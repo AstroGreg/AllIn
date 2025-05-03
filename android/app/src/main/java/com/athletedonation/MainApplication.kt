@@ -1,4 +1,4 @@
-package com.athletedonation
+package com.AllIn
 
 import android.app.Application
 import com.facebook.react.PackageList
