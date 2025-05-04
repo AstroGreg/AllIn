@@ -35,7 +35,7 @@ import tickCircle from '../assets/icons/tickCircle.svg';
 import trash from '../assets/icons/trash.svg';
 import editDetails from '../assets/icons/editDetails.svg';
 import setting from '../assets/icons/setting.svg';
-import eventCalendar from '../assets/icons/eventCalendar.svg';
+import competitionCalendar from '../assets/icons/competitionCalendar.svg';
 import map from '../assets/icons/map.svg';
 import location from '../assets/icons/location.svg';
 import calendarGrey from '../assets/icons/calendarGrey.svg';
@@ -47,7 +47,7 @@ import timer from '../assets/icons/timer.svg';
 import edit from '../assets/icons/edit.svg';
 import greenTick from '../assets/icons/tickCircleGreen.svg';
 import pending from '../assets/icons/pending.svg';
-import deleteEvent from '../assets/icons/deleteEvent.svg';
+import DeleteCompetition from '../assets/icons/deleteCompetition.svg';
 import backArrow from '../assets/icons/arrowLeft.svg';
 import profileSetting from '../assets/icons/userBlue.svg';
 import lightMode from '../assets/icons/lightMode.svg';
@@ -90,7 +90,7 @@ import editBlue from '../assets/icons/editBlue.svg';
 import more from '../assets/icons/more.svg';
 import cameraBlue from '../assets/icons/cameraBlue.svg';
 import videoBlue from '../assets/icons/videoBlue.svg';
-import eventName from '../assets/icons/eventName.svg';
+import CompetitionName from '../assets/icons/competitionName.svg';
 import dropdown from '../assets/icons/dropdown.svg';
 import filter from '../assets/icons/filter.svg';
 import cameraWhite from '../assets/icons/cameraWhite.svg';
@@ -103,7 +103,7 @@ const Icons = {
     CameraWhite: cameraWhite,
     Filter: filter,
     Dropdown: dropdown,
-    EventName: eventName,
+    CompetitionName: CompetitionName,
     VideoBlue: videoBlue,
     CameraBlue: cameraBlue,
     More: more,
@@ -149,7 +149,7 @@ const Icons = {
     Strava: strava,
     ProfileSetting: profileSetting,
     BackArrow: backArrow,
-    DeleteEvent: deleteEvent,
+    DeleteCompetition: DeleteCompetition,
     Pending: pending,
     GreenTick: greenTick,
     Timer: timer,
@@ -161,7 +161,7 @@ const Icons = {
     CalendarGrey: calendarGrey,
     Location: location,
     Map: map,
-    EventCalendar: eventCalendar,
+    competitionCalendar: competitionCalendar,
     Setting: setting,
     EditDetails: editDetails,
     Trash: trash,

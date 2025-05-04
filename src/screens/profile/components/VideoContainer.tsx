@@ -11,12 +11,12 @@ import ShimmerEffect from '../../../components/shimmerEffect/ShimmerEffect';
 interface VideoContainerProps {
     onPressVideo?: any;
     videoUri?: any;
-    eventName?: string;
+    CompetitionName?: string;
     event?: string;
     timer?: string;
 }
 
-const VideoContainer = ({ onPressVideo, videoUri, eventName, event, timer }: VideoContainerProps) => {
+const VideoContainer = ({ onPressVideo, videoUri, CompetitionName, event, timer }: VideoContainerProps) => {
 
     const deviceWidth = Dimensions.get('window').width;
     const spacing = 20;
@@ -86,7 +86,7 @@ const VideoContainer = ({ onPressVideo, videoUri, eventName, event, timer }: Vid
                     <View style={Styles.row}>
                         <Icons.Map height={16} width={16} />
                         <SizeBox width={4} />
-                        <Text style={Styles.subText}>{eventName}</Text>
+                        <Text style={Styles.subText}>{CompetitionName}</Text>
                     </View>
                     <SizeBox width={4} />
                     <View style={Styles.dot} />

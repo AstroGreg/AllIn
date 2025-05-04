@@ -37,7 +37,7 @@ const ActionModal = ({ visible, onClose, onEdit, onDelete }: ActionModalProps) =
                         <Text style={Styles.actionText}>Edit</Text>
                     </TouchableOpacity>
                     <TouchableOpacity style={Styles.actionButton} onPress={onDelete}>
-                        <Icons.DeleteEvent height={21} width={21} />
+                        <Icons.DeleteCompetition height={21} width={21} />
                         <Text style={Styles.actionText}>Delete</Text>
                     </TouchableOpacity>
                 </TouchableOpacity>

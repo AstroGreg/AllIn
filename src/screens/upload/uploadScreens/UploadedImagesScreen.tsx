@@ -29,11 +29,11 @@ const UploadedImagesScreen = ({ route, navigation }: any) => {
             <SizeBox height={8} />
             <View style={[Styles.row]}>
                 <View style={{ flex: 2 }}>
-                    <CustomSearch value={search} placeholder='Event Search....' onChangeText={(text: any) => setSearch(text)} />
+                    <CustomSearch value={search} placeholder='Competition Search....' onChangeText={(text: any) => setSearch(text)} />
                 </View>
                 <SizeBox width={5} />
                 <View style={{ flex: 1, marginRight: 20 }}>
-                    <CustomButton title='Add New' onPress={() => navigation.navigate('CreateEvent')} isAdd={true} />
+                    <CustomButton title='Add New' onPress={() => navigation.navigate('CreateCompetition')} isAdd={true} />
                 </View>
             </View>
             <SizeBox height={24} />

@@ -9,7 +9,7 @@ interface SectionTabsProps {
 }
 
 const SectionTabs = ({ selectedTab, onTabPress }: SectionTabsProps) => {
-    const tabs = ['Potential Videos of me', 'Created Events'];
+    const tabs = ['Potential Videos of me', 'Created Competitions'];
 
     return (
         <View style={Styles.tabContainer}>

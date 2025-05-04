@@ -56,7 +56,7 @@ const Styles = StyleSheet.create({
         height: '100%',
         width: '100%'
     },
-    eventName: {
+    CompetitionName: {
         ...Fonts.regular14,
         fontWeight: '500',
         color: Colors.mainTextColor

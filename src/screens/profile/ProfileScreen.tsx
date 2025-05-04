@@ -8,7 +8,7 @@ import FastImage from 'react-native-fast-image'
 import Images from '../../constants/Images'
 import Icons from '../../constants/Icons'
 import BorderButton from '../../components/borderButton/BorderButton'
-import EventsContainer from './components/EventsContainer'
+import CompetitionContainer from './components/CompetitionContainer'
 import LinksModal from './components/LinksModal'
 
 const ProfileScreen = ({ navigation }: any) => {
@@ -147,7 +147,7 @@ const ProfileScreen = ({ navigation }: any) => {
                 <FlatList
                     data={['', '', '', '', '',]}
                     renderItem={(item: any) =>
-                        <EventsContainer
+                        <CompetitionContainer
                             onPressPhoto={() => navigation.navigate('AllPhotosOfEvents')}
                             onPressVideo={() => navigation.navigate('AllVideosOfEvents')}
                         />}

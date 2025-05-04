@@ -34,7 +34,7 @@ const SimilarEvents = ({
             </View>
             <SizeBox width={14} />
             <View style={{ width: '70%' }}>
-                <Text style={Styles.eventName} numberOfLines={1}>Champions in Motion</Text>
+                <Text style={Styles.CompetitionName} numberOfLines={1}>Champions in Motion</Text>
                 <SizeBox height={6} />
                 <View style={Styles.row}>
                     <SubscribedUsers users={subscribedUsers} />
@@ -57,7 +57,7 @@ const SimilarEvents = ({
                 </View>
             </View>
             {isSubscription && <TouchableOpacity style={Styles.right} onPress={onPressSubscribe}>
-                <Text style={[Styles.eventName, { color: Colors.primaryColor, fontWeight: '400', }]}>Subscribe</Text>
+                <Text style={[Styles.CompetitionName, { color: Colors.primaryColor, fontWeight: '400', }]}>Subscribe</Text>
             </TouchableOpacity>}
         </View>
     )

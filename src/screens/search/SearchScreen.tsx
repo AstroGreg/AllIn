@@ -88,7 +88,7 @@ const SearchScreen = ({ navigation }: any) => {
                 />
                 <SizeBox height={10} />
                 <SearchResult
-                    icon={<Icons.EventCalendar height={34} width={34} />}
+                    icon={<Icons.competitionCalendar height={34} width={34} />}
                     isAction={true}
                     onPressPhotos={() => navigation.navigate('Videography', { type: 'photo' })}
                     onPressVideos={() => navigation.navigate('Videography', { type: 'video' })}

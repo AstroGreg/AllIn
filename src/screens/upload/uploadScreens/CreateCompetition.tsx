@@ -10,7 +10,7 @@ import { launchImageLibrary } from 'react-native-image-picker';
 import CustomButton from '../../../components/customButton/CustomButton'
 
 
-const CreateEvent = ({ navigation }: any) => {
+const CreateCompetition = ({ navigation }: any) => {
     const insets = useSafeAreaInsets();
     const [selectedImages, setSelectedImages] = useState([]);
 
@@ -35,31 +35,31 @@ const CreateEvent = ({ navigation }: any) => {
     return (
         <View style={Styles.mainContainer}>
             <SizeBox height={insets.top} />
-            <CustomHeader title={`Create Event`} onBackPress={() => navigation.goBack()} onPressSetting={() => navigation.navigate('ProfileSettings')} />
+            <CustomHeader title={`Create Competition`} onBackPress={() => navigation.goBack()} onPressSetting={() => navigation.navigate('ProfileSettings')} />
             <ScrollView style={{ marginHorizontal: 20 }} showsVerticalScrollIndicator={false} >
                 <SizeBox height={24} />
                 <CustomTextInput
-                    label='Event Name'
-                    placeholder='Event name type...'
-                    icon={<Icons.EventName height={16} width={16} />}
+                    label='Competition Name'
+                    placeholder='Competition Name type...'
+                    icon={<Icons.CompetitionName height={16} width={16} />}
                 />
                 <SizeBox height={24} />
                 <CustomTextInput
-                    label='Event Location'
+                    label='Competition Location'
                     placeholder='Select location'
                     icon={<Icons.LocationSetting height={16} width={16} />}
                     isDown={true}
                 />
                 <SizeBox height={24} />
                 <CustomTextInput
-                    label='Event Date'
+                    label='Competition Date'
                     placeholder='dd/mm/year'
                     icon={<Icons.DOB height={16} width={16} />}
                 />
                 <SizeBox height={24} />
                 <CustomTextInput
-                    label='Event Type'
-                    placeholder='Event type custom'
+                    label='Competition Type'
+                    placeholder='Competition type custom'
                     icon={<Icons.LocationSetting height={16} width={16} />}
                     isDown={true}
                 />
@@ -82,4 +82,4 @@ const CreateEvent = ({ navigation }: any) => {
     )
 }
 
-export default CreateEvent
+export default CreateCompetition

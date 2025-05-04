@@ -84,7 +84,7 @@ const AllVideosOfEvents = ({ navigation }: any) => {
                     <VideoContainer
                         onPressVideo={() => navigation.navigate('VideoScreen', { videoUrl: item.videoUri })}
                         event={item.name}
-                        eventName={item.event}
+                        CompetitionName={item.event}
                         videoUri={item.videoUri}
                         timer={item.timer}
                     />

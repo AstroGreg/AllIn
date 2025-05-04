@@ -1,16 +1,16 @@
 import { View, Text, FlatList } from 'react-native'
 import React from 'react'
-import EventContainer from './EventContainer'
+import CompetitionContainer from './CompetitionContainer'
 import SizeBox from '../../../constants/SizeBox'
 import Colors from '../../../constants/Colors'
 import CustomButton from '../../../components/customButton/CustomButton'
 import { useNavigation } from '@react-navigation/native'
 
-interface CretedEventsProps {
+interface CreatedCompetitionsProps {
     data?: any
 }
 
-const CretedEvents = ({ data }: CretedEventsProps) => {
+const CreatedCompetitions = ({ data }: CreatedCompetitionsProps) => {
     const navigation: any = useNavigation();
 
     return (
@@ -22,10 +22,9 @@ const CretedEvents = ({ data }: CretedEventsProps) => {
                 style={{ marginHorizontal: 20 }}
                 renderItem={({ item }: any) =>
                     <>
-                        <EventContainer
+                        <CompetitionContainer
                             videoUri={item.videoUri}
-                            eventName={item.eventName}
-                            map={item.map}
+                            CompetitionName={item.CompetitionName}
                             location={item.location}
                             date={item.date}
                             onPress={() => { }}
@@ -47,4 +46,4 @@ const CretedEvents = ({ data }: CretedEventsProps) => {
     )
 }
 
-export default CretedEvents
+export default CreatedCompetitions

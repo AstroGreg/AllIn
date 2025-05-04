@@ -31,7 +31,7 @@ const FeaturedEvents = ({
                 />
             </View>
             <SizeBox height={10} />
-            <Text style={Styles.eventName} numberOfLines={1}>Champions in Motion</Text>
+            <Text style={Styles.CompetitionName} numberOfLines={1}>Champions in Motion</Text>
             <SizeBox height={6} />
             <View style={Styles.row}>
                 <View style={Styles.row}>

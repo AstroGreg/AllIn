@@ -32,7 +32,7 @@ const SelectCategory = ({ route, navigation }: any) => {
                         </View>
                         <SizeBox width={5} />
                         <View style={{ flex: 1, marginRight: 20 }}>
-                            <CustomButton title='Add New' onPress={() => navigation.navigate('CreateEvent')} isAdd={true} />
+                            <CustomButton title='Add New' onPress={() => navigation.navigate('CreateCompetition')} isAdd={true} />
                         </View>
                     </View>
                     <SizeBox height={24} />

@@ -8,9 +8,9 @@ import Video from 'react-native-video'
 import ActionBtn from './ActionBtn'
 import ShimmerEffect from '../../../components/shimmerEffect/ShimmerEffect'
 
-interface EventContainerProps {
+interface CompetitionContainerProps {
     videoUri?: string;
-    eventName?: string;
+    CompetitionName?: string;
     map?: string;
     location?: string;
     date?: string;
@@ -19,16 +19,16 @@ interface EventContainerProps {
     onPressContainer?: any;
 }
 
-const EventContainer = ({
+const CompetitionContainer = ({
     videoUri,
-    eventName,
+    CompetitionName,
     map,
     location,
     date,
     onPress,
     isActions = false,
     onPressContainer
-}: EventContainerProps) => {
+}: CompetitionContainerProps) => {
     const [isPlaying, setIsPlaying] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
 
@@ -37,7 +37,7 @@ const EventContainer = ({
     };
 
     return (
-        <TouchableOpacity activeOpacity={0.7} style={Styles.eventContainer} onPress={onPressContainer}>
+        <TouchableOpacity activeOpacity={0.7} style={Styles.CompetitionContainer} onPress={onPressContainer}>
             <View style={Styles.VideoContainer}>
                 <TouchableOpacity
                     style={Styles.videoWrapper}
@@ -76,18 +76,21 @@ const EventContainer = ({
             <SizeBox height={11} />
 
             <View style={Styles.rowCenter}>
-                <Icons.EventCalendar height={20} width={20} />
+                <Icons.competitionCalendar height={20} width={20} />
                 <SizeBox width={6} />
-                <Text numberOfLines={1} style={Styles.eventTitle} >{eventName}</Text>
+                <Text numberOfLines={1} style={Styles.eventTitle} >{CompetitionName}</Text>
             </View>
 
             <SizeBox height={6} />
-            <View style={Styles.rowCenter}>
-                <Icons.Map height={16} width={16} />
-                <SizeBox width={6} />
-                <Text numberOfLines={1} style={Styles.eventSubText}>{map}</Text>
-            </View>
-
+            {
+                map &&   
+                <View style={Styles.rowCenter}>
+                    <Icons.Map height={16} width={16} />
+                    <SizeBox width={6} />
+                    <Text numberOfLines={1} style={Styles.eventSubText}>{map}</Text>
+                </View>
+            }
+        
             <SizeBox height={6} />
 
             <View style={[Styles.rowCenter]}>
@@ -108,7 +111,7 @@ const EventContainer = ({
             {isActions ?
                 <View style={[Styles.rowCenter, { justifyContent: 'space-between' }]}>
                     <ActionBtn title='Edit' icon={<Icons.Edit height={14} width={14} />} />
-                    <ActionBtn title='Delete' icon={<Icons.DeleteEvent height={14} width={14} />} />
+                    <ActionBtn title='Delete' icon={<Icons.DeleteCompetition height={14} width={14} />} />
                 </View>
                 : <BorderButton title='Participant' onPress={onPress} />}
 
@@ -116,4 +119,4 @@ const EventContainer = ({
     )
 }
 
-export default EventContainer
+export default CompetitionContainer

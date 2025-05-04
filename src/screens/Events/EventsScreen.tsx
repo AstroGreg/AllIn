@@ -12,7 +12,7 @@ import SimilarEvents from './components/SimilarEvents'
 const EventsScreen = ({ navigation }: any) => {
 
   const insets = useSafeAreaInsets();
-  const [serach, setSearch] = useState('');
+  const [search, setSearch] = useState('');
 
   const RenderFeaturedEvents = () => {
     return (
@@ -37,7 +37,7 @@ const EventsScreen = ({ navigation }: any) => {
 
       <ScrollView style={Styles.container} showsVerticalScrollIndicator={false} nestedScrollEnabled={true}>
         <SizeBox height={24} />
-        <CustomSearch value={serach} placeholder='Search....' onChangeText={(text) => setSearch(text)} />
+        <CustomSearch value={search} placeholder='Search....' onChangeText={(text) => setSearch(text)} />
         <SizeBox height={24} />
 
         <TitleContainers title={'Featured events'} onActionPress={() => { }} />

@@ -6,14 +6,14 @@ import Images from '../../../constants/Images'
 import SizeBox from '../../../constants/SizeBox'
 import Icons from '../../../constants/Icons'
 
-interface EventContainerProps {
+interface CompetitionContainerProps {
     onPressPhoto?: any;
     onPressVideo?: any;
 }
 
-const EventsContainer = ({ onPressPhoto, onPressVideo }: EventContainerProps) => {
+const CompetitionContainer = ({ onPressPhoto, onPressVideo }: CompetitionContainerProps) => {
     return (
-        <View style={Styles.eventContainer}>
+        <View style={Styles.CompetitionContainer}>
             <View style={Styles.eventImgCont}>
                 <FastImage
                     source={Images.event1}
@@ -62,4 +62,4 @@ const EventsContainer = ({ onPressPhoto, onPressVideo }: EventContainerProps) =>
     )
 }
 
-export default EventsContainer
+export default CompetitionContainer

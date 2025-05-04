@@ -51,7 +51,7 @@ const PhotosContainer = ({ onPressImg, photo, name, price }: PhotosContainerProp
                     <Icons.Edit height={16} width={16} />
                 </TouchableOpacity>
                 <TouchableOpacity onPress={() => setIsDeleteVisible(true)}>
-                    <Icons.DeleteEvent height={16} width={16} />
+                    <Icons.DeleteCompetition height={16} width={16} />
                 </TouchableOpacity>
             </View>
 

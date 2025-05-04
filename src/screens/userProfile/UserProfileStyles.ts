@@ -140,7 +140,7 @@ const Styles = StyleSheet.create({
 
 
     //Event Container
-    eventContainer: {
+    CompetitionContainer: {
         padding: 16,
         borderWidth: 0.5,
         borderColor: Colors.lightGrayColor,

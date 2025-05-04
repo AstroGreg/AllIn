@@ -14,7 +14,7 @@ import ViewSelectedTalent from '../screens/authFlow/setUpTalent/performer/ViewSe
 import TalenetForPhotograph from '../screens/authFlow/setUpTalent/creater/TalenetForPhotograph';
 import PhotographyName from '../screens/authFlow/setUpTalent/creater/PhotographyName';
 import ViewPhotographProfile from '../screens/authFlow/setUpTalent/creater/ViewPhotographProfile';
-import EventsScreen from '../screens/Events/EventsScreen';
+import EventsScreen from '../screens/events/EventsScreen';
 import ParticipantScreen from '../screens/participant/ParticipantScreen';
 import ChooseEventScreen from '../screens/chooseEvent/ChooseEventScreen';
 import CongratulationsScreen from '../screens/congratulations/CongratulationsScreen';
@@ -30,7 +30,7 @@ import MediaScreens from '../screens/profile/profileScreens/MediaScreens';
 import PhotosScreen from '../screens/photos/PhotosScreen';
 import VideoScreen from '../screens/videos/VideoScreen';
 import UploadedImagesScreen from '../screens/upload/uploadScreens/UploadedImagesScreen';
-import CreateEvent from '../screens/upload/uploadScreens/CreateEvent';
+import CreateCompetition from '../screens/upload/uploadScreens/CreateCompetition';
 import SelectCategory from '../screens/upload/uploadScreens/SelectCategory';
 import Videography from '../screens/search/searchScreens/Videography';
 import VideosForEvent from '../screens/search/searchScreens/VideosForEvent';
@@ -81,7 +81,7 @@ const RootStackNavigation = () => {
             <Stack.Screen name="PhotosScreen" component={PhotosScreen} />
             <Stack.Screen name="VideoScreen" component={VideoScreen} />
             <Stack.Screen name="UploadedImagesScreen" component={UploadedImagesScreen} />
-            <Stack.Screen name="CreateEvent" component={CreateEvent} />
+            <Stack.Screen name="CreateCompetition" component={CreateCompetition} />
             <Stack.Screen name="SelectCategory" component={SelectCategory} />
             <Stack.Screen name="Videography" component={Videography} />
             <Stack.Screen name="VideosForEvent" component={VideosForEvent} />

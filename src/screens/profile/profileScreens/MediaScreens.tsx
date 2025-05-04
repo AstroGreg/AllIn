@@ -186,7 +186,7 @@ const MediaScreens = ({ navigation }: any) => {
                     renderItem={({ item }) =>
                         <VideoContainer
                             event={item.name}
-                            eventName={item.event}
+                            CompetitionName={item.event}
                             videoUri={item.videoUri}
                             timer={item.timer}
                             onPressVideo={() => navigation.navigate('VideoScreen', { videoUrl: '' })}

@@ -18,7 +18,7 @@ const ViewPhotographProfile = ({ navigation }: any) => {
         // Add more default events if needed
     ]);
 
-    const handleDeleteEvent = (id: number) => {
+    const handleDeleteCompetition = (id: number) => {
         setEvents(events.filter(event => event.id !== id));
     };
     return (
@@ -58,7 +58,7 @@ const ViewPhotographProfile = ({ navigation }: any) => {
                                 disabled={true}
                                 isRightAction={true}
                                 isDelete={true}
-                                onPressDelete={() => handleDeleteEvent(event.id)}
+                                onPressDelete={() => handleDeleteCompetition(event.id)}
                             />
                         ))}
 

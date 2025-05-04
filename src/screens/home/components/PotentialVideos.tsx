@@ -1,13 +1,13 @@
 import { View, Text, FlatList, ScrollView, TouchableOpacity } from 'react-native'
 import React from 'react'
-import EventContainer from './EventContainer'
+import CompetitionContainer from './CompetitionContainer'
 import SizeBox from '../../../constants/SizeBox'
 import Styles from '../HomeStyles'
 import CustomButton from '../../../components/customButton/CustomButton'
 import Icons from '../../../constants/Icons'
 import BorderButton from '../../../components/borderButton/BorderButton'
 import RequestContainers from './RequestContainers'
-import SimilarEvents from '../../Events/components/SimilarEvents'
+import SimilarEvents from '../../events/components/SimilarEvents'
 import { useNavigation } from '@react-navigation/native';
 
 interface PotentialVideosProps {
@@ -26,9 +26,9 @@ const PotentialVideos = ({ data, onPressAddEvent, onPressParticipant, onPressDow
             <FlatList
                 data={data}
                 renderItem={({ item }: any) =>
-                    <EventContainer
+                    <CompetitionContainer
                         videoUri={item.videoUri}
-                        eventName={item.eventName}
+                        CompetitionName={item.CompetitionName}
                         map={item.map}
                         location={item.location}
                         date={item.date}
@@ -51,9 +51,9 @@ const PotentialVideos = ({ data, onPressAddEvent, onPressParticipant, onPressDow
             <FlatList
                 data={data}
                 renderItem={({ item }: any) =>
-                    <EventContainer
+                    <CompetitionContainer
                         videoUri={item.videoUri}
-                        eventName={item.eventName}
+                        CompetitionName={item.CompetitionName}
                         map={item.map}
                         location={item.location}
                         date={item.date}

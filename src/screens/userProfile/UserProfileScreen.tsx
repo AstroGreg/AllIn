@@ -8,7 +8,7 @@ import Images from '../../constants/Images'
 import Icons from '../../constants/Icons'
 import BorderButton from '../../components/borderButton/BorderButton'
 import LinksModal from '../profile/components/LinksModal'
-import EventsContainer from '../profile/components/EventsContainer'
+import CompetitionContainer from '../profile/components/CompetitionContainer'
 import Styles from './UserProfileStyles'
 
 const UserProfileScreen = ({ navigation }: any) => {
@@ -154,7 +154,7 @@ const UserProfileScreen = ({ navigation }: any) => {
                 <FlatList
                     data={['', '', '', '', '',]}
                     renderItem={(item: any) =>
-                        <EventsContainer
+                        <CompetitionContainer
                             onPressPhoto={() => navigation.navigate('AllPhotosOfEvents')}
                             onPressVideo={() => navigation.navigate('AllVideosOfEvents')}
                         />}

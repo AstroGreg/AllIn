@@ -6,7 +6,7 @@ import SizeBox from '../../constants/SizeBox'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import SectionTabs from '../../components/sectionTabs/SectionTabs'
 import PotentialVideos from './components/PotentialVideos'
-import CretedEvents from './components/CretedEvents'
+import CreatedCompetitions from './components/CreatedCompetitions'
 import CustomButton from '../../components/customButton/CustomButton'
 
 const HomeScreen = ({ navigation }: any) => {
@@ -16,7 +16,7 @@ const HomeScreen = ({ navigation }: any) => {
     const data = [
         {
             id: 1,
-            eventName: "BK Studentent 23",
+            CompetitionName: "BK Studentent 23",
             map: "800m heat 1",
             location: "Dhaka",
             date: "Mar 4,25",
@@ -24,7 +24,7 @@ const HomeScreen = ({ navigation }: any) => {
         },
         {
             id: 2,
-            eventName: "PK 2025 indoor",
+            CompetitionName: "PK 2025 indoor",
             map: "800m heat 1",
             location: "Dhaka",
             date: "Mar 4,25",
@@ -32,7 +32,7 @@ const HomeScreen = ({ navigation }: any) => {
         },
         {
             id: 3,
-            eventName: "BK Studentent 23",
+            CompetitionName: "BK Studentent 23",
             map: "800m heat 1",
             location: "Dhaka",
             date: "Mar 4,25",
@@ -40,7 +40,7 @@ const HomeScreen = ({ navigation }: any) => {
         },
         {
             id: 4,
-            eventName: "BK Studentent 23",
+            CompetitionName: "BK Studentent 23",
             map: "800m heat 1",
             location: "Dhaka",
             date: "Mar 4,25",
@@ -48,7 +48,7 @@ const HomeScreen = ({ navigation }: any) => {
         },
         {
             id: 5,
-            eventName: "BK Studentent 23",
+            CompetitionName: "BK Studentent 23",
             map: "800m heat 1",
             location: "Dhaka",
             date: "Mar 4,25",
@@ -76,14 +76,14 @@ const HomeScreen = ({ navigation }: any) => {
                         onPressAddEvent={() => navigation.navigate('EventsScreen')}
                         onPressDownloads={() => navigation.navigate('DownloadsScreens')}
                         onPressParticipant={() => navigation.navigate('ParticipantScreen')}
-                    /> : <CretedEvents data={data} />}
+                    /> : <CreatedCompetitions data={data} />}
 
                 <SizeBox height={24} />
             </ScrollView>
 
             {seletedTab === 1 &&
                 <View style={Styles.bottomAddEventBtn}>
-                    <CustomButton title='Create Event' onPress={() => navigation.navigate('CreateEvent')} isAdd={true} />
+                    <CustomButton title='Create Competition' onPress={() => navigation.navigate('CreateCompetition')} isAdd={true} />
                 </View>}
         </View >
     )
