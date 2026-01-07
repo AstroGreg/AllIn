@@ -7,7 +7,7 @@ import CustomButton from '../../../components/customButton/CustomButton'
 import Icons from '../../../constants/Icons'
 import BorderButton from '../../../components/borderButton/BorderButton'
 import RequestContainers from './RequestContainers'
-import SimilarEvents from '../../events/components/SimilarEvents'
+import SimilarEvents from '../../Events/components/SimilarEvents'
 import { useNavigation } from '@react-navigation/native';
 
 interface PotentialVideosProps {

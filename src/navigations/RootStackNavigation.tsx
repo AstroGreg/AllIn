@@ -14,7 +14,7 @@ import ViewSelectedTalent from '../screens/authFlow/setUpTalent/performer/ViewSe
 import TalenetForPhotograph from '../screens/authFlow/setUpTalent/creater/TalenetForPhotograph';
 import PhotographyName from '../screens/authFlow/setUpTalent/creater/PhotographyName';
 import ViewPhotographProfile from '../screens/authFlow/setUpTalent/creater/ViewPhotographProfile';
-import EventsScreen from '../screens/events/EventsScreen';
+import EventsScreen from '../screens/Events/EventsScreen';
 import ParticipantScreen from '../screens/participant/ParticipantScreen';
 import ChooseEventScreen from '../screens/chooseEvent/ChooseEventScreen';
 import CongratulationsScreen from '../screens/congratulations/CongratulationsScreen';

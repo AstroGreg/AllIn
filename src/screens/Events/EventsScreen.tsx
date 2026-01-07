@@ -5,9 +5,9 @@ import Styles from './EventsStyles'
 import SizeBox from '../../constants/SizeBox'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import CustomSearch from '../../components/customSearch/CustomSearch'
-import TitleContainers from './components/TitleContainers'
-import FeaturedEvents from './components/FeaturedEvents'
-import SimilarEvents from './components/SimilarEvents'
+import TitleContainers from '../Events/components/TitleContainers'
+import FeaturedEvents from '../Events/components/FeaturedEvents'
+import SimilarEvents from '../Events/components/SimilarEvents'
 
 const EventsScreen = ({ navigation }: any) => {
 
