@@ -9,13 +9,15 @@ import Icons from '../../../constants/Icons'
 interface HeaderProps {
     userName: string;
     profilePic?: string;
-    onPressSetting?: any;
+    onPressFeed?: () => void;
+    onPressNotification?: () => void;
 }
 
 const Header = ({
     userName,
     profilePic,
-    onPressSetting
+    onPressFeed,
+    onPressNotification
 }: HeaderProps) => {
     return (
         <View style={Styles.header}>
@@ -26,14 +28,20 @@ const Header = ({
                 />
             </View>
             <SizeBox width={10} />
-            <View>
+            <View style={Styles.userInfoContainer}>
                 <Text style={Styles.welcomeText}>Welcome,</Text>
                 <Text style={Styles.userNameText}>{userName}</Text>
             </View>
 
-            <TouchableOpacity onPress={onPressSetting} style={Styles.settingBtn}>
-                <Icons.Setting height={24} width={24} />
-            </TouchableOpacity>
+            <View style={Styles.headerIconsContainer}>
+                <TouchableOpacity onPress={onPressFeed} style={Styles.headerIconBtn}>
+                    <Icons.FeedBlue height={24} width={24} />
+                </TouchableOpacity>
+                <SizeBox width={10} />
+                <TouchableOpacity onPress={onPressNotification} style={Styles.headerIconBtn}>
+                    <Icons.NotificationBoldBlue height={24} width={24} />
+                </TouchableOpacity>
+            </View>
         </View>
     )
 }

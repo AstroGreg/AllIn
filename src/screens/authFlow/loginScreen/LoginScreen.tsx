@@ -60,7 +60,10 @@ const LoginScreen = ({ navigation }: any) => {
                     </View>
 
                     <SizeBox height={40} />
-                    <CustomButton title={'Continue'} onPress={() => navigation.navigate('BottomTabBar')} />
+                    <CustomButton title={'Continue'} onPress={() => navigation.reset({
+                        index: 0,
+                        routes: [{ name: 'BottomTabBar' }],
+                    })} />
 
                     <SizeBox height={16} />
                     <OrContainer />
@@ -68,13 +71,19 @@ const LoginScreen = ({ navigation }: any) => {
                     <SizeBox height={16} />
                     <SocialBtn
                         title='Continue with Google'
-                        onPress={() => navigation.navigate('AddTalentScreen')}
+                        onPress={() => navigation.reset({
+                            index: 0,
+                            routes: [{ name: 'BottomTabBar' }],
+                        })}
                         isGoogle={true}
                     />
                     <SizeBox height={20} />
                     <SocialBtn
                         title='Continue with Apple'
-                        onPress={() => { }}
+                        onPress={() => navigation.reset({
+                            index: 0,
+                            routes: [{ name: 'BottomTabBar' }],
+                        })}
                         isGoogle={false}
                     />
 

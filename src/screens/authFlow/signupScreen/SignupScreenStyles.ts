@@ -11,25 +11,41 @@ const Styles = StyleSheet.create({
         paddingHorizontal: 20
     },
     headingText: {
-        ...Fonts.semibold22,
+        ...Fonts.medium22,
+        fontSize: 24,
+        lineHeight: 32,
         color: Colors.mainTextColor,
-        fontWeight: '500',
         textAlign: 'center'
     },
     subHeadingText: {
         ...Fonts.regular14,
-        color: Colors.subTextColor,
-        fontWeight: '400',
+        lineHeight: 22,
+        color: '#9B9F9F',
         textAlign: 'center'
     },
     checkBox: {
         flexDirection: 'row',
+        alignItems: 'flex-start',
+        width: '100%',
+    },
+    checkboxIcon: {
+        marginTop: 3,
     },
     rememberMeText: {
-        ...Fonts.regular13,
+        ...Fonts.regular14,
+        lineHeight: 22,
         color: Colors.mainTextColor,
-        fontWeight: '400',
-
+        flexWrap: 'wrap',
+    },
+    termsTextContainer: {
+        flex: 1,
+        paddingRight: 10,
+    },
+    linkText: {
+        ...Fonts.regular14,
+        lineHeight: 22,
+        color: Colors.primaryColor,
+        textDecorationLine: 'underline',
     },
     forgotPass: {
         ...Fonts.regular14,

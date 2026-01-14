@@ -1,8 +1,10 @@
 import React from "react";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
+import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import Icons from "../constants/Icons";
 import Colors from "../constants/Colors";
 import HomeScreen from "../screens/home/HomeScreen";
+import HubScreen from "../screens/hub/HubScreen";
 import { Platform } from "react-native";
 import SearchScreen from "../screens/search/SearchScreen";
 import UploadScreen from "../screens/upload/UploadScreen";
@@ -11,6 +13,16 @@ import MenuScreen from "../screens/menu/MenuScreen";
 import Fonts from "../constants/Fonts";
 
 const Tab = createBottomTabNavigator();
+const HomeStack = createNativeStackNavigator();
+
+const HomeStackNavigator = () => {
+    return (
+        <HomeStack.Navigator screenOptions={{ headerShown: false }}>
+            <HomeStack.Screen name="HomeScreen" component={HomeScreen} />
+            <HomeStack.Screen name="HubScreen" component={HubScreen} />
+        </HomeStack.Navigator>
+    );
+};
 
 const BottomTabBar = () => {
     return (
@@ -55,7 +67,7 @@ const BottomTabBar = () => {
                 },
             })}
         >
-            <Tab.Screen name="Home" component={HomeScreen} />
+            <Tab.Screen name="Home" component={HomeStackNavigator} />
             <Tab.Screen name="Search" component={SearchScreen} />
             <Tab.Screen name="Upload" component={UploadScreen} />
             <Tab.Screen name="Profile" component={ProfileScreen} />

@@ -39,6 +39,7 @@ import competitionCalendar from '../assets/icons/competitionCalendar.svg';
 import map from '../assets/icons/map.svg';
 import location from '../assets/icons/location.svg';
 import calendarGrey from '../assets/icons/calendarGrey.svg';
+import calendarWhite from '../assets/icons/calendarWhite.svg';
 import rightBtnIconGrey from '../assets/icons/arrowRightGrey.svg';
 import play from '../assets/icons/posh.svg';
 import downloads from '../assets/icons/downloads.svg';
@@ -95,10 +96,18 @@ import dropdown from '../assets/icons/dropdown.svg';
 import filter from '../assets/icons/filter.svg';
 import cameraWhite from '../assets/icons/cameraWhite.svg';
 import playCricle from '../assets/icons/playCricle.svg';
+import feedBlue from '../assets/icons/feedBlue.svg';
+import notificationBoldBlue from '../assets/icons/notificationBoldBlue.svg';
+import playWhite from '../assets/icons/playWhite.svg';
+import bellColorful from '../assets/icons/bellColorful.svg';
 
 
 
 const Icons = {
+    FeedBlue: feedBlue,
+    NotificationBoldBlue: notificationBoldBlue,
+    PlayWhite: playWhite,
+    BellColorful: bellColorful,
     PlayCricle: playCricle,
     CameraWhite: cameraWhite,
     Filter: filter,
@@ -159,6 +168,7 @@ const Icons = {
     Play: play,
     RightBtnIconGrey: rightBtnIconGrey,
     CalendarGrey: calendarGrey,
+    CalendarWhite: calendarWhite,
     Location: location,
     Map: map,
     competitionCalendar: competitionCalendar,

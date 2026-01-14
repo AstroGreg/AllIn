@@ -35,42 +35,14 @@ const SignupScreen = ({ navigation }: any) => {
                     <CustomTextInput
                         label='Email'
                         placeholder='Enter email'
-                        icon={<Icons.Email height={22} width={22} />}
-                    />
-
-                    <SizeBox height={24} />
-                    <CustomTextInput
-                        label='Username'
-                        placeholder='Enter Username'
-                        icon={<Icons.User height={18} width={18} />}
-                    />
-
-                    <SizeBox height={24} />
-                    <CustomTextInput
-                        label='First Name'
-                        placeholder='Enter First Name'
-                        icon={<Icons.User height={18} width={18} />}
-                    />
-
-                    <SizeBox height={24} />
-                    <CustomTextInput
-                        label='Last Name'
-                        placeholder='Last Name'
-                        icon={<Icons.User height={18} width={18} />}
-                    />
-
-                    <SizeBox height={24} />
-                    <CustomTextInput
-                        label='Your Birthdate'
-                        placeholder='dd/mm/yyyy'
-                        icon={<Icons.DOB height={20} width={20} />}
+                        icon={<Icons.Email height={16} width={16} />}
                     />
 
                     <SizeBox height={24} />
                     <CustomTextInput
                         label='Password'
                         placeholder='Enter password'
-                        icon={<Icons.Password height={20} width={20} />}
+                        icon={<Icons.Password height={16} width={16} />}
                         isPass={true}
                     />
 
@@ -78,30 +50,29 @@ const SignupScreen = ({ navigation }: any) => {
                     <CustomTextInput
                         label='Confirm password'
                         placeholder='Confirm password'
-                        icon={<Icons.Password height={20} width={20} />}
+                        icon={<Icons.Password height={16} width={16} />}
                         isPass={true}
                     />
 
-                    <SizeBox height={14} />
+                    <SizeBox height={24} />
 
                     <View style={Styles.checkBox}>
-                        <CheckBox onPressCheckBox={() => { }} />
-                        <SizeBox width={6} />
-
-                        <View style={[Styles.checkBox, { flexWrap: 'wrap' }]}>
-                            <Text style={Styles.rememberMeText}>By proceeding, you agree to the </Text>
-                            <TouchableOpacity onPress={() => { }}>
-                                <Text style={[Styles.rememberMeText, { color: Colors.primaryColor, textDecorationLine: 'underline', }]}>Terms of Service</Text>
-                            </TouchableOpacity>
-                            <Text style={Styles.rememberMeText}> and </Text>
-                            <TouchableOpacity onPress={() => { }}>
-                                <Text style={[Styles.rememberMeText, { color: Colors.primaryColor, textDecorationLine: 'underline', }]}>Privacy Policy.</Text>
-                            </TouchableOpacity>
+                        <View style={Styles.checkboxIcon}>
+                            <CheckBox onPressCheckBox={() => { }} />
+                        </View>
+                        <SizeBox width={10} />
+                        <View style={Styles.termsTextContainer}>
+                            <Text style={Styles.rememberMeText}>
+                                By proceeding, you agree to the{' '}
+                                <Text style={Styles.linkText} onPress={() => { }}>Terms of Service</Text>
+                                {' '}and{' '}
+                                <Text style={Styles.linkText} onPress={() => { }}>Privacy Policy.</Text>
+                            </Text>
                         </View>
                     </View>
 
                     <SizeBox height={40} />
-                    <CustomButton title={'Continue'} onPress={() => navigation.navigate('LanguageScreen')} />
+                    <CustomButton title={'Sign Up'} onPress={() => navigation.navigate('CreateProfileScreen')} />
 
                     <SizeBox height={16} />
                     <OrContainer />
@@ -109,13 +80,13 @@ const SignupScreen = ({ navigation }: any) => {
                     <SizeBox height={16} />
                     <SocialBtn
                         title='Continue with Google'
-                        onPress={() => { }}
+                        onPress={() => navigation.navigate('CreateProfileScreen')}
                         isGoogle={true}
                     />
                     <SizeBox height={20} />
                     <SocialBtn
                         title='Continue with Apple'
-                        onPress={() => { }}
+                        onPress={() => navigation.navigate('CreateProfileScreen')}
                         isGoogle={false}
                     />
                     <SizeBox height={20} />

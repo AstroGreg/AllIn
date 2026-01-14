@@ -1,91 +1,72 @@
-import { View, ScrollView, } from 'react-native'
-import React, { useState } from 'react'
+import { View, ScrollView } from 'react-native'
+import React from 'react'
 import Styles from './HomeStyles'
 import Header from './components/Header'
 import SizeBox from '../../constants/SizeBox'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import SectionTabs from '../../components/sectionTabs/SectionTabs'
-import PotentialVideos from './components/PotentialVideos'
-import CreatedCompetitions from './components/CreatedCompetitions'
-import CustomButton from '../../components/customButton/CustomButton'
+import NewsFeedCard from './components/NewsFeedCard'
+import Images from '../../constants/Images'
 
 const HomeScreen = ({ navigation }: any) => {
     const insets = useSafeAreaInsets();
-    const [seletedTab, setSelectedTab] = useState(0);
 
-    const data = [
-        {
-            id: 1,
-            CompetitionName: "BK Studentent 23",
-            map: "800m heat 1",
-            location: "Dhaka",
-            date: "Mar 4,25",
-            videoUri: "https://awssportreels.s3.eu-central-1.amazonaws.com/PK-800m.mp4"
-        },
-        {
-            id: 2,
-            CompetitionName: "PK 2025 indoor",
-            map: "800m heat 1",
-            location: "Dhaka",
-            date: "Mar 4,25",
-            videoUri: "https://awssportreels.s3.eu-central-1.amazonaws.com/BK+studenten+2023.MP4"
-        },
-        {
-            id: 3,
-            CompetitionName: "BK Studentent 23",
-            map: "800m heat 1",
-            location: "Dhaka",
-            date: "Mar 4,25",
-            videoUri: "https://awssportreels.s3.eu-central-1.amazonaws.com/BK-2024.mp4"
-        },
-        {
-            id: 4,
-            CompetitionName: "BK Studentent 23",
-            map: "800m heat 1",
-            location: "Dhaka",
-            date: "Mar 4,25",
-            videoUri: "https://awssportreels.s3.eu-central-1.amazonaws.com/PK-1500m.mp4"
-        },
-        {
-            id: 5,
-            CompetitionName: "BK Studentent 23",
-            map: "800m heat 1",
-            location: "Dhaka",
-            date: "Mar 4,25",
-            videoUri: "https://awssportreels.s3.eu-central-1.amazonaws.com/PK-400m.mp4"
-        },
-    ]
+    const feedImages = [
+        Images.photo1,
+        Images.photo3,
+        Images.photo4,
+        Images.photo5,
+        Images.photo6,
+        Images.photo7,
+        Images.photo8,
+        Images.photo9,
+    ];
+
+    const kbcNachtImages = [
+        Images.photo5,
+    ];
 
     return (
         <View style={Styles.mainContainer}>
             <SizeBox height={insets.top} />
-            <Header userName={"David Malan"} onPressSetting={() => navigation.navigate('ProfileSettings')} />
+            <Header userName={"David Malan"} onPressFeed={() => navigation.navigate('HubScreen')} />
 
             <ScrollView showsVerticalScrollIndicator={false} nestedScrollEnabled={true}>
-                <SizeBox height={10} />
+                <SizeBox height={24} />
 
-                <SectionTabs
-                    selectedTab={seletedTab}
-                    onTabPress={(tab: number) => { setSelectedTab(tab) }}
+                {/* First card - no border, just title + image carousel */}
+                <NewsFeedCard
+                    title="Belgium championships 2025"
+                    images={feedImages}
+                    hasBorder={false}
                 />
-                <SizeBox height={16} />
 
-                {seletedTab === 0 ?
-                    <PotentialVideos
-                        data={data}
-                        onPressAddEvent={() => navigation.navigate('EventsScreen')}
-                        onPressDownloads={() => navigation.navigate('DownloadsScreens')}
-                        onPressParticipant={() => navigation.navigate('ParticipantScreen')}
-                    /> : <CreatedCompetitions data={data} />}
+                {/* Second card - has border, user post with single image */}
+                <NewsFeedCard
+                    title="Belgium championships 2025"
+                    description={`Elias took part in the 800m and achieved a time close to his best 1'50"99`}
+                    images={[Images.photo1]}
+                    hasBorder={true}
+                    user={{
+                        name: "Mia Moon",
+                        avatar: Images.profilePic,
+                        timeAgo: "3 Days Ago"
+                    }}
+                    onFollow={() => {}}
+                    onViewBlog={() => {}}
+                />
+
+                {/* Third card - no border, video with play button */}
+                <NewsFeedCard
+                    title="KBC Nacht 2025"
+                    images={kbcNachtImages}
+                    hasBorder={false}
+                    isVideo={true}
+                    videoUri="https://awssportreels.s3.eu-central-1.amazonaws.com/PK-800m.mp4"
+                />
 
                 <SizeBox height={24} />
             </ScrollView>
-
-            {seletedTab === 1 &&
-                <View style={Styles.bottomAddEventBtn}>
-                    <CustomButton title='Create Competition' onPress={() => navigation.navigate('CreateCompetition')} isAdd={true} />
-                </View>}
-        </View >
+        </View>
     )
 }
 

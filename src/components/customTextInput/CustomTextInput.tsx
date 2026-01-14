@@ -62,8 +62,8 @@ const CustomTextInput = ({
                     <TouchableOpacity style={Styles.eyeIcon} onPress={() => setSecureTextEntry(!secureTextEntry)} >
                         {
                             secureTextEntry ?
-                                <Image source={Icons.ShowPassword} style={{ height: 20, width: 20 }} /> :
-                                <Icons.HidePassword height={20} width={20} />
+                                <Icons.HidePassword height={20} width={20} /> :
+                                <Image source={Icons.ShowPassword} style={{ height: 20, width: 20 }} />
                         }
                     </TouchableOpacity>
                 }
