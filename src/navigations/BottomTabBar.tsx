@@ -5,6 +5,20 @@ import Icons from "../constants/Icons";
 import Colors from "../constants/Colors";
 import HomeScreen from "../screens/home/HomeScreen";
 import HubScreen from "../screens/hub/HubScreen";
+import MyAllEventsScreen from "../screens/myAllEvents/MyAllEventsScreen";
+import VideoDetailsScreen from "../screens/videoDetails/VideoDetailsScreen";
+import EventDetailsScreen from "../screens/eventDetails/EventDetailsScreen";
+import SentRequestStateScreen from "../screens/sentRequestState/SentRequestStateScreen";
+import ReceivedRequestStateScreen from "../screens/receivedRequestState/ReceivedRequestStateScreen";
+import VideoEditRequestsScreen from "../screens/videoEditRequests/VideoEditRequestsScreen";
+import CompetitionsScreen from "../screens/competitions/CompetitionsScreen";
+import NotificationsScreen from "../screens/notifications/NotificationsScreen";
+import AvailableEventsScreen from "../screens/availableEvents/AvailableEventsScreen";
+import AddToEventScreen from "../screens/addToEvent/AddToEventScreen";
+import EventSummaryScreen from "../screens/eventSummary/EventSummaryScreen";
+import CongratulationsScreen from "../screens/congratulations/CongratulationsScreen";
+import FailedScreen from "../screens/failed/FailedScreen";
+import PhotosScreen from "../screens/photos/PhotosScreen";
 import { Platform } from "react-native";
 import SearchScreen from "../screens/search/SearchScreen";
 import UploadScreen from "../screens/upload/UploadScreen";
@@ -20,6 +34,20 @@ const HomeStackNavigator = () => {
         <HomeStack.Navigator screenOptions={{ headerShown: false }}>
             <HomeStack.Screen name="HomeScreen" component={HomeScreen} />
             <HomeStack.Screen name="HubScreen" component={HubScreen} />
+            <HomeStack.Screen name="MyAllEventsScreen" component={MyAllEventsScreen} />
+            <HomeStack.Screen name="VideoDetailsScreen" component={VideoDetailsScreen} />
+            <HomeStack.Screen name="EventDetailsScreen" component={EventDetailsScreen} />
+            <HomeStack.Screen name="SentRequestStateScreen" component={SentRequestStateScreen} />
+            <HomeStack.Screen name="ReceivedRequestStateScreen" component={ReceivedRequestStateScreen} />
+            <HomeStack.Screen name="VideoEditRequestsScreen" component={VideoEditRequestsScreen} />
+            <HomeStack.Screen name="CompetitionsScreen" component={CompetitionsScreen} />
+            <HomeStack.Screen name="NotificationsScreen" component={NotificationsScreen} />
+            <HomeStack.Screen name="AvailableEventsScreen" component={AvailableEventsScreen} />
+            <HomeStack.Screen name="AddToEventScreen" component={AddToEventScreen} />
+            <HomeStack.Screen name="EventSummaryScreen" component={EventSummaryScreen} />
+            <HomeStack.Screen name="CongratulationsScreen" component={CongratulationsScreen} />
+            <HomeStack.Screen name="FailedScreen" component={FailedScreen} />
+            <HomeStack.Screen name="PhotosScreen" component={PhotosScreen} />
         </HomeStack.Navigator>
     );
 };

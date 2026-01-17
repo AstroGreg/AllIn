@@ -28,7 +28,11 @@ const HomeScreen = ({ navigation }: any) => {
     return (
         <View style={Styles.mainContainer}>
             <SizeBox height={insets.top} />
-            <Header userName={"David Malan"} onPressFeed={() => navigation.navigate('HubScreen')} />
+            <Header
+                userName={"David Malan"}
+                onPressFeed={() => navigation.navigate('HubScreen')}
+                onPressNotification={() => navigation.navigate('NotificationsScreen')}
+            />
 
             <ScrollView showsVerticalScrollIndicator={false} nestedScrollEnabled={true}>
                 <SizeBox height={24} />

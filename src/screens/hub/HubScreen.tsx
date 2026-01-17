@@ -9,7 +9,6 @@ import {
     Map1,
     Location,
     VideoSquare,
-    Play,
     Eye,
     DocumentDownload,
 } from 'iconsax-react-nativejs';
@@ -95,7 +94,10 @@ const HubScreen = ({ navigation }: any) => {
                 </View>
             </View>
             <View style={Styles.divider} />
-            <TouchableOpacity style={Styles.viewButton}>
+            <TouchableOpacity
+                style={Styles.viewButton}
+                onPress={() => navigation.navigate('CompetitionsScreen')}
+            >
                 <Text style={Styles.viewButtonText}>View</Text>
                 <Icons.RightBtnIcon height={18} width={18} />
             </TouchableOpacity>
@@ -132,7 +134,12 @@ const HubScreen = ({ navigation }: any) => {
     );
 
     const renderCreatedEventCard = (item: any) => (
-        <View key={item.id} style={Styles.videoCard}>
+        <TouchableOpacity
+            key={item.id}
+            style={Styles.videoCard}
+            activeOpacity={0.7}
+            onPress={() => navigation.navigate('EventDetailsScreen')}
+        >
             <View style={Styles.videoThumbnailWrapper}>
                 <FastImage source={item.thumbnail} style={Styles.videoThumbnail} resizeMode="cover" />
             </View>
@@ -163,15 +170,19 @@ const HubScreen = ({ navigation }: any) => {
                     </View>
                 </View>
             </View>
-        </View>
+        </TouchableOpacity>
     );
 
     const renderVideoCard = () => (
-        <View style={Styles.videoCard}>
+        <TouchableOpacity
+            style={Styles.videoCard}
+            activeOpacity={0.7}
+            onPress={() => navigation.navigate('VideoDetailsScreen')}
+        >
             <View style={Styles.videoThumbnailWrapper}>
                 <FastImage source={Images.photo7} style={Styles.videoThumbnail} resizeMode="cover" />
                 <View style={Styles.videoPlayButton}>
-                    <Play size={20} color={Colors.primaryColor} variant="Bold" />
+                    <Icons.PlayBlue height={20} width={20} />
                 </View>
             </View>
             <View style={Styles.videoInfo}>
@@ -196,7 +207,7 @@ const HubScreen = ({ navigation }: any) => {
                     <ArrowDown size={18} color={Colors.whiteColor} variant="Linear" />
                 </TouchableOpacity>
             </View>
-        </View>
+        </TouchableOpacity>
     );
 
     return (
@@ -209,7 +220,10 @@ const HubScreen = ({ navigation }: any) => {
                     <ArrowLeft2 size={20} color={Colors.mainTextColor} variant="Linear" />
                 </TouchableOpacity>
                 <Text style={Styles.headerTitle}>Hub</Text>
-                <TouchableOpacity style={Styles.notificationButton}>
+                <TouchableOpacity
+                    style={Styles.notificationButton}
+                    onPress={() => navigation.navigate('NotificationsScreen')}
+                >
                     <Icons.NotificationBoldBlue height={24} width={24} />
                 </TouchableOpacity>
             </View>
@@ -220,7 +234,10 @@ const HubScreen = ({ navigation }: any) => {
                 <SizeBox height={16} />
                 {appearances.map(renderAppearanceCard)}
 
-                <TouchableOpacity style={Styles.primaryButton}>
+                <TouchableOpacity
+                    style={Styles.primaryButton}
+                    onPress={() => navigation.navigate('PhotosScreen')}
+                >
                     <Text style={Styles.primaryButtonText}>View All</Text>
                     <Icons.RightBtnIcon height={18} width={18} />
                 </TouchableOpacity>
@@ -228,13 +245,16 @@ const HubScreen = ({ navigation }: any) => {
                 {/* My Events Section */}
                 <View style={Styles.sectionHeader}>
                     <Text style={Styles.sectionTitle}>My Events</Text>
-                    <TouchableOpacity>
+                    <TouchableOpacity onPress={() => navigation.navigate('MyAllEventsScreen')}>
                         <Text style={Styles.viewAllText}>View all</Text>
                     </TouchableOpacity>
                 </View>
                 {myEvents.map(renderMyEventCard)}
 
-                <TouchableOpacity style={Styles.primaryButton}>
+                <TouchableOpacity
+                    style={Styles.primaryButton}
+                    onPress={() => navigation.navigate('AvailableEventsScreen')}
+                >
                     <Text style={Styles.primaryButtonText}>Add Myself To Events</Text>
                     <Icons.RightBtnIcon height={18} width={18} />
                 </TouchableOpacity>

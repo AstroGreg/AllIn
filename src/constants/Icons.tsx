@@ -47,6 +47,7 @@ import receiptEdit from '../assets/icons/receiptEdit.svg';
 import timer from '../assets/icons/timer.svg';
 import edit from '../assets/icons/edit.svg';
 import greenTick from '../assets/icons/tickCircleGreen.svg';
+import checkCircleGreen from '../assets/icons/checkCircleGreen.svg';
 import pending from '../assets/icons/pending.svg';
 import DeleteCompetition from '../assets/icons/deleteCompetition.svg';
 import backArrow from '../assets/icons/arrowLeft.svg';
@@ -100,14 +101,18 @@ import feedBlue from '../assets/icons/feedBlue.svg';
 import notificationBoldBlue from '../assets/icons/notificationBoldBlue.svg';
 import playWhite from '../assets/icons/playWhite.svg';
 import bellColorful from '../assets/icons/bellColorful.svg';
+import playBlue from '../assets/icons/playBlue.svg';
+import fileEmptyColorful from '../assets/icons/fileEmptyColorful.svg';
 
 
 
 const Icons = {
+    FileEmptyColorful: fileEmptyColorful,
     FeedBlue: feedBlue,
     NotificationBoldBlue: notificationBoldBlue,
     PlayWhite: playWhite,
     BellColorful: bellColorful,
+    PlayBlue: playBlue,
     PlayCricle: playCricle,
     CameraWhite: cameraWhite,
     Filter: filter,
@@ -161,6 +166,7 @@ const Icons = {
     DeleteCompetition: DeleteCompetition,
     Pending: pending,
     GreenTick: greenTick,
+    CheckCircleGreen: checkCircleGreen,
     Timer: timer,
     Edit: edit,
     ReceiptEdit: receiptEdit,
