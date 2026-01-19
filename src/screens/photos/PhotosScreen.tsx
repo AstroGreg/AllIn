@@ -20,7 +20,7 @@ const PhotosScreen = ({ navigation, route }: any) => {
 
     const photos = [
         { id: 1, price: '€0,10', resolution: '3840×2160', thumbnail: Images.photo1 },
-        { id: 2, price: '€0,15', resolution: '3840×2160', thumbnail: Images.photo2 },
+        { id: 2, price: '€0,15', resolution: '3840×2160', thumbnail: Images.photo7 },
         { id: 3, price: '€0,20', resolution: '3840×2160', thumbnail: Images.photo3 },
         { id: 4, price: '€0,15', resolution: '3840×2160', thumbnail: Images.photo4 },
         { id: 5, price: '€0,15', resolution: '3840×2160', thumbnail: Images.photo5 },
@@ -29,15 +29,36 @@ const PhotosScreen = ({ navigation, route }: any) => {
 
     const renderPhotoCard = (photo: any) => (
         <View key={photo.id} style={Styles.photoCard}>
-            <FastImage
-                source={photo.thumbnail}
-                style={Styles.photoThumbnail}
-                resizeMode="cover"
-            />
+            <TouchableOpacity
+                onPress={() => navigation.navigate('PhotoBuyScreen', {
+                    eventTitle,
+                    photo: {
+                        title: 'PK 2025 indoor Passionate',
+                        views: '122K+',
+                        thumbnail: photo.thumbnail,
+                    },
+                })}
+            >
+                <FastImage
+                    source={photo.thumbnail}
+                    style={Styles.photoThumbnail}
+                    resizeMode="cover"
+                />
+            </TouchableOpacity>
             <View style={Styles.photoInfo}>
                 <View style={Styles.photoLeftInfo}>
                     <Text style={Styles.photoPrice}>{photo.price}</Text>
-                    <TouchableOpacity style={Styles.viewButton}>
+                    <TouchableOpacity
+                        style={Styles.viewButton}
+                        onPress={() => navigation.navigate('PhotoDetailScreen', {
+                            eventTitle,
+                            photo: {
+                                title: 'PK 2025 indoor Passionate',
+                                views: '122K+',
+                                thumbnail: photo.thumbnail,
+                            },
+                        })}
+                    >
                         <Text style={Styles.viewButtonText}>View</Text>
                         <ArrowRight size={12} color={Colors.whiteColor} variant="Linear" />
                     </TouchableOpacity>
@@ -45,7 +66,7 @@ const PhotosScreen = ({ navigation, route }: any) => {
                 <View style={Styles.photoRightInfo}>
                     <Text style={Styles.photoResolution}>{photo.resolution}</Text>
                     <TouchableOpacity>
-                        <Icons.Download height={24} width={24} />
+                        <Icons.DownloadBlue height={16} width={16} />
                     </TouchableOpacity>
                 </View>
             </View>
@@ -62,7 +83,10 @@ const PhotosScreen = ({ navigation, route }: any) => {
                     <ArrowLeft2 size={24} color={Colors.mainTextColor} variant="Linear" />
                 </TouchableOpacity>
                 <Text style={Styles.headerTitle}>{eventTitle}</Text>
-                <TouchableOpacity style={Styles.videoButton}>
+                <TouchableOpacity
+                    style={Styles.videoButton}
+                    onPress={() => navigation.navigate('VideosScreen', { eventTitle })}
+                >
                     <VideoCircle size={24} color={Colors.primaryColor} variant="Bold" />
                 </TouchableOpacity>
             </View>
@@ -93,7 +117,7 @@ const PhotosScreen = ({ navigation, route }: any) => {
 
                 {/* Info Card */}
                 <View style={Styles.infoCard}>
-                    <Icons.BellColorful height={30} width={30} />
+                    <Icons.LightbulbColorful height={30} width={30} />
                     <Text style={Styles.infoText}>
                         These photos were found through facial recognition or by matching your chest number.
                     </Text>

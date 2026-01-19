@@ -19,6 +19,10 @@ import EventSummaryScreen from "../screens/eventSummary/EventSummaryScreen";
 import CongratulationsScreen from "../screens/congratulations/CongratulationsScreen";
 import FailedScreen from "../screens/failed/FailedScreen";
 import PhotosScreen from "../screens/photos/PhotosScreen";
+import PhotoDetailScreen from "../screens/photoDetail/PhotoDetailScreen";
+import PhotoBuyScreen from "../screens/photoBuy/PhotoBuyScreen";
+import VideosScreen from "../screens/videos/VideosScreen";
+import VideoPlayingScreen from "../screens/videoPlaying/VideoPlayingScreen";
 import { Platform } from "react-native";
 import SearchScreen from "../screens/search/SearchScreen";
 import UploadScreen from "../screens/upload/UploadScreen";
@@ -48,6 +52,10 @@ const HomeStackNavigator = () => {
             <HomeStack.Screen name="CongratulationsScreen" component={CongratulationsScreen} />
             <HomeStack.Screen name="FailedScreen" component={FailedScreen} />
             <HomeStack.Screen name="PhotosScreen" component={PhotosScreen} />
+            <HomeStack.Screen name="PhotoDetailScreen" component={PhotoDetailScreen} />
+            <HomeStack.Screen name="PhotoBuyScreen" component={PhotoBuyScreen} />
+            <HomeStack.Screen name="VideosScreen" component={VideosScreen} />
+            <HomeStack.Screen name="VideoPlayingScreen" component={VideoPlayingScreen} />
         </HomeStack.Navigator>
     );
 };

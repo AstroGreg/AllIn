@@ -81,6 +81,7 @@ import run from '../assets/icons/run.svg';
 import camera from '../assets/icons/camera.svg';
 import video from '../assets/icons/video.svg';
 import download from '../assets/icons/download.svg';
+import downloadBlue from '../assets/icons/downloadBlue.svg';
 import moreAction from '../assets/icons/moreCircle.svg';
 import eye from '../assets/icons/eye.svg';
 import previousVideo from '../assets/icons/previousVideo.svg';
@@ -103,10 +104,13 @@ import playWhite from '../assets/icons/playWhite.svg';
 import bellColorful from '../assets/icons/bellColorful.svg';
 import playBlue from '../assets/icons/playBlue.svg';
 import fileEmptyColorful from '../assets/icons/fileEmptyColorful.svg';
+import lightbulbColorful from '../assets/icons/lightbulbColorful.svg';
+import shareBlue from '../assets/icons/shareBlue.png';
 
 
 
 const Icons = {
+    LightbulbColorful: lightbulbColorful,
     FileEmptyColorful: fileEmptyColorful,
     FeedBlue: feedBlue,
     NotificationBoldBlue: notificationBoldBlue,
@@ -130,6 +134,7 @@ const Icons = {
     Eye: eye,
     MoreAction: moreAction,
     Download: download,
+    DownloadBlue: downloadBlue,
     Run: run,
     Video: video,
     Camera: camera,
@@ -209,7 +214,8 @@ const Icons = {
     Menu: menu,
     MenuActive: menuActive,
     AddWhite: addWhite,
-    TickCircle: tickCircle
+    TickCircle: tickCircle,
+    ShareBlue: shareBlue
 }
 
 export default Icons;

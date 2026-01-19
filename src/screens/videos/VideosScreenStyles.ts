@@ -32,7 +32,7 @@ const Styles = StyleSheet.create({
         ...Fonts.medium14,
         color: Colors.mainTextColor,
     },
-    videoButton: {
+    imageButton: {
         width: 44,
         height: 44,
         borderRadius: 22,
@@ -44,56 +44,24 @@ const Styles = StyleSheet.create({
         paddingHorizontal: 20,
         paddingTop: 16,
     },
-    walletRow: {
+    videosHeader: {
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
     },
-    walletInfo: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 8,
-    },
-    walletLabel: {
-        ...Fonts.medium14,
-        color: Colors.mainTextColor,
-    },
-    walletBalance: {
-        ...Fonts.semibold18,
-        color: Colors.mainTextColor,
-    },
-    rechargeButton: {
-        backgroundColor: Colors.primaryColor,
-        borderRadius: 7,
-        paddingHorizontal: 11,
-        paddingVertical: 4,
-        width: 109,
-        alignItems: 'center',
-        justifyContent: 'center',
-    },
-    rechargeButtonText: {
-        ...Fonts.regular14,
-        color: Colors.whiteColor,
-    },
-    photosHeader: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-    },
-    photosLabel: {
+    videosLabel: {
         ...Fonts.medium14,
         color: Colors.mainTextColor,
     },
     downloadAllButton: {
-        borderWidth: 0.5,
-        borderColor: Colors.primaryColor,
+        backgroundColor: Colors.primaryColor,
         borderRadius: 7,
         paddingHorizontal: 11,
         paddingVertical: 4,
     },
     downloadAllText: {
         ...Fonts.regular14,
-        color: Colors.primaryColor,
+        color: Colors.whiteColor,
     },
     infoCard: {
         flexDirection: 'row',
@@ -104,13 +72,7 @@ const Styles = StyleSheet.create({
         borderColor: '#DEDEDE',
         paddingHorizontal: 16,
         paddingVertical: 12,
-        gap: 12,
-    },
-    lampIconContainer: {
-        width: 30,
-        height: 30,
-        alignItems: 'center',
-        justifyContent: 'center',
+        gap: 6,
     },
     infoText: {
         flex: 1,
@@ -118,13 +80,13 @@ const Styles = StyleSheet.create({
         color: '#9B9F9F',
         lineHeight: 22,
     },
-    photosGrid: {
+    videosGrid: {
         flexDirection: 'row',
         flexWrap: 'wrap',
         justifyContent: 'space-between',
         rowGap: 24,
     },
-    photoCard: {
+    videoCard: {
         width: cardWidth,
         backgroundColor: Colors.whiteColor,
         borderRadius: 10,
@@ -132,21 +94,39 @@ const Styles = StyleSheet.create({
         borderColor: '#DEDEDE',
         padding: 16,
     },
-    photoThumbnail: {
+    videoThumbnailContainer: {
         width: '100%',
         height: 104,
         borderRadius: 4,
+        position: 'relative',
     },
-    photoInfo: {
+    videoThumbnail: {
+        width: '100%',
+        height: '100%',
+        borderRadius: 4,
+    },
+    playIconContainer: {
+        position: 'absolute',
+        top: '50%',
+        left: '50%',
+        transform: [{ translateX: -16 }, { translateY: -16 }],
+        width: 32,
+        height: 32,
+        borderRadius: 16,
+        backgroundColor: 'rgba(224, 236, 254, 0.9)',
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    videoInfo: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         marginTop: 10,
     },
-    photoLeftInfo: {
+    videoLeftInfo: {
         justifyContent: 'space-between',
         height: 50,
     },
-    photoPrice: {
+    videoPrice: {
         ...Fonts.semibold12,
         color: Colors.mainTextColor,
     },
@@ -155,7 +135,7 @@ const Styles = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'center',
         backgroundColor: Colors.primaryColor,
-        borderRadius: 4,
+        borderRadius: 4.41,
         paddingHorizontal: 9,
         paddingVertical: 5.5,
         gap: 3,
@@ -166,12 +146,12 @@ const Styles = StyleSheet.create({
         color: Colors.whiteColor,
         lineHeight: 12,
     },
-    photoRightInfo: {
+    videoRightInfo: {
         alignItems: 'flex-end',
         justifyContent: 'space-between',
         height: 50,
     },
-    photoResolution: {
+    videoResolution: {
         ...Fonts.regular12,
         color: Colors.mainTextColor,
     },
