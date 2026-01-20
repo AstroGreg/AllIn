@@ -1,7 +1,7 @@
 import { View, Text, Dimensions, TouchableOpacity } from 'react-native'
 import React, { useState } from 'react'
 import FastImage from 'react-native-fast-image';
-import Styles from '../ProfileStyles';
+import Styles from '../ViewUserProfileStyles';
 import Colors from '../../../constants/Colors';
 import SizeBox from '../../../constants/SizeBox';
 import Icons from '../../../constants/Icons';

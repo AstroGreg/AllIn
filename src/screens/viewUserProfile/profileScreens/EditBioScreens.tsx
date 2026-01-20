@@ -1,6 +1,6 @@
 import { View, Text, TextInput, ScrollView, TouchableOpacity } from 'react-native'
 import React, { useState } from 'react'
-import Styles from '../ProfileStyles'
+import Styles from '../ViewUserProfileStyles'
 import SizeBox from '../../../constants/SizeBox'
 import CustomHeader from '../../../components/customHeader/CustomHeader'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'

@@ -106,10 +106,13 @@ import playBlue from '../assets/icons/playBlue.svg';
 import fileEmptyColorful from '../assets/icons/fileEmptyColorful.svg';
 import lightbulbColorful from '../assets/icons/lightbulbColorful.svg';
 import shareBlue from '../assets/icons/shareBlue.png';
+import shareGray from '../assets/icons/shareGray.png';
+import blueTick from '../assets/icons/blueTick.svg';
 
 
 
 const Icons = {
+    BlueTick: blueTick,
     LightbulbColorful: lightbulbColorful,
     FileEmptyColorful: fileEmptyColorful,
     FeedBlue: feedBlue,
@@ -215,7 +218,8 @@ const Icons = {
     MenuActive: menuActive,
     AddWhite: addWhite,
     TickCircle: tickCircle,
-    ShareBlue: shareBlue
+    ShareBlue: shareBlue,
+    ShareGray: shareGray,
 }
 
 export default Icons;

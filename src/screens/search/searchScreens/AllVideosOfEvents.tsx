@@ -4,7 +4,7 @@ import Styles from '../SearchStyles'
 import SizeBox from '../../../constants/SizeBox'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import CustomHeader from '../../../components/customHeader/CustomHeader'
-import VideoContainer from '../../profile/components/VideoContainer'
+import VideoContainer from '../../viewUserProfile/components/VideoContainer'
 
 const AllVideosOfEvents = ({ navigation }: any) => {
     const insets = useSafeAreaInsets();

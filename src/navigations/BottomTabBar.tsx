@@ -23,15 +23,21 @@ import PhotoDetailScreen from "../screens/photoDetail/PhotoDetailScreen";
 import PhotoBuyScreen from "../screens/photoBuy/PhotoBuyScreen";
 import VideosScreen from "../screens/videos/VideosScreen";
 import VideoPlayingScreen from "../screens/videoPlaying/VideoPlayingScreen";
+import ViewUserPostsViewAllScreen from "../screens/viewUserPostsViewAll/ViewUserPostsViewAllScreen";
+import ViewUserBlogDetailsScreen from "../screens/viewUserBlogDetails/ViewUserBlogDetailsScreen";
+import ViewUserCollectionsPhotosScreen from "../screens/viewUserCollectionsPhotos/ViewUserCollectionsPhotosScreen";
+import ViewUserCollectionsVideosScreen from "../screens/viewUserCollectionsVideos/ViewUserCollectionsVideosScreen";
+import ViewUserProfileScreen from "../screens/viewUserProfile/ViewUserProfileScreen";
 import { Platform } from "react-native";
 import SearchScreen from "../screens/search/SearchScreen";
 import UploadScreen from "../screens/upload/UploadScreen";
-import ProfileScreen from "../screens/profile/ProfileScreen";
+import UserProfileScreen from "../screens/userProfile/UserProfileScreen";
 import MenuScreen from "../screens/menu/MenuScreen";
 import Fonts from "../constants/Fonts";
 
 const Tab = createBottomTabNavigator();
 const HomeStack = createNativeStackNavigator();
+const ProfileStack = createNativeStackNavigator();
 
 const HomeStackNavigator = () => {
     return (
@@ -57,6 +63,19 @@ const HomeStackNavigator = () => {
             <HomeStack.Screen name="VideosScreen" component={VideosScreen} />
             <HomeStack.Screen name="VideoPlayingScreen" component={VideoPlayingScreen} />
         </HomeStack.Navigator>
+    );
+};
+
+const ProfileStackNavigator = () => {
+    return (
+        <ProfileStack.Navigator screenOptions={{ headerShown: false }}>
+            <ProfileStack.Screen name="UserProfileScreen" component={UserProfileScreen} />
+            <ProfileStack.Screen name="ViewUserProfileScreen" component={ViewUserProfileScreen} />
+            <ProfileStack.Screen name="ViewUserPostsViewAllScreen" component={ViewUserPostsViewAllScreen} />
+            <ProfileStack.Screen name="ViewUserBlogDetailsScreen" component={ViewUserBlogDetailsScreen} />
+            <ProfileStack.Screen name="ViewUserCollectionsPhotosScreen" component={ViewUserCollectionsPhotosScreen} />
+            <ProfileStack.Screen name="ViewUserCollectionsVideosScreen" component={ViewUserCollectionsVideosScreen} />
+        </ProfileStack.Navigator>
     );
 };
 
@@ -106,7 +125,7 @@ const BottomTabBar = () => {
             <Tab.Screen name="Home" component={HomeStackNavigator} />
             <Tab.Screen name="Search" component={SearchScreen} />
             <Tab.Screen name="Upload" component={UploadScreen} />
-            <Tab.Screen name="Profile" component={ProfileScreen} />
+            <Tab.Screen name="Profile" component={ProfileStackNavigator} />
             <Tab.Screen name="Menu" component={MenuScreen} />
         </Tab.Navigator>
     );

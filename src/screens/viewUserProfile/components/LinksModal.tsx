@@ -3,7 +3,7 @@ import React from 'react'
 import SizeBox from '../../../constants/SizeBox';
 import FastImage from 'react-native-fast-image';
 import Icons from '../../../constants/Icons';
-import Styles from '../ProfileStyles';
+import Styles from '../ViewUserProfileStyles';
 
 interface LinksModalProps {
     isVisible: boolean;

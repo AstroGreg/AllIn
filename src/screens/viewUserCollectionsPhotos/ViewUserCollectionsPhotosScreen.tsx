@@ -1,0 +1,125 @@
+import React, { useState } from 'react';
+import { View, Text, ScrollView, TouchableOpacity } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import FastImage from 'react-native-fast-image';
+import { ArrowLeft2, User, Clock } from 'iconsax-react-nativejs';
+import Styles from './ViewUserCollectionsPhotosScreenStyles';
+import SizeBox from '../../constants/SizeBox';
+import Colors from '../../constants/Colors';
+import Images from '../../constants/Images';
+import Icons from '../../constants/Icons';
+
+const ViewUserCollectionsPhotosScreen = ({ navigation }: any) => {
+    const insets = useSafeAreaInsets();
+    const [activeTab, setActiveTab] = useState('photos');
+
+    const photos = [
+        Images.photo1, Images.photo3, Images.photo4, Images.photo5,
+        Images.photo1, Images.photo3, Images.photo4, Images.photo5,
+        Images.photo1, Images.photo3, Images.photo4, Images.photo5,
+        Images.photo1, Images.photo3, Images.photo4, Images.photo5,
+        Images.photo1, Images.photo3, Images.photo4, Images.photo5,
+    ];
+
+    const videos = [
+        { id: 1, thumbnail: Images.photo1, title: '17:45 / MIN-M (Series)', author: 'Smith', duration: '5:06 mins' },
+        { id: 2, thumbnail: Images.photo3, title: '17:45 / MIN-M (Series)', author: 'Smith', duration: '5:06 mins' },
+        { id: 3, thumbnail: Images.photo1, title: '17:45 / MIN-M (Series)', author: 'Smith', duration: '5:06 mins' },
+        { id: 4, thumbnail: Images.photo3, title: '17:45 / MIN-M (Series)', author: 'Smith', duration: '5:06 mins' },
+        { id: 5, thumbnail: Images.photo1, title: '17:45 / MIN-M (Series)', author: 'Smith', duration: '5:06 mins' },
+        { id: 6, thumbnail: Images.photo3, title: '17:45 / MIN-M (Series)', author: 'Smith', duration: '5:06 mins' },
+    ];
+
+    const renderVideoCard = (video: any) => (
+        <View key={video.id} style={Styles.videoCard}>
+            <View style={Styles.thumbnailContainer}>
+                <FastImage source={video.thumbnail} style={Styles.thumbnail} resizeMode="cover" />
+                <View style={Styles.playIconContainer}>
+                    <Icons.PlayBlue width={24} height={24} />
+                </View>
+            </View>
+            <Text style={Styles.videoTitle}>{video.title}</Text>
+            <View style={Styles.videoMeta}>
+                <View style={Styles.metaItem}>
+                    <User size={14} color="#9B9F9F" variant="Linear" />
+                    <Text style={Styles.metaText}>{video.author}</Text>
+                </View>
+                <View style={Styles.metaItem}>
+                    <Clock size={14} color="#9B9F9F" variant="Linear" />
+                    <Text style={Styles.metaText}>{video.duration}</Text>
+                </View>
+            </View>
+        </View>
+    );
+
+    return (
+        <View style={Styles.mainContainer}>
+            <SizeBox height={insets.top} />
+
+            {/* Header */}
+            <View style={Styles.header}>
+                <TouchableOpacity style={Styles.headerButton} onPress={() => navigation.goBack()}>
+                    <ArrowLeft2 size={24} color={Colors.mainTextColor} variant="Linear" />
+                </TouchableOpacity>
+                <Text style={Styles.headerTitle}>Collections</Text>
+                <View style={[Styles.headerButton, { opacity: 0 }]} />
+            </View>
+
+            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={Styles.scrollContent}>
+                {/* Section Header */}
+                <View style={Styles.sectionHeader}>
+                    <Text style={Styles.sectionTitle}>Collections</Text>
+                    <View style={Styles.photosCountBadge}>
+                        <Text style={Styles.photosCountText}>
+                            {activeTab === 'photos' ? '430 Photos Available' : '430 Videos Available'}
+                        </Text>
+                    </View>
+                </View>
+
+                <SizeBox height={16} />
+
+                {/* Toggle */}
+                <View style={Styles.toggleContainer}>
+                    <TouchableOpacity
+                        style={[Styles.toggleButton, activeTab === 'photos' && Styles.toggleButtonActive]}
+                        onPress={() => setActiveTab('photos')}
+                    >
+                        <Text style={activeTab === 'photos' ? Styles.toggleTextActive : Styles.toggleText}>Photos</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                        style={[Styles.toggleButton, activeTab === 'videos' && Styles.toggleButtonActive]}
+                        onPress={() => setActiveTab('videos')}
+                    >
+                        <Text style={activeTab === 'videos' ? Styles.toggleTextActive : Styles.toggleText}>Videos</Text>
+                    </TouchableOpacity>
+                </View>
+
+                <SizeBox height={16} />
+
+                {/* Content Grid */}
+                {activeTab === 'photos' ? (
+                    <View style={Styles.photosCard}>
+                        <View style={Styles.photosGrid}>
+                            {photos.map((photo, index) => (
+                                <FastImage
+                                    key={index}
+                                    source={photo}
+                                    style={Styles.photoImage}
+                                    resizeMode="cover"
+                                />
+                            ))}
+                        </View>
+                    </View>
+                ) : (
+                    <View style={Styles.videosGrid}>
+                        {videos.map(renderVideoCard)}
+                    </View>
+                )}
+
+                <SizeBox height={insets.bottom > 0 ? insets.bottom + 20 : 40} />
+            </ScrollView>
+        </View>
+    );
+};
+
+export default ViewUserCollectionsPhotosScreen;

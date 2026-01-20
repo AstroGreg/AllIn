@@ -1,6 +1,6 @@
 import { View, Text, Dimensions, TouchableOpacity, StyleSheet } from 'react-native'
 import React, { useState } from 'react'
-import Styles from '../ProfileStyles';
+import Styles from '../ViewUserProfileStyles';
 import Colors from '../../../constants/Colors';
 import SizeBox from '../../../constants/SizeBox';
 import Icons from '../../../constants/Icons';

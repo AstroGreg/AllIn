@@ -1,6 +1,6 @@
 import { View, Text, TouchableOpacity } from 'react-native'
 import React from 'react'
-import Styles from '../ProfileStyles'
+import Styles from '../ViewUserProfileStyles'
 import FastImage from 'react-native-fast-image'
 import Images from '../../../constants/Images'
 import SizeBox from '../../../constants/SizeBox'
