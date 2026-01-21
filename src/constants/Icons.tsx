@@ -25,7 +25,9 @@ import homeActive from '../assets/icons/homeBlue.svg';
 import searchIcon from '../assets/icons/search-normal.svg';
 import searchActive from '../assets/icons/searchBlue.svg';
 import upload from '../assets/icons/uploadGrey.svg';
-import uploadBlue from '../assets/icons/uploadBlue.svg'
+import uploadBlue from '../assets/icons/uploadBlue.svg';
+import uploadWhite from '../assets/icons/uploadWhite.svg';
+import uploadBlue2 from '../assets/icons/uploadBlue2.svg';
 import profile from '../assets/icons/profileGrey.svg';
 import profileActive from '../assets/icons/profileBlue.svg';
 import menu from '../assets/icons/menuGrey.svg';
@@ -212,6 +214,8 @@ const Icons = {
     SearchActive: searchActive,
     Upload: upload,
     UploadBlue: uploadBlue,
+    UploadWhite: uploadWhite,
+    UploadBlue2: uploadBlue2,
     Profile: profile,
     ProfileActive: profileActive,
     Menu: menu,

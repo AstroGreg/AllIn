@@ -1,135 +1,115 @@
-import { View, Text, TouchableOpacity } from 'react-native'
-import React, { useState } from 'react'
+import { View, Text, TouchableOpacity, ScrollView } from 'react-native'
+import React from 'react'
 import Styles from './UploadStyles'
 import SizeBox from '../../constants/SizeBox'
-import CustomHeader from '../../components/customHeader/CustomHeader'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
+import FastImage from 'react-native-fast-image'
 import Icons from '../../constants/Icons'
-import CustomSwitch from '../../components/customSwitch/CustomSwitch'
-import { launchImageLibrary } from 'react-native-image-picker';
+import Images from '../../constants/Images'
+import Colors from '../../constants/Colors'
+import { Camera, Add } from 'iconsax-react-nativejs'
+
+interface Account {
+    id: number;
+    name: string;
+    sport: string;
+    avatar: any;
+}
 
 const UploadScreen = ({ navigation }: any) => {
     const insets = useSafeAreaInsets();
-    const [isEnabled, setIsEnabled] = useState(true);
-    const [selectedImages, setSelectedImages] = useState([]);
-    const [selectedVideo, setSelectedVideo] = useState<any>(null);
-    const toggleSwitch = () => {
-        setIsEnabled(prev => !prev);
+
+    const accounts: Account[] = [
+        { id: 1, name: 'James Ray', sport: 'Boxing', avatar: Images.profile1 },
+        { id: 2, name: 'James Ray 2', sport: 'Running', avatar: Images.profile1 },
+    ];
+
+    const handleSelectAccount = (account: Account) => {
+        navigation.navigate('SelectCompetitionScreen', { account });
     };
 
-    const handleImagePicker = async () => {
-        const options: any = {
-            mediaType: 'photo',
-            selectionLimit: 0,
-            quality: 1,
-        };
-
-        try {
-            const result: any = await launchImageLibrary(options);
-
-            if (result.assets) {
-                setSelectedImages(result.assets);
-                setSelectedVideo(null);
-            }
-        } catch (error) {
-            console.error('Error picking images:', error);
-        }
+    const handleCreatePhotographerAccount = () => {
+        // Navigate to create photographer account screen
+        navigation.navigate('CreatePhotographerAccount');
     };
 
-    const handleVideoPicker = async () => {
-        const options: any = {
-            mediaType: 'video',
-            selectionLimit: 1,
-            quality: 1,
-        };
-
-        try {
-            const result: any = await launchImageLibrary(options);
-            if (result.assets && result.assets[0]) {
-                setSelectedVideo(result.assets[0]);
-                setSelectedImages([]); // Clear images when video is selected
-            }
-        } catch (error) {
-            console.error('Error picking video:', error);
-        }
+    const handleUploadAnonymously = () => {
+        navigation.navigate('UploadAnonymouslyScreen');
     };
 
-    const handleUpload = () => {
-        if (selectedImages.length > 0) {
-            navigation.navigate('UploadedImagesScreen', { images: selectedImages });
-        } else if (selectedVideo) {
-            navigation.navigate('SelectCategory', { video: selectedVideo });
-        }
-    };
-
+    const renderAccountCard = (account: Account) => (
+        <View key={account.id} style={Styles.accountCard}>
+            <View style={Styles.accountInfo}>
+                <View style={Styles.avatarContainer}>
+                    <FastImage source={account.avatar} style={Styles.avatar} resizeMode="cover" />
+                </View>
+                <View style={Styles.accountDetails}>
+                    <Text style={Styles.accountName}>{account.name}</Text>
+                    <View style={Styles.sportRow}>
+                        <Camera size={16} color="#9B9F9F" variant="Linear" />
+                        <Text style={Styles.sportText}>{account.sport}</Text>
+                    </View>
+                </View>
+            </View>
+            <TouchableOpacity
+                style={Styles.selectButton}
+                onPress={() => handleSelectAccount(account)}
+            >
+                <Text style={Styles.selectButtonText}>Select</Text>
+            </TouchableOpacity>
+        </View>
+    );
 
     return (
         <View style={Styles.mainContainer}>
             <SizeBox height={insets.top} />
-            <CustomHeader title='Upload Details' isBack={false} onPressSetting={() => navigation.navigate('ProfileSettings')} />
 
-            <View style={Styles.container}>
-                <Text style={Styles.titleText}>Upload</Text>
-
-                {selectedImages.length > 0 && (
-                    <View style={Styles.selectedImagesContainer}>
-                        <Text style={Styles.subText}>
-                            Selected {selectedImages.length} images
-                        </Text>
-                    </View>
-                )}
-
-                {selectedVideo && (
-                    <View style={Styles.selectedVideoContainer}>
-                        <Text style={Styles.subText}>
-                            Selected video: {selectedVideo.fileName}
-                        </Text>
-                        <Text style={Styles.videoDetails}>
-                            Duration: {Math.round(selectedVideo.duration)} seconds
-                        </Text>
-                    </View>
-                )}
-
-                <SizeBox height={12} />
-                <TouchableOpacity style={Styles.uploadContainer} onPress={() => handleImagePicker()}>
-                    <Text style={Styles.uploadText}>Browse Files Images</Text>
-                    <SizeBox width={4} />
-                    <Icons.CameraBlue height={18} width={18} />
-                </TouchableOpacity>
-
-                <SizeBox height={12} />
-                <TouchableOpacity style={Styles.uploadContainer} onPress={() => handleVideoPicker()}>
-                    <Text style={Styles.uploadText}>Browse Files Videos</Text>
-                    <SizeBox width={4} />
-                    <Icons.VideoBlue height={18} width={18} />
-                </TouchableOpacity>
-                <SizeBox height={16} />
-
-                <View style={[Styles.row, { justifyContent: 'space-between' }]}>
-                    <View style={Styles.row}>
-                        <Icons.HidePassword height={19} width={19} />
-                        <SizeBox width={4} />
-                        <Text style={Styles.subText}>Upload anonymously</Text>
-                    </View>
-
-                    <CustomSwitch isEnabled={isEnabled} toggleSwitch={toggleSwitch} />
-                </View>
-                <SizeBox height={20} />
-
-                <TouchableOpacity
-                    style={[
-                        Styles.btnContianer,
-                        { opacity: (selectedImages.length > 0 || selectedVideo) ? 1 : 0.5 }
-                    ]}
-                    onPress={handleUpload}
-                    disabled={!(selectedImages.length > 0 || selectedVideo)}
-                >
-                    <Text style={Styles.btnText}>{selectedVideo ? 'Next' : 'Upload'}</Text>
-                </TouchableOpacity>
+            {/* Header */}
+            <View style={Styles.header}>
+                <Text style={Styles.headerTitle}>Upload</Text>
             </View>
 
-        </View>
-    )
-}
+            <ScrollView
+                showsVerticalScrollIndicator={false}
+                contentContainerStyle={Styles.scrollContent}
+            >
+                {/* Tip Card */}
+                <View style={Styles.tipCard}>
+                    <Icons.LightbulbColorful width={90} height={90} />
+                    <SizeBox height={14} />
+                    <Text style={Styles.tipText}>Select account you would like to use</Text>
+                </View>
 
-export default UploadScreen
+                <SizeBox height={16} />
+
+                {/* Account Cards */}
+                {accounts.map(renderAccountCard)}
+
+                <SizeBox height={16} />
+
+                {/* Create Photographer Account Button */}
+                <TouchableOpacity
+                    style={Styles.createAccountButton}
+                    onPress={handleCreatePhotographerAccount}
+                >
+                    <Text style={Styles.createAccountButtonText}>Create Photographer Account</Text>
+                    <Add size={18} color={Colors.whiteColor} variant="Linear" />
+                </TouchableOpacity>
+
+                <SizeBox height={14} />
+
+                {/* Upload Anonymously Button */}
+                <TouchableOpacity
+                    style={Styles.anonymousButton}
+                    onPress={handleUploadAnonymously}
+                >
+                    <Text style={Styles.anonymousButtonText}>Upload Anonymously</Text>
+                </TouchableOpacity>
+
+                <SizeBox height={insets.bottom > 0 ? insets.bottom + 20 : 40} />
+            </ScrollView>
+        </View>
+    );
+};
+
+export default UploadScreen;

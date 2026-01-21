@@ -1,6 +1,6 @@
 import { ScrollView, Text, View } from 'react-native'
 import React, { useState } from 'react'
-import Styles from '../UploadStyles'
+import Styles from '../UploadDetailsStyles'
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import SizeBox from '../../../constants/SizeBox';
 import CustomHeader from '../../../components/customHeader/CustomHeader';

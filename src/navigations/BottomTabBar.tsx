@@ -31,6 +31,15 @@ import ViewUserProfileScreen from "../screens/viewUserProfile/ViewUserProfileScr
 import { Platform } from "react-native";
 import SearchScreen from "../screens/search/SearchScreen";
 import UploadScreen from "../screens/upload/UploadScreen";
+import UploadDetailsScreen from "../screens/upload/UploadDetailsScreen";
+import UploadAnonymouslyScreen from "../screens/upload/UploadAnonymouslyScreen";
+import SelectCompetitionScreen from "../screens/upload/SelectCompetitionScreen";
+import CompetitionDetailsScreen from "../screens/upload/CompetitionDetailsScreen";
+import WatermarkScreen from "../screens/upload/WatermarkScreen";
+import UploadSummaryScreen from "../screens/upload/UploadSummaryScreen";
+import SelectCategory from "../screens/upload/uploadScreens/SelectCategory";
+import CreateCompetition from "../screens/upload/uploadScreens/CreateCompetition";
+import UploadedImagesScreen from "../screens/upload/uploadScreens/UploadedImagesScreen";
 import UserProfileScreen from "../screens/userProfile/UserProfileScreen";
 import MenuScreen from "../screens/menu/MenuScreen";
 import Fonts from "../constants/Fonts";
@@ -38,6 +47,7 @@ import Fonts from "../constants/Fonts";
 const Tab = createBottomTabNavigator();
 const HomeStack = createNativeStackNavigator();
 const ProfileStack = createNativeStackNavigator();
+const UploadStack = createNativeStackNavigator();
 
 const HomeStackNavigator = () => {
     return (
@@ -63,6 +73,23 @@ const HomeStackNavigator = () => {
             <HomeStack.Screen name="VideosScreen" component={VideosScreen} />
             <HomeStack.Screen name="VideoPlayingScreen" component={VideoPlayingScreen} />
         </HomeStack.Navigator>
+    );
+};
+
+const UploadStackNavigator = () => {
+    return (
+        <UploadStack.Navigator screenOptions={{ headerShown: false }}>
+            <UploadStack.Screen name="UploadScreen" component={UploadScreen} />
+            <UploadStack.Screen name="UploadDetailsScreen" component={UploadDetailsScreen} />
+            <UploadStack.Screen name="UploadAnonymouslyScreen" component={UploadAnonymouslyScreen} />
+            <UploadStack.Screen name="SelectCompetitionScreen" component={SelectCompetitionScreen} />
+            <UploadStack.Screen name="CompetitionDetailsScreen" component={CompetitionDetailsScreen} />
+            <UploadStack.Screen name="WatermarkScreen" component={WatermarkScreen} />
+            <UploadStack.Screen name="UploadSummaryScreen" component={UploadSummaryScreen} />
+            <UploadStack.Screen name="SelectCategory" component={SelectCategory} />
+            <UploadStack.Screen name="CreateCompetition" component={CreateCompetition} />
+            <UploadStack.Screen name="UploadedImagesScreen" component={UploadedImagesScreen} />
+        </UploadStack.Navigator>
     );
 };
 
@@ -124,7 +151,7 @@ const BottomTabBar = () => {
         >
             <Tab.Screen name="Home" component={HomeStackNavigator} />
             <Tab.Screen name="Search" component={SearchScreen} />
-            <Tab.Screen name="Upload" component={UploadScreen} />
+            <Tab.Screen name="Upload" component={UploadStackNavigator} />
             <Tab.Screen name="Profile" component={ProfileStackNavigator} />
             <Tab.Screen name="Menu" component={MenuScreen} />
         </Tab.Navigator>
