@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { View, Text, ScrollView, TouchableOpacity } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import FastImage from 'react-native-fast-image';
@@ -12,9 +12,11 @@ import SizeBox from '../../constants/SizeBox';
 import Colors from '../../constants/Colors';
 import Images from '../../constants/Images';
 import Icons from '../../constants/Icons';
+import SubscriptionModal from '../../components/subscriptionModal/SubscriptionModal';
 
 const PhotosScreen = ({ navigation, route }: any) => {
     const insets = useSafeAreaInsets();
+    const [showSubscriptionModal, setShowSubscriptionModal] = useState(false);
     const eventTitle = route?.params?.eventTitle || 'BK Studentent 23';
     const walletBalance = route?.params?.walletBalance || '€20,09';
 
@@ -98,7 +100,7 @@ const PhotosScreen = ({ navigation, route }: any) => {
                         <Text style={Styles.walletLabel}>Wallet Balance:</Text>
                         <Text style={Styles.walletBalance}>{walletBalance}</Text>
                     </View>
-                    <TouchableOpacity style={Styles.rechargeButton}>
+                    <TouchableOpacity style={Styles.rechargeButton} onPress={() => setShowSubscriptionModal(true)}>
                         <Text style={Styles.rechargeButtonText}>Recharge</Text>
                     </TouchableOpacity>
                 </View>
@@ -132,6 +134,11 @@ const PhotosScreen = ({ navigation, route }: any) => {
 
                 <SizeBox height={insets.bottom > 0 ? insets.bottom + 20 : 40} />
             </ScrollView>
+
+            <SubscriptionModal
+                isVisible={showSubscriptionModal}
+                onClose={() => setShowSubscriptionModal(false)}
+            />
         </View>
     );
 };

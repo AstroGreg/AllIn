@@ -1,97 +1,88 @@
 import { View, Text, ScrollView, TouchableOpacity } from 'react-native'
 import React, { useState } from 'react'
 import Styles from './MenuStyles'
-import CustomHeader from '../../components/customHeader/CustomHeader'
 import SizeBox from '../../constants/SizeBox'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import MenuContainers from './components/MenuContainers'
 import Icons from '../../constants/Icons'
-import CustomButton from '../../components/customButton/CustomButton'
 import FastImage from 'react-native-fast-image'
+import Colors from '../../constants/Colors'
+import { ArrowLeft2, Notification, Money3, UserOctagon, MainComponent, Eye } from 'iconsax-react-nativejs'
+
+interface SocialLink {
+    platform: string;
+    icon: any;
+    isConnected: boolean;
+    url?: string;
+}
 
 const MenuScreen = ({ navigation }: any) => {
     const insets = useSafeAreaInsets();
     const [mode, setMode] = useState('light');
-    const [isEnabled, setIsEnabled] = useState(true);
-    const toggleSwitch = () => {
-        setIsEnabled(prev => !prev);
+    const [pushNotifications, setPushNotifications] = useState(true);
+    const [aiPhotoRecognition, setAiPhotoRecognition] = useState(true);
+    const [ghostMode, setGhostMode] = useState(true);
+
+    const [socialLinks, setSocialLinks] = useState<SocialLink[]>([
+        { platform: 'Strava', icon: Icons.Strava, isConnected: false, url: 'www.usertrava.com' },
+        { platform: 'Facebook', icon: Icons.Facebook, isConnected: false, url: 'www.usertrava.com' },
+        { platform: 'Instagram', icon: Icons.Instagram, isConnected: false, url: 'www.usertrava.com' },
+    ]);
+
+    const toggleSocialLink = (platform: string) => {
+        setSocialLinks(prev => prev.map(link =>
+            link.platform === platform
+                ? { ...link, isConnected: !link.isConnected }
+                : link
+        ));
     };
 
     return (
         <View style={Styles.mainContainer}>
             <SizeBox height={insets.top} />
-            <CustomHeader title='Menu' isBack={false} isSetting={false} />
 
-            <ScrollView showsVerticalScrollIndicator={false} style={Styles.container} >
-                <SizeBox height={24} />
-                <MenuContainers
-                    icon={<Icons.ProfileSetting height={20} width={20} />}
-                    title='Profile Settings'
-                    onPress={() => navigation.navigate('ProfileSettings')}
-                />
+            {/* Header */}
+            <View style={Styles.header}>
+                <TouchableOpacity style={Styles.headerButton} onPress={() => navigation.goBack()}>
+                    <ArrowLeft2 size={24} color={Colors.primaryColor} variant="Linear" />
+                </TouchableOpacity>
+                <Text style={Styles.headerTitle}>Menu</Text>
+                <TouchableOpacity style={Styles.headerButton}>
+                    <Notification size={24} color={Colors.primaryColor} variant="Linear" />
+                </TouchableOpacity>
+            </View>
 
+            <ScrollView showsVerticalScrollIndicator={false} style={Styles.container}>
                 <SizeBox height={24} />
-                <View style={Styles.talentContainer}>
-                    <SizeBox height={16} />
-                    <Text style={Styles.containerTitle}>Talents</Text>
-                    <SizeBox height={10} />
-                    <View style={Styles.talentList}>
-                        <Text style={Styles.talentTypeTitle}>Performer</Text>
-                        <SizeBox height={16} />
-                        <CustomButton title='Add Talent' onPress={() => navigation.navigate('SelecteTalent')} isAdd={true} isSmall={true} />
-                    </View>
-                    <SizeBox height={24} />
-                    <View style={Styles.separator} />
-                    <SizeBox height={10} />
-                    <View style={Styles.talentList}>
-                        <Text style={Styles.talentTypeTitle}>Creater</Text>
-                        <SizeBox height={16} />
-                        <CustomButton title='Add Talent' onPress={() => navigation.navigate('TalenetForPhotograph')} isAdd={true} isSmall={true} />
-                    </View>
-                    <SizeBox height={24} />
-                    <View style={Styles.separator} />
-                </View>
 
-                <SizeBox height={24} />
-                <Text style={Styles.containerTitle}>Social links</Text>
+                {/* Social Links */}
+                <Text style={Styles.sectionTitle}>Social links</Text>
                 <SizeBox height={16} />
-                <View style={Styles.talentContainer}>
-                    <SizeBox height={16} />
-                    <TouchableOpacity style={Styles.socialLinks}>
-                        <FastImage source={Icons.Strava} style={Styles.icons} />
-                        <SizeBox width={12} />
-                        <Text style={Styles.titlesText}>Connect with Strava</Text>
-                        <View style={[Styles.nextArrow, { right: 0 }]}>
-                            <Icons.ArrowNext height={24} width={24} />
-                        </View>
-                    </TouchableOpacity>
-                    <SizeBox height={14} />
-                    <View style={Styles.separator} />
-                    <SizeBox height={14} />
-                    <TouchableOpacity style={Styles.socialLinks}>
-                        <FastImage source={Icons.Facebook} style={Styles.icons} />
-                        <SizeBox width={12} />
-                        <Text style={Styles.titlesText}>Connect with Facebook</Text>
-                        <View style={[Styles.nextArrow, { right: 0 }]}>
-                            <Icons.ArrowNext height={24} width={24} />
-                        </View>
-                    </TouchableOpacity>
-                    <SizeBox height={14} />
-                    <View style={Styles.separator} />
-                    <SizeBox height={14} />
-                    <TouchableOpacity style={Styles.socialLinks}>
-                        <FastImage source={Icons.Instagram} style={Styles.icons} />
-                        <SizeBox width={12} />
-                        <Text style={Styles.titlesText}>Connect with Instagram</Text>
-                        <View style={[Styles.nextArrow, { right: 0 }]}>
-                            <Icons.ArrowNext height={24} width={24} />
-                        </View>
-                    </TouchableOpacity>
-                    <SizeBox height={16} />
+                <View style={Styles.socialLinksCard}>
+                    {socialLinks.map((link, index) => (
+                        <React.Fragment key={link.platform}>
+                            <TouchableOpacity style={Styles.socialLinkRow} onPress={() => toggleSocialLink(link.platform)}>
+                                <FastImage source={link.icon} style={Styles.socialIcon} />
+                                {link.isConnected ? (
+                                    <View style={Styles.connectedLinkContent}>
+                                        <Text style={Styles.socialLinkPlatform}>{link.platform}</Text>
+                                        <Icons.Links height={14} width={14} />
+                                        <Text style={Styles.socialLinkUrl}>{link.url}</Text>
+                                    </View>
+                                ) : (
+                                    <Text style={Styles.socialLinkText}>Connect with {link.platform}</Text>
+                                )}
+                                <Icons.ArrowNext height={20} width={20} />
+                            </TouchableOpacity>
+                            {index < socialLinks.length - 1 && <View style={Styles.socialLinkDivider} />}
+                        </React.Fragment>
+                    ))}
                 </View>
 
                 <SizeBox height={24} />
-                <Text style={Styles.containerTitle}>Appearance</Text>
+
+                {/* Appearance */}
+                <Text style={Styles.sectionTitle}>Appearance</Text>
                 <SizeBox height={16} />
                 <MenuContainers
                     icon={<Icons.LightMode height={20} width={20} />}
@@ -100,7 +91,7 @@ const MenuScreen = ({ navigation }: any) => {
                     isNext={false}
                     isSelected={mode === 'light'}
                 />
-                <SizeBox height={16} />
+                <SizeBox height={12} />
                 <MenuContainers
                     icon={<Icons.DarkMode height={20} width={20} />}
                     title='Dark mode'
@@ -110,53 +101,137 @@ const MenuScreen = ({ navigation }: any) => {
                 />
 
                 <SizeBox height={24} />
-                <Text style={Styles.containerTitle}>Settings</Text>
+
+                {/* Settings */}
+                <Text style={Styles.sectionTitle}>Settings</Text>
                 <SizeBox height={16} />
                 <MenuContainers
                     icon={<Icons.Notification height={20} width={20} />}
-                    title='Notifications'
+                    title='Push Notifications'
                     onPress={() => { }}
                     isSwitch={true}
                     isNext={false}
-                    toggleSwitch={toggleSwitch}
-                    isEnabled={isEnabled}
+                    toggleSwitch={() => setPushNotifications(prev => !prev)}
+                    isEnabled={pushNotifications}
                 />
-                <SizeBox height={16} />
+                <SizeBox height={12} />
                 <MenuContainers
                     icon={<Icons.LanguageSetting height={20} width={20} />}
                     title='Language'
                     onPress={() => navigation.navigate('Language')}
                 />
-                <SizeBox height={16} />
+                <SizeBox height={12} />
                 <MenuContainers
                     icon={<Icons.LocationSetting height={20} width={20} />}
                     title='Location'
                     onPress={() => navigation.navigate('Location')}
                 />
+                <SizeBox height={12} />
+                <MenuContainers
+                    icon={<Icons.ProfileSetting height={20} width={20} />}
+                    title='Account'
+                    onPress={() => navigation.navigate('ProfileSettings')}
+                />
 
                 <SizeBox height={24} />
-                <Text style={Styles.containerTitle}>Other</Text>
+
+                {/* Other */}
+                <Text style={Styles.sectionTitle}>Other</Text>
                 <SizeBox height={16} />
                 <MenuContainers
                     icon={<Icons.PaymentMethod height={20} width={20} />}
                     title='Payment Method'
                     onPress={() => navigation.navigate('PaymentMethod')}
                 />
-                <SizeBox height={16} />
+                <SizeBox height={12} />
+                <MenuContainers
+                    icon={<Icons.AiBlueBordered height={20} width={20} />}
+                    title='AI'
+                    onPress={() => { }}
+                />
+                <SizeBox height={12} />
+                <MenuContainers
+                    icon={<Money3 size={20} color={Colors.primaryColor} variant="Linear" />}
+                    title='Subscription'
+                    onPress={() => navigation.navigate('Subscription')}
+                />
+                <SizeBox height={12} />
                 <MenuContainers
                     icon={<Icons.Terms height={20} width={20} />}
                     title='Terms of Service'
-                    onPress={() => { }}
+                    onPress={() => navigation.navigate('TermsOfService')}
                 />
-                <SizeBox height={16} />
+                <SizeBox height={12} />
+                <MenuContainers
+                    icon={<UserOctagon size={20} color={Colors.primaryColor} variant="Linear" />}
+                    title='Help'
+                    onPress={() => navigation.navigate('Help')}
+                />
+                <SizeBox height={12} />
                 <MenuContainers
                     icon={<Icons.DeleteAccount height={20} width={20} />}
                     title='Delete/Pause your account'
                     onPress={() => navigation.navigate('DeleteAndPause')}
                 />
 
+                <SizeBox height={24} />
+
+                {/* Privacy Settings */}
+                <Text style={Styles.sectionTitle}>Privacy Settings</Text>
+                <SizeBox height={16} />
+                <View style={Styles.privacyCard}>
+                    <View style={Styles.privacyHeader}>
+                        <View style={Styles.privacyIconContainer}>
+                            <MainComponent size={20} color={Colors.primaryColor} variant="Linear" />
+                        </View>
+                        <SizeBox width={16} />
+                        <Text style={Styles.privacyTitle}>AI Photo Recognition</Text>
+                        <View style={Styles.privacySwitch}>
+                            <TouchableOpacity
+                                style={[Styles.switchTrack, aiPhotoRecognition && Styles.switchTrackActive]}
+                                onPress={() => setAiPhotoRecognition(prev => !prev)}
+                            >
+                                <View style={[Styles.switchThumb, aiPhotoRecognition && Styles.switchThumbActive]} />
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+                    <SizeBox height={12} />
+                    <Text style={Styles.privacySubtitle}>How it works:</Text>
+                    <SizeBox height={4} />
+                    <Text style={Styles.privacyDescription}>• AI scans newly uploaded photos for faces.</Text>
+                    <Text style={Styles.privacyDescription}>• Automatically suggests tags when you're detected.</Text>
+                    <Text style={Styles.privacyDescription}>• You'll receive notifications for photo suggestions.</Text>
+                    <Text style={Styles.privacyDescription}>• You can always approve or reject tags.</Text>
+                </View>
+
                 <SizeBox height={16} />
 
+                <View style={Styles.privacyCard}>
+                    <View style={Styles.privacyHeader}>
+                        <View style={Styles.privacyIconContainer}>
+                            <Eye size={20} color={Colors.primaryColor} variant="Linear" />
+                        </View>
+                        <SizeBox width={16} />
+                        <Text style={Styles.privacyTitle}>Ghost Mode</Text>
+                        <View style={Styles.privacySwitch}>
+                            <TouchableOpacity
+                                style={[Styles.switchTrack, ghostMode && Styles.switchTrackActive]}
+                                onPress={() => setGhostMode(prev => !prev)}
+                            >
+                                <View style={[Styles.switchThumb, ghostMode && Styles.switchThumbActive]} />
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+                    <SizeBox height={12} />
+                    <Text style={Styles.privacySubtitle}>When Ghost Mode is active:</Text>
+                    <SizeBox height={4} />
+                    <Text style={Styles.privacyDescription}>• Your profile won't appear in search results.</Text>
+                    <Text style={Styles.privacyDescription}>• You won't show up in "People you may know".</Text>
+                    <Text style={Styles.privacyDescription}>• Existing friends can still see your profile.</Text>
+                    <Text style={Styles.privacyDescription}>• You can still browse and interact normally.</Text>
+                </View>
+
+                <SizeBox height={insets.bottom > 0 ? insets.bottom + 20 : 40} />
             </ScrollView>
         </View>
     )

@@ -8,12 +8,14 @@ import Styles from './PhotoBuyScreenStyles';
 import SizeBox from '../../constants/SizeBox';
 import Colors from '../../constants/Colors';
 import Images from '../../constants/Images';
+import SubscriptionModal from '../../components/subscriptionModal/SubscriptionModal';
 
 const PhotoBuyScreen = ({ navigation, route }: any) => {
     const insets = useSafeAreaInsets();
     const [showBuyModal, setShowBuyModal] = useState(false);
     const [showSuccessModal, setShowSuccessModal] = useState(false);
     const [showFailedModal, setShowFailedModal] = useState(false);
+    const [showSubscriptionModal, setShowSubscriptionModal] = useState(false);
     const eventTitle = route?.params?.eventTitle || 'BK Studentent 23';
     const photoPrice = route?.params?.photo?.price || '€0,20';
     const photo = route?.params?.photo || {
@@ -39,7 +41,7 @@ const PhotoBuyScreen = ({ navigation, route }: any) => {
 
     const handleRecharge = () => {
         setShowFailedModal(false);
-        // Navigate to recharge screen or handle recharge logic
+        setShowSubscriptionModal(true);
     };
 
     return (
@@ -191,6 +193,11 @@ const PhotoBuyScreen = ({ navigation, route }: any) => {
                     </View>
                 </View>
             </Modal>
+
+            <SubscriptionModal
+                isVisible={showSubscriptionModal}
+                onClose={() => setShowSubscriptionModal(false)}
+            />
         </View>
     );
 };

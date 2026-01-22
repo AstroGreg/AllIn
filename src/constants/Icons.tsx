@@ -110,11 +110,19 @@ import lightbulbColorful from '../assets/icons/lightbulbColorful.svg';
 import shareBlue from '../assets/icons/shareBlue.png';
 import shareGray from '../assets/icons/shareGray.png';
 import blueTick from '../assets/icons/blueTick.svg';
+import aiBlueBordered from '../assets/icons/aiBlueBordered.svg';
+import englishBlueCircle from '../assets/icons/englishBlueCircle.svg';
+import deleteRedBold from '../assets/icons/deleteRedBold.svg';
+import paycoinqBancontact from '../assets/imgs/paycoinqBancontact.png';
 
 
 
 const Icons = {
     BlueTick: blueTick,
+    AiBlueBordered: aiBlueBordered,
+    EnglishBlueCircle: englishBlueCircle,
+    DeleteRedBold: deleteRedBold,
+    PaycoinqBancontact: paycoinqBancontact,
     LightbulbColorful: lightbulbColorful,
     FileEmptyColorful: fileEmptyColorful,
     FeedBlue: feedBlue,

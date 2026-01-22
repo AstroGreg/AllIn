@@ -9,9 +9,25 @@ interface ConfirmationModelProps {
     text?: string;
     onPressYes?: any;
     icon?: any;
+    leftBtnText?: string;
+    rightBtnText?: string;
+    leftBtnTextColor?: string;
+    leftBtnBorderColor?: string;
+    iconBgColor?: string;
 }
 
-const ConfirmationModel = ({ onClose, isVisible, text, onPressYes, icon }: ConfirmationModelProps) => {
+const ConfirmationModel = ({
+    onClose,
+    isVisible,
+    text,
+    onPressYes,
+    icon,
+    leftBtnText = 'No',
+    rightBtnText = 'Yes',
+    leftBtnTextColor,
+    leftBtnBorderColor,
+    iconBgColor
+}: ConfirmationModelProps) => {
     return (
         <Modal
             visible={isVisible}
@@ -21,19 +37,29 @@ const ConfirmationModel = ({ onClose, isVisible, text, onPressYes, icon }: Confi
         >
             <View style={Styles.mainContainer}>
                 <View style={Styles.container}>
-                    <Text style={Styles.text}>{text}</Text>
-                    <SizeBox height={10} />
-                    <View style={Styles.iconCont}>
+                    <View style={[Styles.iconCont, iconBgColor && { backgroundColor: iconBgColor }]}>
                         {icon}
                     </View>
-                    <SizeBox height={14} />
+                    <SizeBox height={20} />
+                    <Text style={Styles.text} numberOfLines={3}>{text}</Text>
+                    <SizeBox height={24} />
                     <View style={Styles.row}>
-                        <TouchableOpacity activeOpacity={0.7} style={Styles.noBtn} onPress={onClose}>
-                            <Text style={Styles.noText}>No</Text>
+                        <TouchableOpacity
+                            activeOpacity={0.7}
+                            style={[
+                                Styles.noBtn,
+                                leftBtnBorderColor && { borderColor: leftBtnBorderColor }
+                            ]}
+                            onPress={onClose}
+                        >
+                            <Text style={[
+                                Styles.noText,
+                                leftBtnTextColor && { color: leftBtnTextColor }
+                            ]}>{leftBtnText}</Text>
                         </TouchableOpacity>
-                        <SizeBox width={20} />
+                        <SizeBox width={16} />
                         <TouchableOpacity activeOpacity={0.7} style={Styles.yesBtn} onPress={onPressYes}>
-                            <Text style={Styles.yesText}>Yes</Text>
+                            <Text style={Styles.yesText}>{rightBtnText}</Text>
                         </TouchableOpacity>
                     </View>
                 </View>

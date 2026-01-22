@@ -1,11 +1,12 @@
-import { Text, View } from 'react-native'
+import { Text, View, TouchableOpacity } from 'react-native'
 import React, { useState } from 'react'
 import Styles from '../MenuStyles'
 import SizeBox from '../../../constants/SizeBox'
-import CustomHeader from '../../../components/customHeader/CustomHeader'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import MenuContainers from '../components/MenuContainers'
 import Icons from '../../../constants/Icons'
+import Colors from '../../../constants/Colors'
+import { ArrowLeft2, Notification, LanguageCircle } from 'iconsax-react-nativejs'
 
 const Language = ({ navigation }: any) => {
     const insets = useSafeAreaInsets();
@@ -14,21 +15,32 @@ const Language = ({ navigation }: any) => {
     return (
         <View style={Styles.mainContainer}>
             <SizeBox height={insets.top} />
-            <CustomHeader title='Menu' onBackPress={() => navigation.goBack()} onPressSetting={() => navigation.navigate('ProfileSettings')} />
-            <SizeBox height={24} />
+
+            {/* Header */}
+            <View style={Styles.header}>
+                <TouchableOpacity style={Styles.headerButton} onPress={() => navigation.goBack()}>
+                    <ArrowLeft2 size={24} color={Colors.primaryColor} variant="Linear" />
+                </TouchableOpacity>
+                <Text style={Styles.headerTitle}>Menu</Text>
+                <TouchableOpacity style={Styles.headerButton}>
+                    <Notification size={24} color={Colors.primaryColor} variant="Linear" />
+                </TouchableOpacity>
+            </View>
+
             <View style={Styles.container}>
-                <Text style={Styles.containerTitle}>Language</Text>
+                <SizeBox height={24} />
+                <Text style={Styles.sectionTitle}>Language</Text>
                 <SizeBox height={16} />
                 <MenuContainers
-                    icon={<Icons.Dt height={20} width={20} />}
+                    icon={<LanguageCircle size={20} color={Colors.primaryColor} variant="Linear" />}
                     title='Dutch'
                     onPress={() => setLanguage('dt')}
                     isNext={false}
                     isSelected={language === 'dt'}
                 />
-                <SizeBox height={16} />
+                <SizeBox height={12} />
                 <MenuContainers
-                    icon={<Icons.En height={20} width={20} />}
+                    icon={<Icons.EnglishBlueCircle height={20} width={20} />}
                     title='English'
                     onPress={() => setLanguage('en')}
                     isNext={false}

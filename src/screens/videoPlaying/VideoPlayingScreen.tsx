@@ -16,6 +16,7 @@ import SizeBox from '../../constants/SizeBox';
 import Colors from '../../constants/Colors';
 import Images from '../../constants/Images';
 import Icons from '../../constants/Icons';
+import SubscriptionModal from '../../components/subscriptionModal/SubscriptionModal';
 
 const VideoPlayingScreen = ({ navigation, route }: any) => {
     const insets = useSafeAreaInsets();
@@ -30,6 +31,7 @@ const VideoPlayingScreen = ({ navigation, route }: any) => {
     const [showBuyModal, setShowBuyModal] = useState(false);
     const [showSuccessModal, setShowSuccessModal] = useState(false);
     const [showFailedModal, setShowFailedModal] = useState(false);
+    const [showSubscriptionModal, setShowSubscriptionModal] = useState(false);
 
     useEffect(() => {
         if (showBuyModalOnLoad) {
@@ -54,7 +56,7 @@ const VideoPlayingScreen = ({ navigation, route }: any) => {
 
     const handleRecharge = () => {
         setShowFailedModal(false);
-        // Navigate to recharge screen or handle recharge logic
+        setShowSubscriptionModal(true);
     };
 
     return (
@@ -235,6 +237,11 @@ const VideoPlayingScreen = ({ navigation, route }: any) => {
                     </View>
                 </View>
             </Modal>
+
+            <SubscriptionModal
+                isVisible={showSubscriptionModal}
+                onClose={() => setShowSubscriptionModal(false)}
+            />
         </View>
     );
 };

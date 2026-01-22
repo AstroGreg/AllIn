@@ -41,6 +41,13 @@ import VideosForEvent from '../screens/search/searchScreens/VideosForEvent';
 import AllPhotosOfEvents from '../screens/search/searchScreens/AllPhotosOfEvents';
 import AllVideosOfEvents from '../screens/search/searchScreens/AllVideosOfEvents';
 import Location from '../screens/menu/menuScreens/Location';
+import Help from '../screens/menu/menuScreens/Help';
+import TermsOfService from '../screens/menu/menuScreens/TermsOfService';
+import Subscription from '../screens/menu/menuScreens/Subscription';
+import ChangePassword from '../screens/menu/menuScreens/ChangePassword';
+import ChangeUsername from '../screens/menu/menuScreens/ChangeUsername';
+import ChangeNationality from '../screens/menu/menuScreens/ChangeNationality';
+import DateOfBirth from '../screens/menu/menuScreens/DateOfBirth';
 import UserProfileScreen from '../screens/userProfile/UserProfileScreen';
 
 const Stack = createNativeStackNavigator();
@@ -96,6 +103,13 @@ const RootStackNavigation = () => {
             <Stack.Screen name="AllPhotosOfEvents" component={AllPhotosOfEvents} />
             <Stack.Screen name="AllVideosOfEvents" component={AllVideosOfEvents} />
             <Stack.Screen name="Location" component={Location} />
+            <Stack.Screen name="Help" component={Help} />
+            <Stack.Screen name="TermsOfService" component={TermsOfService} />
+            <Stack.Screen name="Subscription" component={Subscription} />
+            <Stack.Screen name="ChangePassword" component={ChangePassword} />
+            <Stack.Screen name="ChangeUsername" component={ChangeUsername} />
+            <Stack.Screen name="ChangeNationality" component={ChangeNationality} />
+            <Stack.Screen name="DateOfBirth" component={DateOfBirth} />
             <Stack.Screen name="UserProfileScreen" component={UserProfileScreen} />
 
         </Stack.Navigator>
