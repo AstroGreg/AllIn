@@ -5,6 +5,7 @@ import SizeBox from '../../../constants/SizeBox'
 import Styles from '../HomeStyles'
 import CustomButton from '../../../components/customButton/CustomButton'
 import Icons from '../../../constants/Icons'
+import Images from '../../../constants/Images'
 import BorderButton from '../../../components/borderButton/BorderButton'
 import RequestContainers from './RequestContainers'
 import SimilarEvents from '../../Events/components/SimilarEvents'
@@ -33,8 +34,12 @@ const PotentialVideos = ({ data, onPressAddEvent, onPressParticipant, onPressDow
                         location={item.location}
                         date={item.date}
                         onPress={onPressParticipant}
-                        onPressContainer={() => navigation.navigate('VideoScreen', {
-                            videoUrl: item.videoUri
+                        onPressContainer={() => navigation.navigate('VideoPlayingScreen', {
+                            video: {
+                                title: item.CompetitionName || 'BK Studenten 2023',
+                                subtitle: item.map || 'Senioren, Heat 1',
+                                thumbnail: Images.photo1,
+                            }
                         })}
                     />
                 }
@@ -58,8 +63,12 @@ const PotentialVideos = ({ data, onPressAddEvent, onPressParticipant, onPressDow
                         location={item.location}
                         date={item.date}
                         onPress={onPressParticipant}
-                        onPressContainer={() => navigation.navigate('VideoScreen', {
-                            videoUrl: item.videoUri
+                        onPressContainer={() => navigation.navigate('VideoPlayingScreen', {
+                            video: {
+                                title: item.CompetitionName || 'BK Studenten 2023',
+                                subtitle: item.map || 'Senioren, Heat 1',
+                                thumbnail: Images.photo1,
+                            }
                         })}
                     />
                 }

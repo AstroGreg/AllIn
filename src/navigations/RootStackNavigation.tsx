@@ -40,6 +40,11 @@ import Videography from '../screens/search/searchScreens/Videography';
 import VideosForEvent from '../screens/search/searchScreens/VideosForEvent';
 import AllPhotosOfEvents from '../screens/search/searchScreens/AllPhotosOfEvents';
 import AllVideosOfEvents from '../screens/search/searchScreens/AllVideosOfEvents';
+import FrontFaceCaptureScreen from '../screens/search/searchScreens/FrontFaceCaptureScreen';
+import LeftSideCaptureScreen from '../screens/search/searchScreens/LeftSideCaptureScreen';
+import RightSideCaptureScreen from '../screens/search/searchScreens/RightSideCaptureScreen';
+import NameThisFaceScreen from '../screens/search/searchScreens/NameThisFaceScreen';
+import CompetitionDetailsScreen from '../screens/search/searchScreens/CompetitionDetailsScreen';
 import Location from '../screens/menu/menuScreens/Location';
 import Help from '../screens/menu/menuScreens/Help';
 import TermsOfService from '../screens/menu/menuScreens/TermsOfService';
@@ -49,6 +54,9 @@ import ChangeUsername from '../screens/menu/menuScreens/ChangeUsername';
 import ChangeNationality from '../screens/menu/menuScreens/ChangeNationality';
 import DateOfBirth from '../screens/menu/menuScreens/DateOfBirth';
 import UserProfileScreen from '../screens/userProfile/UserProfileScreen';
+import ViewUserProfileScreen from '../screens/viewUserProfile/ViewUserProfileScreen';
+import PhotoDetailScreen from '../screens/photoDetail/PhotoDetailScreen';
+import VideoPlayingScreen from '../screens/videoPlaying/VideoPlayingScreen';
 
 const Stack = createNativeStackNavigator();
 const RootStackNavigation = () => {
@@ -102,6 +110,11 @@ const RootStackNavigation = () => {
             <Stack.Screen name="VideosForEvent" component={VideosForEvent} />
             <Stack.Screen name="AllPhotosOfEvents" component={AllPhotosOfEvents} />
             <Stack.Screen name="AllVideosOfEvents" component={AllVideosOfEvents} />
+            <Stack.Screen name="FrontFaceCaptureScreen" component={FrontFaceCaptureScreen} />
+            <Stack.Screen name="LeftSideCaptureScreen" component={LeftSideCaptureScreen} />
+            <Stack.Screen name="RightSideCaptureScreen" component={RightSideCaptureScreen} />
+            <Stack.Screen name="NameThisFaceScreen" component={NameThisFaceScreen} />
+            <Stack.Screen name="CompetitionDetailsScreen" component={CompetitionDetailsScreen} />
             <Stack.Screen name="Location" component={Location} />
             <Stack.Screen name="Help" component={Help} />
             <Stack.Screen name="TermsOfService" component={TermsOfService} />
@@ -111,6 +124,9 @@ const RootStackNavigation = () => {
             <Stack.Screen name="ChangeNationality" component={ChangeNationality} />
             <Stack.Screen name="DateOfBirth" component={DateOfBirth} />
             <Stack.Screen name="UserProfileScreen" component={UserProfileScreen} />
+            <Stack.Screen name="ViewUserProfileScreen" component={ViewUserProfileScreen} />
+            <Stack.Screen name="PhotoDetailScreen" component={PhotoDetailScreen} />
+            <Stack.Screen name="VideoPlayingScreen" component={VideoPlayingScreen} />
 
         </Stack.Navigator>
     )

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, ScrollView, TouchableOpacity } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, Pressable } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import FastImage from 'react-native-fast-image';
 import { ArrowLeft2, User, Clock } from 'iconsax-react-nativejs';
@@ -31,7 +31,17 @@ const ViewUserCollectionsPhotosScreen = ({ navigation }: any) => {
     ];
 
     const renderVideoCard = (video: any) => (
-        <View key={video.id} style={Styles.videoCard}>
+        <TouchableOpacity
+            key={video.id}
+            style={Styles.videoCard}
+            onPress={() => navigation.navigate('VideoPlayingScreen', {
+                video: {
+                    title: 'BK Studenten 2023',
+                    subtitle: video.title,
+                    thumbnail: video.thumbnail,
+                }
+            })}
+        >
             <View style={Styles.thumbnailContainer}>
                 <FastImage source={video.thumbnail} style={Styles.thumbnail} resizeMode="cover" />
                 <View style={Styles.playIconContainer}>
@@ -49,7 +59,7 @@ const ViewUserCollectionsPhotosScreen = ({ navigation }: any) => {
                     <Text style={Styles.metaText}>{video.duration}</Text>
                 </View>
             </View>
-        </View>
+        </TouchableOpacity>
     );
 
     return (
@@ -101,12 +111,23 @@ const ViewUserCollectionsPhotosScreen = ({ navigation }: any) => {
                     <View style={Styles.photosCard}>
                         <View style={Styles.photosGrid}>
                             {photos.map((photo, index) => (
-                                <FastImage
+                                <Pressable
                                     key={index}
-                                    source={photo}
-                                    style={Styles.photoImage}
-                                    resizeMode="cover"
-                                />
+                                    onPress={() => navigation.navigate('PhotoDetailScreen', {
+                                        eventTitle: 'BK Studenten 2023',
+                                        photo: {
+                                            title: 'PK 2025 indoor Passionate',
+                                            views: '122K+',
+                                            thumbnail: photo,
+                                        }
+                                    })}
+                                >
+                                    <FastImage
+                                        source={photo}
+                                        style={Styles.photoImage}
+                                        resizeMode="cover"
+                                    />
+                                </Pressable>
                             ))}
                         </View>
                     </View>

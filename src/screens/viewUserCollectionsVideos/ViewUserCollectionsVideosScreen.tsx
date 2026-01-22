@@ -31,7 +31,17 @@ const ViewUserCollectionsVideosScreen = ({ navigation }: any) => {
     ];
 
     const renderVideoCard = (video: any) => (
-        <View key={video.id} style={Styles.videoCard}>
+        <TouchableOpacity
+            key={video.id}
+            style={Styles.videoCard}
+            onPress={() => navigation.navigate('VideoPlayingScreen', {
+                video: {
+                    title: 'BK Studenten 2023',
+                    subtitle: video.title,
+                    thumbnail: video.thumbnail,
+                }
+            })}
+        >
             <View style={Styles.thumbnailContainer}>
                 <FastImage source={video.thumbnail} style={Styles.thumbnail} resizeMode="cover" />
                 <View style={Styles.playIconContainer}>
@@ -49,7 +59,7 @@ const ViewUserCollectionsVideosScreen = ({ navigation }: any) => {
                     <Text style={Styles.metaText}>{video.duration}</Text>
                 </View>
             </View>
-        </View>
+        </TouchableOpacity>
     );
 
     return (

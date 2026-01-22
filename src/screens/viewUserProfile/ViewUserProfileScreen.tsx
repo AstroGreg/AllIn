@@ -270,18 +270,39 @@ const ViewUserProfileScreen = ({ navigation }: any) => {
                     {activeTab === 'photos' ? (
                         <View style={Styles.collectionsGrid}>
                             {collections.map((item) => (
-                                <FastImage
+                                <TouchableOpacity
                                     key={item.id}
-                                    source={item.imgUrl}
-                                    style={Styles.collectionImage}
-                                    resizeMode="cover"
-                                />
+                                    onPress={() => navigation.navigate('PhotoDetailScreen', {
+                                        eventTitle: 'BK Studenten 2023',
+                                        photo: {
+                                            title: 'PK 2025 indoor Passionate',
+                                            views: '122K+',
+                                            thumbnail: item.imgUrl,
+                                        }
+                                    })}
+                                >
+                                    <FastImage
+                                        source={item.imgUrl}
+                                        style={Styles.collectionImage}
+                                        resizeMode="cover"
+                                    />
+                                </TouchableOpacity>
                             ))}
                         </View>
                     ) : (
                         <View style={Styles.videosGrid}>
                             {collectionVideos.map((video) => (
-                                <View key={video.id} style={Styles.videoCard}>
+                                <TouchableOpacity
+                                    key={video.id}
+                                    style={Styles.videoCard}
+                                    onPress={() => navigation.navigate('VideoPlayingScreen', {
+                                        video: {
+                                            title: 'BK Studenten 2023',
+                                            subtitle: video.title,
+                                            thumbnail: video.thumbnail,
+                                        }
+                                    })}
+                                >
                                     <View style={Styles.videoThumbnailContainer}>
                                         <FastImage source={video.thumbnail} style={Styles.videoThumbnail} resizeMode="cover" />
                                         <View style={Styles.videoPlayIconContainer}>
@@ -299,7 +320,7 @@ const ViewUserProfileScreen = ({ navigation }: any) => {
                                             <Text style={Styles.videoMetaText}>{video.duration}</Text>
                                         </View>
                                     </View>
-                                </View>
+                                </TouchableOpacity>
                             ))}
                         </View>
                     )}

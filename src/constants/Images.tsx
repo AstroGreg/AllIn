@@ -27,6 +27,7 @@ const Images = {
     photo8: require('../assets/imgs/foto8.png'),
     photo9: require('../assets/imgs/foto9.png'),
     fiverr: require('../assets/imgs/fiverr.png'),
+    noResult: require('../assets/imgs/no-result.png'),
 }
 
 export default Images;  

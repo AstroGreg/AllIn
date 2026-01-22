@@ -5,6 +5,7 @@ import SizeBox from '../../../constants/SizeBox'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import CustomHeader from '../../../components/customHeader/CustomHeader'
 import VideoContainer from '../../viewUserProfile/components/VideoContainer'
+import Images from '../../../constants/Images'
 
 const AllVideosOfEvents = ({ navigation }: any) => {
     const insets = useSafeAreaInsets();
@@ -82,7 +83,13 @@ const AllVideosOfEvents = ({ navigation }: any) => {
                 data={data}
                 renderItem={({ item }) =>
                     <VideoContainer
-                        onPressVideo={() => navigation.navigate('VideoScreen', { videoUrl: item.videoUri })}
+                        onPressVideo={() => navigation.navigate('VideoPlayingScreen', {
+                            video: {
+                                title: 'BK Studenten 2023',
+                                subtitle: item.event,
+                                thumbnail: Images.photo1,
+                            }
+                        })}
                         event={item.name}
                         CompetitionName={item.event}
                         videoUri={item.videoUri}

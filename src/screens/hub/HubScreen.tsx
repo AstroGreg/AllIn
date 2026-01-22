@@ -236,7 +236,7 @@ const HubScreen = ({ navigation }: any) => {
 
                 <TouchableOpacity
                     style={Styles.primaryButton}
-                    onPress={() => navigation.navigate('PhotosScreen')}
+                    onPress={() => navigation.navigate('AllPhotosOfEvents')}
                 >
                     <Text style={Styles.primaryButtonText}>View All</Text>
                     <Icons.RightBtnIcon height={18} width={18} />
