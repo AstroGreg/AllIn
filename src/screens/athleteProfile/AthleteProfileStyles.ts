@@ -82,7 +82,7 @@ const Styles = StyleSheet.create({
         marginBottom: 4,
     },
     userName: {
-        ...Fonts.semiBold18,
+        ...Fonts.semibold18,
         color: Colors.mainTextColor,
     },
     userHandle: {
@@ -103,7 +103,7 @@ const Styles = StyleSheet.create({
         paddingHorizontal: 24,
     },
     statValue: {
-        ...Fonts.semiBold18,
+        ...Fonts.semibold18,
         color: Colors.mainTextColor,
     },
     statLabel: {
@@ -148,7 +148,7 @@ const Styles = StyleSheet.create({
         alignItems: 'center',
     },
     additionalStatValue: {
-        ...Fonts.semiBold16,
+        ...Fonts.semibold16,
         color: Colors.mainTextColor,
     },
     additionalStatLabel: {

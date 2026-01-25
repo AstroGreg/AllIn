@@ -8,6 +8,7 @@ import Colors from '../../constants/Colors';
 import Styles from './GroupProfileStyles';
 import { ArrowLeft2, User, ArrowRight, Edit2, Trash, Add, Location, Note, Sms, Map, Calendar } from 'iconsax-react-nativejs';
 import Icons from '../../constants/Icons';
+import ShareModal from '../../components/shareModal/ShareModal';
 
 const GroupProfileScreen = ({ navigation }: any) => {
     const insets = useSafeAreaInsets();
@@ -16,6 +17,7 @@ const GroupProfileScreen = ({ navigation }: any) => {
     const [emailInput, setEmailInput] = useState('');
     const [coachModalVisible, setCoachModalVisible] = useState(false);
     const [selectedCoach, setSelectedCoach] = useState<any>(null);
+    const [showShareModal, setShowShareModal] = useState(false);
 
     const tabs = ['Athletes', 'Coaches', 'Events'];
 
@@ -326,7 +328,7 @@ const GroupProfileScreen = ({ navigation }: any) => {
                 {/* Profile Card */}
                 <View style={Styles.profileCard}>
                     {/* Share Button */}
-                    <TouchableOpacity style={Styles.shareButton}>
+                    <TouchableOpacity style={Styles.shareButton} onPress={() => setShowShareModal(true)}>
                         <Text style={Styles.shareButtonText}>Share</Text>
                         <ArrowRight size={24} color="#9B9F9F" variant="Linear" />
                     </TouchableOpacity>
@@ -546,6 +548,12 @@ const GroupProfileScreen = ({ navigation }: any) => {
                     </View>
                 </View>
             </Modal>
+
+            {/* Share Modal */}
+            <ShareModal
+                visible={showShareModal}
+                onClose={() => setShowShareModal(false)}
+            />
         </View>
     );
 };

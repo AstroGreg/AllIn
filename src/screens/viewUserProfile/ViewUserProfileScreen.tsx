@@ -14,10 +14,12 @@ import {
     Global,
     Clock,
 } from 'iconsax-react-nativejs'
+import ShareModal from '../../components/shareModal/ShareModal'
 
 const ViewUserProfileScreen = ({ navigation }: any) => {
     const insets = useSafeAreaInsets();
     const [activeTab, setActiveTab] = useState('photos');
+    const [showShareModal, setShowShareModal] = useState(false);
 
     const collections = [
         { id: 1, imgUrl: Images.photo1 },
@@ -108,11 +110,11 @@ const ViewUserProfileScreen = ({ navigation }: any) => {
             {/* Header */}
             <View style={Styles.header}>
                 <TouchableOpacity style={Styles.headerButton} onPress={() => navigation.goBack()}>
-                    <ArrowLeft2 size={24} color={Colors.mainTextColor} variant="Linear" />
+                    <ArrowLeft2 size={24} color={Colors.primaryColor} variant="Linear" />
                 </TouchableOpacity>
                 <Text style={Styles.headerTitle}>Profile</Text>
                 <TouchableOpacity style={Styles.headerButton}>
-                    <User size={24} color={Colors.mainTextColor} variant="Linear" />
+                    <User size={24} color={Colors.primaryColor} variant="Linear" />
                 </TouchableOpacity>
             </View>
 
@@ -134,7 +136,7 @@ const ViewUserProfileScreen = ({ navigation }: any) => {
                 <View style={Styles.profileCard}>
                     <View style={Styles.profileHeader}>
                         {/* Share Button */}
-                        <TouchableOpacity style={Styles.shareButton}>
+                        <TouchableOpacity style={Styles.shareButton} onPress={() => setShowShareModal(true)}>
                             <Text style={Styles.shareButtonText}>Share</Text>
                             <Image source={Icons.ShareGray} style={{ width: 18, height: 18 }} />
                         </TouchableOpacity>
@@ -328,6 +330,12 @@ const ViewUserProfileScreen = ({ navigation }: any) => {
 
                 <SizeBox height={insets.bottom > 0 ? insets.bottom + 20 : 40} />
             </ScrollView>
+
+            {/* Share Modal */}
+            <ShareModal
+                visible={showShareModal}
+                onClose={() => setShowShareModal(false)}
+            />
         </View>
     )
 }

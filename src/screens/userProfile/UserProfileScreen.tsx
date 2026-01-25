@@ -167,11 +167,11 @@ const UserProfileScreen = ({ navigation }: any) => {
             {/* Header */}
             <View style={Styles.header}>
                 <TouchableOpacity style={Styles.headerButton} onPress={() => navigation.goBack()}>
-                    <ArrowLeft2 size={24} color={Colors.mainTextColor} variant="Linear" />
+                    <ArrowLeft2 size={24} color={Colors.primaryColor} variant="Linear" />
                 </TouchableOpacity>
                 <Text style={Styles.headerTitle}>Profile</Text>
                 <TouchableOpacity style={Styles.headerButton} onPress={() => navigation.navigate('ProfileSettings')}>
-                    <User size={24} color={Colors.mainTextColor} variant="Linear" />
+                    <User size={24} color={Colors.primaryColor} variant="Linear" />
                 </TouchableOpacity>
             </View>
 

@@ -14,10 +14,12 @@ import {
     Location,
     Calendar,
 } from 'iconsax-react-nativejs';
+import ShareModal from '../../components/shareModal/ShareModal';
 
 const AthleteProfileScreen = ({ navigation, route }: any) => {
     const insets = useSafeAreaInsets();
     const [activeTab, setActiveTab] = useState('athletes');
+    const [showShareModal, setShowShareModal] = useState(false);
     const athlete = route?.params?.athlete;
 
     const clubAthletes = [
@@ -143,7 +145,7 @@ const AthleteProfileScreen = ({ navigation, route }: any) => {
                 {/* Profile Card */}
                 <View style={Styles.profileCard}>
                     {/* Share Button */}
-                    <TouchableOpacity style={Styles.shareButton}>
+                    <TouchableOpacity style={Styles.shareButton} onPress={() => setShowShareModal(true)}>
                         <Text style={Styles.shareButtonText}>Share</Text>
                         <Image source={Icons.ShareGray} style={{ width: 18, height: 18 }} />
                     </TouchableOpacity>
@@ -302,6 +304,12 @@ const AthleteProfileScreen = ({ navigation, route }: any) => {
 
                 <SizeBox height={insets.bottom > 0 ? insets.bottom + 20 : 40} />
             </ScrollView>
+
+            {/* Share Modal */}
+            <ShareModal
+                visible={showShareModal}
+                onClose={() => setShowShareModal(false)}
+            />
         </View>
     );
 };

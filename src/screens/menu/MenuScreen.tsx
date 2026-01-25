@@ -7,7 +7,7 @@ import MenuContainers from './components/MenuContainers'
 import Icons from '../../constants/Icons'
 import FastImage from 'react-native-fast-image'
 import Colors from '../../constants/Colors'
-import { ArrowLeft2, Notification, Money3, UserOctagon, MainComponent, Eye } from 'iconsax-react-nativejs'
+import { ArrowLeft2, Notification, Money3, UserOctagon, MainComponent, Eye, Copy, SecurityUser } from 'iconsax-react-nativejs'
 
 interface SocialLink {
     platform: string;
@@ -132,6 +132,12 @@ const MenuScreen = ({ navigation }: any) => {
                     title='Account'
                     onPress={() => navigation.navigate('ProfileSettings')}
                 />
+                <SizeBox height={12} />
+                <MenuContainers
+                    icon={<SecurityUser size={20} color={Colors.primaryColor} variant="Linear" />}
+                    title='Authentication'
+                    onPress={() => navigation.navigate('Authentication')}
+                />
 
                 <SizeBox height={24} />
 
@@ -147,7 +153,7 @@ const MenuScreen = ({ navigation }: any) => {
                 <MenuContainers
                     icon={<Icons.AiBlueBordered height={20} width={20} />}
                     title='AI'
-                    onPress={() => { }}
+                    onPress={() => navigation.navigate('AISearchScreen')}
                 />
                 <SizeBox height={12} />
                 <MenuContainers
@@ -172,6 +178,12 @@ const MenuScreen = ({ navigation }: any) => {
                     icon={<Icons.DeleteAccount height={20} width={20} />}
                     title='Delete/Pause your account'
                     onPress={() => navigation.navigate('DeleteAndPause')}
+                />
+                <SizeBox height={12} />
+                <MenuContainers
+                    icon={<Copy size={20} color={Colors.primaryColor} variant="Linear" />}
+                    title='Right to be Forgotten'
+                    onPress={() => navigation.navigate('RightToBeForgotten')}
                 />
 
                 <SizeBox height={24} />

@@ -39,7 +39,7 @@ const PaymentMethod = ({ navigation }: any) => {
                     <ArrowLeft2 size={24} color={Colors.primaryColor} variant="Linear" />
                 </TouchableOpacity>
                 <Text style={Styles.headerTitle}>Payment method</Text>
-                <TouchableOpacity style={Styles.headerButton}>
+                <TouchableOpacity style={Styles.headerButton} onPress={() => navigation.navigate('NotificationsScreen')}>
                     <Notification size={24} color={Colors.primaryColor} variant="Linear" />
                 </TouchableOpacity>
             </View>

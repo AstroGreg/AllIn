@@ -28,10 +28,10 @@ const Styles = StyleSheet.create({
     welcomeText: {
         ...Fonts.regular12,
         color: Colors.subTextColor,
-        marginBottom: 5
+        marginBottom: 2
     },
     userNameText: {
-        ...Fonts.regular18,
+        ...Fonts.medium18,
         color: Colors.mainTextColor,
     },
     userInfoContainer: {
@@ -50,6 +50,220 @@ const Styles = StyleSheet.create({
         justifyContent: 'center'
     },
 
+    //Home screen
+    mainContainer: {
+        flex: 1,
+        backgroundColor: Colors.whiteColor,
+    },
+    scrollContent: {
+        paddingHorizontal: 20,
+    },
+
+    // Wallet Balance Card
+    walletCard: {
+        backgroundColor: Colors.whiteColor,
+        borderWidth: 0.5,
+        borderColor: Colors.lightGrayColor,
+        borderRadius: 10,
+        padding: 16,
+        marginBottom: 24,
+    },
+    walletCardContent: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+    },
+    walletLeftSection: {
+        flexDirection: 'row',
+        alignItems: 'flex-start',
+        gap: 12,
+    },
+    walletIconContainer: {
+        width: 40,
+        height: 40,
+        borderRadius: 6,
+        backgroundColor: Colors.secondaryBlueColor,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    walletInfoContainer: {
+        gap: 8,
+    },
+    walletTitle: {
+        ...Fonts.medium16,
+        color: Colors.mainTextColor,
+    },
+    walletBalance: {
+        ...Fonts.medium14,
+        color: Colors.grayColor,
+    },
+    planBadge: {
+        backgroundColor: '#E4FFEE',
+        paddingHorizontal: 12,
+        paddingVertical: 4,
+        borderRadius: 6,
+    },
+    planBadgeText: {
+        ...Fonts.regular12,
+        color: Colors.greenColor,
+    },
+    rechargeButton: {
+        borderWidth: 0.5,
+        borderColor: Colors.lightGrayColor,
+        borderRadius: 6,
+        paddingHorizontal: 16,
+        paddingVertical: 10,
+        height: 38,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    rechargeButtonText: {
+        ...Fonts.regular14,
+        color: '#9B9F9F',
+    },
+
+    // AI Smart Search Card
+    aiSearchCard: {
+        backgroundColor: 'rgba(255, 255, 255, 0.95)',
+        borderWidth: 0.5,
+        borderColor: Colors.lightGrayColor,
+        borderRadius: 18,
+        padding: 20,
+        marginBottom: 24,
+        shadowColor: '#DDD6FF',
+        shadowOffset: { width: 0, height: 25 },
+        shadowOpacity: 0.5,
+        shadowRadius: 50,
+        elevation: 10,
+        overflow: 'hidden',
+    },
+    aiSearchTitle: {
+        ...Fonts.bold24,
+        fontSize: 30,
+        lineHeight: 36,
+        color: '#101828',
+        marginTop: 20,
+        marginBottom: 12,
+        letterSpacing: -0.35,
+    },
+    aiSearchDescription: {
+        ...Fonts.regular14,
+        fontSize: 18,
+        lineHeight: 29,
+        color: '#4A5565',
+        marginBottom: 24,
+        letterSpacing: -0.44,
+    },
+    tryAiButton: {
+        height: 57,
+        borderRadius: 13,
+        alignItems: 'center',
+        justifyContent: 'center',
+        flexDirection: 'row',
+        gap: 8,
+        shadowColor: '#C4B4FF',
+        shadowOffset: { width: 0, height: 10 },
+        shadowOpacity: 0.5,
+        shadowRadius: 15,
+        elevation: 8,
+    },
+    tryAiButtonText: {
+        ...Fonts.bold16,
+        fontSize: 18,
+        color: Colors.whiteColor,
+        letterSpacing: -0.44,
+    },
+
+    // Quick Actions Section
+    sectionContainer: {
+        marginBottom: 24,
+    },
+    sectionHeader: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        marginBottom: 16,
+    },
+    sectionTitle: {
+        ...Fonts.medium18,
+        color: '#0F0F0F',
+    },
+    seeAllText: {
+        ...Fonts.regular14,
+        color: Colors.grayColor,
+    },
+    quickActionsGrid: {
+        gap: 16,
+    },
+    quickActionsRow: {
+        flexDirection: 'row',
+        gap: 10,
+    },
+    quickActionCard: {
+        flex: 1,
+        backgroundColor: Colors.whiteColor,
+        borderWidth: 0.5,
+        borderColor: Colors.lightGrayColor,
+        borderRadius: 10,
+        padding: 12,
+    },
+    quickActionContent: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 6,
+    },
+    quickActionIconContainer: {
+        width: 30,
+        height: 30,
+        borderRadius: 6,
+        backgroundColor: Colors.secondaryBlueColor,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    quickActionTextContainer: {
+        flex: 1,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+    },
+    quickActionText: {
+        ...Fonts.medium14,
+        color: Colors.mainTextColor,
+    },
+    gradientButton: {
+        flex: 1,
+        height: 54,
+        borderRadius: 13,
+        alignItems: 'center',
+        justifyContent: 'center',
+        flexDirection: 'row',
+        gap: 6,
+        shadowColor: '#C4B4FF',
+        shadowOffset: { width: 0, height: 10 },
+        shadowOpacity: 0.5,
+        shadowRadius: 15,
+        elevation: 8,
+    },
+    gradientButtonText: {
+        ...Fonts.medium14,
+        color: Colors.whiteColor,
+    },
+
+    // New For You Section
+    newForYouHeader: {
+        marginBottom: 16,
+    },
+    newForYouTitle: {
+        ...Fonts.medium18,
+        color: '#0F0F0F',
+        marginBottom: 6,
+    },
+    newForYouDescription: {
+        ...Fonts.regular14,
+        color: '#9B9F9F',
+        lineHeight: 22,
+    },
+
     // News Feed Card
     newsFeedCard: {
         backgroundColor: Colors.whiteColor,
@@ -57,12 +271,10 @@ const Styles = StyleSheet.create({
         borderColor: '#E0ECFE',
         borderRadius: 10,
         padding: 16,
-        marginHorizontal: 20,
         marginBottom: 24,
     },
     newsFeedCardNoBorder: {
         backgroundColor: Colors.whiteColor,
-        paddingHorizontal: 20,
         marginBottom: 24,
     },
     newsFeedTitle: {
@@ -203,11 +415,6 @@ const Styles = StyleSheet.create({
         alignItems: 'center',
     },
 
-    //Home screen
-    mainContainer: {
-        flex: 1,
-        backgroundColor: Colors.whiteColor,
-    },
     rowCenter: {
         flexDirection: 'row',
         alignItems: 'center',
@@ -268,7 +475,7 @@ const Styles = StyleSheet.create({
         paddingHorizontal: 20
     },
 
-    //Event Container 
+    //Event Container
     CompetitionContainer: {
         borderWidth: 0.5,
         borderColor: Colors.lightGrayColor,
