@@ -84,6 +84,7 @@ import camera from '../assets/icons/camera.svg';
 import video from '../assets/icons/video.svg';
 import download from '../assets/icons/download.svg';
 import downloadBlue from '../assets/icons/downloadBlue.svg';
+import downloadColorful from '../assets/icons/downloadColorful.svg';
 import moreAction from '../assets/icons/moreCircle.svg';
 import eye from '../assets/icons/eye.svg';
 import previousVideo from '../assets/icons/previousVideo.svg';
@@ -115,6 +116,10 @@ import aiWhiteBordered from '../assets/icons/aiWhiteBordered.svg';
 import englishBlueCircle from '../assets/icons/englishBlueCircle.svg';
 import deleteRedBold from '../assets/icons/deleteRedBold.svg';
 import paycoinqBancontact from '../assets/imgs/paycoinqBancontact.png';
+import individualColorful from '../assets/icons/individualColorful.svg';
+import photographerColorful from '../assets/icons/photographerColorful.svg';
+import groupColorful from '../assets/icons/groupColorful.svg';
+import lockColorful from '../assets/icons/lockColorful.svg';
 
 
 
@@ -150,6 +155,7 @@ const Icons = {
     MoreAction: moreAction,
     Download: download,
     DownloadBlue: downloadBlue,
+    DownloadColorful: downloadColorful,
     Run: run,
     Video: video,
     Camera: camera,
@@ -234,6 +240,10 @@ const Icons = {
     TickCircle: tickCircle,
     ShareBlue: shareBlue,
     ShareGray: shareGray,
+    IndividualColorful: individualColorful,
+    PhotographerColorful: photographerColorful,
+    GroupColorful: groupColorful,
+    LockColorful: lockColorful,
 }
 
 export default Icons;

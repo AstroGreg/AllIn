@@ -7,11 +7,13 @@ import Images from '../../constants/Images'
 import Icons from '../../constants/Icons'
 import Colors from '../../constants/Colors'
 import Styles from './UserProfileStyles'
-import { ArrowLeft2, User, Edit2, Trash, Global, Clock } from 'iconsax-react-nativejs'
+import { ArrowLeft2, User, Edit2, Trash, Global, Clock, ArrowRight, Location, Calendar, Camera, VideoPlay } from 'iconsax-react-nativejs'
+import ManageSocialMediaModal from '../../components/manageSocialMediaModal/ManageSocialMediaModal'
 
 const UserProfileScreen = ({ navigation }: any) => {
     const insets = useSafeAreaInsets();
     const [activeTab, setActiveTab] = useState('photos');
+    const [showSocialMediaModal, setShowSocialMediaModal] = useState(false);
 
     const { width } = Dimensions.get('window');
     const imageWidth = Math.floor((width - 40 - 24 - 30) / 4);
@@ -45,8 +47,54 @@ const UserProfileScreen = ({ navigation }: any) => {
         },
     ];
 
+    const events = [
+        {
+            id: 1,
+            image: Images.photo1,
+            title: 'City Run Marathon',
+            location: 'Dhaka',
+            date: '27/05/2025',
+        },
+        {
+            id: 2,
+            image: Images.photo3,
+            title: 'City Run Marathon',
+            location: 'Dhaka',
+            date: '27/05/2025',
+        },
+    ];
+
+    const handlePostPress = (post: any) => {
+        if (post.id === 1) {
+            navigation.navigate('ViewUserBlogDetailsScreen', {
+                post: {
+                    title: post.title,
+                    date: post.date,
+                    image: post.image,
+                    readCount: '1k',
+                    writer: 'James Ray',
+                    writerImage: Images.profile1,
+                    description: `The IFAM Outdoor Oordegem is an internationally renowned athletics meeting held annually in Oordegem, Belgium. Recognized by World Athletics, it attracts a diverse mix of elite and emerging athletes from across Europe and beyond who compete in a full range of track and field events, including sprints, middle- and long-distance races, hurdles, jumps, and throws. Known for its exceptionally fast track and well-organized schedule, the event has become a prime venue for athletes seeking personal bests or qualification standards for major championships.`,
+                },
+            });
+        } else if (post.id === 2) {
+            navigation.navigate('ViewUserBlogDetailsScreen', {
+                post: {
+                    title: post.title,
+                    date: post.date,
+                    image: post.image,
+                    gallery: [Images.photo1, Images.photo3, Images.photo4, Images.photo5, Images.photo6],
+                    readCount: '1k',
+                    writer: 'James Ray',
+                    writerImage: Images.profile1,
+                    description: `This race meant everything to me. Running the European Championships on home soil, with my family and friends lining the track, was an incredible experience. The atmosphere was electric and the support from the crowd pushed me to give my absolute best performance.`,
+                },
+            });
+        }
+    };
+
     const renderPostCard = (post: any) => (
-        <View key={post.id} style={Styles.postCard}>
+        <TouchableOpacity key={post.id} style={Styles.postCard} onPress={() => handlePostPress(post)}>
             <View style={Styles.postImageContainer}>
                 <FastImage source={post.image} style={Styles.postImage} resizeMode="cover" />
             </View>
@@ -63,6 +111,50 @@ const UserProfileScreen = ({ navigation }: any) => {
                 <TouchableOpacity style={Styles.deleteButton}>
                     <Text style={Styles.deleteButtonText}>Delete</Text>
                     <Trash size={18} color="#ED5454" variant="Linear" />
+                </TouchableOpacity>
+            </View>
+        </TouchableOpacity>
+    );
+
+    const renderEventCard = (event: any) => (
+        <View key={event.id} style={Styles.eventCard}>
+            <View style={Styles.eventCardContent}>
+                <View style={Styles.eventImageContainer}>
+                    <FastImage source={event.image} style={Styles.eventImage} resizeMode="cover" />
+                </View>
+                <View style={Styles.eventDetails}>
+                    <Text style={Styles.eventTitle}>{event.title}</Text>
+                    <View style={Styles.eventInfoRow}>
+                        <Text style={Styles.eventInfoLabel}>Location</Text>
+                        <View style={Styles.eventInfoValue}>
+                            <Location size={16} color="#9B9F9F" variant="Linear" />
+                            <Text style={Styles.eventInfoValueText}>{event.location}</Text>
+                        </View>
+                    </View>
+                    <View style={Styles.eventInfoRow}>
+                        <Text style={Styles.eventInfoLabel}>Date</Text>
+                        <View style={Styles.eventInfoValue}>
+                            <Calendar size={16} color="#9B9F9F" variant="Linear" />
+                            <Text style={Styles.eventInfoValueText}>{event.date}</Text>
+                        </View>
+                    </View>
+                </View>
+            </View>
+            <View style={Styles.eventDivider} />
+            <View style={Styles.eventActions}>
+                <View style={Styles.eventActionButtons}>
+                    <TouchableOpacity style={Styles.eventActionButton}>
+                        <Text style={Styles.eventActionButtonText}>Photograph</Text>
+                        <Camera size={18} color="#9B9F9F" variant="Linear" />
+                    </TouchableOpacity>
+                    <TouchableOpacity style={Styles.eventActionButton}>
+                        <Text style={Styles.eventActionButtonText}>Videos</Text>
+                        <VideoPlay size={18} color="#9B9F9F" variant="Linear" />
+                    </TouchableOpacity>
+                </View>
+                <TouchableOpacity style={Styles.eventEditButton}>
+                    <Text style={Styles.eventEditButtonText}>Edit</Text>
+                    <Edit2 size={18} color={Colors.whiteColor} variant="Linear" />
                 </TouchableOpacity>
             </View>
         </View>
@@ -152,6 +244,17 @@ const UserProfileScreen = ({ navigation }: any) => {
                         <View style={Styles.bioDivider} />
                     </View>
 
+                    {/* Manage Social Media Button */}
+                    <TouchableOpacity
+                        style={Styles.manageSocialMediaButton}
+                        onPress={() => setShowSocialMediaModal(true)}
+                    >
+                        <Text style={Styles.manageSocialMediaButtonText}>Manage Social Media</Text>
+                        <ArrowRight size={18} color={Colors.whiteColor} variant="Linear" />
+                    </TouchableOpacity>
+
+                    <SizeBox height={10} />
+
                     {/* Link Section */}
                     <View style={Styles.linkSection}>
                         <View style={Styles.linkRow}>
@@ -174,7 +277,7 @@ const UserProfileScreen = ({ navigation }: any) => {
                 </View>
 
                 {/* Create New Post Button */}
-                <TouchableOpacity style={Styles.createPostButton}>
+                <TouchableOpacity style={Styles.createPostButton} onPress={() => navigation.navigate('CreateNewPostScreen')}>
                     <Text style={Styles.createPostButtonText}>Create New Post</Text>
                 </TouchableOpacity>
 
@@ -182,7 +285,7 @@ const UserProfileScreen = ({ navigation }: any) => {
                 <View style={Styles.postsSection}>
                     <View style={Styles.sectionHeader}>
                         <Text style={Styles.sectionTitle}>Posts</Text>
-                        <TouchableOpacity>
+                        <TouchableOpacity onPress={() => navigation.navigate('ViewUserPostsViewAllScreen')}>
                             <Text style={Styles.viewAllText}>View All</Text>
                         </TouchableOpacity>
                     </View>
@@ -194,7 +297,13 @@ const UserProfileScreen = ({ navigation }: any) => {
                 <View style={Styles.collectionsSection}>
                     <View style={Styles.sectionHeader}>
                         <Text style={Styles.sectionTitle}>Collections</Text>
-                        <TouchableOpacity>
+                        <TouchableOpacity onPress={() => {
+                            if (activeTab === 'photos') {
+                                navigation.navigate('ViewUserCollectionsPhotosScreen');
+                            } else if (activeTab === 'videos') {
+                                navigation.navigate('ViewUserCollectionsVideosScreen');
+                            }
+                        }}>
                             <Text style={Styles.viewAllText}>View All</Text>
                         </TouchableOpacity>
                     </View>
@@ -260,13 +369,66 @@ const UserProfileScreen = ({ navigation }: any) => {
                 </View>
 
                 {/* Edit Button */}
-                <TouchableOpacity style={Styles.mainEditButton} onPress={() => navigation.navigate('MediaScreens')}>
+                <TouchableOpacity style={Styles.mainEditButton} onPress={() => {
+                    if (activeTab === 'photos') {
+                        navigation.navigate('EditPhotoCollectionsScreen');
+                    } else {
+                        navigation.navigate('EditVideoCollectionsScreen');
+                    }
+                }}>
                     <Text style={Styles.mainEditButtonText}>Edit</Text>
                     <Edit2 size={18} color={Colors.whiteColor} variant="Linear" />
                 </TouchableOpacity>
 
+                {/* Events Section */}
+                <View style={Styles.eventsSection}>
+                    <View style={Styles.eventsSectionHeader}>
+                        <Text style={Styles.sectionTitle}>Events</Text>
+                        <View style={Styles.eventsBadge}>
+                            <Text style={Styles.eventsBadgeText}>430 Events Available</Text>
+                        </View>
+                    </View>
+                    <View style={Styles.eventsCardsContainer}>
+                        {events.map(renderEventCard)}
+                    </View>
+                    <TouchableOpacity style={Styles.eventsViewAllButton} onPress={() => navigation.navigate('EventsViewAllScreen')}>
+                        <Text style={Styles.eventsViewAllButtonText}>View All</Text>
+                        <ArrowRight size={18} color={Colors.whiteColor} variant="Linear" />
+                    </TouchableOpacity>
+                </View>
+
+                {/* Downloads Section */}
+                <View style={Styles.downloadsSection}>
+                    <Text style={Styles.sectionTitle}>Downloads</Text>
+                    <View style={Styles.downloadsCard}>
+                        <View style={Styles.downloadsContent}>
+                            <View style={Styles.downloadsIconContainer}>
+                                <Icons.DownloadColorful width={24} height={24} />
+                            </View>
+                            <Text>
+                                <Text style={Styles.downloadsText}>Total Downloads: </Text>
+                                <Text style={Styles.downloadsTextBold}>346,456</Text>
+                            </Text>
+                        </View>
+                        <TouchableOpacity style={Styles.downloadsDetailsButton} onPress={() => navigation.navigate('DownloadsDetailsScreen')}>
+                            <Text style={Styles.downloadsDetailsButtonText}>Details</Text>
+                            <ArrowRight size={18} color="#9B9F9F" variant="Linear" />
+                        </TouchableOpacity>
+                    </View>
+                </View>
+
                 <SizeBox height={insets.bottom > 0 ? insets.bottom + 20 : 40} />
             </ScrollView>
+
+            {/* Manage Social Media Modal */}
+            <ManageSocialMediaModal
+                visible={showSocialMediaModal}
+                onClose={() => setShowSocialMediaModal(false)}
+                onSave={() => {
+                    // Handle save logic
+                    setShowSocialMediaModal(false);
+                }}
+            />
         </View>
     );
 };

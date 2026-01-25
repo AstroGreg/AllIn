@@ -180,6 +180,22 @@ const Styles = StyleSheet.create({
         marginTop: 14,
     },
 
+    // Manage Social Media Button
+    manageSocialMediaButton: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 8,
+        backgroundColor: Colors.primaryColor,
+        borderRadius: 10,
+        height: 54,
+        marginTop: 14,
+    },
+    manageSocialMediaButtonText: {
+        ...Fonts.medium16,
+        color: Colors.whiteColor,
+    },
+
     // Link Section
     linkSection: {
         marginTop: 14,
@@ -439,6 +455,190 @@ const Styles = StyleSheet.create({
     mainEditButtonText: {
         ...Fonts.medium16,
         color: Colors.whiteColor,
+    },
+
+    // Events Section
+    eventsSection: {
+        marginTop: 30,
+    },
+    eventsSectionHeader: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+    },
+    eventsBadge: {
+        backgroundColor: '#F5F5F5',
+        paddingHorizontal: 12,
+        paddingVertical: 6,
+        borderRadius: 6,
+    },
+    eventsBadgeText: {
+        ...Fonts.regular14,
+        color: '#9B9F9F',
+    },
+    eventsCardsContainer: {
+        marginTop: 16,
+        gap: 24,
+    },
+    eventCard: {
+        backgroundColor: Colors.whiteColor,
+        borderRadius: 10,
+        borderWidth: 0.5,
+        borderColor: '#DEDEDE',
+        padding: 16,
+    },
+    eventCardContent: {
+        flexDirection: 'row',
+        gap: 12,
+        alignItems: 'center',
+    },
+    eventImageContainer: {
+        width: 86,
+        height: 86,
+        borderRadius: 10,
+        overflow: 'hidden',
+    },
+    eventImage: {
+        width: '100%',
+        height: '100%',
+    },
+    eventDetails: {
+        flex: 1,
+        gap: 6,
+    },
+    eventTitle: {
+        ...Fonts.medium14,
+        color: Colors.mainTextColor,
+    },
+    eventInfoRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+    },
+    eventInfoLabel: {
+        ...Fonts.regular12,
+        color: '#9B9F9F',
+    },
+    eventInfoValue: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 4,
+    },
+    eventInfoValueText: {
+        ...Fonts.regular12,
+        color: '#9B9F9F',
+    },
+    eventDivider: {
+        height: 1,
+        backgroundColor: '#DEDEDE',
+        marginTop: 10,
+    },
+    eventActions: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        marginTop: 12,
+    },
+    eventActionButtons: {
+        flexDirection: 'row',
+        gap: 12,
+    },
+    eventActionButton: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 6,
+        borderWidth: 0.5,
+        borderColor: '#DEDEDE',
+        borderRadius: 6,
+        paddingHorizontal: 16,
+        paddingVertical: 8,
+        height: 36,
+    },
+    eventActionButtonText: {
+        ...Fonts.regular14,
+        color: '#9B9F9F',
+    },
+    eventEditButton: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 6,
+        backgroundColor: Colors.primaryColor,
+        borderRadius: 8,
+        paddingHorizontal: 16,
+        paddingVertical: 8,
+        height: 36,
+    },
+    eventEditButtonText: {
+        ...Fonts.regular14,
+        color: Colors.whiteColor,
+    },
+    eventsViewAllButton: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 6,
+        backgroundColor: Colors.primaryColor,
+        borderRadius: 8,
+        paddingHorizontal: 16,
+        paddingVertical: 10,
+        marginTop: 16,
+        alignSelf: 'center',
+        height: 38,
+    },
+    eventsViewAllButtonText: {
+        ...Fonts.regular14,
+        color: Colors.whiteColor,
+    },
+
+    // Downloads Section
+    downloadsSection: {
+        marginTop: 30,
+    },
+    downloadsCard: {
+        backgroundColor: Colors.whiteColor,
+        borderRadius: 10,
+        borderWidth: 0.5,
+        borderColor: '#DEDEDE',
+        padding: 16,
+        marginTop: 16,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        height: 70,
+    },
+    downloadsContent: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 10,
+    },
+    downloadsIconContainer: {
+        width: 24,
+        height: 24,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    downloadsText: {
+        ...Fonts.regular14,
+        color: '#9B9F9F',
+    },
+    downloadsTextBold: {
+        ...Fonts.medium14,
+        color: Colors.mainTextColor,
+    },
+    downloadsDetailsButton: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 6,
+        borderWidth: 0.5,
+        borderColor: '#DEDEDE',
+        borderRadius: 6,
+        paddingHorizontal: 16,
+        paddingVertical: 10,
+        height: 38,
+    },
+    downloadsDetailsButtonText: {
+        ...Fonts.regular14,
+        color: '#9B9F9F',
     },
 });
 

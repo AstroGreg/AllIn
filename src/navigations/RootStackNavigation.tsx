@@ -55,8 +55,15 @@ import ChangeNationality from '../screens/menu/menuScreens/ChangeNationality';
 import DateOfBirth from '../screens/menu/menuScreens/DateOfBirth';
 import UserProfileScreen from '../screens/userProfile/UserProfileScreen';
 import ViewUserProfileScreen from '../screens/viewUserProfile/ViewUserProfileScreen';
+import ViewUserCollectionsPhotosScreen from '../screens/viewUserCollectionsPhotos/ViewUserCollectionsPhotosScreen';
+import ViewUserCollectionsVideosScreen from '../screens/viewUserCollectionsVideos/ViewUserCollectionsVideosScreen';
+import ViewUserPostsViewAllScreen from '../screens/viewUserPostsViewAll/ViewUserPostsViewAllScreen';
+import ViewUserBlogDetailsScreen from '../screens/viewUserBlogDetails/ViewUserBlogDetailsScreen';
+import EditPhotoCollectionsScreen from '../screens/editPhotoCollections/EditPhotoCollectionsScreen';
+import EditVideoCollectionsScreen from '../screens/editVideoCollections/EditVideoCollectionsScreen';
 import PhotoDetailScreen from '../screens/photoDetail/PhotoDetailScreen';
 import VideoPlayingScreen from '../screens/videoPlaying/VideoPlayingScreen';
+import CreateNewPostScreen from '../screens/createNewPost/CreateNewPostScreen';
 
 const Stack = createNativeStackNavigator();
 const RootStackNavigation = () => {
@@ -125,8 +132,15 @@ const RootStackNavigation = () => {
             <Stack.Screen name="DateOfBirth" component={DateOfBirth} />
             <Stack.Screen name="UserProfileScreen" component={UserProfileScreen} />
             <Stack.Screen name="ViewUserProfileScreen" component={ViewUserProfileScreen} />
+            <Stack.Screen name="ViewUserCollectionsPhotosScreen" component={ViewUserCollectionsPhotosScreen} />
+            <Stack.Screen name="ViewUserCollectionsVideosScreen" component={ViewUserCollectionsVideosScreen} />
+            <Stack.Screen name="ViewUserPostsViewAllScreen" component={ViewUserPostsViewAllScreen} />
+            <Stack.Screen name="ViewUserBlogDetailsScreen" component={ViewUserBlogDetailsScreen} />
+            <Stack.Screen name="EditPhotoCollectionsScreen" component={EditPhotoCollectionsScreen} />
+            <Stack.Screen name="EditVideoCollectionsScreen" component={EditVideoCollectionsScreen} />
             <Stack.Screen name="PhotoDetailScreen" component={PhotoDetailScreen} />
             <Stack.Screen name="VideoPlayingScreen" component={VideoPlayingScreen} />
+            <Stack.Screen name="CreateNewPostScreen" component={CreateNewPostScreen} />
 
         </Stack.Navigator>
     )

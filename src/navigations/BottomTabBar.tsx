@@ -28,6 +28,23 @@ import ViewUserBlogDetailsScreen from "../screens/viewUserBlogDetails/ViewUserBl
 import ViewUserCollectionsPhotosScreen from "../screens/viewUserCollectionsPhotos/ViewUserCollectionsPhotosScreen";
 import ViewUserCollectionsVideosScreen from "../screens/viewUserCollectionsVideos/ViewUserCollectionsVideosScreen";
 import ViewUserProfileScreen from "../screens/viewUserProfile/ViewUserProfileScreen";
+import EditPhotoCollectionsScreen from "../screens/editPhotoCollections/EditPhotoCollectionsScreen";
+import EditVideoCollectionsScreen from "../screens/editVideoCollections/EditVideoCollectionsScreen";
+import CreateNewPostScreen from "../screens/createNewPost/CreateNewPostScreen";
+import EditBioScreens from "../screens/viewUserProfile/profileScreens/EditBioScreens";
+import DownloadsDetailsScreen from "../screens/downloadsDetails/DownloadsDetailsScreen";
+import EventsViewAllScreen from "../screens/eventsViewAll/EventsViewAllScreen";
+import SelectCategoryScreen from "../screens/selectCategory/SelectCategoryScreen";
+import SelectEventInterestScreen from "../screens/selectEventInterest/SelectEventInterestScreen";
+import CompleteAthleteDetailsScreen from "../screens/completeAthleteDetails/CompleteAthleteDetailsScreen";
+import CreatePhotographerProfileScreen from "../screens/createPhotographerProfile/CreatePhotographerProfileScreen";
+import CreateGroupProfileScreen from "../screens/createGroupProfile/CreateGroupProfileScreen";
+import GroupProfileScreen from "../screens/groupProfile/GroupProfileScreen";
+import AddCoachScreen from "../screens/addCoach/AddCoachScreen";
+import AddAthleteScreen from "../screens/addAthlete/AddAthleteScreen";
+import EventAthletesScreen from "../screens/eventAthletes/EventAthletesScreen";
+import GroupEventsViewAllScreen from "../screens/groupEventsViewAll/GroupEventsViewAllScreen";
+import AthleteProfileScreen from "../screens/athleteProfile/AthleteProfileScreen";
 import { Platform } from "react-native";
 import SearchScreen from "../screens/search/SearchScreen";
 import UploadScreen from "../screens/upload/UploadScreen";
@@ -42,12 +59,27 @@ import CreateCompetition from "../screens/upload/uploadScreens/CreateCompetition
 import UploadedImagesScreen from "../screens/upload/uploadScreens/UploadedImagesScreen";
 import UserProfileScreen from "../screens/userProfile/UserProfileScreen";
 import MenuScreen from "../screens/menu/MenuScreen";
+import Language from "../screens/menu/menuScreens/Language";
+import DeleteAndPause from "../screens/menu/menuScreens/DeleteAndPause";
+import PaymentMethod from "../screens/menu/menuScreens/PaymentMethod";
+import AddNewCard from "../screens/menu/menuScreens/AddNewCard";
+import ProfileSettings from "../screens/menu/menuScreens/ProfileSettings";
+import EditProfile from "../screens/menu/menuScreens/EditProfile";
+import Location from "../screens/menu/menuScreens/Location";
+import Help from "../screens/menu/menuScreens/Help";
+import TermsOfService from "../screens/menu/menuScreens/TermsOfService";
+import Subscription from "../screens/menu/menuScreens/Subscription";
+import ChangePassword from "../screens/menu/menuScreens/ChangePassword";
+import ChangeUsername from "../screens/menu/menuScreens/ChangeUsername";
+import ChangeNationality from "../screens/menu/menuScreens/ChangeNationality";
+import DateOfBirth from "../screens/menu/menuScreens/DateOfBirth";
 import Fonts from "../constants/Fonts";
 
 const Tab = createBottomTabNavigator();
 const HomeStack = createNativeStackNavigator();
 const ProfileStack = createNativeStackNavigator();
 const UploadStack = createNativeStackNavigator();
+const MenuStack = createNativeStackNavigator();
 
 const HomeStackNavigator = () => {
     return (
@@ -102,7 +134,50 @@ const ProfileStackNavigator = () => {
             <ProfileStack.Screen name="ViewUserBlogDetailsScreen" component={ViewUserBlogDetailsScreen} />
             <ProfileStack.Screen name="ViewUserCollectionsPhotosScreen" component={ViewUserCollectionsPhotosScreen} />
             <ProfileStack.Screen name="ViewUserCollectionsVideosScreen" component={ViewUserCollectionsVideosScreen} />
+            <ProfileStack.Screen name="EditPhotoCollectionsScreen" component={EditPhotoCollectionsScreen} />
+            <ProfileStack.Screen name="EditVideoCollectionsScreen" component={EditVideoCollectionsScreen} />
+            <ProfileStack.Screen name="CreateNewPostScreen" component={CreateNewPostScreen} />
+            <ProfileStack.Screen name="EditBioScreens" component={EditBioScreens} />
+            <ProfileStack.Screen name="ProfileSettings" component={ProfileSettings} />
+            <ProfileStack.Screen name="PhotoDetailScreen" component={PhotoDetailScreen} />
+            <ProfileStack.Screen name="VideoPlayingScreen" component={VideoPlayingScreen} />
+            <ProfileStack.Screen name="DownloadsDetailsScreen" component={DownloadsDetailsScreen} />
+            <ProfileStack.Screen name="EventsViewAllScreen" component={EventsViewAllScreen} />
+            <ProfileStack.Screen name="SelectCategoryScreen" component={SelectCategoryScreen} />
+            <ProfileStack.Screen name="SelectEventInterestScreen" component={SelectEventInterestScreen} />
+            <ProfileStack.Screen name="CompleteAthleteDetailsScreen" component={CompleteAthleteDetailsScreen} />
+            <ProfileStack.Screen name="CreatePhotographerProfileScreen" component={CreatePhotographerProfileScreen} />
+            <ProfileStack.Screen name="CreateGroupProfileScreen" component={CreateGroupProfileScreen} />
+            <ProfileStack.Screen name="GroupProfileScreen" component={GroupProfileScreen} />
+            <ProfileStack.Screen name="AddCoachScreen" component={AddCoachScreen} />
+            <ProfileStack.Screen name="AddAthleteScreen" component={AddAthleteScreen} />
+            <ProfileStack.Screen name="EventAthletesScreen" component={EventAthletesScreen} />
+            <ProfileStack.Screen name="GroupEventsViewAllScreen" component={GroupEventsViewAllScreen} />
+            <ProfileStack.Screen name="CongratulationsScreen" component={CongratulationsScreen} />
+            <ProfileStack.Screen name="AthleteProfileScreen" component={AthleteProfileScreen} />
         </ProfileStack.Navigator>
+    );
+};
+
+const MenuStackNavigator = () => {
+    return (
+        <MenuStack.Navigator screenOptions={{ headerShown: false }}>
+            <MenuStack.Screen name="MenuScreen" component={MenuScreen} />
+            <MenuStack.Screen name="Language" component={Language} />
+            <MenuStack.Screen name="DeleteAndPause" component={DeleteAndPause} />
+            <MenuStack.Screen name="PaymentMethod" component={PaymentMethod} />
+            <MenuStack.Screen name="AddNewCard" component={AddNewCard} />
+            <MenuStack.Screen name="ProfileSettings" component={ProfileSettings} />
+            <MenuStack.Screen name="EditProfile" component={EditProfile} />
+            <MenuStack.Screen name="Location" component={Location} />
+            <MenuStack.Screen name="Help" component={Help} />
+            <MenuStack.Screen name="TermsOfService" component={TermsOfService} />
+            <MenuStack.Screen name="Subscription" component={Subscription} />
+            <MenuStack.Screen name="ChangePassword" component={ChangePassword} />
+            <MenuStack.Screen name="ChangeUsername" component={ChangeUsername} />
+            <MenuStack.Screen name="ChangeNationality" component={ChangeNationality} />
+            <MenuStack.Screen name="DateOfBirth" component={DateOfBirth} />
+        </MenuStack.Navigator>
     );
 };
 
@@ -153,7 +228,7 @@ const BottomTabBar = () => {
             <Tab.Screen name="Search" component={SearchScreen} />
             <Tab.Screen name="Upload" component={UploadStackNavigator} />
             <Tab.Screen name="Profile" component={ProfileStackNavigator} />
-            <Tab.Screen name="Menu" component={MenuScreen} />
+            <Tab.Screen name="Menu" component={MenuStackNavigator} />
         </Tab.Navigator>
     );
 };
