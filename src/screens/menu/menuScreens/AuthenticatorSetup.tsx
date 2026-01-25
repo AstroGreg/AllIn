@@ -1,0 +1,101 @@
+import { View, Text, ScrollView, TouchableOpacity } from 'react-native';
+import React from 'react';
+import SizeBox from '../../../constants/SizeBox';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import Colors from '../../../constants/Colors';
+import Icons from '../../../constants/Icons';
+import {
+    ArrowLeft2,
+    Notification,
+    ArrowRight,
+    Copy,
+} from 'iconsax-react-nativejs';
+import styles from './AuthenticatorSetupStyles';
+
+const AuthenticatorSetup = ({ navigation }: any) => {
+    const insets = useSafeAreaInsets();
+    const setupCode = 'J4XW 4C3K L9MN 2P8Q';
+
+    const handleCopyCode = () => {
+        // Copy to clipboard functionality
+    };
+
+    return (
+        <View style={styles.mainContainer}>
+            <SizeBox height={insets.top} />
+
+            {/* Header */}
+            <View style={styles.header}>
+                <TouchableOpacity style={styles.headerButton} onPress={() => navigation.goBack()}>
+                    <ArrowLeft2 size={24} color={Colors.primaryColor} variant="Linear" />
+                </TouchableOpacity>
+                <Text style={styles.headerTitle}>Authenticator Setup</Text>
+                <TouchableOpacity style={styles.headerButton}>
+                    <Notification size={24} color={Colors.primaryColor} variant="Linear" />
+                </TouchableOpacity>
+            </View>
+
+            <ScrollView showsVerticalScrollIndicator={false} style={styles.container}>
+                <SizeBox height={49} />
+
+                {/* Title Section */}
+                <View style={styles.titleSection}>
+                    <Text style={styles.title}>Set up authenticator app</Text>
+                    <SizeBox height={6} />
+                    <Text style={styles.description}>
+                        Scan this QR code using Google Authenticator or Authy.
+                    </Text>
+                </View>
+
+                <SizeBox height={32} />
+
+                {/* QR Code */}
+                <View style={styles.qrContainer}>
+                    <View style={styles.qrCode}>
+                        <Icons.QrBlack width={140} height={140} />
+                    </View>
+                </View>
+
+                <SizeBox height={24} />
+
+                {/* Manual Code Entry */}
+                <Text style={styles.orText}>Or enter code manually</Text>
+
+                <SizeBox height={16} />
+
+                {/* Code Box */}
+                <TouchableOpacity style={styles.codeBox} onPress={handleCopyCode}>
+                    <Text style={styles.codeText}>{setupCode}</Text>
+                    <Copy size={20} color="#9B9F9F" variant="Linear" />
+                </TouchableOpacity>
+
+                <SizeBox height={24} />
+            </ScrollView>
+
+            {/* Bottom Section */}
+            <View style={[styles.bottomContainer, { paddingBottom: insets.bottom > 0 ? insets.bottom : 20 }]}>
+                <TouchableOpacity
+                    style={styles.primaryButton}
+                    onPress={() => navigation.navigate('VerificationCode')}
+                >
+                    <Text style={styles.primaryButtonText}>I've Scaned the code</Text>
+                    <ArrowRight size={24} color={Colors.whiteColor} variant="Linear" />
+                </TouchableOpacity>
+
+                <SizeBox height={18} />
+
+                <TouchableOpacity>
+                    <Text style={styles.linkText}>Can't scan? Enter code manually</Text>
+                </TouchableOpacity>
+
+                <SizeBox height={8} />
+
+                <TouchableOpacity onPress={() => navigation.goBack()}>
+                    <Text style={styles.linkText}>Use different method</Text>
+                </TouchableOpacity>
+            </View>
+        </View>
+    );
+};
+
+export default AuthenticatorSetup;

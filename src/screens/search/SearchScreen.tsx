@@ -7,7 +7,8 @@ import Colors from '../../constants/Colors'
 import Icons from '../../constants/Icons'
 import Images from '../../constants/Images'
 import FastImage from 'react-native-fast-image'
-import { ArrowLeft2, Notification, SearchNormal1, Setting4, Calendar, Location, CloseCircle, Clock, ArrowDown2, Camera, Add } from 'iconsax-react-nativejs'
+import LinearGradient from 'react-native-linear-gradient'
+import { ArrowLeft2, Notification, SearchNormal1, Calendar, Location, CloseCircle, Clock, ArrowDown2, Camera, Add, Note, ArrowRight } from 'iconsax-react-nativejs'
 
 interface FilterChip {
     id: number;
@@ -45,6 +46,27 @@ interface GroupResult {
     images: string[];
 }
 
+interface ContextResult {
+    id: number;
+    name: string;
+    type: string;
+    bib: string;
+    avatar: string;
+    isAiSearched?: boolean;
+}
+
+interface BibResult {
+    id: number;
+    name: string;
+    type: string;
+    bib?: string;
+    place?: string;
+    time?: string;
+    status?: string;
+    avatar: string;
+    isAiSearched?: boolean;
+}
+
 const SearchScreen = ({ navigation }: any) => {
     const insets = useSafeAreaInsets();
     const [search, setSearch] = useState('');
@@ -57,7 +79,7 @@ const SearchScreen = ({ navigation }: any) => {
     const [modalInputValue, setModalInputValue] = useState('');
     const modalInputRef = useRef<TextInput>(null);
 
-    const filters = ['Competition', 'Athelete', 'Location', 'Photographer', 'Chest Number', 'Face saved', 'Add Face', 'Group'];
+    const filters = ['Competition', 'Athelete', 'Location', 'Photographer', 'Chest Number', 'Face saved', 'BIB', 'Add Face', 'Group', 'Context'];
 
     const [activeChips, setActiveChips] = useState<FilterChip[]>([]);
 
@@ -172,6 +194,76 @@ const SearchScreen = ({ navigation }: any) => {
         },
     ];
 
+    const contextResults: ContextResult[] = [
+        {
+            id: 1,
+            name: 'James Ray',
+            type: 'Athlete',
+            bib: '#2827',
+            avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200',
+            isAiSearched: true,
+        },
+        {
+            id: 2,
+            name: 'James Ray',
+            type: 'Athlete',
+            bib: '#2827',
+            avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200',
+        },
+        {
+            id: 3,
+            name: 'James Ray',
+            type: 'Athlete',
+            bib: '#2827',
+            avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200',
+        },
+        {
+            id: 4,
+            name: 'James Ray',
+            type: 'Athlete',
+            bib: '#2827',
+            avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200',
+        },
+    ];
+
+    const bibResults: BibResult[] = [
+        {
+            id: 1,
+            name: 'James Ray',
+            type: 'Athlete',
+            bib: '#2827',
+            avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200',
+            isAiSearched: true,
+        },
+        {
+            id: 2,
+            name: 'James Ray',
+            type: 'Athlete',
+            place: '1st',
+            time: '1:23:45',
+            status: 'Finished',
+            avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200',
+        },
+        {
+            id: 3,
+            name: 'James Ray',
+            type: 'Athlete',
+            place: '1st',
+            time: '1:23:45',
+            status: 'Finished',
+            avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200',
+        },
+        {
+            id: 4,
+            name: 'James Ray',
+            type: 'Athlete',
+            place: '1st',
+            time: '1:23:45',
+            status: 'Finished',
+            avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200',
+        },
+    ];
+
     const removeChip = (chipId: number) => {
         setActiveChips(prev => prev.filter(chip => chip.id !== chipId));
     };
@@ -201,8 +293,8 @@ const SearchScreen = ({ navigation }: any) => {
             setShowFaceSaved(!showFaceSaved);
         } else {
             setShowFaceSaved(false);
-            // Show modal only for value-based filters (Location, Chest Number)
-            if (filter === 'Location' || filter === 'Chest Number') {
+            // Show modal for value-based filters (Location, Chest Number, BIB, Context)
+            if (filter === 'Location' || filter === 'Chest Number' || filter === 'BIB' || filter === 'Context') {
                 setModalFilterType(filter);
                 setModalInputValue('');
                 setShowFilterModal(true);
@@ -384,6 +476,154 @@ const SearchScreen = ({ navigation }: any) => {
         </TouchableOpacity>
     );
 
+    const renderContextResultCard = (result: ContextResult) => (
+        <View key={result.id} style={Styles.contextResultCardWrapper}>
+            <View
+                style={[
+                    Styles.contextResultCard,
+                    result.isAiSearched && Styles.contextResultCardAiSearched,
+                ]}
+            >
+                <View style={Styles.contextResultHeader}>
+                    <FastImage
+                        source={{ uri: result.avatar }}
+                        style={Styles.contextAvatar}
+                        resizeMode={FastImage.resizeMode.cover}
+                    />
+                    <SizeBox width={8} />
+                    <View style={Styles.contextResultInfo}>
+                        <View style={Styles.contextResultNameRow}>
+                            <Text style={Styles.contextResultName}>{result.name}</Text>
+                            <View style={Styles.contextTypeBadge}>
+                                <Text style={Styles.contextTypeBadgeText}>{result.type}</Text>
+                            </View>
+                        </View>
+                        <View style={Styles.contextBibRow}>
+                            <Note size={16} color="#9B9F9F" variant="Linear" />
+                            <SizeBox width={4} />
+                            <Text style={Styles.contextBibLabel}>Bib:</Text>
+                            <View style={{ flex: 1 }} />
+                            <Text style={Styles.contextBibValue}>{result.bib}</Text>
+                        </View>
+                    </View>
+                </View>
+
+                <SizeBox height={10} />
+
+                <View style={Styles.contextCardFooter}>
+                    <TouchableOpacity
+                        style={Styles.contextViewDetailsButton}
+                        onPress={() => navigation.navigate('ViewUserProfileScreen', { user: result })}
+                    >
+                        <Text style={Styles.contextViewDetailsText}>View Details</Text>
+                        <ArrowRight size={24} color={Colors.whiteColor} variant="Linear" />
+                    </TouchableOpacity>
+
+                    {result.isAiSearched && (
+                        <LinearGradient
+                            colors={['#155DFC', '#7F22FE']}
+                            start={{ x: 0, y: 0 }}
+                            end={{ x: 1, y: 0 }}
+                            style={Styles.contextAiSearchedBadge}
+                        >
+                            <Text style={Styles.contextAiSearchedText}>Ai Searched</Text>
+                        </LinearGradient>
+                    )}
+                </View>
+            </View>
+        </View>
+    );
+
+    const renderContextResults = () => (
+        <View>
+            {contextResults.map(renderContextResultCard)}
+        </View>
+    );
+
+    const renderBibResultCard = (result: BibResult) => (
+        <View key={result.id} style={Styles.bibResultCardWrapper}>
+            <View
+                style={[
+                    Styles.bibResultCard,
+                    result.isAiSearched && Styles.bibResultCardAiSearched,
+                ]}
+            >
+                <View style={Styles.bibResultHeader}>
+                    <FastImage
+                        source={{ uri: result.avatar }}
+                        style={Styles.bibAvatar}
+                        resizeMode={FastImage.resizeMode.cover}
+                    />
+                    <SizeBox width={8} />
+                    <View style={Styles.bibResultInfo}>
+                        <View style={Styles.bibResultNameRow}>
+                            <Text style={Styles.bibResultName}>{result.name}</Text>
+                            <View style={Styles.bibTypeBadge}>
+                                <Text style={Styles.bibTypeBadgeText}>{result.type}</Text>
+                            </View>
+                        </View>
+                        {result.isAiSearched && result.bib ? (
+                            <View style={Styles.bibBibRow}>
+                                <View style={Styles.bibBibLeft}>
+                                    <Note size={16} color="#9B9F9F" variant="Linear" />
+                                    <SizeBox width={4} />
+                                    <Text style={Styles.bibBibLabel}>Bib:</Text>
+                                </View>
+                                <Text style={Styles.bibBibValue}>{result.bib}</Text>
+                            </View>
+                        ) : (
+                            <View style={Styles.bibDetailsRow}>
+                                <View style={Styles.bibDetailItem}>
+                                    <Note size={16} color="#9B9F9F" variant="Linear" />
+                                    <SizeBox width={4} />
+                                    <Text style={Styles.bibDetailText}>Place: {result.place}</Text>
+                                </View>
+                                <View style={Styles.bibDetailItem}>
+                                    <Clock size={16} color="#9B9F9F" variant="Linear" />
+                                    <SizeBox width={4} />
+                                    <Text style={Styles.bibDetailText}>{result.time}</Text>
+                                </View>
+                                <View style={Styles.bibDetailItem}>
+                                    <Note size={16} color="#9B9F9F" variant="Linear" />
+                                    <SizeBox width={4} />
+                                    <Text style={Styles.bibDetailText}>Status: {result.status}</Text>
+                                </View>
+                            </View>
+                        )}
+                    </View>
+                </View>
+
+                <SizeBox height={10} />
+
+                <View style={Styles.bibCardFooter}>
+                    <TouchableOpacity
+                        style={Styles.bibViewDetailsButton}
+                        onPress={() => navigation.navigate('ViewUserProfileScreen', { user: result })}
+                    >
+                        <Text style={Styles.bibViewDetailsButtonText}>View Details</Text>
+                    </TouchableOpacity>
+
+                    {result.isAiSearched && (
+                        <LinearGradient
+                            colors={['#155DFC', '#7F22FE']}
+                            start={{ x: 0, y: 0 }}
+                            end={{ x: 1, y: 0 }}
+                            style={Styles.bibAiSearchedBadge}
+                        >
+                            <Text style={Styles.bibAiSearchedText}>Ai Searched</Text>
+                        </LinearGradient>
+                    )}
+                </View>
+            </View>
+        </View>
+    );
+
+    const renderBibResults = () => (
+        <View>
+            {bibResults.map(renderBibResultCard)}
+        </View>
+    );
+
     const renderNoResults = () => (
         <View style={Styles.noResultsContainer}>
             <Image
@@ -403,6 +643,8 @@ const SearchScreen = ({ navigation }: any) => {
         if (selectedFilter === 'Athelete') return userResults.filter(u => u.type === 'Athlete').length > 0;
         if (selectedFilter === 'Photographer') return userResults.filter(u => u.type === 'Photographer').length > 0;
         if (selectedFilter === 'Group') return groupResults.length > 0;
+        if (selectedFilter === 'Context') return contextResults.length > 0;
+        if (selectedFilter === 'BIB') return bibResults.length > 0;
         return eventResults.length > 0 || userResults.length > 0;
     };
 
@@ -437,8 +679,15 @@ const SearchScreen = ({ navigation }: any) => {
                             onChangeText={setSearch}
                         />
                     </View>
-                    <TouchableOpacity style={Styles.filterButton}>
-                        <Setting4 size={24} color={Colors.whiteColor} variant="Linear" />
+                    <TouchableOpacity onPress={() => navigation.navigate('AISearchOptions')}>
+                        <LinearGradient
+                            colors={['#6366F1', '#3B82F6']}
+                            start={{ x: 0, y: 0 }}
+                            end={{ x: 1, y: 1 }}
+                            style={Styles.aiButton}
+                        >
+                            <Icons.AiWhiteSquare width={24} height={24} />
+                        </LinearGradient>
                     </TouchableOpacity>
                 </View>
 
@@ -590,6 +839,12 @@ const SearchScreen = ({ navigation }: any) => {
                 ) : selectedFilter === 'Group' ? (
                     // Show only group results
                     groupResults.length > 0 ? groupResults.map(renderGroupCard) : renderNoResults()
+                ) : selectedFilter === 'Context' ? (
+                    // Show context/AI search results
+                    contextResults.length > 0 ? renderContextResults() : renderNoResults()
+                ) : selectedFilter === 'BIB' ? (
+                    // Show BIB search results
+                    bibResults.length > 0 ? renderBibResults() : renderNoResults()
                 ) : (
                     // Show mixed results for other filters
                     eventResults.length > 0 || userResults.length > 0 ? (
@@ -624,7 +879,11 @@ const SearchScreen = ({ navigation }: any) => {
                                 <TextInput
                                     ref={modalInputRef}
                                     style={Styles.modalInput}
-                                    placeholder={`Enter ${modalFilterType}`}
+                                    placeholder={
+                                        modalFilterType === 'BIB' ? 'Enter BIB number (e.g., 2827)' :
+                                        modalFilterType === 'Context' ? 'Enter context (e.g., Podium, Finish Line)' :
+                                        `Enter ${modalFilterType}`
+                                    }
                                     placeholderTextColor="#9B9F9F"
                                     value={modalInputValue}
                                     onChangeText={setModalInputValue}

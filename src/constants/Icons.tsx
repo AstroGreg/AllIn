@@ -120,6 +120,17 @@ import individualColorful from '../assets/icons/individualColorful.svg';
 import photographerColorful from '../assets/icons/photographerColorful.svg';
 import groupColorful from '../assets/icons/groupColorful.svg';
 import lockColorful from '../assets/icons/lockColorful.svg';
+import aiColorful from '../assets/icons/aiColorful.svg';
+import hashWhite from '../assets/icons/hashWhite.svg';
+import imageWhite from '../assets/icons/imageWhite.svg';
+import facescanWhite from '../assets/icons/facescanWhite.svg';
+import boltBlue from '../assets/icons/boltBlue.svg';
+import aiViolate from '../assets/icons/aiViolate.svg';
+import targetBlue from '../assets/icons/targetBlue.svg';
+import athleteBlue from '../assets/icons/athleteBlue.svg';
+import qrBlack from '../assets/icons/qrBlack.svg';
+import aiWhiteSquare from '../assets/icons/aiWhiteSquare.svg';
+import loadingGradient from '../assets/icons/loadingGradient.svg';
 
 
 
@@ -244,6 +255,17 @@ const Icons = {
     PhotographerColorful: photographerColorful,
     GroupColorful: groupColorful,
     LockColorful: lockColorful,
+    AiColorful: aiColorful,
+    HashWhite: hashWhite,
+    ImageWhite: imageWhite,
+    FacescanWhite: facescanWhite,
+    BoltBlue: boltBlue,
+    AiViolate: aiViolate,
+    TargetBlue: targetBlue,
+    AthleteBlue: athleteBlue,
+    QrBlack: qrBlack,
+    AiWhiteSquare: aiWhiteSquare,
+    LoadingGradient: loadingGradient,
 }
 
 export default Icons;

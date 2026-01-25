@@ -62,6 +62,13 @@ const Styles = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'center',
     },
+    aiButton: {
+        width: 54,
+        height: 54,
+        borderRadius: 10,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
 
     // Filter Tabs
     filterTabsContainer: {
@@ -520,6 +527,207 @@ const Styles = StyleSheet.create({
         width: 20,
         height: 20,
         borderBottomRightRadius: 8,
+    },
+
+    // Context Search Results
+    contextResultCardWrapper: {
+        marginBottom: 16,
+    },
+    contextResultCard: {
+        borderWidth: 0.5,
+        borderColor: '#DEDEDE',
+        borderRadius: 10,
+        padding: 16,
+        backgroundColor: Colors.whiteColor,
+    },
+    contextResultCardAiSearched: {
+        borderColor: '#155DFC',
+        borderWidth: 0.5,
+    },
+    contextResultHeader: {
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
+    contextAvatar: {
+        width: 40,
+        height: 40,
+        borderRadius: 20,
+    },
+    contextResultInfo: {
+        flex: 1,
+    },
+    contextResultNameRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+    },
+    contextResultName: {
+        ...Fonts.medium14,
+        color: '#171717',
+    },
+    contextTypeBadge: {
+        backgroundColor: '#F5F5F5',
+        paddingHorizontal: 8,
+        paddingVertical: 4,
+        borderRadius: 6,
+    },
+    contextTypeBadgeText: {
+        ...Fonts.regular12,
+        color: '#9B9F9F',
+    },
+    contextBibRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginTop: 2,
+    },
+    contextBibLabel: {
+        ...Fonts.regular12,
+        color: '#9B9F9F',
+    },
+    contextBibValue: {
+        ...Fonts.regular12,
+        color: '#9B9F9F',
+    },
+    contextCardFooter: {
+        flexDirection: 'row',
+        alignItems: 'flex-end',
+        justifyContent: 'space-between',
+    },
+    contextViewDetailsButton: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: Colors.primaryColor,
+        height: 38,
+        borderRadius: 8,
+        paddingHorizontal: 16,
+        gap: 6,
+    },
+    contextViewDetailsText: {
+        ...Fonts.regular14,
+        color: Colors.whiteColor,
+    },
+    contextAiSearchedBadge: {
+        borderRadius: 6,
+        width: 80,
+        height: 20,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    contextAiSearchedText: {
+        fontFamily: 'Inter-Regular',
+        fontSize: 11,
+        fontWeight: '400',
+        color: Colors.whiteColor,
+    },
+
+    // BIB Search Results
+    bibResultCardWrapper: {
+        marginBottom: 16,
+    },
+    bibResultCard: {
+        borderWidth: 0.5,
+        borderColor: '#DEDEDE',
+        borderRadius: 10,
+        padding: 16,
+        backgroundColor: Colors.whiteColor,
+    },
+    bibResultCardAiSearched: {
+        borderColor: '#155DFC',
+        borderWidth: 0.5,
+    },
+    bibResultHeader: {
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
+    bibAvatar: {
+        width: 40,
+        height: 40,
+        borderRadius: 20,
+    },
+    bibResultInfo: {
+        flex: 1,
+    },
+    bibResultNameRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+    },
+    bibResultName: {
+        ...Fonts.medium14,
+        color: '#171717',
+    },
+    bibTypeBadge: {
+        backgroundColor: '#F5F5F5',
+        paddingHorizontal: 8,
+        paddingVertical: 4,
+        borderRadius: 6,
+    },
+    bibTypeBadgeText: {
+        ...Fonts.regular12,
+        color: '#9B9F9F',
+    },
+    bibBibRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        marginTop: 2,
+    },
+    bibBibLeft: {
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
+    bibBibLabel: {
+        ...Fonts.regular12,
+        color: '#9B9F9F',
+    },
+    bibBibValue: {
+        ...Fonts.regular12,
+        color: '#9B9F9F',
+    },
+    bibDetailsRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        marginTop: 2,
+    },
+    bibDetailItem: {
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
+    bibDetailText: {
+        ...Fonts.regular12,
+        color: '#9B9F9F',
+    },
+    bibCardFooter: {
+        flexDirection: 'row',
+        alignItems: 'flex-end',
+        justifyContent: 'space-between',
+    },
+    bibViewDetailsButton: {
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: Colors.primaryColor,
+        height: 38,
+        borderRadius: 8,
+        paddingHorizontal: 16,
+    },
+    bibViewDetailsButtonText: {
+        ...Fonts.regular14,
+        color: Colors.whiteColor,
+    },
+    bibAiSearchedBadge: {
+        borderRadius: 6,
+        width: 80,
+        height: 20,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    bibAiSearchedText: {
+        fontFamily: 'Inter-Regular',
+        fontSize: 11,
+        fontWeight: '400',
+        color: Colors.whiteColor,
     },
 });
 
