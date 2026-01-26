@@ -2,8 +2,9 @@ import React, { useState, useRef, useCallback } from 'react';
 import { View, Text, TouchableOpacity, Dimensions, FlatList, ViewToken } from 'react-native';
 import FastImage from 'react-native-fast-image';
 import Video from 'react-native-video';
-import Styles from '../HomeStyles';
+import { createStyles } from '../HomeStyles';
 import Icons from '../../../constants/Icons';
+import { useTheme } from '../../../context/ThemeContext';
 
 const { width: screenWidth } = Dimensions.get('window');
 
@@ -36,6 +37,8 @@ const NewsFeedCard = ({
     onFollow,
     onViewBlog
 }: NewsFeedCardProps) => {
+    const { colors } = useTheme();
+    const Styles = createStyles(colors);
     const [currentIndex, setCurrentIndex] = useState(0);
     const [isPlaying, setIsPlaying] = useState(false);
     const flatListRef = useRef<FlatList>(null);

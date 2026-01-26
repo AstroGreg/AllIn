@@ -1,11 +1,11 @@
 import { StyleSheet } from "react-native";
-import Colors from "../../../constants/Colors";
 import Fonts from "../../../constants/Fonts";
+import { ThemeColors, lightColors } from "../../../constants/Theme";
 
-const Styles = StyleSheet.create({
+export const createStyles = (colors: ThemeColors) => StyleSheet.create({
     mainContainer: {
         flex: 1,
-        backgroundColor: Colors.whiteColor,
+        backgroundColor: colors.backgroundColor,
     },
     contentContainer: {
         paddingHorizontal: 20
@@ -14,13 +14,13 @@ const Styles = StyleSheet.create({
         ...Fonts.medium22,
         fontSize: 24,
         lineHeight: 32,
-        color: Colors.mainTextColor,
+        color: colors.mainTextColor,
         textAlign: 'center'
     },
     subHeadingText: {
         ...Fonts.regular14,
         lineHeight: 22,
-        color: '#9B9F9F',
+        color: colors.grayColor,
         textAlign: 'center'
     },
     checkBox: {
@@ -34,7 +34,7 @@ const Styles = StyleSheet.create({
     rememberMeText: {
         ...Fonts.regular14,
         lineHeight: 22,
-        color: Colors.mainTextColor,
+        color: colors.mainTextColor,
         flexWrap: 'wrap',
     },
     termsTextContainer: {
@@ -44,12 +44,12 @@ const Styles = StyleSheet.create({
     linkText: {
         ...Fonts.regular14,
         lineHeight: 22,
-        color: Colors.primaryColor,
+        color: colors.primaryColor,
         textDecorationLine: 'underline',
     },
     forgotPass: {
         ...Fonts.regular14,
-        color: Colors.errorColor,
+        color: colors.errorColor,
         fontWeight: '400',
     },
     signUpContainer: {
@@ -57,6 +57,8 @@ const Styles = StyleSheet.create({
         justifyContent: 'center',
         alignItems: 'center',
     }
-})
+});
 
+// Backward compatibility
+const Styles = createStyles(lightColors);
 export default Styles;

@@ -1,11 +1,11 @@
 import { StyleSheet } from "react-native";
-import Colors from "../../constants/Colors";
 import Fonts from "../../constants/Fonts";
+import { ThemeColors, lightColors } from "../../constants/Theme";
 
-const Styles = StyleSheet.create({
+export const createStyles = (colors: ThemeColors) => StyleSheet.create({
     mainContainer: {
         flex: 1,
-        backgroundColor: Colors.whiteColor,
+        backgroundColor: colors.backgroundColor,
     },
     header: {
         flexDirection: 'row',
@@ -14,35 +14,35 @@ const Styles = StyleSheet.create({
         paddingHorizontal: 20,
         paddingVertical: 16,
         borderBottomWidth: 0.3,
-        borderBottomColor: '#DEDEDE',
+        borderBottomColor: colors.lightGrayColor,
     },
     headerButton: {
         width: 44,
         height: 44,
         borderRadius: 22,
-        backgroundColor: '#F5F5F5',
+        backgroundColor: colors.btnBackgroundColor,
         alignItems: 'center',
         justifyContent: 'center',
     },
     headerTitle: {
         ...Fonts.medium18,
-        color: Colors.mainTextColor,
+        color: colors.mainTextColor,
     },
     scrollContent: {
         paddingHorizontal: 20,
         paddingTop: 24,
     },
     tipCard: {
-        backgroundColor: Colors.whiteColor,
+        backgroundColor: colors.cardBackground,
         borderRadius: 10,
         borderWidth: 0.5,
-        borderColor: '#DEDEDE',
+        borderColor: colors.lightGrayColor,
         padding: 16,
         alignItems: 'center',
     },
     tipText: {
         ...Fonts.regular14,
-        color: '#9B9F9F',
+        color: colors.grayColor,
         textAlign: 'center',
         lineHeight: 22,
     },
@@ -55,10 +55,10 @@ const Styles = StyleSheet.create({
         flex: 1,
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: '#F7FAFF',
+        backgroundColor: colors.secondaryColor,
         borderRadius: 10,
         borderWidth: 0.5,
-        borderColor: '#E0ECFE',
+        borderColor: colors.borderColor,
         paddingHorizontal: 16,
         paddingVertical: 16,
         gap: 6,
@@ -66,14 +66,14 @@ const Styles = StyleSheet.create({
     searchInput: {
         flex: 1,
         ...Fonts.regular14,
-        color: Colors.mainTextColor,
+        color: colors.mainTextColor,
         padding: 0,
     },
     filterButton: {
         width: 54,
         height: 54,
         borderRadius: 10,
-        backgroundColor: Colors.primaryColor,
+        backgroundColor: colors.primaryColor,
         alignItems: 'center',
         justifyContent: 'center',
     },
@@ -86,20 +86,20 @@ const Styles = StyleSheet.create({
         paddingHorizontal: 10,
         paddingVertical: 6,
         borderRadius: 6,
-        backgroundColor: '#F5F5F5',
+        backgroundColor: colors.btnBackgroundColor,
         height: 32,
         alignItems: 'center',
         justifyContent: 'center',
     },
     filterTabActive: {
-        backgroundColor: Colors.primaryColor,
+        backgroundColor: colors.primaryColor,
     },
     filterTabText: {
         ...Fonts.regular12,
-        color: '#777777',
+        color: colors.grayColor,
     },
     filterTabTextActive: {
-        color: Colors.whiteColor,
+        color: colors.pureWhite,
     },
     activeFiltersRow: {
         flexDirection: 'row',
@@ -109,7 +109,7 @@ const Styles = StyleSheet.create({
     activeFilterChip: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: Colors.primaryColor,
+        backgroundColor: colors.primaryColor,
         borderRadius: 6,
         paddingHorizontal: 10,
         paddingVertical: 6,
@@ -118,15 +118,15 @@ const Styles = StyleSheet.create({
     },
     activeFilterText: {
         ...Fonts.regular12,
-        color: Colors.whiteColor,
+        color: colors.pureWhite,
     },
     timeRangeButton: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: Colors.whiteColor,
+        backgroundColor: colors.cardBackground,
         borderRadius: 6,
         borderWidth: 0.5,
-        borderColor: '#DEDEDE',
+        borderColor: colors.lightGrayColor,
         paddingHorizontal: 10,
         paddingVertical: 6,
         height: 32,
@@ -134,7 +134,7 @@ const Styles = StyleSheet.create({
     },
     timeRangeText: {
         ...Fonts.regular12,
-        color: '#9B9F9F',
+        color: colors.grayColor,
     },
     resultsHeader: {
         flexDirection: 'row',
@@ -143,23 +143,23 @@ const Styles = StyleSheet.create({
     },
     resultsTitle: {
         ...Fonts.medium18,
-        color: Colors.mainTextColor,
+        color: colors.mainTextColor,
     },
     resultsCountBadge: {
-        backgroundColor: '#F5F5F5',
+        backgroundColor: colors.btnBackgroundColor,
         borderRadius: 6,
         paddingHorizontal: 12,
         paddingVertical: 6,
     },
     resultsCountText: {
         ...Fonts.regular14,
-        color: '#9B9F9F',
+        color: colors.grayColor,
     },
     competitionCard: {
-        backgroundColor: Colors.whiteColor,
+        backgroundColor: colors.cardBackground,
         borderRadius: 10,
         borderWidth: 0.5,
-        borderColor: '#DEDEDE',
+        borderColor: colors.lightGrayColor,
         padding: 16,
         marginBottom: 24,
     },
@@ -188,7 +188,7 @@ const Styles = StyleSheet.create({
     },
     competitionName: {
         ...Fonts.medium14,
-        color: Colors.mainTextColor,
+        color: colors.mainTextColor,
     },
     videoCountRow: {
         flexDirection: 'row',
@@ -197,7 +197,7 @@ const Styles = StyleSheet.create({
     },
     videoCountText: {
         ...Fonts.regular12,
-        color: '#9B9F9F',
+        color: colors.grayColor,
     },
     infoRow: {
         flexDirection: 'row',
@@ -206,7 +206,7 @@ const Styles = StyleSheet.create({
     },
     infoLabel: {
         ...Fonts.regular12,
-        color: '#9B9F9F',
+        color: colors.grayColor,
     },
     infoValueRow: {
         flexDirection: 'row',
@@ -215,13 +215,13 @@ const Styles = StyleSheet.create({
     },
     infoValue: {
         ...Fonts.regular12,
-        color: '#9B9F9F',
+        color: colors.grayColor,
     },
     uploadButton: {
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',
-        backgroundColor: Colors.primaryColor,
+        backgroundColor: colors.primaryColor,
         borderRadius: 8,
         paddingHorizontal: 16,
         paddingVertical: 10,
@@ -231,8 +231,10 @@ const Styles = StyleSheet.create({
     },
     uploadButtonText: {
         ...Fonts.regular14,
-        color: Colors.whiteColor,
+        color: colors.pureWhite,
     },
 });
 
+// Backward compatibility
+const Styles = createStyles(lightColors);
 export default Styles;

@@ -2,10 +2,10 @@ import { View, Text, ScrollView, TouchableOpacity, TextInput } from 'react-nativ
 import React, { useState } from 'react';
 import SizeBox from '../../../constants/SizeBox';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import Colors from '../../../constants/Colors';
+import { useTheme } from '../../../context/ThemeContext';
 import { ArrowLeft2, Notification, SearchNormal1, Add, ArrowRight } from 'iconsax-react-nativejs';
 import FastImage from 'react-native-fast-image';
-import styles from './FaceSearchScreenStyles';
+import { createStyles } from './FaceSearchScreenStyles';
 
 interface FaceGroup {
     id: number;
@@ -15,6 +15,8 @@ interface FaceGroup {
 
 const FaceSearchScreen = ({ navigation }: any) => {
     const insets = useSafeAreaInsets();
+    const { colors } = useTheme();
+    const styles = createStyles(colors);
     const [searchText, setSearchText] = useState('');
     const [selectedFaceGroup, setSelectedFaceGroup] = useState<number | null>(null);
 
@@ -108,11 +110,11 @@ const FaceSearchScreen = ({ navigation }: any) => {
             {/* Header */}
             <View style={styles.header}>
                 <TouchableOpacity style={styles.headerButton} onPress={() => navigation.goBack()}>
-                    <ArrowLeft2 size={24} color={Colors.primaryColor} variant="Linear" />
+                    <ArrowLeft2 size={24} color={colors.primaryColor} variant="Linear" />
                 </TouchableOpacity>
                 <Text style={styles.headerTitle}>Faces</Text>
                 <TouchableOpacity style={styles.headerButton} onPress={() => navigation.navigate('NotificationsScreen')}>
-                    <Notification size={24} color={Colors.primaryColor} variant="Linear" />
+                    <Notification size={24} color={colors.primaryColor} variant="Linear" />
                 </TouchableOpacity>
             </View>
 
@@ -127,7 +129,7 @@ const FaceSearchScreen = ({ navigation }: any) => {
                         onPress={() => navigation.navigate('FrontFaceCaptureScreen')}
                     >
                         <Text style={styles.addFaceButtonText}>Add Face</Text>
-                        <Add size={16} color={Colors.whiteColor} variant="Linear" />
+                        <Add size={16} color="#FFFFFF" variant="Linear" />
                     </TouchableOpacity>
                 </View>
 
@@ -135,12 +137,12 @@ const FaceSearchScreen = ({ navigation }: any) => {
 
                 {/* Search Input */}
                 <View style={styles.searchInputContainer}>
-                    <SearchNormal1 size={24} color="#9B9F9F" variant="Linear" />
+                    <SearchNormal1 size={24} color={colors.grayColor} variant="Linear" />
                     <SizeBox width={6} />
                     <TextInput
                         style={styles.searchInput}
                         placeholder="Search face"
-                        placeholderTextColor="#9B9F9F"
+                        placeholderTextColor={colors.grayColor}
                         value={searchText}
                         onChangeText={setSearchText}
                     />
@@ -167,7 +169,7 @@ const FaceSearchScreen = ({ navigation }: any) => {
                     disabled={!selectedFaceGroup}
                 >
                     <Text style={styles.continueButtonText}>Continue</Text>
-                    <ArrowRight size={24} color={Colors.whiteColor} variant="Linear" />
+                    <ArrowRight size={24} color="#FFFFFF" variant="Linear" />
                 </TouchableOpacity>
             </View>
         </View>

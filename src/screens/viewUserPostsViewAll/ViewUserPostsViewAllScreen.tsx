@@ -3,14 +3,16 @@ import { View, Text, ScrollView, TouchableOpacity, Image } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import FastImage from 'react-native-fast-image';
 import { ArrowLeft2 } from 'iconsax-react-nativejs';
-import Styles from './ViewUserPostsViewAllScreenStyles';
+import { createStyles } from './ViewUserPostsViewAllScreenStyles';
 import SizeBox from '../../constants/SizeBox';
-import Colors from '../../constants/Colors';
 import Images from '../../constants/Images';
 import Icons from '../../constants/Icons';
+import { useTheme } from '../../context/ThemeContext';
 
 const ViewUserPostsViewAllScreen = ({ navigation }: any) => {
     const insets = useSafeAreaInsets();
+    const { colors } = useTheme();
+    const Styles = createStyles(colors);
 
     const posts = [
         {
@@ -106,7 +108,7 @@ const ViewUserPostsViewAllScreen = ({ navigation }: any) => {
             <Text style={Styles.postDescription}>{post.description}</Text>
             <TouchableOpacity style={Styles.shareButton}>
                 <Text style={Styles.shareButtonText}>Share</Text>
-                <Image source={Icons.ShareBlue} style={{ width: 18, height: 18, tintColor: Colors.whiteColor }} />
+                <Image source={Icons.ShareBlue} style={{ width: 18, height: 18, tintColor: '#FFFFFF' }} />
             </TouchableOpacity>
         </View>
     );
@@ -118,7 +120,7 @@ const ViewUserPostsViewAllScreen = ({ navigation }: any) => {
             {/* Header */}
             <View style={Styles.header}>
                 <TouchableOpacity style={Styles.headerButton} onPress={() => navigation.goBack()}>
-                    <ArrowLeft2 size={24} color={Colors.mainTextColor} variant="Linear" />
+                    <ArrowLeft2 size={24} color={colors.mainTextColor} variant="Linear" />
                 </TouchableOpacity>
                 <Text style={Styles.headerTitle}>Posts</Text>
                 <View style={[Styles.headerButton, { opacity: 0 }]} />

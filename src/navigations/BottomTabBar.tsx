@@ -2,7 +2,7 @@ import React from "react";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import Icons from "../constants/Icons";
-import Colors from "../constants/Colors";
+import { useTheme } from "../context/ThemeContext";
 import HomeScreen from "../screens/home/HomeScreen";
 import HubScreen from "../screens/hub/HubScreen";
 import MyAllEventsScreen from "../screens/myAllEvents/MyAllEventsScreen";
@@ -243,6 +243,8 @@ const SearchStackNavigator = () => {
 };
 
 const BottomTabBar = () => {
+    const { colors } = useTheme();
+
     return (
         <Tab.Navigator
             screenOptions={({ route }) => ({
@@ -269,18 +271,19 @@ const BottomTabBar = () => {
                     return iconName;
                 },
                 headerShown: false,
-                tabBarActiveTintColor: Colors.primaryColor,
-                tabBarInactiveTintColor: Colors.subTextColor,
+                tabBarActiveTintColor: colors.primaryColor,
+                tabBarInactiveTintColor: colors.subTextColor,
                 tabBarShowLabel: true,
                 tabBarLabelStyle: {
-                    ...Fonts.regular12
+                    ...Fonts.regular12,
+                    color: colors.subTextColor
                 },
                 tabBarStyle: {
-                    backgroundColor: Colors.whiteColor,
+                    backgroundColor: colors.backgroundColor,
                     elevation: 5,
                     height: Platform.OS === 'ios' ? 83 : 60,
                     borderTopWidth: 0.3,
-                    borderStartColor: Colors.lightGrayColor,
+                    borderTopColor: colors.lightGrayColor,
                     paddingTop: Platform.OS === 'ios' ? 10 : 10
                 },
             })}

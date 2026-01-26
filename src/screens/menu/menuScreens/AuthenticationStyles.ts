@@ -1,11 +1,11 @@
 import { StyleSheet } from 'react-native';
-import Colors from '../../../constants/Colors';
 import Fonts from '../../../constants/Fonts';
+import { ThemeColors, lightColors } from '../../../constants/Theme';
 
-const styles = StyleSheet.create({
+export const createStyles = (colors: ThemeColors) => StyleSheet.create({
     mainContainer: {
         flex: 1,
-        backgroundColor: Colors.whiteColor,
+        backgroundColor: colors.backgroundColor,
     },
     header: {
         flexDirection: 'row',
@@ -14,19 +14,19 @@ const styles = StyleSheet.create({
         paddingHorizontal: 20,
         paddingVertical: 10,
         borderBottomWidth: 0.5,
-        borderBottomColor: '#DEDEDE',
+        borderBottomColor: colors.lightGrayColor,
     },
     headerButton: {
         width: 44,
         height: 44,
         borderRadius: 22,
-        backgroundColor: '#F5F5F5',
+        backgroundColor: colors.btnBackgroundColor,
         alignItems: 'center',
         justifyContent: 'center',
     },
     headerTitle: {
         ...Fonts.medium18,
-        color: Colors.mainTextColor,
+        color: colors.mainTextColor,
     },
     container: {
         flex: 1,
@@ -35,19 +35,19 @@ const styles = StyleSheet.create({
     titleSection: {},
     title: {
         ...Fonts.semibold24,
-        color: Colors.mainTextColor,
+        color: colors.mainTextColor,
         lineHeight: 32,
     },
     description: {
         ...Fonts.regular14,
-        color: '#9B9F9F',
+        color: colors.grayColor,
         lineHeight: 22,
     },
     optionsContainer: {},
     optionCard: {
-        backgroundColor: Colors.whiteColor,
+        backgroundColor: colors.cardBackground,
         borderWidth: 0.5,
-        borderColor: '#DEDEDE',
+        borderColor: colors.lightGrayColor,
         borderRadius: 10,
         padding: 16,
         flexDirection: 'row',
@@ -58,7 +58,7 @@ const styles = StyleSheet.create({
         width: 48,
         height: 48,
         borderRadius: 24,
-        backgroundColor: '#E0ECFE',
+        backgroundColor: colors.secondaryColor,
         alignItems: 'center',
         justifyContent: 'center',
     },
@@ -68,11 +68,11 @@ const styles = StyleSheet.create({
     },
     optionTitle: {
         ...Fonts.medium16,
-        color: Colors.mainTextColor,
+        color: colors.mainTextColor,
     },
     optionDescription: {
         ...Fonts.regular12,
-        color: '#9B9F9F',
+        color: colors.grayColor,
         lineHeight: 20,
     },
     radioContainer: {
@@ -83,14 +83,14 @@ const styles = StyleSheet.create({
         height: 20,
         borderRadius: 10,
         borderWidth: 1.5,
-        borderColor: '#DEDEDE',
+        borderColor: colors.lightGrayColor,
     },
     radioSelected: {
         width: 20,
         height: 20,
         borderRadius: 10,
         borderWidth: 1.5,
-        borderColor: Colors.primaryColor,
+        borderColor: colors.primaryColor,
         alignItems: 'center',
         justifyContent: 'center',
     },
@@ -98,12 +98,12 @@ const styles = StyleSheet.create({
         width: 10,
         height: 10,
         borderRadius: 5,
-        backgroundColor: Colors.primaryColor,
+        backgroundColor: colors.primaryColor,
     },
     bottomContainer: {
         paddingHorizontal: 20,
         paddingTop: 16,
-        backgroundColor: Colors.whiteColor,
+        backgroundColor: colors.backgroundColor,
     },
     primaryButton: {
         flexDirection: 'row',
@@ -111,12 +111,12 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         gap: 8,
         height: 54,
-        backgroundColor: Colors.primaryColor,
+        backgroundColor: colors.primaryColor,
         borderRadius: 10,
     },
     primaryButtonText: {
         ...Fonts.medium16,
-        color: Colors.whiteColor,
+        color: colors.pureWhite,
     },
     secondaryButton: {
         flexDirection: 'row',
@@ -125,13 +125,15 @@ const styles = StyleSheet.create({
         gap: 8,
         height: 54,
         borderWidth: 0.5,
-        borderColor: '#DEDEDE',
+        borderColor: colors.lightGrayColor,
         borderRadius: 10,
     },
     secondaryButtonText: {
         ...Fonts.medium16,
-        color: '#9B9F9F',
+        color: colors.grayColor,
     },
 });
 
+// Backward compatibility
+const styles = createStyles(lightColors);
 export default styles;

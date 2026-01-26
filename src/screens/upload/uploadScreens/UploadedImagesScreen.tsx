@@ -3,13 +3,16 @@ import { View, Text, FlatList } from 'react-native';
 import FastImage from 'react-native-fast-image';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import SizeBox from '../../../constants/SizeBox';
-import Styles from '../UploadDetailsStyles';
+import { createStyles } from '../UploadDetailsStyles';
 import CustomHeader from '../../../components/customHeader/CustomHeader';
 import CustomButton from '../../../components/customButton/CustomButton';
 import CustomSearch from '../../../components/customSearch/CustomSearch';
+import { useTheme } from '../../../context/ThemeContext';
 
 const UploadedImagesScreen = ({ route, navigation }: any) => {
     const insets = useSafeAreaInsets();
+    const { colors } = useTheme();
+    const Styles = createStyles(colors);
     const { images } = route.params || {};
     const [search, setSearch] = useState('');
 

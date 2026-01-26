@@ -1,11 +1,11 @@
 import { StyleSheet } from 'react-native';
-import Colors from '../../../constants/Colors';
 import Fonts from '../../../constants/Fonts';
+import { ThemeColors, lightColors } from '../../../constants/Theme';
 
-const Styles = StyleSheet.create({
+export const createStyles = (colors: ThemeColors) => StyleSheet.create({
     mainContainer: {
         flex: 1,
-        backgroundColor: Colors.whiteColor,
+        backgroundColor: colors.backgroundColor,
     },
     scrollContent: {
         flexGrow: 1,
@@ -26,13 +26,13 @@ const Styles = StyleSheet.create({
         ...Fonts.medium22,
         fontSize: 24,
         lineHeight: 32,
-        color: Colors.mainTextColor,
+        color: colors.mainTextColor,
         textAlign: 'center',
     },
     subHeadingText: {
         ...Fonts.regular14,
         lineHeight: 22,
-        color: '#9B9F9F',
+        color: colors.grayColor,
         textAlign: 'center',
     },
     formContainer: {
@@ -50,7 +50,7 @@ const Styles = StyleSheet.create({
         height: 54,
         borderRadius: 10,
         borderWidth: 0.5,
-        borderColor: Colors.lightGrayColor,
+        borderColor: colors.lightGrayColor,
         alignItems: 'center',
         justifyContent: 'center',
         flexDirection: 'row',
@@ -59,13 +59,13 @@ const Styles = StyleSheet.create({
     skipButtonText: {
         ...Fonts.medium16,
         lineHeight: 24,
-        color: '#9B9F9F',
+        color: colors.grayColor,
     },
     finishButton: {
         flex: 1,
         height: 54,
         borderRadius: 10,
-        backgroundColor: Colors.primaryColor,
+        backgroundColor: colors.primaryColor,
         alignItems: 'center',
         justifyContent: 'center',
         flexDirection: 'row',
@@ -74,8 +74,10 @@ const Styles = StyleSheet.create({
     finishButtonText: {
         ...Fonts.medium16,
         lineHeight: 24,
-        color: Colors.whiteColor,
+        color: '#FFFFFF',
     },
 });
 
+// Backward compatibility
+const Styles = createStyles(lightColors);
 export default Styles;

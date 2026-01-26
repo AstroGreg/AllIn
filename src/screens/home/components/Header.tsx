@@ -1,10 +1,11 @@
 import { View, Text, TouchableOpacity } from 'react-native'
 import React from 'react'
-import Styles from '../HomeStyles'
+import { createStyles } from '../HomeStyles'
 import FastImage from 'react-native-fast-image'
 import Images from '../../../constants/Images'
 import SizeBox from '../../../constants/SizeBox'
 import Icons from '../../../constants/Icons'
+import { useTheme } from '../../../context/ThemeContext'
 
 interface HeaderProps {
     userName: string;
@@ -19,6 +20,9 @@ const Header = ({
     onPressFeed,
     onPressNotification
 }: HeaderProps) => {
+    const { colors } = useTheme();
+    const Styles = createStyles(colors);
+
     return (
         <View style={Styles.header}>
             <View style={Styles.profilePic}>

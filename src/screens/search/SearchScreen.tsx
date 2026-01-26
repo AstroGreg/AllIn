@@ -1,9 +1,9 @@
 import { View, Text, ScrollView, TouchableOpacity, TextInput, Modal, Image } from 'react-native'
 import React, { useState, useRef } from 'react'
-import Styles from './SearchStyles'
+import { createStyles } from './SearchStyles'
 import SizeBox from '../../constants/SizeBox'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import Colors from '../../constants/Colors'
+import { useTheme } from '../../context/ThemeContext'
 import Icons from '../../constants/Icons'
 import Images from '../../constants/Images'
 import FastImage from 'react-native-fast-image'
@@ -69,6 +69,8 @@ interface BibResult {
 
 const SearchScreen = ({ navigation }: any) => {
     const insets = useSafeAreaInsets();
+    const { colors } = useTheme();
+    const Styles = createStyles(colors);
     const [search, setSearch] = useState('');
     const [hasSearched, setHasSearched] = useState(false);
     const [selectedFilter, setSelectedFilter] = useState('Competition');
@@ -334,7 +336,7 @@ const SearchScreen = ({ navigation }: any) => {
             )}
         >
             <View style={Styles.eventIconContainer}>
-                <Calendar size={20} color={Colors.primaryColor} variant="Linear" />
+                <Calendar size={20} color={colors.primaryColor} variant="Linear" />
             </View>
             <SizeBox width={16} />
             <View style={Styles.eventContent}>
@@ -516,7 +518,7 @@ const SearchScreen = ({ navigation }: any) => {
                         onPress={() => navigation.navigate('ViewUserProfileScreen', { user: result })}
                     >
                         <Text style={Styles.contextViewDetailsText}>View Details</Text>
-                        <ArrowRight size={24} color={Colors.whiteColor} variant="Linear" />
+                        <ArrowRight size={24} color="#FFFFFF" variant="Linear" />
                     </TouchableOpacity>
 
                     {result.isAiSearched && (
@@ -655,11 +657,11 @@ const SearchScreen = ({ navigation }: any) => {
             {/* Header */}
             <View style={Styles.header}>
                 <TouchableOpacity style={Styles.headerButton} onPress={() => navigation.goBack()}>
-                    <ArrowLeft2 size={24} color={Colors.primaryColor} variant="Linear" />
+                    <ArrowLeft2 size={24} color={colors.primaryColor} variant="Linear" />
                 </TouchableOpacity>
                 <Text style={Styles.headerTitle}>Search</Text>
                 <TouchableOpacity style={Styles.headerButton}>
-                    <Notification size={24} color={Colors.primaryColor} variant="Linear" />
+                    <Notification size={24} color={colors.primaryColor} variant="Linear" />
                 </TouchableOpacity>
             </View>
 
@@ -706,7 +708,7 @@ const SearchScreen = ({ navigation }: any) => {
                                 onPress={() => handleFilterPress(filter)}
                             >
                                 {filter === 'Add Face' && (
-                                    <Add size={14} color={selectedFilter === filter ? Colors.whiteColor : '#777777'} variant="Linear" />
+                                    <Add size={14} color={selectedFilter === filter ? colors.whiteColor : '#777777'} variant="Linear" />
                                 )}
                                 {filter === 'Add Face' && <SizeBox width={4} />}
                                 <Text style={[
@@ -749,7 +751,7 @@ const SearchScreen = ({ navigation }: any) => {
                             <Text style={Styles.activeChipText}>
                                 {chip.label}: {chip.value}
                             </Text>
-                            <CloseCircle size={16} color={Colors.whiteColor} variant="Linear" />
+                            <CloseCircle size={16} color="#FFFFFF" variant="Linear" />
                         </TouchableOpacity>
                     ))}
                     {/* Selected Face Active Chips */}
@@ -765,7 +767,7 @@ const SearchScreen = ({ navigation }: any) => {
                                 <Text style={Styles.activeChipText}>
                                     {face.name}
                                 </Text>
-                                <CloseCircle size={16} color={Colors.whiteColor} variant="Linear" />
+                                <CloseCircle size={16} color="#FFFFFF" variant="Linear" />
                             </TouchableOpacity>
                         );
                     })}

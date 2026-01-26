@@ -1,11 +1,11 @@
 import { StyleSheet } from "react-native";
-import Colors from "../../constants/Colors";
 import Fonts from "../../constants/Fonts";
+import { ThemeColors, lightColors } from "../../constants/Theme";
 
-const Styles = StyleSheet.create({
+export const createStyles = (colors: ThemeColors) => StyleSheet.create({
     mainContainer: {
         flex: 1,
-        backgroundColor: Colors.whiteColor,
+        backgroundColor: colors.backgroundColor,
     },
     header: {
         flexDirection: 'row',
@@ -14,19 +14,19 @@ const Styles = StyleSheet.create({
         paddingHorizontal: 20,
         paddingVertical: 16,
         borderBottomWidth: 0.5,
-        borderBottomColor: '#DEDEDE',
+        borderBottomColor: colors.lightGrayColor,
     },
     headerButton: {
         width: 44,
         height: 44,
         borderRadius: 22,
-        backgroundColor: '#F5F5F5',
+        backgroundColor: colors.btnBackgroundColor,
         alignItems: 'center',
         justifyContent: 'center',
     },
     headerTitle: {
         ...Fonts.medium18,
-        color: Colors.mainTextColor,
+        color: colors.mainTextColor,
     },
     scrollContent: {
         paddingHorizontal: 20,
@@ -46,16 +46,16 @@ const Styles = StyleSheet.create({
     },
     sectionTitle: {
         ...Fonts.medium16,
-        color: Colors.mainTextColor,
+        color: colors.mainTextColor,
     },
     sectionSubtitle: {
         ...Fonts.regular12,
-        color: '#777777',
+        color: colors.grayColor,
     },
     uploadArea: {
-        backgroundColor: '#F7FAFF',
+        backgroundColor: colors.secondaryColor,
         borderWidth: 1,
-        borderColor: '#E0ECFE',
+        borderColor: colors.borderColor,
         borderStyle: 'dashed',
         borderRadius: 10,
         paddingHorizontal: 30,
@@ -66,7 +66,7 @@ const Styles = StyleSheet.create({
     },
     maxSizeText: {
         ...Fonts.regular14,
-        color: '#9B9F9F',
+        color: colors.grayColor,
         position: 'absolute',
         top: 12,
         right: 16,
@@ -76,32 +76,32 @@ const Styles = StyleSheet.create({
         alignItems: 'center',
         gap: 16,
         borderWidth: 0.5,
-        borderColor: '#DEDEDE',
+        borderColor: colors.lightGrayColor,
         borderRadius: 10,
         paddingHorizontal: 16,
         paddingVertical: 8,
     },
     chooseFileButton: {
-        backgroundColor: '#9B9F9F',
+        backgroundColor: colors.grayColor,
         borderRadius: 6,
         paddingHorizontal: 16,
         paddingVertical: 10,
     },
     chooseFileButtonText: {
         ...Fonts.regular12,
-        color: Colors.whiteColor,
+        color: colors.pureWhite,
     },
     noFileText: {
         ...Fonts.regular12,
-        color: Colors.mainTextColor,
+        color: colors.mainTextColor,
     },
     radioOptionsContainer: {
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
-        backgroundColor: Colors.whiteColor,
+        backgroundColor: colors.cardBackground,
         borderWidth: 0.5,
-        borderColor: '#DEDEDE',
+        borderColor: colors.lightGrayColor,
         borderRadius: 10,
         padding: 16,
     },
@@ -112,37 +112,37 @@ const Styles = StyleSheet.create({
     },
     radioLabel: {
         ...Fonts.regular12,
-        color: '#9B9F9F',
+        color: colors.grayColor,
     },
     radioOuter: {
         width: 16,
         height: 16,
         borderRadius: 8,
         borderWidth: 1,
-        borderColor: Colors.primaryColor,
+        borderColor: colors.primaryColor,
         alignItems: 'center',
         justifyContent: 'center',
     },
     radioOuterSelected: {
         borderWidth: 1,
-        borderColor: Colors.primaryColor,
+        borderColor: colors.primaryColor,
     },
     radioInner: {
         width: 10,
         height: 10,
         borderRadius: 5,
-        backgroundColor: Colors.primaryColor,
+        backgroundColor: colors.primaryColor,
     },
     savedWatermarksHeader: {
         gap: 6,
     },
     savedWatermarksTitle: {
         ...Fonts.medium16,
-        color: Colors.mainTextColor,
+        color: colors.mainTextColor,
     },
     savedWatermarksSubtitle: {
         ...Fonts.regular14,
-        color: '#9B9F9F',
+        color: colors.grayColor,
     },
     watermarksRow: {
         flexDirection: 'row',
@@ -151,9 +151,9 @@ const Styles = StyleSheet.create({
     },
     watermarkCard: {
         width: 122,
-        backgroundColor: Colors.whiteColor,
+        backgroundColor: colors.cardBackground,
         borderWidth: 0.5,
-        borderColor: '#DEDEDE',
+        borderColor: colors.lightGrayColor,
         borderRadius: 10,
         paddingHorizontal: 12,
         paddingVertical: 8,
@@ -161,7 +161,7 @@ const Styles = StyleSheet.create({
         gap: 8,
     },
     watermarkCardSelected: {
-        borderColor: Colors.primaryColor,
+        borderColor: colors.primaryColor,
     },
     watermarkThumbnail: {
         width: '100%',
@@ -175,25 +175,27 @@ const Styles = StyleSheet.create({
     },
     watermarkName: {
         ...Fonts.regular14,
-        color: '#9B9F9F',
+        color: colors.grayColor,
         textAlign: 'center',
     },
     watermarkNameSelected: {
-        color: Colors.mainTextColor,
+        color: colors.mainTextColor,
     },
     previewButton: {
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',
-        backgroundColor: Colors.primaryColor,
+        backgroundColor: colors.primaryColor,
         borderRadius: 10,
         height: 54,
         gap: 8,
     },
     previewButtonText: {
         ...Fonts.medium16,
-        color: Colors.whiteColor,
+        color: colors.pureWhite,
     },
 });
 
+// Backward compatibility
+const Styles = createStyles(lightColors);
 export default Styles;

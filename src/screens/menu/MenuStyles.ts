@@ -1,11 +1,12 @@
 import { StyleSheet } from "react-native";
 import Colors from "../../constants/Colors";
 import Fonts from "../../constants/Fonts";
+import { ThemeColors } from "../../constants/Theme";
 
-const Styles = StyleSheet.create({
+export const createStyles = (colors: ThemeColors) => StyleSheet.create({
     mainContainer: {
         flex: 1,
-        backgroundColor: Colors.whiteColor
+        backgroundColor: colors.backgroundColor
     },
     header: {
         flexDirection: 'row',
@@ -14,19 +15,19 @@ const Styles = StyleSheet.create({
         paddingHorizontal: 20,
         paddingVertical: 16,
         borderBottomWidth: 0.5,
-        borderBottomColor: '#DEDEDE',
+        borderBottomColor: colors.lightGrayColor,
     },
     headerButton: {
         width: 44,
         height: 44,
         borderRadius: 22,
-        backgroundColor: '#F5F5F5',
+        backgroundColor: colors.btnBackgroundColor,
         alignItems: 'center',
         justifyContent: 'center',
     },
     headerTitle: {
         ...Fonts.medium18,
-        color: Colors.mainTextColor,
+        color: colors.mainTextColor,
     },
     searchContainer: {
         position: 'absolute',
@@ -43,7 +44,7 @@ const Styles = StyleSheet.create({
     },
     sectionTitle: {
         ...Fonts.medium14,
-        color: Colors.mainTextColor,
+        color: colors.mainTextColor,
     },
     socialIcon: {
         width: 22,
@@ -51,10 +52,11 @@ const Styles = StyleSheet.create({
     },
     socialLinksCard: {
         borderWidth: 0.5,
-        borderColor: Colors.lightGrayColor,
+        borderColor: colors.lightGrayColor,
         borderRadius: 10,
         paddingHorizontal: 16,
         paddingVertical: 14,
+        backgroundColor: colors.cardBackground,
     },
     socialLinkRow: {
         flexDirection: 'row',
@@ -63,13 +65,13 @@ const Styles = StyleSheet.create({
     },
     socialLinkText: {
         ...Fonts.regular14,
-        color: Colors.mainTextColor,
+        color: colors.mainTextColor,
         flex: 1,
         marginLeft: 12,
     },
     socialLinkDivider: {
         height: 0.5,
-        backgroundColor: Colors.lightGrayColor,
+        backgroundColor: colors.lightGrayColor,
         marginVertical: 12,
     },
     connectedLinkContent: {
@@ -81,11 +83,11 @@ const Styles = StyleSheet.create({
     },
     socialLinkPlatform: {
         ...Fonts.regular14,
-        color: Colors.mainTextColor,
+        color: colors.mainTextColor,
     },
     socialLinkUrl: {
         ...Fonts.regular14,
-        color: Colors.primaryColor,
+        color: colors.primaryColor,
     },
     icons: {
         height: 22,
@@ -94,17 +96,18 @@ const Styles = StyleSheet.create({
     titlesText: {
         ...Fonts.regular14,
         fontWeight: '400',
-        color: Colors.mainTextColor
+        color: colors.mainTextColor
     },
     talentContainer: {
         borderRadius: 10,
         paddingHorizontal: 16,
         borderWidth: 0.5,
-        borderColor: Colors.lightGrayColor,
+        borderColor: colors.lightGrayColor,
+        backgroundColor: colors.cardBackground,
     },
     containerTitle: {
         ...Fonts.regular16,
-        color: Colors.mainTextColor,
+        color: colors.mainTextColor,
         fontWeight: '500',
     },
     talentList: {
@@ -112,19 +115,19 @@ const Styles = StyleSheet.create({
     },
     talentTypeTitle: {
         ...Fonts.regular12,
-        color: Colors.subTextColor,
+        color: colors.subTextColor,
         fontWeight: '400',
     },
     separator: {
         height: 0.5,
-        backgroundColor: Colors.lightGrayColor,
+        backgroundColor: colors.lightGrayColor,
     },
     selectionContainer: {
         height: 16,
         width: 16,
         borderRadius: 8,
         borderWidth: 0.5,
-        borderColor: Colors.primaryColor,
+        borderColor: colors.primaryColor,
         alignItems: 'center',
         justifyContent: 'center'
     },
@@ -132,7 +135,7 @@ const Styles = StyleSheet.create({
         height: 10,
         width: 10,
         borderRadius: 5,
-        backgroundColor: Colors.primaryColor
+        backgroundColor: colors.primaryColor
     },
     socialLinks: {
         flexDirection: 'row',
@@ -148,7 +151,7 @@ const Styles = StyleSheet.create({
         paddingVertical: 10,
         borderRadius: 6,
         borderWidth: 0.5,
-        borderColor: Colors.lightGrayColor,
+        borderColor: colors.lightGrayColor,
         position: 'absolute',
         right: 0,
         flexDirection: 'row',
@@ -158,18 +161,19 @@ const Styles = StyleSheet.create({
     btnText: {
         textAlign: 'center',
         ...Fonts.regular12,
-        color: Colors.subTextColor
+        color: colors.subTextColor
     },
 
     //Menu container
     menuContainer: {
         borderWidth: 0.5,
-        borderColor: Colors.lightGrayColor,
+        borderColor: colors.lightGrayColor,
         borderRadius: 10,
         flexDirection: 'row',
         alignItems: 'center',
         paddingVertical: 13,
-        paddingHorizontal: 16
+        paddingHorizontal: 16,
+        backgroundColor: colors.cardBackground,
     },
     iconCont: {
         height: 40,
@@ -177,7 +181,7 @@ const Styles = StyleSheet.create({
         borderRadius: 20,
         alignItems: 'center',
         justifyContent: 'center',
-        backgroundColor: Colors.secondaryBlueColor,
+        backgroundColor: colors.secondaryBlueColor,
     },
     nextArrow: {
         position: 'absolute',
@@ -189,7 +193,7 @@ const Styles = StyleSheet.create({
     },
     pauseDescription: {
         ...Fonts.regular12,
-        color: '#9B9F9F',
+        color: colors.subTextColor,
         marginTop: 4,
         lineHeight: 18,
     },
@@ -206,11 +210,11 @@ const Styles = StyleSheet.create({
     },
     textInput: {
         borderBottomWidth: 0.5,
-        borderBottomColor: Colors.subTextColor,
+        borderBottomColor: colors.subTextColor,
         paddingVertical: 5,
         marginTop: 6,
         ...Fonts.regular16,
-        color: Colors.mainTextColor,
+        color: colors.mainTextColor,
     },
 
     // Profile Settings
@@ -233,7 +237,7 @@ const Styles = StyleSheet.create({
     },
     profileLabel: {
         ...Fonts.regular14,
-        color: Colors.subTextColor
+        color: colors.subTextColor
     },
     linksIcon: {
         height: 20,
@@ -251,36 +255,36 @@ const Styles = StyleSheet.create({
         marginHorizontal: 20,
         borderRadius: 10,
         padding: 16,
-        backgroundColor: Colors.whiteColor,
+        backgroundColor: colors.whiteColor,
     },
     noBtn: {
         paddingHorizontal: 20,
         paddingVertical: 12,
         borderRadius: 8,
         borderWidth: 0.5,
-        borderColor: Colors.lightGrayColor
+        borderColor: colors.lightGrayColor
     },
     noText: {
         textAlign: 'center',
         ...Fonts.regular12,
-        color: Colors.subTextColor
+        color: colors.subTextColor
     },
     yesBtn: {
         paddingHorizontal: 20,
         paddingVertical: 12,
         borderRadius: 8,
-        backgroundColor: Colors.primaryColor
+        backgroundColor: colors.primaryColor
     },
     yesText: {
         textAlign: 'center',
         ...Fonts.regular12,
-        color: Colors.whiteColor
+        color: colors.pureWhite
     },
 
     // Privacy Settings
     privacyCard: {
         borderWidth: 0.5,
-        borderColor: Colors.lightGrayColor,
+        borderColor: colors.lightGrayColor,
         borderRadius: 10,
         padding: 16,
     },
@@ -292,13 +296,13 @@ const Styles = StyleSheet.create({
         width: 40,
         height: 40,
         borderRadius: 20,
-        backgroundColor: Colors.secondaryBlueColor,
+        backgroundColor: colors.secondaryBlueColor,
         alignItems: 'center',
         justifyContent: 'center',
     },
     privacyTitle: {
         ...Fonts.regular14,
-        color: Colors.mainTextColor,
+        color: colors.mainTextColor,
         flex: 1,
     },
     privacySwitch: {
@@ -306,12 +310,12 @@ const Styles = StyleSheet.create({
     },
     privacySubtitle: {
         ...Fonts.regular12,
-        color: '#777777',
+        color: colors.grayColor,
         marginLeft: 56,
     },
     privacyDescription: {
         ...Fonts.regular12,
-        color: '#9B9F9F',
+        color: colors.subTextColor,
         marginLeft: 56,
         lineHeight: 18,
     },
@@ -324,13 +328,13 @@ const Styles = StyleSheet.create({
         paddingHorizontal: 2,
     },
     switchTrackActive: {
-        backgroundColor: Colors.primaryColor,
+        backgroundColor: colors.primaryColor,
     },
     switchThumb: {
         width: 20,
         height: 20,
         borderRadius: 10,
-        backgroundColor: Colors.whiteColor,
+        backgroundColor: colors.whiteColor,
     },
     switchThumbActive: {
         alignSelf: 'flex-end',
@@ -340,9 +344,9 @@ const Styles = StyleSheet.create({
     locationInputContainer: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: '#F7FAFF',
+        backgroundColor: colors.secondaryColor,
         borderWidth: 0.5,
-        borderColor: '#E0ECFE',
+        borderColor: colors.borderColor,
         borderRadius: 10,
         paddingHorizontal: 16,
         height: 54,
@@ -350,13 +354,13 @@ const Styles = StyleSheet.create({
     locationInput: {
         flex: 1,
         ...Fonts.regular14,
-        color: Colors.mainTextColor,
+        color: colors.mainTextColor,
     },
 
     // Help
     helpCard: {
         borderWidth: 0.5,
-        borderColor: Colors.lightGrayColor,
+        borderColor: colors.lightGrayColor,
         borderRadius: 10,
         padding: 16,
     },
@@ -368,7 +372,7 @@ const Styles = StyleSheet.create({
         width: 40,
         height: 40,
         borderRadius: 20,
-        backgroundColor: Colors.secondaryBlueColor,
+        backgroundColor: colors.secondaryBlueColor,
         alignItems: 'center',
         justifyContent: 'center',
     },
@@ -378,15 +382,15 @@ const Styles = StyleSheet.create({
     },
     helpLabel: {
         ...Fonts.regular14,
-        color: Colors.subTextColor,
+        color: colors.subTextColor,
     },
     helpValue: {
         ...Fonts.medium16,
-        color: Colors.mainTextColor,
+        color: colors.mainTextColor,
     },
     helpDivider: {
         height: 0.5,
-        backgroundColor: Colors.lightGrayColor,
+        backgroundColor: colors.lightGrayColor,
     },
 
     // Terms of Service
@@ -395,16 +399,16 @@ const Styles = StyleSheet.create({
     },
     termsSectionTitle: {
         ...Fonts.medium18,
-        color: Colors.mainTextColor,
+        color: colors.mainTextColor,
     },
     termsText: {
         ...Fonts.regular14,
-        color: Colors.mainTextColor,
+        color: colors.mainTextColor,
         lineHeight: 22,
     },
     termsLink: {
         ...Fonts.regular14,
-        color: Colors.primaryColor,
+        color: colors.primaryColor,
         lineHeight: 22,
     },
 
@@ -422,11 +426,11 @@ const Styles = StyleSheet.create({
         paddingVertical: 10,
         borderRadius: 6,
         borderWidth: 0.5,
-        borderColor: Colors.lightGrayColor,
+        borderColor: colors.lightGrayColor,
     },
     addCardText: {
         ...Fonts.regular14,
-        color: Colors.subTextColor,
+        color: colors.subTextColor,
     },
     walletCard: {
         flexDirection: 'row',
@@ -435,16 +439,16 @@ const Styles = StyleSheet.create({
         padding: 16,
         borderRadius: 10,
         borderWidth: 0.5,
-        borderColor: Colors.lightGrayColor,
-        backgroundColor: Colors.whiteColor,
+        borderColor: colors.lightGrayColor,
+        backgroundColor: colors.whiteColor,
     },
     walletLabel: {
         ...Fonts.regular12,
-        color: Colors.subTextColor,
+        color: colors.subTextColor,
     },
     walletBalance: {
         ...Fonts.medium18,
-        color: Colors.mainTextColor,
+        color: colors.mainTextColor,
     },
     amountRow: {
         flexDirection: 'row',
@@ -456,20 +460,20 @@ const Styles = StyleSheet.create({
         paddingHorizontal: 16,
         borderRadius: 10,
         borderWidth: 0.5,
-        borderColor: Colors.lightGrayColor,
+        borderColor: colors.lightGrayColor,
         minWidth: 85,
         alignItems: 'center',
     },
     amountBtnSelected: {
-        borderColor: Colors.primaryColor,
+        borderColor: colors.primaryColor,
     },
     amountText: {
         ...Fonts.medium14,
-        color: Colors.mainTextColor,
+        color: colors.mainTextColor,
     },
     customAmountInput: {
         ...Fonts.medium14,
-        color: Colors.mainTextColor,
+        color: colors.mainTextColor,
         textAlign: 'center',
         padding: 0,
         minWidth: 50,
@@ -481,8 +485,8 @@ const Styles = StyleSheet.create({
         padding: 16,
         borderRadius: 10,
         borderWidth: 0.5,
-        borderColor: Colors.lightGrayColor,
-        backgroundColor: Colors.whiteColor,
+        borderColor: colors.lightGrayColor,
+        backgroundColor: colors.whiteColor,
     },
     paymentCardLeft: {
         flexDirection: 'row',
@@ -497,13 +501,13 @@ const Styles = StyleSheet.create({
     },
     paymentCardText: {
         ...Fonts.regular14,
-        color: Colors.mainTextColor,
+        color: colors.mainTextColor,
     },
     payNowBtn: {
         paddingHorizontal: 20,
         paddingVertical: 8,
         borderRadius: 6,
-        backgroundColor: Colors.primaryColor,
+        backgroundColor: colors.primaryColor,
         alignItems: 'center',
         justifyContent: 'center',
     },
@@ -512,18 +516,18 @@ const Styles = StyleSheet.create({
         paddingVertical: 8,
         borderRadius: 6,
         borderWidth: 0.5,
-        borderColor: Colors.lightGrayColor,
-        backgroundColor: Colors.whiteColor,
+        borderColor: colors.lightGrayColor,
+        backgroundColor: colors.whiteColor,
         alignItems: 'center',
         justifyContent: 'center',
     },
     payNowText: {
         ...Fonts.regular14,
-        color: Colors.whiteColor,
+        color: colors.pureWhite,
     },
     payNowTextGrey: {
         ...Fonts.regular14,
-        color: Colors.subTextColor,
+        color: colors.subTextColor,
     },
     bankCard: {
         flexDirection: 'row',
@@ -532,8 +536,8 @@ const Styles = StyleSheet.create({
         padding: 16,
         borderRadius: 10,
         borderWidth: 0.5,
-        borderColor: Colors.lightGrayColor,
-        backgroundColor: Colors.whiteColor,
+        borderColor: colors.lightGrayColor,
+        backgroundColor: colors.whiteColor,
     },
     bankCardLeft: {
         flexDirection: 'row',
@@ -554,18 +558,18 @@ const Styles = StyleSheet.create({
     },
     bankName: {
         ...Fonts.medium14,
-        color: Colors.mainTextColor,
+        color: colors.mainTextColor,
     },
     cardHolderText: {
         ...Fonts.regular12,
-        color: Colors.subTextColor,
+        color: colors.subTextColor,
     },
     cardHolderName: {
-        color: Colors.mainTextColor,
+        color: colors.mainTextColor,
     },
     cardNumber: {
         ...Fonts.regular12,
-        color: Colors.subTextColor,
+        color: colors.subTextColor,
     },
 
     // Add New Card
@@ -574,14 +578,14 @@ const Styles = StyleSheet.create({
     },
     addCardLabel: {
         ...Fonts.semibold14,
-        color: Colors.mainTextColor,
+        color: colors.mainTextColor,
     },
     addCardInputContainer: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: '#F7FAFF',
+        backgroundColor: colors.secondaryColor,
         borderWidth: 0.5,
-        borderColor: '#E0ECFE',
+        borderColor: colors.borderColor,
         borderRadius: 10,
         paddingHorizontal: 16,
         height: 54,
@@ -589,45 +593,45 @@ const Styles = StyleSheet.create({
     addCardInput: {
         flex: 1,
         ...Fonts.regular14,
-        color: Colors.mainTextColor,
+        color: colors.mainTextColor,
     },
     addCardPlaceholder: {
         flex: 1,
         ...Fonts.regular14,
-        color: '#777777',
+        color: colors.grayColor,
     },
     addCardInputText: {
-        color: Colors.mainTextColor,
+        color: colors.mainTextColor,
     },
     continueBtn: {
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',
         gap: 8,
-        backgroundColor: Colors.primaryColor,
+        backgroundColor: colors.primaryColor,
         borderRadius: 10,
         height: 54,
         width: '100%',
     },
     continueBtnText: {
         ...Fonts.medium16,
-        color: Colors.whiteColor,
+        color: colors.pureWhite,
     },
     cancelBtn: {
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',
         gap: 8,
-        backgroundColor: Colors.whiteColor,
+        backgroundColor: colors.whiteColor,
         borderWidth: 0.5,
-        borderColor: Colors.lightGrayColor,
+        borderColor: colors.lightGrayColor,
         borderRadius: 10,
         height: 54,
         width: '100%',
     },
     cancelBtnText: {
         ...Fonts.medium16,
-        color: Colors.subTextColor,
+        color: colors.subTextColor,
     },
 
     // Card Type Modal
@@ -638,14 +642,14 @@ const Styles = StyleSheet.create({
         alignItems: 'center',
     },
     cardTypeModalContent: {
-        backgroundColor: Colors.whiteColor,
+        backgroundColor: colors.whiteColor,
         borderRadius: 16,
         padding: 20,
         width: '85%',
     },
     cardTypeModalTitle: {
         ...Fonts.medium16,
-        color: Colors.mainTextColor,
+        color: colors.mainTextColor,
         textAlign: 'center',
     },
     cardTypeOption: {
@@ -656,35 +660,35 @@ const Styles = StyleSheet.create({
         paddingHorizontal: 16,
         borderRadius: 10,
         borderWidth: 0.5,
-        borderColor: Colors.lightGrayColor,
+        borderColor: colors.lightGrayColor,
         marginBottom: 12,
     },
     cardTypeOptionSelected: {
-        borderColor: Colors.primaryColor,
+        borderColor: colors.primaryColor,
         backgroundColor: 'rgba(60, 130, 246, 0.05)',
     },
     cardTypeOptionText: {
         ...Fonts.regular14,
-        color: Colors.mainTextColor,
+        color: colors.mainTextColor,
     },
     cardTypeOptionTextSelected: {
-        color: Colors.primaryColor,
+        color: colors.primaryColor,
     },
     cardTypeCheckmark: {
         width: 10,
         height: 10,
         borderRadius: 5,
-        backgroundColor: Colors.primaryColor,
+        backgroundColor: colors.primaryColor,
     },
 
     // Subscription
     subscriptionTitle: {
         ...Fonts.semibold20,
-        color: Colors.mainTextColor,
+        color: colors.mainTextColor,
     },
     subscriptionTabContainer: {
         flexDirection: 'row',
-        backgroundColor: '#F5F5F5',
+        backgroundColor: colors.btnBackgroundColor,
         borderRadius: 10,
         padding: 4,
     },
@@ -696,43 +700,43 @@ const Styles = StyleSheet.create({
         borderRadius: 8,
     },
     subscriptionActiveTab: {
-        backgroundColor: Colors.primaryColor,
+        backgroundColor: colors.primaryColor,
     },
     subscriptionTabText: {
         ...Fonts.medium14,
-        color: '#9B9F9F',
+        color: colors.subTextColor,
     },
     subscriptionActiveTabText: {
-        color: Colors.whiteColor,
+        color: colors.pureWhite,
     },
     planCard: {
-        backgroundColor: Colors.whiteColor,
+        backgroundColor: colors.whiteColor,
         borderRadius: 12,
         borderWidth: 1,
-        borderColor: '#DEDEDE',
+        borderColor: colors.lightGrayColor,
         padding: 20,
         marginBottom: 16,
     },
     popularPlanCard: {
-        borderColor: Colors.primaryColor,
+        borderColor: colors.primaryColor,
         borderWidth: 2,
     },
     popularBadge: {
         position: 'absolute',
         top: -12,
         right: 20,
-        backgroundColor: Colors.primaryColor,
+        backgroundColor: colors.primaryColor,
         paddingHorizontal: 12,
         paddingVertical: 4,
         borderRadius: 12,
     },
     popularBadgeText: {
         ...Fonts.medium12,
-        color: Colors.whiteColor,
+        color: colors.pureWhite,
     },
     planName: {
         ...Fonts.semibold18,
-        color: Colors.mainTextColor,
+        color: colors.mainTextColor,
     },
     priceRow: {
         flexDirection: 'row',
@@ -741,16 +745,16 @@ const Styles = StyleSheet.create({
     },
     planPrice: {
         ...Fonts.bold28,
-        color: Colors.mainTextColor,
+        color: colors.mainTextColor,
     },
     planPeriod: {
         ...Fonts.regular14,
-        color: '#9B9F9F',
+        color: colors.subTextColor,
         marginLeft: 4,
     },
     planCredits: {
         ...Fonts.regular12,
-        color: Colors.primaryColor,
+        color: colors.primaryColor,
         marginTop: 4,
     },
     featuresContainer: {
@@ -763,29 +767,29 @@ const Styles = StyleSheet.create({
     },
     featureText: {
         ...Fonts.regular14,
-        color: '#777777',
+        color: colors.grayColor,
         marginLeft: 10,
         flex: 1,
     },
     getStartedButton: {
-        backgroundColor: Colors.whiteColor,
+        backgroundColor: colors.whiteColor,
         borderRadius: 8,
         borderWidth: 1,
-        borderColor: Colors.primaryColor,
+        borderColor: colors.primaryColor,
         paddingVertical: 14,
         alignItems: 'center',
         marginTop: 16,
     },
     popularGetStartedButton: {
-        backgroundColor: Colors.primaryColor,
-        borderColor: Colors.primaryColor,
+        backgroundColor: colors.primaryColor,
+        borderColor: colors.primaryColor,
     },
     getStartedButtonText: {
         ...Fonts.medium14,
-        color: Colors.primaryColor,
+        color: colors.primaryColor,
     },
     popularGetStartedButtonText: {
-        color: Colors.whiteColor,
+        color: colors.pureWhite,
     },
 
     // Account Settings
@@ -797,8 +801,8 @@ const Styles = StyleSheet.create({
         height: 70,
         borderRadius: 10,
         borderWidth: 0.5,
-        borderColor: '#DEDEDE',
-        backgroundColor: Colors.whiteColor,
+        borderColor: colors.lightGrayColor,
+        backgroundColor: colors.whiteColor,
     },
     accountSettingsLeft: {
         flexDirection: 'row',
@@ -808,20 +812,20 @@ const Styles = StyleSheet.create({
         width: 40,
         height: 40,
         borderRadius: 20,
-        backgroundColor: Colors.secondaryBlueColor,
+        backgroundColor: colors.secondaryBlueColor,
         alignItems: 'center',
         justifyContent: 'center',
     },
     accountSettingsTitle: {
         ...Fonts.regular14,
-        color: Colors.mainTextColor,
+        color: colors.mainTextColor,
         lineHeight: 22,
     },
 
     // Change Password
     changePasswordTitle: {
         ...Fonts.medium18,
-        color: Colors.mainTextColor,
+        color: colors.mainTextColor,
         lineHeight: 26,
     },
 
@@ -831,7 +835,7 @@ const Styles = StyleSheet.create({
         bottom: 0,
         left: 0,
         right: 0,
-        backgroundColor: Colors.whiteColor,
+        backgroundColor: colors.whiteColor,
         borderTopLeftRadius: 20,
         borderTopRightRadius: 20,
         shadowColor: '#000',
@@ -847,16 +851,19 @@ const Styles = StyleSheet.create({
         paddingHorizontal: 20,
         paddingVertical: 16,
         borderBottomWidth: 0.5,
-        borderBottomColor: '#DEDEDE',
+        borderBottomColor: colors.lightGrayColor,
     },
     datePickerCancel: {
         ...Fonts.medium16,
-        color: '#9B9F9F',
+        color: colors.subTextColor,
     },
     datePickerDone: {
         ...Fonts.medium16,
-        color: Colors.primaryColor,
+        color: colors.primaryColor,
     },
 });
 
+// Backward compatibility - export static styles using light colors
+import { lightColors } from "../../constants/Theme";
+const Styles = createStyles(lightColors);
 export default Styles;

@@ -1,18 +1,20 @@
 import { View, ScrollView, Text, TouchableOpacity } from 'react-native'
 import React from 'react'
-import Styles from './HomeStyles'
+import { createStyles } from './HomeStyles'
 import Header from './components/Header'
 import SizeBox from '../../constants/SizeBox'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import NewsFeedCard from './components/NewsFeedCard'
 import Images from '../../constants/Images'
 import Icons from '../../constants/Icons'
-import Colors from '../../constants/Colors'
+import { useTheme } from '../../context/ThemeContext'
 import LinearGradient from 'react-native-linear-gradient'
 import { Wallet, UserAdd, ArrowRight } from 'iconsax-react-nativejs'
 
 const HomeScreen = ({ navigation }: any) => {
     const insets = useSafeAreaInsets();
+    const { colors } = useTheme();
+    const Styles = createStyles(colors);
 
     const feedImages = [
         Images.photo1,
@@ -46,7 +48,7 @@ const HomeScreen = ({ navigation }: any) => {
                     <View style={Styles.walletCardContent}>
                         <View style={Styles.walletLeftSection}>
                             <View style={Styles.walletIconContainer}>
-                                <Wallet size={24} color={Colors.primaryColor} variant="Linear" />
+                                <Wallet size={24} color={colors.primaryColor} variant="Linear" />
                             </View>
                             <View style={Styles.walletInfoContainer}>
                                 <Text style={Styles.walletTitle}>Wallet Balance</Text>
@@ -77,7 +79,7 @@ const HomeScreen = ({ navigation }: any) => {
                             style={Styles.tryAiButton}
                         >
                             <Text style={Styles.tryAiButtonText}>Try AI Search</Text>
-                            <ArrowRight size={24} color={Colors.whiteColor} variant="Linear" />
+                            <ArrowRight size={24} color="#FFFFFF" variant="Linear" />
                         </LinearGradient>
                     </TouchableOpacity>
                 </View>
@@ -96,11 +98,11 @@ const HomeScreen = ({ navigation }: any) => {
                             <TouchableOpacity style={Styles.quickActionCard}>
                                 <View style={Styles.quickActionContent}>
                                     <View style={Styles.quickActionIconContainer}>
-                                        <UserAdd size={20} color={Colors.primaryColor} variant="Linear" />
+                                        <UserAdd size={20} color={colors.primaryColor} variant="Linear" />
                                     </View>
                                     <View style={Styles.quickActionTextContainer}>
                                         <Text style={Styles.quickActionText}>Add myself</Text>
-                                        <ArrowRight size={16} color={Colors.primaryColor} variant="Linear" />
+                                        <ArrowRight size={16} color={colors.primaryColor} variant="Linear" />
                                     </View>
                                 </View>
                             </TouchableOpacity>
@@ -111,7 +113,7 @@ const HomeScreen = ({ navigation }: any) => {
                                     </View>
                                     <View style={Styles.quickActionTextContainer}>
                                         <Text style={Styles.quickActionText}>My downloads</Text>
-                                        <ArrowRight size={16} color={Colors.primaryColor} variant="Linear" />
+                                        <ArrowRight size={16} color={colors.primaryColor} variant="Linear" />
                                     </View>
                                 </View>
                             </TouchableOpacity>
@@ -127,7 +129,7 @@ const HomeScreen = ({ navigation }: any) => {
                             >
                                 <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
                                     <Text style={Styles.gradientButtonText}>Context Search</Text>
-                                    <ArrowRight size={24} color={Colors.whiteColor} variant="Linear" />
+                                    <ArrowRight size={24} color="#FFFFFF" variant="Linear" />
                                 </TouchableOpacity>
                             </LinearGradient>
                             <LinearGradient
@@ -138,7 +140,7 @@ const HomeScreen = ({ navigation }: any) => {
                             >
                                 <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
                                     <Text style={Styles.gradientButtonText}>Face Search</Text>
-                                    <ArrowRight size={24} color={Colors.whiteColor} variant="Linear" />
+                                    <ArrowRight size={24} color="#FFFFFF" variant="Linear" />
                                 </TouchableOpacity>
                             </LinearGradient>
                         </View>

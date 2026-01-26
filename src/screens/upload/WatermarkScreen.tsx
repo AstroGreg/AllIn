@@ -3,9 +3,9 @@ import React, { useState } from 'react'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import FastImage from 'react-native-fast-image'
 import { ArrowLeft2, Notification, ArrowRight } from 'iconsax-react-nativejs'
-import Styles from './WatermarkScreenStyles'
+import { createStyles } from './WatermarkScreenStyles'
 import SizeBox from '../../constants/SizeBox'
-import Colors from '../../constants/Colors'
+import { useTheme } from '../../context/ThemeContext'
 import Icons from '../../constants/Icons'
 import Images from '../../constants/Images'
 
@@ -17,6 +17,8 @@ interface SavedWatermark {
 
 const WatermarkScreen = ({ navigation, route }: any) => {
     const insets = useSafeAreaInsets();
+    const { colors } = useTheme();
+    const Styles = createStyles(colors);
     const competition = route?.params?.competition;
     const account = route?.params?.account;
     const anonymous = route?.params?.anonymous;
@@ -68,11 +70,11 @@ const WatermarkScreen = ({ navigation, route }: any) => {
             {/* Header */}
             <View style={Styles.header}>
                 <TouchableOpacity style={Styles.headerButton} onPress={() => navigation.goBack()}>
-                    <ArrowLeft2 size={24} color={Colors.mainTextColor} variant="Linear" />
+                    <ArrowLeft2 size={24} color={colors.mainTextColor} variant="Linear" />
                 </TouchableOpacity>
                 <Text style={Styles.headerTitle}>WaterMark</Text>
                 <TouchableOpacity style={Styles.headerButton}>
-                    <Notification size={24} color={Colors.mainTextColor} variant="Linear" />
+                    <Notification size={24} color={colors.mainTextColor} variant="Linear" />
                 </TouchableOpacity>
             </View>
 
@@ -172,7 +174,7 @@ const WatermarkScreen = ({ navigation, route }: any) => {
                 {/* Preview Button */}
                 <TouchableOpacity style={Styles.previewButton} onPress={handlePreview}>
                     <Text style={Styles.previewButtonText}>Preview</Text>
-                    <ArrowRight size={18} color={Colors.whiteColor} variant="Linear" />
+                    <ArrowRight size={18} color={colors.pureWhite} variant="Linear" />
                 </TouchableOpacity>
 
                 <SizeBox height={insets.bottom > 0 ? insets.bottom + 20 : 40} />

@@ -1,8 +1,8 @@
 import { StyleSheet } from 'react-native';
-import Colors from '../../constants/Colors';
 import Fonts from '../../constants/Fonts';
+import { ThemeColors, lightColors } from '../../constants/Theme';
 
-const Styles = StyleSheet.create({
+export const createStyles = (colors: ThemeColors) => StyleSheet.create({
     modalOverlay: {
         flex: 1,
         backgroundColor: 'rgba(0, 0, 0, 0.5)',
@@ -11,7 +11,7 @@ const Styles = StyleSheet.create({
         paddingHorizontal: 20,
     },
     modalContainer: {
-        backgroundColor: Colors.whiteColor,
+        backgroundColor: colors.modalBackground,
         borderRadius: 24,
         padding: 24,
         width: '100%',
@@ -27,7 +27,7 @@ const Styles = StyleSheet.create({
         ...Fonts.medium20,
         fontSize: 24,
         lineHeight: 32,
-        color: Colors.mainTextColor,
+        color: colors.mainTextColor,
     },
     closeButton: {
         position: 'absolute',
@@ -36,7 +36,7 @@ const Styles = StyleSheet.create({
     },
     copyLinkCard: {
         borderWidth: 0.5,
-        borderColor: '#DEDEDE',
+        borderColor: colors.borderColor,
         borderRadius: 10,
         padding: 16,
         marginBottom: 24,
@@ -49,25 +49,25 @@ const Styles = StyleSheet.create({
     },
     copyLinkTitle: {
         ...Fonts.medium16,
-        color: Colors.mainTextColor,
+        color: colors.mainTextColor,
     },
     copyLinkSubtitle: {
         ...Fonts.regular14,
-        color: '#9B9F9F',
+        color: colors.subTextColor,
     },
     socialSection: {
         gap: 16,
     },
     socialTitle: {
         ...Fonts.regular14,
-        color: '#9B9F9F',
+        color: colors.subTextColor,
     },
     socialButtons: {
         flexDirection: 'row',
         justifyContent: 'space-between',
     },
     socialButton: {
-        backgroundColor: '#F5F5F5',
+        backgroundColor: colors.btnBackgroundColor,
         borderRadius: 10,
         paddingHorizontal: 16,
         paddingVertical: 8,
@@ -77,8 +77,10 @@ const Styles = StyleSheet.create({
     },
     socialButtonText: {
         ...Fonts.regular14,
-        color: Colors.mainTextColor,
+        color: colors.mainTextColor,
     },
 });
 
+// Backward compatibility
+const Styles = createStyles(lightColors);
 export default Styles;

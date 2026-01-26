@@ -1,14 +1,14 @@
 import {StyleSheet, Dimensions} from 'react-native';
-import Colors from '../../../constants/Colors';
 import Fonts from '../../../constants/Fonts';
+import { ThemeColors, lightColors } from '../../../constants/Theme';
 
 const {width} = Dimensions.get('window');
 export const CARD_WIDTH = (width - 40 - 16 - 32) / 2;
 
-const styles = StyleSheet.create({
+export const createStyles = (colors: ThemeColors) => StyleSheet.create({
   mainContainer: {
     flex: 1,
-    backgroundColor: Colors.whiteColor,
+    backgroundColor: colors.backgroundColor,
   },
   header: {
     flexDirection: 'row',
@@ -17,19 +17,19 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 16,
     borderBottomWidth: 0.5,
-    borderBottomColor: '#DEDEDE',
+    borderBottomColor: colors.lightGrayColor,
   },
   headerButton: {
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: '#F5F5F5',
+    backgroundColor: colors.btnBackgroundColor,
     alignItems: 'center',
     justifyContent: 'center',
   },
   headerTitle: {
     ...Fonts.medium18,
-    color: '#171717',
+    color: colors.mainTextColor,
   },
   container: {
     flex: 1,
@@ -42,21 +42,21 @@ const styles = StyleSheet.create({
   },
   resultsTitle: {
     ...Fonts.medium18,
-    color: '#171717',
+    color: colors.mainTextColor,
   },
   resultsBadge: {
-    backgroundColor: '#F5F5F5',
+    backgroundColor: colors.btnBackgroundColor,
     borderRadius: 6,
     paddingHorizontal: 12,
     paddingVertical: 6,
   },
   resultsBadgeText: {
     ...Fonts.regular14,
-    color: '#000000',
+    color: colors.mainTextColor,
   },
   resultsBadgeTextHidden: {
     ...Fonts.regular14,
-    color: '#000000',
+    color: colors.mainTextColor,
     opacity: 0,
   },
   photoGroupWrapper: {
@@ -75,7 +75,7 @@ const styles = StyleSheet.create({
     margin: 1,
     borderRadius: 9,
     padding: 12,
-    backgroundColor: Colors.whiteColor,
+    backgroundColor: colors.cardBackground,
   },
   photoGroupRow: {
     flexDirection: 'row',
@@ -83,9 +83,9 @@ const styles = StyleSheet.create({
   },
   photoCard: {
     width: CARD_WIDTH,
-    backgroundColor: Colors.whiteColor,
+    backgroundColor: colors.cardBackground,
     borderWidth: 0.5,
-    borderColor: '#DEDEDE',
+    borderColor: colors.lightGrayColor,
     borderRadius: 10,
     padding: 16,
   },
@@ -103,7 +103,7 @@ const styles = StyleSheet.create({
   },
   priceText: {
     ...Fonts.semibold12,
-    color: '#171717',
+    color: colors.mainTextColor,
   },
   viewButton: {
     flexDirection: 'row',
@@ -117,7 +117,7 @@ const styles = StyleSheet.create({
   viewButtonText: {
     fontFamily: 'Inter-Regular',
     fontSize: 8,
-    color: Colors.whiteColor,
+    color: '#FFFFFF',
   },
   photoRightInfo: {
     alignItems: 'flex-end',
@@ -125,7 +125,7 @@ const styles = StyleSheet.create({
   },
   resolutionText: {
     ...Fonts.regular12,
-    color: '#171717',
+    color: colors.mainTextColor,
   },
   downloadButton: {
     width: 24,
@@ -135,4 +135,6 @@ const styles = StyleSheet.create({
   },
 });
 
+// Backward compatibility
+const styles = createStyles(lightColors);
 export default styles;

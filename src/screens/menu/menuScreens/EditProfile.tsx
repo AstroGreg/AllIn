@@ -1,6 +1,6 @@
 import { View, Text, ScrollView, TouchableOpacity } from 'react-native'
 import React, { useState } from 'react'
-import Styles from '../MenuStyles'
+import { createStyles } from '../MenuStyles'
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import SizeBox from '../../../constants/SizeBox';
 import CustomHeader from '../../../components/customHeader/CustomHeader';
@@ -9,9 +9,12 @@ import Icons from '../../../constants/Icons';
 import FastImage from 'react-native-fast-image';
 import CustomButton from '../../../components/customButton/CustomButton';
 import AddSocialLink from '../components/AddSocialLink';
+import { useTheme } from '../../../context/ThemeContext';
 
 const EditProfile = ({ navigation }: any) => {
     const insets = useSafeAreaInsets();
+    const { colors } = useTheme();
+    const Styles = createStyles(colors);
 
     const [modalVisible, setModalVisible] = useState(false);
 

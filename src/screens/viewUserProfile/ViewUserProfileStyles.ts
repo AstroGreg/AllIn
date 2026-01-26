@@ -1,13 +1,14 @@
 import { StyleSheet, Dimensions } from "react-native";
 import Colors from "../../constants/Colors";
 import Fonts from "../../constants/Fonts";
+import { ThemeColors, lightColors } from "../../constants/Theme";
 
 const { width } = Dimensions.get('window');
 
-const Styles = StyleSheet.create({
+export const createStyles = (colors: ThemeColors) => StyleSheet.create({
     mainContainer: {
         flex: 1,
-        backgroundColor: Colors.whiteColor
+        backgroundColor: colors.backgroundColor
     },
     header: {
         flexDirection: 'row',
@@ -16,59 +17,59 @@ const Styles = StyleSheet.create({
         paddingHorizontal: 20,
         paddingVertical: 16,
         borderBottomWidth: 0.5,
-        borderBottomColor: '#DEDEDE',
+        borderBottomColor: colors.lightGrayColor,
     },
     headerButton: {
         width: 44,
         height: 44,
         borderRadius: 22,
-        backgroundColor: '#F5F5F5',
+        backgroundColor: colors.btnBackgroundColor,
         alignItems: 'center',
         justifyContent: 'center',
     },
     headerTitle: {
         ...Fonts.medium18,
-        color: Colors.mainTextColor,
+        color: colors.mainTextColor,
     },
     scrollContent: {
         paddingHorizontal: 20,
     },
     // Search Card
     searchCard: {
-        backgroundColor: Colors.whiteColor,
+        backgroundColor: colors.cardBackground,
         borderRadius: 10,
         borderWidth: 0.5,
-        borderColor: '#DEDEDE',
+        borderColor: colors.lightGrayColor,
         paddingHorizontal: 16,
         paddingVertical: 24,
         gap: 24,
     },
     searchLabel: {
         ...Fonts.medium14,
-        color: Colors.mainTextColor,
+        color: colors.mainTextColor,
         textAlign: 'center',
     },
     searchInput: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: '#F7FAFF',
+        backgroundColor: colors.secondaryColor,
         borderRadius: 10,
         borderWidth: 0.5,
-        borderColor: '#DEDEDE',
+        borderColor: colors.lightGrayColor,
         paddingHorizontal: 16,
         paddingVertical: 15,
         gap: 14,
     },
     searchPlaceholder: {
         ...Fonts.regular16,
-        color: '#9B9F9F',
+        color: colors.subTextColor,
     },
     // Profile Card
     profileCard: {
-        backgroundColor: Colors.whiteColor,
+        backgroundColor: colors.cardBackground,
         borderRadius: 10,
         borderWidth: 0.5,
-        borderColor: '#DEDEDE',
+        borderColor: colors.lightGrayColor,
         padding: 16,
     },
     profileHeader: {
@@ -85,12 +86,12 @@ const Styles = StyleSheet.create({
         paddingVertical: 10,
         borderRadius: 6,
         borderWidth: 0.5,
-        borderColor: '#DEDEDE',
+        borderColor: colors.lightGrayColor,
         gap: 6,
     },
     shareButtonText: {
         ...Fonts.regular14,
-        color: '#9B9F9F',
+        color: colors.subTextColor,
     },
     profileImageContainer: {
         width: 100,
@@ -109,11 +110,11 @@ const Styles = StyleSheet.create({
     },
     userName: {
         ...Fonts.medium14,
-        color: Colors.mainTextColor,
+        color: colors.mainTextColor,
     },
     userHandle: {
         ...Fonts.regular12,
-        color: '#9B9F9F',
+        color: colors.subTextColor,
         textAlign: 'center',
     },
     // Stats Row
@@ -129,16 +130,16 @@ const Styles = StyleSheet.create({
     },
     statValue: {
         ...Fonts.medium16,
-        color: Colors.mainTextColor,
+        color: colors.mainTextColor,
     },
     statLabel: {
         ...Fonts.regular12,
-        color: '#9B9F9F',
+        color: colors.subTextColor,
     },
     statDivider: {
         width: 1,
         height: 24,
-        backgroundColor: '#DEDEDE',
+        backgroundColor: colors.lightGrayColor,
     },
     // Info Row
     infoRow: {
@@ -161,7 +162,7 @@ const Styles = StyleSheet.create({
     },
     infoLabel: {
         ...Fonts.regular12,
-        color: '#9B9F9F',
+        color: colors.subTextColor,
     },
     infoValueContainer: {
         flexDirection: 'row',
@@ -170,7 +171,7 @@ const Styles = StyleSheet.create({
     },
     infoValue: {
         ...Fonts.medium16,
-        color: Colors.mainTextColor,
+        color: colors.mainTextColor,
     },
     // Unfollow Button
     unfollowButton: {
@@ -180,12 +181,12 @@ const Styles = StyleSheet.create({
         paddingVertical: 10,
         borderRadius: 6,
         borderWidth: 0.5,
-        borderColor: '#DEDEDE',
+        borderColor: colors.lightGrayColor,
         marginTop: 16,
     },
     unfollowButtonText: {
         ...Fonts.regular14,
-        color: '#9B9F9F',
+        color: colors.subTextColor,
     },
     // Bio Section
     bioSection: {
@@ -199,16 +200,16 @@ const Styles = StyleSheet.create({
     },
     bioTitle: {
         ...Fonts.medium16,
-        color: Colors.mainTextColor,
+        color: colors.mainTextColor,
     },
     bioText: {
         ...Fonts.regular12,
-        color: '#777777',
+        color: colors.grayColor,
         lineHeight: 20,
     },
     separator: {
         height: 1,
-        backgroundColor: '#DEDEDE',
+        backgroundColor: colors.lightGrayColor,
         marginTop: 8,
     },
     // Links Section
@@ -223,7 +224,7 @@ const Styles = StyleSheet.create({
     linkChip: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: '#F5F5F5',
+        backgroundColor: colors.btnBackgroundColor,
         borderRadius: 6,
         paddingHorizontal: 10,
         paddingVertical: 6,
@@ -231,18 +232,18 @@ const Styles = StyleSheet.create({
     },
     linkText: {
         ...Fonts.regular12,
-        color: '#9B9F9F',
+        color: colors.subTextColor,
     },
     linkTextUnderline: {
         ...Fonts.regular12,
-        color: '#9B9F9F',
+        color: colors.subTextColor,
         textDecorationLine: 'underline',
     },
     emailChip: {
         flex: 1,
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: '#F5F5F5',
+        backgroundColor: colors.btnBackgroundColor,
         borderRadius: 6,
         paddingHorizontal: 10,
         paddingVertical: 6,
@@ -250,7 +251,7 @@ const Styles = StyleSheet.create({
     },
     emailText: {
         ...Fonts.medium12,
-        color: '#9B9F9F',
+        color: colors.subTextColor,
     },
     // Posts Section
     postsSection: {
@@ -263,11 +264,11 @@ const Styles = StyleSheet.create({
     },
     sectionTitle: {
         ...Fonts.medium18,
-        color: Colors.mainTextColor,
+        color: colors.mainTextColor,
     },
     viewAllText: {
         ...Fonts.regular14,
-        color: '#9B9F9F',
+        color: colors.subTextColor,
     },
     postsContainer: {
         marginTop: 24,
@@ -275,10 +276,10 @@ const Styles = StyleSheet.create({
     },
     // Post Card
     postCard: {
-        backgroundColor: Colors.whiteColor,
+        backgroundColor: colors.cardBackground,
         borderRadius: 10,
         borderWidth: 0.5,
-        borderColor: '#DEDEDE',
+        borderColor: colors.lightGrayColor,
         padding: 16,
         gap: 16,
     },
@@ -294,29 +295,29 @@ const Styles = StyleSheet.create({
         height: '100%',
     },
     postInfoBar: {
-        backgroundColor: '#E0ECFE',
+        backgroundColor: colors.borderColor,
         paddingHorizontal: 16,
         paddingVertical: 8,
         gap: 2,
     },
     postTitle: {
         ...Fonts.medium14,
-        color: Colors.mainTextColor,
+        color: colors.mainTextColor,
     },
     postDate: {
         ...Fonts.regular12,
-        color: '#9B9F9F',
+        color: colors.subTextColor,
     },
     postDescription: {
         ...Fonts.regular12,
-        color: '#9B9F9F',
+        color: colors.subTextColor,
         lineHeight: 20,
     },
     sharePostButton: {
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',
-        backgroundColor: Colors.primaryColor,
+        backgroundColor: colors.primaryColor,
         borderRadius: 8,
         paddingHorizontal: 16,
         paddingVertical: 10,
@@ -325,7 +326,7 @@ const Styles = StyleSheet.create({
     },
     sharePostButtonText: {
         ...Fonts.regular14,
-        color: Colors.whiteColor,
+        color: colors.pureWhite,
     },
     // Collections Section
     collectionsSection: {
@@ -333,10 +334,10 @@ const Styles = StyleSheet.create({
     },
     toggleContainer: {
         flexDirection: 'row',
-        backgroundColor: Colors.whiteColor,
+        backgroundColor: colors.cardBackground,
         borderRadius: 10,
         borderWidth: 0.5,
-        borderColor: '#DEDEDE',
+        borderColor: colors.lightGrayColor,
         padding: 8,
         marginTop: 16,
     },
@@ -352,19 +353,19 @@ const Styles = StyleSheet.create({
     },
     toggleText: {
         ...Fonts.regular12,
-        color: '#9B9F9F',
+        color: colors.subTextColor,
     },
     toggleTextActive: {
         ...Fonts.regular12,
-        color: Colors.mainTextColor,
+        color: colors.mainTextColor,
     },
     collectionsGrid: {
         flexDirection: 'row',
         justifyContent: 'space-between',
-        backgroundColor: Colors.whiteColor,
+        backgroundColor: colors.cardBackground,
         borderRadius: 10,
         borderWidth: 0.5,
-        borderColor: '#DEDEDE',
+        borderColor: colors.lightGrayColor,
         padding: 12,
         marginTop: 16,
     },
@@ -377,10 +378,10 @@ const Styles = StyleSheet.create({
     videosGrid: {
         flexDirection: 'row',
         justifyContent: 'space-between',
-        backgroundColor: Colors.whiteColor,
+        backgroundColor: colors.cardBackground,
         borderRadius: 10,
         borderWidth: 0.5,
-        borderColor: '#DEDEDE',
+        borderColor: colors.lightGrayColor,
         padding: 12,
         marginTop: 16,
         gap: 12,
@@ -413,7 +414,7 @@ const Styles = StyleSheet.create({
     },
     videoCardTitle: {
         ...Fonts.medium12,
-        color: Colors.mainTextColor,
+        color: colors.mainTextColor,
         marginTop: 8,
     },
     videoCardMeta: {
@@ -429,7 +430,7 @@ const Styles = StyleSheet.create({
     },
     videoMetaText: {
         ...Fonts.regular10,
-        color: '#9B9F9F',
+        color: colors.subTextColor,
     },
 
     // Legacy styles (kept for backward compatibility)
@@ -453,14 +454,14 @@ const Styles = StyleSheet.create({
         height: 6,
         width: 6,
         borderRadius: 3,
-        backgroundColor: Colors.subTextColor
+        backgroundColor: colors.subTextColor
     },
     profileImgCont: {
         height: 110,
         width: 110,
         borderRadius: 55,
         borderWidth: 2,
-        borderColor: Colors.primaryColor,
+        borderColor: colors.primaryColor,
         alignSelf: 'center'
     },
     profileImg: {
@@ -470,12 +471,12 @@ const Styles = StyleSheet.create({
     },
     userNameText: {
         ...Fonts.regular20,
-        color: Colors.mainTextColor,
+        color: colors.mainTextColor,
         fontWeight: '500',
     },
     subText: {
         ...Fonts.regular12,
-        color: Colors.grayColor,
+        color: colors.grayColor,
         fontWeight: '400',
     },
     followingCont: {
@@ -483,26 +484,26 @@ const Styles = StyleSheet.create({
         paddingVertical: 8,
         borderRadius: 6,
         borderWidth: 0.5,
-        borderColor: Colors.primaryColor
+        borderColor: colors.primaryColor
     },
     followersText: {
         ...Fonts.regular14,
-        color: Colors.primaryColor
+        color: colors.primaryColor
     },
     unfollowCont: {
         paddingHorizontal: 20,
         paddingVertical: 10,
         borderRadius: 6,
         borderWidth: 0.5,
-        borderColor: Colors.lightGrayColor
+        borderColor: colors.lightGrayColor
     },
     unfollowText: {
         ...Fonts.regular14,
-        color: Colors.subTextColor
+        color: colors.subTextColor
     },
     titleText: {
         ...Fonts.regular16,
-        color: Colors.mainTextColor
+        color: colors.mainTextColor
     },
     socialIcons: {
         height: 14,
@@ -520,7 +521,7 @@ const Styles = StyleSheet.create({
     editBtn: {
         height: 54,
         borderWidth: 1,
-        borderColor: Colors.lightGrayColor,
+        borderColor: colors.lightGrayColor,
         borderRadius: 10,
         alignItems: 'center',
         justifyContent: 'center',
@@ -528,12 +529,12 @@ const Styles = StyleSheet.create({
     },
     btnText: {
         ...Fonts.regular16,
-        color: Colors.subTextColor
+        color: colors.subTextColor
     },
     downloadContainer: {
         borderRadius: 10,
         borderWidth: 0.5,
-        borderColor: Colors.lightGrayColor,
+        borderColor: colors.lightGrayColor,
         paddingHorizontal: 16,
         paddingVertical: 23,
         alignItems: 'center',
@@ -542,7 +543,7 @@ const Styles = StyleSheet.create({
     },
     downloadText: {
         ...Fonts.regular14,
-        color: Colors.subTextColor,
+        color: colors.subTextColor,
         fontWeight: '400',
         marginLeft: 10,
         marginRight: 5
@@ -550,7 +551,7 @@ const Styles = StyleSheet.create({
     downloadCount: {
         ...Fonts.regular14,
         fontWeight: '500',
-        color: Colors.mainTextColor,
+        color: colors.mainTextColor,
     },
     btnRight: {
         position: 'absolute',
@@ -559,7 +560,7 @@ const Styles = StyleSheet.create({
     CompetitionContainer: {
         padding: 16,
         borderWidth: 0.5,
-        borderColor: Colors.lightGrayColor,
+        borderColor: colors.lightGrayColor,
         borderRadius: 10,
         marginRight: 20
     },
@@ -575,18 +576,18 @@ const Styles = StyleSheet.create({
     },
     eventText: {
         ...Fonts.regular14,
-        color: Colors.mainTextColor
+        color: colors.mainTextColor
     },
     eventbtns: {
         paddingVertical: 8,
         paddingHorizontal: 9,
         borderWidth: 0.5,
-        borderColor: Colors.lightGrayColor,
+        borderColor: colors.lightGrayColor,
         borderRadius: 6
     },
     eventBtnText: {
         ...Fonts.regular14,
-        color: Colors.subTextColor
+        color: colors.subTextColor
     },
     modalContainer: {
         flex: 1,
@@ -602,8 +603,8 @@ const Styles = StyleSheet.create({
         borderRadius: 10,
         paddingHorizontal: 16,
         borderWidth: 0.5,
-        borderColor: Colors.lightGrayColor,
-        backgroundColor: Colors.whiteColor,
+        borderColor: colors.lightGrayColor,
+        backgroundColor: colors.cardBackground,
         marginHorizontal: 20
     },
     icons: {
@@ -615,11 +616,11 @@ const Styles = StyleSheet.create({
         right: 12
     },
     bioContainer: {
-        backgroundColor: '#F7FAFF',
+        backgroundColor: colors.secondaryColor,
         borderRadius: 12,
         padding: 12,
         borderWidth: 1,
-        borderColor: Colors.borderColor,
+        borderColor: colors.borderColor,
     },
     iconRow: {
         flexDirection: 'row',
@@ -631,7 +632,7 @@ const Styles = StyleSheet.create({
     },
     textInput: {
         flex: 1,
-        color: Colors.mainTextColor,
+        color: colors.mainTextColor,
         fontSize: 16,
         minHeight: 100,
         textAlignVertical: 'top',
@@ -641,7 +642,7 @@ const Styles = StyleSheet.create({
         justifyContent: 'center',
         height: 48,
         borderWidth: 0.5,
-        borderColor: Colors.lightGrayColor,
+        borderColor: colors.lightGrayColor,
         borderRadius: 10
     },
     toggleBtnContainer: {
@@ -653,10 +654,10 @@ const Styles = StyleSheet.create({
     },
     selectedTab: {
         borderBottomWidth: 3,
-        borderBottomColor: Colors.primaryColor,
+        borderBottomColor: colors.primaryColor,
     },
     selectedTabText: {
-        color: Colors.primaryColor,
+        color: colors.primaryColor,
     },
     photoImgCont: {
         height: 120,
@@ -681,6 +682,8 @@ const Styles = StyleSheet.create({
         justifyContent: 'center',
         alignItems: 'center',
     },
-})
+});
 
+// Backward compatibility
+const Styles = createStyles(lightColors);
 export default Styles;

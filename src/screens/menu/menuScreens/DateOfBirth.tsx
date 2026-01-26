@@ -1,14 +1,16 @@
 import { View, Text, TouchableOpacity, ScrollView, Platform } from 'react-native'
 import React, { useState } from 'react'
-import Styles from '../MenuStyles'
+import { createStyles } from '../MenuStyles'
 import SizeBox from '../../../constants/SizeBox'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import Colors from '../../../constants/Colors'
+import { useTheme } from '../../../context/ThemeContext'
 import { ArrowLeft2, Notification, Calendar, ArrowDown2, ArrowRight2 } from 'iconsax-react-nativejs'
 import DateTimePicker from '@react-native-community/datetimepicker'
 
 const DateOfBirth = ({ navigation }: any) => {
     const insets = useSafeAreaInsets();
+    const { colors } = useTheme();
+    const Styles = createStyles(colors);
     const [currentDate, setCurrentDate] = useState<Date | null>(null);
     const [newDate, setNewDate] = useState<Date | null>(null);
     const [showCurrentDatePicker, setShowCurrentDatePicker] = useState(false);
@@ -48,11 +50,11 @@ const DateOfBirth = ({ navigation }: any) => {
             {/* Header */}
             <View style={Styles.header}>
                 <TouchableOpacity style={Styles.headerButton} onPress={() => navigation.goBack()}>
-                    <ArrowLeft2 size={24} color={Colors.primaryColor} variant="Linear" />
+                    <ArrowLeft2 size={24} color={colors.primaryColor} variant="Linear" />
                 </TouchableOpacity>
                 <Text style={Styles.headerTitle}>Date of Birth</Text>
                 <TouchableOpacity style={Styles.headerButton}>
-                    <Notification size={24} color={Colors.primaryColor} variant="Linear" />
+                    <Notification size={24} color={colors.primaryColor} variant="Linear" />
                 </TouchableOpacity>
             </View>
 
@@ -70,12 +72,12 @@ const DateOfBirth = ({ navigation }: any) => {
                         style={Styles.addCardInputContainer}
                         onPress={() => setShowCurrentDatePicker(true)}
                     >
-                        <Calendar size={16} color={Colors.primaryColor} variant="Linear" />
+                        <Calendar size={16} color={colors.primaryColor} variant="Linear" />
                         <SizeBox width={10} />
                         <Text style={[Styles.addCardPlaceholder, currentDate && Styles.addCardInputText]}>
                             {formatDate(currentDate)}
                         </Text>
-                        <ArrowDown2 size={20} color="#777777" variant="Linear" />
+                        <ArrowDown2 size={20} color={colors.grayColor} variant="Linear" />
                     </TouchableOpacity>
                 </View>
 
@@ -89,12 +91,12 @@ const DateOfBirth = ({ navigation }: any) => {
                         style={Styles.addCardInputContainer}
                         onPress={() => setShowNewDatePicker(true)}
                     >
-                        <Calendar size={16} color={Colors.primaryColor} variant="Linear" />
+                        <Calendar size={16} color={colors.primaryColor} variant="Linear" />
                         <SizeBox width={10} />
                         <Text style={[Styles.addCardPlaceholder, newDate && Styles.addCardInputText]}>
                             {formatDate(newDate)}
                         </Text>
-                        <ArrowDown2 size={20} color="#777777" variant="Linear" />
+                        <ArrowDown2 size={20} color={colors.grayColor} variant="Linear" />
                     </TouchableOpacity>
                 </View>
 
@@ -103,7 +105,7 @@ const DateOfBirth = ({ navigation }: any) => {
                 {/* Continue Button */}
                 <TouchableOpacity style={Styles.continueBtn} onPress={() => navigation.goBack()}>
                     <Text style={Styles.continueBtnText}>Continue</Text>
-                    <ArrowRight2 size={18} color={Colors.whiteColor} variant="Linear" />
+                    <ArrowRight2 size={18} color={colors.pureWhite} variant="Linear" />
                 </TouchableOpacity>
 
                 <SizeBox height={insets.bottom > 0 ? insets.bottom + 20 : 40} />

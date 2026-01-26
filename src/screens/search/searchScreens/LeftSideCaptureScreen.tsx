@@ -3,14 +3,14 @@ import React, { useState } from 'react'
 import Svg, { Path } from 'react-native-svg'
 import SizeBox from '../../../constants/SizeBox'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import Colors from '../../../constants/Colors'
+import { useTheme } from '../../../context/ThemeContext'
 import FastImage from 'react-native-fast-image'
 import { ArrowLeft2, Notification } from 'iconsax-react-nativejs'
 import { launchCamera } from 'react-native-image-picker'
-import styles from './LeftSideCaptureScreenStyles'
+import { createStyles } from './LeftSideCaptureScreenStyles'
 
 // Custom camera frame with corner brackets
-const CameraFrame = ({ width, height, children }: { width: number; height: number; children: React.ReactNode }) => {
+const CameraFrame = ({ width, height, children, primaryColor, secondaryColor }: { width: number; height: number; children: React.ReactNode; primaryColor: string; secondaryColor: string }) => {
     const strokeWidth = 10;
     const cornerLength = 80;
     const borderRadius = 10;
@@ -25,7 +25,7 @@ const CameraFrame = ({ width, height, children }: { width: number; height: numbe
                 height,
                 borderRadius,
                 overflow: 'hidden',
-                backgroundColor: '#E8E8E8'
+                backgroundColor: secondaryColor
             }}>
                 {children}
             </View>
@@ -42,7 +42,7 @@ const CameraFrame = ({ width, height, children }: { width: number; height: numbe
                         L ${strokeWidth / 2} ${borderRadius}
                         Q ${strokeWidth / 2} ${strokeWidth / 2} ${borderRadius} ${strokeWidth / 2}
                         L ${borderRadius + cornerLength} ${strokeWidth / 2}`}
-                    stroke={Colors.primaryColor}
+                    stroke={primaryColor}
                     strokeWidth={strokeWidth}
                     fill="none"
                     strokeLinecap="round"
@@ -54,7 +54,7 @@ const CameraFrame = ({ width, height, children }: { width: number; height: numbe
                         L ${width - borderRadius} ${strokeWidth / 2}
                         Q ${width - strokeWidth / 2} ${strokeWidth / 2} ${width - strokeWidth / 2} ${borderRadius}
                         L ${width - strokeWidth / 2} ${borderRadius + cornerLength}`}
-                    stroke={Colors.primaryColor}
+                    stroke={primaryColor}
                     strokeWidth={strokeWidth}
                     fill="none"
                     strokeLinecap="round"
@@ -64,7 +64,7 @@ const CameraFrame = ({ width, height, children }: { width: number; height: numbe
                 <Path
                     d={`M ${strokeWidth / 2} ${middleY - middleBracketLength}
                         L ${strokeWidth / 2} ${middleY + middleBracketLength}`}
-                    stroke={Colors.primaryColor}
+                    stroke={primaryColor}
                     strokeWidth={strokeWidth}
                     fill="none"
                     strokeLinecap="round"
@@ -74,7 +74,7 @@ const CameraFrame = ({ width, height, children }: { width: number; height: numbe
                 <Path
                     d={`M ${width - strokeWidth / 2} ${middleY - middleBracketLength}
                         L ${width - strokeWidth / 2} ${middleY + middleBracketLength}`}
-                    stroke={Colors.primaryColor}
+                    stroke={primaryColor}
                     strokeWidth={strokeWidth}
                     fill="none"
                     strokeLinecap="round"
@@ -86,7 +86,7 @@ const CameraFrame = ({ width, height, children }: { width: number; height: numbe
                         L ${strokeWidth / 2} ${height - borderRadius}
                         Q ${strokeWidth / 2} ${height - strokeWidth / 2} ${borderRadius} ${height - strokeWidth / 2}
                         L ${borderRadius + cornerLength} ${height - strokeWidth / 2}`}
-                    stroke={Colors.primaryColor}
+                    stroke={primaryColor}
                     strokeWidth={strokeWidth}
                     fill="none"
                     strokeLinecap="round"
@@ -98,7 +98,7 @@ const CameraFrame = ({ width, height, children }: { width: number; height: numbe
                         L ${width - borderRadius} ${height - strokeWidth / 2}
                         Q ${width - strokeWidth / 2} ${height - strokeWidth / 2} ${width - strokeWidth / 2} ${height - borderRadius}
                         L ${width - strokeWidth / 2} ${height - borderRadius - cornerLength}`}
-                    stroke={Colors.primaryColor}
+                    stroke={primaryColor}
                     strokeWidth={strokeWidth}
                     fill="none"
                     strokeLinecap="round"
@@ -114,6 +114,8 @@ const FRAME_HEIGHT = 465;
 
 const LeftSideCaptureScreen = ({ navigation, route }: any) => {
     const insets = useSafeAreaInsets();
+    const { colors } = useTheme();
+    const styles = createStyles(colors);
     const [capturedImage, setCapturedImage] = useState<string | null>(null);
     const frontFaceImage = route?.params?.frontFaceImage;
 
@@ -155,11 +157,11 @@ const LeftSideCaptureScreen = ({ navigation, route }: any) => {
             {/* Header */}
             <View style={styles.header}>
                 <TouchableOpacity style={styles.headerButton} onPress={() => navigation.goBack()}>
-                    <ArrowLeft2 size={24} color={Colors.primaryColor} variant="Linear" />
+                    <ArrowLeft2 size={24} color={colors.primaryColor} variant="Linear" />
                 </TouchableOpacity>
                 <Text style={styles.headerTitle}>Left Side Capture</Text>
                 <TouchableOpacity style={styles.headerButton}>
-                    <Notification size={24} color={Colors.primaryColor} variant="Linear" />
+                    <Notification size={24} color={colors.primaryColor} variant="Linear" />
                 </TouchableOpacity>
             </View>
 
@@ -176,7 +178,12 @@ const LeftSideCaptureScreen = ({ navigation, route }: any) => {
                     onPress={!capturedImage ? handleCapture : undefined}
                     activeOpacity={capturedImage ? 1 : 0.7}
                 >
-                    <CameraFrame width={FRAME_WIDTH} height={FRAME_HEIGHT}>
+                    <CameraFrame
+                        width={FRAME_WIDTH}
+                        height={FRAME_HEIGHT}
+                        primaryColor={colors.primaryColor}
+                        secondaryColor={colors.secondaryColor}
+                    >
                         {capturedImage ? (
                             <FastImage
                                 source={{ uri: capturedImage }}

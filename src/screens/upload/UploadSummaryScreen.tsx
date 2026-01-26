@@ -3,9 +3,9 @@ import React from 'react'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import FastImage from 'react-native-fast-image'
 import { ArrowLeft2, Notification, ArrowRight } from 'iconsax-react-nativejs'
-import Styles from './UploadSummaryScreenStyles'
+import { createStyles } from './UploadSummaryScreenStyles'
 import SizeBox from '../../constants/SizeBox'
-import Colors from '../../constants/Colors'
+import { useTheme } from '../../context/ThemeContext'
 import Images from '../../constants/Images'
 import Icons from '../../constants/Icons'
 
@@ -23,6 +23,8 @@ interface CategorySection {
 
 const UploadSummaryScreen = ({ navigation, route }: any) => {
     const insets = useSafeAreaInsets();
+    const { colors } = useTheme();
+    const Styles = createStyles(colors);
     const competition = route?.params?.competition;
     const account = route?.params?.account;
     const anonymous = route?.params?.anonymous;
@@ -80,11 +82,11 @@ const UploadSummaryScreen = ({ navigation, route }: any) => {
             {/* Header */}
             <View style={Styles.header}>
                 <TouchableOpacity style={Styles.headerButton} onPress={() => navigation.goBack()}>
-                    <ArrowLeft2 size={24} color={Colors.mainTextColor} variant="Linear" />
+                    <ArrowLeft2 size={24} color={colors.mainTextColor} variant="Linear" />
                 </TouchableOpacity>
                 <Text style={Styles.headerTitle}>Upload Summary</Text>
                 <TouchableOpacity style={Styles.headerButton}>
-                    <Notification size={24} color={Colors.mainTextColor} variant="Linear" />
+                    <Notification size={24} color={colors.mainTextColor} variant="Linear" />
                 </TouchableOpacity>
             </View>
 
@@ -96,7 +98,7 @@ const UploadSummaryScreen = ({ navigation, route }: any) => {
                 {/* Confirm Button */}
                 <TouchableOpacity style={Styles.confirmButton} onPress={handleConfirm}>
                     <Text style={Styles.confirmButtonText}>Confirm</Text>
-                    <ArrowRight size={18} color={Colors.whiteColor} variant="Linear" />
+                    <ArrowRight size={18} color={colors.pureWhite} variant="Linear" />
                 </TouchableOpacity>
 
                 <SizeBox height={insets.bottom > 0 ? insets.bottom + 20 : 40} />

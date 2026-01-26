@@ -1,13 +1,15 @@
 import { Text, View, TouchableOpacity, TextInput } from 'react-native'
 import React, { useState } from 'react'
-import Styles from '../MenuStyles'
+import { createStyles } from '../MenuStyles'
 import SizeBox from '../../../constants/SizeBox'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import Colors from '../../../constants/Colors'
+import { useTheme } from '../../../context/ThemeContext'
 import { ArrowLeft2, Notification, Location as LocationIcon } from 'iconsax-react-nativejs'
 
 const Location = ({ navigation }: any) => {
     const insets = useSafeAreaInsets();
+    const { colors } = useTheme();
+    const Styles = createStyles(colors);
     const [location, setLocation] = useState('');
 
     return (
@@ -17,11 +19,11 @@ const Location = ({ navigation }: any) => {
             {/* Header */}
             <View style={Styles.header}>
                 <TouchableOpacity style={Styles.headerButton} onPress={() => navigation.goBack()}>
-                    <ArrowLeft2 size={24} color={Colors.primaryColor} variant="Linear" />
+                    <ArrowLeft2 size={24} color={colors.primaryColor} variant="Linear" />
                 </TouchableOpacity>
                 <Text style={Styles.headerTitle}>Menu</Text>
                 <TouchableOpacity style={Styles.headerButton}>
-                    <Notification size={24} color={Colors.primaryColor} variant="Linear" />
+                    <Notification size={24} color={colors.primaryColor} variant="Linear" />
                 </TouchableOpacity>
             </View>
 
@@ -30,12 +32,12 @@ const Location = ({ navigation }: any) => {
                 <Text style={Styles.sectionTitle}>Location</Text>
                 <SizeBox height={16} />
                 <View style={Styles.locationInputContainer}>
-                    <LocationIcon size={20} color={Colors.primaryColor} variant="Linear" />
+                    <LocationIcon size={20} color={colors.primaryColor} variant="Linear" />
                     <SizeBox width={10} />
                     <TextInput
                         style={Styles.locationInput}
                         placeholder="Enter your location"
-                        placeholderTextColor="#777777"
+                        placeholderTextColor={colors.grayColor}
                         value={location}
                         onChangeText={setLocation}
                     />

@@ -1,15 +1,18 @@
 import { View, Text, TouchableOpacity } from 'react-native'
 import React, { useState } from 'react'
-import Styles from './UploadDetailsStyles'
+import { createStyles } from './UploadDetailsStyles'
 import SizeBox from '../../constants/SizeBox'
 import CustomHeader from '../../components/customHeader/CustomHeader'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import Icons from '../../constants/Icons'
 import CustomSwitch from '../../components/customSwitch/CustomSwitch'
 import { launchImageLibrary } from 'react-native-image-picker';
+import { useTheme } from '../../context/ThemeContext'
 
 const UploadDetailsScreen = ({ navigation }: any) => {
     const insets = useSafeAreaInsets();
+    const { colors } = useTheme();
+    const Styles = createStyles(colors);
     const [isEnabled, setIsEnabled] = useState(true);
     const [selectedImages, setSelectedImages] = useState([]);
     const [selectedVideo, setSelectedVideo] = useState<any>(null);

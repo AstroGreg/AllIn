@@ -1,11 +1,11 @@
 import { StyleSheet } from 'react-native';
-import Colors from '../../../constants/Colors';
 import Fonts from '../../../constants/Fonts';
+import { ThemeColors, lightColors } from '../../../constants/Theme';
 
-const Styles = StyleSheet.create({
+export const createStyles = (colors: ThemeColors) => StyleSheet.create({
     mainContainer: {
         flex: 1,
-        backgroundColor: Colors.whiteColor,
+        backgroundColor: colors.backgroundColor,
     },
     imageContainer: {
         alignItems: 'center',
@@ -22,15 +22,17 @@ const Styles = StyleSheet.create({
         ...Fonts.medium22,
         fontSize: 24,
         lineHeight: 32,
-        color: Colors.mainTextColor,
+        color: colors.mainTextColor,
         textAlign: 'center',
     },
     subHeadingText: {
         ...Fonts.regular14,
         lineHeight: 22,
-        color: '#9B9F9F',
+        color: colors.grayColor,
         textAlign: 'center',
     },
 });
 
+// Backward compatibility
+const Styles = createStyles(lightColors);
 export default Styles;

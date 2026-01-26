@@ -1,45 +1,46 @@
 import { StyleSheet } from "react-native";
 import Colors from "../../constants/Colors";
 import Fonts from "../../constants/Fonts";
+import { ThemeColors, lightColors } from "../../constants/Theme";
 
-const Styles = StyleSheet.create({
+export const createStyles = (colors: ThemeColors) => StyleSheet.create({
     mainContainer: {
         flex: 1,
-        backgroundColor: Colors.whiteColor,
+        backgroundColor: colors.backgroundColor,
     },
     header: {
         paddingHorizontal: 20,
         paddingVertical: 16,
         borderBottomWidth: 0.5,
-        borderBottomColor: '#DEDEDE',
+        borderBottomColor: colors.lightGrayColor,
         alignItems: 'center',
     },
     headerTitle: {
         ...Fonts.medium18,
-        color: Colors.mainTextColor,
+        color: colors.mainTextColor,
     },
     scrollContent: {
         paddingHorizontal: 20,
         paddingTop: 24,
     },
     tipCard: {
-        backgroundColor: Colors.whiteColor,
+        backgroundColor: colors.whiteColor,
         borderRadius: 10,
         borderWidth: 0.5,
-        borderColor: '#DEDEDE',
+        borderColor: colors.lightGrayColor,
         padding: 16,
         alignItems: 'center',
     },
     tipText: {
         ...Fonts.regular14,
-        color: '#9B9F9F',
+        color: colors.subTextColor,
         textAlign: 'center',
     },
     accountCard: {
-        backgroundColor: Colors.whiteColor,
+        backgroundColor: colors.whiteColor,
         borderRadius: 10,
         borderWidth: 0.5,
-        borderColor: '#DEDEDE',
+        borderColor: colors.lightGrayColor,
         padding: 16,
         flexDirection: 'row',
         alignItems: 'center',
@@ -67,7 +68,7 @@ const Styles = StyleSheet.create({
     },
     accountName: {
         ...Fonts.medium14,
-        color: Colors.mainTextColor,
+        color: colors.mainTextColor,
     },
     sportRow: {
         flexDirection: 'row',
@@ -77,10 +78,10 @@ const Styles = StyleSheet.create({
     },
     sportText: {
         ...Fonts.regular12,
-        color: '#9B9F9F',
+        color: colors.subTextColor,
     },
     selectButton: {
-        backgroundColor: Colors.primaryColor,
+        backgroundColor: colors.primaryColor,
         borderRadius: 5,
         paddingHorizontal: 16,
         paddingVertical: 10,
@@ -91,10 +92,10 @@ const Styles = StyleSheet.create({
     },
     selectButtonText: {
         ...Fonts.medium12,
-        color: Colors.whiteColor,
+        color: colors.pureWhite,
     },
     createAccountButton: {
-        backgroundColor: Colors.primaryColor,
+        backgroundColor: colors.primaryColor,
         borderRadius: 10,
         paddingVertical: 16,
         flexDirection: 'row',
@@ -104,10 +105,10 @@ const Styles = StyleSheet.create({
     },
     createAccountButtonText: {
         ...Fonts.medium16,
-        color: Colors.whiteColor,
+        color: colors.pureWhite,
     },
     anonymousButton: {
-        backgroundColor: '#F5F5F5',
+        backgroundColor: colors.btnBackgroundColor,
         borderRadius: 10,
         paddingVertical: 16,
         alignItems: 'center',
@@ -115,8 +116,10 @@ const Styles = StyleSheet.create({
     },
     anonymousButtonText: {
         ...Fonts.medium16,
-        color: Colors.primaryColor,
+        color: colors.primaryColor,
     },
 });
 
+// Backward compatibility
+const Styles = createStyles(lightColors);
 export default Styles;

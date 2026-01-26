@@ -1,12 +1,11 @@
 import { StyleSheet } from 'react-native';
-import Colors from '../../constants/Colors';
 import Fonts from '../../constants/Fonts';
+import { ThemeColors, lightColors } from '../../constants/Theme';
 
-
-const Styles = StyleSheet.create({
+export const createStyles = (colors: ThemeColors) => StyleSheet.create({
     mainContainer: {
         flex: 1,
-        backgroundColor: Colors.whiteColor,
+        backgroundColor: colors.backgroundColor,
     },
     header: {
         flexDirection: 'row',
@@ -15,19 +14,19 @@ const Styles = StyleSheet.create({
         paddingHorizontal: 20,
         paddingVertical: 16,
         borderBottomWidth: 0.5,
-        borderBottomColor: '#DEDEDE',
+        borderBottomColor: colors.borderColor,
     },
     backButton: {
         width: 44,
         height: 44,
         borderRadius: 22,
-        backgroundColor: '#F5F5F5',
+        backgroundColor: colors.btnBackgroundColor,
         alignItems: 'center',
         justifyContent: 'center',
     },
     headerTitle: {
         ...Fonts.medium14,
-        color: Colors.mainTextColor,
+        color: colors.mainTextColor,
     },
     placeholder: {
         width: 44,
@@ -39,10 +38,10 @@ const Styles = StyleSheet.create({
         paddingTop: 16,
     },
     questionCard: {
-        backgroundColor: Colors.whiteColor,
+        backgroundColor: colors.cardBackground,
         borderRadius: 10,
         borderWidth: 0.5,
-        borderColor: '#DEDEDE',
+        borderColor: colors.borderColor,
         paddingHorizontal: 16,
         paddingVertical: 12,
         height: 115,
@@ -51,7 +50,7 @@ const Styles = StyleSheet.create({
     },
     questionText: {
         ...Fonts.regular14,
-        color: '#9B9F9F',
+        color: colors.subTextColor,
         textAlign: 'center',
         marginBottom: 12,
     },
@@ -72,7 +71,7 @@ const Styles = StyleSheet.create({
         justifyContent: 'center',
     },
     yesButton: {
-        backgroundColor: Colors.primaryColor,
+        backgroundColor: colors.primaryColor,
         borderRadius: 8,
         paddingHorizontal: 12,
         paddingVertical: 8,
@@ -83,7 +82,7 @@ const Styles = StyleSheet.create({
     },
     buttonText: {
         ...Fonts.regular14,
-        color: Colors.whiteColor,
+        color: colors.pureWhite,
         fontSize: 11,
         lineHeight: 17,
     },
@@ -114,7 +113,7 @@ const Styles = StyleSheet.create({
     },
     viewsText: {
         ...Fonts.regular16,
-        color: Colors.whiteColor,
+        color: colors.pureWhite,
     },
     gradientOverlay: {
         position: 'absolute',
@@ -133,11 +132,11 @@ const Styles = StyleSheet.create({
     },
     photoTitle: {
         ...Fonts.medium16,
-        color: Colors.whiteColor,
+        color: colors.pureWhite,
         flex: 1,
     },
     downloadButton: {
-        backgroundColor: Colors.primaryColor,
+        backgroundColor: colors.primaryColor,
         borderRadius: 8,
         paddingHorizontal: 16,
         paddingVertical: 10,
@@ -147,10 +146,10 @@ const Styles = StyleSheet.create({
     },
     downloadButtonText: {
         ...Fonts.regular14,
-        color: Colors.whiteColor,
+        color: colors.pureWhite,
     },
     buyButton: {
-        backgroundColor: Colors.primaryColor,
+        backgroundColor: colors.primaryColor,
         borderRadius: 8,
         paddingHorizontal: 16,
         paddingVertical: 10,
@@ -161,8 +160,10 @@ const Styles = StyleSheet.create({
     },
     buyButtonText: {
         ...Fonts.regular14,
-        color: Colors.whiteColor,
+        color: colors.pureWhite,
     },
 });
 
+// Backward compatibility
+const Styles = createStyles(lightColors);
 export default Styles;

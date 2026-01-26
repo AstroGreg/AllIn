@@ -1,11 +1,11 @@
 import { StyleSheet } from 'react-native';
-import Colors from '../../../constants/Colors';
 import Fonts from '../../../constants/Fonts';
+import { ThemeColors, lightColors } from '../../../constants/Theme';
 
-const Styles = StyleSheet.create({
+export const createStyles = (colors: ThemeColors) => StyleSheet.create({
     mainContainer: {
         flex: 1,
-        backgroundColor: Colors.whiteColor,
+        backgroundColor: colors.backgroundColor,
     },
     scrollContent: {
         flexGrow: 1,
@@ -26,19 +26,19 @@ const Styles = StyleSheet.create({
         ...Fonts.medium22,
         fontSize: 24,
         lineHeight: 32,
-        color: Colors.mainTextColor,
+        color: colors.mainTextColor,
         textAlign: 'center',
     },
     subHeadingText: {
         ...Fonts.regular14,
         lineHeight: 22,
-        color: '#9B9F9F',
+        color: colors.grayColor,
         textAlign: 'center',
     },
     cardContainer: {
-        backgroundColor: Colors.whiteColor,
+        backgroundColor: colors.cardBackground,
         borderWidth: 0.5,
-        borderColor: Colors.lightGrayColor,
+        borderColor: colors.lightGrayColor,
         borderRadius: 10,
         padding: 16,
         gap: 20,
@@ -51,15 +51,15 @@ const Styles = StyleSheet.create({
         paddingHorizontal: 16,
         borderRadius: 10,
         borderWidth: 0.5,
-        borderColor: Colors.lightGrayColor,
-        backgroundColor: '#F5F5F5',
+        borderColor: colors.lightGrayColor,
+        backgroundColor: colors.btnBackgroundColor,
     },
     eventItemSelected: {
         backgroundColor: 'rgba(60, 130, 246, 0.14)',
-        borderColor: Colors.primaryColor,
+        borderColor: colors.primaryColor,
     },
     eventItemDisabled: {
-        backgroundColor: '#F5F5F5',
+        backgroundColor: colors.btnBackgroundColor,
     },
     eventInfo: {
         flexDirection: 'row',
@@ -74,14 +74,14 @@ const Styles = StyleSheet.create({
     eventName: {
         ...Fonts.regular14,
         lineHeight: 22,
-        color: '#9B9F9F',
+        color: colors.grayColor,
         flex: 1,
     },
     eventNameSelected: {
-        color: Colors.mainTextColor,
+        color: colors.mainTextColor,
     },
     eventNameDisabled: {
-        color: '#9B9F9F',
+        color: colors.grayColor,
     },
     lockIcon: {
         width: 16,
@@ -99,7 +99,7 @@ const Styles = StyleSheet.create({
         height: 54,
         borderRadius: 10,
         borderWidth: 0.5,
-        borderColor: Colors.lightGrayColor,
+        borderColor: colors.lightGrayColor,
         alignItems: 'center',
         justifyContent: 'center',
         flexDirection: 'row',
@@ -108,13 +108,13 @@ const Styles = StyleSheet.create({
     backButtonText: {
         ...Fonts.medium16,
         lineHeight: 24,
-        color: '#9B9F9F',
+        color: colors.grayColor,
     },
     nextButton: {
         flex: 1,
         height: 54,
         borderRadius: 10,
-        backgroundColor: Colors.primaryColor,
+        backgroundColor: colors.primaryColor,
         alignItems: 'center',
         justifyContent: 'center',
         flexDirection: 'row',
@@ -123,8 +123,10 @@ const Styles = StyleSheet.create({
     nextButtonText: {
         ...Fonts.medium16,
         lineHeight: 24,
-        color: Colors.whiteColor,
+        color: '#FFFFFF',
     },
 });
 
+// Backward compatibility
+const Styles = createStyles(lightColors);
 export default Styles;

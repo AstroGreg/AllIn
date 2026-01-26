@@ -2,15 +2,17 @@ import { View, Text, TouchableOpacity, Animated, Easing } from 'react-native';
 import React, { useEffect, useRef, useState } from 'react';
 import SizeBox from '../../../constants/SizeBox';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import Colors from '../../../constants/Colors';
+import { useTheme } from '../../../context/ThemeContext';
 import Icons from '../../../constants/Icons';
 import LinearGradient from 'react-native-linear-gradient';
 import MaskedView from '@react-native-masked-view/masked-view';
 import { ArrowLeft2, Notification } from 'iconsax-react-nativejs';
-import styles from './ContextSearchLoadingScreenStyles';
+import { createStyles } from './ContextSearchLoadingScreenStyles';
 
 const ContextSearchLoadingScreen = ({ navigation, route }: any) => {
     const insets = useSafeAreaInsets();
+    const { colors } = useTheme();
+    const styles = createStyles(colors);
     const rotateAnim = useRef(new Animated.Value(0)).current;
     const [scannedCount, setScannedCount] = useState(0);
     const [matchedCount, setMatchedCount] = useState(0);
@@ -83,11 +85,11 @@ const ContextSearchLoadingScreen = ({ navigation, route }: any) => {
             {/* Header */}
             <View style={styles.header}>
                 <TouchableOpacity style={styles.headerButton} onPress={() => navigation.goBack()}>
-                    <ArrowLeft2 size={24} color={Colors.primaryColor} variant="Linear" />
+                    <ArrowLeft2 size={24} color={colors.primaryColor} variant="Linear" />
                 </TouchableOpacity>
                 <View style={{ width: 44 }} />
                 <TouchableOpacity style={styles.headerButton} onPress={() => navigation.navigate('NotificationsScreen')}>
-                    <Notification size={24} color={Colors.primaryColor} variant="Linear" />
+                    <Notification size={24} color={colors.primaryColor} variant="Linear" />
                 </TouchableOpacity>
             </View>
 

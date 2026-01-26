@@ -1,12 +1,12 @@
 import { View, Text, TouchableOpacity, ScrollView } from 'react-native'
 import React from 'react'
-import Styles from './UploadStyles'
+import { createStyles } from './UploadStyles'
 import SizeBox from '../../constants/SizeBox'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import FastImage from 'react-native-fast-image'
 import Icons from '../../constants/Icons'
 import Images from '../../constants/Images'
-import Colors from '../../constants/Colors'
+import { useTheme } from '../../context/ThemeContext'
 import { Camera, Add } from 'iconsax-react-nativejs'
 
 interface Account {
@@ -18,6 +18,8 @@ interface Account {
 
 const UploadScreen = ({ navigation }: any) => {
     const insets = useSafeAreaInsets();
+    const { colors } = useTheme();
+    const Styles = createStyles(colors);
 
     const accounts: Account[] = [
         { id: 1, name: 'James Ray', sport: 'Boxing', avatar: Images.profile1 },
@@ -93,7 +95,7 @@ const UploadScreen = ({ navigation }: any) => {
                     onPress={handleCreatePhotographerAccount}
                 >
                     <Text style={Styles.createAccountButtonText}>Create Photographer Account</Text>
-                    <Add size={18} color={Colors.whiteColor} variant="Linear" />
+                    <Add size={18} color="#FFFFFF" variant="Linear" />
                 </TouchableOpacity>
 
                 <SizeBox height={14} />

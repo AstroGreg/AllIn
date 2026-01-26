@@ -2,17 +2,19 @@ import { View, Text, ScrollView, TouchableOpacity, TextInput } from 'react-nativ
 import React, { useState, useRef } from 'react';
 import SizeBox from '../../../constants/SizeBox';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import Colors from '../../../constants/Colors';
+import { useTheme } from '../../../context/ThemeContext';
 import {
     ArrowLeft2,
     Notification,
     ArrowRight,
     Timer1,
 } from 'iconsax-react-nativejs';
-import styles from './VerificationCodeStyles';
+import { createStyles } from './VerificationCodeStyles';
 
 const VerificationCode = ({ navigation }: any) => {
     const insets = useSafeAreaInsets();
+    const { colors } = useTheme();
+    const styles = createStyles(colors);
     const [code, setCode] = useState(['', '', '', '', '', '']);
     const inputRefs = useRef<(TextInput | null)[]>([]);
 
@@ -40,11 +42,11 @@ const VerificationCode = ({ navigation }: any) => {
             {/* Header */}
             <View style={styles.header}>
                 <TouchableOpacity style={styles.headerButton} onPress={() => navigation.goBack()}>
-                    <ArrowLeft2 size={24} color={Colors.primaryColor} variant="Linear" />
+                    <ArrowLeft2 size={24} color={colors.primaryColor} variant="Linear" />
                 </TouchableOpacity>
                 <Text style={styles.headerTitle}>Enter verification code</Text>
                 <TouchableOpacity style={styles.headerButton}>
-                    <Notification size={24} color={Colors.primaryColor} variant="Linear" />
+                    <Notification size={24} color={colors.primaryColor} variant="Linear" />
                 </TouchableOpacity>
             </View>
 
@@ -75,6 +77,7 @@ const VerificationCode = ({ navigation }: any) => {
                             keyboardType="number-pad"
                             maxLength={1}
                             selectTextOnFocus
+                            placeholderTextColor={colors.grayColor}
                         />
                     ))}
                 </View>
@@ -83,7 +86,7 @@ const VerificationCode = ({ navigation }: any) => {
 
                 {/* Timer */}
                 <View style={styles.timerContainer}>
-                    <Timer1 size={16} color="#9B9F9F" variant="Linear" />
+                    <Timer1 size={16} color={colors.grayColor} variant="Linear" />
                     <Text style={styles.timerText}>Code refreshes every 30 seconds</Text>
                 </View>
             </ScrollView>
@@ -92,7 +95,7 @@ const VerificationCode = ({ navigation }: any) => {
             <View style={[styles.bottomContainer, { paddingBottom: insets.bottom > 0 ? insets.bottom : 20 }]}>
                 <TouchableOpacity style={styles.primaryButton}>
                     <Text style={styles.primaryButtonText}>Verify & Activate</Text>
-                    <ArrowRight size={24} color={Colors.whiteColor} variant="Linear" />
+                    <ArrowRight size={24} color={colors.pureWhite} variant="Linear" />
                 </TouchableOpacity>
 
                 <SizeBox height={18} />

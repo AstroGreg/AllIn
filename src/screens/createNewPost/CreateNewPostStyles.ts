@@ -1,11 +1,11 @@
 import { StyleSheet } from 'react-native';
-import Colors from '../../constants/Colors';
 import Fonts from '../../constants/Fonts';
+import { ThemeColors, lightColors } from '../../constants/Theme';
 
-const Styles = StyleSheet.create({
+export const createStyles = (colors: ThemeColors) => StyleSheet.create({
     mainContainer: {
         flex: 1,
-        backgroundColor: Colors.whiteColor,
+        backgroundColor: colors.backgroundColor,
     },
     header: {
         flexDirection: 'row',
@@ -14,13 +14,13 @@ const Styles = StyleSheet.create({
         paddingHorizontal: 20,
         paddingVertical: 16,
         borderBottomWidth: 0.5,
-        borderBottomColor: '#DEDEDE',
+        borderBottomColor: colors.borderColor,
     },
     headerButton: {
         width: 44,
         height: 44,
         borderRadius: 22,
-        backgroundColor: '#F5F5F5',
+        backgroundColor: colors.btnBackgroundColor,
         alignItems: 'center',
         justifyContent: 'center',
     },
@@ -30,7 +30,7 @@ const Styles = StyleSheet.create({
     },
     headerTitle: {
         ...Fonts.medium18,
-        color: Colors.mainTextColor,
+        color: colors.mainTextColor,
     },
     scrollContent: {
         paddingHorizontal: 20,
@@ -38,19 +38,19 @@ const Styles = StyleSheet.create({
     },
     sectionTitle: {
         ...Fonts.medium18,
-        color: Colors.mainTextColor,
+        color: colors.mainTextColor,
     },
     inputContainer: {
         width: '100%',
     },
     inputLabel: {
         ...Fonts.medium14,
-        color: Colors.mainTextColor,
+        color: colors.mainTextColor,
     },
     uploadContainer: {
-        backgroundColor: '#F7FAFF',
+        backgroundColor: colors.secondaryColor,
         borderWidth: 1,
-        borderColor: Colors.primaryColor,
+        borderColor: colors.primaryColor,
         borderStyle: 'dashed',
         borderRadius: 10,
         paddingVertical: 32,
@@ -60,11 +60,11 @@ const Styles = StyleSheet.create({
     },
     uploadText: {
         ...Fonts.regular14,
-        color: '#777777',
+        color: colors.grayColor,
     },
     uploadOrText: {
         ...Fonts.regular14,
-        color: '#777777',
+        color: colors.grayColor,
     },
     browseButton: {
         paddingHorizontal: 24,
@@ -75,14 +75,14 @@ const Styles = StyleSheet.create({
     },
     browseButtonText: {
         ...Fonts.medium14,
-        color: Colors.primaryColor,
+        color: colors.primaryColor,
     },
     textInputContainer: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: '#F7FAFF',
+        backgroundColor: colors.secondaryColor,
         borderWidth: 0.5,
-        borderColor: '#E0ECFE',
+        borderColor: colors.borderColor,
         borderRadius: 10,
         paddingHorizontal: 16,
         height: 54,
@@ -91,15 +91,15 @@ const Styles = StyleSheet.create({
     textInput: {
         flex: 1,
         ...Fonts.regular14,
-        color: Colors.mainTextColor,
+        color: colors.mainTextColor,
         height: '100%',
     },
     textAreaContainer: {
         flexDirection: 'row',
         alignItems: 'flex-start',
-        backgroundColor: '#F7FAFF',
+        backgroundColor: colors.secondaryColor,
         borderWidth: 0.5,
-        borderColor: '#E0ECFE',
+        borderColor: colors.borderColor,
         borderRadius: 10,
         paddingHorizontal: 16,
         paddingVertical: 16,
@@ -109,7 +109,7 @@ const Styles = StyleSheet.create({
     textArea: {
         flex: 1,
         ...Fonts.regular14,
-        color: Colors.mainTextColor,
+        color: colors.mainTextColor,
         height: '100%',
     },
     buttonsContainer: {
@@ -122,7 +122,7 @@ const Styles = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'center',
         borderWidth: 0.5,
-        borderColor: '#DEDEDE',
+        borderColor: colors.borderColor,
         borderRadius: 10,
         height: 54,
         width: '47%',
@@ -130,13 +130,13 @@ const Styles = StyleSheet.create({
     },
     cancelButtonText: {
         ...Fonts.medium16,
-        color: '#9B9F9F',
+        color: colors.subTextColor,
     },
     createButton: {
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',
-        backgroundColor: Colors.primaryColor,
+        backgroundColor: colors.primaryColor,
         borderRadius: 10,
         height: 54,
         width: '47%',
@@ -144,8 +144,10 @@ const Styles = StyleSheet.create({
     },
     createButtonText: {
         ...Fonts.medium16,
-        color: Colors.whiteColor,
+        color: colors.pureWhite,
     },
 });
 
+// Backward compatibility
+const Styles = createStyles(lightColors);
 export default Styles;

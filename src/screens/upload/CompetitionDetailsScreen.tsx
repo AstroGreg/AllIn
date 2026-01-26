@@ -2,9 +2,9 @@ import { View, Text, TouchableOpacity, ScrollView } from 'react-native'
 import React, { useState } from 'react'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { ArrowLeft2, Setting2, Setting5, Add } from 'iconsax-react-nativejs'
-import Styles from './CompetitionDetailsStyles'
+import { createStyles } from './CompetitionDetailsStyles'
 import SizeBox from '../../constants/SizeBox'
-import Colors from '../../constants/Colors'
+import { useTheme } from '../../context/ThemeContext'
 import Icons from '../../constants/Icons'
 
 interface EventCategory {
@@ -14,6 +14,8 @@ interface EventCategory {
 
 const CompetitionDetailsScreen = ({ navigation, route }: any) => {
     const insets = useSafeAreaInsets();
+    const { colors } = useTheme();
+    const Styles = createStyles(colors);
     const competition = route?.params?.competition;
     const account = route?.params?.account;
     const anonymous = route?.params?.anonymous;
@@ -82,11 +84,11 @@ const CompetitionDetailsScreen = ({ navigation, route }: any) => {
             {/* Header */}
             <View style={Styles.header}>
                 <TouchableOpacity style={Styles.headerButton} onPress={() => navigation.goBack()}>
-                    <ArrowLeft2 size={24} color={Colors.mainTextColor} variant="Linear" />
+                    <ArrowLeft2 size={24} color={colors.mainTextColor} variant="Linear" />
                 </TouchableOpacity>
                 <Text style={Styles.headerTitle}>{competition?.name || 'BK Studenten 2023'}</Text>
                 <TouchableOpacity style={Styles.headerButton}>
-                    <Setting2 size={24} color={Colors.mainTextColor} variant="Linear" />
+                    <Setting2 size={24} color={colors.mainTextColor} variant="Linear" />
                 </TouchableOpacity>
             </View>
 
@@ -128,7 +130,7 @@ const CompetitionDetailsScreen = ({ navigation, route }: any) => {
                 <View style={Styles.sectionHeader}>
                     <Text style={Styles.sectionTitle}>Videos</Text>
                     <TouchableOpacity style={Styles.sectionFilterButton}>
-                        <Setting5 size={16} color={Colors.whiteColor} variant="Linear" />
+                        <Setting5 size={16} color={colors.pureWhite} variant="Linear" />
                     </TouchableOpacity>
                 </View>
 
@@ -142,7 +144,7 @@ const CompetitionDetailsScreen = ({ navigation, route }: any) => {
                 {/* Add Video Category Button */}
                 <TouchableOpacity style={Styles.addCategoryButton} onPress={handleAddVideoCategory}>
                     <Text style={Styles.addCategoryButtonText}>Add Video Category</Text>
-                    <Add size={18} color={Colors.whiteColor} variant="Linear" />
+                    <Add size={18} color={colors.pureWhite} variant="Linear" />
                 </TouchableOpacity>
 
                 <SizeBox height={24} />
@@ -155,7 +157,7 @@ const CompetitionDetailsScreen = ({ navigation, route }: any) => {
                 {/* Add Photo Category Button */}
                 <TouchableOpacity style={Styles.addCategoryButton} onPress={handleAddPhotoCategory}>
                     <Text style={Styles.addCategoryButtonText}>Add Photo Category</Text>
-                    <Add size={18} color={Colors.whiteColor} variant="Linear" />
+                    <Add size={18} color={colors.pureWhite} variant="Linear" />
                 </TouchableOpacity>
 
                 <SizeBox height={14} />

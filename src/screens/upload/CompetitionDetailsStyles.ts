@@ -1,11 +1,11 @@
 import { StyleSheet } from "react-native";
-import Colors from "../../constants/Colors";
 import Fonts from "../../constants/Fonts";
+import { ThemeColors, lightColors } from "../../constants/Theme";
 
-const Styles = StyleSheet.create({
+export const createStyles = (colors: ThemeColors) => StyleSheet.create({
     mainContainer: {
         flex: 1,
-        backgroundColor: Colors.whiteColor,
+        backgroundColor: colors.backgroundColor,
     },
     header: {
         flexDirection: 'row',
@@ -14,41 +14,41 @@ const Styles = StyleSheet.create({
         paddingHorizontal: 20,
         paddingVertical: 16,
         borderBottomWidth: 0.3,
-        borderBottomColor: '#DEDEDE',
+        borderBottomColor: colors.lightGrayColor,
     },
     headerButton: {
         width: 44,
         height: 44,
         borderRadius: 22,
-        backgroundColor: '#F5F5F5',
+        backgroundColor: colors.btnBackgroundColor,
         alignItems: 'center',
         justifyContent: 'center',
     },
     headerTitle: {
         ...Fonts.medium18,
-        color: Colors.mainTextColor,
+        color: colors.mainTextColor,
     },
     scrollContent: {
         paddingHorizontal: 20,
         paddingTop: 24,
     },
     tipCard: {
-        backgroundColor: Colors.whiteColor,
+        backgroundColor: colors.cardBackground,
         borderRadius: 10,
         borderWidth: 0.5,
-        borderColor: '#DEDEDE',
+        borderColor: colors.lightGrayColor,
         padding: 16,
         alignItems: 'center',
     },
     tipText: {
         ...Fonts.regular14,
-        color: '#9B9F9F',
+        color: colors.grayColor,
         textAlign: 'center',
         lineHeight: 22,
     },
     toggleContainer: {
         flexDirection: 'row',
-        backgroundColor: '#F5F5F5',
+        backgroundColor: colors.btnBackgroundColor,
         borderRadius: 10,
         padding: 4,
     },
@@ -60,14 +60,14 @@ const Styles = StyleSheet.create({
         borderRadius: 8,
     },
     toggleTabActive: {
-        backgroundColor: Colors.primaryColor,
+        backgroundColor: colors.primaryColor,
     },
     toggleTabText: {
         ...Fonts.medium14,
-        color: '#777777',
+        color: colors.grayColor,
     },
     toggleTabTextActive: {
-        color: Colors.whiteColor,
+        color: colors.pureWhite,
     },
     sectionHeader: {
         flexDirection: 'row',
@@ -76,13 +76,13 @@ const Styles = StyleSheet.create({
     },
     sectionTitle: {
         ...Fonts.medium18,
-        color: Colors.mainTextColor,
+        color: colors.mainTextColor,
     },
     sectionFilterButton: {
         width: 32,
         height: 32,
         borderRadius: 8,
-        backgroundColor: Colors.primaryColor,
+        backgroundColor: colors.primaryColor,
         alignItems: 'center',
         justifyContent: 'center',
     },
@@ -90,21 +90,21 @@ const Styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
-        backgroundColor: Colors.whiteColor,
+        backgroundColor: colors.cardBackground,
         borderRadius: 10,
         borderWidth: 0.5,
-        borderColor: '#DEDEDE',
+        borderColor: colors.lightGrayColor,
         paddingHorizontal: 16,
         paddingVertical: 14,
         marginBottom: 10,
     },
     categoryName: {
         ...Fonts.medium14,
-        color: Colors.mainTextColor,
+        color: colors.mainTextColor,
     },
     uploadIconButton: {
         borderRadius: 8,
-        backgroundColor: Colors.primaryColor,
+        backgroundColor: colors.primaryColor,
         alignItems: 'center',
         justifyContent: 'center',
         paddingVertical: 8,
@@ -114,33 +114,33 @@ const Styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',
-        backgroundColor: Colors.primaryColor,
+        backgroundColor: colors.primaryColor,
         borderRadius: 10,
         paddingVertical: 14,
         gap: 8,
     },
     addCategoryButtonText: {
         ...Fonts.medium14,
-        color: Colors.whiteColor,
+        color: colors.pureWhite,
     },
     unlabelledButton: {
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',
-        backgroundColor: Colors.whiteColor,
+        backgroundColor: colors.cardBackground,
         borderRadius: 10,
         borderWidth: 1,
-        borderColor: Colors.primaryColor,
+        borderColor: colors.primaryColor,
         paddingVertical: 14,
         gap: 8,
     },
     unlabelledButtonText: {
         ...Fonts.medium14,
-        color: Colors.primaryColor,
+        color: colors.primaryColor,
     },
     divider: {
         height: 1,
-        backgroundColor: '#DEDEDE',
+        backgroundColor: colors.lightGrayColor,
     },
     finishButton: {
         alignItems: 'center',
@@ -151,8 +151,10 @@ const Styles = StyleSheet.create({
     },
     finishButtonText: {
         ...Fonts.medium16,
-        color: Colors.whiteColor,
+        color: colors.pureWhite,
     },
 });
 
+// Backward compatibility
+const Styles = createStyles(lightColors);
 export default Styles;

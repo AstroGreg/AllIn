@@ -1,10 +1,10 @@
 import { StyleSheet } from 'react-native';
-import Colors from '../../../constants/Colors';
+import { ThemeColors, lightColors } from '../../../constants/Theme';
 
-const styles = StyleSheet.create({
+export const createStyles = (colors: ThemeColors) => StyleSheet.create({
     mainContainer: {
         flex: 1,
-        backgroundColor: Colors.whiteColor,
+        backgroundColor: colors.backgroundColor,
     },
     header: {
         flexDirection: 'row',
@@ -13,13 +13,13 @@ const styles = StyleSheet.create({
         paddingHorizontal: 20,
         paddingVertical: 16,
         borderBottomWidth: 0.5,
-        borderBottomColor: '#DEDEDE',
+        borderBottomColor: colors.lightGrayColor,
     },
     headerButton: {
         width: 44,
         height: 44,
         borderRadius: 22,
-        backgroundColor: '#F5F5F5',
+        backgroundColor: colors.btnBackgroundColor,
         alignItems: 'center',
         justifyContent: 'center',
     },
@@ -48,7 +48,7 @@ const styles = StyleSheet.create({
         fontFamily: 'Inter-Medium',
         fontSize: 13,
         fontWeight: '500',
-        color: '#000000',
+        color: colors.mainTextColor,
         lineHeight: 26,
         textAlign: 'center',
     },
@@ -58,7 +58,7 @@ const styles = StyleSheet.create({
         fontWeight: '500',
         lineHeight: 26,
         textAlign: 'center',
-        color: '#000000',
+        color: colors.mainTextColor,
     },
     maskedView: {
         flexDirection: 'row',
@@ -68,4 +68,6 @@ const styles = StyleSheet.create({
     },
 });
 
+// Backward compatibility
+const styles = createStyles(lightColors);
 export default styles;

@@ -1,8 +1,11 @@
 import { View, Text } from 'react-native'
 import React from 'react'
-import Styles from './Styles'
+import { createStyles } from './Styles'
+import { useTheme } from '../../../context/ThemeContext'
 
 const OrContainer = () => {
+    const { colors } = useTheme();
+    const Styles = createStyles(colors);
     return (
         <View style={Styles.orContainer}>
             <View style={Styles.grayLines} />

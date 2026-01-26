@@ -1,8 +1,8 @@
 import { StyleSheet } from 'react-native';
-import Colors from '../../constants/Colors';
 import Fonts from '../../constants/Fonts';
+import { ThemeColors, lightColors } from '../../constants/Theme';
 
-const Styles = StyleSheet.create({
+export const createStyles = (colors: ThemeColors) => StyleSheet.create({
     overlay: {
         flex: 1,
         backgroundColor: 'rgba(17, 17, 17, 0.5)',
@@ -10,7 +10,7 @@ const Styles = StyleSheet.create({
         alignItems: 'center',
     },
     modalContainer: {
-        backgroundColor: Colors.whiteColor,
+        backgroundColor: colors.modalBackground,
         borderRadius: 16,
         padding: 16,
         width: '90%',
@@ -25,16 +25,16 @@ const Styles = StyleSheet.create({
     },
     inputLabel: {
         ...Fonts.medium14,
-        color: Colors.mainTextColor,
+        color: colors.mainTextColor,
         marginBottom: 8,
     },
     selectInput: {
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
-        backgroundColor: '#F7FAFF',
+        backgroundColor: colors.secondaryColor,
         borderWidth: 0.5,
-        borderColor: '#E0ECFE',
+        borderColor: colors.borderColor,
         borderRadius: 10,
         paddingHorizontal: 16,
         height: 54,
@@ -47,7 +47,7 @@ const Styles = StyleSheet.create({
     },
     selectInputText: {
         ...Fonts.regular14,
-        color: '#777777',
+        color: colors.grayColor,
     },
     buttonsContainer: {
         flexDirection: 'row',
@@ -62,29 +62,31 @@ const Styles = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'center',
         borderWidth: 0.5,
-        borderColor: '#DEDEDE',
+        borderColor: colors.borderColor,
         borderRadius: 10,
         height: 54,
         gap: 8,
     },
     addMoreButtonText: {
         ...Fonts.medium16,
-        color: '#9B9F9F',
+        color: colors.subTextColor,
     },
     saveButton: {
         flex: 1,
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',
-        backgroundColor: Colors.primaryColor,
+        backgroundColor: colors.primaryColor,
         borderRadius: 10,
         height: 54,
         gap: 8,
     },
     saveButtonText: {
         ...Fonts.medium16,
-        color: Colors.whiteColor,
+        color: colors.pureWhite,
     },
 });
 
+// Backward compatibility
+const Styles = createStyles(lightColors);
 export default Styles;

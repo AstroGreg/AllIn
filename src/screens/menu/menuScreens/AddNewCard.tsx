@@ -1,15 +1,17 @@
 import { View, Text, TouchableOpacity, TextInput, ScrollView, Modal } from 'react-native'
 import React, { useState } from 'react'
-import Styles from '../MenuStyles'
+import { createStyles } from '../MenuStyles'
 import SizeBox from '../../../constants/SizeBox'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import Colors from '../../../constants/Colors'
+import { useTheme } from '../../../context/ThemeContext'
 import { ArrowLeft2, Notification, Cards, User, Card, Calendar, Note, ArrowRight2, ArrowDown2 } from 'iconsax-react-nativejs'
 
 const cardTypes = ['Bancontact', 'Maestro', 'Master'];
 
 const AddNewCard = ({ navigation }: any) => {
     const insets = useSafeAreaInsets();
+    const { colors } = useTheme();
+    const Styles = createStyles(colors);
 
     const [cardType, setCardType] = useState('');
     const [showCardTypeModal, setShowCardTypeModal] = useState(false);
@@ -25,11 +27,11 @@ const AddNewCard = ({ navigation }: any) => {
             {/* Header */}
             <View style={Styles.header}>
                 <TouchableOpacity style={Styles.headerButton} onPress={() => navigation.goBack()}>
-                    <ArrowLeft2 size={24} color={Colors.primaryColor} variant="Linear" />
+                    <ArrowLeft2 size={24} color={colors.primaryColor} variant="Linear" />
                 </TouchableOpacity>
                 <Text style={Styles.headerTitle}>Add Card</Text>
                 <TouchableOpacity style={Styles.headerButton}>
-                    <Notification size={24} color={Colors.primaryColor} variant="Linear" />
+                    <Notification size={24} color={colors.primaryColor} variant="Linear" />
                 </TouchableOpacity>
             </View>
 
@@ -44,12 +46,12 @@ const AddNewCard = ({ navigation }: any) => {
                     <Text style={Styles.addCardLabel}>Card Type</Text>
                     <SizeBox height={8} />
                     <TouchableOpacity style={Styles.addCardInputContainer} onPress={() => setShowCardTypeModal(true)}>
-                        <Cards size={16} color={Colors.primaryColor} variant="Linear" />
+                        <Cards size={16} color={colors.primaryColor} variant="Linear" />
                         <SizeBox width={10} />
                         <Text style={[Styles.addCardPlaceholder, cardType && Styles.addCardInputText]}>
                             {cardType || 'Select Card type'}
                         </Text>
-                        <ArrowDown2 size={20} color="#777777" variant="Linear" />
+                        <ArrowDown2 size={20} color={colors.grayColor} variant="Linear" />
                     </TouchableOpacity>
                 </View>
 
@@ -60,12 +62,12 @@ const AddNewCard = ({ navigation }: any) => {
                     <Text style={Styles.addCardLabel}>Name on Card</Text>
                     <SizeBox height={8} />
                     <View style={Styles.addCardInputContainer}>
-                        <User size={16} color={Colors.primaryColor} variant="Linear" />
+                        <User size={16} color={colors.primaryColor} variant="Linear" />
                         <SizeBox width={10} />
                         <TextInput
                             style={Styles.addCardInput}
                             placeholder="Enter Card Holder Name"
-                            placeholderTextColor="#777777"
+                            placeholderTextColor={colors.grayColor}
                             value={name}
                             onChangeText={setName}
                         />
@@ -79,12 +81,12 @@ const AddNewCard = ({ navigation }: any) => {
                     <Text style={Styles.addCardLabel}>Card Number</Text>
                     <SizeBox height={8} />
                     <View style={Styles.addCardInputContainer}>
-                        <Card size={16} color={Colors.primaryColor} variant="Linear" />
+                        <Card size={16} color={colors.primaryColor} variant="Linear" />
                         <SizeBox width={10} />
                         <TextInput
                             style={Styles.addCardInput}
                             placeholder="Enter Card Number"
-                            placeholderTextColor="#777777"
+                            placeholderTextColor={colors.grayColor}
                             value={cardNumber}
                             onChangeText={setCardNumber}
                             keyboardType="numeric"
@@ -100,12 +102,12 @@ const AddNewCard = ({ navigation }: any) => {
                     <Text style={Styles.addCardLabel}>Expiry Date</Text>
                     <SizeBox height={8} />
                     <View style={Styles.addCardInputContainer}>
-                        <Calendar size={16} color={Colors.primaryColor} variant="Linear" />
+                        <Calendar size={16} color={colors.primaryColor} variant="Linear" />
                         <SizeBox width={10} />
                         <TextInput
                             style={Styles.addCardInput}
                             placeholder="Enter Expiry Date"
-                            placeholderTextColor="#777777"
+                            placeholderTextColor={colors.grayColor}
                             value={expDate}
                             onChangeText={setExpDate}
                             keyboardType="numeric"
@@ -120,12 +122,12 @@ const AddNewCard = ({ navigation }: any) => {
                     <Text style={Styles.addCardLabel}>CVV</Text>
                     <SizeBox height={8} />
                     <View style={Styles.addCardInputContainer}>
-                        <Note size={16} color={Colors.primaryColor} variant="Linear" />
+                        <Note size={16} color={colors.primaryColor} variant="Linear" />
                         <SizeBox width={10} />
                         <TextInput
                             style={Styles.addCardInput}
                             placeholder="Enter CVV"
-                            placeholderTextColor="#777777"
+                            placeholderTextColor={colors.grayColor}
                             value={cvv}
                             onChangeText={setCvv}
                             keyboardType="numeric"
@@ -140,7 +142,7 @@ const AddNewCard = ({ navigation }: any) => {
                 {/* Continue Button */}
                 <TouchableOpacity style={Styles.continueBtn} onPress={() => navigation.goBack()}>
                     <Text style={Styles.continueBtnText}>Continue</Text>
-                    <ArrowRight2 size={18} color={Colors.whiteColor} variant="Linear" />
+                    <ArrowRight2 size={18} color={colors.pureWhite} variant="Linear" />
                 </TouchableOpacity>
 
                 <SizeBox height={24} />
@@ -148,7 +150,7 @@ const AddNewCard = ({ navigation }: any) => {
                 {/* Cancel Button */}
                 <TouchableOpacity style={Styles.cancelBtn} onPress={() => navigation.goBack()}>
                     <Text style={Styles.cancelBtnText}>Cancel</Text>
-                    <ArrowRight2 size={18} color={Colors.subTextColor} variant="Linear" />
+                    <ArrowRight2 size={18} color={colors.subTextColor} variant="Linear" />
                 </TouchableOpacity>
 
                 <SizeBox height={insets.bottom > 0 ? insets.bottom + 20 : 40} />

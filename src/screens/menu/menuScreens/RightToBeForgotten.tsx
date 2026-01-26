@@ -2,7 +2,7 @@ import { View, Text, ScrollView, TouchableOpacity } from 'react-native';
 import React from 'react';
 import SizeBox from '../../../constants/SizeBox';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import Colors from '../../../constants/Colors';
+import { useTheme } from '../../../context/ThemeContext';
 import Icons from '../../../constants/Icons';
 import {
     ArrowLeft2,
@@ -14,7 +14,7 @@ import {
     Coin,
     Trash,
 } from 'iconsax-react-nativejs';
-import styles from './RightToBeForgottenStyles';
+import { createStyles } from './RightToBeForgottenStyles';
 
 interface DataItem {
     id: number;
@@ -44,6 +44,8 @@ const athleticProfileItems: DataItem[] = [
 
 const RightToBeForgotten = ({ navigation }: any) => {
     const insets = useSafeAreaInsets();
+    const { colors } = useTheme();
+    const styles = createStyles(colors);
 
     const dataCategories: DataCategory[] = [
         {
@@ -121,7 +123,7 @@ const RightToBeForgotten = ({ navigation }: any) => {
                             {category.icon === 'athletic' ? (
                                 <Icons.AthleteBlue width={24} height={24} />
                             ) : (
-                                <Data size={24} color={Colors.primaryColor} variant="Linear" />
+                                <Data size={24} color={colors.primaryColor} variant="Linear" />
                             )}
                         </View>
                         <View style={styles.categoryInfo}>
@@ -133,7 +135,7 @@ const RightToBeForgotten = ({ navigation }: any) => {
                         {category.markedCount > 0 && (
                             <Text style={styles.markedText}>{category.markedCount} marked</Text>
                         )}
-                        <ArrowDown size={16} color={Colors.primaryColor} variant="Linear" />
+                        <ArrowDown size={16} color={colors.primaryColor} variant="Linear" />
                     </View>
                 </View>
 
@@ -159,7 +161,7 @@ const RightToBeForgotten = ({ navigation }: any) => {
                         {category.icon === 'athletic' ? (
                             <Icons.AthleteBlue width={24} height={24} />
                         ) : (
-                            <Data size={24} color={Colors.primaryColor} variant="Linear" />
+                            <Data size={24} color={colors.primaryColor} variant="Linear" />
                         )}
                     </View>
                     <View style={styles.categoryInfo}>
@@ -171,7 +173,7 @@ const RightToBeForgotten = ({ navigation }: any) => {
                     {category.markedCount > 0 && (
                         <Text style={styles.markedText}>{category.markedCount} marked</Text>
                     )}
-                    <ArrowDown size={16} color={Colors.primaryColor} variant="Linear" />
+                    <ArrowDown size={16} color={colors.primaryColor} variant="Linear" />
                 </View>
             </View>
         );
@@ -184,11 +186,11 @@ const RightToBeForgotten = ({ navigation }: any) => {
             {/* Header */}
             <View style={styles.header}>
                 <TouchableOpacity style={styles.headerButton} onPress={() => navigation.goBack()}>
-                    <ArrowLeft2 size={24} color={Colors.primaryColor} variant="Linear" />
+                    <ArrowLeft2 size={24} color={colors.primaryColor} variant="Linear" />
                 </TouchableOpacity>
                 <Text style={styles.headerTitle}>Right to be forgotten</Text>
                 <TouchableOpacity style={styles.headerButton}>
-                    <Notification size={24} color={Colors.primaryColor} variant="Linear" />
+                    <Notification size={24} color={colors.primaryColor} variant="Linear" />
                 </TouchableOpacity>
             </View>
 
@@ -199,7 +201,7 @@ const RightToBeForgotten = ({ navigation }: any) => {
                 <View style={styles.infoCard}>
                     <View style={styles.infoHeader}>
                         <View style={styles.infoIconContainer}>
-                            <Gallery size={24} color={Colors.primaryColor} variant="Linear" />
+                            <Gallery size={24} color={colors.primaryColor} variant="Linear" />
                         </View>
                         <Text style={styles.infoTitle}>Your Athletic Data Rights</Text>
                     </View>
@@ -246,14 +248,14 @@ const RightToBeForgotten = ({ navigation }: any) => {
 
                 {/* Bottom Buttons */}
                 <TouchableOpacity style={styles.downloadButton}>
-                    <DocumentDownload size={24} color={Colors.whiteColor} variant="Linear" />
+                    <DocumentDownload size={24} color={colors.pureWhite} variant="Linear" />
                     <Text style={styles.downloadButtonText}>Download My Athletic Data</Text>
                 </TouchableOpacity>
 
                 <SizeBox height={16} />
 
                 <TouchableOpacity style={styles.exportButton}>
-                    <Coin size={24} color="#9B9F9F" variant="Linear" />
+                    <Coin size={24} color={colors.grayColor} variant="Linear" />
                     <Text style={styles.exportButtonText}>Export as CSV</Text>
                 </TouchableOpacity>
 

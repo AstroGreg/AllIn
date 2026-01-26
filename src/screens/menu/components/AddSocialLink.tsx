@@ -1,9 +1,10 @@
 import { View, Text, Modal, TouchableOpacity } from 'react-native'
 import React from 'react'
-import Styles from '../MenuStyles';
+import { createStyles } from '../MenuStyles';
 import CustomTextInput from '../../../components/customTextInput/CustomTextInput';
 import Icons from '../../../constants/Icons';
 import SizeBox from '../../../constants/SizeBox';
+import { useTheme } from '../../../context/ThemeContext';
 
 interface AddSocialLinkProps {
     isVisible?: boolean;
@@ -16,6 +17,9 @@ const AddSocialLink = ({
     onClose,
     onYesPress
 }: AddSocialLinkProps) => {
+    const { colors } = useTheme();
+    const Styles = createStyles(colors);
+
     return (
         <Modal
             visible={isVisible}

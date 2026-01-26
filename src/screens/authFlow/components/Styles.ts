@@ -1,8 +1,8 @@
 import { StyleSheet } from "react-native";
-import Colors from "../../../constants/Colors";
 import Fonts from "../../../constants/Fonts";
+import { ThemeColors, lightColors } from "../../../constants/Theme";
 
-const Styles = StyleSheet.create({
+export const createStyles = (colors: ThemeColors) => StyleSheet.create({
 
     //OR Container
     orContainer: {
@@ -13,12 +13,12 @@ const Styles = StyleSheet.create({
     grayLines: {
         flex: 2,
         borderBottomWidth: 1,
-        borderBottomColor: Colors.lightGrayColor
+        borderBottomColor: colors.lightGrayColor
     },
     orText: {
         flex: 1,
         ...Fonts.regular14,
-        color: Colors.grayColor,
+        color: colors.grayColor,
         textAlign: 'center'
     },
 
@@ -26,16 +26,16 @@ const Styles = StyleSheet.create({
     buttonContainer: {
         height: 54,
         borderRadius: 10,
-        backgroundColor: Colors.secondaryColor,
+        backgroundColor: colors.secondaryColor,
         alignItems: 'center',
         justifyContent: 'center',
         flexDirection: 'row',
         borderWidth: 1,
-        borderColor: Colors.borderColor
+        borderColor: colors.borderColor
     },
     btnText: {
         ...Fonts.regular14,
-        color: Colors.grayColor,
+        color: colors.grayColor,
         fontWeight: '400',
     },
 
@@ -43,16 +43,18 @@ const Styles = StyleSheet.create({
     languageContainer: {
         paddingHorizontal: 40,
         borderWidth: 1,
-        borderColor: Colors.borderColor,
-        backgroundColor: Colors.secondaryColor,
+        borderColor: colors.borderColor,
+        backgroundColor: colors.secondaryColor,
         borderRadius: 10,
     },
     lngText: {
         ...Fonts.regular14,
-        color: Colors.mainTextColor,
+        color: colors.mainTextColor,
         textAlign: 'center'
     },
 
-})
+});
 
+// Backward compatibility
+const Styles = createStyles(lightColors);
 export default Styles;

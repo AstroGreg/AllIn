@@ -2,14 +2,17 @@ import React from 'react';
 import { View, Text, ScrollView } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import FastImage from 'react-native-fast-image';
-import Styles from './CreateProfileScreenStyles';
+import { createStyles } from './CreateProfileScreenStyles';
 import SizeBox from '../../../constants/SizeBox';
 import CustomTextInput from '../../../components/customTextInput/CustomTextInput';
 import CustomButton from '../../../components/customButton/CustomButton';
 import Icons from '../../../constants/Icons';
 import Images from '../../../constants/Images';
+import { useTheme } from '../../../context/ThemeContext';
 
 const CreateProfileScreen = ({ navigation }: any) => {
+    const { colors } = useTheme();
+    const Styles = createStyles(colors);
     const insets = useSafeAreaInsets();
 
     const handleContinue = () => {

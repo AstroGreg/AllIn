@@ -1,11 +1,11 @@
 import { View, Text, TouchableOpacity, ScrollView, TextInput } from 'react-native'
 import React, { useState, useRef } from 'react'
-import Styles from '../MenuStyles'
+import { createStyles } from '../MenuStyles'
 import SizeBox from '../../../constants/SizeBox'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import Icons from '../../../constants/Icons'
 import FastImage from 'react-native-fast-image'
-import Colors from '../../../constants/Colors'
+import { useTheme } from '../../../context/ThemeContext'
 import { ArrowLeft2, Notification, Bank, MoneyRecive } from 'iconsax-react-nativejs'
 
 interface BankCard {
@@ -17,6 +17,8 @@ interface BankCard {
 
 const PaymentMethod = ({ navigation }: any) => {
     const insets = useSafeAreaInsets();
+    const { colors } = useTheme();
+    const Styles = createStyles(colors);
     const [selectedAmount, setSelectedAmount] = useState('€5');
     const [customAmount, setCustomAmount] = useState('');
     const [selectedCard, setSelectedCard] = useState(1);
@@ -36,11 +38,11 @@ const PaymentMethod = ({ navigation }: any) => {
             {/* Header */}
             <View style={Styles.header}>
                 <TouchableOpacity style={Styles.headerButton} onPress={() => navigation.goBack()}>
-                    <ArrowLeft2 size={24} color={Colors.primaryColor} variant="Linear" />
+                    <ArrowLeft2 size={24} color={colors.primaryColor} variant="Linear" />
                 </TouchableOpacity>
                 <Text style={Styles.headerTitle}>Payment method</Text>
                 <TouchableOpacity style={Styles.headerButton} onPress={() => navigation.navigate('NotificationsScreen')}>
-                    <Notification size={24} color={Colors.primaryColor} variant="Linear" />
+                    <Notification size={24} color={colors.primaryColor} variant="Linear" />
                 </TouchableOpacity>
             </View>
 
@@ -65,7 +67,7 @@ const PaymentMethod = ({ navigation }: any) => {
                         <SizeBox height={8} />
                         <Text style={Styles.walletBalance}>€72.50</Text>
                     </View>
-                    <MoneyRecive size={30} color={Colors.primaryColor} variant="Bold" />
+                    <MoneyRecive size={30} color={colors.primaryColor} variant="Bold" />
                 </View>
 
                 <SizeBox height={24} />
@@ -102,7 +104,7 @@ const PaymentMethod = ({ navigation }: any) => {
                                 ref={customInputRef}
                                 style={Styles.customAmountInput}
                                 placeholder="€"
-                                placeholderTextColor="#777777"
+                                placeholderTextColor={colors.grayColor}
                                 keyboardType="numeric"
                                 value={customAmount}
                                 onChangeText={setCustomAmount}
@@ -134,7 +136,7 @@ const PaymentMethod = ({ navigation }: any) => {
                         <View style={Styles.bankCard}>
                             <View style={Styles.bankCardLeft}>
                                 <View style={Styles.bankIconContainer}>
-                                    <Bank size={24} color={Colors.primaryColor} variant="Bold" />
+                                    <Bank size={24} color={colors.primaryColor} variant="Bold" />
                                 </View>
                                 <SizeBox width={10} />
                                 <View style={Styles.bankCardInfo}>

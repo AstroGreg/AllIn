@@ -7,7 +7,7 @@ const SplashScreen = ({ navigation }: any) => {
 
     useEffect(() => {
         const timer = setTimeout(() => {
-            navigation.navigate('SelectLanguageScreen');
+            navigation.navigate('AdvertisementScreen');
         }, 2000);
 
         return () => clearTimeout(timer);

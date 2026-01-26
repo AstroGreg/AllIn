@@ -1,11 +1,11 @@
 import { StyleSheet } from 'react-native';
-import Colors from '../../../constants/Colors';
 import Fonts from '../../../constants/Fonts';
+import { ThemeColors, lightColors } from '../../../constants/Theme';
 
-const Styles = StyleSheet.create({
+export const createStyles = (colors: ThemeColors) => StyleSheet.create({
     mainContainer: {
         flex: 1,
-        backgroundColor: Colors.whiteColor,
+        backgroundColor: colors.backgroundColor,
     },
     contentContainer: {
         flex: 1,
@@ -19,13 +19,13 @@ const Styles = StyleSheet.create({
         ...Fonts.medium22,
         fontSize: 24,
         lineHeight: 32,
-        color: Colors.mainTextColor,
+        color: colors.mainTextColor,
         textAlign: 'center',
     },
     subHeadingText: {
         ...Fonts.regular14,
         lineHeight: 22,
-        color: '#9B9F9F',
+        color: colors.grayColor,
         textAlign: 'center',
     },
     languageListContainer: {
@@ -37,9 +37,9 @@ const Styles = StyleSheet.create({
         justifyContent: 'space-between',
         padding: 16,
         borderWidth: 0.5,
-        borderColor: Colors.lightGrayColor,
+        borderColor: colors.lightGrayColor,
         borderRadius: 10,
-        backgroundColor: Colors.whiteColor,
+        backgroundColor: colors.cardBackground,
     },
     languageInfo: {
         flexDirection: 'row',
@@ -60,17 +60,17 @@ const Styles = StyleSheet.create({
     languageName: {
         ...Fonts.medium18,
         lineHeight: 26,
-        color: Colors.mainTextColor,
+        color: colors.mainTextColor,
     },
     languageNameUnselected: {
-        color: '#9B9F9F',
+        color: colors.grayColor,
     },
     radioOuter: {
         width: 16,
         height: 16,
         borderRadius: 8,
         borderWidth: 1,
-        borderColor: Colors.primaryColor,
+        borderColor: colors.primaryColor,
         alignItems: 'center',
         justifyContent: 'center',
         padding: 3,
@@ -82,8 +82,10 @@ const Styles = StyleSheet.create({
         width: 10,
         height: 10,
         borderRadius: 5,
-        backgroundColor: Colors.primaryColor,
+        backgroundColor: colors.primaryColor,
     },
 });
 
+// Backward compatibility
+const Styles = createStyles(lightColors);
 export default Styles;

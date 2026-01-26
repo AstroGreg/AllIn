@@ -1,11 +1,11 @@
 import { StyleSheet } from "react-native";
-import Colors from "../../constants/Colors";
 import Fonts from "../../constants/Fonts";
+import { ThemeColors, lightColors } from "../../constants/Theme";
 
-const Styles = StyleSheet.create({
+export const createStyles = (colors: ThemeColors) => StyleSheet.create({
     mainContainer: {
         flex: 1,
-        backgroundColor: Colors.whiteColor,
+        backgroundColor: colors.backgroundColor,
     },
     container: {
         // alignItems: 'center',
@@ -15,7 +15,7 @@ const Styles = StyleSheet.create({
     },
     titleText: {
         ...Fonts.regular14,
-        color: Colors.mainTextColor,
+        color: colors.mainTextColor,
         fontWeight: '500'
     },
     uploadContainer: {
@@ -23,8 +23,8 @@ const Styles = StyleSheet.create({
         borderRadius: 10,
         borderWidth: 1,
         borderStyle: 'dashed',
-        borderColor: Colors.primaryColor,
-        backgroundColor: Colors.secondaryColor,
+        borderColor: colors.primaryColor,
+        backgroundColor: colors.secondaryColor,
         alignItems: 'center',
         justifyContent: 'center',
         flexDirection: 'row'
@@ -32,7 +32,7 @@ const Styles = StyleSheet.create({
     uploadText: {
         ...Fonts.regular14,
         fontWeight: '500',
-        color: Colors.primaryColor
+        color: colors.primaryColor
     },
     row: {
         flexDirection: 'row',
@@ -41,11 +41,11 @@ const Styles = StyleSheet.create({
     subText: {
         ...Fonts.regular14,
         fontWeight: '400',
-        color: Colors.grayColor
+        color: colors.grayColor
     },
     btnContianer: {
         paddingHorizontal: 16,
-        backgroundColor: Colors.primaryColor,
+        backgroundColor: colors.primaryColor,
         borderRadius: 8,
         height: 38,
         alignItems: 'center',
@@ -53,12 +53,12 @@ const Styles = StyleSheet.create({
     },
     btnText: {
         ...Fonts.regular14,
-        color: Colors.whiteColor
+        color: colors.pureWhite
     },
     selectedImagesContainer: {
         marginTop: 12,
         padding: 8,
-        backgroundColor: Colors.secondaryColor,
+        backgroundColor: colors.secondaryColor,
         borderRadius: 8,
     },
     bottomBtn: {
@@ -73,19 +73,19 @@ const Styles = StyleSheet.create({
     },
     box: {
         borderWidth: 0.5,
-        borderColor: Colors.lightGrayColor,
+        borderColor: colors.lightGrayColor,
         borderRadius: 10,
         padding: 16
     },
     selectedVideoContainer: {
         marginTop: 12,
         padding: 12,
-        backgroundColor: Colors.secondaryColor,
+        backgroundColor: colors.secondaryColor,
         borderRadius: 8,
     },
 
     videoDetails: {
-        color: Colors.grayColor,
+        color: colors.grayColor,
         fontSize: 12,
         marginTop: 4,
     },
@@ -95,4 +95,6 @@ const Styles = StyleSheet.create({
     },
 });
 
+// Backward compatibility
+const Styles = createStyles(lightColors);
 export default Styles;

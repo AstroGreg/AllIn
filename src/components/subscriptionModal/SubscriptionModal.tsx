@@ -1,9 +1,9 @@
 import { View, Text, Modal, TouchableOpacity, ScrollView } from 'react-native'
 import React, { useState } from 'react'
-import Styles from './SubscriptionModalStyles'
+import { createStyles } from './SubscriptionModalStyles'
 import SizeBox from '../../constants/SizeBox'
 import { CloseCircle, TickCircle } from 'iconsax-react-nativejs'
-import Colors from '../../constants/Colors'
+import { useTheme } from '../../context/ThemeContext'
 
 interface SubscriptionModalProps {
     isVisible: boolean;
@@ -25,6 +25,8 @@ interface Plan {
 }
 
 const SubscriptionModal = ({ isVisible, onClose }: SubscriptionModalProps) => {
+    const { colors } = useTheme();
+    const Styles = createStyles(colors);
     const [selectedTab, setSelectedTab] = useState<'monthly' | 'yearly'>('monthly');
 
     const monthlyPlans: Plan[] = [
@@ -117,7 +119,7 @@ const SubscriptionModal = ({ isVisible, onClose }: SubscriptionModalProps) => {
             <View style={Styles.featuresContainer}>
                 {plan.features.map((feature, featureIndex) => (
                     <View key={featureIndex} style={Styles.featureRow}>
-                        <TickCircle size={16} color={Colors.primaryColor} variant="Bold" />
+                        <TickCircle size={16} color={colors.primaryColor} variant="Bold" />
                         <Text style={Styles.featureText}>{feature.text}</Text>
                     </View>
                 ))}
@@ -143,7 +145,7 @@ const SubscriptionModal = ({ isVisible, onClose }: SubscriptionModalProps) => {
                     <View style={Styles.header}>
                         <Text style={Styles.headerTitle}>Choose Your Plan</Text>
                         <TouchableOpacity onPress={onClose} style={Styles.closeButton}>
-                            <CloseCircle size={24} color={Colors.mainTextColor} variant="Linear" />
+                            <CloseCircle size={24} color={colors.mainTextColor} variant="Linear" />
                         </TouchableOpacity>
                     </View>
 

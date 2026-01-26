@@ -1,12 +1,12 @@
 import { View, Text, ScrollView, TouchableOpacity } from 'react-native'
 import React, { useState } from 'react'
-import Styles from './MenuStyles'
+import { createStyles } from './MenuStyles'
 import SizeBox from '../../constants/SizeBox'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import MenuContainers from './components/MenuContainers'
 import Icons from '../../constants/Icons'
 import FastImage from 'react-native-fast-image'
-import Colors from '../../constants/Colors'
+import { useTheme } from '../../context/ThemeContext'
 import { ArrowLeft2, Notification, Money3, UserOctagon, MainComponent, Eye, Copy, SecurityUser } from 'iconsax-react-nativejs'
 
 interface SocialLink {
@@ -18,7 +18,8 @@ interface SocialLink {
 
 const MenuScreen = ({ navigation }: any) => {
     const insets = useSafeAreaInsets();
-    const [mode, setMode] = useState('light');
+    const { mode, colors, setTheme } = useTheme();
+    const Styles = createStyles(colors);
     const [pushNotifications, setPushNotifications] = useState(true);
     const [aiPhotoRecognition, setAiPhotoRecognition] = useState(true);
     const [ghostMode, setGhostMode] = useState(true);
@@ -44,11 +45,11 @@ const MenuScreen = ({ navigation }: any) => {
             {/* Header */}
             <View style={Styles.header}>
                 <TouchableOpacity style={Styles.headerButton} onPress={() => navigation.goBack()}>
-                    <ArrowLeft2 size={24} color={Colors.primaryColor} variant="Linear" />
+                    <ArrowLeft2 size={24} color={colors.primaryColor} variant="Linear" />
                 </TouchableOpacity>
                 <Text style={Styles.headerTitle}>Menu</Text>
                 <TouchableOpacity style={Styles.headerButton}>
-                    <Notification size={24} color={Colors.primaryColor} variant="Linear" />
+                    <Notification size={24} color={colors.primaryColor} variant="Linear" />
                 </TouchableOpacity>
             </View>
 
@@ -87,7 +88,7 @@ const MenuScreen = ({ navigation }: any) => {
                 <MenuContainers
                     icon={<Icons.LightMode height={20} width={20} />}
                     title='Light mode'
-                    onPress={() => setMode('light')}
+                    onPress={() => setTheme('light')}
                     isNext={false}
                     isSelected={mode === 'light'}
                 />
@@ -95,7 +96,7 @@ const MenuScreen = ({ navigation }: any) => {
                 <MenuContainers
                     icon={<Icons.DarkMode height={20} width={20} />}
                     title='Dark mode'
-                    onPress={() => setMode('dark')}
+                    onPress={() => setTheme('dark')}
                     isNext={false}
                     isSelected={mode === 'dark'}
                 />
@@ -134,7 +135,7 @@ const MenuScreen = ({ navigation }: any) => {
                 />
                 <SizeBox height={12} />
                 <MenuContainers
-                    icon={<SecurityUser size={20} color={Colors.primaryColor} variant="Linear" />}
+                    icon={<SecurityUser size={20} color={colors.primaryColor} variant="Linear" />}
                     title='Authentication'
                     onPress={() => navigation.navigate('Authentication')}
                 />
@@ -157,7 +158,7 @@ const MenuScreen = ({ navigation }: any) => {
                 />
                 <SizeBox height={12} />
                 <MenuContainers
-                    icon={<Money3 size={20} color={Colors.primaryColor} variant="Linear" />}
+                    icon={<Money3 size={20} color={colors.primaryColor} variant="Linear" />}
                     title='Subscription'
                     onPress={() => navigation.navigate('Subscription')}
                 />
@@ -169,7 +170,7 @@ const MenuScreen = ({ navigation }: any) => {
                 />
                 <SizeBox height={12} />
                 <MenuContainers
-                    icon={<UserOctagon size={20} color={Colors.primaryColor} variant="Linear" />}
+                    icon={<UserOctagon size={20} color={colors.primaryColor} variant="Linear" />}
                     title='Help'
                     onPress={() => navigation.navigate('Help')}
                 />
@@ -181,7 +182,7 @@ const MenuScreen = ({ navigation }: any) => {
                 />
                 <SizeBox height={12} />
                 <MenuContainers
-                    icon={<Copy size={20} color={Colors.primaryColor} variant="Linear" />}
+                    icon={<Copy size={20} color={colors.primaryColor} variant="Linear" />}
                     title='Right to be Forgotten'
                     onPress={() => navigation.navigate('RightToBeForgotten')}
                 />
@@ -194,7 +195,7 @@ const MenuScreen = ({ navigation }: any) => {
                 <View style={Styles.privacyCard}>
                     <View style={Styles.privacyHeader}>
                         <View style={Styles.privacyIconContainer}>
-                            <MainComponent size={20} color={Colors.primaryColor} variant="Linear" />
+                            <MainComponent size={20} color={colors.primaryColor} variant="Linear" />
                         </View>
                         <SizeBox width={16} />
                         <Text style={Styles.privacyTitle}>AI Photo Recognition</Text>
@@ -221,7 +222,7 @@ const MenuScreen = ({ navigation }: any) => {
                 <View style={Styles.privacyCard}>
                     <View style={Styles.privacyHeader}>
                         <View style={Styles.privacyIconContainer}>
-                            <Eye size={20} color={Colors.primaryColor} variant="Linear" />
+                            <Eye size={20} color={colors.primaryColor} variant="Linear" />
                         </View>
                         <SizeBox width={16} />
                         <Text style={Styles.privacyTitle}>Ghost Mode</Text>

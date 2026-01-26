@@ -1,6 +1,6 @@
 import { View, ScrollView, Text } from 'react-native'
 import React, { useState } from 'react'
-import Styles from '../AddTalentStyles'
+import { createStyles } from '../AddTalentStyles'
 import SizeBox from '../../../../constants/SizeBox'
 import FastImage from 'react-native-fast-image'
 import Images from '../../../../constants/Images'
@@ -8,9 +8,11 @@ import CustomButton from '../../../../components/customButton/CustomButton'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import TabBar from '../components/TabBar'
 import SelcetionContainer from '../components/SelcetionContainer'
+import { useTheme } from '../../../../context/ThemeContext'
 
 const SelectEvents = ({ navigation }: any) => {
-
+    const { colors } = useTheme();
+    const Styles = createStyles(colors);
     const insets = useSafeAreaInsets();
     const [seletedTab, setSelectedTab] = useState(0);
     const [selectedId, setSelectedId] = useState<number | null>(null);

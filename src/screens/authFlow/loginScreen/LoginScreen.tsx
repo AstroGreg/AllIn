@@ -1,6 +1,6 @@
 import { View, Text, Image, TouchableOpacity, ScrollView } from 'react-native'
 import React from 'react'
-import Styles from './LoginStyles'
+import { createStyles } from './LoginStyles'
 import SizeBox from '../../../constants/SizeBox'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import Images from '../../../constants/Images'
@@ -10,11 +10,12 @@ import CheckBox from '../../../components/checkbox/CheckBox'
 import CustomButton from '../../../components/customButton/CustomButton'
 import OrContainer from '../components/OrContainer'
 import SocialBtn from '../components/SocialBtn'
-import Colors from '../../../constants/Colors'
 import FastImage from 'react-native-fast-image'
+import { useTheme } from '../../../context/ThemeContext'
 
 const LoginScreen = ({ navigation }: any) => {
-
+    const { colors } = useTheme();
+    const Styles = createStyles(colors);
     const insets = useSafeAreaInsets();
     return (
         <View style={Styles.mainContainer}>
@@ -92,7 +93,7 @@ const LoginScreen = ({ navigation }: any) => {
                         <Text style={Styles.rememberMeText}>Don't have an account?</Text>
                         <SizeBox width={3} />
                         <TouchableOpacity onPress={() => navigation.navigate('SignupScreen')}>
-                            <Text style={[Styles.rememberMeText, { color: Colors.primaryColor }]}>Sign Up</Text>
+                            <Text style={[Styles.rememberMeText, { color: colors.primaryColor }]}>Sign Up</Text>
                         </TouchableOpacity>
                     </View>
 

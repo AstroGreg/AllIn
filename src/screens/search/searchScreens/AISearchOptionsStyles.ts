@@ -1,11 +1,11 @@
 import { StyleSheet } from 'react-native';
-import Colors from '../../../constants/Colors';
 import Fonts from '../../../constants/Fonts';
+import { ThemeColors, lightColors } from '../../../constants/Theme';
 
-const styles = StyleSheet.create({
+export const createStyles = (colors: ThemeColors) => StyleSheet.create({
     mainContainer: {
         flex: 1,
-        backgroundColor: Colors.whiteColor,
+        backgroundColor: colors.backgroundColor,
     },
     header: {
         flexDirection: 'row',
@@ -14,34 +14,32 @@ const styles = StyleSheet.create({
         paddingHorizontal: 20,
         paddingVertical: 16,
         borderBottomWidth: 0.5,
-        borderBottomColor: '#DEDEDE',
-        backgroundColor: Colors.whiteColor,
+        borderBottomColor: colors.lightGrayColor,
+        backgroundColor: colors.backgroundColor,
     },
     headerButton: {
         width: 44,
         height: 44,
         borderRadius: 22,
-        backgroundColor: '#F5F5F5',
+        backgroundColor: colors.btnBackgroundColor,
         alignItems: 'center',
         justifyContent: 'center',
     },
     headerTitle: {
         ...Fonts.medium18,
-        color: '#171717',
+        color: colors.mainTextColor,
     },
     topSection: {
         paddingHorizontal: 20,
         paddingTop: 24,
         paddingBottom: 24,
-        borderBottomWidth: 0.5,
-        borderBottomColor: '#EDE9FE',
     },
     titleSection: {},
     mainTitle: {
         fontFamily: 'Inter-Bold',
         fontSize: 36,
         fontWeight: '700',
-        color: '#101828',
+        color: colors.mainTextColor,
         lineHeight: 45,
         letterSpacing: -0.5,
     },
@@ -49,22 +47,22 @@ const styles = StyleSheet.create({
         fontFamily: 'Inter-Regular',
         fontSize: 18,
         fontWeight: '400',
-        color: '#4A5565',
+        color: colors.grayColor,
         lineHeight: 29,
         letterSpacing: -0.4,
     },
     optionsContainer: {
         flex: 1,
-        backgroundColor: Colors.whiteColor,
+        backgroundColor: colors.backgroundColor,
     },
     optionsContent: {
         paddingHorizontal: 20,
         paddingTop: 32,
     },
     searchOptionCard: {
-        backgroundColor: Colors.whiteColor,
+        backgroundColor: colors.cardBackground,
         borderWidth: 1,
-        borderColor: '#DEDEDE',
+        borderColor: colors.lightGrayColor,
         borderRadius: 28,
         padding: 24,
         marginBottom: 16,
@@ -119,7 +117,7 @@ const styles = StyleSheet.create({
         fontFamily: 'Inter-Bold',
         fontSize: 20,
         fontWeight: '700',
-        color: '#101828',
+        color: colors.mainTextColor,
         lineHeight: 25,
         letterSpacing: -0.45,
     },
@@ -127,7 +125,7 @@ const styles = StyleSheet.create({
         fontFamily: 'Inter-Regular',
         fontSize: 16,
         fontWeight: '400',
-        color: '#4A5565',
+        color: colors.grayColor,
         lineHeight: 26,
         letterSpacing: -0.3,
     },
@@ -162,13 +160,13 @@ const styles = StyleSheet.create({
     },
     modalContainer: {
         width: '85%',
-        backgroundColor: Colors.whiteColor,
+        backgroundColor: colors.modalBackground,
         borderRadius: 20,
         padding: 24,
     },
     filtersModalContainer: {
         width: '85%',
-        backgroundColor: Colors.whiteColor,
+        backgroundColor: colors.modalBackground,
         borderRadius: 20,
         padding: 24,
     },
@@ -176,15 +174,15 @@ const styles = StyleSheet.create({
         fontFamily: 'Inter-Bold',
         fontSize: 18,
         fontWeight: '700',
-        color: '#171717',
+        color: colors.mainTextColor,
         textAlign: 'center',
     },
     contextInputContainer: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: Colors.whiteColor,
+        backgroundColor: colors.secondaryColor,
         borderWidth: 1,
-        borderColor: '#E5E7EB',
+        borderColor: colors.lightGrayColor,
         borderRadius: 10,
         paddingHorizontal: 16,
         height: 50,
@@ -192,7 +190,7 @@ const styles = StyleSheet.create({
     contextInput: {
         flex: 1,
         ...Fonts.regular14,
-        color: Colors.mainTextColor,
+        color: colors.mainTextColor,
     },
     nextButton: {
         flexDirection: 'row',
@@ -204,15 +202,15 @@ const styles = StyleSheet.create({
     },
     nextButtonText: {
         ...Fonts.medium16,
-        color: Colors.whiteColor,
+        color: '#FFFFFF',
     },
     filterOption: {
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
-        backgroundColor: Colors.whiteColor,
+        backgroundColor: colors.secondaryColor,
         borderWidth: 1,
-        borderColor: '#E5E7EB',
+        borderColor: colors.lightGrayColor,
         borderRadius: 10,
         paddingHorizontal: 16,
         height: 54,
@@ -224,14 +222,14 @@ const styles = StyleSheet.create({
     },
     filterLabel: {
         ...Fonts.regular16,
-        color: '#171717',
+        color: colors.mainTextColor,
     },
     checkbox: {
         width: 24,
         height: 24,
         borderRadius: 6,
         borderWidth: 1,
-        borderColor: '#E5E7EB',
+        borderColor: colors.lightGrayColor,
         alignItems: 'center',
         justifyContent: 'center',
     },
@@ -240,4 +238,6 @@ const styles = StyleSheet.create({
     },
 });
 
+// Backward compatibility
+const styles = createStyles(lightColors);
 export default styles;

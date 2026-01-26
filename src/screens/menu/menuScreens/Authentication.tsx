@@ -2,7 +2,7 @@ import { View, Text, ScrollView, TouchableOpacity } from 'react-native';
 import React, { useState } from 'react';
 import SizeBox from '../../../constants/SizeBox';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import Colors from '../../../constants/Colors';
+import { useTheme } from '../../../context/ThemeContext';
 import {
     ArrowLeft2,
     Notification,
@@ -10,12 +10,14 @@ import {
     SecuritySafe,
     ArrowRight,
 } from 'iconsax-react-nativejs';
-import styles from './AuthenticationStyles';
+import { createStyles } from './AuthenticationStyles';
 
 type AuthMethod = '2fa' | 'authenticator' | null;
 
 const Authentication = ({ navigation }: any) => {
     const insets = useSafeAreaInsets();
+    const { colors } = useTheme();
+    const styles = createStyles(colors);
     const [selectedMethod, setSelectedMethod] = useState<AuthMethod>('authenticator');
 
     return (
@@ -25,11 +27,11 @@ const Authentication = ({ navigation }: any) => {
             {/* Header */}
             <View style={styles.header}>
                 <TouchableOpacity style={styles.headerButton} onPress={() => navigation.goBack()}>
-                    <ArrowLeft2 size={24} color={Colors.primaryColor} variant="Linear" />
+                    <ArrowLeft2 size={24} color={colors.primaryColor} variant="Linear" />
                 </TouchableOpacity>
                 <Text style={styles.headerTitle}>Authentication</Text>
                 <TouchableOpacity style={styles.headerButton}>
-                    <Notification size={24} color={Colors.primaryColor} variant="Linear" />
+                    <Notification size={24} color={colors.primaryColor} variant="Linear" />
                 </TouchableOpacity>
             </View>
 
@@ -55,7 +57,7 @@ const Authentication = ({ navigation }: any) => {
                         onPress={() => setSelectedMethod('2fa')}
                     >
                         <View style={styles.optionIconContainer}>
-                            <Message size={24} color={Colors.primaryColor} variant="Bold" />
+                            <Message size={24} color={colors.primaryColor} variant="Bold" />
                         </View>
                         <View style={styles.optionContent}>
                             <Text style={styles.optionTitle}>2- Factor Authentication</Text>
@@ -82,7 +84,7 @@ const Authentication = ({ navigation }: any) => {
                         onPress={() => setSelectedMethod('authenticator')}
                     >
                         <View style={styles.optionIconContainer}>
-                            <SecuritySafe size={24} color={Colors.primaryColor} variant="Bold" />
+                            <SecuritySafe size={24} color={colors.primaryColor} variant="Bold" />
                         </View>
                         <View style={styles.optionContent}>
                             <Text style={styles.optionTitle}>Authenticator App</Text>
@@ -110,7 +112,7 @@ const Authentication = ({ navigation }: any) => {
                     onPress={() => navigation.navigate('AuthenticatorSetup')}
                 >
                     <Text style={styles.primaryButtonText}>Set Up Now</Text>
-                    <ArrowRight size={24} color={Colors.whiteColor} variant="Linear" />
+                    <ArrowRight size={24} color={colors.pureWhite} variant="Linear" />
                 </TouchableOpacity>
 
                 <SizeBox height={18} />
@@ -120,7 +122,7 @@ const Authentication = ({ navigation }: any) => {
                     onPress={() => navigation.goBack()}
                 >
                     <Text style={styles.secondaryButtonText}>Skip For now</Text>
-                    <ArrowRight size={24} color="#9B9F9F" variant="Linear" />
+                    <ArrowRight size={24} color={colors.grayColor} variant="Linear" />
                 </TouchableOpacity>
             </View>
         </View>

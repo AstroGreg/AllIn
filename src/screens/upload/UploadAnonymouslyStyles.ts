@@ -1,22 +1,22 @@
 import { StyleSheet } from "react-native";
-import Colors from "../../constants/Colors";
 import Fonts from "../../constants/Fonts";
+import { ThemeColors, lightColors } from "../../constants/Theme";
 
-const Styles = StyleSheet.create({
+export const createStyles = (colors: ThemeColors) => StyleSheet.create({
     mainContainer: {
         flex: 1,
-        backgroundColor: Colors.whiteColor,
+        backgroundColor: colors.backgroundColor,
     },
     header: {
         paddingHorizontal: 20,
         paddingVertical: 16,
         borderBottomWidth: 0.5,
-        borderBottomColor: '#DEDEDE',
+        borderBottomColor: colors.lightGrayColor,
         alignItems: 'center',
     },
     headerTitle: {
         ...Fonts.medium18,
-        color: Colors.mainTextColor,
+        color: colors.mainTextColor,
     },
     content: {
         flex: 1,
@@ -25,17 +25,17 @@ const Styles = StyleSheet.create({
         paddingHorizontal: 20,
     },
     infoCard: {
-        backgroundColor: Colors.whiteColor,
+        backgroundColor: colors.cardBackground,
         borderRadius: 10,
         borderWidth: 0.5,
-        borderColor: '#DEDEDE',
+        borderColor: colors.lightGrayColor,
         padding: 16,
         alignItems: 'center',
         width: '100%',
     },
     infoText: {
         ...Fonts.regular14,
-        color: '#9B9F9F',
+        color: colors.grayColor,
         textAlign: 'center',
         lineHeight: 22,
     },
@@ -43,7 +43,7 @@ const Styles = StyleSheet.create({
         paddingHorizontal: 20,
     },
     niceButton: {
-        backgroundColor: Colors.primaryColor,
+        backgroundColor: colors.primaryColor,
         borderRadius: 10,
         paddingVertical: 16,
         alignItems: 'center',
@@ -51,8 +51,10 @@ const Styles = StyleSheet.create({
     },
     niceButtonText: {
         ...Fonts.medium16,
-        color: Colors.whiteColor,
+        color: colors.pureWhite,
     },
 });
 
+// Backward compatibility
+const Styles = createStyles(lightColors);
 export default Styles;

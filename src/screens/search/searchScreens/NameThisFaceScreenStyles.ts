@@ -1,11 +1,11 @@
 import { StyleSheet } from 'react-native';
-import Colors from '../../../constants/Colors';
 import Fonts from '../../../constants/Fonts';
+import { ThemeColors, lightColors } from '../../../constants/Theme';
 
-const styles = StyleSheet.create({
+export const createStyles = (colors: ThemeColors) => StyleSheet.create({
     mainContainer: {
         flex: 1,
-        backgroundColor: Colors.whiteColor,
+        backgroundColor: colors.backgroundColor,
     },
     header: {
         flexDirection: 'row',
@@ -14,19 +14,19 @@ const styles = StyleSheet.create({
         paddingHorizontal: 20,
         paddingVertical: 16,
         borderBottomWidth: 0.3,
-        borderBottomColor: '#DEDEDE',
+        borderBottomColor: colors.lightGrayColor,
     },
     headerButton: {
         width: 44,
         height: 44,
         borderRadius: 22,
-        backgroundColor: '#F5F5F5',
+        backgroundColor: colors.btnBackgroundColor,
         alignItems: 'center',
         justifyContent: 'center',
     },
     headerTitle: {
         ...Fonts.medium18,
-        color: Colors.mainTextColor,
+        color: colors.mainTextColor,
     },
     content: {
         flex: 1,
@@ -35,7 +35,7 @@ const styles = StyleSheet.create({
     },
     sectionTitle: {
         ...Fonts.medium16,
-        color: Colors.mainTextColor,
+        color: colors.mainTextColor,
     },
     capturedViewsRow: {
         flexDirection: 'row',
@@ -46,7 +46,7 @@ const styles = StyleSheet.create({
         height: 60,
         borderRadius: 8,
         borderWidth: 1,
-        borderColor: Colors.primaryColor,
+        borderColor: colors.primaryColor,
         overflow: 'hidden',
     },
     capturedImage: {
@@ -55,14 +55,14 @@ const styles = StyleSheet.create({
     },
     inputLabel: {
         ...Fonts.regular14,
-        color: Colors.mainTextColor,
+        color: colors.mainTextColor,
     },
     inputContainer: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: '#F7FAFF',
+        backgroundColor: colors.secondaryColor,
         borderWidth: 0.5,
-        borderColor: '#E0ECFE',
+        borderColor: colors.borderColor,
         borderRadius: 10,
         paddingHorizontal: 16,
         height: 54,
@@ -70,7 +70,7 @@ const styles = StyleSheet.create({
     textInput: {
         flex: 1,
         ...Fonts.regular14,
-        color: Colors.mainTextColor,
+        color: colors.mainTextColor,
     },
     bottomContainer: {
         paddingHorizontal: 20,
@@ -78,7 +78,7 @@ const styles = StyleSheet.create({
     saveButton: {
         height: 54,
         borderRadius: 10,
-        backgroundColor: Colors.primaryColor,
+        backgroundColor: colors.primaryColor,
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',
@@ -89,8 +89,10 @@ const styles = StyleSheet.create({
     },
     saveButtonText: {
         ...Fonts.medium16,
-        color: Colors.whiteColor,
+        color: '#FFFFFF',
     },
 });
 
+// Backward compatibility
+const styles = createStyles(lightColors);
 export default styles;

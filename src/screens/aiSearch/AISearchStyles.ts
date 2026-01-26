@@ -1,11 +1,11 @@
 import { StyleSheet } from 'react-native';
-import Colors from '../../constants/Colors';
 import Fonts from '../../constants/Fonts';
+import { ThemeColors, lightColors } from '../../constants/Theme';
 
-const Styles = StyleSheet.create({
+export const createStyles = (colors: ThemeColors) => StyleSheet.create({
     mainContainer: {
         flex: 1,
-        backgroundColor: Colors.whiteColor,
+        backgroundColor: colors.backgroundColor,
     },
     header: {
         flexDirection: 'row',
@@ -14,20 +14,20 @@ const Styles = StyleSheet.create({
         paddingHorizontal: 20,
         paddingVertical: 16,
         borderBottomWidth: 0.5,
-        borderBottomColor: '#DEDEDE',
-        backgroundColor: Colors.whiteColor,
+        borderBottomColor: colors.lightGrayColor,
+        backgroundColor: colors.backgroundColor,
     },
     headerButton: {
         width: 44,
         height: 44,
         borderRadius: 22,
-        backgroundColor: '#F5F5F5',
+        backgroundColor: colors.btnBackgroundColor,
         alignItems: 'center',
         justifyContent: 'center',
     },
     headerTitle: {
         ...Fonts.medium18,
-        color: Colors.mainTextColor,
+        color: colors.mainTextColor,
     },
 
     // Top Section with Gradient
@@ -35,9 +35,6 @@ const Styles = StyleSheet.create({
         paddingHorizontal: 20,
         paddingTop: 24,
         paddingBottom: 32,
-        backgroundColor: 'rgba(255, 255, 255, 0.8)',
-        borderBottomWidth: 1,
-        borderBottomColor: '#EDE9FE',
     },
     titleSection: {
         marginBottom: 0,
@@ -46,21 +43,21 @@ const Styles = StyleSheet.create({
         ...Fonts.bold36,
         fontSize: 36,
         lineHeight: 45,
-        color: '#101828',
+        color: colors.mainTextColor,
         letterSpacing: -0.53,
     },
     subtitle: {
         ...Fonts.regular14,
         fontSize: 18,
         lineHeight: 29,
-        color: '#4A5565',
+        color: colors.grayColor,
         letterSpacing: -0.44,
     },
 
     // Options Container
     optionsContainer: {
         flex: 1,
-        backgroundColor: 'transparent',
+        backgroundColor: colors.backgroundColor,
     },
     optionsContent: {
         paddingHorizontal: 20,
@@ -70,10 +67,10 @@ const Styles = StyleSheet.create({
 
     // Search Option Card
     searchOptionCard: {
-        backgroundColor: Colors.whiteColor,
+        backgroundColor: colors.cardBackground,
         borderRadius: 28,
         borderWidth: 1,
-        borderColor: '#DEDEDE',
+        borderColor: colors.lightGrayColor,
         padding: 25,
         marginBottom: 16,
         overflow: 'hidden',
@@ -145,7 +142,7 @@ const Styles = StyleSheet.create({
         ...Fonts.bold20,
         fontSize: 20,
         lineHeight: 25,
-        color: '#101828',
+        color: colors.mainTextColor,
         letterSpacing: -0.45,
         marginBottom: 8,
     },
@@ -153,7 +150,7 @@ const Styles = StyleSheet.create({
         ...Fonts.regular14,
         fontSize: 16,
         lineHeight: 26,
-        color: '#4A5565',
+        color: colors.grayColor,
         letterSpacing: -0.31,
         marginBottom: 16,
     },
@@ -193,10 +190,10 @@ const Styles = StyleSheet.create({
         paddingHorizontal: 20,
     },
     modalContainer: {
-        backgroundColor: 'rgba(255, 255, 255, 0.95)',
+        backgroundColor: colors.modalBackground,
         borderRadius: 18,
         borderWidth: 0.5,
-        borderColor: '#DEDEDE',
+        borderColor: colors.lightGrayColor,
         padding: 20,
         width: '100%',
         shadowColor: '#DDD6FF',
@@ -213,21 +210,21 @@ const Styles = StyleSheet.create({
     },
     modalPrice: {
         ...Fonts.bold24,
-        color: '#101828',
+        color: colors.mainTextColor,
         letterSpacing: -0.35,
     },
     modalTitle: {
         ...Fonts.bold24,
         fontSize: 25,
         lineHeight: 36,
-        color: '#101828',
+        color: colors.mainTextColor,
         letterSpacing: -0.35,
     },
     modalDescription: {
         ...Fonts.regular14,
         fontSize: 16,
         lineHeight: 24,
-        color: '#4A5565',
+        color: colors.grayColor,
         letterSpacing: -0.44,
         marginTop: 16,
         marginBottom: 24,
@@ -248,9 +245,11 @@ const Styles = StyleSheet.create({
     subscribeButtonText: {
         ...Fonts.bold16,
         fontSize: 18,
-        color: Colors.whiteColor,
+        color: '#FFFFFF',
         letterSpacing: -0.44,
     },
 });
 
+// Backward compatibility
+const Styles = createStyles(lightColors);
 export default Styles;

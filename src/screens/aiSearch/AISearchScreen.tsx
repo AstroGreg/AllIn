@@ -1,15 +1,17 @@
 import { View, Text, TouchableOpacity, ScrollView, Modal } from 'react-native';
 import React, { useState } from 'react';
-import Styles from './AISearchStyles';
+import { createStyles } from './AISearchStyles';
 import SizeBox from '../../constants/SizeBox';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import Colors from '../../constants/Colors';
+import { useTheme } from '../../context/ThemeContext';
 import Icons from '../../constants/Icons';
 import LinearGradient from 'react-native-linear-gradient';
 import { ArrowLeft2, Notification, ArrowRight } from 'iconsax-react-nativejs';
 
 const AISearchScreen = ({ navigation }: any) => {
     const insets = useSafeAreaInsets();
+    const { colors, isDark } = useTheme();
+    const Styles = createStyles(colors);
     const [selectedOption, setSelectedOption] = useState<string | null>(null);
     const [showModal, setShowModal] = useState(false);
 
@@ -154,17 +156,17 @@ const AISearchScreen = ({ navigation }: any) => {
             {/* Header */}
             <View style={Styles.header}>
                 <TouchableOpacity style={Styles.headerButton} onPress={() => navigation.goBack()}>
-                    <ArrowLeft2 size={24} color={Colors.primaryColor} variant="Linear" />
+                    <ArrowLeft2 size={24} color={colors.primaryColor} variant="Linear" />
                 </TouchableOpacity>
                 <Text style={Styles.headerTitle}>AI Search</Text>
                 <TouchableOpacity style={Styles.headerButton} onPress={() => navigation.navigate('NotificationsScreen')}>
-                    <Notification size={24} color={Colors.primaryColor} variant="Linear" />
+                    <Notification size={24} color={colors.primaryColor} variant="Linear" />
                 </TouchableOpacity>
             </View>
 
             {/* Top Section with Gradient Background */}
             <LinearGradient
-                colors={['#F5F3FF', '#FFFFFF']}
+                colors={isDark ? [colors.backgroundColor, colors.backgroundColor] : ['#F5F3FF', '#FFFFFF']}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 0, y: 1 }}
                 style={Styles.topSection}
@@ -229,7 +231,7 @@ const AISearchScreen = ({ navigation }: any) => {
                                 style={Styles.subscribeButton}
                             >
                                 <Text style={Styles.subscribeButtonText}>Subscribe Now</Text>
-                                <ArrowRight size={24} color={Colors.whiteColor} variant="Linear" />
+                                <ArrowRight size={24} color="#FFFFFF" variant="Linear" />
                             </LinearGradient>
                         </TouchableOpacity>
                     </TouchableOpacity>

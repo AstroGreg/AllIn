@@ -1,15 +1,17 @@
 import { View, ScrollView, Text } from 'react-native'
 import React from 'react'
-import Styles from '../AddTalentStyles'
+import { createStyles } from '../AddTalentStyles'
 import SizeBox from '../../../../constants/SizeBox'
 import FastImage from 'react-native-fast-image'
 import Images from '../../../../constants/Images'
 import CustomButton from '../../../../components/customButton/CustomButton'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import CustomTextInput from '../../../../components/customTextInput/CustomTextInput'
+import { useTheme } from '../../../../context/ThemeContext'
 
 const ChestDetails = ({ navigation }: any) => {
-
+    const { colors } = useTheme();
+    const Styles = createStyles(colors);
     const insets = useSafeAreaInsets();
 
     return (

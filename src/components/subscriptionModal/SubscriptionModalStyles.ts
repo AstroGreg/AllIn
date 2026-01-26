@@ -1,17 +1,17 @@
 import { StyleSheet, Dimensions } from "react-native";
-import Colors from "../../constants/Colors";
 import Fonts from "../../constants/Fonts";
+import { ThemeColors, lightColors } from "../../constants/Theme";
 
 const { height } = Dimensions.get('window');
 
-const Styles = StyleSheet.create({
+export const createStyles = (colors: ThemeColors) => StyleSheet.create({
     modalOverlay: {
         flex: 1,
         backgroundColor: 'rgba(0, 0, 0, 0.5)',
         justifyContent: 'flex-end',
     },
     modalContainer: {
-        backgroundColor: Colors.whiteColor,
+        backgroundColor: colors.modalBackground,
         borderTopLeftRadius: 24,
         borderTopRightRadius: 24,
         maxHeight: height * 0.9,
@@ -26,14 +26,14 @@ const Styles = StyleSheet.create({
     },
     headerTitle: {
         ...Fonts.semibold20,
-        color: Colors.mainTextColor,
+        color: colors.mainTextColor,
     },
     closeButton: {
         padding: 4,
     },
     tabContainer: {
         flexDirection: 'row',
-        backgroundColor: '#F5F5F5',
+        backgroundColor: colors.btnBackgroundColor,
         borderRadius: 10,
         padding: 4,
     },
@@ -45,46 +45,46 @@ const Styles = StyleSheet.create({
         borderRadius: 8,
     },
     activeTab: {
-        backgroundColor: Colors.primaryColor,
+        backgroundColor: colors.primaryColor,
     },
     tabText: {
         ...Fonts.medium14,
-        color: '#9B9F9F',
+        color: colors.subTextColor,
     },
     activeTabText: {
-        color: Colors.whiteColor,
+        color: colors.pureWhite,
     },
     plansContainer: {
         paddingBottom: 20,
     },
     planCard: {
-        backgroundColor: Colors.whiteColor,
+        backgroundColor: colors.cardBackground,
         borderRadius: 12,
         borderWidth: 1,
-        borderColor: '#DEDEDE',
+        borderColor: colors.borderColor,
         padding: 20,
         marginBottom: 16,
     },
     popularPlanCard: {
-        borderColor: Colors.primaryColor,
+        borderColor: colors.primaryColor,
         borderWidth: 2,
     },
     popularBadge: {
         position: 'absolute',
         top: -12,
         right: 20,
-        backgroundColor: Colors.primaryColor,
+        backgroundColor: colors.primaryColor,
         paddingHorizontal: 12,
         paddingVertical: 4,
         borderRadius: 12,
     },
     popularBadgeText: {
         ...Fonts.medium12,
-        color: Colors.whiteColor,
+        color: colors.pureWhite,
     },
     planName: {
         ...Fonts.semibold18,
-        color: Colors.mainTextColor,
+        color: colors.mainTextColor,
     },
     priceRow: {
         flexDirection: 'row',
@@ -93,16 +93,16 @@ const Styles = StyleSheet.create({
     },
     planPrice: {
         ...Fonts.bold28,
-        color: Colors.mainTextColor,
+        color: colors.mainTextColor,
     },
     planPeriod: {
         ...Fonts.regular14,
-        color: '#9B9F9F',
+        color: colors.subTextColor,
         marginLeft: 4,
     },
     planCredits: {
         ...Fonts.regular12,
-        color: Colors.primaryColor,
+        color: colors.primaryColor,
         marginTop: 4,
     },
     featuresContainer: {
@@ -115,30 +115,32 @@ const Styles = StyleSheet.create({
     },
     featureText: {
         ...Fonts.regular14,
-        color: '#777777',
+        color: colors.grayColor,
         marginLeft: 10,
         flex: 1,
     },
     getStartedButton: {
-        backgroundColor: Colors.whiteColor,
+        backgroundColor: colors.cardBackground,
         borderRadius: 8,
         borderWidth: 1,
-        borderColor: Colors.primaryColor,
+        borderColor: colors.primaryColor,
         paddingVertical: 14,
         alignItems: 'center',
         marginTop: 16,
     },
     popularGetStartedButton: {
-        backgroundColor: Colors.primaryColor,
-        borderColor: Colors.primaryColor,
+        backgroundColor: colors.primaryColor,
+        borderColor: colors.primaryColor,
     },
     getStartedButtonText: {
         ...Fonts.medium14,
-        color: Colors.primaryColor,
+        color: colors.primaryColor,
     },
     popularGetStartedButtonText: {
-        color: Colors.whiteColor,
+        color: colors.pureWhite,
     },
 });
 
+// Backward compatibility
+const Styles = createStyles(lightColors);
 export default Styles;

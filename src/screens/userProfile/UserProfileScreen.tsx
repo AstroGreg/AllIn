@@ -5,13 +5,15 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import FastImage from 'react-native-fast-image'
 import Images from '../../constants/Images'
 import Icons from '../../constants/Icons'
-import Colors from '../../constants/Colors'
-import Styles from './UserProfileStyles'
+import { useTheme } from '../../context/ThemeContext'
+import { createStyles } from './UserProfileStyles'
 import { ArrowLeft2, User, Edit2, Trash, Global, Clock, ArrowRight, Location, Calendar, Camera, VideoPlay } from 'iconsax-react-nativejs'
 import ManageSocialMediaModal from '../../components/manageSocialMediaModal/ManageSocialMediaModal'
 
 const UserProfileScreen = ({ navigation }: any) => {
     const insets = useSafeAreaInsets();
+    const { colors } = useTheme();
+    const Styles = createStyles(colors);
     const [activeTab, setActiveTab] = useState('photos');
     const [showSocialMediaModal, setShowSocialMediaModal] = useState(false);
 
@@ -106,7 +108,7 @@ const UserProfileScreen = ({ navigation }: any) => {
             <View style={Styles.postActions}>
                 <TouchableOpacity style={Styles.editButton}>
                     <Text style={Styles.editButtonText}>Edit</Text>
-                    <Edit2 size={18} color={Colors.whiteColor} variant="Linear" />
+                    <Edit2 size={18} color="#FFFFFF" variant="Linear" />
                 </TouchableOpacity>
                 <TouchableOpacity style={Styles.deleteButton}>
                     <Text style={Styles.deleteButtonText}>Delete</Text>
@@ -154,7 +156,7 @@ const UserProfileScreen = ({ navigation }: any) => {
                 </View>
                 <TouchableOpacity style={Styles.eventEditButton}>
                     <Text style={Styles.eventEditButtonText}>Edit</Text>
-                    <Edit2 size={18} color={Colors.whiteColor} variant="Linear" />
+                    <Edit2 size={18} color="#FFFFFF" variant="Linear" />
                 </TouchableOpacity>
             </View>
         </View>
@@ -167,11 +169,11 @@ const UserProfileScreen = ({ navigation }: any) => {
             {/* Header */}
             <View style={Styles.header}>
                 <TouchableOpacity style={Styles.headerButton} onPress={() => navigation.goBack()}>
-                    <ArrowLeft2 size={24} color={Colors.primaryColor} variant="Linear" />
+                    <ArrowLeft2 size={24} color={colors.primaryColor} variant="Linear" />
                 </TouchableOpacity>
                 <Text style={Styles.headerTitle}>Profile</Text>
                 <TouchableOpacity style={Styles.headerButton} onPress={() => navigation.navigate('ProfileSettings')}>
-                    <User size={24} color={Colors.primaryColor} variant="Linear" />
+                    <User size={24} color={colors.primaryColor} variant="Linear" />
                 </TouchableOpacity>
             </View>
 
@@ -235,7 +237,7 @@ const UserProfileScreen = ({ navigation }: any) => {
                         <View style={Styles.bioHeader}>
                             <Text style={Styles.bioTitle}>Bio</Text>
                             <TouchableOpacity onPress={() => navigation.navigate('EditBioScreens')}>
-                                <Edit2 size={16} color={Colors.mainTextColor} variant="Linear" />
+                                <Edit2 size={16} color={colors.mainTextColor} variant="Linear" />
                             </TouchableOpacity>
                         </View>
                         <Text style={Styles.bioText}>
@@ -250,7 +252,7 @@ const UserProfileScreen = ({ navigation }: any) => {
                         onPress={() => setShowSocialMediaModal(true)}
                     >
                         <Text style={Styles.manageSocialMediaButtonText}>Manage Social Media</Text>
-                        <ArrowRight size={18} color={Colors.whiteColor} variant="Linear" />
+                        <ArrowRight size={18} color="#FFFFFF" variant="Linear" />
                     </TouchableOpacity>
 
                     <SizeBox height={10} />
@@ -268,7 +270,7 @@ const UserProfileScreen = ({ navigation }: any) => {
                                 </TouchableOpacity>
                                 <SizeBox width={8} />
                                 <TouchableOpacity>
-                                    <Edit2 size={16} color={Colors.mainTextColor} variant="Linear" />
+                                    <Edit2 size={16} color={colors.mainTextColor} variant="Linear" />
                                 </TouchableOpacity>
                             </View>
                         </View>
@@ -377,7 +379,7 @@ const UserProfileScreen = ({ navigation }: any) => {
                     }
                 }}>
                     <Text style={Styles.mainEditButtonText}>Edit</Text>
-                    <Edit2 size={18} color={Colors.whiteColor} variant="Linear" />
+                    <Edit2 size={18} color="#FFFFFF" variant="Linear" />
                 </TouchableOpacity>
 
                 {/* Events Section */}
@@ -393,7 +395,7 @@ const UserProfileScreen = ({ navigation }: any) => {
                     </View>
                     <TouchableOpacity style={Styles.eventsViewAllButton} onPress={() => navigation.navigate('EventsViewAllScreen')}>
                         <Text style={Styles.eventsViewAllButtonText}>View All</Text>
-                        <ArrowRight size={18} color={Colors.whiteColor} variant="Linear" />
+                        <ArrowRight size={18} color="#FFFFFF" variant="Linear" />
                     </TouchableOpacity>
                 </View>
 

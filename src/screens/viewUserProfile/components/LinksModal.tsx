@@ -3,7 +3,8 @@ import React from 'react'
 import SizeBox from '../../../constants/SizeBox';
 import FastImage from 'react-native-fast-image';
 import Icons from '../../../constants/Icons';
-import Styles from '../ViewUserProfileStyles';
+import { createStyles } from '../ViewUserProfileStyles';
+import { useTheme } from '../../../context/ThemeContext';
 
 interface LinksModalProps {
     isVisible: boolean;
@@ -11,6 +12,9 @@ interface LinksModalProps {
 }
 
 const LinksModal = ({ isVisible, onClose }: LinksModalProps) => {
+    const { colors } = useTheme();
+    const Styles = createStyles(colors);
+
     return (
         <Modal
             visible={isVisible}

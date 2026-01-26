@@ -1,15 +1,15 @@
 import { StyleSheet, Dimensions } from 'react-native';
-import Colors from '../../constants/Colors';
 import Fonts from '../../constants/Fonts';
+import { ThemeColors, lightColors } from '../../constants/Theme';
 
 const { width } = Dimensions.get('window');
 const cardWidth = (width - 40 - 16) / 2; // 2 columns with gap
 const photoImageWidth = Math.floor((width - 40 - 24 - 30) / 4); // 4 columns: screen - scrollPadding(40) - cardPadding(24) - gaps(30)
 
-const Styles = StyleSheet.create({
+export const createStyles = (colors: ThemeColors) => StyleSheet.create({
     mainContainer: {
         flex: 1,
-        backgroundColor: Colors.whiteColor,
+        backgroundColor: colors.backgroundColor,
     },
     header: {
         flexDirection: 'row',
@@ -18,19 +18,19 @@ const Styles = StyleSheet.create({
         paddingHorizontal: 20,
         paddingVertical: 16,
         borderBottomWidth: 0.5,
-        borderBottomColor: '#DEDEDE',
+        borderBottomColor: colors.borderColor,
     },
     headerButton: {
         width: 44,
         height: 44,
         borderRadius: 22,
-        backgroundColor: '#F5F5F5',
+        backgroundColor: colors.btnBackgroundColor,
         alignItems: 'center',
         justifyContent: 'center',
     },
     headerTitle: {
         ...Fonts.medium18,
-        color: Colors.mainTextColor,
+        color: colors.mainTextColor,
     },
     scrollContent: {
         paddingHorizontal: 20,
@@ -43,24 +43,24 @@ const Styles = StyleSheet.create({
     },
     sectionTitle: {
         ...Fonts.medium18,
-        color: Colors.mainTextColor,
+        color: colors.mainTextColor,
     },
     videosCountBadge: {
-        backgroundColor: '#F5F5F5',
+        backgroundColor: colors.btnBackgroundColor,
         borderRadius: 6,
         paddingHorizontal: 12,
         paddingVertical: 6,
     },
     videosCountText: {
         ...Fonts.regular14,
-        color: '#9B9F9F',
+        color: colors.subTextColor,
     },
     toggleContainer: {
         flexDirection: 'row',
-        backgroundColor: Colors.whiteColor,
+        backgroundColor: colors.cardBackground,
         borderRadius: 10,
         borderWidth: 0.5,
-        borderColor: '#DEDEDE',
+        borderColor: colors.borderColor,
         padding: 8,
     },
     toggleButton: {
@@ -75,11 +75,11 @@ const Styles = StyleSheet.create({
     },
     toggleText: {
         ...Fonts.regular12,
-        color: '#9B9F9F',
+        color: colors.subTextColor,
     },
     toggleTextActive: {
         ...Fonts.regular12,
-        color: Colors.mainTextColor,
+        color: colors.mainTextColor,
     },
     videosGrid: {
         flexDirection: 'row',
@@ -88,10 +88,10 @@ const Styles = StyleSheet.create({
     },
     videoCard: {
         width: cardWidth,
-        backgroundColor: Colors.whiteColor,
+        backgroundColor: colors.cardBackground,
         borderRadius: 10,
         borderWidth: 0.5,
-        borderColor: '#DEDEDE',
+        borderColor: colors.borderColor,
         padding: 12,
     },
     thumbnailContainer: {
@@ -119,7 +119,7 @@ const Styles = StyleSheet.create({
     },
     videoTitle: {
         ...Fonts.medium14,
-        color: Colors.mainTextColor,
+        color: colors.mainTextColor,
         marginTop: 12,
     },
     videoMeta: {
@@ -135,14 +135,14 @@ const Styles = StyleSheet.create({
     },
     metaText: {
         ...Fonts.regular12,
-        color: '#9B9F9F',
+        color: colors.subTextColor,
     },
     // Photo styles
     photosCard: {
-        backgroundColor: Colors.whiteColor,
+        backgroundColor: colors.cardBackground,
         borderRadius: 10,
         borderWidth: 0.5,
-        borderColor: '#DEDEDE',
+        borderColor: colors.borderColor,
         padding: 12,
     },
     photosGrid: {
@@ -157,4 +157,6 @@ const Styles = StyleSheet.create({
     },
 });
 
+// Backward compatibility
+const Styles = createStyles(lightColors);
 export default Styles;

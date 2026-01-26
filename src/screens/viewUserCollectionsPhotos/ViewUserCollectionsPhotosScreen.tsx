@@ -3,14 +3,16 @@ import { View, Text, ScrollView, TouchableOpacity, Pressable } from 'react-nativ
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import FastImage from 'react-native-fast-image';
 import { ArrowLeft2, User, Clock } from 'iconsax-react-nativejs';
-import Styles from './ViewUserCollectionsPhotosScreenStyles';
+import { createStyles } from './ViewUserCollectionsPhotosScreenStyles';
 import SizeBox from '../../constants/SizeBox';
-import Colors from '../../constants/Colors';
 import Images from '../../constants/Images';
 import Icons from '../../constants/Icons';
+import { useTheme } from '../../context/ThemeContext';
 
 const ViewUserCollectionsPhotosScreen = ({ navigation }: any) => {
     const insets = useSafeAreaInsets();
+    const { colors } = useTheme();
+    const Styles = createStyles(colors);
     const [activeTab, setActiveTab] = useState('photos');
 
     const photos = [
@@ -51,11 +53,11 @@ const ViewUserCollectionsPhotosScreen = ({ navigation }: any) => {
             <Text style={Styles.videoTitle}>{video.title}</Text>
             <View style={Styles.videoMeta}>
                 <View style={Styles.metaItem}>
-                    <User size={14} color="#9B9F9F" variant="Linear" />
+                    <User size={14} color={colors.subTextColor} variant="Linear" />
                     <Text style={Styles.metaText}>{video.author}</Text>
                 </View>
                 <View style={Styles.metaItem}>
-                    <Clock size={14} color="#9B9F9F" variant="Linear" />
+                    <Clock size={14} color={colors.subTextColor} variant="Linear" />
                     <Text style={Styles.metaText}>{video.duration}</Text>
                 </View>
             </View>
@@ -69,7 +71,7 @@ const ViewUserCollectionsPhotosScreen = ({ navigation }: any) => {
             {/* Header */}
             <View style={Styles.header}>
                 <TouchableOpacity style={Styles.headerButton} onPress={() => navigation.goBack()}>
-                    <ArrowLeft2 size={24} color={Colors.mainTextColor} variant="Linear" />
+                    <ArrowLeft2 size={24} color={colors.mainTextColor} variant="Linear" />
                 </TouchableOpacity>
                 <Text style={Styles.headerTitle}>Collections</Text>
                 <View style={[Styles.headerButton, { opacity: 0 }]} />

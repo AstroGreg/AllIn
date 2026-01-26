@@ -3,14 +3,16 @@ import { View, Text, ScrollView, TouchableOpacity, Image } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import FastImage from 'react-native-fast-image';
 import { ArrowLeft2, Edit2 } from 'iconsax-react-nativejs';
-import Styles from './ViewUserBlogDetailsScreenStyles';
+import { createStyles } from './ViewUserBlogDetailsScreenStyles';
 import SizeBox from '../../constants/SizeBox';
-import Colors from '../../constants/Colors';
 import Images from '../../constants/Images';
 import Icons from '../../constants/Icons';
+import { useTheme } from '../../context/ThemeContext';
 
 const ViewUserBlogDetailsScreen = ({ navigation, route }: any) => {
     const insets = useSafeAreaInsets();
+    const { colors } = useTheme();
+    const Styles = createStyles(colors);
     const post = route?.params?.post || {
         title: 'IFAM Outdoor Oordegem',
         date: '09/08/2025',
@@ -30,7 +32,7 @@ const ViewUserBlogDetailsScreen = ({ navigation, route }: any) => {
             {/* Header */}
             <View style={Styles.header}>
                 <TouchableOpacity style={Styles.headerButton} onPress={() => navigation.goBack()}>
-                    <ArrowLeft2 size={24} color={Colors.mainTextColor} variant="Linear" />
+                    <ArrowLeft2 size={24} color={colors.mainTextColor} variant="Linear" />
                 </TouchableOpacity>
                 <Text style={Styles.headerTitle}>Blogs Details</Text>
                 <View style={[Styles.headerButton, { opacity: 0 }]} />
@@ -82,7 +84,7 @@ const ViewUserBlogDetailsScreen = ({ navigation, route }: any) => {
                 {/* Read Count and Writer */}
                 <View style={Styles.metaRow}>
                     <View style={Styles.readCountContainer}>
-                        <Edit2 size={16} color="#777777" variant="Linear" />
+                        <Edit2 size={16} color={colors.grayColor} variant="Linear" />
                         <Text style={Styles.readCountText}>{post.readCount} read</Text>
                     </View>
                     <View style={Styles.writerContainer}>
@@ -104,7 +106,7 @@ const ViewUserBlogDetailsScreen = ({ navigation, route }: any) => {
                 {/* Share Button */}
                 <TouchableOpacity style={Styles.shareButton}>
                     <Text style={Styles.shareButtonText}>Share</Text>
-                    <Image source={Icons.ShareBlue} style={{ width: 18, height: 18, tintColor: Colors.whiteColor }} />
+                    <Image source={Icons.ShareBlue} style={{ width: 18, height: 18, tintColor: '#FFFFFF' }} />
                 </TouchableOpacity>
 
                 <SizeBox height={insets.bottom > 0 ? insets.bottom + 20 : 40} />

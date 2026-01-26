@@ -1,9 +1,9 @@
 import { View, Text, TouchableOpacity, ScrollView } from 'react-native'
 import React, { useState } from 'react'
-import Styles from '../MenuStyles'
+import { createStyles } from '../MenuStyles'
 import SizeBox from '../../../constants/SizeBox'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import Colors from '../../../constants/Colors'
+import { useTheme } from '../../../context/ThemeContext'
 import { ArrowLeft2, Notification, TickCircle } from 'iconsax-react-nativejs'
 
 interface PlanFeature {
@@ -22,6 +22,8 @@ interface Plan {
 
 const Subscription = ({ navigation }: any) => {
     const insets = useSafeAreaInsets();
+    const { colors } = useTheme();
+    const Styles = createStyles(colors);
     const [selectedTab, setSelectedTab] = useState<'monthly' | 'yearly'>('monthly');
 
     const monthlyPlans: Plan[] = [
@@ -114,7 +116,7 @@ const Subscription = ({ navigation }: any) => {
             <View style={Styles.featuresContainer}>
                 {plan.features.map((feature, featureIndex) => (
                     <View key={featureIndex} style={Styles.featureRow}>
-                        <TickCircle size={16} color={Colors.primaryColor} variant="Bold" />
+                        <TickCircle size={16} color={colors.primaryColor} variant="Bold" />
                         <Text style={Styles.featureText}>{feature.text}</Text>
                     </View>
                 ))}
@@ -134,11 +136,11 @@ const Subscription = ({ navigation }: any) => {
             {/* Header */}
             <View style={Styles.header}>
                 <TouchableOpacity style={Styles.headerButton} onPress={() => navigation.goBack()}>
-                    <ArrowLeft2 size={24} color={Colors.primaryColor} variant="Linear" />
+                    <ArrowLeft2 size={24} color={colors.primaryColor} variant="Linear" />
                 </TouchableOpacity>
                 <Text style={Styles.headerTitle}>Subscription</Text>
                 <TouchableOpacity style={Styles.headerButton}>
-                    <Notification size={24} color={Colors.primaryColor} variant="Linear" />
+                    <Notification size={24} color={colors.primaryColor} variant="Linear" />
                 </TouchableOpacity>
             </View>
 

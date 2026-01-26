@@ -1,13 +1,13 @@
 import { StyleSheet, Dimensions } from 'react-native';
-import Colors from '../../constants/Colors';
 import Fonts from '../../constants/Fonts';
+import { ThemeColors, lightColors } from '../../constants/Theme';
 
 const { width, height } = Dimensions.get('window');
 
-const Styles = StyleSheet.create({
+export const createStyles = (colors: ThemeColors) => StyleSheet.create({
     mainContainer: {
         flex: 1,
-        backgroundColor: Colors.whiteColor,
+        backgroundColor: colors.backgroundColor,
     },
     header: {
         flexDirection: 'row',
@@ -16,7 +16,7 @@ const Styles = StyleSheet.create({
         paddingHorizontal: 20,
         paddingVertical: 16,
         borderBottomWidth: 0.5,
-        borderBottomColor: '#DEDEDE',
+        borderBottomColor: colors.borderColor,
     },
     headerLeft: {
         flexDirection: 'row',
@@ -27,7 +27,7 @@ const Styles = StyleSheet.create({
         width: 40,
         height: 40,
         borderRadius: 90,
-        backgroundColor: Colors.primaryColor,
+        backgroundColor: colors.primaryColor,
         alignItems: 'center',
         justifyContent: 'center',
     },
@@ -36,28 +36,28 @@ const Styles = StyleSheet.create({
     },
     headerTitle: {
         ...Fonts.medium16,
-        color: Colors.mainTextColor,
+        color: colors.mainTextColor,
         textAlign: 'center',
     },
     headerSubtitle: {
         ...Fonts.regular12,
-        color: Colors.mainTextColor,
+        color: colors.mainTextColor,
     },
     // Question Card
     questionCard: {
         marginHorizontal: 20,
         marginTop: 16,
-        backgroundColor: Colors.whiteColor,
+        backgroundColor: colors.cardBackground,
         borderRadius: 10,
         borderWidth: 0.5,
-        borderColor: '#DEDEDE',
+        borderColor: colors.borderColor,
         paddingHorizontal: 16,
         paddingVertical: 12,
         alignItems: 'center',
     },
     questionText: {
         ...Fonts.regular14,
-        color: '#9B9F9F',
+        color: colors.subTextColor,
         textAlign: 'center',
         marginBottom: 12,
     },
@@ -77,7 +77,7 @@ const Styles = StyleSheet.create({
         justifyContent: 'center',
     },
     yesButton: {
-        backgroundColor: Colors.primaryColor,
+        backgroundColor: colors.primaryColor,
         borderRadius: 8,
         paddingHorizontal: 13,
         paddingVertical: 8,
@@ -88,7 +88,7 @@ const Styles = StyleSheet.create({
     buttonText: {
         fontSize: 11,
         fontFamily: 'Inter-Regular',
-        color: Colors.whiteColor,
+        color: colors.pureWhite,
         lineHeight: 17,
     },
     // Video Container
@@ -112,7 +112,7 @@ const Styles = StyleSheet.create({
         width: 50,
         height: 50,
         borderRadius: 90,
-        backgroundColor: '#F7FAFF',
+        backgroundColor: colors.secondaryColor,
         alignItems: 'center',
         justifyContent: 'center',
     },
@@ -139,7 +139,7 @@ const Styles = StyleSheet.create({
     progressBarFill: {
         width: '30%',
         height: '100%',
-        backgroundColor: Colors.primaryColor,
+        backgroundColor: colors.primaryColor,
         borderRadius: 2,
     },
     progressThumb: {
@@ -148,7 +148,7 @@ const Styles = StyleSheet.create({
         width: 12,
         height: 12,
         borderRadius: 6,
-        backgroundColor: Colors.primaryColor,
+        backgroundColor: colors.primaryColor,
         marginLeft: -6,
     },
     controlButtons: {
@@ -160,7 +160,7 @@ const Styles = StyleSheet.create({
         width: 50,
         height: 50,
         borderRadius: 25,
-        backgroundColor: '#E0ECFE',
+        backgroundColor: colors.borderColor,
         alignItems: 'center',
         justifyContent: 'center',
     },
@@ -168,7 +168,7 @@ const Styles = StyleSheet.create({
         width: 80,
         height: 80,
         borderRadius: 40,
-        backgroundColor: '#E0ECFE',
+        backgroundColor: colors.borderColor,
         alignItems: 'center',
         justifyContent: 'center',
     },
@@ -181,10 +181,10 @@ const Styles = StyleSheet.create({
     },
     modalContainer: {
         width: 310,
-        backgroundColor: Colors.whiteColor,
+        backgroundColor: colors.modalBackground,
         borderRadius: 8,
         borderWidth: 0.4,
-        borderColor: '#E0ECFE',
+        borderColor: colors.borderColor,
         paddingHorizontal: 13,
         paddingVertical: 16,
         alignItems: 'center',
@@ -208,16 +208,16 @@ const Styles = StyleSheet.create({
     },
     modalTitle: {
         ...Fonts.medium14,
-        color: Colors.mainTextColor,
+        color: colors.mainTextColor,
     },
     modalPrice: {
         ...Fonts.medium14,
-        color: Colors.mainTextColor,
+        color: colors.mainTextColor,
     },
     modalDivider: {
         width: '100%',
         height: 0.4,
-        backgroundColor: '#E0ECFE',
+        backgroundColor: colors.borderColor,
         marginVertical: 16,
     },
     modalButtonsRow: {
@@ -236,7 +236,7 @@ const Styles = StyleSheet.create({
         justifyContent: 'center',
     },
     payButton: {
-        backgroundColor: Colors.primaryColor,
+        backgroundColor: colors.primaryColor,
         borderRadius: 8,
         paddingHorizontal: 13,
         paddingVertical: 8,
@@ -247,16 +247,16 @@ const Styles = StyleSheet.create({
     modalButtonText: {
         fontSize: 11,
         fontFamily: 'Inter-Regular',
-        color: Colors.whiteColor,
+        color: colors.pureWhite,
         lineHeight: 17,
     },
     // Success Modal Styles
     successModalContainer: {
         width: 297,
-        backgroundColor: Colors.whiteColor,
+        backgroundColor: colors.modalBackground,
         borderRadius: 10,
         borderWidth: 0.5,
-        borderColor: '#E0ECFE',
+        borderColor: colors.borderColor,
         paddingHorizontal: 16,
         paddingVertical: 20,
         alignItems: 'center',
@@ -273,19 +273,19 @@ const Styles = StyleSheet.create({
     },
     successTitle: {
         ...Fonts.medium16,
-        color: Colors.mainTextColor,
+        color: colors.mainTextColor,
         textAlign: 'center',
         marginTop: 5,
     },
     successSubtitle: {
         fontSize: 10,
         fontFamily: 'Inter-Regular',
-        color: '#9B9F9F',
+        color: colors.subTextColor,
         textAlign: 'center',
         lineHeight: 15,
     },
     downloadButton: {
-        backgroundColor: Colors.primaryColor,
+        backgroundColor: colors.primaryColor,
         borderRadius: 10,
         paddingHorizontal: 13,
         paddingVertical: 13,
@@ -298,16 +298,16 @@ const Styles = StyleSheet.create({
     },
     downloadButtonText: {
         ...Fonts.medium14,
-        color: Colors.whiteColor,
+        color: colors.pureWhite,
         fontSize: 13,
     },
     // Failed Modal Styles
     failedModalContainer: {
         width: 297,
-        backgroundColor: Colors.whiteColor,
+        backgroundColor: colors.modalBackground,
         borderRadius: 10,
         borderWidth: 0.5,
-        borderColor: '#E0ECFE',
+        borderColor: colors.borderColor,
         paddingHorizontal: 16,
         paddingVertical: 20,
         alignItems: 'center',
@@ -324,14 +324,14 @@ const Styles = StyleSheet.create({
     },
     failedTitle: {
         ...Fonts.medium16,
-        color: Colors.mainTextColor,
+        color: colors.mainTextColor,
         textAlign: 'center',
         marginTop: 5,
     },
     failedSubtitle: {
         fontSize: 10,
         fontFamily: 'Inter-Regular',
-        color: '#9B9F9F',
+        color: colors.subTextColor,
         textAlign: 'center',
         lineHeight: 15,
     },
@@ -353,7 +353,7 @@ const Styles = StyleSheet.create({
         justifyContent: 'center',
     },
     rechargeButton: {
-        backgroundColor: Colors.primaryColor,
+        backgroundColor: colors.primaryColor,
         borderRadius: 6,
         paddingHorizontal: 16,
         paddingVertical: 10,
@@ -363,8 +363,10 @@ const Styles = StyleSheet.create({
     },
     failedButtonText: {
         ...Fonts.regular14,
-        color: Colors.whiteColor,
+        color: colors.pureWhite,
     },
 });
 
+// Backward compatibility
+const Styles = createStyles(lightColors);
 export default Styles;

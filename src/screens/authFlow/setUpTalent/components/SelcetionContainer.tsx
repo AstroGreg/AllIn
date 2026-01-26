@@ -1,8 +1,8 @@
 import { View, Text, TouchableOpacity } from 'react-native'
 import React from 'react'
-import Styles from '../AddTalentStyles'
-import Colors from '../../../../constants/Colors';
+import { createStyles } from '../AddTalentStyles'
 import Icons from '../../../../constants/Icons';
+import { useTheme } from '../../../../context/ThemeContext';
 
 interface props {
     title: string;
@@ -27,12 +27,14 @@ const SelcetionContainer = ({
     isDelete = false,
     onPressDelete
 }: props) => {
+    const { colors } = useTheme();
+    const Styles = createStyles(colors);
     return (
         <TouchableOpacity
             disabled={disabled}
             onPress={onPress}
             activeOpacity={0.7}
-            style={[Styles.selectionContainer, isSelected && { borderColor: Colors.primaryColor }]}
+            style={[Styles.selectionContainer, isSelected && { borderColor: colors.primaryColor }]}
         >
             {isIcon && icon}
             <Text style={Styles.titleText}>{title}</Text>

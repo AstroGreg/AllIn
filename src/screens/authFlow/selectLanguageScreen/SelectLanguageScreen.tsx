@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, Image } from 'react-native';
-import Styles from './SelectLanguageScreenStyles';
+import { createStyles } from './SelectLanguageScreenStyles';
 import SizeBox from '../../../constants/SizeBox';
 import CustomButton from '../../../components/customButton/CustomButton';
 import Images from '../../../constants/Images';
+import { useTheme } from '../../../context/ThemeContext';
 
 interface LanguageOption {
     id: string;
@@ -17,6 +18,8 @@ const languages: LanguageOption[] = [
 ];
 
 const SelectLanguageScreen = ({ navigation }: any) => {
+    const { colors } = useTheme();
+    const Styles = createStyles(colors);
     const [selectedLanguage, setSelectedLanguage] = useState('en');
 
     const handleContinue = () => {

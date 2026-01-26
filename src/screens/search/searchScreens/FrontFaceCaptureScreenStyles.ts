@@ -1,11 +1,11 @@
 import { StyleSheet } from 'react-native';
-import Colors from '../../../constants/Colors';
 import Fonts from '../../../constants/Fonts';
+import { ThemeColors, lightColors } from '../../../constants/Theme';
 
-const styles = StyleSheet.create({
+export const createStyles = (colors: ThemeColors) => StyleSheet.create({
     mainContainer: {
         flex: 1,
-        backgroundColor: Colors.whiteColor,
+        backgroundColor: colors.backgroundColor,
     },
     header: {
         flexDirection: 'row',
@@ -14,19 +14,19 @@ const styles = StyleSheet.create({
         paddingHorizontal: 20,
         paddingVertical: 16,
         borderBottomWidth: 0.3,
-        borderBottomColor: '#DEDEDE',
+        borderBottomColor: colors.lightGrayColor,
     },
     headerButton: {
         width: 44,
         height: 44,
         borderRadius: 22,
-        backgroundColor: '#F5F5F5',
+        backgroundColor: colors.btnBackgroundColor,
         alignItems: 'center',
         justifyContent: 'center',
     },
     headerTitle: {
         ...Fonts.medium18,
-        color: Colors.mainTextColor,
+        color: colors.mainTextColor,
     },
     content: {
         flex: 1,
@@ -35,7 +35,7 @@ const styles = StyleSheet.create({
     },
     instructionText: {
         ...Fonts.regular14,
-        color: '#777777',
+        color: colors.grayColor,
         textAlign: 'center',
     },
     capturedImage: {
@@ -46,11 +46,11 @@ const styles = StyleSheet.create({
         flex: 1,
         alignItems: 'center',
         justifyContent: 'center',
-        backgroundColor: '#E8E8E8',
+        backgroundColor: colors.secondaryColor,
     },
     tapToCapture: {
         ...Fonts.regular14,
-        color: '#777777',
+        color: colors.grayColor,
     },
     buttonRow: {
         flexDirection: 'row',
@@ -62,19 +62,19 @@ const styles = StyleSheet.create({
         height: 54,
         borderRadius: 10,
         borderWidth: 0.5,
-        borderColor: '#DEDEDE',
+        borderColor: colors.lightGrayColor,
         alignItems: 'center',
         justifyContent: 'center',
     },
     nextButtonText: {
         ...Fonts.medium16,
-        color: '#9B9F9F',
+        color: colors.grayColor,
     },
     confirmButton: {
         width: 180,
         height: 54,
         borderRadius: 10,
-        backgroundColor: Colors.primaryColor,
+        backgroundColor: colors.primaryColor,
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',
@@ -85,8 +85,10 @@ const styles = StyleSheet.create({
     },
     confirmButtonText: {
         ...Fonts.medium16,
-        color: Colors.whiteColor,
+        color: '#FFFFFF',
     },
 });
 
+// Backward compatibility
+const styles = createStyles(lightColors);
 export default styles;

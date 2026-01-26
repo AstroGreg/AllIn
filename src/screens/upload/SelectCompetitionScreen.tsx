@@ -3,9 +3,9 @@ import React, { useState } from 'react'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import FastImage from 'react-native-fast-image'
 import { ArrowLeft2, Notification, SearchNormal1, Setting5, CloseCircle, Clock, Location, Calendar, VideoSquare, ArrowRight, ArrowDown2 } from 'iconsax-react-nativejs'
-import Styles from './SelectCompetitionStyles'
+import { createStyles } from './SelectCompetitionStyles'
 import SizeBox from '../../constants/SizeBox'
-import Colors from '../../constants/Colors'
+import { useTheme } from '../../context/ThemeContext'
 import Images from '../../constants/Images'
 import Icons from '../../constants/Icons'
 
@@ -20,6 +20,8 @@ interface Competition {
 
 const SelectCompetitionScreen = ({ navigation, route }: any) => {
     const insets = useSafeAreaInsets();
+    const { colors } = useTheme();
+    const Styles = createStyles(colors);
     const account = route?.params?.account;
     const anonymous = route?.params?.anonymous;
 
@@ -52,21 +54,21 @@ const SelectCompetitionScreen = ({ navigation, route }: any) => {
                     <View style={Styles.competitionHeader}>
                         <Text style={Styles.competitionName}>{competition.name}</Text>
                         <View style={Styles.videoCountRow}>
-                            <VideoSquare size={16} color="#9B9F9F" variant="Linear" />
+                            <VideoSquare size={16} color={colors.grayColor} variant="Linear" />
                             <Text style={Styles.videoCountText}>{competition.videoCount} Videos</Text>
                         </View>
                     </View>
                     <View style={Styles.infoRow}>
                         <Text style={Styles.infoLabel}>Location</Text>
                         <View style={Styles.infoValueRow}>
-                            <Location size={16} color="#9B9F9F" variant="Linear" />
+                            <Location size={16} color={colors.grayColor} variant="Linear" />
                             <Text style={Styles.infoValue}>{competition.location}</Text>
                         </View>
                     </View>
                     <View style={Styles.infoRow}>
                         <Text style={Styles.infoLabel}>Date</Text>
                         <View style={Styles.infoValueRow}>
-                            <Calendar size={16} color="#9B9F9F" variant="Linear" />
+                            <Calendar size={16} color={colors.grayColor} variant="Linear" />
                             <Text style={Styles.infoValue}>{competition.date}</Text>
                         </View>
                     </View>
@@ -77,7 +79,7 @@ const SelectCompetitionScreen = ({ navigation, route }: any) => {
                 onPress={() => handleUploadToCompetition(competition)}
             >
                 <Text style={Styles.uploadButtonText}>Upload</Text>
-                <ArrowRight size={18} color={Colors.whiteColor} variant="Linear" />
+                <ArrowRight size={18} color={colors.pureWhite} variant="Linear" />
             </TouchableOpacity>
         </View>
     );
@@ -89,11 +91,11 @@ const SelectCompetitionScreen = ({ navigation, route }: any) => {
             {/* Header */}
             <View style={Styles.header}>
                 <TouchableOpacity style={Styles.headerButton} onPress={() => navigation.goBack()}>
-                    <ArrowLeft2 size={24} color={Colors.mainTextColor} variant="Linear" />
+                    <ArrowLeft2 size={24} color={colors.mainTextColor} variant="Linear" />
                 </TouchableOpacity>
                 <Text style={Styles.headerTitle}>Upload</Text>
                 <TouchableOpacity style={Styles.headerButton}>
-                    <Notification size={24} color={Colors.mainTextColor} variant="Linear" />
+                    <Notification size={24} color={colors.mainTextColor} variant="Linear" />
                 </TouchableOpacity>
             </View>
 
@@ -112,17 +114,17 @@ const SelectCompetitionScreen = ({ navigation, route }: any) => {
                 {/* Search Bar */}
                 <View style={Styles.searchRow}>
                     <View style={Styles.searchInputContainer}>
-                        <SearchNormal1 size={16} color="#9B9F9F" variant="Linear" />
+                        <SearchNormal1 size={16} color={colors.grayColor} variant="Linear" />
                         <TextInput
                             style={Styles.searchInput}
                             placeholder="Running...."
-                            placeholderTextColor="#9B9F9F"
+                            placeholderTextColor={colors.grayColor}
                             value={searchText}
                             onChangeText={setSearchText}
                         />
                     </View>
                     <TouchableOpacity style={Styles.filterButton}>
-                        <Setting5 size={24} color={Colors.whiteColor} variant="Linear" />
+                        <Setting5 size={24} color={colors.pureWhite} variant="Linear" />
                     </TouchableOpacity>
                 </View>
 
@@ -156,13 +158,13 @@ const SelectCompetitionScreen = ({ navigation, route }: any) => {
                     {selectedCompetition && (
                         <TouchableOpacity style={Styles.activeFilterChip}>
                             <Text style={Styles.activeFilterText}>Competition: {selectedCompetition}</Text>
-                            <CloseCircle size={16} color={Colors.whiteColor} variant="Linear" />
+                            <CloseCircle size={16} color={colors.pureWhite} variant="Linear" />
                         </TouchableOpacity>
                     )}
                     <TouchableOpacity style={Styles.timeRangeButton}>
-                        <Clock size={14} color="#9B9F9F" variant="Linear" />
+                        <Clock size={14} color={colors.grayColor} variant="Linear" />
                         <Text style={Styles.timeRangeText}>Time Range</Text>
-                        <ArrowDown2 size={14} color="#9B9F9F" variant="Linear" />
+                        <ArrowDown2 size={14} color={colors.grayColor} variant="Linear" />
                     </TouchableOpacity>
                 </View>
 

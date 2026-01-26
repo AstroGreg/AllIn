@@ -2,11 +2,11 @@ import React, { useState } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, Image } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import FastImage from 'react-native-fast-image';
-import Styles from './SelectEventScreenStyles';
+import { createStyles } from './SelectEventScreenStyles';
 import SizeBox from '../../../constants/SizeBox';
 import Images from '../../../constants/Images';
-import Colors from '../../../constants/Colors';
 import Icons from '../../../constants/Icons';
+import { useTheme } from '../../../context/ThemeContext';
 
 interface EventOption {
     id: string;
@@ -23,6 +23,8 @@ const events: EventOption[] = [
 ];
 
 const SelectEventScreen = ({ navigation }: any) => {
+    const { colors } = useTheme();
+    const Styles = createStyles(colors);
     const insets = useSafeAreaInsets();
     const [selectedEvent, setSelectedEvent] = useState('track-field');
 

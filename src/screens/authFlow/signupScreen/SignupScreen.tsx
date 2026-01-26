@@ -9,11 +9,13 @@ import CheckBox from '../../../components/checkbox/CheckBox'
 import CustomButton from '../../../components/customButton/CustomButton'
 import OrContainer from '../components/OrContainer'
 import SocialBtn from '../components/SocialBtn'
-import Colors from '../../../constants/Colors'
-import Styles from './SignupScreenStyles'
+import { createStyles } from './SignupScreenStyles'
 import FastImage from 'react-native-fast-image'
+import { useTheme } from '../../../context/ThemeContext'
 
 const SignupScreen = ({ navigation }: any) => {
+    const { colors } = useTheme();
+    const Styles = createStyles(colors);
     const insets = useSafeAreaInsets();
     return (
         <View style={Styles.mainContainer}>
@@ -94,7 +96,7 @@ const SignupScreen = ({ navigation }: any) => {
                         <Text style={Styles.rememberMeText}>Already have an Account?</Text>
                         <SizeBox width={3} />
                         <TouchableOpacity onPress={() => navigation.goBack()}>
-                            <Text style={[Styles.rememberMeText, { color: Colors.primaryColor }]}>Sign In</Text>
+                            <Text style={[Styles.rememberMeText, { color: colors.primaryColor }]}>Sign In</Text>
                         </TouchableOpacity>
                     </View>
                 </View>

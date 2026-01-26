@@ -3,13 +3,15 @@ import React, { useState } from 'react'
 import { CommonActions } from '@react-navigation/native'
 import SizeBox from '../../../constants/SizeBox'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import Colors from '../../../constants/Colors'
+import { useTheme } from '../../../context/ThemeContext'
 import FastImage from 'react-native-fast-image'
 import { ArrowLeft2, Notification, User, ArrowRight2 } from 'iconsax-react-nativejs'
-import styles from './NameThisFaceScreenStyles'
+import { createStyles } from './NameThisFaceScreenStyles'
 
 const NameThisFaceScreen = ({ navigation, route }: any) => {
     const insets = useSafeAreaInsets();
+    const { colors } = useTheme();
+    const styles = createStyles(colors);
     const [faceName, setFaceName] = useState('');
 
     const frontFaceImage = route?.params?.frontFaceImage;
@@ -55,11 +57,11 @@ const NameThisFaceScreen = ({ navigation, route }: any) => {
             {/* Header */}
             <View style={styles.header}>
                 <TouchableOpacity style={styles.headerButton} onPress={() => navigation.goBack()}>
-                    <ArrowLeft2 size={24} color={Colors.primaryColor} variant="Linear" />
+                    <ArrowLeft2 size={24} color={colors.primaryColor} variant="Linear" />
                 </TouchableOpacity>
                 <Text style={styles.headerTitle}>Name This Face</Text>
                 <TouchableOpacity style={styles.headerButton}>
-                    <Notification size={24} color={Colors.primaryColor} variant="Linear" />
+                    <Notification size={24} color={colors.primaryColor} variant="Linear" />
                 </TouchableOpacity>
             </View>
 
@@ -87,12 +89,12 @@ const NameThisFaceScreen = ({ navigation, route }: any) => {
                 <SizeBox height={8} />
 
                 <View style={styles.inputContainer}>
-                    <User size={20} color={Colors.primaryColor} variant="Linear" />
+                    <User size={20} color={colors.primaryColor} variant="Linear" />
                     <SizeBox width={10} />
                     <TextInput
                         style={styles.textInput}
                         placeholder="Enter Face Name"
-                        placeholderTextColor="#9B9F9F"
+                        placeholderTextColor={colors.grayColor}
                         value={faceName}
                         onChangeText={setFaceName}
                     />
@@ -110,7 +112,7 @@ const NameThisFaceScreen = ({ navigation, route }: any) => {
                     disabled={!faceName.trim()}
                 >
                     <Text style={styles.saveButtonText}>Save Face</Text>
-                    <ArrowRight2 size={18} color={Colors.whiteColor} variant="Linear" />
+                    <ArrowRight2 size={18} color="#FFFFFF" variant="Linear" />
                 </TouchableOpacity>
             </View>
 

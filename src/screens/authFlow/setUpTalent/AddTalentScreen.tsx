@@ -1,13 +1,16 @@
 import { View, ScrollView, Text } from 'react-native'
 import React from 'react'
-import Styles from './AddTalentStyles'
+import { createStyles } from './AddTalentStyles'
 import SizeBox from '../../../constants/SizeBox'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import Images from '../../../constants/Images'
 import FastImage from 'react-native-fast-image'
 import CustomButton from '../../../components/customButton/CustomButton'
+import { useTheme } from '../../../context/ThemeContext'
 
 const AddTalentScreen = ({ navigation }: any) => {
+    const { colors } = useTheme();
+    const Styles = createStyles(colors);
     const insets = useSafeAreaInsets();
 
     return (

@@ -2,13 +2,13 @@ import React from 'react';
 import {View, Text, TouchableOpacity, ScrollView} from 'react-native';
 import SizeBox from '../../../constants/SizeBox';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
-import Colors from '../../../constants/Colors';
+import {useTheme} from '../../../context/ThemeContext';
 import FastImage from 'react-native-fast-image';
 import LinearGradient from 'react-native-linear-gradient';
 import MaskedView from '@react-native-masked-view/masked-view';
 import {ArrowLeft2, Notification, ArrowRight} from 'iconsax-react-nativejs';
 import Icons from '../../../constants/Icons';
-import styles from './AISearchResultsScreenStyles';
+import {createStyles} from './AISearchResultsScreenStyles';
 
 interface PhotoResult {
   id: number;
@@ -24,6 +24,8 @@ interface PhotoGroup {
 
 const AISearchResultsScreen = ({navigation, route}: any) => {
   const insets = useSafeAreaInsets();
+  const {colors} = useTheme();
+  const styles = createStyles(colors);
   const matchedCount = route?.params?.matchedCount || 5;
 
   // Mock data for photo results
@@ -109,7 +111,7 @@ const AISearchResultsScreen = ({navigation, route}: any) => {
               end={{x: 1, y: 0}}
               style={styles.viewButton}>
               <Text style={styles.viewButtonText}>View</Text>
-              <ArrowRight size={13} color={Colors.whiteColor} variant="Linear" />
+              <ArrowRight size={13} color="#FFFFFF" variant="Linear" />
             </LinearGradient>
           </TouchableOpacity>
         </View>
@@ -149,7 +151,7 @@ const AISearchResultsScreen = ({navigation, route}: any) => {
         <TouchableOpacity
           style={styles.headerButton}
           onPress={() => navigation.goBack()}>
-          <ArrowLeft2 size={24} color={Colors.primaryColor} variant="Linear" />
+          <ArrowLeft2 size={24} color={colors.primaryColor} variant="Linear" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>AI</Text>
         <TouchableOpacity
@@ -157,7 +159,7 @@ const AISearchResultsScreen = ({navigation, route}: any) => {
           onPress={() => navigation.navigate('NotificationsScreen')}>
           <Notification
             size={24}
-            color={Colors.primaryColor}
+            color={colors.primaryColor}
             variant="Linear"
           />
         </TouchableOpacity>

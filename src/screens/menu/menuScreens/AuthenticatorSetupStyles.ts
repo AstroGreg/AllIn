@@ -1,11 +1,11 @@
 import { StyleSheet } from 'react-native';
-import Colors from '../../../constants/Colors';
 import Fonts from '../../../constants/Fonts';
+import { ThemeColors, lightColors } from '../../../constants/Theme';
 
-const styles = StyleSheet.create({
+export const createStyles = (colors: ThemeColors) => StyleSheet.create({
     mainContainer: {
         flex: 1,
-        backgroundColor: Colors.whiteColor,
+        backgroundColor: colors.backgroundColor,
     },
     header: {
         flexDirection: 'row',
@@ -14,19 +14,19 @@ const styles = StyleSheet.create({
         paddingHorizontal: 20,
         paddingVertical: 10,
         borderBottomWidth: 0.5,
-        borderBottomColor: '#DEDEDE',
+        borderBottomColor: colors.lightGrayColor,
     },
     headerButton: {
         width: 44,
         height: 44,
         borderRadius: 22,
-        backgroundColor: '#F5F5F5',
+        backgroundColor: colors.btnBackgroundColor,
         alignItems: 'center',
         justifyContent: 'center',
     },
     headerTitle: {
         ...Fonts.medium18,
-        color: Colors.mainTextColor,
+        color: colors.mainTextColor,
     },
     container: {
         flex: 1,
@@ -37,13 +37,13 @@ const styles = StyleSheet.create({
     },
     title: {
         ...Fonts.semibold24,
-        color: Colors.mainTextColor,
+        color: colors.mainTextColor,
         lineHeight: 32,
         textAlign: 'center',
     },
     description: {
         ...Fonts.regular14,
-        color: '#9B9F9F',
+        color: colors.grayColor,
         lineHeight: 22,
         textAlign: 'center',
     },
@@ -54,32 +54,32 @@ const styles = StyleSheet.create({
         width: 180,
         height: 180,
         borderRadius: 16,
-        backgroundColor: '#F7FAFF',
+        backgroundColor: colors.secondaryColor,
         alignItems: 'center',
         justifyContent: 'center',
     },
     orText: {
         ...Fonts.regular14,
-        color: '#9B9F9F',
+        color: colors.grayColor,
         textAlign: 'center',
     },
     codeBox: {
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
-        backgroundColor: '#F7FAFF',
+        backgroundColor: colors.secondaryColor,
         borderRadius: 10,
         paddingHorizontal: 16,
         paddingVertical: 16,
     },
     codeText: {
         ...Fonts.medium16,
-        color: Colors.mainTextColor,
+        color: colors.mainTextColor,
     },
     bottomContainer: {
         paddingHorizontal: 20,
         paddingTop: 16,
-        backgroundColor: Colors.whiteColor,
+        backgroundColor: colors.backgroundColor,
         alignItems: 'center',
     },
     primaryButton: {
@@ -88,19 +88,21 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         gap: 8,
         height: 54,
-        backgroundColor: Colors.primaryColor,
+        backgroundColor: colors.primaryColor,
         borderRadius: 10,
         width: '100%',
     },
     primaryButtonText: {
         ...Fonts.medium16,
-        color: Colors.whiteColor,
+        color: colors.pureWhite,
     },
     linkText: {
         ...Fonts.regular14,
-        color: '#9B9F9F',
+        color: colors.grayColor,
         textAlign: 'center',
     },
 });
 
+// Backward compatibility
+const styles = createStyles(lightColors);
 export default styles;

@@ -11,15 +11,17 @@ import {
     TickCircle,
     CloseCircle,
 } from 'iconsax-react-nativejs';
-import Styles from './VideoPlayingScreenStyles';
+import { createStyles } from './VideoPlayingScreenStyles';
 import SizeBox from '../../constants/SizeBox';
-import Colors from '../../constants/Colors';
 import Images from '../../constants/Images';
 import Icons from '../../constants/Icons';
 import SubscriptionModal from '../../components/subscriptionModal/SubscriptionModal';
+import { useTheme } from '../../context/ThemeContext';
 
 const VideoPlayingScreen = ({ navigation, route }: any) => {
     const insets = useSafeAreaInsets();
+    const { colors } = useTheme();
+    const Styles = createStyles(colors);
     const showBuyModalOnLoad = route?.params?.showBuyModal || false;
     const videoPrice = route?.params?.video?.price || '€0,20';
     const video = route?.params?.video || {
@@ -67,10 +69,10 @@ const VideoPlayingScreen = ({ navigation, route }: any) => {
             <View style={Styles.header}>
                 <View style={Styles.headerLeft}>
                     <TouchableOpacity onPress={() => navigation.goBack()}>
-                        <ArrowLeft2 size={24} color={Colors.mainTextColor} variant="Linear" />
+                        <ArrowLeft2 size={24} color={colors.mainTextColor} variant="Linear" />
                     </TouchableOpacity>
                     <View style={Styles.calendarIconContainer}>
-                        <Calendar size={18} color={Colors.whiteColor} variant="Linear" />
+                        <Calendar size={18} color="#FFFFFF" variant="Linear" />
                     </View>
                     <View style={Styles.headerTitleContainer}>
                         <Text style={Styles.headerTitle}>{video.title}</Text>
@@ -78,7 +80,7 @@ const VideoPlayingScreen = ({ navigation, route }: any) => {
                     </View>
                 </View>
                 <TouchableOpacity>
-                    <More size={24} color={Colors.mainTextColor} variant="Linear" style={{ transform: [{ rotate: '90deg' }] }} />
+                    <More size={24} color={colors.mainTextColor} variant="Linear" style={{ transform: [{ rotate: '90deg' }] }} />
                 </TouchableOpacity>
             </View>
 
@@ -126,13 +128,13 @@ const VideoPlayingScreen = ({ navigation, route }: any) => {
                     {/* Control Buttons */}
                     <View style={Styles.controlButtons}>
                         <TouchableOpacity style={Styles.skipButton}>
-                            <Forward size={28} color={Colors.primaryColor} variant="Bold" style={{ transform: [{ rotate: '180deg' }] }} />
+                            <Forward size={28} color={colors.primaryColor} variant="Bold" style={{ transform: [{ rotate: '180deg' }] }} />
                         </TouchableOpacity>
                         <TouchableOpacity style={Styles.playButton}>
                             <Icons.PlayBlue width={45} height={45} />
                         </TouchableOpacity>
                         <TouchableOpacity style={Styles.skipButton}>
-                            <Forward size={28} color={Colors.primaryColor} variant="Bold" />
+                            <Forward size={28} color={colors.primaryColor} variant="Bold" />
                         </TouchableOpacity>
                     </View>
                 </View>
@@ -198,7 +200,7 @@ const VideoPlayingScreen = ({ navigation, route }: any) => {
                             onPress={handleDownload}
                         >
                             <Text style={Styles.downloadButtonText}>Download</Text>
-                            <ArrowRight size={18} color={Colors.whiteColor} variant="Linear" />
+                            <ArrowRight size={18} color="#FFFFFF" variant="Linear" />
                         </TouchableOpacity>
                     </View>
                 </View>

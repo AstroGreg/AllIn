@@ -1,16 +1,18 @@
 import { View, Text, TouchableOpacity } from 'react-native'
 import React, { useState } from 'react'
-import Styles from '../MenuStyles'
+import { createStyles } from '../MenuStyles'
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import SizeBox from '../../../constants/SizeBox';
 import MenuContainers from '../components/MenuContainers';
 import Icons from '../../../constants/Icons';
-import Colors from '../../../constants/Colors';
+import { useTheme } from '../../../context/ThemeContext';
 import ConfirmationModel from '../../../components/confirmationModel/ConfirmationModel';
 import { ArrowLeft2, Notification, Pause } from 'iconsax-react-nativejs';
 
 const DeleteAndPause = ({ navigation }: any) => {
     const insets = useSafeAreaInsets();
+    const { colors } = useTheme();
+    const Styles = createStyles(colors);
     const [isDeleteSuggestionVisible, setIsDeleteSuggestionVisible] = useState(false);
     const [isDeleteConfirmVisible, setIsDeleteConfirmVisible] = useState(false);
     const [isPauseVisible, setIsPauseVisible] = useState(false);
@@ -22,11 +24,11 @@ const DeleteAndPause = ({ navigation }: any) => {
             {/* Header */}
             <View style={Styles.header}>
                 <TouchableOpacity style={Styles.headerButton} onPress={() => navigation.goBack()}>
-                    <ArrowLeft2 size={24} color={Colors.primaryColor} variant="Linear" />
+                    <ArrowLeft2 size={24} color={colors.primaryColor} variant="Linear" />
                 </TouchableOpacity>
                 <Text style={Styles.headerTitle}>Menu</Text>
                 <TouchableOpacity style={Styles.headerButton}>
-                    <Notification size={24} color={Colors.primaryColor} variant="Linear" />
+                    <Notification size={24} color={colors.primaryColor} variant="Linear" />
                 </TouchableOpacity>
             </View>
 
@@ -49,7 +51,7 @@ const DeleteAndPause = ({ navigation }: any) => {
                     onPress={() => setIsPauseVisible(true)}
                 >
                     <View style={Styles.iconCont}>
-                        <Pause size={20} color={Colors.primaryColor} variant="Linear" />
+                        <Pause size={20} color={colors.primaryColor} variant="Linear" />
                     </View>
                     <SizeBox width={20} />
                     <View style={Styles.pauseContent}>
@@ -72,7 +74,7 @@ const DeleteAndPause = ({ navigation }: any) => {
                     setIsDeleteConfirmVisible(true);
                 }}
                 text="Did you know you can also pause your account? This way, others won't be able to find you, but you'll still be with us for a bit"
-                icon={<Pause size={28} color={Colors.whiteColor} variant="Bold" />}
+                icon={<Pause size={28} color={colors.pureWhite} variant="Bold" />}
                 onPressYes={() => {
                     setIsDeleteSuggestionVisible(false);
                     setIsPauseVisible(true);
@@ -98,7 +100,7 @@ const DeleteAndPause = ({ navigation }: any) => {
                 isVisible={isPauseVisible}
                 onClose={() => setIsPauseVisible(false)}
                 text='Are You Sure You Want to Pause Your Account?'
-                icon={<Pause size={28} color={Colors.whiteColor} variant="Bold" />}
+                icon={<Pause size={28} color={colors.pureWhite} variant="Bold" />}
                 onPressYes={() => { }}
             />
         </View>

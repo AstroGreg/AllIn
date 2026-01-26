@@ -1,12 +1,15 @@
 import { View, Text, TouchableOpacity } from 'react-native'
 import React from 'react'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import Styles from './UploadAnonymouslyStyles'
+import { createStyles } from './UploadAnonymouslyStyles'
 import SizeBox from '../../constants/SizeBox'
 import Icons from '../../constants/Icons'
+import { useTheme } from '../../context/ThemeContext'
 
 const UploadAnonymouslyScreen = ({ navigation }: any) => {
     const insets = useSafeAreaInsets();
+    const { colors } = useTheme();
+    const Styles = createStyles(colors);
 
     const handleNice = () => {
         navigation.navigate('SelectCompetitionScreen', { anonymous: true });

@@ -1,13 +1,13 @@
 import { StyleSheet, Dimensions } from 'react-native';
-import Colors from '../../constants/Colors';
 import Fonts from '../../constants/Fonts';
+import { ThemeColors, lightColors } from '../../constants/Theme';
 
 const { width } = Dimensions.get('window');
 
-const Styles = StyleSheet.create({
+export const createStyles = (colors: ThemeColors) => StyleSheet.create({
     mainContainer: {
         flex: 1,
-        backgroundColor: Colors.whiteColor,
+        backgroundColor: colors.backgroundColor,
     },
     header: {
         flexDirection: 'row',
@@ -16,19 +16,19 @@ const Styles = StyleSheet.create({
         paddingHorizontal: 20,
         paddingVertical: 16,
         borderBottomWidth: 0.5,
-        borderBottomColor: '#DEDEDE',
+        borderBottomColor: colors.borderColor,
     },
     headerButton: {
         width: 44,
         height: 44,
         borderRadius: 22,
-        backgroundColor: '#F5F5F5',
+        backgroundColor: colors.btnBackgroundColor,
         alignItems: 'center',
         justifyContent: 'center',
     },
     headerTitle: {
         ...Fonts.medium18,
-        color: Colors.mainTextColor,
+        color: colors.mainTextColor,
     },
     scrollContent: {
         paddingHorizontal: 20,
@@ -49,7 +49,7 @@ const Styles = StyleSheet.create({
     },
     galleryImageSelected: {
         borderWidth: 2,
-        borderColor: Colors.primaryColor,
+        borderColor: colors.primaryColor,
     },
     titleRow: {
         flexDirection: 'row',
@@ -58,12 +58,12 @@ const Styles = StyleSheet.create({
     },
     blogTitle: {
         ...Fonts.medium16,
-        color: Colors.mainTextColor,
+        color: colors.mainTextColor,
         flex: 1,
     },
     blogDate: {
         ...Fonts.regular14,
-        color: '#9B9F9F',
+        color: colors.subTextColor,
     },
     metaRow: {
         flexDirection: 'row',
@@ -77,7 +77,7 @@ const Styles = StyleSheet.create({
     },
     readCountText: {
         ...Fonts.regular14,
-        color: '#777777',
+        color: colors.grayColor,
     },
     writerContainer: {
         flexDirection: 'row',
@@ -86,7 +86,7 @@ const Styles = StyleSheet.create({
     },
     writerLabel: {
         ...Fonts.regular14,
-        color: '#777777',
+        color: colors.grayColor,
     },
     writerInfo: {
         flexDirection: 'row',
@@ -100,26 +100,28 @@ const Styles = StyleSheet.create({
     },
     writerName: {
         ...Fonts.medium14,
-        color: Colors.mainTextColor,
+        color: colors.mainTextColor,
     },
     description: {
         ...Fonts.regular12,
-        color: '#9B9F9F',
+        color: colors.subTextColor,
         lineHeight: 20,
     },
     shareButton: {
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',
-        backgroundColor: Colors.primaryColor,
+        backgroundColor: colors.primaryColor,
         borderRadius: 10,
         paddingVertical: 16,
         gap: 8,
     },
     shareButtonText: {
         ...Fonts.medium16,
-        color: Colors.whiteColor,
+        color: colors.pureWhite,
     },
 });
 
+// Backward compatibility
+const Styles = createStyles(lightColors);
 export default Styles;

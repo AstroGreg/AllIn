@@ -1,15 +1,16 @@
 import { StyleSheet } from "react-native";
 import Colors from "../../constants/Colors";
 import Fonts from "../../constants/Fonts";
+import { ThemeColors, lightColors } from "../../constants/Theme";
 
-const Styles = StyleSheet.create({
+export const createStyles = (colors: ThemeColors) => StyleSheet.create({
     //Header
     header: {
         paddingVertical: 15,
-        backgroundColor: Colors.whiteColor,
+        backgroundColor: colors.backgroundColor,
         paddingHorizontal: 20,
         borderBottomWidth: 0.5,
-        borderBottomColor: Colors.lightGrayColor,
+        borderBottomColor: colors.lightGrayColor,
         flexDirection: 'row',
         alignItems: 'center',
     },
@@ -18,7 +19,7 @@ const Styles = StyleSheet.create({
         width: 44,
         borderRadius: 22,
         borderWidth: 1,
-        borderColor: Colors.primaryColor,
+        borderColor: colors.primaryColor,
         overflow: 'hidden',
     },
     img: {
@@ -27,12 +28,12 @@ const Styles = StyleSheet.create({
     },
     welcomeText: {
         ...Fonts.regular12,
-        color: Colors.subTextColor,
+        color: colors.subTextColor,
         marginBottom: 2
     },
     userNameText: {
         ...Fonts.medium18,
-        color: Colors.mainTextColor,
+        color: colors.mainTextColor,
     },
     userInfoContainer: {
         flex: 1,
@@ -45,7 +46,7 @@ const Styles = StyleSheet.create({
         height: 44,
         width: 44,
         borderRadius: 22,
-        backgroundColor: Colors.btnBackgroundColor,
+        backgroundColor: colors.btnBackgroundColor,
         alignItems: 'center',
         justifyContent: 'center'
     },
@@ -53,7 +54,7 @@ const Styles = StyleSheet.create({
     //Home screen
     mainContainer: {
         flex: 1,
-        backgroundColor: Colors.whiteColor,
+        backgroundColor: colors.backgroundColor,
     },
     scrollContent: {
         paddingHorizontal: 20,
@@ -61,9 +62,9 @@ const Styles = StyleSheet.create({
 
     // Wallet Balance Card
     walletCard: {
-        backgroundColor: Colors.whiteColor,
+        backgroundColor: colors.cardBackground,
         borderWidth: 0.5,
-        borderColor: Colors.lightGrayColor,
+        borderColor: colors.lightGrayColor,
         borderRadius: 10,
         padding: 16,
         marginBottom: 24,
@@ -82,7 +83,7 @@ const Styles = StyleSheet.create({
         width: 40,
         height: 40,
         borderRadius: 6,
-        backgroundColor: Colors.secondaryBlueColor,
+        backgroundColor: colors.secondaryBlueColor,
         alignItems: 'center',
         justifyContent: 'center',
     },
@@ -91,11 +92,11 @@ const Styles = StyleSheet.create({
     },
     walletTitle: {
         ...Fonts.medium16,
-        color: Colors.mainTextColor,
+        color: colors.mainTextColor,
     },
     walletBalance: {
         ...Fonts.medium14,
-        color: Colors.grayColor,
+        color: colors.grayColor,
     },
     planBadge: {
         backgroundColor: '#E4FFEE',
@@ -105,28 +106,29 @@ const Styles = StyleSheet.create({
     },
     planBadgeText: {
         ...Fonts.regular12,
-        color: Colors.greenColor,
+        color: colors.greenColor,
     },
     rechargeButton: {
         borderWidth: 0.5,
-        borderColor: Colors.lightGrayColor,
+        borderColor: colors.lightGrayColor,
         borderRadius: 6,
         paddingHorizontal: 16,
         paddingVertical: 10,
         height: 38,
         alignItems: 'center',
         justifyContent: 'center',
+        backgroundColor: colors.btnBackgroundColor,
     },
     rechargeButtonText: {
         ...Fonts.regular14,
-        color: '#9B9F9F',
+        color: colors.subTextColor,
     },
 
     // AI Smart Search Card
     aiSearchCard: {
-        backgroundColor: 'rgba(255, 255, 255, 0.95)',
+        backgroundColor: colors.cardBackground,
         borderWidth: 0.5,
-        borderColor: Colors.lightGrayColor,
+        borderColor: colors.lightGrayColor,
         borderRadius: 18,
         padding: 20,
         marginBottom: 24,
@@ -141,7 +143,7 @@ const Styles = StyleSheet.create({
         ...Fonts.bold24,
         fontSize: 30,
         lineHeight: 36,
-        color: '#101828',
+        color: colors.mainTextColor,
         marginTop: 20,
         marginBottom: 12,
         letterSpacing: -0.35,
@@ -150,7 +152,7 @@ const Styles = StyleSheet.create({
         ...Fonts.regular14,
         fontSize: 18,
         lineHeight: 29,
-        color: '#4A5565',
+        color: colors.subTextColor,
         marginBottom: 24,
         letterSpacing: -0.44,
     },
@@ -170,7 +172,7 @@ const Styles = StyleSheet.create({
     tryAiButtonText: {
         ...Fonts.bold16,
         fontSize: 18,
-        color: Colors.whiteColor,
+        color: colors.pureWhite,
         letterSpacing: -0.44,
     },
 
@@ -186,11 +188,11 @@ const Styles = StyleSheet.create({
     },
     sectionTitle: {
         ...Fonts.medium18,
-        color: '#0F0F0F',
+        color: colors.mainTextColor,
     },
     seeAllText: {
         ...Fonts.regular14,
-        color: Colors.grayColor,
+        color: colors.grayColor,
     },
     quickActionsGrid: {
         gap: 16,
@@ -201,9 +203,9 @@ const Styles = StyleSheet.create({
     },
     quickActionCard: {
         flex: 1,
-        backgroundColor: Colors.whiteColor,
+        backgroundColor: colors.cardBackground,
         borderWidth: 0.5,
-        borderColor: Colors.lightGrayColor,
+        borderColor: colors.lightGrayColor,
         borderRadius: 10,
         padding: 12,
     },
@@ -216,7 +218,7 @@ const Styles = StyleSheet.create({
         width: 30,
         height: 30,
         borderRadius: 6,
-        backgroundColor: Colors.secondaryBlueColor,
+        backgroundColor: colors.secondaryBlueColor,
         alignItems: 'center',
         justifyContent: 'center',
     },
@@ -228,7 +230,7 @@ const Styles = StyleSheet.create({
     },
     quickActionText: {
         ...Fonts.medium14,
-        color: Colors.mainTextColor,
+        color: colors.mainTextColor,
     },
     gradientButton: {
         flex: 1,
@@ -246,7 +248,7 @@ const Styles = StyleSheet.create({
     },
     gradientButtonText: {
         ...Fonts.medium14,
-        color: Colors.whiteColor,
+        color: colors.pureWhite,
     },
 
     // New For You Section
@@ -255,33 +257,33 @@ const Styles = StyleSheet.create({
     },
     newForYouTitle: {
         ...Fonts.medium18,
-        color: '#0F0F0F',
+        color: colors.mainTextColor,
         marginBottom: 6,
     },
     newForYouDescription: {
         ...Fonts.regular14,
-        color: '#9B9F9F',
+        color: colors.subTextColor,
         lineHeight: 22,
     },
 
     // News Feed Card
     newsFeedCard: {
-        backgroundColor: Colors.whiteColor,
+        backgroundColor: colors.cardBackground,
         borderWidth: 0.5,
-        borderColor: '#E0ECFE',
+        borderColor: colors.borderColor,
         borderRadius: 10,
         padding: 16,
         marginBottom: 24,
     },
     newsFeedCardNoBorder: {
-        backgroundColor: Colors.whiteColor,
+        backgroundColor: colors.cardBackground,
         marginBottom: 24,
     },
     newsFeedTitle: {
         ...Fonts.medium16,
         fontSize: 18,
         lineHeight: 22,
-        color: '#0F0F0F',
+        color: colors.mainTextColor,
         marginBottom: 10,
     },
     newsFeedImageContainer: {
@@ -298,14 +300,14 @@ const Styles = StyleSheet.create({
         position: 'absolute',
         top: 16,
         right: 16,
-        backgroundColor: '#0F0F0F',
+        backgroundColor: colors.mainTextColor,
         borderRadius: 50,
         paddingHorizontal: 16,
         paddingVertical: 6,
     },
     paginationText: {
         ...Fonts.regular14,
-        color: Colors.whiteColor,
+        color: colors.pureWhite,
     },
     paginationDotsContainer: {
         flexDirection: 'row',
@@ -318,10 +320,10 @@ const Styles = StyleSheet.create({
         width: 8,
         height: 8,
         borderRadius: 4,
-        backgroundColor: '#E0E0E0',
+        backgroundColor: colors.lightGrayColor,
     },
     paginationDotActive: {
-        backgroundColor: Colors.primaryColor,
+        backgroundColor: colors.primaryColor,
         width: 24,
     },
 
@@ -344,14 +346,14 @@ const Styles = StyleSheet.create({
     },
     userPostName: {
         ...Fonts.medium14,
-        color: '#0F0F0F',
+        color: colors.mainTextColor,
     },
     userPostTime: {
         ...Fonts.regular12,
-        color: Colors.subTextColor,
+        color: colors.subTextColor,
     },
     followButton: {
-        backgroundColor: Colors.primaryColor,
+        backgroundColor: colors.primaryColor,
         borderRadius: 50,
         paddingHorizontal: 16,
         paddingVertical: 8,
@@ -360,15 +362,15 @@ const Styles = StyleSheet.create({
     },
     followButtonText: {
         ...Fonts.regular12,
-        color: Colors.whiteColor,
+        color: colors.pureWhite,
     },
     userPostDescription: {
         ...Fonts.medium14,
-        color: '#0F0F0F',
+        color: colors.mainTextColor,
         marginBottom: 10,
     },
     viewBlogButton: {
-        backgroundColor: Colors.primaryColor,
+        backgroundColor: colors.primaryColor,
         borderRadius: 8,
         paddingHorizontal: 16,
         paddingVertical: 10,
@@ -382,7 +384,7 @@ const Styles = StyleSheet.create({
         backgroundColor: 'transparent',
         borderRadius: 8,
         borderWidth: 1,
-        borderColor: Colors.primaryColor,
+        borderColor: colors.primaryColor,
         paddingHorizontal: 16,
         paddingVertical: 10,
         flexDirection: 'row',
@@ -393,11 +395,11 @@ const Styles = StyleSheet.create({
     },
     viewBlogButtonText: {
         ...Fonts.regular14,
-        color: Colors.whiteColor,
+        color: colors.pureWhite,
     },
     viewBlogButtonTextOutlined: {
         ...Fonts.regular14,
-        color: Colors.primaryColor,
+        color: colors.primaryColor,
     },
 
     // Video Card with Play Button
@@ -410,7 +412,7 @@ const Styles = StyleSheet.create({
         width: 74,
         height: 74,
         borderRadius: 37,
-        backgroundColor: Colors.primaryColor,
+        backgroundColor: colors.primaryColor,
         justifyContent: 'center',
         alignItems: 'center',
     },
@@ -423,9 +425,9 @@ const Styles = StyleSheet.create({
         ...Fonts.regular14,
         fontWeight: '400',
         paddingBottom: 12,
-        color: Colors.primaryColor,
+        color: colors.primaryColor,
         borderBottomWidth: 3,
-        borderBottomColor: Colors.primaryColor,
+        borderBottomColor: colors.primaryColor,
         alignSelf: 'flex-start',
         marginLeft: 20
     },
@@ -434,13 +436,13 @@ const Styles = StyleSheet.create({
     },
     headings: {
         ...Fonts.regular16,
-        color: Colors.mainTextColor,
+        color: colors.mainTextColor,
         marginHorizontal: 20
     },
     downloadContainer: {
         borderRadius: 10,
         borderWidth: 0.5,
-        borderColor: Colors.lightGrayColor,
+        borderColor: colors.lightGrayColor,
         padding: 16,
         alignItems: 'center',
         flexDirection: 'row',
@@ -448,7 +450,7 @@ const Styles = StyleSheet.create({
     },
     downloadText: {
         ...Fonts.regular14,
-        color: Colors.subTextColor,
+        color: colors.subTextColor,
         fontWeight: '400',
         marginLeft: 10,
         marginRight: 5
@@ -456,7 +458,7 @@ const Styles = StyleSheet.create({
     downloadCount: {
         ...Fonts.regular14,
         fontWeight: '500',
-        color: Colors.mainTextColor,
+        color: colors.mainTextColor,
     },
     btnRight: {
         position: 'absolute',
@@ -466,7 +468,7 @@ const Styles = StyleSheet.create({
         position: 'absolute',
         bottom: 0,
         zIndex: 1,
-        backgroundColor: Colors.whiteColor,
+        backgroundColor: colors.backgroundColor,
         alignItems: 'center',
         justifyContent: 'center',
         paddingBottom: 10,
@@ -478,7 +480,7 @@ const Styles = StyleSheet.create({
     //Event Container
     CompetitionContainer: {
         borderWidth: 0.5,
-        borderColor: Colors.lightGrayColor,
+        borderColor: colors.lightGrayColor,
         borderRadius: 10,
         padding: 16,
         marginRight: 20,
@@ -489,7 +491,7 @@ const Styles = StyleSheet.create({
         height: 120,
         width: 143,
         borderWidth: 0.5,
-        borderColor: Colors.lightGrayColor,
+        borderColor: colors.lightGrayColor,
         borderRadius: 10,
         overflow: 'hidden',
     },
@@ -513,19 +515,19 @@ const Styles = StyleSheet.create({
     },
     eventTitle: {
         ...Fonts.regular14,
-        color: Colors.mainTextColor,
+        color: colors.mainTextColor,
         width: '90%'
     },
     eventSubText: {
         ...Fonts.regular12,
-        color: Colors.grayColor,
+        color: colors.grayColor,
         width: '70%',
     },
 
     // requestContainer
     requestContainer: {
         borderWidth: 0.5,
-        borderColor: Colors.lightGrayColor,
+        borderColor: colors.lightGrayColor,
         borderRadius: 10,
         padding: 16,
         marginBottom: 16,
@@ -537,19 +539,19 @@ const Styles = StyleSheet.create({
         height: 40,
         width: 40,
         borderRadius: 6,
-        backgroundColor: Colors.secondaryColor,
+        backgroundColor: colors.secondaryColor,
         alignItems: 'center',
         justifyContent: 'center'
     },
     requestSubText: {
         ...Fonts.regular10,
-        color: Colors.grayColor,
+        color: colors.grayColor,
     },
     dot: {
         height: 5,
         width: 5,
         borderRadius: 5,
-        backgroundColor: Colors.subTextColor,
+        backgroundColor: colors.subTextColor,
         marginHorizontal: 4
     },
 
@@ -557,7 +559,7 @@ const Styles = StyleSheet.create({
     btnContainre: {
         paddingHorizontal: 7,
         borderWidth: 0.5,
-        borderColor: Colors.lightGrayColor,
+        borderColor: colors.lightGrayColor,
         borderRadius: 6,
         height: 28,
         alignItems: 'center',
@@ -566,8 +568,10 @@ const Styles = StyleSheet.create({
     },
     btnText: {
         ...Fonts.regular14,
-        color: Colors.subTextColor
+        color: colors.subTextColor
     }
 });
 
+// Backward compatibility
+const Styles = createStyles(lightColors);
 export default Styles;

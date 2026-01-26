@@ -1,12 +1,12 @@
 import { View, Text, TouchableOpacity, ScrollView, Image } from 'react-native'
 import React, { useState } from 'react'
-import Styles from './ViewUserProfileStyles'
+import { createStyles } from './ViewUserProfileStyles'
 import SizeBox from '../../constants/SizeBox'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import FastImage from 'react-native-fast-image'
 import Images from '../../constants/Images'
 import Icons from '../../constants/Icons'
-import Colors from '../../constants/Colors'
+import { useTheme } from '../../context/ThemeContext'
 import {
     ArrowLeft2,
     User,
@@ -18,6 +18,8 @@ import ShareModal from '../../components/shareModal/ShareModal'
 
 const ViewUserProfileScreen = ({ navigation }: any) => {
     const insets = useSafeAreaInsets();
+    const { colors } = useTheme();
+    const Styles = createStyles(colors);
     const [activeTab, setActiveTab] = useState('photos');
     const [showShareModal, setShowShareModal] = useState(false);
 
@@ -98,7 +100,7 @@ const ViewUserProfileScreen = ({ navigation }: any) => {
             <Text style={Styles.postDescription}>{post.description}</Text>
             <TouchableOpacity style={Styles.sharePostButton}>
                 <Text style={Styles.sharePostButtonText}>Share</Text>
-                <Image source={Icons.ShareBlue} style={{ width: 18, height: 18, tintColor: Colors.whiteColor }} />
+                <Image source={Icons.ShareBlue} style={{ width: 18, height: 18, tintColor: '#FFFFFF' }} />
             </TouchableOpacity>
         </TouchableOpacity>
     )
@@ -110,11 +112,11 @@ const ViewUserProfileScreen = ({ navigation }: any) => {
             {/* Header */}
             <View style={Styles.header}>
                 <TouchableOpacity style={Styles.headerButton} onPress={() => navigation.goBack()}>
-                    <ArrowLeft2 size={24} color={Colors.primaryColor} variant="Linear" />
+                    <ArrowLeft2 size={24} color={colors.primaryColor} variant="Linear" />
                 </TouchableOpacity>
                 <Text style={Styles.headerTitle}>Profile</Text>
                 <TouchableOpacity style={Styles.headerButton}>
-                    <User size={24} color={Colors.primaryColor} variant="Linear" />
+                    <User size={24} color={colors.primaryColor} variant="Linear" />
                 </TouchableOpacity>
             </View>
 

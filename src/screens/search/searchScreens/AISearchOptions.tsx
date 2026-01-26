@@ -2,11 +2,11 @@ import { View, Text, TouchableOpacity, ScrollView, Modal, TextInput } from 'reac
 import React, { useState, useRef } from 'react';
 import SizeBox from '../../../constants/SizeBox';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import Colors from '../../../constants/Colors';
+import { useTheme } from '../../../context/ThemeContext';
 import Icons from '../../../constants/Icons';
 import LinearGradient from 'react-native-linear-gradient';
 import { ArrowLeft2, Notification, ArrowRight, SearchNormal1, TickSquare, Category } from 'iconsax-react-nativejs';
-import styles from './AISearchOptionsStyles';
+import { createStyles } from './AISearchOptionsStyles';
 
 interface FilterOption {
     id: string;
@@ -16,6 +16,8 @@ interface FilterOption {
 
 const AISearchOptions = ({ navigation }: any) => {
     const insets = useSafeAreaInsets();
+    const { colors, isDark } = useTheme();
+    const styles = createStyles(colors);
     const [selectedOption, setSelectedOption] = useState<string>('face');
     const [showContextModal, setShowContextModal] = useState(false);
     const [showFiltersModal, setShowFiltersModal] = useState(false);
@@ -192,13 +194,13 @@ const AISearchOptions = ({ navigation }: any) => {
             onPress={() => handleFilterToggle(filter.id)}
         >
             <View style={styles.filterLabelContainer}>
-                <Category size={20} color="#9B9F9F" variant="Linear" />
+                <Category size={20} color={colors.grayColor} variant="Linear" />
                 <SizeBox width={12} />
                 <Text style={styles.filterLabel}>{filter.label}</Text>
             </View>
             <View style={[styles.checkbox, filter.checked && styles.checkboxChecked]}>
                 {filter.checked && (
-                    <TickSquare size={24} color={Colors.primaryColor} variant="Bold" />
+                    <TickSquare size={24} color={colors.primaryColor} variant="Bold" />
                 )}
             </View>
         </TouchableOpacity>
@@ -211,17 +213,17 @@ const AISearchOptions = ({ navigation }: any) => {
             {/* Header */}
             <View style={styles.header}>
                 <TouchableOpacity style={styles.headerButton} onPress={() => navigation.goBack()}>
-                    <ArrowLeft2 size={24} color={Colors.primaryColor} variant="Linear" />
+                    <ArrowLeft2 size={24} color={colors.primaryColor} variant="Linear" />
                 </TouchableOpacity>
                 <Text style={styles.headerTitle}>AI</Text>
                 <TouchableOpacity style={styles.headerButton} onPress={() => navigation.navigate('NotificationsScreen')}>
-                    <Notification size={24} color={Colors.primaryColor} variant="Linear" />
+                    <Notification size={24} color={colors.primaryColor} variant="Linear" />
                 </TouchableOpacity>
             </View>
 
             {/* Top Section with Gradient Background */}
             <LinearGradient
-                colors={['#F5F3FF', '#FFFFFF']}
+                colors={isDark ? [colors.backgroundColor, colors.backgroundColor] : ['#F5F3FF', '#FFFFFF']}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 0, y: 1 }}
                 style={styles.topSection}
@@ -266,13 +268,13 @@ const AISearchOptions = ({ navigation }: any) => {
 
                         {/* Search Input */}
                         <View style={styles.contextInputContainer}>
-                            <SearchNormal1 size={20} color="#9B9F9F" variant="Linear" />
+                            <SearchNormal1 size={20} color={colors.grayColor} variant="Linear" />
                             <SizeBox width={10} />
                             <TextInput
                                 ref={contextInputRef}
                                 style={styles.contextInput}
                                 placeholder="For example podium"
-                                placeholderTextColor="#9B9F9F"
+                                placeholderTextColor={colors.grayColor}
                                 value={contextSearchText}
                                 onChangeText={setContextSearchText}
                                 onSubmitEditing={handleContextNext}
@@ -291,7 +293,7 @@ const AISearchOptions = ({ navigation }: any) => {
                                 style={styles.nextButton}
                             >
                                 <Text style={styles.nextButtonText}>Next</Text>
-                                <ArrowRight size={20} color={Colors.whiteColor} variant="Linear" />
+                                <ArrowRight size={20} color="#FFFFFF" variant="Linear" />
                             </LinearGradient>
                         </TouchableOpacity>
                     </TouchableOpacity>
@@ -330,7 +332,7 @@ const AISearchOptions = ({ navigation }: any) => {
                                 style={styles.nextButton}
                             >
                                 <Text style={styles.nextButtonText}>Start</Text>
-                                <ArrowRight size={20} color={Colors.whiteColor} variant="Linear" />
+                                <ArrowRight size={20} color="#FFFFFF" variant="Linear" />
                             </LinearGradient>
                         </TouchableOpacity>
                     </TouchableOpacity>

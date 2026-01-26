@@ -1,8 +1,9 @@
 import { View, Text, Image, TouchableOpacity } from 'react-native'
 import React from 'react'
 import SizeBox from '../../../constants/SizeBox'
-import Styles from './Styles'
+import { createStyles } from './Styles'
 import Icons from '../../../constants/Icons';
+import { useTheme } from '../../../context/ThemeContext'
 
 interface SocialBtnProps {
     title: string;
@@ -11,6 +12,8 @@ interface SocialBtnProps {
 }
 
 const SocialBtn = ({ title, onPress, isGoogle }: SocialBtnProps) => {
+    const { colors } = useTheme();
+    const Styles = createStyles(colors);
     return (
         <TouchableOpacity style={Styles.buttonContainer} onPress={onPress} activeOpacity={0.7}>
             {isGoogle ?

@@ -1,9 +1,9 @@
 import { View, Text, TouchableOpacity, ScrollView } from 'react-native'
 import React from 'react'
-import Styles from '../MenuStyles'
+import { createStyles } from '../MenuStyles'
 import SizeBox from '../../../constants/SizeBox'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import Colors from '../../../constants/Colors'
+import { useTheme } from '../../../context/ThemeContext'
 import { ArrowLeft2, Notification, Lock, User, Card, Calendar, ArrowRight2 } from 'iconsax-react-nativejs'
 
 interface SettingsItem {
@@ -14,25 +14,27 @@ interface SettingsItem {
 
 const ProfileSettings = ({ navigation }: any) => {
     const insets = useSafeAreaInsets();
+    const { colors } = useTheme();
+    const Styles = createStyles(colors);
 
     const settingsItems: SettingsItem[] = [
         {
-            icon: <Lock size={20} color={Colors.primaryColor} variant="Linear" />,
+            icon: <Lock size={20} color={colors.primaryColor} variant="Linear" />,
             title: 'Change Password',
             onPress: () => navigation.navigate('ChangePassword'),
         },
         {
-            icon: <User size={20} color={Colors.primaryColor} variant="Linear" />,
+            icon: <User size={20} color={colors.primaryColor} variant="Linear" />,
             title: 'Change Username',
             onPress: () => navigation.navigate('ChangeUsername'),
         },
         {
-            icon: <Card size={20} color={Colors.primaryColor} variant="Linear" />,
+            icon: <Card size={20} color={colors.primaryColor} variant="Linear" />,
             title: 'Change Nationality',
             onPress: () => navigation.navigate('ChangeNationality'),
         },
         {
-            icon: <Calendar size={20} color={Colors.primaryColor} variant="Linear" />,
+            icon: <Calendar size={20} color={colors.primaryColor} variant="Linear" />,
             title: 'Date of Birth',
             onPress: () => navigation.navigate('DateOfBirth'),
         },
@@ -45,11 +47,11 @@ const ProfileSettings = ({ navigation }: any) => {
             {/* Header */}
             <View style={Styles.header}>
                 <TouchableOpacity style={Styles.headerButton} onPress={() => navigation.goBack()}>
-                    <ArrowLeft2 size={24} color={Colors.primaryColor} variant="Linear" />
+                    <ArrowLeft2 size={24} color={colors.primaryColor} variant="Linear" />
                 </TouchableOpacity>
                 <Text style={Styles.headerTitle}>Account Settings</Text>
                 <TouchableOpacity style={Styles.headerButton}>
-                    <Notification size={24} color={Colors.primaryColor} variant="Linear" />
+                    <Notification size={24} color={colors.primaryColor} variant="Linear" />
                 </TouchableOpacity>
             </View>
 
@@ -66,7 +68,7 @@ const ProfileSettings = ({ navigation }: any) => {
                                 <SizeBox width={20} />
                                 <Text style={Styles.accountSettingsTitle}>{item.title}</Text>
                             </View>
-                            <ArrowRight2 size={24} color="#9B9F9F" variant="Linear" />
+                            <ArrowRight2 size={24} color={colors.grayColor} variant="Linear" />
                         </TouchableOpacity>
                         {index < settingsItems.length - 1 && <SizeBox height={16} />}
                     </React.Fragment>

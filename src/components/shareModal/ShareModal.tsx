@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, Modal, Alert } from 'react-native';
-import Styles from './ShareModalStyles';
+import { createStyles } from './ShareModalStyles';
 import { CloseCircle, Copy, TickCircle } from 'iconsax-react-nativejs';
-import Colors from '../../constants/Colors';
+import { useTheme } from '../../context/ThemeContext';
 
 interface ShareModalProps {
     visible: boolean;
@@ -11,6 +11,8 @@ interface ShareModalProps {
 }
 
 const ShareModal = ({ visible, onClose, shareUrl = 'https://allin.app/profile/user123' }: ShareModalProps) => {
+    const { colors } = useTheme();
+    const Styles = createStyles(colors);
     const [copiedLink, setCopiedLink] = useState<string | null>(null);
 
     const handleCopyLink = () => {
@@ -57,7 +59,7 @@ const ShareModal = ({ visible, onClose, shareUrl = 'https://allin.app/profile/us
                     <View style={Styles.modalHeader}>
                         <Text style={Styles.modalTitle}>Share</Text>
                         <TouchableOpacity onPress={onClose} style={Styles.closeButton}>
-                            <CloseCircle size={24} color={Colors.grayColor} variant="Linear" />
+                            <CloseCircle size={24} color={colors.grayColor} variant="Linear" />
                         </TouchableOpacity>
                     </View>
 
@@ -65,9 +67,9 @@ const ShareModal = ({ visible, onClose, shareUrl = 'https://allin.app/profile/us
                     <TouchableOpacity style={Styles.copyLinkCard} onPress={handleCopyLink}>
                         <View style={Styles.copyLinkContent}>
                             {copiedLink === 'main' ? (
-                                <TickCircle size={24} color={Colors.greenColor} variant="Bold" />
+                                <TickCircle size={24} color={colors.greenColor} variant="Bold" />
                             ) : (
-                                <Copy size={24} color={Colors.mainTextColor} variant="Linear" />
+                                <Copy size={24} color={colors.mainTextColor} variant="Linear" />
                             )}
                             <Text style={Styles.copyLinkTitle}>{copiedLink === 'main' ? 'Copied!' : 'Copy Link'}</Text>
                         </View>
@@ -80,25 +82,25 @@ const ShareModal = ({ visible, onClose, shareUrl = 'https://allin.app/profile/us
                         <View style={Styles.socialButtons}>
                             <TouchableOpacity style={Styles.socialButton} onPress={handleCopyTwitter}>
                                 {copiedLink === 'twitter' ? (
-                                    <TickCircle size={24} color={Colors.greenColor} variant="Bold" />
+                                    <TickCircle size={24} color={colors.greenColor} variant="Bold" />
                                 ) : (
-                                    <Copy size={24} color={Colors.mainTextColor} variant="Linear" />
+                                    <Copy size={24} color={colors.mainTextColor} variant="Linear" />
                                 )}
                                 <Text style={Styles.socialButtonText}>Twitter</Text>
                             </TouchableOpacity>
                             <TouchableOpacity style={Styles.socialButton} onPress={handleCopyFacebook}>
                                 {copiedLink === 'facebook' ? (
-                                    <TickCircle size={24} color={Colors.greenColor} variant="Bold" />
+                                    <TickCircle size={24} color={colors.greenColor} variant="Bold" />
                                 ) : (
-                                    <Copy size={24} color={Colors.mainTextColor} variant="Linear" />
+                                    <Copy size={24} color={colors.mainTextColor} variant="Linear" />
                                 )}
                                 <Text style={Styles.socialButtonText}>Facebook</Text>
                             </TouchableOpacity>
                             <TouchableOpacity style={Styles.socialButton} onPress={handleCopyLinkedIn}>
                                 {copiedLink === 'linkedin' ? (
-                                    <TickCircle size={24} color={Colors.greenColor} variant="Bold" />
+                                    <TickCircle size={24} color={colors.greenColor} variant="Bold" />
                                 ) : (
-                                    <Copy size={24} color={Colors.mainTextColor} variant="Linear" />
+                                    <Copy size={24} color={colors.mainTextColor} variant="Linear" />
                                 )}
                                 <Text style={Styles.socialButtonText}>LinkedIn</Text>
                             </TouchableOpacity>

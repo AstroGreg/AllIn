@@ -2,12 +2,14 @@ import { View, Text, TouchableOpacity, ScrollView, TextInput } from 'react-nativ
 import React, { useState } from 'react'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { ArrowLeft2, Export, Subtitle, Edit2, ArrowRight } from 'iconsax-react-nativejs'
-import Colors from '../../constants/Colors'
 import SizeBox from '../../constants/SizeBox'
-import Styles from './CreateNewPostStyles'
+import { createStyles } from './CreateNewPostStyles'
+import { useTheme } from '../../context/ThemeContext'
 
 const CreateNewPostScreen = ({ navigation }: any) => {
     const insets = useSafeAreaInsets();
+    const { colors } = useTheme();
+    const Styles = createStyles(colors);
 
     const [title, setTitle] = useState('');
     const [summary, setSummary] = useState('');
@@ -25,7 +27,7 @@ const CreateNewPostScreen = ({ navigation }: any) => {
             {/* Header */}
             <View style={Styles.header}>
                 <TouchableOpacity style={Styles.headerButton} onPress={() => navigation.goBack()}>
-                    <ArrowLeft2 size={24} color={Colors.mainTextColor} variant="Linear" />
+                    <ArrowLeft2 size={24} color={colors.mainTextColor} variant="Linear" />
                 </TouchableOpacity>
                 <Text style={Styles.headerTitle}>Create New Post</Text>
                 <View style={Styles.headerButtonPlaceholder} />
@@ -42,7 +44,7 @@ const CreateNewPostScreen = ({ navigation }: any) => {
                     <Text style={Styles.inputLabel}>Upload Photo</Text>
                     <SizeBox height={8} />
                     <TouchableOpacity style={Styles.uploadContainer}>
-                        <Export size={24} color={Colors.primaryColor} variant="Linear" />
+                        <Export size={24} color={colors.primaryColor} variant="Linear" />
                         <SizeBox height={4} />
                         <Text style={Styles.uploadText}>Drag and Drop here</Text>
                         <Text style={Styles.uploadOrText}>or</Text>
@@ -59,11 +61,11 @@ const CreateNewPostScreen = ({ navigation }: any) => {
                     <Text style={Styles.inputLabel}>Title</Text>
                     <SizeBox height={8} />
                     <View style={Styles.textInputContainer}>
-                        <Subtitle size={16} color="#777777" variant="Linear" />
+                        <Subtitle size={16} color={colors.grayColor} variant="Linear" />
                         <TextInput
                             style={Styles.textInput}
                             placeholder="Enter title"
-                            placeholderTextColor="#777777"
+                            placeholderTextColor={colors.grayColor}
                             value={title}
                             onChangeText={setTitle}
                         />
@@ -77,11 +79,11 @@ const CreateNewPostScreen = ({ navigation }: any) => {
                     <Text style={Styles.inputLabel}>Summary</Text>
                     <SizeBox height={8} />
                     <View style={Styles.textAreaContainer}>
-                        <Edit2 size={16} color="#777777" variant="Linear" />
+                        <Edit2 size={16} color={colors.grayColor} variant="Linear" />
                         <TextInput
                             style={Styles.textArea}
                             placeholder="Write Something......"
-                            placeholderTextColor="#777777"
+                            placeholderTextColor={colors.grayColor}
                             value={summary}
                             onChangeText={setSummary}
                             multiline
@@ -97,11 +99,11 @@ const CreateNewPostScreen = ({ navigation }: any) => {
                     <Text style={Styles.inputLabel}>Description</Text>
                     <SizeBox height={8} />
                     <View style={Styles.textAreaContainer}>
-                        <Edit2 size={16} color="#777777" variant="Linear" />
+                        <Edit2 size={16} color={colors.grayColor} variant="Linear" />
                         <TextInput
                             style={Styles.textArea}
                             placeholder="Write Something......"
-                            placeholderTextColor="#777777"
+                            placeholderTextColor={colors.grayColor}
                             value={description}
                             onChangeText={setDescription}
                             multiline
@@ -116,11 +118,11 @@ const CreateNewPostScreen = ({ navigation }: any) => {
                 <View style={Styles.buttonsContainer}>
                     <TouchableOpacity style={Styles.cancelButton} onPress={() => navigation.goBack()}>
                         <Text style={Styles.cancelButtonText}>Cancel</Text>
-                        <ArrowRight size={18} color="#9B9F9F" variant="Linear" />
+                        <ArrowRight size={18} color={colors.subTextColor} variant="Linear" />
                     </TouchableOpacity>
                     <TouchableOpacity style={Styles.createButton} onPress={handleCreatePost}>
                         <Text style={Styles.createButtonText}>Create New Post</Text>
-                        <ArrowRight size={18} color={Colors.whiteColor} variant="Linear" />
+                        <ArrowRight size={18} color="#FFFFFF" variant="Linear" />
                     </TouchableOpacity>
                 </View>
 

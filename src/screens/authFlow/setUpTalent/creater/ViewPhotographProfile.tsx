@@ -1,6 +1,6 @@
 import { View, ScrollView, Text } from 'react-native'
 import React, { useState } from 'react'
-import Styles from '../AddTalentStyles'
+import { createStyles } from '../AddTalentStyles'
 import SizeBox from '../../../../constants/SizeBox'
 import FastImage from 'react-native-fast-image'
 import Images from '../../../../constants/Images'
@@ -9,8 +9,11 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import SelcetionContainer from '../components/SelcetionContainer'
 import Icons from '../../../../constants/Icons'
 import PhotographyDetails from '../components/PhotographyDetails'
+import { useTheme } from '../../../../context/ThemeContext'
 
 const ViewPhotographProfile = ({ navigation }: any) => {
+    const { colors } = useTheme();
+    const Styles = createStyles(colors);
     const insets = useSafeAreaInsets();
     const [events, setEvents] = useState([
         { id: 1, title: 'Athletics' },

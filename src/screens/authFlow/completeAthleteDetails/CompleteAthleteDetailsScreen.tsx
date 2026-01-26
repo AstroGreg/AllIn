@@ -2,13 +2,16 @@ import React from 'react';
 import { View, Text, ScrollView, TouchableOpacity } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import FastImage from 'react-native-fast-image';
-import Styles from './CompleteAthleteDetailsScreenStyles';
+import { createStyles } from './CompleteAthleteDetailsScreenStyles';
 import SizeBox from '../../../constants/SizeBox';
 import Images from '../../../constants/Images';
 import Icons from '../../../constants/Icons';
 import CustomTextInput from '../../../components/customTextInput/CustomTextInput';
+import { useTheme } from '../../../context/ThemeContext';
 
 const CompleteAthleteDetailsScreen = ({ navigation }: any) => {
+    const { colors } = useTheme();
+    const Styles = createStyles(colors);
     const insets = useSafeAreaInsets();
 
     const handleSkip = () => {

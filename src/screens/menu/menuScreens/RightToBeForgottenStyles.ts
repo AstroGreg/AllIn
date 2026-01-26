@@ -1,11 +1,11 @@
 import { StyleSheet } from 'react-native';
-import Colors from '../../../constants/Colors';
 import Fonts from '../../../constants/Fonts';
+import { ThemeColors, lightColors } from '../../../constants/Theme';
 
-const styles = StyleSheet.create({
+export const createStyles = (colors: ThemeColors) => StyleSheet.create({
     mainContainer: {
         flex: 1,
-        backgroundColor: Colors.whiteColor,
+        backgroundColor: colors.backgroundColor,
     },
     header: {
         flexDirection: 'row',
@@ -14,19 +14,19 @@ const styles = StyleSheet.create({
         paddingHorizontal: 20,
         paddingVertical: 10,
         borderBottomWidth: 0.5,
-        borderBottomColor: '#DEDEDE',
+        borderBottomColor: colors.lightGrayColor,
     },
     headerButton: {
         width: 44,
         height: 44,
         borderRadius: 22,
-        backgroundColor: '#F5F5F5',
+        backgroundColor: colors.btnBackgroundColor,
         alignItems: 'center',
         justifyContent: 'center',
     },
     headerTitle: {
         ...Fonts.medium18,
-        color: Colors.mainTextColor,
+        color: colors.mainTextColor,
     },
     container: {
         flex: 1,
@@ -35,7 +35,7 @@ const styles = StyleSheet.create({
     infoCard: {
         backgroundColor: 'rgba(60, 130, 246, 0.08)',
         borderWidth: 0.5,
-        borderColor: Colors.primaryColor,
+        borderColor: colors.primaryColor,
         borderRadius: 10,
         padding: 16,
     },
@@ -49,18 +49,18 @@ const styles = StyleSheet.create({
         width: 50,
         height: 50,
         borderRadius: 10,
-        backgroundColor: '#EDF4FE',
+        backgroundColor: colors.secondaryColor,
         alignItems: 'center',
         justifyContent: 'center',
     },
     infoTitle: {
         ...Fonts.medium18,
-        color: Colors.mainTextColor,
+        color: colors.mainTextColor,
         flex: 1,
     },
     infoDescription: {
         ...Fonts.regular14,
-        color: '#9B9F9F',
+        color: colors.grayColor,
         lineHeight: 22,
     },
     statsRow: {
@@ -70,28 +70,28 @@ const styles = StyleSheet.create({
     },
     statCard: {
         flex: 1,
-        backgroundColor: Colors.whiteColor,
+        backgroundColor: colors.cardBackground,
         borderWidth: 0.5,
-        borderColor: '#DEDEDE',
+        borderColor: colors.lightGrayColor,
         borderRadius: 10,
         padding: 16,
     },
     statLabel: {
         ...Fonts.regular12,
-        color: '#9B9F9F',
+        color: colors.grayColor,
     },
     statValue: {
         ...Fonts.medium16,
-        color: Colors.mainTextColor,
+        color: colors.mainTextColor,
     },
     // Expanded category styles
     expandedCategoryContainer: {
         marginBottom: 16,
     },
     expandedCategoryCard: {
-        backgroundColor: Colors.whiteColor,
+        backgroundColor: colors.cardBackground,
         borderWidth: 0.5,
-        borderColor: '#DEDEDE',
+        borderColor: colors.lightGrayColor,
         borderTopLeftRadius: 10,
         borderTopRightRadius: 10,
         borderBottomWidth: 0,
@@ -101,10 +101,10 @@ const styles = StyleSheet.create({
         justifyContent: 'space-between',
     },
     dataItemsContainer: {
-        backgroundColor: Colors.whiteColor,
+        backgroundColor: colors.cardBackground,
         borderWidth: 0.5,
         borderTopWidth: 0,
-        borderColor: '#DEDEDE',
+        borderColor: colors.lightGrayColor,
         borderBottomLeftRadius: 10,
         borderBottomRightRadius: 10,
         padding: 16,
@@ -112,9 +112,9 @@ const styles = StyleSheet.create({
     },
     // Collapsed category styles
     categoryCard: {
-        backgroundColor: Colors.whiteColor,
+        backgroundColor: colors.cardBackground,
         borderWidth: 0.5,
-        borderColor: '#DEDEDE',
+        borderColor: colors.lightGrayColor,
         borderRadius: 10,
         padding: 16,
         flexDirection: 'row',
@@ -141,11 +141,11 @@ const styles = StyleSheet.create({
     },
     categoryTitle: {
         ...Fonts.medium14,
-        color: Colors.mainTextColor,
+        color: colors.mainTextColor,
     },
     categorySubtitle: {
         ...Fonts.regular12,
-        color: '#9B9F9F',
+        color: colors.grayColor,
     },
     categoryRight: {
         flexDirection: 'row',
@@ -154,13 +154,13 @@ const styles = StyleSheet.create({
     },
     markedText: {
         ...Fonts.regular12,
-        color: Colors.primaryColor,
+        color: colors.primaryColor,
     },
     // Data item styles
     dataItemCard: {
-        backgroundColor: Colors.whiteColor,
+        backgroundColor: colors.cardBackground,
         borderWidth: 0.5,
-        borderColor: '#DEDEDE',
+        borderColor: colors.lightGrayColor,
         borderRadius: 10,
         padding: 16,
         flexDirection: 'row',
@@ -173,11 +173,11 @@ const styles = StyleSheet.create({
     },
     dataItemLabel: {
         ...Fonts.medium14,
-        color: Colors.mainTextColor,
+        color: colors.mainTextColor,
     },
     dataItemValue: {
         ...Fonts.regular12,
-        color: '#9B9F9F',
+        color: colors.grayColor,
     },
     deleteButton: {
         flexDirection: 'row',
@@ -199,12 +199,12 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         gap: 8,
         height: 54,
-        backgroundColor: Colors.primaryColor,
+        backgroundColor: colors.primaryColor,
         borderRadius: 10,
     },
     downloadButtonText: {
         ...Fonts.medium16,
-        color: Colors.whiteColor,
+        color: colors.pureWhite,
     },
     exportButton: {
         flexDirection: 'row',
@@ -213,13 +213,15 @@ const styles = StyleSheet.create({
         gap: 8,
         height: 54,
         borderWidth: 0.5,
-        borderColor: '#9B9F9F',
+        borderColor: colors.grayColor,
         borderRadius: 10,
     },
     exportButtonText: {
         ...Fonts.medium16,
-        color: '#9B9F9F',
+        color: colors.grayColor,
     },
 });
 
+// Backward compatibility
+const styles = createStyles(lightColors);
 export default styles;

@@ -1,8 +1,8 @@
 import { View, Text, TouchableOpacity, Modal, TouchableWithoutFeedback } from 'react-native'
 import React, { useState } from 'react'
 import { CloseCircle, Note, ArrowDown, ArrowRight } from 'iconsax-react-nativejs'
-import Colors from '../../constants/Colors'
-import Styles from './ManageSocialMediaModalStyles'
+import { createStyles } from './ManageSocialMediaModalStyles'
+import { useTheme } from '../../context/ThemeContext'
 
 interface ManageSocialMediaModalProps {
     visible: boolean;
@@ -11,6 +11,8 @@ interface ManageSocialMediaModalProps {
 }
 
 const ManageSocialMediaModal = ({ visible, onClose, onSave }: ManageSocialMediaModalProps) => {
+    const { colors } = useTheme();
+    const Styles = createStyles(colors);
     const [selectedSocialMedia, setSelectedSocialMedia] = useState('');
 
     const handleAddMore = () => {
@@ -35,7 +37,7 @@ const ManageSocialMediaModal = ({ visible, onClose, onSave }: ManageSocialMediaM
                         <View style={Styles.modalContainer}>
                             {/* Close Button */}
                             <TouchableOpacity style={Styles.closeButton} onPress={onClose}>
-                                <CloseCircle size={24} color="#9B9F9F" variant="Linear" />
+                                <CloseCircle size={24} color={colors.subTextColor} variant="Linear" />
                             </TouchableOpacity>
 
                             {/* Social Media Input */}
@@ -43,12 +45,12 @@ const ManageSocialMediaModal = ({ visible, onClose, onSave }: ManageSocialMediaM
                                 <Text style={Styles.inputLabel}>Social Media</Text>
                                 <TouchableOpacity style={Styles.selectInput}>
                                     <View style={Styles.selectInputContent}>
-                                        <Note size={16} color="#777777" variant="Linear" />
+                                        <Note size={16} color={colors.grayColor} variant="Linear" />
                                         <Text style={Styles.selectInputText}>
                                             {selectedSocialMedia || 'Select Social Media'}
                                         </Text>
                                     </View>
-                                    <ArrowDown size={20} color="#777777" variant="Linear" />
+                                    <ArrowDown size={20} color={colors.grayColor} variant="Linear" />
                                 </TouchableOpacity>
                             </View>
 
@@ -56,11 +58,11 @@ const ManageSocialMediaModal = ({ visible, onClose, onSave }: ManageSocialMediaM
                             <View style={Styles.buttonsContainer}>
                                 <TouchableOpacity style={Styles.addMoreButton} onPress={handleAddMore}>
                                     <Text style={Styles.addMoreButtonText}>Add More</Text>
-                                    <ArrowRight size={18} color="#9B9F9F" variant="Linear" />
+                                    <ArrowRight size={18} color={colors.subTextColor} variant="Linear" />
                                 </TouchableOpacity>
                                 <TouchableOpacity style={Styles.saveButton} onPress={handleSave}>
                                     <Text style={Styles.saveButtonText}>Save</Text>
-                                    <ArrowRight size={18} color={Colors.whiteColor} variant="Linear" />
+                                    <ArrowRight size={18} color="#FFFFFF" variant="Linear" />
                                 </TouchableOpacity>
                             </View>
                         </View>

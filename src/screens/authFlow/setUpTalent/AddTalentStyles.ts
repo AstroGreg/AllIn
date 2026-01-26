@@ -1,50 +1,51 @@
 import { StyleSheet } from "react-native";
-import Colors from "../../../constants/Colors";
 import Fonts from "../../../constants/Fonts";
+import { ThemeColors, lightColors } from "../../../constants/Theme";
 
-const Styles = StyleSheet.create({
+export const createStyles = (colors: ThemeColors) => StyleSheet.create({
     mainContainer: {
         flex: 1,
-        backgroundColor: Colors.whiteColor,
+        backgroundColor: colors.backgroundColor,
     },
     contentContainer: {
         paddingHorizontal: 20
     },
     headingText: {
         ...Fonts.regular24,
-        color: Colors.mainTextColor,
+        color: colors.mainTextColor,
         fontWeight: '500',
         textAlign: 'center',
         lineHeight: 32,
     },
     subHeadingText: {
         ...Fonts.regular14,
-        color: Colors.subTextColor,
+        color: colors.grayColor,
         fontWeight: '400',
         textAlign: 'center'
     },
     containerTitle: {
         ...Fonts.regular16,
-        color: Colors.mainTextColor,
+        color: colors.mainTextColor,
         fontWeight: '500',
     },
     talentContainer: {
         borderRadius: 10,
         paddingHorizontal: 16,
         borderWidth: 0.5,
-        borderColor: Colors.lightGrayColor,
+        borderColor: colors.lightGrayColor,
+        backgroundColor: colors.cardBackground,
     },
     talentList: {
         marginLeft: 12
     },
     talentTypeTitle: {
         ...Fonts.regular12,
-        color: Colors.subTextColor,
+        color: colors.grayColor,
         fontWeight: '400',
     },
     separator: {
         height: 0.5,
-        backgroundColor: Colors.lightGrayColor,
+        backgroundColor: colors.lightGrayColor,
     },
     row: {
         flexDirection: 'row',
@@ -56,7 +57,7 @@ const Styles = StyleSheet.create({
     // Performer styles
     searchResultsText: {
         ...Fonts.regular14,
-        color: Colors.grayColor,
+        color: colors.grayColor,
         fontWeight: '400',
     },
 
@@ -67,15 +68,16 @@ const Styles = StyleSheet.create({
         alignItems: 'center',
         paddingLeft: 16,
         borderWidth: 0.5,
-        borderColor: Colors.lightGrayColor,
+        borderColor: colors.lightGrayColor,
         paddingVertical: 16,
         borderRadius: 10,
         marginBottom: 16,
-        gap: 12
+        gap: 12,
+        backgroundColor: colors.cardBackground,
     },
     titleText: {
         ...Fonts.regular14,
-        color: Colors.mainTextColor,
+        color: colors.mainTextColor,
         fontWeight: '400',
     },
     selectionBtn: {
@@ -83,7 +85,7 @@ const Styles = StyleSheet.create({
         width: 16,
         borderRadius: 8,
         borderWidth: 1,
-        borderColor: Colors.primaryColor,
+        borderColor: colors.primaryColor,
         position: 'absolute',
         right: 16,
         alignItems: 'center',
@@ -93,7 +95,7 @@ const Styles = StyleSheet.create({
         height: 10,
         width: 10,
         borderRadius: 5,
-        backgroundColor: Colors.primaryColor,
+        backgroundColor: colors.primaryColor,
     },
     deleteBtn: {
         position: 'absolute',
@@ -112,13 +114,13 @@ const Styles = StyleSheet.create({
     tabs: {
         height: '100%',
         borderBottomWidth: 3,
-        borderBottomColor: Colors.primaryColor,
+        borderBottomColor: colors.primaryColor,
         flex: 2,
         alignItems: 'center',
     },
     tabText: {
         ...Fonts.regular14,
-        color: Colors.subTextColor,
+        color: colors.grayColor,
         fontWeight: '400',
     },
 
@@ -126,16 +128,19 @@ const Styles = StyleSheet.create({
     photographyDetailsContainer: {
         paddingHorizontal: 16,
         borderWidth: 0.5,
-        borderColor: Colors.lightGrayColor,
+        borderColor: colors.lightGrayColor,
         paddingVertical: 16,
         borderRadius: 10,
         marginBottom: 16,
-        gap: 12
+        gap: 12,
+        backgroundColor: colors.cardBackground,
     },
     actionIcons: {
         alignSelf: 'flex-end',
         gap: 6,
     }
-})
+});
 
+// Backward compatibility
+const Styles = createStyles(lightColors);
 export default Styles;
