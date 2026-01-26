@@ -28,6 +28,8 @@ const Images = {
     photo9: require('../assets/imgs/foto9.png'),
     fiverr: require('../assets/imgs/fiverr.png'),
     noResult: require('../assets/imgs/no-result.png'),
+    advertisement: require('../assets/imgs/advertisement.png'),
+    fileUpload: require('../assets/imgs/fileUpload.png'),
 }
 
 export default Images;  

@@ -1,6 +1,6 @@
 import React from 'react'
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import Colors from '../constants/Colors';
+import { useTheme } from '../context/ThemeContext';
 import SplashScreen from '../screens/splashScreen/SplashScreen';
 import LoginScreen from '../screens/authFlow/loginScreen/LoginScreen';
 import SignupScreen from '../screens/authFlow/signupScreen/SignupScreen';
@@ -64,21 +64,30 @@ import EditVideoCollectionsScreen from '../screens/editVideoCollections/EditVide
 import PhotoDetailScreen from '../screens/photoDetail/PhotoDetailScreen';
 import VideoPlayingScreen from '../screens/videoPlaying/VideoPlayingScreen';
 import CreateNewPostScreen from '../screens/createNewPost/CreateNewPostScreen';
+import AdvertisementScreen from '../screens/advertisement/AdvertisementScreen';
+import CategorySelectionScreen from '../screens/categorySelection/CategorySelectionScreen';
+import DocumentUploadScreen from '../screens/documentUpload/DocumentUploadScreen';
+import FaceVerificationScreen from '../screens/faceVerification/FaceVerificationScreen';
 
 const Stack = createNativeStackNavigator();
 const RootStackNavigation = () => {
+    const { colors, isDark } = useTheme();
 
     return (
         <Stack.Navigator
             initialRouteName={'SplashScreen'}
             screenOptions={{
                 headerShown: false,
-                statusBarBackgroundColor: Colors.whiteColor,
-                statusBarStyle: 'dark',
+                statusBarBackgroundColor: colors.backgroundColor,
+                statusBarStyle: isDark ? 'light' : 'dark',
                 presentation: 'card',
                 animationTypeForReplace: 'push',
             }}>
             <Stack.Screen name="SplashScreen" component={SplashScreen} />
+            <Stack.Screen name="AdvertisementScreen" component={AdvertisementScreen} />
+            <Stack.Screen name="CategorySelectionScreen" component={CategorySelectionScreen} />
+            <Stack.Screen name="DocumentUploadScreen" component={DocumentUploadScreen} />
+            <Stack.Screen name="FaceVerificationScreen" component={FaceVerificationScreen} />
             <Stack.Screen name="SelectLanguageScreen" component={SelectLanguageScreen} />
             <Stack.Screen name="LoginScreen" component={LoginScreen} />
             <Stack.Screen name="SignupScreen" component={SignupScreen} />
