@@ -1,5 +1,5 @@
 import { View, Text, TouchableOpacity, ScrollView, Modal, TextInput } from 'react-native';
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import SizeBox from '../../../constants/SizeBox';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../../context/ThemeContext';
@@ -7,6 +7,7 @@ import Icons from '../../../constants/Icons';
 import LinearGradient from 'react-native-linear-gradient';
 import { ArrowLeft2, Notification, ArrowRight, SearchNormal1, TickSquare, Category } from 'iconsax-react-nativejs';
 import { createStyles } from './AISearchOptionsStyles';
+import { useRoute } from '@react-navigation/native';
 
 interface FilterOption {
     id: string;
@@ -18,11 +19,21 @@ const AISearchOptions = ({ navigation }: any) => {
     const insets = useSafeAreaInsets();
     const { colors, isDark } = useTheme();
     const styles = createStyles(colors);
+    const route = useRoute<any>();
     const [selectedOption, setSelectedOption] = useState<string>('face');
     const [showContextModal, setShowContextModal] = useState(false);
     const [showFiltersModal, setShowFiltersModal] = useState(false);
     const [contextSearchText, setContextSearchText] = useState('');
     const contextInputRef = useRef<TextInput>(null);
+
+    // Handle openContext param from navigation
+    useEffect(() => {
+        if (route.params?.openContext) {
+            setSelectedOption('context');
+            setShowContextModal(true);
+            setTimeout(() => contextInputRef.current?.focus(), 100);
+        }
+    }, [route.params?.openContext]);
 
     const [filters, setFilters] = useState<FilterOption[]>([
         { id: 'competition', label: 'Competition', checked: true },

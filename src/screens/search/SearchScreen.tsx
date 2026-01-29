@@ -1,5 +1,5 @@
 import { View, Text, ScrollView, TouchableOpacity, TextInput, Modal, Image } from 'react-native'
-import React, { useState, useRef } from 'react'
+import React, { useState, useRef, useEffect } from 'react'
 import { createStyles } from './SearchStyles'
 import SizeBox from '../../constants/SizeBox'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
@@ -9,6 +9,7 @@ import Images from '../../constants/Images'
 import FastImage from 'react-native-fast-image'
 import LinearGradient from 'react-native-linear-gradient'
 import { ArrowLeft2, Notification, SearchNormal1, Calendar, Location, CloseCircle, Clock, ArrowDown2, Camera, Add, Note, ArrowRight } from 'iconsax-react-nativejs'
+import { useRoute } from '@react-navigation/native'
 
 interface FilterChip {
     id: number;
@@ -71,6 +72,7 @@ const SearchScreen = ({ navigation }: any) => {
     const insets = useSafeAreaInsets();
     const { colors } = useTheme();
     const Styles = createStyles(colors);
+    const route = useRoute<any>();
     const [search, setSearch] = useState('');
     const [hasSearched, setHasSearched] = useState(false);
     const [selectedFilter, setSelectedFilter] = useState('Competition');
@@ -80,6 +82,17 @@ const SearchScreen = ({ navigation }: any) => {
     const [modalFilterType, setModalFilterType] = useState('');
     const [modalInputValue, setModalInputValue] = useState('');
     const modalInputRef = useRef<TextInput>(null);
+
+    // Handle openBIB param from navigation
+    useEffect(() => {
+        if (route.params?.openBIB) {
+            setSelectedFilter('BIB');
+            setModalFilterType('BIB');
+            setModalInputValue('');
+            setShowFilterModal(true);
+            setTimeout(() => modalInputRef.current?.focus(), 100);
+        }
+    }, [route.params?.openBIB]);
 
     const filters = ['Competition', 'Athelete', 'Location', 'Photographer', 'Chest Number', 'Face saved', 'BIB', 'Add Face', 'Group', 'Context'];
 

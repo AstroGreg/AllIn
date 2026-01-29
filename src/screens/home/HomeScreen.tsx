@@ -66,19 +66,18 @@ const HomeScreen = ({ navigation }: any) => {
 
                 {/* AI Smart Search Card */}
                 <View style={Styles.aiSearchCard}>
-                    <Icons.AiColorful width={64} height={64} />
                     <Text style={Styles.aiSearchTitle}>AI Smart Search</Text>
                     <Text style={Styles.aiSearchDescription}>
-                        Fast AI Search by face, bib number, or context in seconds. Got notified instantly.
+                        Try our fast AI Search by face and get pictures and video's of you in seconds.
                     </Text>
-                    <TouchableOpacity onPress={() => navigation.navigate('AISearchScreen')}>
+                    <TouchableOpacity onPress={() => navigation.navigate('Search', { screen: 'FaceSearchScreen' })}>
                         <LinearGradient
                             colors={['#155DFC', '#7F22FE']}
                             start={{ x: 0, y: 0 }}
                             end={{ x: 1, y: 0 }}
                             style={Styles.tryAiButton}
                         >
-                            <Text style={Styles.tryAiButtonText}>Try AI Search</Text>
+                            <Text style={Styles.tryAiButtonText}>Try Face Search</Text>
                             <ArrowRight size={24} color="#FFFFFF" variant="Linear" />
                         </LinearGradient>
                     </TouchableOpacity>
@@ -88,14 +87,11 @@ const HomeScreen = ({ navigation }: any) => {
                 <View style={Styles.sectionContainer}>
                     <View style={Styles.sectionHeader}>
                         <Text style={Styles.sectionTitle}>Quick Actions</Text>
-                        <TouchableOpacity>
-                            <Text style={Styles.seeAllText}>See All</Text>
-                        </TouchableOpacity>
                     </View>
                     <View style={Styles.quickActionsGrid}>
                         {/* First Row - Add myself & My downloads */}
                         <View style={Styles.quickActionsRow}>
-                            <TouchableOpacity style={Styles.quickActionCard}>
+                            <TouchableOpacity style={Styles.quickActionCard} onPress={() => navigation.navigate('SelectEventInterestScreen')}>
                                 <View style={Styles.quickActionContent}>
                                     <View style={Styles.quickActionIconContainer}>
                                         <UserAdd size={20} color={colors.primaryColor} variant="Linear" />
@@ -127,7 +123,10 @@ const HomeScreen = ({ navigation }: any) => {
                                 end={{ x: 1, y: 0 }}
                                 style={Styles.gradientButton}
                             >
-                                <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                                <TouchableOpacity
+                                    style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flex: 1, justifyContent: 'center' }}
+                                    onPress={() => navigation.navigate('Search', { screen: 'AISearchOptions', params: { openContext: true } })}
+                                >
                                     <Text style={Styles.gradientButtonText}>Context Search</Text>
                                     <ArrowRight size={24} color="#FFFFFF" variant="Linear" />
                                 </TouchableOpacity>
@@ -138,8 +137,11 @@ const HomeScreen = ({ navigation }: any) => {
                                 end={{ x: 1, y: 0 }}
                                 style={Styles.gradientButton}
                             >
-                                <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                                    <Text style={Styles.gradientButtonText}>Face Search</Text>
+                                <TouchableOpacity
+                                    style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flex: 1, justifyContent: 'center' }}
+                                    onPress={() => navigation.navigate('Search', { screen: 'SearchScreen', params: { openBIB: true } })}
+                                >
+                                    <Text style={Styles.gradientButtonText}>BIB Search</Text>
                                     <ArrowRight size={24} color="#FFFFFF" variant="Linear" />
                                 </TouchableOpacity>
                             </LinearGradient>
@@ -175,7 +177,17 @@ const HomeScreen = ({ navigation }: any) => {
                             timeAgo: "3 Days Ago"
                         }}
                         onFollow={() => {}}
-                        onViewBlog={() => {}}
+                        onViewBlog={() => navigation.navigate('ViewUserBlogDetailsScreen', {
+                            post: {
+                                title: 'Belgium championships 2025',
+                                date: '27/05/2025',
+                                image: Images.photo1,
+                                readCount: '1k',
+                                writer: 'Mia Moon',
+                                writerImage: Images.profilePic,
+                                description: `Elias took part in the 800m and achieved a time close to his best 1'50"99. The Belgium Championships 2025 showcased incredible athletic talent from across the country, bringing together top competitors in various track and field events.`,
+                            }
+                        })}
                     />
 
                     {/* Third card - no border, video with play button */}

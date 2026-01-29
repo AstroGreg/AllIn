@@ -125,6 +125,9 @@ const HomeStackNavigator = () => {
             <HomeStack.Screen name="VideosScreen" component={VideosScreen} />
             <HomeStack.Screen name="VideoPlayingScreen" component={VideoPlayingScreen} />
             <HomeStack.Screen name="AISearchScreen" component={AISearchScreen} />
+            <HomeStack.Screen name="SelectEventInterestScreen" component={SelectEventInterestScreen} />
+            <HomeStack.Screen name="DownloadsDetailsScreen" component={DownloadsDetailsScreen} />
+            <HomeStack.Screen name="ViewUserBlogDetailsScreen" component={ViewUserBlogDetailsScreen} />
         </HomeStack.Navigator>
     );
 };
