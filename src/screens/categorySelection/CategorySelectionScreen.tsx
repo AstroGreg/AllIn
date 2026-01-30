@@ -50,7 +50,11 @@ const CategorySelectionScreen = ({ navigation }: any) => {
     ];
 
     const handleContinue = () => {
-        navigation.navigate('DocumentUploadScreen');
+        navigation.navigate('SelectEventScreen', { selectedCategory });
+    };
+
+    const handleGuestLogin = () => {
+        navigation.navigate('BottomTabBar');
     };
 
     return (
@@ -116,6 +120,13 @@ const CategorySelectionScreen = ({ navigation }: any) => {
             </ScrollView>
 
             <View style={[Styles.buttonContainer, { paddingBottom: insets.bottom + 20 }]}>
+                <TouchableOpacity
+                    style={Styles.guestButton}
+                    activeOpacity={0.7}
+                    onPress={handleGuestLogin}
+                >
+                    <Text style={Styles.guestButtonText}>Login as a guest</Text>
+                </TouchableOpacity>
                 <CustomButton title="Continue" onPress={handleContinue} />
             </View>
         </View>

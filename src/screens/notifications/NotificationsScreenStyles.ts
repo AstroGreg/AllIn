@@ -102,9 +102,9 @@ const Styles = StyleSheet.create({
         width: 64,
     },
     newBadge: {
-        backgroundColor: Colors.primaryColor,
+        backgroundColor: '#D2E3FF',
         borderRadius: 4,
-        paddingHorizontal: 8,
+        paddingHorizontal: 21,
         paddingVertical: 4,
         alignItems: 'center',
         justifyContent: 'center',
@@ -113,7 +113,7 @@ const Styles = StyleSheet.create({
         fontFamily: 'Inter-Regular',
         fontSize: 10,
         lineHeight: 18,
-        color: Colors.whiteColor,
+        color: Colors.primaryColor,
     },
     dateText: {
         ...Fonts.regular12,

@@ -12,28 +12,51 @@ interface EventOption {
     id: string;
     name: string;
     icon: any;
+    isSvg?: boolean;
     disabled?: boolean;
     comingSoon?: boolean;
 }
 
 const events: EventOption[] = [
     { id: 'track-field', name: 'Track and Field', icon: Images.trackAndField },
-    { id: 'road-events', name: 'Road events', icon: Images.roadEvents, disabled: true },
+    { id: 'road-events', name: 'Road events', icon: Icons.PersonRunningColorful, isSvg: true },
     { id: 'boxing', name: 'Boxing (Coming in the near future)', icon: Images.boxing, disabled: true, comingSoon: true },
 ];
 
-const SelectEventScreen = ({ navigation }: any) => {
+const SelectEventScreen = ({ navigation, route }: any) => {
     const { colors } = useTheme();
     const Styles = createStyles(colors);
     const insets = useSafeAreaInsets();
-    const [selectedEvent, setSelectedEvent] = useState('track-field');
+    const [selectedEvents, setSelectedEvents] = useState<string[]>(['track-field']);
+    const selectedCategory = route?.params?.selectedCategory;
+
+    const toggleEvent = (eventId: string) => {
+        setSelectedEvents(prev => {
+            if (prev.includes(eventId)) {
+                return prev.filter(id => id !== eventId);
+            } else {
+                return [...prev, eventId];
+            }
+        });
+    };
 
     const handleBack = () => {
         navigation.goBack();
     };
 
     const handleNext = () => {
-        navigation.navigate('CompleteAthleteDetailsScreen');
+        if (selectedCategory === 'find') {
+            navigation.navigate('CompleteAthleteDetailsScreen');
+        } else if (selectedCategory === 'manage') {
+            navigation.navigate('CreateGroupProfileScreen');
+        } else if (selectedCategory === 'sell') {
+            navigation.navigate('CreatePhotographerProfileScreen');
+        } else {
+            navigation.reset({
+                index: 0,
+                routes: [{ name: 'BottomTabBar' }],
+            });
+        }
     };
 
     return (
@@ -63,7 +86,7 @@ const SelectEventScreen = ({ navigation }: any) => {
 
                     <View style={Styles.cardContainer}>
                         {events.map((event) => {
-                            const isSelected = selectedEvent === event.id;
+                            const isSelected = selectedEvents.includes(event.id);
                             return (
                                 <TouchableOpacity
                                     key={event.id}
@@ -73,14 +96,18 @@ const SelectEventScreen = ({ navigation }: any) => {
                                         event.disabled && Styles.eventItemDisabled,
                                     ]}
                                     activeOpacity={0.7}
-                                    onPress={() => !event.disabled && setSelectedEvent(event.id)}
+                                    onPress={() => !event.disabled && toggleEvent(event.id)}
                                     disabled={event.disabled}
                                 >
                                     <View style={Styles.eventInfo}>
-                                        <Image
-                                            source={event.icon}
-                                            style={Styles.eventIcon}
-                                        />
+                                        {event.isSvg ? (
+                                            <event.icon width={22} height={22} />
+                                        ) : (
+                                            <Image
+                                                source={event.icon}
+                                                style={Styles.eventIcon}
+                                            />
+                                        )}
                                         <Text
                                             style={[
                                                 Styles.eventName,

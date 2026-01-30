@@ -97,6 +97,21 @@ export const createStyles = (colors: ThemeColors) => StyleSheet.create({
         paddingHorizontal: 20,
         paddingBottom: 40,
         marginTop: 'auto',
+        gap: 12,
+    },
+    guestButton: {
+        height: 54,
+        borderRadius: 10,
+        borderWidth: 1,
+        borderColor: colors.primaryColor,
+        backgroundColor: 'transparent',
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    guestButtonText: {
+        ...Fonts.medium16,
+        lineHeight: 24,
+        color: colors.primaryColor,
     },
 });
 

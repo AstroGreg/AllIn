@@ -112,21 +112,16 @@ const NotificationsScreen = ({ navigation }: any) => {
             {/* Header */}
             <View style={Styles.header}>
                 <TouchableOpacity style={Styles.backButton} onPress={() => navigation.goBack()}>
-                    <ArrowLeft2 size={20} color={Colors.mainTextColor} variant="Linear" />
+                    <ArrowLeft2 size={20} color={Colors.primaryColor} variant="Linear" />
                 </TouchableOpacity>
                 <Text style={Styles.headerTitle}>Notifications</Text>
-                <TouchableOpacity style={Styles.notificationButton}>
-                    <Icons.NotificationBoldBlue height={24} width={24} />
-                </TouchableOpacity>
+                <View style={{ width: 44, height: 44 }} />
             </View>
 
             <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={Styles.scrollContent}>
                 {/* Section Header */}
                 <View style={Styles.sectionHeader}>
                     <Text style={Styles.sectionTitle}>Notifications</Text>
-                    <TouchableOpacity>
-                        <Text style={Styles.viewAllText}>View all</Text>
-                    </TouchableOpacity>
                 </View>
 
                 <SizeBox height={16} />

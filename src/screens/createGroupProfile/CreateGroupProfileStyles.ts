@@ -97,13 +97,20 @@ const Styles = StyleSheet.create({
     addMoreButton: {
         flexDirection: 'row',
         alignItems: 'center',
+        justifyContent: 'center',
         gap: 6,
+        paddingVertical: 10,
+        paddingHorizontal: 16,
+        height: 38,
+        borderWidth: 0.5,
+        borderColor: '#DEDEDE',
+        borderRadius: 6,
+        backgroundColor: Colors.whiteColor,
         alignSelf: 'flex-start',
-        paddingVertical: 8,
     },
     addMoreText: {
         ...Fonts.regular14,
-        color: Colors.mainTextColor,
+        color: '#898989',
     },
 
     // Continue Button

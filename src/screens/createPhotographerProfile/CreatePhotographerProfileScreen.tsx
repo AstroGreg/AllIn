@@ -6,7 +6,7 @@ import FastImage from 'react-native-fast-image';
 import Images from '../../constants/Images';
 import Colors from '../../constants/Colors';
 import Styles from './CreatePhotographerProfileStyles';
-import { ArrowLeft2, ArrowRight, User, Global } from 'iconsax-react-nativejs';
+import { ArrowRight, User, Global } from 'iconsax-react-nativejs';
 
 const CreatePhotographerProfileScreen = ({ navigation }: any) => {
     const insets = useSafeAreaInsets();
@@ -17,13 +17,6 @@ const CreatePhotographerProfileScreen = ({ navigation }: any) => {
         <View style={Styles.mainContainer}>
             <SizeBox height={insets.top} />
 
-            {/* Header */}
-            <View style={Styles.header}>
-                <TouchableOpacity style={Styles.headerButton} onPress={() => navigation.goBack()}>
-                    <ArrowLeft2 size={24} color={Colors.primaryColor} variant="Linear" />
-                </TouchableOpacity>
-            </View>
-
             <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={Styles.scrollContent}>
                 {/* Illustration */}
                 <View style={Styles.illustrationContainer}>
@@ -32,7 +25,7 @@ const CreatePhotographerProfileScreen = ({ navigation }: any) => {
 
                 {/* Title Section */}
                 <View style={Styles.titleSection}>
-                    <Text style={Styles.title}>Create Group Profile</Text>
+                    <Text style={Styles.title}>Create Photographer Profile</Text>
                     <Text style={Styles.subtitle}>It only takes a minute to get started—join us now!</Text>
                 </View>
 
@@ -75,7 +68,7 @@ const CreatePhotographerProfileScreen = ({ navigation }: any) => {
                 <TouchableOpacity
                     style={Styles.continueButton}
                     onPress={() => {
-                        navigation.navigate('EventsViewAllScreen');
+                        navigation.navigate('DocumentUploadScreen');
                     }}
                 >
                     <Text style={Styles.continueButtonText}>Continue</Text>

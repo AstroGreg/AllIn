@@ -6,7 +6,7 @@ import FastImage from 'react-native-fast-image';
 import Images from '../../constants/Images';
 import Colors from '../../constants/Colors';
 import Styles from './CreateGroupProfileStyles';
-import { ArrowLeft2, ArrowRight, User, People, Sms, Card, Add } from 'iconsax-react-nativejs';
+import { ArrowRight, User, People, Sms, Card, Add } from 'iconsax-react-nativejs';
 import Icons from '../../constants/Icons';
 
 const CreateGroupProfileScreen = ({ navigation }: any) => {
@@ -19,13 +19,6 @@ const CreateGroupProfileScreen = ({ navigation }: any) => {
     return (
         <View style={Styles.mainContainer}>
             <SizeBox height={insets.top} />
-
-            {/* Header */}
-            <View style={Styles.header}>
-                <TouchableOpacity style={Styles.headerButton} onPress={() => navigation.goBack()}>
-                    <ArrowLeft2 size={24} color={Colors.primaryColor} variant="Linear" />
-                </TouchableOpacity>
-            </View>
 
             <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={Styles.scrollContent}>
                 {/* Illustration */}
@@ -103,7 +96,7 @@ const CreateGroupProfileScreen = ({ navigation }: any) => {
                     {/* Add More Athletes */}
                     <TouchableOpacity style={Styles.addMoreButton}>
                         <Text style={Styles.addMoreText}>Add More Athletes</Text>
-                        <Add size={18} color={Colors.primaryColor} variant="Linear" />
+                        <Add size={24} color="#898989" variant="Linear" />
                     </TouchableOpacity>
                 </View>
 
@@ -111,7 +104,7 @@ const CreateGroupProfileScreen = ({ navigation }: any) => {
                 <TouchableOpacity
                     style={Styles.continueButton}
                     onPress={() => {
-                        navigation.navigate('EventsViewAllScreen');
+                        navigation.navigate('DocumentUploadScreen');
                     }}
                 >
                     <Text style={Styles.continueButtonText}>Continue</Text>

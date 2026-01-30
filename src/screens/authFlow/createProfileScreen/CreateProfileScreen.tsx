@@ -16,7 +16,7 @@ const CreateProfileScreen = ({ navigation }: any) => {
     const insets = useSafeAreaInsets();
 
     const handleContinue = () => {
-        navigation.navigate('SelectEventScreen');
+        navigation.navigate('CategorySelectionScreen');
     };
 
     return (

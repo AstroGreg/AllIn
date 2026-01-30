@@ -68,6 +68,8 @@ import AdvertisementScreen from '../screens/advertisement/AdvertisementScreen';
 import CategorySelectionScreen from '../screens/categorySelection/CategorySelectionScreen';
 import DocumentUploadScreen from '../screens/documentUpload/DocumentUploadScreen';
 import FaceVerificationScreen from '../screens/faceVerification/FaceVerificationScreen';
+import CreateGroupProfileScreen from '../screens/createGroupProfile/CreateGroupProfileScreen';
+import CreatePhotographerProfileScreen from '../screens/createPhotographerProfile/CreatePhotographerProfileScreen';
 
 const Stack = createNativeStackNavigator();
 const RootStackNavigation = () => {
@@ -94,6 +96,8 @@ const RootStackNavigation = () => {
             <Stack.Screen name="CreateProfileScreen" component={CreateProfileScreen} />
             <Stack.Screen name="SelectEventScreen" component={SelectEventScreen} />
             <Stack.Screen name="CompleteAthleteDetailsScreen" component={CompleteAthleteDetailsScreen} />
+            <Stack.Screen name="CreateGroupProfileScreen" component={CreateGroupProfileScreen} />
+            <Stack.Screen name="CreatePhotographerProfileScreen" component={CreatePhotographerProfileScreen} />
             <Stack.Screen name="LanguageScreen" component={LanguageScreen} />
             <Stack.Screen name="AddTalentScreen" component={AddTalentScreen} />
             <Stack.Screen name="SelecteTalent" component={SelecteTalent} />
