@@ -140,13 +140,13 @@ export const createStyles = (colors: ThemeColors) => StyleSheet.create({
         overflow: 'hidden',
     },
     aiSearchTitle: {
-        ...Fonts.bold24,
+        ...Fonts.bold36,
         fontSize: 30,
         lineHeight: 36,
+        letterSpacing: -0.35,
         color: colors.mainTextColor,
         marginTop: 20,
         marginBottom: 12,
-        letterSpacing: -0.35,
     },
     aiSearchDescription: {
         ...Fonts.regular14,

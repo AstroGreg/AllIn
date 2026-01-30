@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, Image } from 'react-native';
+import { View, Text, TouchableOpacity, Image, ScrollView } from 'react-native';
 import { createStyles } from './SelectLanguageScreenStyles';
 import SizeBox from '../../../constants/SizeBox';
 import CustomButton from '../../../components/customButton/CustomButton';
@@ -15,6 +15,10 @@ interface LanguageOption {
 const languages: LanguageOption[] = [
     { id: 'en', name: 'English', flag: Images.englishFlag },
     { id: 'nl', name: 'Dutch', flag: Images.dutchFlag },
+    { id: 'fr', name: 'French', flag: Images.franceFlag },
+    { id: 'de', name: 'German', flag: Images.germanyFlag },
+    { id: 'es', name: 'Spanish', flag: Images.spanishFlag },
+    { id: 'it', name: 'Italian', flag: Images.italianFlag },
 ];
 
 const SelectLanguageScreen = ({ navigation }: any) => {
@@ -34,7 +38,10 @@ const SelectLanguageScreen = ({ navigation }: any) => {
 
     return (
         <View style={Styles.mainContainer}>
-            <View style={Styles.contentContainer}>
+            <ScrollView
+                showsVerticalScrollIndicator={false}
+                contentContainerStyle={Styles.contentContainer}
+            >
                 <View style={Styles.headerContainer}>
                     <Text style={Styles.headingText}>Select Your Language</Text>
                     <SizeBox height={10} />
@@ -78,7 +85,7 @@ const SelectLanguageScreen = ({ navigation }: any) => {
                 <SizeBox height={30} />
 
                 <CustomButton title="Continue" onPress={handleContinue} />
-            </View>
+            </ScrollView>
         </View>
     );
 };

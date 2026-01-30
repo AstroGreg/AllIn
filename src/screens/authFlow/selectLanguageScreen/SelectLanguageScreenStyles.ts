@@ -8,9 +8,10 @@ export const createStyles = (colors: ThemeColors) => StyleSheet.create({
         backgroundColor: colors.backgroundColor,
     },
     contentContainer: {
-        flex: 1,
+        flexGrow: 1,
         paddingHorizontal: 20,
-        justifyContent: 'center',
+        paddingTop: 60,
+        paddingBottom: 40,
     },
     headerContainer: {
         alignItems: 'center',
