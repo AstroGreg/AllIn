@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, Image } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, Image, Alert, ActivityIndicator } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import FastImage from 'react-native-fast-image';
 import { createStyles } from './SelectEventScreenStyles';
@@ -7,6 +7,7 @@ import SizeBox from '../../../constants/SizeBox';
 import Images from '../../../constants/Images';
 import Icons from '../../../constants/Icons';
 import { useTheme } from '../../../context/ThemeContext';
+import { useAuth } from '../../../context/AuthContext';
 
 interface EventOption {
     id: string;
@@ -27,7 +28,9 @@ const SelectEventScreen = ({ navigation, route }: any) => {
     const { colors } = useTheme();
     const Styles = createStyles(colors);
     const insets = useSafeAreaInsets();
+    const { updateUserProfile } = useAuth();
     const [selectedEvents, setSelectedEvents] = useState<string[]>(['track-field']);
+    const [isLoading, setIsLoading] = useState(false);
     const selectedCategory = route?.params?.selectedCategory;
 
     const toggleEvent = (eventId: string) => {
@@ -44,18 +47,32 @@ const SelectEventScreen = ({ navigation, route }: any) => {
         navigation.goBack();
     };
 
-    const handleNext = () => {
-        if (selectedCategory === 'find') {
-            navigation.navigate('CompleteAthleteDetailsScreen');
-        } else if (selectedCategory === 'manage') {
-            navigation.navigate('CreateGroupProfileScreen');
-        } else if (selectedCategory === 'sell') {
-            navigation.navigate('CreatePhotographerProfileScreen');
-        } else {
-            navigation.reset({
-                index: 0,
-                routes: [{ name: 'BottomTabBar' }],
-            });
+    const handleNext = async () => {
+        if (selectedEvents.length === 0) {
+            Alert.alert('Error', 'Please select at least one event');
+            return;
+        }
+
+        setIsLoading(true);
+        try {
+            await updateUserProfile({ selectedEvents });
+
+            if (selectedCategory === 'find') {
+                navigation.navigate('CompleteAthleteDetailsScreen');
+            } else if (selectedCategory === 'manage') {
+                navigation.navigate('CreateGroupProfileScreen');
+            } else if (selectedCategory === 'sell') {
+                navigation.navigate('CreatePhotographerProfileScreen');
+            } else {
+                navigation.reset({
+                    index: 0,
+                    routes: [{ name: 'BottomTabBar' }],
+                });
+            }
+        } catch (err: any) {
+            Alert.alert('Error', 'Failed to save events. Please try again.');
+        } finally {
+            setIsLoading(false);
         }
     };
 
@@ -140,12 +157,19 @@ const SelectEventScreen = ({ navigation, route }: any) => {
                     </TouchableOpacity>
 
                     <TouchableOpacity
-                        style={Styles.nextButton}
+                        style={[Styles.nextButton, isLoading && { opacity: 0.5 }]}
                         activeOpacity={0.7}
                         onPress={handleNext}
+                        disabled={isLoading}
                     >
-                        <Text style={Styles.nextButtonText}>Next</Text>
-                        <Icons.RightBtnIcon height={18} width={18} />
+                        {isLoading ? (
+                            <ActivityIndicator size="small" color="#fff" />
+                        ) : (
+                            <>
+                                <Text style={Styles.nextButtonText}>Next</Text>
+                                <Icons.RightBtnIcon height={18} width={18} />
+                            </>
+                        )}
                     </TouchableOpacity>
                 </View>
 

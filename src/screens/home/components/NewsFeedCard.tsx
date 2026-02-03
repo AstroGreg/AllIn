@@ -23,6 +23,7 @@ interface NewsFeedCardProps {
     description?: string;
     onFollow?: () => void;
     onViewBlog?: () => void;
+    onPressUser?: () => void;
 }
 
 const NewsFeedCard = ({
@@ -35,7 +36,8 @@ const NewsFeedCard = ({
     user,
     description,
     onFollow,
-    onViewBlog
+    onViewBlog,
+    onPressUser
 }: NewsFeedCardProps) => {
     const { colors } = useTheme();
     const Styles = createStyles(colors);
@@ -119,7 +121,7 @@ const NewsFeedCard = ({
         <View style={hasBorder ? Styles.newsFeedCard : Styles.newsFeedCardNoBorder}>
             {user && (
                 <View style={Styles.userPostHeader}>
-                    <View style={Styles.userPostInfo}>
+                    <TouchableOpacity style={Styles.userPostInfo} onPress={onPressUser}>
                         <FastImage
                             source={user.avatar}
                             style={Styles.userPostAvatar}
@@ -128,7 +130,7 @@ const NewsFeedCard = ({
                             <Text style={Styles.userPostName}>{user.name}</Text>
                             <Text style={Styles.userPostTime}>{user.timeAgo}</Text>
                         </View>
-                    </View>
+                    </TouchableOpacity>
                     <TouchableOpacity style={Styles.followButton} onPress={onFollow}>
                         <Text style={Styles.followButtonText}>Follow</Text>
                     </TouchableOpacity>

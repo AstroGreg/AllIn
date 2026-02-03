@@ -9,13 +9,14 @@ interface SocialBtnProps {
     title: string;
     onPress: any;
     isGoogle: boolean;
+    disabled?: boolean;
 }
 
-const SocialBtn = ({ title, onPress, isGoogle }: SocialBtnProps) => {
+const SocialBtn = ({ title, onPress, isGoogle, disabled = false }: SocialBtnProps) => {
     const { colors } = useTheme();
     const Styles = createStyles(colors);
     return (
-        <TouchableOpacity style={Styles.buttonContainer} onPress={onPress} activeOpacity={0.7}>
+        <TouchableOpacity style={[Styles.buttonContainer, disabled && { opacity: 0.5 }]} onPress={onPress} activeOpacity={0.7} disabled={disabled}>
             {isGoogle ?
                 <Image source={Icons.GoogleIcon} style={{ height: 20, width: 20 }} />
                 : <Image source={Icons.AppleIcon} style={{ height: 20, width: 20 }} />

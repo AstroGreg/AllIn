@@ -20,11 +20,27 @@ interface Plan {
     isPopular?: boolean;
 }
 
-const Subscription = ({ navigation }: any) => {
+const Subscription = ({ navigation, route }: any) => {
     const insets = useSafeAreaInsets();
     const { colors } = useTheme();
     const Styles = createStyles(colors);
     const [selectedTab, setSelectedTab] = useState<'monthly' | 'yearly'>('monthly');
+
+    const redirectTo = route?.params?.redirectTo;
+    const contextSearch = route?.params?.contextSearch;
+    const filters = route?.params?.filters;
+
+    const handleGetStarted = () => {
+        if (redirectTo === 'ContextSearch') {
+            navigation.navigate('ContextSearchScreen');
+        } else if (redirectTo === 'FaceSearch') {
+            navigation.navigate('BottomTabBar', { screen: 'Search', params: { screen: 'FaceSearchScreen' } });
+        } else if (redirectTo === 'BIBSearch') {
+            navigation.navigate('BottomTabBar', { screen: 'Search', params: { screen: 'SearchScreen', params: { openBIB: true } } });
+        } else {
+            navigation.goBack();
+        }
+    };
 
     const monthlyPlans: Plan[] = [
         {
@@ -121,7 +137,7 @@ const Subscription = ({ navigation }: any) => {
                     </View>
                 ))}
             </View>
-            <TouchableOpacity style={[Styles.getStartedButton, plan.isPopular && Styles.popularGetStartedButton]}>
+            <TouchableOpacity style={[Styles.getStartedButton, plan.isPopular && Styles.popularGetStartedButton]} onPress={handleGetStarted}>
                 <Text style={[Styles.getStartedButtonText, plan.isPopular && Styles.popularGetStartedButtonText]}>
                     Get started
                 </Text>

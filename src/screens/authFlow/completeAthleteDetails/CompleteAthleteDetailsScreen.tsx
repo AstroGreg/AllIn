@@ -1,5 +1,5 @@
-import React from 'react';
-import { View, Text, ScrollView, TouchableOpacity } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, ScrollView, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import FastImage from 'react-native-fast-image';
 import { createStyles } from './CompleteAthleteDetailsScreenStyles';
@@ -8,11 +8,19 @@ import Images from '../../../constants/Images';
 import Icons from '../../../constants/Icons';
 import CustomTextInput from '../../../components/customTextInput/CustomTextInput';
 import { useTheme } from '../../../context/ThemeContext';
+import { useAuth } from '../../../context/AuthContext';
+import { Buildings } from 'iconsax-react-nativejs';
 
 const CompleteAthleteDetailsScreen = ({ navigation }: any) => {
     const { colors } = useTheme();
     const Styles = createStyles(colors);
     const insets = useSafeAreaInsets();
+    const { updateUserProfile } = useAuth();
+
+    const [chestNumber, setChestNumber] = useState('');
+    const [website, setWebsite] = useState('');
+    const [runningClub, setRunningClub] = useState('');
+    const [isLoading, setIsLoading] = useState(false);
 
     const handleSkip = () => {
         navigation.reset({
@@ -21,11 +29,20 @@ const CompleteAthleteDetailsScreen = ({ navigation }: any) => {
         });
     };
 
-    const handleFinish = () => {
-        navigation.reset({
-            index: 0,
-            routes: [{ name: 'BottomTabBar' }],
-        });
+    const handleFinish = async () => {
+        setIsLoading(true);
+        try {
+            await updateUserProfile({
+                chestNumber,
+                website,
+                runningClub,
+            });
+            navigation.navigate('DocumentUploadScreen');
+        } catch (err: any) {
+            Alert.alert('Error', 'Failed to save details. Please try again.');
+        } finally {
+            setIsLoading(false);
+        }
     };
 
     return (
@@ -60,18 +77,25 @@ const CompleteAthleteDetailsScreen = ({ navigation }: any) => {
                             label="Chest Number"
                             placeholder="Enter Chest Number"
                             icon={<Icons.User height={16} width={16} />}
+                            value={chestNumber}
+                            onChangeText={setChestNumber}
                         />
 
                         <CustomTextInput
                             label="Website"
                             placeholder="Enter website link"
                             icon={<Icons.WebsiteBlue height={16} width={16} />}
+                            value={website}
+                            onChangeText={setWebsite}
+                            autoCapitalize="none"
                         />
 
                         <CustomTextInput
                             label="Running Club"
                             placeholder="Choose Running Club"
-                            icon={<Icons.Run height={16} width={16} />}
+                            icon={<Buildings size={16} color={colors.primaryColor} />}
+                            value={runningClub}
+                            onChangeText={setRunningClub}
                             isDown={true}
                         />
                     </View>
@@ -88,12 +112,19 @@ const CompleteAthleteDetailsScreen = ({ navigation }: any) => {
                     </TouchableOpacity>
 
                     <TouchableOpacity
-                        style={Styles.finishButton}
+                        style={[Styles.finishButton, isLoading && { opacity: 0.5 }]}
                         activeOpacity={0.7}
                         onPress={handleFinish}
+                        disabled={isLoading}
                     >
-                        <Text style={Styles.finishButtonText}>Finish</Text>
-                        <Icons.RightBtnIcon height={18} width={18} />
+                        {isLoading ? (
+                            <ActivityIndicator size="small" color="#fff" />
+                        ) : (
+                            <>
+                                <Text style={Styles.finishButtonText}>Finish</Text>
+                                <Icons.RightBtnIcon height={18} width={18} />
+                            </>
+                        )}
                     </TouchableOpacity>
                 </View>
 

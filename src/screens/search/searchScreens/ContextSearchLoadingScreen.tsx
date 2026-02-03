@@ -59,10 +59,16 @@ const ContextSearchLoadingScreen = ({ navigation, route }: any) => {
 
         // Navigate to results after loading completes
         const timeout = setTimeout(() => {
-            navigation.replace('AISearchResultsScreen', {
-                contextSearch,
-                filters,
-                matchedCount: 3,
+            navigation.replace('BottomTabBar', {
+                screen: 'Search',
+                params: {
+                    screen: 'AISearchResultsScreen',
+                    params: {
+                        contextSearch,
+                        filters,
+                        matchedCount: 3,
+                    }
+                }
             });
         }, 3000);
 

@@ -1,22 +1,78 @@
-import { View, Text, Image, TouchableOpacity, ScrollView } from 'react-native'
+import { View, Text, TouchableOpacity, ScrollView, Alert, ActivityIndicator } from 'react-native'
 import React from 'react'
 import { createStyles } from './LoginStyles'
 import SizeBox from '../../../constants/SizeBox'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import Images from '../../../constants/Images'
-import CustomTextInput from '../../../components/customTextInput/CustomTextInput'
-import Icons from '../../../constants/Icons'
-import CheckBox from '../../../components/checkbox/CheckBox'
 import CustomButton from '../../../components/customButton/CustomButton'
 import OrContainer from '../components/OrContainer'
 import SocialBtn from '../components/SocialBtn'
 import FastImage from 'react-native-fast-image'
 import { useTheme } from '../../../context/ThemeContext'
+import { useAuth } from '../../../context/AuthContext'
+import AsyncStorage from '@react-native-async-storage/async-storage'
 
 const LoginScreen = ({ navigation }: any) => {
     const { colors } = useTheme();
     const Styles = createStyles(colors);
     const insets = useSafeAreaInsets();
+    const { login, isLoading, isAuthenticated } = useAuth();
+
+    // Debug: Clear all stored auth data
+    const handleClearAuth = async () => {
+        await AsyncStorage.removeItem('@auth_credentials');
+        await AsyncStorage.removeItem('@user_profile');
+        console.log('[LoginScreen] Cleared all auth data');
+        Alert.alert('Debug', 'Auth data cleared. Please restart the app.');
+    };
+
+    console.log('[LoginScreen] Rendered, isAuthenticated:', isAuthenticated, 'isLoading:', isLoading);
+
+    const handleLogin = async () => {
+        console.log('[LoginScreen] Sign In button pressed');
+        try {
+            await login();
+            console.log('[LoginScreen] Login successful, navigating to BottomTabBar');
+            navigation.reset({
+                index: 0,
+                routes: [{ name: 'BottomTabBar' }],
+            });
+        } catch (err: any) {
+            console.log('[LoginScreen] Login error:', err.message);
+            if (err.message !== 'User cancelled the Auth') {
+                Alert.alert('Login Failed', err.message || 'Please try again');
+            }
+        }
+    };
+
+    const handleGoogleLogin = async () => {
+        try {
+            await login('google-oauth2');
+            navigation.reset({
+                index: 0,
+                routes: [{ name: 'BottomTabBar' }],
+            });
+        } catch (err: any) {
+            if (err.message !== 'User cancelled the Auth') {
+                Alert.alert('Login Failed', err.message || 'Google login failed');
+            }
+        }
+    };
+
+    const handleAppleLogin = async () => {
+        try {
+            await login('apple');
+            navigation.reset({
+                index: 0,
+                routes: [{ name: 'BottomTabBar' }],
+            });
+        } catch (err: any) {
+            if (err.message !== 'User cancelled the Auth') {
+                Alert.alert('Login Failed', err.message || 'Apple login failed');
+            }
+        }
+    };
+
     return (
         <View style={Styles.mainContainer}>
             <SizeBox height={insets.top} />
@@ -33,38 +89,12 @@ const LoginScreen = ({ navigation }: any) => {
                     <SizeBox height={8} />
                     <Text style={Styles.subHeadingText}>Access your account and stay connected.</Text>
 
-                    <SizeBox height={24} />
-                    <CustomTextInput
-                        label='Email'
-                        placeholder='Enter email'
-                        icon={<Icons.Email height={22} width={22} />}
-                    />
-
-                    <SizeBox height={24} />
-                    <CustomTextInput
-                        label='Password'
-                        placeholder='Enter password'
-                        icon={<Icons.Password height={20} width={20} />}
-                        isPass={true}
-                    />
-
-                    <SizeBox height={14} />
-                    <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-                        <View style={Styles.checkBox}>
-                            <CheckBox onPressCheckBox={() => { }} />
-                            <SizeBox width={6} />
-                            <Text style={Styles.rememberMeText}>Remember Me</Text>
-                        </View>
-                        <TouchableOpacity>
-                            <Text style={Styles.forgotPass}>Forgot Password?</Text>
-                        </TouchableOpacity>
-                    </View>
-
                     <SizeBox height={40} />
-                    <CustomButton title={'Continue'} onPress={() => navigation.reset({
-                        index: 0,
-                        routes: [{ name: 'BottomTabBar' }],
-                    })} />
+                    {isLoading ? (
+                        <ActivityIndicator size="large" color={colors.primaryColor} />
+                    ) : (
+                        <CustomButton title={'Sign In'} onPress={handleLogin} />
+                    )}
 
                     <SizeBox height={16} />
                     <OrContainer />
@@ -72,20 +102,16 @@ const LoginScreen = ({ navigation }: any) => {
                     <SizeBox height={16} />
                     <SocialBtn
                         title='Continue with Google'
-                        onPress={() => navigation.reset({
-                            index: 0,
-                            routes: [{ name: 'BottomTabBar' }],
-                        })}
+                        onPress={handleGoogleLogin}
                         isGoogle={true}
+                        disabled={isLoading}
                     />
                     <SizeBox height={20} />
                     <SocialBtn
                         title='Continue with Apple'
-                        onPress={() => navigation.reset({
-                            index: 0,
-                            routes: [{ name: 'BottomTabBar' }],
-                        })}
+                        onPress={handleAppleLogin}
                         isGoogle={false}
+                        disabled={isLoading}
                     />
 
                     <SizeBox height={20} />
@@ -96,6 +122,12 @@ const LoginScreen = ({ navigation }: any) => {
                             <Text style={[Styles.rememberMeText, { color: colors.primaryColor }]}>Sign Up</Text>
                         </TouchableOpacity>
                     </View>
+
+                    {/* Debug button - remove in production */}
+                    <SizeBox height={30} />
+                    <TouchableOpacity onPress={handleClearAuth} style={{ padding: 10, alignItems: 'center' }}>
+                        <Text style={{ color: colors.grayColor, fontSize: 12 }}>[Debug] Clear Auth Data</Text>
+                    </TouchableOpacity>
 
                 </View>
                 <SizeBox height={40} />

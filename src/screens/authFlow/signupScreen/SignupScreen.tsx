@@ -1,22 +1,55 @@
-import { View, Text, TouchableOpacity, ScrollView } from 'react-native'
+import { View, Text, TouchableOpacity, ScrollView, Alert, ActivityIndicator } from 'react-native'
 import React from 'react'
 import SizeBox from '../../../constants/SizeBox'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import Images from '../../../constants/Images'
-import CustomTextInput from '../../../components/customTextInput/CustomTextInput'
-import Icons from '../../../constants/Icons'
-import CheckBox from '../../../components/checkbox/CheckBox'
 import CustomButton from '../../../components/customButton/CustomButton'
 import OrContainer from '../components/OrContainer'
 import SocialBtn from '../components/SocialBtn'
 import { createStyles } from './SignupScreenStyles'
 import FastImage from 'react-native-fast-image'
 import { useTheme } from '../../../context/ThemeContext'
+import { useAuth } from '../../../context/AuthContext'
 
 const SignupScreen = ({ navigation }: any) => {
     const { colors } = useTheme();
     const Styles = createStyles(colors);
     const insets = useSafeAreaInsets();
+    const { signup, isLoading } = useAuth();
+
+    const handleSignup = async () => {
+        try {
+            await signup();
+            navigation.navigate('CreateProfileScreen');
+        } catch (err: any) {
+            if (err.message !== 'User cancelled the Auth') {
+                Alert.alert('Signup Failed', err.message || 'Please try again');
+            }
+        }
+    };
+
+    const handleGoogleSignup = async () => {
+        try {
+            await signup('google-oauth2');
+            navigation.navigate('CreateProfileScreen');
+        } catch (err: any) {
+            if (err.message !== 'User cancelled the Auth') {
+                Alert.alert('Signup Failed', err.message || 'Google signup failed');
+            }
+        }
+    };
+
+    const handleAppleSignup = async () => {
+        try {
+            await signup('apple');
+            navigation.navigate('CreateProfileScreen');
+        } catch (err: any) {
+            if (err.message !== 'User cancelled the Auth') {
+                Alert.alert('Signup Failed', err.message || 'Apple signup failed');
+            }
+        }
+    };
+
     return (
         <View style={Styles.mainContainer}>
             <SizeBox height={insets.top} />
@@ -33,48 +66,12 @@ const SignupScreen = ({ navigation }: any) => {
                     <SizeBox height={8} />
                     <Text style={Styles.subHeadingText}>It only takes a minute to get started—join us now!</Text>
 
-                    <SizeBox height={24} />
-                    <CustomTextInput
-                        label='Email'
-                        placeholder='Enter email'
-                        icon={<Icons.Email height={16} width={16} />}
-                    />
-
-                    <SizeBox height={24} />
-                    <CustomTextInput
-                        label='Password'
-                        placeholder='Enter password'
-                        icon={<Icons.Password height={16} width={16} />}
-                        isPass={true}
-                    />
-
-                    <SizeBox height={24} />
-                    <CustomTextInput
-                        label='Confirm password'
-                        placeholder='Confirm password'
-                        icon={<Icons.Password height={16} width={16} />}
-                        isPass={true}
-                    />
-
-                    <SizeBox height={24} />
-
-                    <View style={Styles.checkBox}>
-                        <View style={Styles.checkboxIcon}>
-                            <CheckBox onPressCheckBox={() => { }} />
-                        </View>
-                        <SizeBox width={10} />
-                        <View style={Styles.termsTextContainer}>
-                            <Text style={Styles.rememberMeText}>
-                                By proceeding, you agree to the{' '}
-                                <Text style={Styles.linkText} onPress={() => { }}>Terms of Service</Text>
-                                {' '}and{' '}
-                                <Text style={Styles.linkText} onPress={() => { }}>Privacy Policy.</Text>
-                            </Text>
-                        </View>
-                    </View>
-
                     <SizeBox height={40} />
-                    <CustomButton title={'Sign Up'} onPress={() => navigation.navigate('CreateProfileScreen')} />
+                    {isLoading ? (
+                        <ActivityIndicator size="large" color={colors.primaryColor} />
+                    ) : (
+                        <CustomButton title={'Sign Up'} onPress={handleSignup} />
+                    )}
 
                     <SizeBox height={16} />
                     <OrContainer />
@@ -82,15 +79,18 @@ const SignupScreen = ({ navigation }: any) => {
                     <SizeBox height={16} />
                     <SocialBtn
                         title='Continue with Google'
-                        onPress={() => navigation.navigate('CreateProfileScreen')}
+                        onPress={handleGoogleSignup}
                         isGoogle={true}
+                        disabled={isLoading}
                     />
                     <SizeBox height={20} />
                     <SocialBtn
                         title='Continue with Apple'
-                        onPress={() => navigation.navigate('CreateProfileScreen')}
+                        onPress={handleAppleSignup}
                         isGoogle={false}
+                        disabled={isLoading}
                     />
+
                     <SizeBox height={20} />
                     <View style={Styles.signUpContainer}>
                         <Text style={Styles.rememberMeText}>Already have an Account?</Text>

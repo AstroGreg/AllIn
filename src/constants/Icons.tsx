@@ -119,6 +119,7 @@ import paycoinqBancontact from '../assets/imgs/paycoinqBancontact.png';
 import individualColorful from '../assets/icons/individualColorful.svg';
 import photographerColorful from '../assets/icons/photographerColorful.svg';
 import groupColorful from '../assets/icons/groupColorful.svg';
+import personRunningColorful from '../assets/icons/personRunningColorful.svg';
 import lockColorful from '../assets/icons/lockColorful.svg';
 import aiColorful from '../assets/icons/aiColorful.svg';
 import hashWhite from '../assets/icons/hashWhite.svg';
@@ -254,6 +255,7 @@ const Icons = {
     IndividualColorful: individualColorful,
     PhotographerColorful: photographerColorful,
     GroupColorful: groupColorful,
+    PersonRunningColorful: personRunningColorful,
     LockColorful: lockColorful,
     AiColorful: aiColorful,
     HashWhite: hashWhite,

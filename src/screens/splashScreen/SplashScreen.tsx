@@ -2,16 +2,32 @@ import { Image, View } from 'react-native';
 import Styles from './SplashStyles';
 import Images from '../../constants/Images';
 import { useEffect } from 'react';
+import { useAuth } from '../../context/AuthContext';
 
 const SplashScreen = ({ navigation }: any) => {
+    const { isAuthenticated, isLoading } = useAuth();
 
     useEffect(() => {
+        // Wait for auth check to complete
+        if (isLoading) return;
+
         const timer = setTimeout(() => {
-            navigation.navigate('AdvertisementScreen');
+            if (isAuthenticated) {
+                // User is already logged in, go directly to main app
+                console.log('[SplashScreen] User authenticated, navigating to BottomTabBar');
+                navigation.reset({
+                    index: 0,
+                    routes: [{ name: 'BottomTabBar' }],
+                });
+            } else {
+                // User not logged in, show onboarding/login flow
+                console.log('[SplashScreen] User not authenticated, navigating to SelectLanguageScreen');
+                navigation.navigate('SelectLanguageScreen');
+            }
         }, 2000);
 
         return () => clearTimeout(timer);
-    }, [navigation]);
+    }, [navigation, isAuthenticated, isLoading]);
 
     return (
         <View style={Styles.mainContainer}>

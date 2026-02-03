@@ -15,7 +15,7 @@ interface BankCard {
     cardNumber: string;
 }
 
-const PaymentMethod = ({ navigation }: any) => {
+const PaymentMethod = ({ navigation, route }: any) => {
     const insets = useSafeAreaInsets();
     const { colors } = useTheme();
     const Styles = createStyles(colors);
@@ -23,8 +23,26 @@ const PaymentMethod = ({ navigation }: any) => {
     const [customAmount, setCustomAmount] = useState('');
     const [selectedCard, setSelectedCard] = useState(1);
     const customInputRef = useRef<TextInput>(null);
+    const redirectTo = route?.params?.redirectTo;
+    const contextSearch = route?.params?.contextSearch;
+    const filters = route?.params?.filters;
 
     const amounts = ['€5', '€10', '€15'];
+
+    const handlePayNow = () => {
+        if (redirectTo === 'ContextSearch') {
+            navigation.navigate('ContextSearchLoadingScreen', {
+                contextSearch,
+                filters
+            });
+        } else if (redirectTo === 'FaceSearch') {
+            navigation.navigate('BottomTabBar', { screen: 'Search', params: { screen: 'FaceSearchScreen' } });
+        } else if (redirectTo === 'BIBSearch') {
+            navigation.navigate('BottomTabBar', { screen: 'Search', params: { screen: 'SearchScreen', params: { openBIB: true } } });
+        } else {
+            navigation.goBack();
+        }
+    };
 
     const bankCards: BankCard[] = [
         { id: 1, bankName: 'Dutch Bangla Bank', cardHolder: 'James Ray', cardNumber: '**** **** **** 4532' },
@@ -123,7 +141,7 @@ const PaymentMethod = ({ navigation }: any) => {
                         <FastImage source={Icons.PaycoinqBancontact} style={Styles.payconiqIcon} resizeMode="contain" />
                         <Text style={Styles.paymentCardText}>Pay with Payconiq Card</Text>
                     </View>
-                    <TouchableOpacity style={Styles.payNowBtnOutline}>
+                    <TouchableOpacity style={Styles.payNowBtnOutline} onPress={handlePayNow}>
                         <Text style={Styles.payNowTextGrey}>Pay Now</Text>
                     </TouchableOpacity>
                 </View>
@@ -151,7 +169,10 @@ const PaymentMethod = ({ navigation }: any) => {
                                 style={[
                                     selectedCard === card.id ? Styles.payNowBtn : Styles.payNowBtnOutline
                                 ]}
-                                onPress={() => setSelectedCard(card.id)}
+                                onPress={() => {
+                                    setSelectedCard(card.id);
+                                    handlePayNow();
+                                }}
                             >
                                 <Text style={selectedCard === card.id ? Styles.payNowText : Styles.payNowTextGrey}>
                                     Pay Now

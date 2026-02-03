@@ -12,25 +12,27 @@ interface HeaderProps {
     profilePic?: string;
     onPressFeed?: () => void;
     onPressNotification?: () => void;
+    onPressProfile?: () => void;
 }
 
 const Header = ({
     userName,
     profilePic,
     onPressFeed,
-    onPressNotification
+    onPressNotification,
+    onPressProfile
 }: HeaderProps) => {
     const { colors } = useTheme();
     const Styles = createStyles(colors);
 
     return (
         <View style={Styles.header}>
-            <View style={Styles.profilePic}>
+            <TouchableOpacity onPress={onPressProfile} style={Styles.profilePic}>
                 <FastImage
                     source={Images.profilePic}
                     style={Styles.img}
                 />
-            </View>
+            </TouchableOpacity>
             <SizeBox width={10} />
             <View style={Styles.userInfoContainer}>
                 <Text style={Styles.welcomeText}>Welcome,</Text>

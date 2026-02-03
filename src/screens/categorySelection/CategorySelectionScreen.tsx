@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, ScrollView } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, Alert, ActivityIndicator } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Gallery, Camera, Profile2User, ArrowRight, TickCircle } from 'iconsax-react-nativejs';
 import { createStyles } from './CategorySelectionScreenStyles';
 import SizeBox from '../../constants/SizeBox';
 import CustomButton from '../../components/customButton/CustomButton';
 import { useTheme } from '../../context/ThemeContext';
+import { useAuth } from '../../context/AuthContext';
 
 interface CategoryOption {
     id: string;
@@ -20,7 +21,9 @@ const CategorySelectionScreen = ({ navigation }: any) => {
     const { colors } = useTheme();
     const Styles = createStyles(colors);
     const insets = useSafeAreaInsets();
-    const [selectedCategory, setSelectedCategory] = useState('find');
+    const { updateUserProfile } = useAuth();
+    const [selectedCategory, setSelectedCategory] = useState<'find' | 'sell' | 'manage'>('find');
+    const [isLoading, setIsLoading] = useState(false);
 
     const categories: CategoryOption[] = [
         {
@@ -49,8 +52,16 @@ const CategorySelectionScreen = ({ navigation }: any) => {
         },
     ];
 
-    const handleContinue = () => {
-        navigation.navigate('SelectEventScreen', { selectedCategory });
+    const handleContinue = async () => {
+        setIsLoading(true);
+        try {
+            await updateUserProfile({ category: selectedCategory });
+            navigation.navigate('SelectEventScreen', { selectedCategory });
+        } catch (err: any) {
+            Alert.alert('Error', 'Failed to save category. Please try again.');
+        } finally {
+            setIsLoading(false);
+        }
     };
 
     const handleGuestLogin = () => {
@@ -86,7 +97,7 @@ const CategorySelectionScreen = ({ navigation }: any) => {
                                     isSelected && Styles.optionCardSelected,
                                 ]}
                                 activeOpacity={0.7}
-                                onPress={() => setSelectedCategory(category.id)}
+                                onPress={() => setSelectedCategory(category.id as 'find' | 'sell' | 'manage')}
                             >
                                 <View style={Styles.optionContent}>
                                     <View style={Styles.optionHeader}>
@@ -127,7 +138,11 @@ const CategorySelectionScreen = ({ navigation }: any) => {
                 >
                     <Text style={Styles.guestButtonText}>Login as a guest</Text>
                 </TouchableOpacity>
-                <CustomButton title="Continue" onPress={handleContinue} />
+{isLoading ? (
+                    <ActivityIndicator size="large" color={colors.primaryColor} />
+                ) : (
+                    <CustomButton title="Continue" onPress={handleContinue} />
+                )}
             </View>
         </View>
     );

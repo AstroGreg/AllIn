@@ -1,4 +1,4 @@
-import { View, Text, TouchableOpacity, ScrollView, TextInput } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, TextInput, Alert, ActivityIndicator } from 'react-native';
 import React, { useState } from 'react';
 import SizeBox from '../../constants/SizeBox';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -7,11 +7,34 @@ import Images from '../../constants/Images';
 import Colors from '../../constants/Colors';
 import Styles from './CreatePhotographerProfileStyles';
 import { ArrowRight, User, Global } from 'iconsax-react-nativejs';
+import { useAuth } from '../../context/AuthContext';
 
 const CreatePhotographerProfileScreen = ({ navigation }: any) => {
     const insets = useSafeAreaInsets();
+    const { updateUserProfile } = useAuth();
     const [photographerName, setPhotographerName] = useState('');
     const [website, setWebsite] = useState('');
+    const [isLoading, setIsLoading] = useState(false);
+
+    const handleContinue = async () => {
+        if (!photographerName) {
+            Alert.alert('Error', 'Please enter your photographer name');
+            return;
+        }
+
+        setIsLoading(true);
+        try {
+            await updateUserProfile({
+                photographerName,
+                photographerWebsite: website,
+            });
+            navigation.navigate('DocumentUploadScreen');
+        } catch (err: any) {
+            Alert.alert('Error', 'Failed to save profile. Please try again.');
+        } finally {
+            setIsLoading(false);
+        }
+    };
 
     return (
         <View style={Styles.mainContainer}>
@@ -66,13 +89,18 @@ const CreatePhotographerProfileScreen = ({ navigation }: any) => {
 
                 {/* Continue Button */}
                 <TouchableOpacity
-                    style={Styles.continueButton}
-                    onPress={() => {
-                        navigation.navigate('DocumentUploadScreen');
-                    }}
+                    style={[Styles.continueButton, isLoading && { opacity: 0.5 }]}
+                    onPress={handleContinue}
+                    disabled={isLoading}
                 >
-                    <Text style={Styles.continueButtonText}>Continue</Text>
-                    <ArrowRight size={18} color={Colors.whiteColor} variant="Linear" />
+                    {isLoading ? (
+                        <ActivityIndicator size="small" color={Colors.whiteColor} />
+                    ) : (
+                        <>
+                            <Text style={Styles.continueButtonText}>Continue</Text>
+                            <ArrowRight size={18} color={Colors.whiteColor} variant="Linear" />
+                        </>
+                    )}
                 </TouchableOpacity>
             </ScrollView>
 

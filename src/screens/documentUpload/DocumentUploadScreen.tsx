@@ -1,5 +1,5 @@
-import React from 'react';
-import { View, Text, TouchableOpacity, ScrollView } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, TouchableOpacity, ScrollView, Alert, ActivityIndicator } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import FastImage from 'react-native-fast-image';
 import { Export, Sms } from 'iconsax-react-nativejs';
@@ -8,18 +8,33 @@ import SizeBox from '../../constants/SizeBox';
 import Images from '../../constants/Images';
 import CustomButton from '../../components/customButton/CustomButton';
 import { useTheme } from '../../context/ThemeContext';
+import { useAuth } from '../../context/AuthContext';
 
 const DocumentUploadScreen = ({ navigation }: any) => {
     const { colors } = useTheme();
     const Styles = createStyles(colors);
     const insets = useSafeAreaInsets();
+    const { updateUserProfile } = useAuth();
+    const [isLoading, setIsLoading] = useState(false);
+    const [documentSelected, setDocumentSelected] = useState(false);
 
-    const handleContinue = () => {
-        navigation.navigate('FaceVerificationScreen');
+    const handleContinue = async () => {
+        setIsLoading(true);
+        try {
+            await updateUserProfile({
+                documentUploaded: documentSelected,
+            });
+            navigation.navigate('FaceVerificationScreen');
+        } catch (err: any) {
+            Alert.alert('Error', 'Failed to save. Please try again.');
+        } finally {
+            setIsLoading(false);
+        }
     };
 
     const handleChooseFile = () => {
         // TODO: Implement file picker
+        setDocumentSelected(true);
     };
 
     return (
@@ -95,7 +110,11 @@ const DocumentUploadScreen = ({ navigation }: any) => {
             </ScrollView>
 
             <View style={[Styles.buttonContainer, { paddingBottom: insets.bottom + 20 }]}>
-                <CustomButton title="Continue" onPress={handleContinue} />
+                {isLoading ? (
+                    <ActivityIndicator size="large" color={colors.primaryColor} />
+                ) : (
+                    <CustomButton title="Continue" onPress={handleContinue} />
+                )}
             </View>
         </View>
     );

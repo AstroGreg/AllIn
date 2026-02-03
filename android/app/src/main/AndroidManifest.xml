@@ -1,6 +1,9 @@
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
 
     <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.CAMERA" />
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
 
     <application
       android:name=".MainApplication"
@@ -22,6 +25,23 @@
             <category android:name="android.intent.category.LAUNCHER" />
         </intent-filter>
       </activity>
+
+      <!-- Auth0 redirect activity for handling callbacks -->
+      <activity
+        android:name="com.auth0.android.provider.RedirectActivity"
+        android:exported="true"
+        tools:node="replace">
+        <intent-filter>
+          <action android:name="android.intent.action.VIEW" />
+          <category android:name="android.intent.category.DEFAULT" />
+          <category android:name="android.intent.category.BROWSABLE" />
+          <data
+            android:host="dev-lfzk0n81zjp0c3x3.us.auth0.com"
+            android:pathPrefix="/android/com.allin/callback"
+            android:scheme="com.allin.auth0" />
+        </intent-filter>
+      </activity>
+
       <meta-data
         android:name="com.google.android.geo.API_KEY"
         android:value="AIzaSyDahak0steSL7_2buJqSrYCBGM7Jl0dgK0"/>

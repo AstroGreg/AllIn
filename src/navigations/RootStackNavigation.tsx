@@ -70,6 +70,9 @@ import DocumentUploadScreen from '../screens/documentUpload/DocumentUploadScreen
 import FaceVerificationScreen from '../screens/faceVerification/FaceVerificationScreen';
 import CreateGroupProfileScreen from '../screens/createGroupProfile/CreateGroupProfileScreen';
 import CreatePhotographerProfileScreen from '../screens/createPhotographerProfile/CreatePhotographerProfileScreen';
+import ContextSearchLoadingScreen from '../screens/search/searchScreens/ContextSearchLoadingScreen';
+import AISearchResultsScreen from '../screens/search/searchScreens/AISearchResultsScreen';
+import ContextSearchScreen from '../screens/search/searchScreens/ContextSearchScreen';
 
 const Stack = createNativeStackNavigator();
 const RootStackNavigation = () => {
@@ -154,6 +157,9 @@ const RootStackNavigation = () => {
             <Stack.Screen name="PhotoDetailScreen" component={PhotoDetailScreen} />
             <Stack.Screen name="VideoPlayingScreen" component={VideoPlayingScreen} />
             <Stack.Screen name="CreateNewPostScreen" component={CreateNewPostScreen} />
+            <Stack.Screen name="ContextSearchScreen" component={ContextSearchScreen} />
+            <Stack.Screen name="ContextSearchLoadingScreen" component={ContextSearchLoadingScreen} />
+            <Stack.Screen name="AISearchResultsScreen" component={AISearchResultsScreen} />
 
         </Stack.Navigator>
     )

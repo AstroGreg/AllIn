@@ -9,7 +9,7 @@ import Images from '../../constants/Images'
 import Icons from '../../constants/Icons'
 import { useTheme } from '../../context/ThemeContext'
 import LinearGradient from 'react-native-linear-gradient'
-import { Wallet, UserAdd, ArrowRight } from 'iconsax-react-nativejs'
+import { UserAdd, ArrowRight } from 'iconsax-react-nativejs'
 
 const HomeScreen = ({ navigation }: any) => {
     const insets = useSafeAreaInsets();
@@ -38,13 +38,14 @@ const HomeScreen = ({ navigation }: any) => {
                 userName={"David Malan"}
                 onPressFeed={() => navigation.navigate('HubScreen')}
                 onPressNotification={() => navigation.navigate('NotificationsScreen')}
+                onPressProfile={() => navigation.navigate('BottomTabBar', { screen: 'Profile' })}
             />
 
             <ScrollView showsVerticalScrollIndicator={false} nestedScrollEnabled={true} contentContainerStyle={Styles.scrollContent}>
                 <SizeBox height={24} />
 
-                {/* Wallet Balance Card */}
-                <View style={Styles.walletCard}>
+                {/* Wallet Balance Card - Commented out for now */}
+                {/* <View style={Styles.walletCard}>
                     <View style={Styles.walletCardContent}>
                         <View style={Styles.walletLeftSection}>
                             <View style={Styles.walletIconContainer}>
@@ -58,11 +59,11 @@ const HomeScreen = ({ navigation }: any) => {
                                 </View>
                             </View>
                         </View>
-                        <TouchableOpacity style={Styles.rechargeButton}>
+                        <TouchableOpacity style={Styles.rechargeButton} onPress={() => navigation.navigate('PaymentMethod')}>
                             <Text style={Styles.rechargeButtonText}>Recharge</Text>
                         </TouchableOpacity>
                     </View>
-                </View>
+                </View> */}
 
                 {/* AI Smart Search Card */}
                 <View style={Styles.aiSearchCard}>
@@ -91,7 +92,7 @@ const HomeScreen = ({ navigation }: any) => {
                     <View style={Styles.quickActionsGrid}>
                         {/* First Row - Add myself & My downloads */}
                         <View style={Styles.quickActionsRow}>
-                            <TouchableOpacity style={Styles.quickActionCard} onPress={() => navigation.navigate('SelectEventInterestScreen')}>
+                            <TouchableOpacity style={Styles.quickActionCard} onPress={() => navigation.navigate('AvailableEventsScreen')}>
                                 <View style={Styles.quickActionContent}>
                                     <View style={Styles.quickActionIconContainer}>
                                         <UserAdd size={20} color={colors.primaryColor} variant="Linear" />
@@ -115,36 +116,50 @@ const HomeScreen = ({ navigation }: any) => {
                             </TouchableOpacity>
                         </View>
 
-                        {/* Second Row - Context Search & Face Search */}
+                        {/* Second Row - Context Search, Face Search & BIB Search */}
                         <View style={Styles.quickActionsRow}>
-                            <LinearGradient
-                                colors={['#155DFC', '#7F22FE']}
-                                start={{ x: 0, y: 0 }}
-                                end={{ x: 1, y: 0 }}
-                                style={Styles.gradientButton}
+                            <TouchableOpacity
+                                style={{ flex: 1 }}
+                                activeOpacity={0.8}
+                                onPress={() => navigation.navigate('Subscription', { redirectTo: 'ContextSearch' })}
                             >
-                                <TouchableOpacity
-                                    style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flex: 1, justifyContent: 'center' }}
-                                    onPress={() => navigation.navigate('Search', { screen: 'AISearchOptions', params: { openContext: true } })}
+                                <LinearGradient
+                                    colors={['#155DFC', '#7F22FE']}
+                                    start={{ x: 0, y: 0 }}
+                                    end={{ x: 1, y: 0 }}
+                                    style={Styles.gradientButtonSmall}
                                 >
-                                    <Text style={Styles.gradientButtonText}>Context Search</Text>
-                                    <ArrowRight size={24} color="#FFFFFF" variant="Linear" />
-                                </TouchableOpacity>
-                            </LinearGradient>
-                            <LinearGradient
-                                colors={['#155DFC', '#7F22FE']}
-                                start={{ x: 0, y: 0 }}
-                                end={{ x: 1, y: 0 }}
-                                style={Styles.gradientButton}
+                                    <Text style={Styles.gradientButtonTextSmall}>Context Search</Text>
+                                </LinearGradient>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                                style={{ flex: 1 }}
+                                activeOpacity={0.8}
+                                onPress={() => navigation.navigate('Subscription', { redirectTo: 'FaceSearch' })}
                             >
-                                <TouchableOpacity
-                                    style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flex: 1, justifyContent: 'center' }}
-                                    onPress={() => navigation.navigate('Search', { screen: 'SearchScreen', params: { openBIB: true } })}
+                                <LinearGradient
+                                    colors={['#155DFC', '#7F22FE']}
+                                    start={{ x: 0, y: 0 }}
+                                    end={{ x: 1, y: 0 }}
+                                    style={Styles.gradientButtonSmall}
                                 >
-                                    <Text style={Styles.gradientButtonText}>BIB Search</Text>
-                                    <ArrowRight size={24} color="#FFFFFF" variant="Linear" />
-                                </TouchableOpacity>
-                            </LinearGradient>
+                                    <Text style={Styles.gradientButtonTextSmall}>Face Search</Text>
+                                </LinearGradient>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                                style={{ flex: 1 }}
+                                activeOpacity={0.8}
+                                onPress={() => navigation.navigate('Subscription', { redirectTo: 'BIBSearch' })}
+                            >
+                                <LinearGradient
+                                    colors={['#155DFC', '#7F22FE']}
+                                    start={{ x: 0, y: 0 }}
+                                    end={{ x: 1, y: 0 }}
+                                    style={Styles.gradientButtonSmall}
+                                >
+                                    <Text style={Styles.gradientButtonTextSmall}>BIB Search</Text>
+                                </LinearGradient>
+                            </TouchableOpacity>
                         </View>
                     </View>
                 </View>
@@ -177,6 +192,12 @@ const HomeScreen = ({ navigation }: any) => {
                             timeAgo: "3 Days Ago"
                         }}
                         onFollow={() => {}}
+                        onPressUser={() => navigation.navigate('ViewUserProfileScreen', {
+                            user: {
+                                name: "Mia Moon",
+                                avatar: Images.profilePic,
+                            }
+                        })}
                         onViewBlog={() => navigation.navigate('ViewUserBlogDetailsScreen', {
                             post: {
                                 title: 'Belgium championships 2025',

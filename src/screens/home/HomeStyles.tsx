@@ -250,6 +250,102 @@ export const createStyles = (colors: ThemeColors) => StyleSheet.create({
         ...Fonts.medium14,
         color: colors.pureWhite,
     },
+    gradientButtonSmall: {
+        height: 54,
+        borderRadius: 13,
+        alignItems: 'center',
+        justifyContent: 'center',
+        shadowColor: '#C4B4FF',
+        shadowOffset: { width: 0, height: 10 },
+        shadowOpacity: 0.5,
+        shadowRadius: 15,
+        elevation: 8,
+    },
+    gradientButtonTextSmall: {
+        ...Fonts.medium14,
+        fontSize: 12,
+        color: colors.pureWhite,
+    },
+
+    // Context Search Modal Styles
+    modalOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0, 0, 0, 0.5)',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    modalContainer: {
+        width: '85%',
+        backgroundColor: colors.modalBackground,
+        borderRadius: 20,
+        padding: 24,
+    },
+    modalTitle: {
+        fontFamily: 'Inter-Bold',
+        fontSize: 18,
+        fontWeight: '700',
+        color: colors.mainTextColor,
+        textAlign: 'center',
+    },
+    contextInputContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: colors.secondaryColor,
+        borderWidth: 1,
+        borderColor: colors.lightGrayColor,
+        borderRadius: 10,
+        paddingHorizontal: 16,
+        height: 50,
+    },
+    contextInput: {
+        flex: 1,
+        ...Fonts.regular14,
+        color: colors.mainTextColor,
+    },
+    modalButton: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        height: 50,
+        borderRadius: 10,
+        gap: 8,
+    },
+    modalButtonText: {
+        ...Fonts.medium16,
+        color: '#FFFFFF',
+    },
+    filterOption: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        backgroundColor: colors.secondaryColor,
+        borderWidth: 1,
+        borderColor: colors.lightGrayColor,
+        borderRadius: 10,
+        paddingHorizontal: 16,
+        height: 54,
+        marginBottom: 12,
+    },
+    filterLabelContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
+    filterLabel: {
+        ...Fonts.regular16,
+        color: colors.mainTextColor,
+    },
+    checkbox: {
+        width: 24,
+        height: 24,
+        borderRadius: 6,
+        borderWidth: 1,
+        borderColor: colors.lightGrayColor,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    checkboxChecked: {
+        borderWidth: 0,
+    },
 
     // New For You Section
     newForYouHeader: {

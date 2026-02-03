@@ -1,4 +1,4 @@
-import { View, Text, TouchableOpacity, ScrollView, TextInput } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, TextInput, Alert, ActivityIndicator } from 'react-native';
 import React, { useState } from 'react';
 import SizeBox from '../../constants/SizeBox';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -8,13 +8,38 @@ import Colors from '../../constants/Colors';
 import Styles from './CreateGroupProfileStyles';
 import { ArrowRight, User, People, Sms, Card, Add } from 'iconsax-react-nativejs';
 import Icons from '../../constants/Icons';
+import { useAuth } from '../../context/AuthContext';
 
 const CreateGroupProfileScreen = ({ navigation }: any) => {
     const insets = useSafeAreaInsets();
+    const { updateUserProfile } = useAuth();
     const [groupName, setGroupName] = useState('');
     const [coachName, setCoachName] = useState('');
     const [coachEmail, setCoachEmail] = useState('');
     const [selectedAthlete, setSelectedAthlete] = useState('');
+    const [isLoading, setIsLoading] = useState(false);
+
+    const handleContinue = async () => {
+        if (!groupName || !coachName || !coachEmail) {
+            Alert.alert('Error', 'Please fill in all required fields');
+            return;
+        }
+
+        setIsLoading(true);
+        try {
+            await updateUserProfile({
+                groupName,
+                coachName,
+                coachEmail,
+                athletes: selectedAthlete ? [selectedAthlete] : [],
+            });
+            navigation.navigate('DocumentUploadScreen');
+        } catch (err: any) {
+            Alert.alert('Error', 'Failed to save profile. Please try again.');
+        } finally {
+            setIsLoading(false);
+        }
+    };
 
     return (
         <View style={Styles.mainContainer}>
@@ -102,13 +127,18 @@ const CreateGroupProfileScreen = ({ navigation }: any) => {
 
                 {/* Continue Button */}
                 <TouchableOpacity
-                    style={Styles.continueButton}
-                    onPress={() => {
-                        navigation.navigate('DocumentUploadScreen');
-                    }}
+                    style={[Styles.continueButton, isLoading && { opacity: 0.5 }]}
+                    onPress={handleContinue}
+                    disabled={isLoading}
                 >
-                    <Text style={Styles.continueButtonText}>Continue</Text>
-                    <ArrowRight size={18} color={Colors.whiteColor} variant="Linear" />
+                    {isLoading ? (
+                        <ActivityIndicator size="small" color={Colors.whiteColor} />
+                    ) : (
+                        <>
+                            <Text style={Styles.continueButtonText}>Continue</Text>
+                            <ArrowRight size={18} color={Colors.whiteColor} variant="Linear" />
+                        </>
+                    )}
                 </TouchableOpacity>
             </ScrollView>
 
