@@ -180,6 +180,10 @@ const ProfileStackNavigator = () => {
             <ProfileStack.Screen name="GroupEventsViewAllScreen" component={GroupEventsViewAllScreen} />
             <ProfileStack.Screen name="CongratulationsScreen" component={CongratulationsScreen} />
             <ProfileStack.Screen name="AthleteProfileScreen" component={AthleteProfileScreen} />
+            <ProfileStack.Screen name="ChangePassword" component={ChangePassword} />
+            <ProfileStack.Screen name="ChangeUsername" component={ChangeUsername} />
+            <ProfileStack.Screen name="ChangeNationality" component={ChangeNationality} />
+            <ProfileStack.Screen name="DateOfBirth" component={DateOfBirth} />
         </ProfileStack.Navigator>
     );
 };

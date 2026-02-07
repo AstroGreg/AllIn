@@ -1,17 +1,38 @@
-import { View, Text, TouchableOpacity, ScrollView, TextInput } from 'react-native'
+import { View, Text, TouchableOpacity, ScrollView, TextInput, Alert, ActivityIndicator } from 'react-native'
 import React, { useState } from 'react'
 import { createStyles } from '../MenuStyles'
 import SizeBox from '../../../constants/SizeBox'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useTheme } from '../../../context/ThemeContext'
+import { useAuth } from '../../../context/AuthContext'
 import { ArrowLeft2, Notification, Card, ArrowRight2 } from 'iconsax-react-nativejs'
 
 const ChangeNationality = ({ navigation }: any) => {
     const insets = useSafeAreaInsets();
     const { colors } = useTheme();
     const Styles = createStyles(colors);
-    const [currentNationality, setCurrentNationality] = useState('');
+    const { userProfile, updateUserProfile } = useAuth();
     const [newNationality, setNewNationality] = useState('');
+    const [isLoading, setIsLoading] = useState(false);
+
+    const handleSave = async () => {
+        if (!newNationality.trim()) {
+            Alert.alert('Error', 'Please enter a nationality.');
+            return;
+        }
+
+        setIsLoading(true);
+        try {
+            await updateUserProfile({ location: newNationality.trim() });
+            Alert.alert('Success', 'Nationality updated successfully.', [
+                { text: 'OK', onPress: () => navigation.goBack() },
+            ]);
+        } catch (err: any) {
+            Alert.alert('Error', 'Failed to update nationality.');
+        } finally {
+            setIsLoading(false);
+        }
+    };
 
     return (
         <View style={Styles.mainContainer}>
@@ -41,13 +62,9 @@ const ChangeNationality = ({ navigation }: any) => {
                     <View style={Styles.addCardInputContainer}>
                         <Card size={16} color={colors.primaryColor} variant="Linear" />
                         <SizeBox width={10} />
-                        <TextInput
-                            style={Styles.addCardInput}
-                            placeholder="Enter Nationality"
-                            placeholderTextColor={colors.grayColor}
-                            value={currentNationality}
-                            onChangeText={setCurrentNationality}
-                        />
+                        <Text style={[Styles.addCardInput, { color: colors.grayColor }]}>
+                            {userProfile?.location || 'Not set'}
+                        </Text>
                     </View>
                 </View>
 
@@ -62,7 +79,7 @@ const ChangeNationality = ({ navigation }: any) => {
                         <SizeBox width={10} />
                         <TextInput
                             style={Styles.addCardInput}
-                            placeholder="Enter Nationality"
+                            placeholder="Enter nationality"
                             placeholderTextColor={colors.grayColor}
                             value={newNationality}
                             onChangeText={setNewNationality}
@@ -72,10 +89,20 @@ const ChangeNationality = ({ navigation }: any) => {
 
                 <SizeBox height={30} />
 
-                {/* Continue Button */}
-                <TouchableOpacity style={Styles.continueBtn} onPress={() => navigation.goBack()}>
-                    <Text style={Styles.continueBtnText}>Continue</Text>
-                    <ArrowRight2 size={18} color={colors.pureWhite} variant="Linear" />
+                {/* Save Button */}
+                <TouchableOpacity
+                    style={Styles.continueBtn}
+                    onPress={handleSave}
+                    disabled={isLoading}
+                >
+                    {isLoading ? (
+                        <ActivityIndicator size="small" color={colors.pureWhite} />
+                    ) : (
+                        <>
+                            <Text style={Styles.continueBtnText}>Save</Text>
+                            <ArrowRight2 size={18} color={colors.pureWhite} variant="Linear" />
+                        </>
+                    )}
                 </TouchableOpacity>
 
                 <SizeBox height={insets.bottom > 0 ? insets.bottom + 20 : 40} />

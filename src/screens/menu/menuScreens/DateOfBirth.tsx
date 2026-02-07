@@ -1,9 +1,10 @@
-import { View, Text, TouchableOpacity, ScrollView } from 'react-native'
+import { View, Text, TouchableOpacity, ScrollView, Alert, ActivityIndicator } from 'react-native'
 import React, { useState } from 'react'
 import { createStyles } from '../MenuStyles'
 import SizeBox from '../../../constants/SizeBox'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useTheme } from '../../../context/ThemeContext'
+import { useAuth } from '../../../context/AuthContext'
 import { ArrowLeft2, Notification, Calendar, ArrowDown2, ArrowRight2 } from 'iconsax-react-nativejs'
 import DatePicker from 'react-native-date-picker'
 
@@ -11,10 +12,10 @@ const DateOfBirth = ({ navigation }: any) => {
     const insets = useSafeAreaInsets();
     const { colors } = useTheme();
     const Styles = createStyles(colors);
-    const [currentDate, setCurrentDate] = useState<Date | null>(null);
+    const { userProfile, updateUserProfile } = useAuth();
     const [newDate, setNewDate] = useState<Date | null>(null);
-    const [showCurrentDatePicker, setShowCurrentDatePicker] = useState(false);
-    const [showNewDatePicker, setShowNewDatePicker] = useState(false);
+    const [showDatePicker, setShowDatePicker] = useState(false);
+    const [isLoading, setIsLoading] = useState(false);
 
     const formatDate = (date: Date | null) => {
         if (!date) return 'Select Date';
@@ -25,7 +26,27 @@ const DateOfBirth = ({ navigation }: any) => {
         });
     };
 
-    const [activePicker, setActivePicker] = useState<'current' | 'new' | null>(null);
+    const handleSave = async () => {
+        if (!newDate) {
+            Alert.alert('Error', 'Please select a new date of birth.');
+            return;
+        }
+
+        setIsLoading(true);
+        try {
+            const day = String(newDate.getDate()).padStart(2, '0');
+            const month = String(newDate.getMonth() + 1).padStart(2, '0');
+            const year = newDate.getFullYear();
+            await updateUserProfile({ birthDate: `${day}/${month}/${year}` });
+            Alert.alert('Success', 'Date of birth updated successfully.', [
+                { text: 'OK', onPress: () => navigation.goBack() },
+            ]);
+        } catch (err: any) {
+            Alert.alert('Error', 'Failed to update date of birth.');
+        } finally {
+            setIsLoading(false);
+        }
+    };
 
     return (
         <View style={Styles.mainContainer}>
@@ -52,17 +73,13 @@ const DateOfBirth = ({ navigation }: any) => {
                 <View style={Styles.addCardInputGroup}>
                     <Text style={Styles.addCardLabel}>Current Date of Birth</Text>
                     <SizeBox height={8} />
-                    <TouchableOpacity
-                        style={Styles.addCardInputContainer}
-                        onPress={() => { setShowCurrentDatePicker(true); setActivePicker('current'); }}
-                    >
+                    <View style={Styles.addCardInputContainer}>
                         <Calendar size={16} color={colors.primaryColor} variant="Linear" />
                         <SizeBox width={10} />
-                        <Text style={[Styles.addCardPlaceholder, currentDate && Styles.addCardInputText]}>
-                            {formatDate(currentDate)}
+                        <Text style={[Styles.addCardInput, { color: colors.grayColor }]}>
+                            {userProfile?.birthDate || 'Not set'}
                         </Text>
-                        <ArrowDown2 size={20} color={colors.grayColor} variant="Linear" />
-                    </TouchableOpacity>
+                    </View>
                 </View>
 
                 <SizeBox height={30} />
@@ -73,7 +90,7 @@ const DateOfBirth = ({ navigation }: any) => {
                     <SizeBox height={8} />
                     <TouchableOpacity
                         style={Styles.addCardInputContainer}
-                        onPress={() => { setShowNewDatePicker(true); setActivePicker('new'); }}
+                        onPress={() => setShowDatePicker(true)}
                     >
                         <Calendar size={16} color={colors.primaryColor} variant="Linear" />
                         <SizeBox width={10} />
@@ -86,10 +103,20 @@ const DateOfBirth = ({ navigation }: any) => {
 
                 <SizeBox height={30} />
 
-                {/* Continue Button */}
-                <TouchableOpacity style={Styles.continueBtn} onPress={() => navigation.goBack()}>
-                    <Text style={Styles.continueBtnText}>Continue</Text>
-                    <ArrowRight2 size={18} color={colors.pureWhite} variant="Linear" />
+                {/* Save Button */}
+                <TouchableOpacity
+                    style={Styles.continueBtn}
+                    onPress={handleSave}
+                    disabled={isLoading}
+                >
+                    {isLoading ? (
+                        <ActivityIndicator size="small" color={colors.pureWhite} />
+                    ) : (
+                        <>
+                            <Text style={Styles.continueBtnText}>Save</Text>
+                            <ArrowRight2 size={18} color={colors.pureWhite} variant="Linear" />
+                        </>
+                    )}
                 </TouchableOpacity>
 
                 <SizeBox height={insets.bottom > 0 ? insets.bottom + 20 : 40} />
@@ -97,40 +124,17 @@ const DateOfBirth = ({ navigation }: any) => {
 
             <DatePicker
                 modal
-                open={activePicker === 'current'}
-                date={currentDate || new Date(2000, 0, 1)}
-                mode="date"
-                maximumDate={new Date()}
-                minimumDate={new Date(1920, 0, 1)}
-                title="Select current date of birth"
-                onConfirm={(date) => {
-                    setActivePicker(null);
-                    setShowCurrentDatePicker(false);
-                    setCurrentDate(date);
-                }}
-                onCancel={() => {
-                    setActivePicker(null);
-                    setShowCurrentDatePicker(false);
-                }}
-            />
-
-            <DatePicker
-                modal
-                open={activePicker === 'new'}
+                open={showDatePicker}
                 date={newDate || new Date(2000, 0, 1)}
                 mode="date"
                 maximumDate={new Date()}
                 minimumDate={new Date(1920, 0, 1)}
                 title="Select new date of birth"
                 onConfirm={(date) => {
-                    setActivePicker(null);
-                    setShowNewDatePicker(false);
+                    setShowDatePicker(false);
                     setNewDate(date);
                 }}
-                onCancel={() => {
-                    setActivePicker(null);
-                    setShowNewDatePicker(false);
-                }}
+                onCancel={() => setShowDatePicker(false)}
             />
         </View>
     )
