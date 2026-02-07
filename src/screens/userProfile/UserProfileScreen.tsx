@@ -187,7 +187,7 @@ const UserProfileScreen = ({ navigation }: any) => {
                 {/* Profile Card */}
                 <View style={Styles.profileCard}>
                     {/* Edit Profile Button */}
-                    <TouchableOpacity style={Styles.editProfileButton}>
+                    <TouchableOpacity style={Styles.editProfileButton} onPress={() => navigation.navigate('ProfileSettings')}>
                         <Text style={Styles.editProfileButtonText}>Edit</Text>
                         <Edit2 size={18} color="#9B9F9F" variant="Linear" />
                     </TouchableOpacity>
