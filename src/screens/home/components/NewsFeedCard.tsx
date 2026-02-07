@@ -15,6 +15,7 @@ interface NewsFeedCardProps {
     videoUri?: string;
     hasBorder?: boolean;
     onPress?: () => void;
+    onImagePress?: (index: number) => void;
     user?: {
         name: string;
         avatar: any;
@@ -33,6 +34,7 @@ const NewsFeedCard = ({
     videoUri,
     hasBorder = true,
     onPress,
+    onImagePress,
     user,
     description,
     onFollow,
@@ -69,10 +71,20 @@ const NewsFeedCard = ({
         setIsPlaying(!isPlaying);
     };
 
+    const handleImagePress = (index: number) => {
+        if (isVideo) {
+            handlePlayPause();
+        } else if (onImagePress) {
+            onImagePress(index);
+        } else if (onPress) {
+            onPress();
+        }
+    };
+
     const renderImage = ({ item, index }: { item: any; index: number }) => (
         <TouchableOpacity
             activeOpacity={0.9}
-            onPress={isVideo ? handlePlayPause : onPress}
+            onPress={() => handleImagePress(index)}
             style={[Styles.newsFeedImageContainer, { width: imageWidth }]}
         >
             {isVideo && videoUri && isPlaying ? (

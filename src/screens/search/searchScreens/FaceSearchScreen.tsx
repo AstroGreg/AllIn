@@ -126,7 +126,7 @@ const FaceSearchScreen = ({ navigation }: any) => {
                     <Text style={styles.searchLabel}>Search Face:</Text>
                     <TouchableOpacity
                         style={styles.addFaceButton}
-                        onPress={() => navigation.navigate('FrontFaceCaptureScreen')}
+                        onPress={() => navigation.navigate('SearchFaceCaptureScreen')}
                     >
                         <Text style={styles.addFaceButtonText}>Add Face</Text>
                         <Add size={16} color="#FFFFFF" variant="Linear" />

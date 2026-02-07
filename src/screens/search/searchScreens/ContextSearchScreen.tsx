@@ -1,16 +1,18 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { View, Text, TouchableOpacity, TextInput, ScrollView } from 'react-native';
+import { View, Text, TouchableOpacity, TextInput, ScrollView, Modal } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import LinearGradient from 'react-native-linear-gradient';
-import { SearchNormal1, TickSquare, Category, ArrowRight, ArrowLeft } from 'iconsax-react-nativejs';
+import { SearchNormal1, ArrowRight, ArrowLeft, CloseCircle } from 'iconsax-react-nativejs';
 import { useTheme } from '../../../context/ThemeContext';
 import SizeBox from '../../../constants/SizeBox';
 import { createStyles } from './ContextSearchScreenStyles';
 
-interface FilterOption {
-    id: string;
+const FILTERS = ['Location', 'Athlete', 'Competition', 'Photographer'];
+
+interface FilterChip {
+    id: number;
     label: string;
-    checked: boolean;
+    value: string;
 }
 
 const ContextSearchScreen = ({ navigation }: any) => {
@@ -18,47 +20,77 @@ const ContextSearchScreen = ({ navigation }: any) => {
     const { colors } = useTheme();
     const Styles = createStyles(colors);
     const contextInputRef = useRef<TextInput>(null);
+    const modalInputRef = useRef<TextInput>(null);
 
-    const [step, setStep] = useState<'context' | 'filters'>('context');
     const [contextSearchText, setContextSearchText] = useState('');
-    const [filters, setFilters] = useState<FilterOption[]>([
-        { id: 'competition', label: 'Competition', checked: true },
-        { id: 'athlete', label: 'Athlete', checked: true },
-        { id: 'location', label: 'Location', checked: true },
-        { id: 'photographer', label: 'Photographer', checked: true },
-    ]);
+    const [activeChips, setActiveChips] = useState<FilterChip[]>([]);
+    const [showFilterModal, setShowFilterModal] = useState(false);
+    const [modalFilterType, setModalFilterType] = useState('');
+    const [modalInputValue, setModalInputValue] = useState('');
 
     useEffect(() => {
         setTimeout(() => contextInputRef.current?.focus(), 300);
     }, []);
 
-    const handleNext = () => {
-        if (contextSearchText.trim()) {
-            setStep('filters');
-        }
+    const handleFilterPress = (filter: string) => {
+        setModalFilterType(filter);
+        setModalInputValue('');
+        setShowFilterModal(true);
+        setTimeout(() => modalInputRef.current?.focus(), 100);
     };
 
-    const handleFilterToggle = (filterId: string) => {
-        setFilters(prev => prev.map(filter =>
-            filter.id === filterId
-                ? { ...filter, checked: !filter.checked }
-                : filter
-        ));
+    const handleModalSubmit = () => {
+        if (modalInputValue.trim()) {
+            const newChip: FilterChip = {
+                id: Date.now(),
+                label: modalFilterType,
+                value: modalInputValue.trim()
+            };
+            setActiveChips(prev => [...prev, newChip]);
+        }
+        setShowFilterModal(false);
+        setModalInputValue('');
+    };
+
+    const handleModalClose = () => {
+        setShowFilterModal(false);
+        setModalInputValue('');
+    };
+
+    const removeChip = (chipId: number) => {
+        setActiveChips(prev => prev.filter(chip => chip.id !== chipId));
     };
 
     const handleStartSearch = () => {
-        const selectedFilters = filters.filter(f => f.checked).map(f => f.id);
-        navigation.navigate('ContextSearchLoadingScreen', {
-            contextSearch: contextSearchText.trim(),
-            filters: selectedFilters
-        });
+        if (contextSearchText.trim()) {
+            const filters = activeChips.reduce((acc, chip) => {
+                acc[chip.label.toLowerCase()] = chip.value;
+                return acc;
+            }, {} as Record<string, string>);
+
+            navigation.navigate('ContextSearchLoadingScreen', {
+                contextSearch: contextSearchText.trim(),
+                filters: filters
+            });
+        }
     };
 
     const handleBack = () => {
-        if (step === 'filters') {
-            setStep('context');
-        } else {
-            navigation.goBack();
+        navigation.goBack();
+    };
+
+    const getPlaceholderText = (filterType: string) => {
+        switch (filterType) {
+            case 'Location':
+                return 'Enter location (e.g., Brussels, Gent)';
+            case 'Athlete':
+                return 'Enter athlete name';
+            case 'Competition':
+                return 'Enter competition name';
+            case 'Photographer':
+                return 'Enter photographer name';
+            default:
+                return `Enter ${filterType}`;
         }
     };
 
@@ -76,91 +108,149 @@ const ContextSearchScreen = ({ navigation }: any) => {
             </View>
 
             <ScrollView style={Styles.content} showsVerticalScrollIndicator={false}>
-                {step === 'context' ? (
-                    <>
-                        <Text style={Styles.title}>Describe Context</Text>
-                        <Text style={Styles.subtitle}>
-                            Enter keywords or describe what you're looking for
-                        </Text>
-                        <SizeBox height={24} />
+                <Text style={Styles.title}>Describe Context</Text>
+                <Text style={Styles.subtitle}>
+                    Enter keywords or describe what you're looking for
+                </Text>
+                <SizeBox height={24} />
 
-                        <View style={Styles.inputContainer}>
-                            <SearchNormal1 size={20} color={colors.grayColor} variant="Linear" />
-                            <SizeBox width={10} />
-                            <TextInput
-                                ref={contextInputRef}
-                                style={Styles.input}
-                                placeholder="For example podium, finish line, medal..."
-                                placeholderTextColor={colors.grayColor}
-                                value={contextSearchText}
-                                onChangeText={setContextSearchText}
-                                onSubmitEditing={handleNext}
-                                returnKeyType="next"
-                                multiline={false}
-                            />
-                        </View>
+                {/* Context Search Input */}
+                <View style={Styles.inputContainer}>
+                    <SearchNormal1 size={20} color={colors.grayColor} variant="Linear" />
+                    <SizeBox width={10} />
+                    <TextInput
+                        ref={contextInputRef}
+                        style={Styles.input}
+                        placeholder="For example podium, finish line, medal..."
+                        placeholderTextColor={colors.grayColor}
+                        value={contextSearchText}
+                        onChangeText={setContextSearchText}
+                        returnKeyType="next"
+                        multiline={false}
+                    />
+                </View>
 
-                        <SizeBox height={40} />
+                <SizeBox height={24} />
 
-                        <TouchableOpacity
-                            onPress={handleNext}
-                            disabled={!contextSearchText.trim()}
-                            style={{ opacity: contextSearchText.trim() ? 1 : 0.5 }}
-                        >
-                            <LinearGradient
-                                colors={['#3B82F6', '#8B5CF6']}
-                                start={{ x: 0, y: 0 }}
-                                end={{ x: 1, y: 0 }}
-                                style={Styles.button}
-                            >
-                                <Text style={Styles.buttonText}>Next</Text>
-                                <ArrowRight size={20} color="#FFFFFF" variant="Linear" />
-                            </LinearGradient>
-                        </TouchableOpacity>
-                    </>
-                ) : (
-                    <>
-                        <Text style={Styles.title}>Specify Filters</Text>
-                        <Text style={Styles.subtitle}>
-                            Select the categories you want to search in
-                        </Text>
-                        <SizeBox height={24} />
+                {/* Filter Tabs */}
+                <Text style={Styles.filterSectionTitle}>Add Filters (Optional)</Text>
+                <SizeBox height={12} />
 
-                        {filters.map((filter) => (
+                <ScrollView
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                    contentContainerStyle={Styles.filterTabsContainer}
+                >
+                    {FILTERS.map((filter) => {
+                        const hasValue = activeChips.some(chip => chip.label === filter);
+                        return (
                             <TouchableOpacity
-                                key={filter.id}
-                                style={Styles.filterOption}
-                                onPress={() => handleFilterToggle(filter.id)}
+                                key={filter}
+                                style={[Styles.filterTab, hasValue && Styles.filterTabActive]}
+                                onPress={() => handleFilterPress(filter)}
                             >
-                                <View style={Styles.filterLabelContainer}>
-                                    <Category size={20} color={colors.grayColor} variant="Linear" />
-                                    <SizeBox width={12} />
-                                    <Text style={Styles.filterLabel}>{filter.label}</Text>
-                                </View>
-                                <View style={[Styles.checkbox, filter.checked && Styles.checkboxChecked]}>
-                                    {filter.checked && (
-                                        <TickSquare size={24} color={colors.primaryColor} variant="Bold" />
-                                    )}
-                                </View>
+                                <Text style={[Styles.filterTabText, hasValue && Styles.filterTabTextActive]}>
+                                    {filter}
+                                </Text>
                             </TouchableOpacity>
-                        ))}
+                        );
+                    })}
+                </ScrollView>
 
-                        <SizeBox height={40} />
-
-                        <TouchableOpacity onPress={handleStartSearch}>
-                            <LinearGradient
-                                colors={['#3B82F6', '#8B5CF6']}
-                                start={{ x: 0, y: 0 }}
-                                end={{ x: 1, y: 0 }}
-                                style={Styles.button}
-                            >
-                                <Text style={Styles.buttonText}>Start Search</Text>
-                                <ArrowRight size={20} color="#FFFFFF" variant="Linear" />
-                            </LinearGradient>
-                        </TouchableOpacity>
+                {/* Active Filter Chips */}
+                {activeChips.length > 0 && (
+                    <>
+                        <SizeBox height={16} />
+                        <View style={Styles.activeChipsContainer}>
+                            {activeChips.map((chip) => (
+                                <TouchableOpacity
+                                    key={chip.id}
+                                    style={Styles.activeChip}
+                                    onPress={() => removeChip(chip.id)}
+                                >
+                                    <Text style={Styles.activeChipText}>
+                                        {chip.label}: {chip.value}
+                                    </Text>
+                                    <CloseCircle size={16} color="#FFFFFF" variant="Bold" />
+                                </TouchableOpacity>
+                            ))}
+                        </View>
                     </>
                 )}
+
+                <SizeBox height={40} />
+
+                {/* Start Search Button */}
+                <TouchableOpacity
+                    onPress={handleStartSearch}
+                    disabled={!contextSearchText.trim()}
+                    style={{ opacity: contextSearchText.trim() ? 1 : 0.5 }}
+                >
+                    <LinearGradient
+                        colors={['#3B82F6', '#8B5CF6']}
+                        start={{ x: 0, y: 0 }}
+                        end={{ x: 1, y: 0 }}
+                        style={Styles.button}
+                    >
+                        <Text style={Styles.buttonText}>Start Search</Text>
+                        <ArrowRight size={20} color="#FFFFFF" variant="Linear" />
+                    </LinearGradient>
+                </TouchableOpacity>
+
+                <SizeBox height={insets.bottom + 20} />
             </ScrollView>
+
+            {/* Filter Input Modal */}
+            <Modal
+                visible={showFilterModal}
+                transparent
+                animationType="fade"
+                onRequestClose={handleModalClose}
+            >
+                <TouchableOpacity
+                    style={Styles.modalOverlay}
+                    activeOpacity={1}
+                    onPress={handleModalClose}
+                >
+                    <View style={Styles.modalContainer}>
+                        <TouchableOpacity activeOpacity={1}>
+                            <Text style={Styles.modalTitle}>{modalFilterType}</Text>
+                            <SizeBox height={16} />
+                            <View style={Styles.modalInputContainer}>
+                                <TextInput
+                                    ref={modalInputRef}
+                                    style={Styles.modalInput}
+                                    placeholder={getPlaceholderText(modalFilterType)}
+                                    placeholderTextColor={colors.grayColor}
+                                    value={modalInputValue}
+                                    onChangeText={setModalInputValue}
+                                    onSubmitEditing={handleModalSubmit}
+                                    returnKeyType="done"
+                                />
+                            </View>
+                            <SizeBox height={20} />
+                            <View style={Styles.modalButtonRow}>
+                                <TouchableOpacity
+                                    style={Styles.modalCancelButton}
+                                    onPress={handleModalClose}
+                                >
+                                    <Text style={Styles.modalCancelText}>Cancel</Text>
+                                </TouchableOpacity>
+                                <TouchableOpacity
+                                    style={[
+                                        Styles.modalSubmitButton,
+                                        !modalInputValue.trim() && Styles.modalSubmitButtonDisabled
+                                    ]}
+                                    onPress={handleModalSubmit}
+                                    disabled={!modalInputValue.trim()}
+                                >
+                                    <Text style={Styles.modalSubmitText}>Add Filter</Text>
+                                </TouchableOpacity>
+                            </View>
+                        </TouchableOpacity>
+                    </View>
+                </TouchableOpacity>
+            </Modal>
         </View>
     );
 };

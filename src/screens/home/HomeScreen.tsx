@@ -178,6 +178,11 @@ const HomeScreen = ({ navigation }: any) => {
                         title="Belgium championships 2025"
                         images={feedImages}
                         hasBorder={true}
+                        onImagePress={(index) => navigation.navigate('FullPageImageViewerScreen', {
+                            images: feedImages,
+                            initialIndex: index,
+                            title: 'Belgium championships 2025'
+                        })}
                     />
 
                     {/* Second card - has border, user post with single image */}
@@ -197,6 +202,11 @@ const HomeScreen = ({ navigation }: any) => {
                                 name: "Mia Moon",
                                 avatar: Images.profilePic,
                             }
+                        })}
+                        onImagePress={(index) => navigation.navigate('FullPageImageViewerScreen', {
+                            images: [Images.photo1],
+                            initialIndex: index,
+                            title: 'Belgium championships 2025'
                         })}
                         onViewBlog={() => navigation.navigate('ViewUserBlogDetailsScreen', {
                             post: {

@@ -60,6 +60,7 @@ import SearchCompetitionDetailsScreen from "../screens/search/searchScreens/Comp
 import AISearchOptions from "../screens/search/searchScreens/AISearchOptions";
 import FaceSearchScreen from "../screens/search/searchScreens/FaceSearchScreen";
 import ContextSearchLoadingScreen from "../screens/search/searchScreens/ContextSearchLoadingScreen";
+import SearchFaceCaptureScreen from "../screens/search/searchScreens/SearchFaceCaptureScreen";
 import AISearchResultsScreen from "../screens/search/searchScreens/AISearchResultsScreen";
 import EventsScreen from "../screens/Events/EventsScreen";
 import UploadScreen from "../screens/upload/UploadScreen";
@@ -232,6 +233,7 @@ const SearchStackNavigator = () => {
             <SearchStack.Screen name="CompetitionDetailsScreen" component={SearchCompetitionDetailsScreen} />
             <SearchStack.Screen name="EventsScreen" component={EventsScreen} />
             {/* Face capture flow */}
+            <SearchStack.Screen name="SearchFaceCaptureScreen" component={SearchFaceCaptureScreen} />
             <SearchStack.Screen name="FrontFaceCaptureScreen" component={FrontFaceCaptureScreen} />
             <SearchStack.Screen name="LeftSideCaptureScreen" component={LeftSideCaptureScreen} />
             <SearchStack.Screen name="RightSideCaptureScreen" component={RightSideCaptureScreen} />
@@ -291,11 +293,66 @@ const BottomTabBar = () => {
                 },
             })}
         >
-            <Tab.Screen name="Home" component={HomeStackNavigator} />
-            <Tab.Screen name="Search" component={SearchStackNavigator} />
-            <Tab.Screen name="Upload" component={UploadStackNavigator} />
-            <Tab.Screen name="Profile" component={ProfileStackNavigator} />
-            <Tab.Screen name="Menu" component={MenuStackNavigator} />
+            <Tab.Screen
+                name="Home"
+                component={HomeStackNavigator}
+                listeners={({ navigation }) => ({
+                    tabPress: (e) => {
+                        navigation.reset({
+                            index: 0,
+                            routes: [{ name: 'Home' }],
+                        });
+                    },
+                })}
+            />
+            <Tab.Screen
+                name="Search"
+                component={SearchStackNavigator}
+                listeners={({ navigation }) => ({
+                    tabPress: (e) => {
+                        navigation.reset({
+                            index: 0,
+                            routes: [{ name: 'Search' }],
+                        });
+                    },
+                })}
+            />
+            <Tab.Screen
+                name="Upload"
+                component={UploadStackNavigator}
+                listeners={({ navigation }) => ({
+                    tabPress: (e) => {
+                        navigation.reset({
+                            index: 0,
+                            routes: [{ name: 'Upload' }],
+                        });
+                    },
+                })}
+            />
+            <Tab.Screen
+                name="Profile"
+                component={ProfileStackNavigator}
+                listeners={({ navigation }) => ({
+                    tabPress: (e) => {
+                        navigation.reset({
+                            index: 0,
+                            routes: [{ name: 'Profile' }],
+                        });
+                    },
+                })}
+            />
+            <Tab.Screen
+                name="Menu"
+                component={MenuStackNavigator}
+                listeners={({ navigation }) => ({
+                    tabPress: (e) => {
+                        navigation.reset({
+                            index: 0,
+                            routes: [{ name: 'Menu' }],
+                        });
+                    },
+                })}
+            />
         </Tab.Navigator>
     );
 };

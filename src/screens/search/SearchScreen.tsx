@@ -299,7 +299,7 @@ const SearchScreen = ({ navigation }: any) => {
 
     const handleFilterPress = (filter: string) => {
         if (filter === 'Add Face') {
-            navigation.navigate('FrontFaceCaptureScreen');
+            navigation.navigate('SearchFaceCaptureScreen');
             return;
         }
         setSelectedFilter(filter);

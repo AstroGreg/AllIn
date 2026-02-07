@@ -41,6 +41,7 @@ import VideosForEvent from '../screens/search/searchScreens/VideosForEvent';
 import AllPhotosOfEvents from '../screens/search/searchScreens/AllPhotosOfEvents';
 import AllVideosOfEvents from '../screens/search/searchScreens/AllVideosOfEvents';
 import FrontFaceCaptureScreen from '../screens/search/searchScreens/FrontFaceCaptureScreen';
+import SearchFaceCaptureScreen from '../screens/search/searchScreens/SearchFaceCaptureScreen';
 import LeftSideCaptureScreen from '../screens/search/searchScreens/LeftSideCaptureScreen';
 import RightSideCaptureScreen from '../screens/search/searchScreens/RightSideCaptureScreen';
 import NameThisFaceScreen from '../screens/search/searchScreens/NameThisFaceScreen';
@@ -73,6 +74,7 @@ import CreatePhotographerProfileScreen from '../screens/createPhotographerProfil
 import ContextSearchLoadingScreen from '../screens/search/searchScreens/ContextSearchLoadingScreen';
 import AISearchResultsScreen from '../screens/search/searchScreens/AISearchResultsScreen';
 import ContextSearchScreen from '../screens/search/searchScreens/ContextSearchScreen';
+import FullPageImageViewerScreen from '../screens/fullPageImageViewer/FullPageImageViewerScreen';
 
 const Stack = createNativeStackNavigator();
 const RootStackNavigation = () => {
@@ -134,6 +136,7 @@ const RootStackNavigation = () => {
             <Stack.Screen name="AllPhotosOfEvents" component={AllPhotosOfEvents} />
             <Stack.Screen name="AllVideosOfEvents" component={AllVideosOfEvents} />
             <Stack.Screen name="FrontFaceCaptureScreen" component={FrontFaceCaptureScreen} />
+            <Stack.Screen name="SearchFaceCaptureScreen" component={SearchFaceCaptureScreen} />
             <Stack.Screen name="LeftSideCaptureScreen" component={LeftSideCaptureScreen} />
             <Stack.Screen name="RightSideCaptureScreen" component={RightSideCaptureScreen} />
             <Stack.Screen name="NameThisFaceScreen" component={NameThisFaceScreen} />
@@ -160,6 +163,14 @@ const RootStackNavigation = () => {
             <Stack.Screen name="ContextSearchScreen" component={ContextSearchScreen} />
             <Stack.Screen name="ContextSearchLoadingScreen" component={ContextSearchLoadingScreen} />
             <Stack.Screen name="AISearchResultsScreen" component={AISearchResultsScreen} />
+            <Stack.Screen
+                name="FullPageImageViewerScreen"
+                component={FullPageImageViewerScreen}
+                options={{
+                    presentation: 'fullScreenModal',
+                    animation: 'fade',
+                }}
+            />
 
         </Stack.Navigator>
     )

@@ -22,7 +22,7 @@ export const createStyles = (colors: any) => StyleSheet.create({
         justifyContent: 'center',
     },
     headerTitle: {
-        ...Fonts.semiBold18,
+        ...Fonts.semibold18,
         color: colors.mainTextColor,
     },
     content: {
@@ -55,6 +55,52 @@ export const createStyles = (colors: any) => StyleSheet.create({
         color: colors.mainTextColor,
         padding: 0,
     },
+    filterSectionTitle: {
+        ...Fonts.semibold16,
+        color: colors.mainTextColor,
+    },
+    filterTabsContainer: {
+        gap: 10,
+    },
+    filterTab: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingHorizontal: 16,
+        paddingVertical: 10,
+        borderRadius: 20,
+        backgroundColor: colors.cardBackground,
+        borderWidth: 1,
+        borderColor: colors.borderColor,
+    },
+    filterTabActive: {
+        backgroundColor: colors.primaryColor,
+        borderColor: colors.primaryColor,
+    },
+    filterTabText: {
+        ...Fonts.regular14,
+        color: colors.grayColor,
+    },
+    filterTabTextActive: {
+        color: '#FFFFFF',
+    },
+    activeChipsContainer: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        gap: 8,
+    },
+    activeChip: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: colors.primaryColor,
+        paddingHorizontal: 12,
+        paddingVertical: 8,
+        borderRadius: 20,
+        gap: 6,
+    },
+    activeChipText: {
+        ...Fonts.regular12,
+        color: '#FFFFFF',
+    },
     button: {
         flexDirection: 'row',
         alignItems: 'center',
@@ -64,36 +110,67 @@ export const createStyles = (colors: any) => StyleSheet.create({
         gap: 8,
     },
     buttonText: {
-        ...Fonts.semiBold16,
+        ...Fonts.semibold16,
         color: '#FFFFFF',
     },
-    filterOption: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        paddingVertical: 16,
-        borderBottomWidth: 1,
-        borderBottomColor: colors.borderColor,
-    },
-    filterLabelContainer: {
-        flexDirection: 'row',
+    // Modal styles
+    modalOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0, 0, 0, 0.5)',
+        justifyContent: 'center',
         alignItems: 'center',
     },
-    filterLabel: {
-        ...Fonts.medium16,
+    modalContainer: {
+        width: '85%',
+        backgroundColor: colors.backgroundColor,
+        borderRadius: 16,
+        padding: 24,
+    },
+    modalTitle: {
+        ...Fonts.semibold18,
         color: colors.mainTextColor,
     },
-    checkbox: {
-        width: 24,
-        height: 24,
-        borderRadius: 6,
-        borderWidth: 2,
+    modalInputContainer: {
+        backgroundColor: colors.cardBackground,
+        borderRadius: 12,
+        borderWidth: 1,
         borderColor: colors.borderColor,
+    },
+    modalInput: {
+        ...Fonts.regular14,
+        color: colors.mainTextColor,
+        paddingHorizontal: 16,
+        paddingVertical: 14,
+    },
+    modalButtonRow: {
+        flexDirection: 'row',
+        gap: 12,
+    },
+    modalCancelButton: {
+        flex: 1,
+        paddingVertical: 14,
+        borderRadius: 10,
+        backgroundColor: colors.cardBackground,
         alignItems: 'center',
         justifyContent: 'center',
     },
-    checkboxChecked: {
-        borderColor: colors.primaryColor,
-        backgroundColor: 'transparent',
+    modalCancelText: {
+        ...Fonts.semibold14,
+        color: colors.mainTextColor,
+    },
+    modalSubmitButton: {
+        flex: 1,
+        paddingVertical: 14,
+        borderRadius: 10,
+        backgroundColor: colors.primaryColor,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    modalSubmitButtonDisabled: {
+        backgroundColor: '#B0D4FF',
+    },
+    modalSubmitText: {
+        ...Fonts.semibold14,
+        color: '#FFFFFF',
     },
 });
