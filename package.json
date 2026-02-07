@@ -5,7 +5,9 @@
   "scripts": {
     "android": "react-native run-android",
     "ios": "react-native run-ios",
+    "preios": "test -d ios/Pods || npm run pods",
     "lint": "eslint .",
+    "pods": "cd ios && LANG=en_US.UTF-8 LC_ALL=en_US.UTF-8 pod install",
     "start": "react-native start",
     "test": "jest"
   },

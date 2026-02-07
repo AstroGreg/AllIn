@@ -10,11 +10,34 @@ import Icons from '../../constants/Icons'
 import { useTheme } from '../../context/ThemeContext'
 import LinearGradient from 'react-native-linear-gradient'
 import { UserAdd, ArrowRight } from 'iconsax-react-nativejs'
+import { useAuth } from '../../context/AuthContext'
 
 const HomeScreen = ({ navigation }: any) => {
     const insets = useSafeAreaInsets();
     const { colors } = useTheme();
     const Styles = createStyles(colors);
+    const { user, userProfile } = useAuth();
+
+    const userName = (() => {
+        const profileFullName = [userProfile?.firstName, userProfile?.lastName].filter(Boolean).join(' ').trim();
+        if (profileFullName) return profileFullName;
+
+        const auth0FullName = [user?.givenName, user?.familyName].filter(Boolean).join(' ').trim();
+        if (auth0FullName) return auth0FullName;
+
+        const username = userProfile?.username?.trim();
+        if (username) return username;
+
+        const nickname = user?.nickname?.trim();
+        if (nickname) return nickname;
+
+        const name = user?.name?.trim();
+        if (name) return name;
+
+        return 'Guest';
+    })();
+
+    const profilePic = user?.picture;
 
     const feedImages = [
         Images.photo1,
@@ -35,7 +58,8 @@ const HomeScreen = ({ navigation }: any) => {
         <View style={Styles.mainContainer}>
             <SizeBox height={insets.top} />
             <Header
-                userName={"David Malan"}
+                userName={userName}
+                profilePic={profilePic}
                 onPressFeed={() => navigation.navigate('HubScreen')}
                 onPressNotification={() => navigation.navigate('NotificationsScreen')}
                 onPressProfile={() => navigation.navigate('BottomTabBar', { screen: 'Profile' })}

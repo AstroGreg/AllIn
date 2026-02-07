@@ -29,7 +29,7 @@ const Header = ({
         <View style={Styles.header}>
             <TouchableOpacity onPress={onPressProfile} style={Styles.profilePic}>
                 <FastImage
-                    source={Images.profilePic}
+                    source={profilePic ? { uri: profilePic } : Images.profilePic}
                     style={Styles.img}
                 />
             </TouchableOpacity>

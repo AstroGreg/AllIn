@@ -31,5 +31,15 @@ target 'AllIn' do
       :mac_catalyst_enabled => false,
       # :ccache_enabled => true
     )
+
+    # Google MLKit (via react-native-vision-camera-face-detector) currently ships binaries that are:
+    # - arm64 slice built for iOS device (platform=2)
+    # - x86_64 slice built for iOS Simulator (platform=7)
+    # On Apple Silicon, the simulator defaults to arm64, so we must force an x86_64 Simulator build.
+    installer.pods_project.targets.each do |target|
+      target.build_configurations.each do |build_config|
+        build_config.build_settings['EXCLUDED_ARCHS[sdk=iphonesimulator*]'] = 'arm64'
+      end
+    end
   end
 end
