@@ -6,6 +6,7 @@ import FastImage from 'react-native-fast-image'
 import Images from '../../constants/Images'
 import Icons from '../../constants/Icons'
 import { useTheme } from '../../context/ThemeContext'
+import { useAuth } from '../../context/AuthContext'
 import { createStyles } from './UserProfileStyles'
 import { ArrowLeft2, User, Edit2, Trash, Global, Clock, ArrowRight, Location, Calendar, Camera, VideoPlay } from 'iconsax-react-nativejs'
 import ManageSocialMediaModal from '../../components/manageSocialMediaModal/ManageSocialMediaModal'
@@ -14,8 +15,13 @@ const UserProfileScreen = ({ navigation }: any) => {
     const insets = useSafeAreaInsets();
     const { colors } = useTheme();
     const Styles = createStyles(colors);
+    const { user, userProfile } = useAuth();
     const [activeTab, setActiveTab] = useState('photos');
     const [showSocialMediaModal, setShowSocialMediaModal] = useState(false);
+
+    const fullName = [userProfile?.firstName, userProfile?.lastName].filter(Boolean).join(' ') || user?.name || 'User';
+    const handle = userProfile?.username || user?.nickname || '';
+    const profilePicSource = user?.picture ? { uri: user.picture } : Images.profile1;
 
     const { width } = Dimensions.get('window');
     const imageWidth = Math.floor((width - 40 - 24 - 30) / 4);
@@ -188,15 +194,15 @@ const UserProfileScreen = ({ navigation }: any) => {
 
                     {/* Profile Image */}
                     <View style={Styles.profileImageContainer}>
-                        <FastImage source={Images.profile1} style={Styles.profileImage} />
+                        <FastImage source={profilePicSource} style={Styles.profileImage} />
                     </View>
 
                     {/* Name and Username */}
                     <View style={Styles.nameContainer}>
-                        <Text style={Styles.userName}>James Ray</Text>
+                        <Text style={Styles.userName}>{fullName}</Text>
                         <Icons.BlueTick width={16} height={16} />
                     </View>
-                    <Text style={Styles.userHandle}>jamesray2@</Text>
+                    <Text style={Styles.userHandle}>{handle ? `${handle}@` : ''}</Text>
 
                     {/* Stats */}
                     <View style={Styles.statsContainer}>
@@ -214,21 +220,20 @@ const UserProfileScreen = ({ navigation }: any) => {
                     {/* Info Row */}
                     <View style={Styles.infoRow}>
                         <View style={Styles.infoItem}>
-                            <Text style={Styles.infoLabel}>Born</Text>
+                            <Text style={Styles.infoLabel}>Location</Text>
                             <View style={Styles.infoValueRow}>
-                                <Text style={Styles.infoValue}>Belgium</Text>
-                                <Text style={Styles.flagEmoji}>🇧🇪</Text>
+                                <Text style={Styles.infoValue}>{userProfile?.location || '—'}</Text>
                             </View>
                         </View>
                         <View style={Styles.infoDivider} />
                         <View style={Styles.infoItemCenter}>
-                            <Text style={Styles.infoLabel}>Track and Field</Text>
-                            <Text style={Styles.infoValue}>Boxing</Text>
+                            <Text style={Styles.infoLabel}>Events</Text>
+                            <Text style={Styles.infoValue}>{userProfile?.selectedEvents?.join(', ') || '—'}</Text>
                         </View>
                         <View style={Styles.infoDivider} />
                         <View style={Styles.infoItemEnd}>
                             <Text style={Styles.infoLabel}>Chest Number</Text>
-                            <Text style={Styles.infoValue}>17</Text>
+                            <Text style={Styles.infoValue}>{userProfile?.chestNumber || '—'}</Text>
                         </View>
                     </View>
 
@@ -262,7 +267,7 @@ const UserProfileScreen = ({ navigation }: any) => {
                         <View style={Styles.linkRow}>
                             <View style={Styles.linkContent}>
                                 <Global size={16} color="#9B9F9F" variant="Linear" />
-                                <Text style={Styles.linkText}>georgia.young@example.com</Text>
+                                <Text style={Styles.linkText}>{user?.email || '—'}</Text>
                             </View>
                             <View style={Styles.linkActions}>
                                 <TouchableOpacity>
