@@ -1,9 +1,10 @@
 import { View, Text, TouchableOpacity } from 'react-native'
 import React from 'react'
-import Styles from '../MenuStyles'
+import { createStyles } from '../MenuStyles'
 import Icons from '../../../constants/Icons'
 import SizeBox from '../../../constants/SizeBox';
 import CustomSwitch from '../../../components/customSwitch/CustomSwitch';
+import { useTheme } from '../../../context/ThemeContext';
 
 interface MenuContainersProps {
     title?: string;
@@ -17,6 +18,9 @@ interface MenuContainersProps {
 }
 
 const MenuContainers = ({ title, icon, onPress, isNext = true, isSelected, isSwitch = false, isEnabled, toggleSwitch }: MenuContainersProps) => {
+    const { colors } = useTheme();
+    const Styles = createStyles(colors);
+
     return (
         <TouchableOpacity disabled={isSwitch} activeOpacity={0.7} onPress={onPress} style={Styles.menuContainer}>
             <View style={Styles.iconCont}>

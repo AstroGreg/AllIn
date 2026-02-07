@@ -1,7 +1,7 @@
 import { View, Text, TextInput } from 'react-native'
 import React from 'react'
-import Styles from '../MenuStyles'
-import Colors from '../../../constants/Colors';
+import { createStyles } from '../MenuStyles'
+import { useTheme } from '../../../context/ThemeContext';
 
 
 interface AddCardTextInputProps {
@@ -25,6 +25,9 @@ const AddCardTextInput = ({
     isHalf = false,
     maxLength
 }: AddCardTextInputProps) => {
+    const { colors } = useTheme();
+    const Styles = createStyles(colors);
+
     return (
         <View style={[Styles.textInputContainer, isHalf && { flex: 0.484 }]}>
             <Text style={[Styles.btnText, { textAlign: isCVV ? 'right' : 'left', }]}>{label}</Text>
@@ -33,7 +36,7 @@ const AddCardTextInput = ({
                 placeholder={placeholder}
                 value={value}
                 onChangeText={onChangeText}
-                placeholderTextColor={Colors.grayColor}
+                placeholderTextColor={colors.grayColor}
                 keyboardType={keyboardType ? keyboardType : 'default'}
                 secureTextEntry={isCVV ? true : false}
                 maxLength={maxLength}

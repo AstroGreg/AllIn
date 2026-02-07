@@ -1,15 +1,18 @@
 import { ScrollView, Text, View } from 'react-native'
 import React, { useState } from 'react'
-import Styles from '../UploadStyles'
+import { createStyles } from '../UploadDetailsStyles'
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import SizeBox from '../../../constants/SizeBox';
 import CustomHeader from '../../../components/customHeader/CustomHeader';
 import CustomSearch from '../../../components/customSearch/CustomSearch';
 import CustomButton from '../../../components/customButton/CustomButton';
 import CustomDropdown from '../../../components/customDropdown/CustomDropdown';
+import { useTheme } from '../../../context/ThemeContext';
 
 const SelectCategory = ({ route, navigation }: any) => {
     const insets = useSafeAreaInsets();
+    const { colors } = useTheme();
+    const Styles = createStyles(colors);
     const { video } = route.params || {};
 
     const [search, setSearch] = useState('');

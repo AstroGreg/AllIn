@@ -1,8 +1,9 @@
 import { View, Text, TouchableOpacity } from 'react-native'
 import React from 'react'
-import Styles from './CustomHeaderStyles'
+import { createStyles } from './CustomHeaderStyles'
 import SizeBox from '../../constants/SizeBox'
 import Icons from '../../constants/Icons'
+import { useTheme } from '../../context/ThemeContext'
 
 interface CustomHeaderProps {
     title?: string;
@@ -13,6 +14,9 @@ interface CustomHeaderProps {
 }
 
 const CustomHeader = ({ title, onBackPress, isBack = true, onPressSetting, isSetting = true }: CustomHeaderProps) => {
+    const { colors } = useTheme();
+    const Styles = createStyles(colors);
+
     return (
         <View style={Styles.headerContainer}>
             {isBack && <TouchableOpacity style={[Styles.settingBtn, { left: 20 }]} onPress={onBackPress}>

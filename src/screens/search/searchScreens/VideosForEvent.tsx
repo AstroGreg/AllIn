@@ -5,6 +5,7 @@ import CustomHeader from '../../../components/customHeader/CustomHeader'
 import SizeBox from '../../../constants/SizeBox'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import Icons from '../../../constants/Icons'
+import Images from '../../../constants/Images'
 
 const VideosForEvent = ({ navigation }: any) => {
     const insets = useSafeAreaInsets();
@@ -19,7 +20,13 @@ const VideosForEvent = ({ navigation }: any) => {
                     <Text style={Styles.subText}>5:06 Mins</Text>
                     <Text style={Styles.subText}>5k Views</Text>
                 </View>
-                <TouchableOpacity onPress={() => navigation.navigate('VideoScreen')} style={Styles.playIcon}>
+                <TouchableOpacity onPress={() => navigation.navigate('VideoPlayingScreen', {
+                    video: {
+                        title: 'BK Studenten 2023',
+                        subtitle: '17:45 / MIN-M (Series)',
+                        thumbnail: Images.photo1,
+                    }
+                })} style={Styles.playIcon}>
                     <Icons.PlayCricle height={24} width={24} />
                 </TouchableOpacity>
             </View>

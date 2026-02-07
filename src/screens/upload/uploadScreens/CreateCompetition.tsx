@@ -1,6 +1,6 @@
 import { View, Text, ScrollView, TouchableOpacity } from 'react-native'
 import React, { useState } from 'react'
-import Styles from '../UploadStyles'
+import { createStyles } from '../UploadDetailsStyles'
 import SizeBox from '../../../constants/SizeBox'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import CustomHeader from '../../../components/customHeader/CustomHeader'
@@ -8,10 +8,13 @@ import CustomTextInput from '../../../components/customTextInput/CustomTextInput
 import Icons from '../../../constants/Icons'
 import { launchImageLibrary } from 'react-native-image-picker';
 import CustomButton from '../../../components/customButton/CustomButton'
+import { useTheme } from '../../../context/ThemeContext'
 
 
 const CreateCompetition = ({ navigation }: any) => {
     const insets = useSafeAreaInsets();
+    const { colors } = useTheme();
+    const Styles = createStyles(colors);
     const [selectedImages, setSelectedImages] = useState([]);
 
     const handleImagePicker = async () => {

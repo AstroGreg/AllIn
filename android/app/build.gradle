@@ -84,6 +84,11 @@ android {
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1
         versionName "1.0"
+        resValue "string", "build_config_package", "com.AllIn"
+        manifestPlaceholders = [
+            auth0Domain: "dev-lfzk0n81zjp0c3x3.us.auth0.com",
+            auth0Scheme: "com.allin.auth0"
+        ]
     }
     signingConfigs {
         debug {

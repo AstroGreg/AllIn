@@ -1,6 +1,6 @@
 import { View, Text, TouchableOpacity, FlatList } from 'react-native'
 import React from 'react'
-import Styles from './DownloadsStyles'
+import { createStyles } from './DownloadsStyles'
 import SizeBox from '../../constants/SizeBox'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import CustomHeader from '../../components/customHeader/CustomHeader'
@@ -8,10 +8,12 @@ import FastImage from 'react-native-fast-image'
 import Images from '../../constants/Images'
 import Icons from '../../constants/Icons'
 import Fonts from '../../constants/Fonts'
-import Colors from '../../constants/Colors'
+import { useTheme } from '../../context/ThemeContext'
 
 const DownloadsScreens = ({ navigation }: any) => {
     const insets = useSafeAreaInsets();
+    const { colors } = useTheme();
+    const Styles = createStyles(colors);
 
     const renderItem = () => {
         return (
@@ -55,7 +57,7 @@ const DownloadsScreens = ({ navigation }: any) => {
                 <Text style={Styles.headings}>Esther Howard</Text>
                 <Text style={[Styles.headings, {
                     ...Fonts.regular12,
-                    color: Colors.grayColor,
+                    color: colors.grayColor,
                 }]}>Downloads: 1400+</Text>
             </View>
             <SizeBox height={10} />

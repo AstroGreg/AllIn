@@ -1,56 +1,106 @@
-import { View, Text } from 'react-native'
+import { View, Text, TouchableOpacity } from 'react-native'
 import React, { useState } from 'react'
-import Styles from '../MenuStyles'
+import { createStyles } from '../MenuStyles'
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import SizeBox from '../../../constants/SizeBox';
-import CustomHeader from '../../../components/customHeader/CustomHeader';
 import MenuContainers from '../components/MenuContainers';
 import Icons from '../../../constants/Icons';
+import { useTheme } from '../../../context/ThemeContext';
 import ConfirmationModel from '../../../components/confirmationModel/ConfirmationModel';
+import { ArrowLeft2, Notification, Pause } from 'iconsax-react-nativejs';
 
 const DeleteAndPause = ({ navigation }: any) => {
     const insets = useSafeAreaInsets();
-    const [isDeleteVisible, setIsDeleteVisible] = useState(false);
+    const { colors } = useTheme();
+    const Styles = createStyles(colors);
+    const [isDeleteSuggestionVisible, setIsDeleteSuggestionVisible] = useState(false);
+    const [isDeleteConfirmVisible, setIsDeleteConfirmVisible] = useState(false);
     const [isPauseVisible, setIsPauseVisible] = useState(false);
 
     return (
         <View style={Styles.mainContainer}>
             <SizeBox height={insets.top} />
-            <CustomHeader title='Menu' onBackPress={() => navigation.goBack()} onPressSetting={() => navigation.navigate('ProfileSettings')} />
-            <SizeBox height={24} />
-            <View style={Styles.container}>
 
-                <Text style={Styles.containerTitle}>Delete/Pause</Text>
+            {/* Header */}
+            <View style={Styles.header}>
+                <TouchableOpacity style={Styles.headerButton} onPress={() => navigation.goBack()}>
+                    <ArrowLeft2 size={24} color={colors.primaryColor} variant="Linear" />
+                </TouchableOpacity>
+                <Text style={Styles.headerTitle}>Menu</Text>
+                <TouchableOpacity style={Styles.headerButton}>
+                    <Notification size={24} color={colors.primaryColor} variant="Linear" />
+                </TouchableOpacity>
+            </View>
+
+            <View style={Styles.container}>
+                <SizeBox height={24} />
+                <Text style={Styles.sectionTitle}>Delete/Pause</Text>
                 <SizeBox height={16} />
 
                 <MenuContainers
                     icon={<Icons.DeleteAccount height={20} width={20} />}
                     title='Delete your account'
-                    onPress={() => setIsDeleteVisible(true)}
+                    onPress={() => setIsDeleteSuggestionVisible(true)}
                     isNext={true}
                 />
-                <SizeBox height={16} />
-                <MenuContainers
-                    icon={<Icons.Pause height={20} width={20} />}
-                    title='Pause your account'
+                <SizeBox height={12} />
+
+                {/* Pause Account Card with Description */}
+                <TouchableOpacity
+                    style={Styles.menuContainer}
                     onPress={() => setIsPauseVisible(true)}
-                    isNext={true}
-                />
+                >
+                    <View style={Styles.iconCont}>
+                        <Pause size={20} color={colors.primaryColor} variant="Linear" />
+                    </View>
+                    <SizeBox width={20} />
+                    <View style={Styles.pauseContent}>
+                        <Text style={Styles.titlesText}>Pause your account</Text>
+                        <Text style={Styles.pauseDescription}>
+                            Pausing your account" means temporarily stopping access while keeping all your data safe
+                        </Text>
+                    </View>
+                    <View style={Styles.nextArrow}>
+                        <Icons.ArrowNext height={24} width={24} />
+                    </View>
+                </TouchableOpacity>
             </View>
 
+            {/* Delete Suggestion Modal */}
             <ConfirmationModel
-                isVisible={isDeleteVisible}
-                onClose={() => setIsDeleteVisible(false)}
-                text='Are You Sure You Want to Delete Your Account?'
-                icon={<Icons.DeleteAccount height={24} width={24} />}
-                onPressYes={() => { }}
+                isVisible={isDeleteSuggestionVisible}
+                onClose={() => {
+                    setIsDeleteSuggestionVisible(false);
+                    setIsDeleteConfirmVisible(true);
+                }}
+                text="Did you know you can also pause your account? This way, others won't be able to find you, but you'll still be with us for a bit"
+                icon={<Pause size={28} color={colors.pureWhite} variant="Bold" />}
+                onPressYes={() => {
+                    setIsDeleteSuggestionVisible(false);
+                    setIsPauseVisible(true);
+                }}
+                leftBtnText="Delete"
+                rightBtnText="Pause"
+                leftBtnTextColor="#FF4D4D"
+                leftBtnBorderColor="#FF4D4D"
             />
 
+            {/* Final Delete Confirmation Modal */}
+            <ConfirmationModel
+                isVisible={isDeleteConfirmVisible}
+                onClose={() => setIsDeleteConfirmVisible(false)}
+                text='Are You Sure You Want to Delete Your Account?'
+                icon={<Icons.DeleteRedBold height={32} width={32} />}
+                onPressYes={() => { }}
+                iconBgColor="rgba(237, 84, 84, 0.4)"
+            />
+
+            {/* Pause Confirmation Modal */}
             <ConfirmationModel
                 isVisible={isPauseVisible}
                 onClose={() => setIsPauseVisible(false)}
-                text='Are You Sure You Want to Pause Your account'
-                icon={<Icons.Pause height={24} width={24} />}
+                text='Are You Sure You Want to Pause Your Account?'
+                icon={<Pause size={28} color={colors.pureWhite} variant="Bold" />}
                 onPressYes={() => { }}
             />
         </View>

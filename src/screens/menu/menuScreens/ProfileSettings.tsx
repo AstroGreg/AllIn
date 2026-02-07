@@ -1,103 +1,81 @@
-import { View, Text, TouchableOpacity } from 'react-native'
+import { View, Text, TouchableOpacity, ScrollView } from 'react-native'
 import React from 'react'
-import Styles from '../MenuStyles'
-import CustomHeader from '../../../components/customHeader/CustomHeader'
+import { createStyles } from '../MenuStyles'
 import SizeBox from '../../../constants/SizeBox'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import Icons from '../../../constants/Icons'
-import FastImage from 'react-native-fast-image'
-import Images from '../../../constants/Images'
+import { useTheme } from '../../../context/ThemeContext'
+import { ArrowLeft2, Notification, Lock, User, Card, Calendar, ArrowRight2 } from 'iconsax-react-nativejs'
+
+interface SettingsItem {
+    icon: React.ReactNode;
+    title: string;
+    onPress: () => void;
+}
 
 const ProfileSettings = ({ navigation }: any) => {
     const insets = useSafeAreaInsets();
+    const { colors } = useTheme();
+    const Styles = createStyles(colors);
+
+    const settingsItems: SettingsItem[] = [
+        {
+            icon: <Lock size={20} color={colors.primaryColor} variant="Linear" />,
+            title: 'Change Password',
+            onPress: () => navigation.navigate('ChangePassword'),
+        },
+        {
+            icon: <User size={20} color={colors.primaryColor} variant="Linear" />,
+            title: 'Change Username',
+            onPress: () => navigation.navigate('ChangeUsername'),
+        },
+        {
+            icon: <Card size={20} color={colors.primaryColor} variant="Linear" />,
+            title: 'Change Nationality',
+            onPress: () => navigation.navigate('ChangeNationality'),
+        },
+        {
+            icon: <Calendar size={20} color={colors.primaryColor} variant="Linear" />,
+            title: 'Date of Birth',
+            onPress: () => navigation.navigate('DateOfBirth'),
+        },
+    ];
 
     return (
         <View style={Styles.mainContainer}>
             <SizeBox height={insets.top} />
-            <CustomHeader title='Profile Settings' onBackPress={() => navigation.goBack()} isSetting={false} />
-            <SizeBox height={24} />
-            <View style={Styles.container}>
-                <View style={Styles.row}>
-                    <Text style={Styles.containerTitle}>Payment Methods</Text>
-                    <TouchableOpacity activeOpacity={0.7} style={[Styles.nextArrow, { right: 0 }]} onPress={() => navigation.navigate('EditProfile')}>
-                        <Icons.Edit height={22} width={22} />
-                    </TouchableOpacity>
-                </View>
-                <SizeBox height={20} />
-                <TouchableOpacity activeOpacity={0.7} style={Styles.profilePicContainer}>
-                    <FastImage source={Images.profilePic} style={Styles.profileImg} />
-                    <View style={Styles.editIcon}>
-                        <Icons.EditProfile height={24} width={24} />
-                    </View>
+
+            {/* Header */}
+            <View style={Styles.header}>
+                <TouchableOpacity style={Styles.headerButton} onPress={() => navigation.goBack()}>
+                    <ArrowLeft2 size={24} color={colors.primaryColor} variant="Linear" />
                 </TouchableOpacity>
-                <SizeBox height={20} />
-
-                <View style={[Styles.talentContainer, { padding: 16 }]}>
-                    <View style={[Styles.row, { justifyContent: 'space-between' }]}>
-                        <View style={Styles.row}>
-                            <Icons.UserGrey height={16} width={16} />
-                            <SizeBox width={8} />
-                            <Text style={Styles.profileLabel}>Username</Text>
-                        </View>
-                        <Text style={Styles.titlesText}>@jing_456</Text>
-                    </View>
-                    <SizeBox height={16} />
-                    <View style={Styles.separator} />
-                    <SizeBox height={16} />
-
-                    <View style={[Styles.row, { justifyContent: 'space-between' }]}>
-                        <View style={Styles.row}>
-                            <Icons.EmailGrey height={16} width={16} />
-                            <SizeBox width={8} />
-                            <Text style={Styles.profileLabel}>Email</Text>
-                        </View>
-                        <Text style={Styles.titlesText}>georgia.young@example.com</Text>
-                    </View>
-                    <SizeBox height={16} />
-                    <View style={Styles.separator} />
-                    <SizeBox height={16} />
-
-                    <View style={[Styles.row, { justifyContent: 'space-between' }]}>
-                        <View style={Styles.row}>
-                            <Icons.PasswordGrey height={16} width={16} />
-                            <SizeBox width={8} />
-                            <Text style={Styles.profileLabel}>Password</Text>
-                        </View>
-                        <Text style={Styles.titlesText}>**********</Text>
-                    </View>
-                    <SizeBox height={16} />
-                    <View style={Styles.separator} />
-                    <SizeBox height={16} />
-
-                    <View style={[Styles.row, { justifyContent: 'space-between' }]}>
-                        <View style={Styles.row}>
-                            <Icons.Website height={16} width={16} />
-                            <SizeBox width={8} />
-                            <Text style={Styles.profileLabel}>Website</Text>
-                        </View>
-                        <Text style={Styles.titlesText}>www.demo365.com</Text>
-                    </View>
-                    <SizeBox height={16} />
-                    <View style={Styles.separator} />
-                    <SizeBox height={16} />
-
-                    <View style={[Styles.row, { justifyContent: 'space-between' }]}>
-                        <View style={Styles.row}>
-                            <Icons.Links height={16} width={16} />
-                            <SizeBox width={8} />
-                            <Text style={Styles.profileLabel}>Social links</Text>
-                        </View>
-                        <View style={[Styles.row, { gap: 10 }]}>
-                            <FastImage source={Icons.Strava} style={Styles.linksIcon} />
-                            <FastImage source={Icons.Facebook} style={Styles.linksIcon} />
-                            <FastImage source={Icons.Instagram} style={Styles.linksIcon} />
-                        </View>
-                    </View>
-
-                </View>
-
+                <Text style={Styles.headerTitle}>Account Settings</Text>
+                <TouchableOpacity style={Styles.headerButton}>
+                    <Notification size={24} color={colors.primaryColor} variant="Linear" />
+                </TouchableOpacity>
             </View>
 
+            <ScrollView style={Styles.container} showsVerticalScrollIndicator={false}>
+                <SizeBox height={24} />
+
+                {settingsItems.map((item, index) => (
+                    <React.Fragment key={index}>
+                        <TouchableOpacity style={Styles.accountSettingsCard} onPress={item.onPress}>
+                            <View style={Styles.accountSettingsLeft}>
+                                <View style={Styles.accountSettingsIconContainer}>
+                                    {item.icon}
+                                </View>
+                                <SizeBox width={20} />
+                                <Text style={Styles.accountSettingsTitle}>{item.title}</Text>
+                            </View>
+                            <ArrowRight2 size={24} color={colors.grayColor} variant="Linear" />
+                        </TouchableOpacity>
+                        {index < settingsItems.length - 1 && <SizeBox height={16} />}
+                    </React.Fragment>
+                ))}
+
+                <SizeBox height={insets.bottom > 0 ? insets.bottom + 20 : 40} />
+            </ScrollView>
         </View>
     )
 }

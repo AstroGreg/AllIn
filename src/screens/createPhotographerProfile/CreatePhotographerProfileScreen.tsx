@@ -1,0 +1,112 @@
+import { View, Text, TouchableOpacity, ScrollView, TextInput, Alert, ActivityIndicator } from 'react-native';
+import React, { useState } from 'react';
+import SizeBox from '../../constants/SizeBox';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import FastImage from 'react-native-fast-image';
+import Images from '../../constants/Images';
+import Colors from '../../constants/Colors';
+import Styles from './CreatePhotographerProfileStyles';
+import { ArrowRight, User, Global } from 'iconsax-react-nativejs';
+import { useAuth } from '../../context/AuthContext';
+
+const CreatePhotographerProfileScreen = ({ navigation }: any) => {
+    const insets = useSafeAreaInsets();
+    const { updateUserProfile } = useAuth();
+    const [photographerName, setPhotographerName] = useState('');
+    const [website, setWebsite] = useState('');
+    const [isLoading, setIsLoading] = useState(false);
+
+    const handleContinue = async () => {
+        if (!photographerName) {
+            Alert.alert('Error', 'Please enter your photographer name');
+            return;
+        }
+
+        setIsLoading(true);
+        try {
+            await updateUserProfile({
+                photographerName,
+                photographerWebsite: website,
+            });
+            navigation.navigate('DocumentUploadScreen');
+        } catch (err: any) {
+            Alert.alert('Error', 'Failed to save profile. Please try again.');
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    return (
+        <View style={Styles.mainContainer}>
+            <SizeBox height={insets.top} />
+
+            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={Styles.scrollContent}>
+                {/* Illustration */}
+                <View style={Styles.illustrationContainer}>
+                    <FastImage source={Images.signup2} style={Styles.illustration} resizeMode="contain" />
+                </View>
+
+                {/* Title Section */}
+                <View style={Styles.titleSection}>
+                    <Text style={Styles.title}>Create Photographer Profile</Text>
+                    <Text style={Styles.subtitle}>It only takes a minute to get started—join us now!</Text>
+                </View>
+
+                {/* Form Fields */}
+                <View style={Styles.formContainer}>
+                    {/* Photographer Name */}
+                    <View style={Styles.inputGroup}>
+                        <Text style={Styles.inputLabel}>Photographer Name</Text>
+                        <View style={Styles.inputContainer}>
+                            <User size={24} color={Colors.primaryColor} variant="Linear" />
+                            <TextInput
+                                style={Styles.textInput}
+                                placeholder="Enter Photographer Name"
+                                placeholderTextColor="#777777"
+                                value={photographerName}
+                                onChangeText={setPhotographerName}
+                            />
+                        </View>
+                    </View>
+
+                    {/* Website */}
+                    <View style={Styles.inputGroup}>
+                        <Text style={Styles.inputLabel}>Website</Text>
+                        <View style={Styles.inputContainer}>
+                            <Global size={24} color={Colors.primaryColor} variant="Linear" />
+                            <TextInput
+                                style={Styles.textInput}
+                                placeholder="Enter website link"
+                                placeholderTextColor="#777777"
+                                value={website}
+                                onChangeText={setWebsite}
+                                keyboardType="url"
+                                autoCapitalize="none"
+                            />
+                        </View>
+                    </View>
+                </View>
+
+                {/* Continue Button */}
+                <TouchableOpacity
+                    style={[Styles.continueButton, isLoading && { opacity: 0.5 }]}
+                    onPress={handleContinue}
+                    disabled={isLoading}
+                >
+                    {isLoading ? (
+                        <ActivityIndicator size="small" color={Colors.whiteColor} />
+                    ) : (
+                        <>
+                            <Text style={Styles.continueButtonText}>Continue</Text>
+                            <ArrowRight size={18} color={Colors.whiteColor} variant="Linear" />
+                        </>
+                    )}
+                </TouchableOpacity>
+            </ScrollView>
+
+            <SizeBox height={insets.bottom > 0 ? insets.bottom : 20} />
+        </View>
+    );
+};
+
+export default CreatePhotographerProfileScreen;

@@ -1,7 +1,7 @@
 import { View, Text, TouchableOpacity } from 'react-native'
 import React from 'react'
-import Styles from '../AddTalentStyles'
-import Colors from '../../../../constants/Colors'
+import { createStyles } from '../AddTalentStyles'
+import { useTheme } from '../../../../context/ThemeContext'
 
 interface TabBarProps {
     selectedTab: number;
@@ -9,6 +9,8 @@ interface TabBarProps {
 }
 
 const TabBar = ({ selectedTab, onTabPress }: TabBarProps) => {
+    const { colors } = useTheme();
+    const Styles = createStyles(colors);
     const tabs = ['Track Events', 'Field Events'];
 
     return (
@@ -21,14 +23,14 @@ const TabBar = ({ selectedTab, onTabPress }: TabBarProps) => {
                     style={[
                         Styles.tabs,
                         {
-                            borderBottomColor: selectedTab === index ? Colors.primaryColor : 'transparent'
+                            borderBottomColor: selectedTab === index ? colors.primaryColor : 'transparent'
                         }
                     ]}
                 >
                     <Text style={[
                         Styles.tabText,
                         {
-                            color: selectedTab === index ? Colors.primaryColor : Colors.subTextColor
+                            color: selectedTab === index ? colors.primaryColor : colors.grayColor
                         }
                     ]}>
                         {tab}

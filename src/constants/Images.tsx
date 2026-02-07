@@ -1,5 +1,18 @@
 const Images = {
     logo: require('../assets/imgs/logo.png'),
+    englishFlag: require('../assets/imgs/english-flag.png'),
+    dutchFlag: require('../assets/imgs/dutch-flag.png'),
+    franceFlag: require('../assets/imgs/france-flag.png'),
+    germanyFlag: require('../assets/imgs/germany-flag.png'),
+    spanishFlag: require('../assets/imgs/spanish-flag.png'),
+    italianFlag: require('../assets/imgs/italian-flag.png'),
+    signup2: require('../assets/imgs/signup2.png'),
+    signup3: require('../assets/imgs/signup3.png'),
+    signup4: require('../assets/imgs/signup4.png'),
+    trackAndField: require('../assets/imgs/track-and-field.png'),
+    roadEvents: require('../assets/imgs/road-events.png'),
+    boxing: require('../assets/imgs/boxing.png'),
+    signupLock: require('../assets/imgs/signup-lock.png'),
     loginImg: require('../assets/imgs/login.png'),
     registerImg: require('../assets/imgs/register.png'),
     talentImg: require('../assets/imgs/talent.png'),
@@ -17,6 +30,10 @@ const Images = {
     photo7: require('../assets/imgs/foto7.png'),
     photo8: require('../assets/imgs/foto8.png'),
     photo9: require('../assets/imgs/foto9.png'),
+    fiverr: require('../assets/imgs/fiverr.png'),
+    noResult: require('../assets/imgs/no-result.png'),
+    advertisement: require('../assets/imgs/advertisement.png'),
+    fileUpload: require('../assets/imgs/fileUpload.png'),
 }
 
 export default Images;  

@@ -1,14 +1,14 @@
 import { StyleSheet } from "react-native";
-import Colors from "../../constants/Colors";
 import Fonts from "../../constants/Fonts";
+import { ThemeColors, lightColors } from "../../constants/Theme";
 
-const Styles = StyleSheet.create({
+export const createStyles = (colors: ThemeColors) => StyleSheet.create({
     headerContainer: {
         paddingVertical: 20,
-        backgroundColor: Colors.whiteColor,
+        backgroundColor: colors.backgroundColor,
         paddingHorizontal: 20,
         borderBottomWidth: 0.5,
-        borderBottomColor: Colors.lightGrayColor,
+        borderBottomColor: colors.borderColor,
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center'
@@ -19,16 +19,18 @@ const Styles = StyleSheet.create({
         borderRadius: 22,
         position: 'absolute',
         right: 20,
-        backgroundColor: Colors.btnBackgroundColor,
+        backgroundColor: colors.btnBackgroundColor,
         alignItems: 'center',
         justifyContent: 'center'
     },
     title: {
         textAlign: 'center',
         ...Fonts.regular18,
-        color: Colors.mainTextColor,
+        color: colors.mainTextColor,
         fontWeight: '500'
     }
 });
 
+// Backward compatibility
+const Styles = createStyles(lightColors);
 export default Styles;

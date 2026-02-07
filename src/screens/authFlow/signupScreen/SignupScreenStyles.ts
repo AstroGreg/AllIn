@@ -1,39 +1,55 @@
 import { StyleSheet } from "react-native";
-import Colors from "../../../constants/Colors";
 import Fonts from "../../../constants/Fonts";
+import { ThemeColors, lightColors } from "../../../constants/Theme";
 
-const Styles = StyleSheet.create({
+export const createStyles = (colors: ThemeColors) => StyleSheet.create({
     mainContainer: {
         flex: 1,
-        backgroundColor: Colors.whiteColor,
+        backgroundColor: colors.backgroundColor,
     },
     contentContainer: {
         paddingHorizontal: 20
     },
     headingText: {
-        ...Fonts.semibold22,
-        color: Colors.mainTextColor,
-        fontWeight: '500',
+        ...Fonts.medium22,
+        fontSize: 24,
+        lineHeight: 32,
+        color: colors.mainTextColor,
         textAlign: 'center'
     },
     subHeadingText: {
         ...Fonts.regular14,
-        color: Colors.subTextColor,
-        fontWeight: '400',
+        lineHeight: 22,
+        color: colors.grayColor,
         textAlign: 'center'
     },
     checkBox: {
         flexDirection: 'row',
+        alignItems: 'flex-start',
+        width: '100%',
+    },
+    checkboxIcon: {
+        marginTop: 3,
     },
     rememberMeText: {
-        ...Fonts.regular13,
-        color: Colors.mainTextColor,
-        fontWeight: '400',
-
+        ...Fonts.regular14,
+        lineHeight: 22,
+        color: colors.mainTextColor,
+        flexWrap: 'wrap',
+    },
+    termsTextContainer: {
+        flex: 1,
+        paddingRight: 10,
+    },
+    linkText: {
+        ...Fonts.regular14,
+        lineHeight: 22,
+        color: colors.primaryColor,
+        textDecorationLine: 'underline',
     },
     forgotPass: {
         ...Fonts.regular14,
-        color: Colors.errorColor,
+        color: colors.errorColor,
         fontWeight: '400',
     },
     signUpContainer: {
@@ -41,6 +57,8 @@ const Styles = StyleSheet.create({
         justifyContent: 'center',
         alignItems: 'center',
     }
-})
+});
 
+// Backward compatibility
+const Styles = createStyles(lightColors);
 export default Styles;

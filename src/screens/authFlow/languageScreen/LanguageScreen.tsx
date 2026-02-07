@@ -2,10 +2,13 @@ import { View, Text, } from 'react-native'
 import React, { useState } from 'react'
 import SizeBox from '../../../constants/SizeBox'
 import CustomButton from '../../../components/customButton/CustomButton'
-import Styles from './LanguageScreenStyles'
+import { createStyles } from './LanguageScreenStyles'
 import LanguageContainer from '../components/LanguageContainer'
+import { useTheme } from '../../../context/ThemeContext'
 
 const LanguageScreen = ({ navigation }: any) => {
+    const { colors } = useTheme();
+    const Styles = createStyles(colors);
     const [selectedLng, setSelectedLng] = useState('en');
     return (
         <View style={Styles.mainContainer}>

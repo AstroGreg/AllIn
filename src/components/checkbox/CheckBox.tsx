@@ -3,11 +3,26 @@ import React from 'react'
 import Styles from './CheckBoxStyle'
 import Icons from '../../constants/Icons'
 
-const CheckBox = ({ onPressCheckBox }: any) => {
-    const [checked, setChecked] = React.useState(false);
+interface CheckBoxProps {
+    onPressCheckBox: (checked?: boolean) => void;
+    isChecked?: boolean;
+}
+
+const CheckBox = ({ onPressCheckBox, isChecked }: CheckBoxProps) => {
+    const [internalChecked, setInternalChecked] = React.useState(false);
+
+    // Use external isChecked if provided, otherwise use internal state
+    const checked = isChecked !== undefined ? isChecked : internalChecked;
+
+    const handlePress = () => {
+        if (isChecked === undefined) {
+            setInternalChecked(!internalChecked);
+        }
+        onPressCheckBox(!checked);
+    };
 
     return (
-        <TouchableOpacity style={Styles.checkBoxContainer} onPress={() => { setChecked(!checked); onPressCheckBox(checked) }}>
+        <TouchableOpacity style={Styles.checkBoxContainer} onPress={handlePress}>
             {checked && <Icons.CheckBox height={15} width={15} />}
         </TouchableOpacity>
     )

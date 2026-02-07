@@ -1,24 +1,24 @@
 import { StyleSheet } from "react-native";
-import Colors from "../../../constants/Colors";
 import Fonts from "../../../constants/Fonts";
+import { ThemeColors, lightColors } from "../../../constants/Theme";
 
-const Styles = StyleSheet.create({
+export const createStyles = (colors: ThemeColors) => StyleSheet.create({
     mainContainer: {
         flex: 1,
-        backgroundColor: Colors.whiteColor,
+        backgroundColor: colors.backgroundColor,
     },
     contentContainer: {
         paddingHorizontal: 20
     },
     headingText: {
         ...Fonts.semibold22,
-        color: Colors.mainTextColor,
+        color: colors.mainTextColor,
         fontWeight: '500',
         textAlign: 'center'
     },
     subHeadingText: {
         ...Fonts.regular14,
-        color: Colors.subTextColor,
+        color: colors.grayColor,
         fontWeight: '400',
         textAlign: 'center'
     },
@@ -27,12 +27,12 @@ const Styles = StyleSheet.create({
     },
     rememberMeText: {
         ...Fonts.regular14,
-        color: Colors.mainTextColor,
+        color: colors.mainTextColor,
         fontWeight: '400',
     },
     forgotPass: {
         ...Fonts.regular14,
-        color: Colors.errorColor,
+        color: colors.errorColor,
         fontWeight: '400',
     },
     signUpContainer: {
@@ -40,6 +40,8 @@ const Styles = StyleSheet.create({
         justifyContent: 'center',
         alignItems: 'center',
     }
-})
+});
 
+// Backward compatibility
+const Styles = createStyles(lightColors);
 export default Styles;

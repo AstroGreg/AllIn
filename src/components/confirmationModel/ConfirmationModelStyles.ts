@@ -10,52 +10,56 @@ const Styles = StyleSheet.create({
         justifyContent: 'center',
     },
     container: {
-        width: 220,
-        borderRadius: 10,
-        padding: 16,
+        width: 340,
+        borderRadius: 16,
+        paddingVertical: 24,
+        paddingHorizontal: 20,
         backgroundColor: Colors.whiteColor,
         alignItems: 'center',
-        justifyContent: 'center'
     },
     text: {
-        ...Fonts.regular12,
+        ...Fonts.medium14,
         color: Colors.mainTextColor,
-        textAlign: 'center'
+        textAlign: 'center',
+        lineHeight: 20,
     },
     iconCont: {
-        height: 44,
-        width: 44,
-        borderRadius: 22,
+        height: 64,
+        width: 64,
+        borderRadius: 32,
         alignItems: 'center',
         justifyContent: 'center',
-        backgroundColor: Colors.secondaryBlueColor,
+        backgroundColor: Colors.primaryColor,
     },
     row: {
         flexDirection: 'row',
-        alignItems: 'center'
+        alignItems: 'center',
+        width: '100%',
     },
     noBtn: {
-        paddingHorizontal: 16,
-        paddingVertical: 6,
-        borderRadius: 4,
-        borderWidth: 0.5,
-        borderColor: Colors.lightGrayColor
+        flex: 1,
+        paddingVertical: 14,
+        borderRadius: 10,
+        borderWidth: 1,
+        borderColor: '#DEDEDE',
+        alignItems: 'center',
+        justifyContent: 'center',
     },
     noText: {
-        textAlign: 'center',
-        ...Fonts.regular12,
-        color: Colors.subTextColor
+        ...Fonts.medium14,
+        color: Colors.subTextColor,
     },
     yesBtn: {
-        paddingHorizontal: 16,
-        paddingVertical: 6,
-        borderRadius: 4,
-        backgroundColor: Colors.primaryColor
+        flex: 1,
+        paddingVertical: 14,
+        borderRadius: 10,
+        backgroundColor: Colors.primaryColor,
+        alignItems: 'center',
+        justifyContent: 'center',
     },
     yesText: {
-        textAlign: 'center',
-        ...Fonts.regular12,
-        color: Colors.whiteColor
+        ...Fonts.medium14,
+        color: Colors.whiteColor,
     }
 });
 

@@ -16,6 +16,7 @@ interface CustomTextInputProps {
     isIcon?: boolean;
     isDown?: boolean;
     keyboardType?: any;
+    autoCapitalize?: 'none' | 'sentences' | 'words' | 'characters';
 }
 
 const CustomTextInput = ({
@@ -28,7 +29,8 @@ const CustomTextInput = ({
     value,
     isIcon = true,
     keyboardType,
-    isDown = false
+    isDown = false,
+    autoCapitalize = 'sentences'
 }: CustomTextInputProps) => {
     const [activeInput, setActiveInput] = useState(false);
     const [secureTextEntry, setSecureTextEntry] = useState(true);
@@ -38,7 +40,6 @@ const CustomTextInput = ({
             <Text style={Styles.label}>{label}</Text>
             {subLabel && <SizeBox height={4} />}
             {subLabel && <Text style={Styles.subLabel}>{subLabel}</Text>}
-            <SizeBox height={8} />
             <View style={[Styles.inputContainer, activeInput && { borderColor: Colors.primaryColor }]}>
                 {isIcon && icon}
                 <SizeBox width={isIcon ? 10 : 0} />
@@ -55,6 +56,7 @@ const CustomTextInput = ({
                         onChangeText={onChangeText}
                         keyboardType={keyboardType ? keyboardType : 'default'}
                         editable={isDown ? false : true}
+                        autoCapitalize={autoCapitalize}
                     />
                 </View>
                 {
@@ -62,8 +64,8 @@ const CustomTextInput = ({
                     <TouchableOpacity style={Styles.eyeIcon} onPress={() => setSecureTextEntry(!secureTextEntry)} >
                         {
                             secureTextEntry ?
-                                <Image source={Icons.ShowPassword} style={{ height: 20, width: 20 }} /> :
-                                <Icons.HidePassword height={20} width={20} />
+                                <Icons.HidePassword height={20} width={20} /> :
+                                <Image source={Icons.ShowPassword} style={{ height: 20, width: 20 }} />
                         }
                     </TouchableOpacity>
                 }

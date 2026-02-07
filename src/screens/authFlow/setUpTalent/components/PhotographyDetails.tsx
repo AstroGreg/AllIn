@@ -1,9 +1,9 @@
 import { View, Text, TouchableOpacity } from 'react-native'
 import React from 'react'
-import Styles from '../AddTalentStyles'
-import Colors from '../../../../constants/Colors';
+import { createStyles } from '../AddTalentStyles'
 import Icons from '../../../../constants/Icons';
 import SizeBox from '../../../../constants/SizeBox';
+import { useTheme } from '../../../../context/ThemeContext';
 
 interface props {
     title: string;
@@ -28,12 +28,14 @@ const PhotographyDetails = ({
     isDelete = false,
     onPressDelete
 }: props) => {
+    const { colors } = useTheme();
+    const Styles = createStyles(colors);
     return (
         <TouchableOpacity
             disabled={disabled}
             onPress={onPress}
             activeOpacity={0.7}
-            style={[Styles.photographyDetailsContainer, isSelected && { borderColor: Colors.primaryColor }]}
+            style={[Styles.photographyDetailsContainer, isSelected && { borderColor: colors.primaryColor }]}
         >
             <View style={[Styles.row, { justifyContent: 'space-between', }]}>
                 <Text style={Styles.tabText}>Name</Text>

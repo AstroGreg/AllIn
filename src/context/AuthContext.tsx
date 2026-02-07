@@ -1,0 +1,444 @@
+import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import Auth0, { Credentials, User } from 'react-native-auth0';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
+// Auth0 credentials - update these with your values
+const AUTH0_DOMAIN = 'dev-lfzk0n81zjp0c3x3.us.auth0.com';
+const AUTH0_CLIENT_ID = 'czlUtPo1WSw72XpcqHKSzO5MsuUzTV5P';
+// Custom redirect URI with lowercase package name (required for Android)
+const AUTH0_REDIRECT_URI = 'com.allin.auth0://dev-lfzk0n81zjp0c3x3.us.auth0.com/android/com.allin/callback';
+
+const auth0 = new Auth0({
+    domain: AUTH0_DOMAIN,
+    clientId: AUTH0_CLIENT_ID,
+});
+
+// User profile data structure
+export interface UserProfile {
+    // Basic info from CreateProfileScreen
+    username?: string;
+    firstName?: string;
+    lastName?: string;
+    birthDate?: string;
+    location?: string;
+
+    // Category selection
+    category?: 'find' | 'sell' | 'manage';
+
+    // Events selection
+    selectedEvents?: string[];
+
+    // Athlete details
+    chestNumber?: string;
+    website?: string;
+    runningClub?: string;
+
+    // Group profile
+    groupName?: string;
+    coachName?: string;
+    coachEmail?: string;
+    athletes?: string[];
+
+    // Photographer profile
+    photographerName?: string;
+    photographerWebsite?: string;
+
+    // Verification
+    documentUploaded?: boolean;
+    faceVerified?: boolean;
+
+    // Timestamps
+    createdAt?: string;
+    updatedAt?: string;
+}
+
+interface AuthContextType {
+    isAuthenticated: boolean;
+    isLoading: boolean;
+    user: User | null;
+    userProfile: UserProfile | null;
+    accessToken: string | null;
+    login: (connection?: string) => Promise<void>;
+    signup: (connection?: string) => Promise<void>;
+    logout: () => Promise<void>;
+    updateUserProfile: (profileData: Partial<UserProfile>) => Promise<void>;
+    getUserProfile: () => Promise<UserProfile | null>;
+    error: string | null;
+    clearError: () => void;
+}
+
+const AuthContext = createContext<AuthContextType | undefined>(undefined);
+
+const AUTH_STORAGE_KEY = '@auth_credentials';
+const PROFILE_STORAGE_KEY = '@user_profile';
+
+export const AuthProvider = ({ children }: { children: ReactNode }) => {
+    const [isAuthenticated, setIsAuthenticated] = useState(false);
+    const [isLoading, setIsLoading] = useState(true);
+    const [user, setUser] = useState<User | null>(null);
+    const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
+    const [accessToken, setAccessToken] = useState<string | null>(null);
+    const [error, setError] = useState<string | null>(null);
+
+    // Check for stored credentials on app start
+    useEffect(() => {
+        checkStoredCredentials();
+    }, []);
+
+    const checkStoredCredentials = async () => {
+        console.log('[Auth] Checking stored credentials...');
+        try {
+            const storedCredentials = await AsyncStorage.getItem(AUTH_STORAGE_KEY);
+            const storedProfile = await AsyncStorage.getItem(PROFILE_STORAGE_KEY);
+
+            if (storedProfile) {
+                console.log('[Auth] Found stored profile');
+                setUserProfile(JSON.parse(storedProfile));
+            }
+
+            if (storedCredentials) {
+                console.log('[Auth] Found stored credentials');
+                const credentials = JSON.parse(storedCredentials);
+
+                if (credentials.accessToken) {
+                    let userInfo: User | null = null;
+
+                    // Try to decode ID token first
+                    if (credentials.idToken) {
+                        try {
+                            const idTokenParts = credentials.idToken.split('.');
+                            if (idTokenParts.length === 3) {
+                                const payload = JSON.parse(atob(idTokenParts[1]));
+                                // Check if token is expired
+                                if (payload.exp && payload.exp * 1000 > Date.now()) {
+                                    console.log('[Auth] ID token valid, user:', payload.email);
+                                    userInfo = {
+                                        sub: payload.sub,
+                                        name: payload.name,
+                                        givenName: payload.given_name,
+                                        familyName: payload.family_name,
+                                        nickname: payload.nickname,
+                                        email: payload.email,
+                                        emailVerified: payload.email_verified,
+                                        picture: payload.picture,
+                                    } as User;
+                                } else {
+                                    console.log('[Auth] ID token expired');
+                                    throw new Error('Token expired');
+                                }
+                            }
+                        } catch (decodeError: any) {
+                            console.log('[Auth] Failed to decode ID token:', decodeError.message);
+                            throw decodeError;
+                        }
+                    }
+
+                    if (userInfo) {
+                        setUser(userInfo);
+                        setAccessToken(credentials.accessToken);
+                        setIsAuthenticated(true);
+                    } else {
+                        throw new Error('Could not validate session');
+                    }
+                }
+            } else {
+                console.log('[Auth] No stored credentials found');
+            }
+        } catch (err: any) {
+            // Token expired or invalid, clear stored credentials
+            console.log('[Auth] Token validation failed:', err.message);
+            await AsyncStorage.removeItem(AUTH_STORAGE_KEY);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const storeCredentials = async (credentials: Credentials) => {
+        try {
+            await AsyncStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(credentials));
+        } catch (err) {
+            console.error('Error storing credentials:', err);
+        }
+    };
+
+    const updateUserProfile = async (profileData: Partial<UserProfile>) => {
+        try {
+            const currentProfile = userProfile || {};
+            const updatedProfile: UserProfile = {
+                ...currentProfile,
+                ...profileData,
+                updatedAt: new Date().toISOString(),
+            };
+
+            if (!updatedProfile.createdAt) {
+                updatedProfile.createdAt = new Date().toISOString();
+            }
+
+            // Store locally
+            await AsyncStorage.setItem(PROFILE_STORAGE_KEY, JSON.stringify(updatedProfile));
+            setUserProfile(updatedProfile);
+
+            // If authenticated, also update Auth0 user metadata
+            if (accessToken) {
+                try {
+                    await auth0.auth.userInfo({ token: accessToken });
+                    // Note: To update user_metadata in Auth0, you typically need to use the Management API
+                    // which requires a separate access token. For simplicity, we're storing locally.
+                    // In production, you'd call your backend to update Auth0 user_metadata.
+                } catch (err) {
+                    console.log('Could not sync profile to Auth0:', err);
+                }
+            }
+        } catch (err) {
+            console.error('Error updating user profile:', err);
+            throw err;
+        }
+    };
+
+    const getUserProfile = async (): Promise<UserProfile | null> => {
+        try {
+            const storedProfile = await AsyncStorage.getItem(PROFILE_STORAGE_KEY);
+            if (storedProfile) {
+                const profile = JSON.parse(storedProfile);
+                setUserProfile(profile);
+                return profile;
+            }
+            return null;
+        } catch (err) {
+            console.error('Error getting user profile:', err);
+            return null;
+        }
+    };
+
+    const login = async (connection?: string) => {
+        setIsLoading(true);
+        setError(null);
+        console.log('[Auth] Starting login...', connection ? `with connection: ${connection}` : 'with Universal Login');
+        try {
+            console.log('[Auth] Calling auth0.webAuth.authorize...');
+            const credentials = await auth0.webAuth.authorize({
+                scope: 'openid profile email',
+                redirectUrl: AUTH0_REDIRECT_URI,
+                ...(connection && { connection }),
+                // Force fresh login by adding prompt parameter
+                additionalParameters: {
+                    prompt: 'login',
+                },
+            });
+            console.log('[Auth] Credentials received:', credentials ? 'Yes' : 'No');
+            console.log('[Auth] Access token exists:', !!credentials?.accessToken);
+
+            if (credentials && credentials.accessToken) {
+                console.log('[Auth] Access token received');
+                console.log('[Auth] ID token exists:', !!credentials.idToken);
+
+                let userInfo: User | null = null;
+
+                // Try to get user info from ID token first (more reliable)
+                if (credentials.idToken) {
+                    try {
+                        // Decode ID token to get user info (it's a JWT)
+                        const idTokenParts = credentials.idToken.split('.');
+                        if (idTokenParts.length === 3) {
+                            const payload = JSON.parse(atob(idTokenParts[1]));
+                            console.log('[Auth] Decoded ID token payload:', payload.email || payload.sub);
+                            userInfo = {
+                                sub: payload.sub,
+                                name: payload.name,
+                                givenName: payload.given_name,
+                                familyName: payload.family_name,
+                                nickname: payload.nickname,
+                                email: payload.email,
+                                emailVerified: payload.email_verified,
+                                picture: payload.picture,
+                            } as User;
+                        }
+                    } catch (decodeError) {
+                        console.log('[Auth] Failed to decode ID token:', decodeError);
+                    }
+                }
+
+                // Fallback to userInfo API if ID token decode failed
+                if (!userInfo) {
+                    try {
+                        console.log('[Auth] Fetching user info from API...');
+                        userInfo = await auth0.auth.userInfo({ token: credentials.accessToken });
+                    } catch (userInfoError: any) {
+                        console.log('[Auth] userInfo API failed:', userInfoError.message);
+                        // Continue without user info - we still have a valid session
+                    }
+                }
+
+                console.log('[Auth] User info:', userInfo?.email || 'No email');
+                setUser(userInfo);
+                setAccessToken(credentials.accessToken);
+                setIsAuthenticated(true);
+                await storeCredentials(credentials);
+                console.log('[Auth] Login successful!');
+            } else {
+                console.log('[Auth] No access token in credentials, login may have been cancelled');
+                throw new Error('User cancelled the Auth');
+            }
+        } catch (err: any) {
+            console.log('[Auth] Login error:', err.message, err.code, JSON.stringify(err));
+            // Check for various cancellation messages
+            const isCancelled = err.message?.includes('cancel') ||
+                               err.message?.includes('Cancel') ||
+                               err.message === 'User cancelled the Auth' ||
+                               err.code === 'a]0' ||
+                               err.code === 'CANCELLED';
+
+            if (!isCancelled) {
+                const errorMessage = err.message || 'Login failed. Please try again.';
+                setError(errorMessage);
+                throw new Error(errorMessage);
+            } else {
+                console.log('[Auth] User cancelled login');
+                throw new Error('User cancelled the Auth');
+            }
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const signup = async (connection?: string) => {
+        setIsLoading(true);
+        setError(null);
+        console.log('[Auth] Starting signup...', connection ? `with connection: ${connection}` : 'with Universal Login');
+        try {
+            console.log('[Auth] Calling auth0.webAuth.authorize for signup...');
+            const credentials = await auth0.webAuth.authorize({
+                scope: 'openid profile email',
+                redirectUrl: AUTH0_REDIRECT_URI,
+                ...(connection && { connection }),
+                additionalParameters: {
+                    screen_hint: 'signup',
+                    prompt: 'login',
+                },
+            });
+            console.log('[Auth] Signup credentials received:', credentials ? 'Yes' : 'No');
+            console.log('[Auth] Access token exists:', !!credentials?.accessToken);
+
+            if (credentials && credentials.accessToken) {
+                console.log('[Auth] Access token received');
+                console.log('[Auth] ID token exists:', !!credentials.idToken);
+
+                let userInfo: User | null = null;
+
+                // Try to get user info from ID token first (more reliable)
+                if (credentials.idToken) {
+                    try {
+                        const idTokenParts = credentials.idToken.split('.');
+                        if (idTokenParts.length === 3) {
+                            const payload = JSON.parse(atob(idTokenParts[1]));
+                            console.log('[Auth] Decoded ID token payload:', payload.email || payload.sub);
+                            userInfo = {
+                                sub: payload.sub,
+                                name: payload.name,
+                                givenName: payload.given_name,
+                                familyName: payload.family_name,
+                                nickname: payload.nickname,
+                                email: payload.email,
+                                emailVerified: payload.email_verified,
+                                picture: payload.picture,
+                            } as User;
+                        }
+                    } catch (decodeError) {
+                        console.log('[Auth] Failed to decode ID token:', decodeError);
+                    }
+                }
+
+                // Fallback to userInfo API if ID token decode failed
+                if (!userInfo) {
+                    try {
+                        console.log('[Auth] Fetching user info from API...');
+                        userInfo = await auth0.auth.userInfo({ token: credentials.accessToken });
+                    } catch (userInfoError: any) {
+                        console.log('[Auth] userInfo API failed:', userInfoError.message);
+                    }
+                }
+
+                console.log('[Auth] User info:', userInfo?.email || 'No email');
+                setUser(userInfo);
+                setAccessToken(credentials.accessToken);
+                setIsAuthenticated(true);
+                await storeCredentials(credentials);
+                console.log('[Auth] Signup successful!');
+            } else {
+                console.log('[Auth] No access token in credentials, signup may have been cancelled');
+                throw new Error('User cancelled the Auth');
+            }
+        } catch (err: any) {
+            console.log('[Auth] Signup error:', err.message, err.code, JSON.stringify(err));
+            // Check for various cancellation messages
+            const isCancelled = err.message?.includes('cancel') ||
+                               err.message?.includes('Cancel') ||
+                               err.message === 'User cancelled the Auth' ||
+                               err.code === 'a0.session.user_cancelled' ||
+                               err.code === 'CANCELLED';
+
+            if (!isCancelled) {
+                const errorMessage = err.message || 'Signup failed. Please try again.';
+                setError(errorMessage);
+                throw new Error(errorMessage);
+            } else {
+                console.log('[Auth] User cancelled signup');
+                throw new Error('User cancelled the Auth');
+            }
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const logout = async () => {
+        setIsLoading(true);
+        try {
+            await auth0.webAuth.clearSession();
+            await AsyncStorage.removeItem(AUTH_STORAGE_KEY);
+            await AsyncStorage.removeItem(PROFILE_STORAGE_KEY);
+            setUser(null);
+            setUserProfile(null);
+            setAccessToken(null);
+            setIsAuthenticated(false);
+        } catch (err: any) {
+            console.error('Logout error:', err);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const clearError = () => {
+        setError(null);
+    };
+
+    return (
+        <AuthContext.Provider
+            value={{
+                isAuthenticated,
+                isLoading,
+                user,
+                userProfile,
+                accessToken,
+                login,
+                signup,
+                logout,
+                updateUserProfile,
+                getUserProfile,
+                error,
+                clearError,
+            }}
+        >
+            {children}
+        </AuthContext.Provider>
+    );
+};
+
+export const useAuth = () => {
+    const context = useContext(AuthContext);
+    if (context === undefined) {
+        throw new Error('useAuth must be used within an AuthProvider');
+    }
+    return context;
+};
+
+export default AuthContext;

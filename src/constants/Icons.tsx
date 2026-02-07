@@ -25,7 +25,9 @@ import homeActive from '../assets/icons/homeBlue.svg';
 import searchIcon from '../assets/icons/search-normal.svg';
 import searchActive from '../assets/icons/searchBlue.svg';
 import upload from '../assets/icons/uploadGrey.svg';
-import uploadBlue from '../assets/icons/uploadBlue.svg'
+import uploadBlue from '../assets/icons/uploadBlue.svg';
+import uploadWhite from '../assets/icons/uploadWhite.svg';
+import uploadBlue2 from '../assets/icons/uploadBlue2.svg';
 import profile from '../assets/icons/profileGrey.svg';
 import profileActive from '../assets/icons/profileBlue.svg';
 import menu from '../assets/icons/menuGrey.svg';
@@ -39,6 +41,7 @@ import competitionCalendar from '../assets/icons/competitionCalendar.svg';
 import map from '../assets/icons/map.svg';
 import location from '../assets/icons/location.svg';
 import calendarGrey from '../assets/icons/calendarGrey.svg';
+import calendarWhite from '../assets/icons/calendarWhite.svg';
 import rightBtnIconGrey from '../assets/icons/arrowRightGrey.svg';
 import play from '../assets/icons/posh.svg';
 import downloads from '../assets/icons/downloads.svg';
@@ -46,6 +49,7 @@ import receiptEdit from '../assets/icons/receiptEdit.svg';
 import timer from '../assets/icons/timer.svg';
 import edit from '../assets/icons/edit.svg';
 import greenTick from '../assets/icons/tickCircleGreen.svg';
+import checkCircleGreen from '../assets/icons/checkCircleGreen.svg';
 import pending from '../assets/icons/pending.svg';
 import DeleteCompetition from '../assets/icons/deleteCompetition.svg';
 import backArrow from '../assets/icons/arrowLeft.svg';
@@ -79,6 +83,8 @@ import run from '../assets/icons/run.svg';
 import camera from '../assets/icons/camera.svg';
 import video from '../assets/icons/video.svg';
 import download from '../assets/icons/download.svg';
+import downloadBlue from '../assets/icons/downloadBlue.svg';
+import downloadColorful from '../assets/icons/downloadColorful.svg';
 import moreAction from '../assets/icons/moreCircle.svg';
 import eye from '../assets/icons/eye.svg';
 import previousVideo from '../assets/icons/previousVideo.svg';
@@ -95,10 +101,54 @@ import dropdown from '../assets/icons/dropdown.svg';
 import filter from '../assets/icons/filter.svg';
 import cameraWhite from '../assets/icons/cameraWhite.svg';
 import playCricle from '../assets/icons/playCricle.svg';
+import feedBlue from '../assets/icons/feedBlue.svg';
+import notificationBoldBlue from '../assets/icons/notificationBoldBlue.svg';
+import playWhite from '../assets/icons/playWhite.svg';
+import bellColorful from '../assets/icons/bellColorful.svg';
+import playBlue from '../assets/icons/playBlue.svg';
+import fileEmptyColorful from '../assets/icons/fileEmptyColorful.svg';
+import lightbulbColorful from '../assets/icons/lightbulbColorful.svg';
+import shareBlue from '../assets/icons/shareBlue.png';
+import shareGray from '../assets/icons/shareGray.png';
+import blueTick from '../assets/icons/blueTick.svg';
+import aiBlueBordered from '../assets/icons/aiBlueBordered.svg';
+import aiWhiteBordered from '../assets/icons/aiWhiteBordered.svg';
+import englishBlueCircle from '../assets/icons/englishBlueCircle.svg';
+import deleteRedBold from '../assets/icons/deleteRedBold.svg';
+import paycoinqBancontact from '../assets/imgs/paycoinqBancontact.png';
+import individualColorful from '../assets/icons/individualColorful.svg';
+import photographerColorful from '../assets/icons/photographerColorful.svg';
+import groupColorful from '../assets/icons/groupColorful.svg';
+import personRunningColorful from '../assets/icons/personRunningColorful.svg';
+import lockColorful from '../assets/icons/lockColorful.svg';
+import aiColorful from '../assets/icons/aiColorful.svg';
+import hashWhite from '../assets/icons/hashWhite.svg';
+import imageWhite from '../assets/icons/imageWhite.svg';
+import facescanWhite from '../assets/icons/facescanWhite.svg';
+import boltBlue from '../assets/icons/boltBlue.svg';
+import aiViolate from '../assets/icons/aiViolate.svg';
+import targetBlue from '../assets/icons/targetBlue.svg';
+import athleteBlue from '../assets/icons/athleteBlue.svg';
+import qrBlack from '../assets/icons/qrBlack.svg';
+import aiWhiteSquare from '../assets/icons/aiWhiteSquare.svg';
+import loadingGradient from '../assets/icons/loadingGradient.svg';
 
 
 
 const Icons = {
+    BlueTick: blueTick,
+    AiBlueBordered: aiBlueBordered,
+    AiWhiteBordered: aiWhiteBordered,
+    EnglishBlueCircle: englishBlueCircle,
+    DeleteRedBold: deleteRedBold,
+    PaycoinqBancontact: paycoinqBancontact,
+    LightbulbColorful: lightbulbColorful,
+    FileEmptyColorful: fileEmptyColorful,
+    FeedBlue: feedBlue,
+    NotificationBoldBlue: notificationBoldBlue,
+    PlayWhite: playWhite,
+    BellColorful: bellColorful,
+    PlayBlue: playBlue,
     PlayCricle: playCricle,
     CameraWhite: cameraWhite,
     Filter: filter,
@@ -116,6 +166,8 @@ const Icons = {
     Eye: eye,
     MoreAction: moreAction,
     Download: download,
+    DownloadBlue: downloadBlue,
+    DownloadColorful: downloadColorful,
     Run: run,
     Video: video,
     Camera: camera,
@@ -152,6 +204,7 @@ const Icons = {
     DeleteCompetition: DeleteCompetition,
     Pending: pending,
     GreenTick: greenTick,
+    CheckCircleGreen: checkCircleGreen,
     Timer: timer,
     Edit: edit,
     ReceiptEdit: receiptEdit,
@@ -159,6 +212,7 @@ const Icons = {
     Play: play,
     RightBtnIconGrey: rightBtnIconGrey,
     CalendarGrey: calendarGrey,
+    CalendarWhite: calendarWhite,
     Location: location,
     Map: map,
     competitionCalendar: competitionCalendar,
@@ -188,12 +242,32 @@ const Icons = {
     SearchActive: searchActive,
     Upload: upload,
     UploadBlue: uploadBlue,
+    UploadWhite: uploadWhite,
+    UploadBlue2: uploadBlue2,
     Profile: profile,
     ProfileActive: profileActive,
     Menu: menu,
     MenuActive: menuActive,
     AddWhite: addWhite,
-    TickCircle: tickCircle
+    TickCircle: tickCircle,
+    ShareBlue: shareBlue,
+    ShareGray: shareGray,
+    IndividualColorful: individualColorful,
+    PhotographerColorful: photographerColorful,
+    GroupColorful: groupColorful,
+    PersonRunningColorful: personRunningColorful,
+    LockColorful: lockColorful,
+    AiColorful: aiColorful,
+    HashWhite: hashWhite,
+    ImageWhite: imageWhite,
+    FacescanWhite: facescanWhite,
+    BoltBlue: boltBlue,
+    AiViolate: aiViolate,
+    TargetBlue: targetBlue,
+    AthleteBlue: athleteBlue,
+    QrBlack: qrBlack,
+    AiWhiteSquare: aiWhiteSquare,
+    LoadingGradient: loadingGradient,
 }
 
 export default Icons;

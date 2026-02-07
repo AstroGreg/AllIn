@@ -91,7 +91,14 @@ const AllPhotosOfEvents = ({ navigation }: any) => {
                         photo={item.photo}
                         name={item.name}
                         price={item.price}
-                        onPressImg={() => navigation.navigate('PhotosScreen', { photoUri: item.photo })}
+                        onPressImg={() => navigation.navigate('PhotoDetailScreen', {
+                            eventTitle: 'BK Studenten 2023',
+                            photo: {
+                                title: `PK 2025 indoor ${item.name}`,
+                                views: '122K+',
+                                thumbnail: item.photo,
+                            }
+                        })}
                     />
                 }
                 showsVerticalScrollIndicator={false}
