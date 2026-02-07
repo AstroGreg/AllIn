@@ -15,9 +15,10 @@ interface MenuContainersProps {
     isSwitch?: boolean;
     toggleSwitch?: any;
     isEnabled?: boolean;
+    titleColor?: string;
 }
 
-const MenuContainers = ({ title, icon, onPress, isNext = true, isSelected, isSwitch = false, isEnabled, toggleSwitch }: MenuContainersProps) => {
+const MenuContainers = ({ title, icon, onPress, isNext = true, isSelected, isSwitch = false, isEnabled, toggleSwitch, titleColor }: MenuContainersProps) => {
     const { colors } = useTheme();
     const Styles = createStyles(colors);
 
@@ -27,7 +28,7 @@ const MenuContainers = ({ title, icon, onPress, isNext = true, isSelected, isSwi
                 {icon}
             </View>
             <SizeBox width={20} />
-            <Text style={Styles.titlesText}>{title}</Text>
+            <Text style={[Styles.titlesText, titleColor && { color: titleColor }]}>{title}</Text>
             <View style={Styles.nextArrow}>
                 {isSwitch ? <CustomSwitch isEnabled={isEnabled} toggleSwitch={toggleSwitch} /> :
                     isNext ? <Icons.ArrowNext height={24} width={24} /> :

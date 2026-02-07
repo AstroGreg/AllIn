@@ -10,23 +10,12 @@ import SocialBtn from '../components/SocialBtn'
 import FastImage from 'react-native-fast-image'
 import { useTheme } from '../../../context/ThemeContext'
 import { useAuth } from '../../../context/AuthContext'
-import AsyncStorage from '@react-native-async-storage/async-storage'
 
 const LoginScreen = ({ navigation }: any) => {
     const { colors } = useTheme();
     const Styles = createStyles(colors);
     const insets = useSafeAreaInsets();
-    const { login, isLoading, isAuthenticated } = useAuth();
-
-    // Debug: Clear all stored auth data
-    const handleClearAuth = async () => {
-        await AsyncStorage.removeItem('@auth_credentials');
-        await AsyncStorage.removeItem('@user_profile');
-        console.log('[LoginScreen] Cleared all auth data');
-        Alert.alert('Debug', 'Auth data cleared. Please restart the app.');
-    };
-
-    console.log('[LoginScreen] Rendered, isAuthenticated:', isAuthenticated, 'isLoading:', isLoading);
+    const { login, isLoading } = useAuth();
 
     const handleLogin = async () => {
         console.log('[LoginScreen] Sign In button pressed');
@@ -122,12 +111,6 @@ const LoginScreen = ({ navigation }: any) => {
                             <Text style={[Styles.rememberMeText, { color: colors.primaryColor }]}>Sign Up</Text>
                         </TouchableOpacity>
                     </View>
-
-                    {/* Debug button - remove in production */}
-                    <SizeBox height={30} />
-                    <TouchableOpacity onPress={handleClearAuth} style={{ padding: 10, alignItems: 'center' }}>
-                        <Text style={{ color: colors.grayColor, fontSize: 12 }}>[Debug] Clear Auth Data</Text>
-                    </TouchableOpacity>
 
                 </View>
                 <SizeBox height={40} />

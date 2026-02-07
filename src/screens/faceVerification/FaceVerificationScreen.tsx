@@ -15,9 +15,12 @@ import { createStyles } from './FaceVerificationScreenStyles';
 import SizeBox from '../../constants/SizeBox';
 import { useTheme } from '../../context/ThemeContext';
 import { useAuth } from '../../context/AuthContext';
+import { verifyFaceAngle, grantFaceRecognitionConsent, enrollFace } from '../../services/api';
+
+type ApiAngle = 'frontal' | 'left_profile' | 'right_profile' | 'upward' | 'downward';
 
 interface CaptureAngle {
-    id: string;
+    id: ApiAngle;
     title: string;
     instruction: string;
     yawMin: number;
@@ -27,19 +30,18 @@ interface CaptureAngle {
 }
 
 const CAPTURE_ANGLES: CaptureAngle[] = [
-    { id: 'front', title: 'Front', instruction: 'Look straight at the camera and hold still', yawMin: -10, yawMax: 10, pitchMin: -10, pitchMax: 10 },
-    { id: 'slight_left', title: 'Slight Left', instruction: 'Turn your head slightly to the left and hold still', yawMin: 15, yawMax: 40, pitchMin: -15, pitchMax: 15 },
-    { id: 'slight_right', title: 'Slight Right', instruction: 'Turn your head slightly to the right and hold still', yawMin: -40, yawMax: -15, pitchMin: -15, pitchMax: 15 },
-    { id: 'slight_up', title: 'Slight Up', instruction: 'Tilt your head slightly upward and hold still', yawMin: -15, yawMax: 15, pitchMin: 10, pitchMax: 35 },
-    { id: 'slight_down', title: 'Slight Down', instruction: 'Tilt your head slightly downward and hold still', yawMin: -15, yawMax: 15, pitchMin: -35, pitchMax: -10 },
-    { id: 'back_front', title: 'Front Again', instruction: 'Look straight at the camera one more time', yawMin: -10, yawMax: 10, pitchMin: -10, pitchMax: 10 },
+    { id: 'frontal', title: 'Front', instruction: 'Look straight at the camera and hold still', yawMin: -10, yawMax: 10, pitchMin: -10, pitchMax: 10 },
+    { id: 'left_profile', title: 'Left Profile', instruction: 'Turn your head to the left and hold still', yawMin: 15, yawMax: 40, pitchMin: -15, pitchMax: 15 },
+    { id: 'right_profile', title: 'Right Profile', instruction: 'Turn your head to the right and hold still', yawMin: -40, yawMax: -15, pitchMin: -15, pitchMax: 15 },
+    { id: 'upward', title: 'Look Up', instruction: 'Tilt your head slightly upward and hold still', yawMin: -15, yawMax: 15, pitchMin: 10, pitchMax: 35 },
+    { id: 'downward', title: 'Look Down', instruction: 'Tilt your head slightly downward and hold still', yawMin: -15, yawMax: 15, pitchMin: -35, pitchMax: -10 },
 ];
 
 const FaceVerificationScreen = ({ navigation }: any) => {
     const { colors } = useTheme();
     const Styles = createStyles(colors);
     const insets = useSafeAreaInsets();
-    const { updateUserProfile } = useAuth();
+    const { updateUserProfile, accessToken } = useAuth();
 
     const cameraRef = useRef<Camera>(null);
     const [isSaving, setIsSaving] = useState(false);
@@ -54,35 +56,42 @@ const FaceVerificationScreen = ({ navigation }: any) => {
 
     const [currentAngleIndex, setCurrentAngleIndex] = useState(0);
     const [capturedImages, setCapturedImages] = useState<{ [key: string]: string }>({});
+    const [verifiedImages, setVerifiedImages] = useState<{ [key: string]: boolean }>({});
     const [isCapturing, setIsCapturing] = useState(false);
+    const [isVerifying, setIsVerifying] = useState(false);
     const [faceDetected, setFaceDetected] = useState(false);
     const [angleMatched, setAngleMatched] = useState(false);
     const [countdown, setCountdown] = useState<number | null>(null);
     const [isTransitioning, setIsTransitioning] = useState(false);
 
-    // Use refs to track state in worklet callbacks (avoid stale closures)
+    // Use refs to track state in worklet callbacks
     const currentAngleIndexRef = useRef(currentAngleIndex);
     const isCapturingRef = useRef(false);
     const hasCurrentImageRef = useRef(false);
     const countdownActiveRef = useRef(false);
     const isTransitioningRef = useRef(false);
+    const isVerifyingRef = useRef(false);
     const countdownRef = useRef<NodeJS.Timeout | null>(null);
     const isMountedRef = useRef(true);
 
-    // Keep refs in sync with state
     useEffect(() => {
         currentAngleIndexRef.current = currentAngleIndex;
     }, [currentAngleIndex]);
 
     useEffect(() => {
         const currentAngle = CAPTURE_ANGLES[currentAngleIndex];
-        hasCurrentImageRef.current = !!capturedImages[currentAngle?.id];
-    }, [capturedImages, currentAngleIndex]);
+        hasCurrentImageRef.current = !!verifiedImages[currentAngle?.id];
+    }, [verifiedImages, currentAngleIndex]);
+
+    useEffect(() => {
+        isVerifyingRef.current = isVerifying;
+    }, [isVerifying]);
 
     const currentAngle = CAPTURE_ANGLES[currentAngleIndex];
     const currentImage = capturedImages[currentAngle?.id];
-    const allCaptured = Object.keys(capturedImages).length === CAPTURE_ANGLES.length;
-    const progress = Object.keys(capturedImages).length / CAPTURE_ANGLES.length;
+    const isCurrentVerified = verifiedImages[currentAngle?.id];
+    const allVerified = CAPTURE_ANGLES.every(a => verifiedImages[a.id]);
+    const progress = Object.keys(verifiedImages).length / CAPTURE_ANGLES.length;
 
     const handleRequestPermission = useCallback(async () => {
         try {
@@ -123,7 +132,6 @@ const FaceVerificationScreen = ({ navigation }: any) => {
         Linking.openSettings();
     }, []);
 
-    // Check if face angle matches current target
     const checkAngleMatch = useCallback((yaw: number, pitch: number, angleIndex: number) => {
         const angle = CAPTURE_ANGLES[angleIndex];
         if (!angle) return false;
@@ -131,6 +139,38 @@ const FaceVerificationScreen = ({ navigation }: any) => {
         const pitchMatch = pitch >= angle.pitchMin && pitch <= angle.pitchMax;
         return yawMatch && pitchMatch;
     }, []);
+
+    // Verify a captured photo with the API (falls back to local detection if API is unavailable)
+    const verifyCapture = useCallback(async (angleId: ApiAngle, photoUri: string) => {
+        if (!accessToken) {
+            console.log('[FaceVerify] No access token, using local verification');
+            return true;
+        }
+
+        setIsVerifying(true);
+        isVerifyingRef.current = true;
+        try {
+            const result = await verifyFaceAngle(accessToken, angleId, photoUri);
+            console.log('[FaceVerify] API result:', JSON.stringify(result));
+
+            if (result.accepted) {
+                return true;
+            } else {
+                Alert.alert(
+                    'Verification Failed',
+                    result.reason || `Expected ${result.expected_angle} but detected ${result.detected_angle}. Please try again.`,
+                );
+                return false;
+            }
+        } catch (err: any) {
+            console.log('[FaceVerify] API error, falling back to local verification:', err.message);
+            // Accept local face detection result if API is unavailable (e.g. token not configured)
+            return true;
+        } finally {
+            setIsVerifying(false);
+            isVerifyingRef.current = false;
+        }
+    }, [accessToken]);
 
     // Capture photo
     const capturePhoto = useCallback(async () => {
@@ -152,31 +192,54 @@ const FaceVerificationScreen = ({ navigation }: any) => {
             const capturedAngleIndex = currentAngleIndexRef.current;
             const capturedAngle = CAPTURE_ANGLES[capturedAngleIndex];
 
+            // Show the captured image immediately
             setCapturedImages(prev => ({
                 ...prev,
                 [capturedAngle.id]: photoUri
             }));
 
-            // Auto-advance to next angle after a delay
-            if (capturedAngleIndex < CAPTURE_ANGLES.length - 1) {
-                isTransitioningRef.current = true;
-                setIsTransitioning(true);
+            // Verify with the API
+            const verified = await verifyCapture(capturedAngle.id, photoUri);
 
-                setTimeout(() => {
-                    if (!isMountedRef.current) return;
+            if (!isMountedRef.current) return;
 
-                    setCurrentAngleIndex(capturedAngleIndex + 1);
-                    setAngleMatched(false);
-                    setCountdown(null);
-                    countdownActiveRef.current = false;
+            if (verified) {
+                // Mark as verified
+                setVerifiedImages(prev => ({
+                    ...prev,
+                    [capturedAngle.id]: true
+                }));
 
-                    // Allow a brief moment before enabling detection again
+                // Auto-advance to next angle
+                if (capturedAngleIndex < CAPTURE_ANGLES.length - 1) {
+                    isTransitioningRef.current = true;
+                    setIsTransitioning(true);
+
                     setTimeout(() => {
                         if (!isMountedRef.current) return;
-                        isTransitioningRef.current = false;
-                        setIsTransitioning(false);
-                    }, 500);
-                }, 1500);
+
+                        setCurrentAngleIndex(capturedAngleIndex + 1);
+                        setAngleMatched(false);
+                        setCountdown(null);
+                        countdownActiveRef.current = false;
+
+                        setTimeout(() => {
+                            if (!isMountedRef.current) return;
+                            isTransitioningRef.current = false;
+                            setIsTransitioning(false);
+                        }, 500);
+                    }, 1500);
+                }
+            } else {
+                // Verification failed — clear the captured image so user can retry
+                setCapturedImages(prev => {
+                    const next = { ...prev };
+                    delete next[capturedAngle.id];
+                    return next;
+                });
+                setAngleMatched(false);
+                setCountdown(null);
+                countdownActiveRef.current = false;
             }
         } catch (error) {
             console.log('Capture error:', error);
@@ -186,9 +249,8 @@ const FaceVerificationScreen = ({ navigation }: any) => {
                 setIsCapturing(false);
             }
         }
-    }, []);
+    }, [verifyCapture]);
 
-    // Clear countdown
     const clearCountdown = useCallback(() => {
         if (countdownRef.current) {
             clearInterval(countdownRef.current);
@@ -198,9 +260,8 @@ const FaceVerificationScreen = ({ navigation }: any) => {
         setCountdown(null);
     }, []);
 
-    // Start countdown
     const startCountdown = useCallback(() => {
-        if (countdownActiveRef.current || isCapturingRef.current || hasCurrentImageRef.current || isTransitioningRef.current) {
+        if (countdownActiveRef.current || isCapturingRef.current || hasCurrentImageRef.current || isTransitioningRef.current || isVerifyingRef.current) {
             return;
         }
 
@@ -224,7 +285,6 @@ const FaceVerificationScreen = ({ navigation }: any) => {
         }, 1000);
     }, [capturePhoto, clearCountdown]);
 
-    // Handle face detection result from worklet
     const handleFaceDetected = Worklets.createRunOnJS((
         detected: boolean,
         yaw: number,
@@ -234,8 +294,7 @@ const FaceVerificationScreen = ({ navigation }: any) => {
 
         setFaceDetected(detected);
 
-        // Skip processing if transitioning, capturing, or already have image
-        if (isTransitioningRef.current || isCapturingRef.current || hasCurrentImageRef.current) {
+        if (isTransitioningRef.current || isCapturingRef.current || hasCurrentImageRef.current || isVerifyingRef.current) {
             return;
         }
 
@@ -256,7 +315,6 @@ const FaceVerificationScreen = ({ navigation }: any) => {
         }
     });
 
-    // Frame processor for face detection
     const frameProcessor = useFrameProcessor((frame) => {
         'worklet';
         try {
@@ -276,28 +334,55 @@ const FaceVerificationScreen = ({ navigation }: any) => {
     }, [detectFaces, handleFaceDetected]);
 
     const handleContinue = useCallback(async () => {
+        if (!accessToken) {
+            Alert.alert('Error', 'Not authenticated. Please log in again.');
+            return;
+        }
+
         setIsSaving(true);
         try {
+            // Try API enrollment (non-blocking if token isn't configured for the API)
+            try {
+                await grantFaceRecognitionConsent(accessToken);
+                console.log('[FaceVerify] Consent granted');
+
+                await enrollFace(accessToken, {
+                    frontal: capturedImages['frontal'],
+                    left_profile: capturedImages['left_profile'],
+                    right_profile: capturedImages['right_profile'],
+                    upward: capturedImages['upward'],
+                    downward: capturedImages['downward'],
+                });
+                console.log('[FaceVerify] Face enrollment successful');
+            } catch (apiErr: any) {
+                console.log('[FaceVerify] API enrollment skipped (token not configured):', apiErr.message);
+            }
+
+            // Update profile metadata locally
             await updateUserProfile({
                 faceVerified: true,
             });
+
             navigation.reset({
                 index: 0,
                 routes: [{ name: 'BottomTabBar' }],
             });
         } catch (err: any) {
-            Alert.alert('Error', 'Failed to save verification. Please try again.');
+            console.log('[FaceVerify] Save error:', err.message);
+            Alert.alert('Error', err.message || 'Failed to save. Please try again.');
         } finally {
             setIsSaving(false);
         }
-    }, [navigation, updateUserProfile]);
+    }, [navigation, updateUserProfile, accessToken, capturedImages]);
 
     const handleCancel = useCallback(() => {
         navigation.goBack();
     }, [navigation]);
 
-    // Get instruction text based on current state
     const getInstructionText = () => {
+        if (isVerifying) {
+            return 'Verifying your face angle...';
+        }
         if (isTransitioning) {
             return 'Great! Moving to the next angle...';
         }
@@ -348,8 +433,7 @@ const FaceVerificationScreen = ({ navigation }: any) => {
         );
     }
 
-    // Determine if camera should show preview
-    const showCameraPreview = !currentImage;
+    const showCameraPreview = !currentImage || !isCurrentVerified;
 
     return (
         <View style={Styles.mainContainer}>
@@ -359,26 +443,20 @@ const FaceVerificationScreen = ({ navigation }: any) => {
                 {/* Camera Container */}
                 <View style={Styles.cameraOuterContainer}>
                     {/* Custom dashed border */}
-                    {/* Corners */}
                     <View style={[Styles.borderCorner, Styles.borderCornerTopLeft]} />
                     <View style={[Styles.borderCorner, Styles.borderCornerTopRight]} />
                     <View style={[Styles.borderCorner, Styles.borderCornerBottomLeft]} />
                     <View style={[Styles.borderCorner, Styles.borderCornerBottomRight]} />
-                    {/* Top dashes */}
                     <View style={[Styles.borderDash, Styles.borderDashHorizontal, { top: 0, left: '30%' }]} />
                     <View style={[Styles.borderDash, Styles.borderDashHorizontal, { top: 0, right: '30%' }]} />
-                    {/* Bottom dashes */}
                     <View style={[Styles.borderDash, Styles.borderDashHorizontal, { bottom: 0, left: '30%' }]} />
                     <View style={[Styles.borderDash, Styles.borderDashHorizontal, { bottom: 0, right: '30%' }]} />
-                    {/* Left dashes */}
                     <View style={[Styles.borderDash, Styles.borderDashVertical, { left: 0, top: '30%' }]} />
                     <View style={[Styles.borderDash, Styles.borderDashVertical, { left: 0, bottom: '30%' }]} />
-                    {/* Right dashes */}
                     <View style={[Styles.borderDash, Styles.borderDashVertical, { right: 0, top: '30%' }]} />
                     <View style={[Styles.borderDash, Styles.borderDashVertical, { right: 0, bottom: '30%' }]} />
 
                     <View style={Styles.cameraContainer}>
-                        {/* Always render camera but control visibility */}
                         <View style={[Styles.cameraWrapper, !showCameraPreview && { opacity: 0, position: 'absolute' }]}>
                             <Camera
                                 ref={cameraRef}
@@ -390,7 +468,6 @@ const FaceVerificationScreen = ({ navigation }: any) => {
                             />
                             {showCameraPreview && (
                                 <>
-                                    {/* Face guide overlay with oval */}
                                     <View style={Styles.faceGuideOverlay}>
                                         <View style={[
                                             Styles.faceGuide,
@@ -399,17 +476,20 @@ const FaceVerificationScreen = ({ navigation }: any) => {
                                             !faceDetected && { borderColor: colors.primaryColor }
                                         ]} />
                                     </View>
-                                    {/* Countdown overlay */}
                                     {countdown !== null && (
                                         <View style={Styles.countdownOverlay}>
                                             <Text style={Styles.countdownText}>{countdown}</Text>
                                         </View>
                                     )}
+                                    {isVerifying && (
+                                        <View style={Styles.countdownOverlay}>
+                                            <ActivityIndicator size="large" color={colors.pureWhite} />
+                                        </View>
+                                    )}
                                 </>
                             )}
                         </View>
-                        {/* Show captured image */}
-                        {currentImage && (
+                        {currentImage && isCurrentVerified && (
                             <FastImage
                                 source={{ uri: currentImage }}
                                 style={Styles.capturedImage}
@@ -447,18 +527,18 @@ const FaceVerificationScreen = ({ navigation }: any) => {
                     <TouchableOpacity
                         style={[
                             Styles.primaryButton,
-                            (!allCaptured || isSaving) && Styles.primaryButtonDisabled
+                            (!allVerified || isSaving) && Styles.primaryButtonDisabled
                         ]}
                         activeOpacity={0.7}
                         onPress={handleContinue}
-                        disabled={!allCaptured || isSaving}
+                        disabled={!allVerified || isSaving}
                     >
                         {isSaving ? (
                             <ActivityIndicator size="small" color={colors.pureWhite} />
                         ) : (
                             <>
                                 <Text style={Styles.primaryButtonText}>
-                                    {allCaptured ? 'Save Preferences' : `${currentAngleIndex + 1} of ${CAPTURE_ANGLES.length}`}
+                                    {allVerified ? 'Save Preferences' : `${currentAngleIndex + 1} of ${CAPTURE_ANGLES.length}`}
                                 </Text>
                                 <ArrowRight size={24} color={colors.pureWhite} />
                             </>

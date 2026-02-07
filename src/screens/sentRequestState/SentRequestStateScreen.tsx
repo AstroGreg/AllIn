@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, TextInput, Platform } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, TextInput } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import DateTimePicker from '@react-native-community/datetimepicker';
+import DatePicker from 'react-native-date-picker';
 import {
     ArrowLeft2,
     Calendar,
@@ -35,12 +35,6 @@ const SentRequestStateScreen = ({ navigation }: any) => {
         return `${day}.${month}.${year}`;
     };
 
-    const onDateChange = (event: any, selectedDate?: Date) => {
-        setShowDatePicker(false);
-        if (event.type === 'set' && selectedDate) {
-            setDate(selectedDate);
-        }
-    };
 
     const handleStatusChange = (status: 'sent' | 'nonIssue') => {
         if (status === 'sent') {
@@ -141,14 +135,17 @@ const SentRequestStateScreen = ({ navigation }: any) => {
                     <ArrowDown2 size={20} color="#9B9F9F" variant="Linear" />
                 </TouchableOpacity>
 
-                {showDatePicker && (
-                    <DateTimePicker
-                        value={date || new Date()}
-                        mode="date"
-                        display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-                        onChange={onDateChange}
-                    />
-                )}
+                <DatePicker
+                    modal
+                    open={showDatePicker}
+                    date={date || new Date()}
+                    mode="date"
+                    onConfirm={(selectedDate) => {
+                        setShowDatePicker(false);
+                        setDate(selectedDate);
+                    }}
+                    onCancel={() => setShowDatePicker(false)}
+                />
 
                 <SizeBox height={16} />
 

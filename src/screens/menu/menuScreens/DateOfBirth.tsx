@@ -1,11 +1,11 @@
-import { View, Text, TouchableOpacity, ScrollView, Platform } from 'react-native'
+import { View, Text, TouchableOpacity, ScrollView } from 'react-native'
 import React, { useState } from 'react'
 import { createStyles } from '../MenuStyles'
 import SizeBox from '../../../constants/SizeBox'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useTheme } from '../../../context/ThemeContext'
 import { ArrowLeft2, Notification, Calendar, ArrowDown2, ArrowRight2 } from 'iconsax-react-nativejs'
-import DateTimePicker from '@react-native-community/datetimepicker'
+import DatePicker from 'react-native-date-picker'
 
 const DateOfBirth = ({ navigation }: any) => {
     const insets = useSafeAreaInsets();
@@ -25,23 +25,7 @@ const DateOfBirth = ({ navigation }: any) => {
         });
     };
 
-    const onCurrentDateChange = (event: any, selectedDate?: Date) => {
-        if (Platform.OS === 'android') {
-            setShowCurrentDatePicker(false);
-        }
-        if (selectedDate) {
-            setCurrentDate(selectedDate);
-        }
-    };
-
-    const onNewDateChange = (event: any, selectedDate?: Date) => {
-        if (Platform.OS === 'android') {
-            setShowNewDatePicker(false);
-        }
-        if (selectedDate) {
-            setNewDate(selectedDate);
-        }
-    };
+    const [activePicker, setActivePicker] = useState<'current' | 'new' | null>(null);
 
     return (
         <View style={Styles.mainContainer}>
@@ -70,7 +54,7 @@ const DateOfBirth = ({ navigation }: any) => {
                     <SizeBox height={8} />
                     <TouchableOpacity
                         style={Styles.addCardInputContainer}
-                        onPress={() => setShowCurrentDatePicker(true)}
+                        onPress={() => { setShowCurrentDatePicker(true); setActivePicker('current'); }}
                     >
                         <Calendar size={16} color={colors.primaryColor} variant="Linear" />
                         <SizeBox width={10} />
@@ -89,7 +73,7 @@ const DateOfBirth = ({ navigation }: any) => {
                     <SizeBox height={8} />
                     <TouchableOpacity
                         style={Styles.addCardInputContainer}
-                        onPress={() => setShowNewDatePicker(true)}
+                        onPress={() => { setShowNewDatePicker(true); setActivePicker('new'); }}
                     >
                         <Calendar size={16} color={colors.primaryColor} variant="Linear" />
                         <SizeBox width={10} />
@@ -111,67 +95,43 @@ const DateOfBirth = ({ navigation }: any) => {
                 <SizeBox height={insets.bottom > 0 ? insets.bottom + 20 : 40} />
             </ScrollView>
 
-            {/* Current Date Picker */}
-            {showCurrentDatePicker && (
-                Platform.OS === 'ios' ? (
-                    <View style={Styles.datePickerContainer}>
-                        <View style={Styles.datePickerHeader}>
-                            <TouchableOpacity onPress={() => setShowCurrentDatePicker(false)}>
-                                <Text style={Styles.datePickerCancel}>Cancel</Text>
-                            </TouchableOpacity>
-                            <TouchableOpacity onPress={() => setShowCurrentDatePicker(false)}>
-                                <Text style={Styles.datePickerDone}>Done</Text>
-                            </TouchableOpacity>
-                        </View>
-                        <DateTimePicker
-                            value={currentDate || new Date()}
-                            mode="date"
-                            display="spinner"
-                            onChange={onCurrentDateChange}
-                            maximumDate={new Date()}
-                        />
-                    </View>
-                ) : (
-                    <DateTimePicker
-                        value={currentDate || new Date()}
-                        mode="date"
-                        display="default"
-                        onChange={onCurrentDateChange}
-                        maximumDate={new Date()}
-                    />
-                )
-            )}
+            <DatePicker
+                modal
+                open={activePicker === 'current'}
+                date={currentDate || new Date(2000, 0, 1)}
+                mode="date"
+                maximumDate={new Date()}
+                minimumDate={new Date(1920, 0, 1)}
+                title="Select current date of birth"
+                onConfirm={(date) => {
+                    setActivePicker(null);
+                    setShowCurrentDatePicker(false);
+                    setCurrentDate(date);
+                }}
+                onCancel={() => {
+                    setActivePicker(null);
+                    setShowCurrentDatePicker(false);
+                }}
+            />
 
-            {/* New Date Picker */}
-            {showNewDatePicker && (
-                Platform.OS === 'ios' ? (
-                    <View style={Styles.datePickerContainer}>
-                        <View style={Styles.datePickerHeader}>
-                            <TouchableOpacity onPress={() => setShowNewDatePicker(false)}>
-                                <Text style={Styles.datePickerCancel}>Cancel</Text>
-                            </TouchableOpacity>
-                            <TouchableOpacity onPress={() => setShowNewDatePicker(false)}>
-                                <Text style={Styles.datePickerDone}>Done</Text>
-                            </TouchableOpacity>
-                        </View>
-                        <DateTimePicker
-                            value={newDate || new Date()}
-                            mode="date"
-                            display="spinner"
-                            onChange={onNewDateChange}
-                            maximumDate={new Date()}
-                        />
-                    </View>
-                ) : (
-                    <DateTimePicker
-                        value={newDate || new Date()}
-                        mode="date"
-                        display="default"
-                        onChange={onNewDateChange}
-                        maximumDate={new Date()}
-                    />
-                )
-            )}
+            <DatePicker
+                modal
+                open={activePicker === 'new'}
+                date={newDate || new Date(2000, 0, 1)}
+                mode="date"
+                maximumDate={new Date()}
+                minimumDate={new Date(1920, 0, 1)}
+                title="Select new date of birth"
+                onConfirm={(date) => {
+                    setActivePicker(null);
+                    setShowNewDatePicker(false);
+                    setNewDate(date);
+                }}
+                onCancel={() => {
+                    setActivePicker(null);
+                    setShowNewDatePicker(false);
+                }}
+            />
         </View>
     )
 }

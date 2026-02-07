@@ -1,4 +1,4 @@
-import { View, Text, ScrollView, TouchableOpacity } from 'react-native'
+import { View, Text, ScrollView, TouchableOpacity, Alert } from 'react-native'
 import React, { useState } from 'react'
 import { createStyles } from './MenuStyles'
 import SizeBox from '../../constants/SizeBox'
@@ -7,7 +7,9 @@ import MenuContainers from './components/MenuContainers'
 import Icons from '../../constants/Icons'
 import FastImage from 'react-native-fast-image'
 import { useTheme } from '../../context/ThemeContext'
-import { ArrowLeft2, Notification, Money3, UserOctagon, MainComponent, Eye, Copy, SecurityUser } from 'iconsax-react-nativejs'
+import { useAuth } from '../../context/AuthContext'
+import { ArrowLeft2, Notification, Money3, UserOctagon, MainComponent, Eye, Copy, SecurityUser, Logout } from 'iconsax-react-nativejs'
+import { CommonActions } from '@react-navigation/native'
 
 interface SocialLink {
     platform: string;
@@ -19,10 +21,40 @@ interface SocialLink {
 const MenuScreen = ({ navigation }: any) => {
     const insets = useSafeAreaInsets();
     const { mode, colors, setTheme } = useTheme();
+    const { logout, isLoading } = useAuth();
     const Styles = createStyles(colors);
     const [pushNotifications, setPushNotifications] = useState(true);
     const [aiPhotoRecognition, setAiPhotoRecognition] = useState(true);
     const [ghostMode, setGhostMode] = useState(true);
+
+    const handleLogout = () => {
+        Alert.alert(
+            'Sign Out',
+            'Are you sure you want to sign out?',
+            [
+                { text: 'Cancel', style: 'cancel' },
+                {
+                    text: 'Sign Out',
+                    style: 'destructive',
+                    onPress: async () => {
+                        try {
+                            await logout();
+                            // Reset navigation to login screen
+                            navigation.dispatch(
+                                CommonActions.reset({
+                                    index: 0,
+                                    routes: [{ name: 'SelectLanguageScreen' }],
+                                })
+                            );
+                        } catch (error) {
+                            console.error('Logout error:', error);
+                            Alert.alert('Error', 'Failed to sign out. Please try again.');
+                        }
+                    },
+                },
+            ]
+        );
+    };
 
     const [socialLinks, setSocialLinks] = useState<SocialLink[]>([
         { platform: 'Strava', icon: Icons.Strava, isConnected: false, url: 'www.usertrava.com' },
@@ -243,6 +275,17 @@ const MenuScreen = ({ navigation }: any) => {
                     <Text style={Styles.privacyDescription}>• Existing friends can still see your profile.</Text>
                     <Text style={Styles.privacyDescription}>• You can still browse and interact normally.</Text>
                 </View>
+
+                <SizeBox height={24} />
+
+                {/* Sign Out */}
+                <MenuContainers
+                    icon={<Logout size={20} color="#FF4444" variant="Linear" />}
+                    title='Sign Out'
+                    onPress={handleLogout}
+                    isNext={false}
+                    titleColor="#FF4444"
+                />
 
                 <SizeBox height={insets.bottom > 0 ? insets.bottom + 20 : 40} />
             </ScrollView>

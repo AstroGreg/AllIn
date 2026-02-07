@@ -8,6 +8,7 @@ import NewsFeedCard from './components/NewsFeedCard'
 import Images from '../../constants/Images'
 import Icons from '../../constants/Icons'
 import { useTheme } from '../../context/ThemeContext'
+import { useAuth } from '../../context/AuthContext'
 import LinearGradient from 'react-native-linear-gradient'
 import { UserAdd, ArrowRight } from 'iconsax-react-nativejs'
 
@@ -15,6 +16,9 @@ const HomeScreen = ({ navigation }: any) => {
     const insets = useSafeAreaInsets();
     const { colors } = useTheme();
     const Styles = createStyles(colors);
+    const { user, userProfile } = useAuth();
+
+    const displayName = userProfile?.firstName || 'User';
 
     const feedImages = [
         Images.photo1,
@@ -35,7 +39,8 @@ const HomeScreen = ({ navigation }: any) => {
         <View style={Styles.mainContainer}>
             <SizeBox height={insets.top} />
             <Header
-                userName={"David Malan"}
+                userName={displayName}
+                profilePic={user?.picture}
                 onPressFeed={() => navigation.navigate('HubScreen')}
                 onPressNotification={() => navigation.navigate('NotificationsScreen')}
                 onPressProfile={() => navigation.navigate('BottomTabBar', { screen: 'Profile' })}

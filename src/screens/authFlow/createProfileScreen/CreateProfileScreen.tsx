@@ -1,13 +1,15 @@
 import React, { useState } from 'react';
-import { View, Text, ScrollView, Alert, ActivityIndicator } from 'react-native';
+import { View, Text, ScrollView, Alert, ActivityIndicator, TouchableOpacity } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import FastImage from 'react-native-fast-image';
+import DatePicker from 'react-native-date-picker';
 import { createStyles } from './CreateProfileScreenStyles';
 import SizeBox from '../../../constants/SizeBox';
 import CustomTextInput from '../../../components/customTextInput/CustomTextInput';
 import CustomButton from '../../../components/customButton/CustomButton';
 import Icons from '../../../constants/Icons';
 import Images from '../../../constants/Images';
+import Colors from '../../../constants/Colors';
 import { useTheme } from '../../../context/ThemeContext';
 import { useAuth } from '../../../context/AuthContext';
 
@@ -15,14 +17,22 @@ const CreateProfileScreen = ({ navigation }: any) => {
     const { colors } = useTheme();
     const Styles = createStyles(colors);
     const insets = useSafeAreaInsets();
-    const { updateUserProfile } = useAuth();
+    const { updateUserProfile, user } = useAuth();
 
-    const [username, setUsername] = useState('');
-    const [firstName, setFirstName] = useState('');
-    const [lastName, setLastName] = useState('');
-    const [birthDate, setBirthDate] = useState('');
+    const [username, setUsername] = useState(user?.nickname || '');
+    const [firstName, setFirstName] = useState(user?.givenName || '');
+    const [lastName, setLastName] = useState(user?.familyName || '');
+    const [birthDate, setBirthDate] = useState<Date | null>(null);
+    const [showDatePicker, setShowDatePicker] = useState(false);
     const [location, setLocation] = useState('');
     const [isLoading, setIsLoading] = useState(false);
+
+    const formatDate = (date: Date) => {
+        const day = String(date.getDate()).padStart(2, '0');
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const year = date.getFullYear();
+        return `${day}/${month}/${year}`;
+    };
 
     const handleContinue = async () => {
         if (!username || !firstName || !lastName) {
@@ -36,7 +46,7 @@ const CreateProfileScreen = ({ navigation }: any) => {
                 username,
                 firstName,
                 lastName,
-                birthDate,
+                birthDate: birthDate ? formatDate(birthDate) : '',
                 location,
             });
             navigation.navigate('CategorySelectionScreen');
@@ -103,13 +113,31 @@ const CreateProfileScreen = ({ navigation }: any) => {
 
                     <SizeBox height={24} />
 
-                    <CustomTextInput
-                        label="Your Birth Date"
-                        placeholder="dd/mm/year"
-                        icon={<Icons.DOB height={16} width={16} />}
-                        value={birthDate}
-                        onChangeText={setBirthDate}
-                    />
+                    <Text style={{ fontSize: 14, fontWeight: '500', color: colors.blackColor }}>Your Birth Date</Text>
+                    <TouchableOpacity
+                        onPress={() => setShowDatePicker(true)}
+                        activeOpacity={0.7}
+                        style={{
+                            flexDirection: 'row',
+                            alignItems: 'center',
+                            borderWidth: 1,
+                            borderColor: colors.borderColor || '#E0E0E0',
+                            borderRadius: 12,
+                            paddingHorizontal: 16,
+                            height: 56,
+                            backgroundColor: colors.inputBackground || colors.backgroundColor,
+                        }}
+                    >
+                        <Icons.DOB height={16} width={16} />
+                        <SizeBox width={10} />
+                        <Text style={{
+                            flex: 1,
+                            fontSize: 14,
+                            color: birthDate ? colors.blackColor : Colors.grayColor,
+                        }}>
+                            {birthDate ? formatDate(birthDate) : 'dd/mm/year'}
+                        </Text>
+                    </TouchableOpacity>
 
                     <SizeBox height={24} />
 
@@ -132,6 +160,21 @@ const CreateProfileScreen = ({ navigation }: any) => {
 
                 <SizeBox height={40} />
             </ScrollView>
+
+            <DatePicker
+                modal
+                open={showDatePicker}
+                date={birthDate || new Date(2000, 0, 1)}
+                mode="date"
+                maximumDate={new Date()}
+                minimumDate={new Date(1920, 0, 1)}
+                title="Select your birth date"
+                onConfirm={(date) => {
+                    setShowDatePicker(false);
+                    setBirthDate(date);
+                }}
+                onCancel={() => setShowDatePicker(false)}
+            />
         </View>
     );
 };
