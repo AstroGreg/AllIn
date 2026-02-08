@@ -12,14 +12,16 @@ import {
     Eye,
     DocumentDownload,
 } from 'iconsax-react-nativejs';
-import Styles from './HubScreenStyles';
+import { createStyles } from './HubScreenStyles';
 import SizeBox from '../../constants/SizeBox';
 import Images from '../../constants/Images';
-import Colors from '../../constants/Colors';
 import Icons from '../../constants/Icons';
+import { useTheme } from '../../context/ThemeContext';
 
 const HubScreen = ({ navigation }: any) => {
     const insets = useSafeAreaInsets();
+    const { colors } = useTheme();
+    const Styles = createStyles(colors);
 
     const appearances = [
         {
@@ -64,33 +66,33 @@ const HubScreen = ({ navigation }: any) => {
             <View style={Styles.cardRow}>
                 <FastImage source={item.thumbnail} style={Styles.squareThumbnail} resizeMode="cover" />
                 <View style={Styles.cardInfo}>
-                    <View style={Styles.titleRow}>
-                        <View style={Styles.playIconCircle}>
-                            <Calendar size={12} color={Colors.whiteColor} variant="Linear" />
-                        </View>
-                        <Text style={Styles.cardTitle}>{item.title}</Text>
-                    </View>
+	                    <View style={Styles.titleRow}>
+	                        <View style={Styles.playIconCircle}>
+	                            <Calendar size={12} color={colors.pureWhite} variant="Linear" />
+	                        </View>
+	                        <Text style={Styles.cardTitle}>{item.title}</Text>
+	                    </View>
                     <View style={Styles.detailRow}>
                         <Text style={Styles.detailLabel}>Distance</Text>
                         <View style={Styles.detailValue}>
-                            <Map1 size={16} color="#9B9F9F" variant="Linear" />
-                            <Text style={Styles.detailText}>{item.distance}</Text>
-                        </View>
-                    </View>
+	                            <Map1 size={16} color={colors.grayColor} variant="Linear" />
+	                            <Text style={Styles.detailText}>{item.distance}</Text>
+	                        </View>
+	                    </View>
                     <View style={Styles.detailRow}>
                         <Text style={Styles.detailLabel}>Location</Text>
                         <View style={Styles.detailValue}>
-                            <Location size={16} color="#9B9F9F" variant="Linear" />
-                            <Text style={Styles.detailText}>{item.location}</Text>
-                        </View>
-                    </View>
+	                            <Location size={16} color={colors.grayColor} variant="Linear" />
+	                            <Text style={Styles.detailText}>{item.location}</Text>
+	                        </View>
+	                    </View>
                     <View style={Styles.detailRow}>
                         <Text style={Styles.detailLabel}>Date</Text>
                         <View style={Styles.detailValue}>
-                            <Calendar size={16} color="#9B9F9F" variant="Linear" />
-                            <Text style={Styles.detailText}>{item.date}</Text>
-                        </View>
-                    </View>
+	                            <Calendar size={16} color={colors.grayColor} variant="Linear" />
+	                            <Text style={Styles.detailText}>{item.date}</Text>
+	                        </View>
+	                    </View>
                 </View>
             </View>
             <View style={Styles.divider} />
@@ -111,23 +113,23 @@ const HubScreen = ({ navigation }: any) => {
                 <View style={Styles.eventTitleRow}>
                     <Text style={Styles.cardTitle}>{item.title}</Text>
                     <View style={Styles.videosCount}>
-                        <VideoSquare size={16} color="#9B9F9F" variant="Linear" />
-                        <Text style={Styles.detailText}>{item.videos}</Text>
-                    </View>
+	                        <VideoSquare size={16} color={colors.grayColor} variant="Linear" />
+	                        <Text style={Styles.detailText}>{item.videos}</Text>
+	                    </View>
                 </View>
                 <View style={Styles.detailRow}>
                     <Text style={Styles.detailLabel}>Location</Text>
                     <View style={Styles.detailValue}>
-                        <Location size={16} color="#9B9F9F" variant="Linear" />
-                        <Text style={Styles.detailText}>{item.location}</Text>
-                    </View>
+	                        <Location size={16} color={colors.grayColor} variant="Linear" />
+	                        <Text style={Styles.detailText}>{item.location}</Text>
+	                    </View>
                 </View>
                 <View style={Styles.detailRow}>
                     <Text style={Styles.detailLabel}>Date</Text>
                     <View style={Styles.detailValue}>
-                        <Calendar size={16} color="#9B9F9F" variant="Linear" />
-                        <Text style={Styles.detailText}>{item.date}</Text>
-                    </View>
+	                        <Calendar size={16} color={colors.grayColor} variant="Linear" />
+	                        <Text style={Styles.detailText}>{item.date}</Text>
+	                    </View>
                 </View>
             </View>
         </View>
@@ -151,23 +153,23 @@ const HubScreen = ({ navigation }: any) => {
                 <View style={Styles.eventTitleRow}>
                     <Text style={Styles.cardTitle}>{item.title}</Text>
                     <View style={Styles.videosCount}>
-                        <VideoSquare size={16} color="#9B9F9F" variant="Linear" />
-                        <Text style={Styles.detailText}>{item.videos}</Text>
-                    </View>
+	                        <VideoSquare size={16} color={colors.grayColor} variant="Linear" />
+	                        <Text style={Styles.detailText}>{item.videos}</Text>
+	                    </View>
                 </View>
                 <View style={Styles.detailRow}>
                     <Text style={Styles.detailLabel}>Location</Text>
                     <View style={Styles.detailValue}>
-                        <Location size={16} color="#9B9F9F" variant="Linear" />
-                        <Text style={Styles.detailText}>{item.location}</Text>
-                    </View>
+	                        <Location size={16} color={colors.grayColor} variant="Linear" />
+	                        <Text style={Styles.detailText}>{item.location}</Text>
+	                    </View>
                 </View>
                 <View style={Styles.detailRow}>
                     <Text style={Styles.detailLabel}>Date</Text>
                     <View style={Styles.detailValue}>
-                        <Calendar size={16} color="#9B9F9F" variant="Linear" />
-                        <Text style={Styles.detailText}>{item.date}</Text>
-                    </View>
+	                        <Calendar size={16} color={colors.grayColor} variant="Linear" />
+	                        <Text style={Styles.detailText}>{item.date}</Text>
+	                    </View>
                 </View>
             </View>
         </TouchableOpacity>
@@ -193,19 +195,19 @@ const HubScreen = ({ navigation }: any) => {
                 <Text style={Styles.videoTitle}>PK 2025 indoor</Text>
                 <View style={Styles.videoMeta}>
                     <View style={Styles.videoMetaItem}>
-                        <Map1 size={16} color="#9B9F9F" variant="Linear" />
-                        <Text style={Styles.detailText}>800m heat 1</Text>
-                    </View>
+	                        <Map1 size={16} color={colors.grayColor} variant="Linear" />
+	                        <Text style={Styles.detailText}>800m heat 1</Text>
+	                    </View>
                     <View style={Styles.videoMetaDot} />
                     <View style={Styles.videoMetaItem}>
-                        <Eye size={16} color="#9B9F9F" variant="Linear" />
-                        <Text style={Styles.detailText}>2300</Text>
-                    </View>
-                </View>
-                <TouchableOpacity style={Styles.downloadButton}>
-                    <Text style={Styles.downloadButtonText}>Download</Text>
-                    <ArrowDown size={18} color={Colors.whiteColor} variant="Linear" />
-                </TouchableOpacity>
+	                        <Eye size={16} color={colors.grayColor} variant="Linear" />
+	                        <Text style={Styles.detailText}>2300</Text>
+	                    </View>
+	                </View>
+	                <TouchableOpacity style={Styles.downloadButton}>
+	                    <Text style={Styles.downloadButtonText}>Download</Text>
+	                    <ArrowDown size={18} color={colors.pureWhite} variant="Linear" />
+	                </TouchableOpacity>
             </View>
         </TouchableOpacity>
     );
@@ -217,15 +219,10 @@ const HubScreen = ({ navigation }: any) => {
             {/* Header */}
             <View style={Styles.header}>
                 <TouchableOpacity style={Styles.backButton} onPress={() => navigation.goBack()}>
-                    <ArrowLeft2 size={20} color={Colors.mainTextColor} variant="Linear" />
+                    <ArrowLeft2 size={20} color={colors.mainTextColor} variant="Linear" />
                 </TouchableOpacity>
                 <Text style={Styles.headerTitle}>Hub</Text>
-                <TouchableOpacity
-                    style={Styles.notificationButton}
-                    onPress={() => navigation.navigate('NotificationsScreen')}
-                >
-                    <Icons.NotificationBoldBlue height={24} width={24} />
-                </TouchableOpacity>
+                <View style={{ width: 44, height: 44 }} />
             </View>
 
             <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={Styles.scrollContent}>
@@ -274,10 +271,10 @@ const HubScreen = ({ navigation }: any) => {
                     </TouchableOpacity>
                 </View>
 
-                <TouchableOpacity style={Styles.primaryButton}>
-                    <Text style={Styles.primaryButtonText}>Redownload All Images</Text>
-                    <DocumentDownload size={18} color={Colors.whiteColor} variant="Linear" />
-                </TouchableOpacity>
+	                <TouchableOpacity style={Styles.primaryButton}>
+	                    <Text style={Styles.primaryButtonText}>Redownload All Images</Text>
+	                    <DocumentDownload size={18} color={colors.pureWhite} variant="Linear" />
+	                </TouchableOpacity>
 
                 {/* Created Events & Videos Section */}
                 <View style={Styles.sectionHeader}>

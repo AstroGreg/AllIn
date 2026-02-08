@@ -12,12 +12,12 @@
 		5D6225C8545B44A0923D601E /* Inter_24pt-Regular.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 6B7EB3DE6E0948CD96B6D1DE /* Inter_24pt-Regular.ttf */; };
 		5DDA23DD0F054A4BBE9BBDB4 /* Inter_24pt-SemiBold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 8F7BFCC2816746B887BED6F2 /* Inter_24pt-SemiBold.ttf */; };
 		680D53FB2C464492B7CAD2CB /* Inter_28pt-Bold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = F45CFC8DC9404F679DCAA273 /* Inter_28pt-Bold.ttf */; };
-		758FD4FC9CC07A9418DA4377 /* libPods-AllIn.a in Frameworks */ = {isa = PBXBuildFile; fileRef = CE6B15A047E580F5BFA33192 /* libPods-AllIn.a */; };
 		761780ED2CA45674006654EE /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 761780EC2CA45674006654EE /* AppDelegate.swift */; };
 		81AB9BB82411601600AC10FF /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 81AB9BB72411601600AC10FF /* LaunchScreen.storyboard */; };
 		A2ACB3532D6245E3A3D11316 /* Inter_24pt-Light.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 4C38F89F034A49B7BC69757A /* Inter_24pt-Light.ttf */; };
 		C6EA391B32C24E80AE7884DA /* Inter_24pt-Thin.ttf in Resources */ = {isa = PBXBuildFile; fileRef = C20194D883DC43449A17D459 /* Inter_24pt-Thin.ttf */; };
 		C8D4986E0AA56233A25BEEA1 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 13B07FB81A68108700A75B9A /* PrivacyInfo.xcprivacy */; };
+		E22DBD080BCDBCF5931FFAE2 /* libPods-AllIn.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 8361DDD79DFA92198C6EA620 /* libPods-AllIn.a */; };
 		E899096A0E4C4D68B0BB04CD /* Inter_28pt-ExtraBold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 8E1581213D884D04B340D775 /* Inter_28pt-ExtraBold.ttf */; };
 		EC9FD7F5F40E44B98D9F99D9 /* Inter_28pt-Black.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 4CD82F944DBE41FE801A8685 /* Inter_28pt-Black.ttf */; };
 		F7DAB55435D54772AEA3A58B /* Inter_24pt-Medium.ttf in Resources */ = {isa = PBXBuildFile; fileRef = AB00A08CD4FB4DA4AD814DA5 /* Inter_24pt-Medium.ttf */; };
@@ -30,17 +30,19 @@
 		13B07FB81A68108700A75B9A /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = PrivacyInfo.xcprivacy; path = AllIn/PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		4C38F89F034A49B7BC69757A /* Inter_24pt-Light.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "Inter_24pt-Light.ttf"; path = "../src/assets/fonts/Inter_24pt-Light.ttf"; sourceTree = "<group>"; };
 		4CD82F944DBE41FE801A8685 /* Inter_28pt-Black.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "Inter_28pt-Black.ttf"; path = "../src/assets/fonts/Inter_28pt-Black.ttf"; sourceTree = "<group>"; };
-		52AF10F6B525F392119A5D43 /* Pods-AllIn.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-AllIn.release.xcconfig"; path = "Target Support Files/Pods-AllIn/Pods-AllIn.release.xcconfig"; sourceTree = "<group>"; };
 		6B7EB3DE6E0948CD96B6D1DE /* Inter_24pt-Regular.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "Inter_24pt-Regular.ttf"; path = "../src/assets/fonts/Inter_24pt-Regular.ttf"; sourceTree = "<group>"; };
 		761780EC2CA45674006654EE /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = AppDelegate.swift; path = AllIn/AppDelegate.swift; sourceTree = "<group>"; };
-		7E50804D1209FB42C1A387BF /* Pods-AllIn.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-AllIn.debug.xcconfig"; path = "Target Support Files/Pods-AllIn/Pods-AllIn.debug.xcconfig"; sourceTree = "<group>"; };
 		81AB9BB72411601600AC10FF /* LaunchScreen.storyboard */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.storyboard; name = LaunchScreen.storyboard; path = AllIn/LaunchScreen.storyboard; sourceTree = "<group>"; };
+		8361DDD79DFA92198C6EA620 /* libPods-AllIn.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-AllIn.a"; sourceTree = BUILT_PRODUCTS_DIR; };
 		89AAE6FEF1414E3D88919174 /* Inter_28pt-Light.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "Inter_28pt-Light.ttf"; path = "../src/assets/fonts/Inter_28pt-Light.ttf"; sourceTree = "<group>"; };
 		8E1581213D884D04B340D775 /* Inter_28pt-ExtraBold.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "Inter_28pt-ExtraBold.ttf"; path = "../src/assets/fonts/Inter_28pt-ExtraBold.ttf"; sourceTree = "<group>"; };
 		8F7BFCC2816746B887BED6F2 /* Inter_24pt-SemiBold.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "Inter_24pt-SemiBold.ttf"; path = "../src/assets/fonts/Inter_24pt-SemiBold.ttf"; sourceTree = "<group>"; };
+		A1B2C3D4E5F60718293A4B5C /* Config.Debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; path = AllIn/Config.Debug.xcconfig; sourceTree = "<group>"; };
 		AB00A08CD4FB4DA4AD814DA5 /* Inter_24pt-Medium.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "Inter_24pt-Medium.ttf"; path = "../src/assets/fonts/Inter_24pt-Medium.ttf"; sourceTree = "<group>"; };
+		B1C2D3E4F5061728394A5B6C /* Config.Release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; path = AllIn/Config.Release.xcconfig; sourceTree = "<group>"; };
 		C20194D883DC43449A17D459 /* Inter_24pt-Thin.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "Inter_24pt-Thin.ttf"; path = "../src/assets/fonts/Inter_24pt-Thin.ttf"; sourceTree = "<group>"; };
-		CE6B15A047E580F5BFA33192 /* libPods-AllIn.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-AllIn.a"; sourceTree = BUILT_PRODUCTS_DIR; };
+		C73C507C355BC40AF819A7A6 /* Pods-AllIn.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-AllIn.debug.xcconfig"; path = "Target Support Files/Pods-AllIn/Pods-AllIn.debug.xcconfig"; sourceTree = "<group>"; };
+		E5F4AA1237BC89D36E3772E6 /* Pods-AllIn.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-AllIn.release.xcconfig"; path = "Target Support Files/Pods-AllIn/Pods-AllIn.release.xcconfig"; sourceTree = "<group>"; };
 		ED297162215061F000B7C4FE /* JavaScriptCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = JavaScriptCore.framework; path = System/Library/Frameworks/JavaScriptCore.framework; sourceTree = SDKROOT; };
 		F45CFC8DC9404F679DCAA273 /* Inter_28pt-Bold.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "Inter_28pt-Bold.ttf"; path = "../src/assets/fonts/Inter_28pt-Bold.ttf"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -50,7 +52,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				758FD4FC9CC07A9418DA4377 /* libPods-AllIn.a in Frameworks */,
+				E22DBD080BCDBCF5931FFAE2 /* libPods-AllIn.a in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -63,6 +65,8 @@
 				13B07FB51A68108700A75B9A /* Images.xcassets */,
 				761780EC2CA45674006654EE /* AppDelegate.swift */,
 				13B07FB61A68108700A75B9A /* Info.plist */,
+				A1B2C3D4E5F60718293A4B5C /* Config.Debug.xcconfig */,
+				B1C2D3E4F5061728394A5B6C /* Config.Release.xcconfig */,
 				81AB9BB72411601600AC10FF /* LaunchScreen.storyboard */,
 				13B07FB81A68108700A75B9A /* PrivacyInfo.xcprivacy */,
 			);
@@ -73,7 +77,7 @@
 			isa = PBXGroup;
 			children = (
 				ED297162215061F000B7C4FE /* JavaScriptCore.framework */,
-				CE6B15A047E580F5BFA33192 /* libPods-AllIn.a */,
+				8361DDD79DFA92198C6EA620 /* libPods-AllIn.a */,
 			);
 			name = Frameworks;
 			sourceTree = "<group>";
@@ -127,8 +131,8 @@
 		BBD78D7AC51CEA395F1C20DB /* Pods */ = {
 			isa = PBXGroup;
 			children = (
-				7E50804D1209FB42C1A387BF /* Pods-AllIn.debug.xcconfig */,
-				52AF10F6B525F392119A5D43 /* Pods-AllIn.release.xcconfig */,
+				C73C507C355BC40AF819A7A6 /* Pods-AllIn.debug.xcconfig */,
+				E5F4AA1237BC89D36E3772E6 /* Pods-AllIn.release.xcconfig */,
 			);
 			path = Pods;
 			sourceTree = "<group>";
@@ -140,13 +144,13 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = 13B07F931A680F5B00A75B9A /* Build configuration list for PBXNativeTarget "AllIn" */;
 			buildPhases = (
-				ABDF54C865E030DFB2A14BBA /* [CP] Check Pods Manifest.lock */,
+				A3C39447561CDC9C9998477B /* [CP] Check Pods Manifest.lock */,
 				13B07F871A680F5B00A75B9A /* Sources */,
 				13B07F8C1A680F5B00A75B9A /* Frameworks */,
 				13B07F8E1A680F5B00A75B9A /* Resources */,
 				00DD1BFF1BD5951E006B06BC /* Bundle React Native code and images */,
-				F6C8AD4829EF73578F3684B9 /* [CP] Embed Pods Frameworks */,
-				0813DCA4F72E921C216B3EE6 /* [CP] Copy Pods Resources */,
+				10338C70D389F9F3079C7B9B /* [CP] Embed Pods Frameworks */,
+				6BC3563CF48E374F45DA39DF /* [CP] Copy Pods Resources */,
 			);
 			buildRules = (
 			);
@@ -227,7 +231,24 @@
 			shellPath = /bin/sh;
 			shellScript = "set -e\n\nWITH_ENVIRONMENT=\"$REACT_NATIVE_PATH/scripts/xcode/with-environment.sh\"\nREACT_NATIVE_XCODE=\"$REACT_NATIVE_PATH/scripts/react-native-xcode.sh\"\n\n/bin/sh -c \"$WITH_ENVIRONMENT $REACT_NATIVE_XCODE\"\n";
 		};
-		0813DCA4F72E921C216B3EE6 /* [CP] Copy Pods Resources */ = {
+		10338C70D389F9F3079C7B9B /* [CP] Embed Pods Frameworks */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+				"${PODS_ROOT}/Target Support Files/Pods-AllIn/Pods-AllIn-frameworks-${CONFIGURATION}-input-files.xcfilelist",
+			);
+			name = "[CP] Embed Pods Frameworks";
+			outputFileListPaths = (
+				"${PODS_ROOT}/Target Support Files/Pods-AllIn/Pods-AllIn-frameworks-${CONFIGURATION}-output-files.xcfilelist",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-AllIn/Pods-AllIn-frameworks.sh\"\n";
+			showEnvVarsInLog = 0;
+		};
+		6BC3563CF48E374F45DA39DF /* [CP] Copy Pods Resources */ = {
 			isa = PBXShellScriptBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -244,7 +265,7 @@
 			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-AllIn/Pods-AllIn-resources.sh\"\n";
 			showEnvVarsInLog = 0;
 		};
-		ABDF54C865E030DFB2A14BBA /* [CP] Check Pods Manifest.lock */ = {
+		A3C39447561CDC9C9998477B /* [CP] Check Pods Manifest.lock */ = {
 			isa = PBXShellScriptBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -266,23 +287,6 @@
 			shellScript = "diff \"${PODS_PODFILE_DIR_PATH}/Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null\nif [ $? != 0 ] ; then\n    # print error to STDERR\n    echo \"error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\" >&2\n    exit 1\nfi\n# This output is used by Xcode 'outputs' to avoid re-running this script phase.\necho \"SUCCESS\" > \"${SCRIPT_OUTPUT_FILE_0}\"\n";
 			showEnvVarsInLog = 0;
 		};
-		F6C8AD4829EF73578F3684B9 /* [CP] Embed Pods Frameworks */ = {
-			isa = PBXShellScriptBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			inputFileListPaths = (
-				"${PODS_ROOT}/Target Support Files/Pods-AllIn/Pods-AllIn-frameworks-${CONFIGURATION}-input-files.xcfilelist",
-			);
-			name = "[CP] Embed Pods Frameworks";
-			outputFileListPaths = (
-				"${PODS_ROOT}/Target Support Files/Pods-AllIn/Pods-AllIn-frameworks-${CONFIGURATION}-output-files.xcfilelist",
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/sh;
-			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-AllIn/Pods-AllIn-frameworks.sh\"\n";
-			showEnvVarsInLog = 0;
-		};
 /* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
@@ -299,7 +303,7 @@
 /* Begin XCBuildConfiguration section */
 		13B07F941A680F5B00A75B9A /* Debug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 7E50804D1209FB42C1A387BF /* Pods-AllIn.debug.xcconfig */;
+			baseConfigurationReference = A1B2C3D4E5F60718293A4B5C /* Config.Debug.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ENABLE_MODULES = YES;
@@ -333,7 +337,7 @@
 		};
 		13B07F951A680F5B00A75B9A /* Release */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 52AF10F6B525F392119A5D43 /* Pods-AllIn.release.xcconfig */;
+			baseConfigurationReference = B1C2D3E4F5061728394A5B6C /* Config.Release.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ENABLE_MODULES = YES;
@@ -432,7 +436,10 @@
 					"-DFOLLY_CFG_NO_COROUTINES=1",
 					"-DFOLLY_HAVE_CLOCK_GETTIME=1",
 				);
-				OTHER_LDFLAGS = "$(inherited)  ";
+				OTHER_LDFLAGS = (
+					"$(inherited)",
+					" ",
+				);
 				REACT_NATIVE_PATH = "${PODS_ROOT}/../../node_modules/react-native";
 				SDKROOT = iphoneos;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited) DEBUG";
@@ -501,7 +508,10 @@
 					"-DFOLLY_CFG_NO_COROUTINES=1",
 					"-DFOLLY_HAVE_CLOCK_GETTIME=1",
 				);
-				OTHER_LDFLAGS = "$(inherited)  ";
+				OTHER_LDFLAGS = (
+					"$(inherited)",
+					" ",
+				);
 				REACT_NATIVE_PATH = "${PODS_ROOT}/../../node_modules/react-native";
 				SDKROOT = iphoneos;
 				USE_HERMES = true;

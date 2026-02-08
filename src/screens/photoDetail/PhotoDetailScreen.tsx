@@ -1,24 +1,586 @@
-import React from 'react';
-import { View, Text, TouchableOpacity } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import React, {useCallback, useMemo, useState, useEffect, useRef} from 'react';
+import {ActionSheetIOS, Alert, Image, Linking, Platform, Share, Text, TouchableOpacity, View} from 'react-native';
+import {useSafeAreaInsets} from 'react-native-safe-area-context';
+// useFocusEffect not available in some runtime bundles; use navigation listeners instead.
 import FastImage from 'react-native-fast-image';
-import { ArrowLeft2, Eye, MoreCircle } from 'iconsax-react-nativejs';
-import LinearGradient from 'react-native-linear-gradient';
-import { createStyles } from './PhotoDetailScreenStyles';
+import {createStyles} from './PhotoDetailScreenStyles';
 import SizeBox from '../../constants/SizeBox';
-import Images from '../../constants/Images';
-import { useTheme } from '../../context/ThemeContext';
+import {useTheme} from '../../context/ThemeContext';
+import {useAuth} from '../../context/AuthContext';
+import {ApiError, getMediaById, postAiFeedbackLabel, recordDownload, type MediaViewAllItem} from '../../services/apiGateway';
+import Video from 'react-native-video';
+import {getApiBaseUrl, getHlsBaseUrl} from '../../constants/RuntimeConfig';
+import Slider from '@react-native-community/slider';
+import {CameraRoll, iosRequestAddOnlyGalleryPermission} from '@react-native-camera-roll/camera-roll';
+import Icons from '../../constants/Icons';
 
-const PhotoDetailScreen = ({ navigation, route }: any) => {
+type FeedbackChoice = 'yes' | 'no' | null;
+
+const PhotoDetailScreen = ({navigation, route}: any) => {
     const insets = useSafeAreaInsets();
-    const { colors } = useTheme();
+    const {colors} = useTheme();
     const Styles = createStyles(colors);
-    const eventTitle = route?.params?.eventTitle || 'BK Studentent 23';
-    const photo = route?.params?.photo || {
-        title: 'PK 2025 indoor Passionate',
-        views: '122K+',
-        thumbnail: Images.photo1,
-    };
+    const {apiAccessToken} = useAuth();
+
+    const eventTitle = route?.params?.eventTitle || '';
+    const legacyPhoto = route?.params?.photo ?? null;
+    const media = route?.params?.media ?? null;
+
+    const mediaId: string | null = media?.id ? String(media.id) : null;
+    const eventId: string | null = media?.eventId ? String(media.eventId) : null;
+    const matchType: string | null = media?.matchType ? String(media.matchType) : null;
+
+    const apiBaseUrl = useMemo(() => getApiBaseUrl(), []);
+    const hlsBaseUrl = useMemo(() => getHlsBaseUrl(), []);
+
+    const toAbsoluteUrl = useCallback((value?: string | null) => {
+        if (!value) return null;
+        const str = String(value);
+        if (str.startsWith('http://') || str.startsWith('https://')) return str;
+        return `${apiBaseUrl}${str.startsWith('/') ? '' : '/'}${str}`;
+    }, [apiBaseUrl]);
+
+    const normalizeMedia = useCallback((item: MediaViewAllItem) => ({
+        id: item.media_id,
+        eventId: item.event_id,
+        thumbnailUrl: item.thumbnail_url,
+        previewUrl: item.preview_url,
+        originalUrl: item.original_url,
+        fullUrl: item.full_url,
+        rawUrl: item.raw_url,
+        vp9Url: item.vp9_url,
+        av1Url: item.av1_url,
+        hlsManifestPath: item.hls_manifest_path,
+        type: item.type,
+        assets: item.assets ?? [],
+        title: (item as any).title ?? null,
+    }), []);
+
+    const [resolvedMedia, setResolvedMedia] = useState<ReturnType<typeof normalizeMedia> | null>(null);
+    const activeMedia = resolvedMedia ?? media;
+    const matchPercent = typeof media?.matchPercent === 'number' ? media.matchPercent : null;
+    const headerLabel = eventTitle || (eventId ? `Event ${eventId}` : 'Media');
+
+    useEffect(() => {
+        let isMounted = true;
+        const loadMedia = async () => {
+            if (!apiAccessToken || !mediaId) return;
+            try {
+                const fresh = await getMediaById(apiAccessToken, mediaId);
+                if (isMounted) setResolvedMedia(normalizeMedia(fresh));
+            } catch {
+                // ignore fetch errors; fall back to route data
+            }
+        };
+        loadMedia();
+        return () => {
+            isMounted = false;
+        };
+    }, [apiAccessToken, mediaId, normalizeMedia]);
+
+    const hlsUrl = useMemo(() => {
+        const path = activeMedia?.hlsManifestPath || activeMedia?.hls_manifest_path;
+        if (!path) return null;
+        const str = String(path);
+        if (str.startsWith('http://') || str.startsWith('https://')) return str;
+        const suffix = str.startsWith('/') ? str : `/${str}`;
+        return `${hlsBaseUrl}${suffix}`;
+    }, [activeMedia?.hlsManifestPath, activeMedia?.hls_manifest_path, hlsBaseUrl]);
+
+    const isSignedUrl = useCallback((value?: string | null) => {
+        if (!value) return false;
+        const lower = String(value).toLowerCase();
+        return (
+            lower.includes('x-amz-signature') ||
+            lower.includes('x-amz-credential') ||
+            lower.includes('x-amz-security-token') ||
+            lower.includes('signature=') ||
+            lower.includes('token=') ||
+            lower.includes('expires=')
+        );
+    }, []);
+
+    const hlsUrlWithToken = useMemo(() => {
+        if (!hlsUrl) return null;
+        if (!apiAccessToken) return hlsUrl;
+        if (isSignedUrl(hlsUrl)) return hlsUrl;
+        const sep = hlsUrl.includes('?') ? '&' : '?';
+        return `${hlsUrl}${sep}access_token=${encodeURIComponent(apiAccessToken)}`;
+    }, [apiAccessToken, hlsUrl, isSignedUrl]);
+
+    const bestImageUrl = useMemo(() => {
+        const candidates = [activeMedia?.previewUrl, activeMedia?.originalUrl, activeMedia?.thumbnailUrl].filter(Boolean);
+        if (candidates.length > 0) return toAbsoluteUrl(String(candidates[0]));
+        return null;
+    }, [activeMedia?.originalUrl, activeMedia?.previewUrl, activeMedia?.thumbnailUrl, toAbsoluteUrl]);
+
+    const posterUrl = useMemo(() => {
+        const candidates = [activeMedia?.thumbnailUrl, activeMedia?.previewUrl, activeMedia?.originalUrl].filter(Boolean);
+        if (candidates.length > 0) return toAbsoluteUrl(String(candidates[0]));
+        return bestImageUrl;
+    }, [activeMedia?.originalUrl, activeMedia?.previewUrl, activeMedia?.thumbnailUrl, bestImageUrl, toAbsoluteUrl]);
+
+    const assetMp4Url = useMemo(() => {
+        const assets = activeMedia?.assets ?? [];
+        if (!Array.isArray(assets) || assets.length === 0) return null;
+        const mp4Assets = assets.filter((a) => {
+            const variant = String(a.variant ?? '').toLowerCase();
+            const mime = String(a.mime_type ?? '').toLowerCase();
+            const url = String(a.url ?? '').toLowerCase();
+            return /mp4|mov|m4v/.test(variant) || /video\/mp4/.test(mime) || /\.(mp4|mov|m4v)(\?|$)/.test(url);
+        });
+        if (mp4Assets.length === 0) return null;
+        const signedFirst = mp4Assets.find((a) => {
+            const urlType = String(a.url_type ?? '').toLowerCase();
+            const url = String(a.url ?? '').toLowerCase();
+            return (
+                urlType.includes('signed') ||
+                url.includes('x-amz-signature') ||
+                url.includes('token=') ||
+                url.includes('sig=') ||
+                url.includes('sv=')
+            );
+        });
+        return (signedFirst?.url || mp4Assets[0]?.url || null) as string | null;
+    }, [activeMedia?.assets]);
+
+    const assetHlsUrl = useMemo(() => {
+        const assets = activeMedia?.assets ?? [];
+        if (!Array.isArray(assets) || assets.length === 0) return null;
+        const hlsAssets = assets.filter((a) => {
+            const variant = String(a.variant ?? '').toLowerCase();
+            const mime = String(a.mime_type ?? '').toLowerCase();
+            const url = String(a.url ?? '').toLowerCase();
+            return /hls|m3u8|mpegurl/.test(variant) || /mpegurl/.test(mime) || /\.m3u8(\?|$)/.test(url);
+        });
+        if (hlsAssets.length === 0) return null;
+        const signedFirst = hlsAssets.find((a) => {
+            const urlType = String(a.url_type ?? '').toLowerCase();
+            const url = String(a.url ?? '').toLowerCase();
+            return (
+                urlType.includes('signed') ||
+                url.includes('x-amz-signature') ||
+                url.includes('token=') ||
+                url.includes('sig=') ||
+                url.includes('sv=')
+            );
+        });
+        const candidate = (signedFirst?.url || hlsAssets[0]?.url || null) as string | null;
+        if (!candidate) return null;
+        return candidate.startsWith('http') ? candidate : null;
+    }, [activeMedia?.assets]);
+
+    const isVideoFile = useCallback((value?: string | null) => {
+        if (!value) return false;
+        const cleaned = String(value).toLowerCase();
+        return /\.(m3u8|mp4|mov|m4v)(\?|$)/.test(cleaned);
+    }, []);
+
+    const videoCandidates = useMemo(() => {
+        const rawCandidates = [
+            assetMp4Url,
+            activeMedia?.fullUrl,
+            activeMedia?.rawUrl,
+            activeMedia?.originalUrl,
+            activeMedia?.previewUrl,
+            assetHlsUrl,
+            hlsUrlWithToken,
+        ]
+            .filter(Boolean)
+            .map((value) => String(value));
+
+        const normalized = rawCandidates
+            .map((value) => {
+                if (value.startsWith('http://') || value.startsWith('https://')) return value;
+                if (value.toLowerCase().includes('.m3u8')) return null;
+                return toAbsoluteUrl(value);
+            })
+            .filter((value): value is string => !!value);
+
+        const allowNonExtension = String(activeMedia?.type ?? '').toLowerCase() === 'video';
+        const filtered = allowNonExtension ? normalized : normalized.filter((value) => isVideoFile(value));
+
+        const unique: string[] = [];
+        filtered.forEach((value) => {
+            if (!unique.includes(value)) unique.push(value);
+        });
+        return unique;
+    }, [activeMedia?.fullUrl, activeMedia?.originalUrl, activeMedia?.previewUrl, activeMedia?.rawUrl, activeMedia?.type, assetHlsUrl, assetMp4Url, hlsUrlWithToken, isVideoFile, toAbsoluteUrl]);
+
+    const bestVideoUrl = useMemo(() => videoCandidates[0] ?? null, [videoCandidates]);
+    const [videoSourceIndex, setVideoSourceIndex] = useState(0);
+    const activeVideoUrl = videoCandidates[videoSourceIndex] ?? bestVideoUrl;
+
+    const isVideo = useMemo(() => {
+        if (activeMedia?.type) return String(activeMedia.type).toLowerCase() === 'video';
+        const u = (bestVideoUrl ?? bestImageUrl ?? '').toLowerCase();
+        return /\.(mp4|mov|m4v|m3u8)(\\?|$)/.test(u) || u.includes('video');
+    }, [bestImageUrl, bestVideoUrl, activeMedia?.type]);
+
+    const videoRef = useRef<Video>(null);
+    const [isPlaying, setIsPlaying] = useState(true);
+    const [duration, setDuration] = useState(0);
+    const [currentTime, setCurrentTime] = useState(0);
+    const [isSeeking, setIsSeeking] = useState(false);
+    const [videoError, setVideoError] = useState<string | null>(null);
+
+    const formatTime = useCallback((value: number) => {
+        const safeValue = Number.isFinite(value) ? Math.max(0, value) : 0;
+        const minutes = Math.floor(safeValue / 60);
+        const seconds = Math.floor(safeValue % 60);
+        const paddedSeconds = seconds < 10 ? `0${seconds}` : `${seconds}`;
+        return `${minutes}:${paddedSeconds}`;
+    }, []);
+
+    const seekTo = useCallback((time: number) => {
+        const clamped = Math.max(0, Math.min(time, duration || 0));
+        videoRef.current?.seek(clamped);
+        setCurrentTime(clamped);
+    }, [duration]);
+
+    const handleSeekComplete = useCallback((time: number) => {
+        seekTo(time);
+    }, [seekTo]);
+
+    const togglePlayback = useCallback(() => {
+        setIsPlaying((prev) => !prev);
+    }, []);
+
+    const sliderMax = useMemo(() => Math.max(duration, 1), [duration]);
+
+    const shouldAttachAuthHeader = useMemo(() => {
+        if (!activeVideoUrl || !apiAccessToken) return false;
+        if (isSignedUrl(activeVideoUrl)) return false;
+        if (activeVideoUrl.toLowerCase().includes('.m3u8')) return false;
+        return true;
+    }, [activeVideoUrl, apiAccessToken, isSignedUrl]);
+
+    const videoHeaders = useMemo(() => {
+        if (!shouldAttachAuthHeader || !apiAccessToken) return undefined;
+        return { Authorization: `Bearer ${apiAccessToken}` };
+    }, [apiAccessToken, shouldAttachAuthHeader]);
+
+    useEffect(() => {
+        setVideoSourceIndex(0);
+        setVideoError(null);
+        setCurrentTime(0);
+    }, [mediaId, bestVideoUrl]);
+
+    const getShareModule = useCallback(() => {
+        try {
+            // eslint-disable-next-line @typescript-eslint/no-var-requires
+            return require('react-native-share');
+        } catch {
+            return null;
+        }
+    }, []);
+
+    const getFsModule = useCallback(() => {
+        try {
+            // eslint-disable-next-line @typescript-eslint/no-var-requires
+            return require('react-native-fs');
+        } catch {
+            return null;
+        }
+    }, []);
+
+    const requestPhotoPermission = useCallback(async () => {
+        if (Platform.OS !== 'ios') return true;
+        try {
+            const status = await iosRequestAddOnlyGalleryPermission();
+            return status === 'granted' || status === 'limited';
+        } catch {
+            return true;
+        }
+    }, []);
+
+    const handleReportIssue = useCallback(async () => {
+        const subject = `Report issue${eventId ? `: Event ${eventId}` : ''}`;
+        const body = `Event ID: ${eventId ?? 'n/a'}\nMedia ID: ${mediaId ?? 'n/a'}\n`;
+        const mailto = `mailto:support@bcs.com?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+        try {
+            await Linking.openURL(mailto);
+        } catch {
+            Alert.alert('Unable to open email', 'Please email support@bcs.com with the issue details.');
+        }
+    }, [eventId, mediaId]);
+
+    const isHlsUrl = useCallback((value?: string | null) => {
+        if (!value) return false;
+        return String(value).toLowerCase().includes('.m3u8');
+    }, []);
+
+    const extensionFromUrl = useCallback((value: string) => {
+        const base = value.split('?')[0];
+        const match = base.match(/\.(mp4|mov|m4v|jpg|jpeg|png)$/i);
+        if (match?.[1]) return match[1].toLowerCase();
+        return 'mp4';
+    }, []);
+
+    const resolveDownloadUrl = useCallback(async () => {
+
+        const candidates = [
+            assetMp4Url,
+            activeMedia?.originalUrl,
+            activeMedia?.fullUrl,
+            activeMedia?.rawUrl,
+            activeMedia?.previewUrl,
+        ]
+            .filter(Boolean)
+            .map((value) => toAbsoluteUrl(String(value)))
+            .filter(Boolean) as string[];
+
+        const direct = candidates.find((value) => !isHlsUrl(value));
+        if (direct) return direct;
+
+        if (mediaId && apiAccessToken) {
+            try {
+                const fresh = await getMediaById(apiAccessToken, mediaId);
+                const freshCandidates = [
+                    fresh.original_url,
+                    fresh.full_url,
+                    fresh.raw_url,
+                    fresh.preview_url,
+                    fresh.thumbnail_url,
+                ]
+                    .filter(Boolean)
+                    .map((value) => toAbsoluteUrl(String(value)))
+                    .filter(Boolean) as string[];
+
+                const freshDirect = freshCandidates.find((value) => !isHlsUrl(value));
+                if (freshDirect) return freshDirect;
+            } catch {
+                // ignore
+            }
+        }
+
+        return bestVideoUrl ?? null;
+    }, [activeMedia?.fullUrl, activeMedia?.originalUrl, activeMedia?.previewUrl, activeMedia?.rawUrl, apiAccessToken, assetMp4Url, bestVideoUrl, isHlsUrl, mediaId, toAbsoluteUrl]);
+
+    const resolveShareUrl = useCallback(async () => {
+        const candidate = await resolveDownloadUrl();
+        if (candidate && !isHlsUrl(candidate)) {
+            return candidate;
+        }
+        return bestImageUrl ?? null;
+    }, [bestImageUrl, isHlsUrl, resolveDownloadUrl]);
+
+    const ensureLocalFile = useCallback(
+        async (remoteUrl: string, extensionHint: string) => {
+            const fsModule = getFsModule();
+            if (!fsModule?.downloadFile || !fsModule?.CachesDirectoryPath) {
+                return null;
+            }
+
+            const safeExt = extensionHint.startsWith('.') ? extensionHint : `.${extensionHint}`;
+            const baseName = mediaId ? `allin-${mediaId}` : `allin-${Date.now()}`;
+            const destPath = `${fsModule.CachesDirectoryPath}/${baseName}${safeExt}`;
+
+            try {
+                const result = await fsModule.downloadFile({fromUrl: remoteUrl, toFile: destPath}).promise;
+                if (result?.statusCode && result.statusCode >= 400) {
+                    return null;
+                }
+                return `file://${destPath}`;
+            } catch {
+                return null;
+            }
+        },
+        [getFsModule, mediaId],
+    );
+
+    const handleDownload = useCallback(async () => {
+        if (!apiAccessToken) {
+            Alert.alert('Missing API token', 'Log in or set a Dev API token to download.');
+            return;
+        }
+
+        if (!mediaId) {
+            Alert.alert('Missing media', 'This item has no media_id to download.');
+            return;
+        }
+
+        const downloadUrl = await resolveDownloadUrl();
+        if (!downloadUrl) {
+            Alert.alert('No download URL', 'The API did not provide a downloadable URL for this media.');
+            return;
+        }
+
+        const fileUrl = await ensureLocalFile(downloadUrl, extensionFromUrl(downloadUrl));
+        if (!fileUrl) {
+            Alert.alert('Download failed', 'Unable to download the media file.');
+            return;
+        }
+        try {
+            await recordDownload(apiAccessToken, {media_id: mediaId, event_id: eventId});
+        } catch {
+            // ignore
+        }
+        const permissionOk = await requestPhotoPermission();
+        if (!permissionOk) {
+            Alert.alert('Photos permission required', 'Enable Photos access to save media.', [
+                {text: 'Cancel', style: 'cancel'},
+                {text: 'Open Settings', onPress: () => Linking.openSettings()},
+            ]);
+            return;
+        }
+
+        try {
+            const ext = extensionFromUrl(fileUrl);
+            const saveType = ['jpg', 'jpeg', 'png'].includes(ext) ? 'photo' : 'video';
+            if (CameraRoll.saveAsset) {
+                await CameraRoll.saveAsset(fileUrl, {type: saveType});
+            } else {
+                await CameraRoll.save(fileUrl, {type: saveType});
+            }
+            Alert.alert('Saved', 'Media saved to Photos.');
+        } catch (err: any) {
+            const msg = String(err?.message ?? err);
+            Alert.alert('Save failed', msg, [
+                {text: 'Cancel', style: 'cancel'},
+                {text: 'Open Settings', onPress: () => Linking.openSettings()},
+            ]);
+        }
+    }, [apiAccessToken, ensureLocalFile, eventId, extensionFromUrl, mediaId, requestPhotoPermission, resolveDownloadUrl]);
+
+    const handleShareNative = useCallback(async () => {
+        const shareUrl = await resolveShareUrl();
+        if (!shareUrl) {
+            Alert.alert('No media available', 'There is no media to share.');
+            return;
+        }
+        const localShareUrl = await ensureLocalFile(shareUrl, extensionFromUrl(shareUrl));
+        if (!localShareUrl) {
+            Alert.alert('Share failed', 'Unable to download the media file.');
+            return;
+        }
+        try {
+            await Share.share({message: 'AllIn media', url: localShareUrl});
+        } catch (e: any) {
+            const msg = String(e?.message ?? e);
+            Alert.alert('Share failed', msg);
+        }
+    }, [ensureLocalFile, extensionFromUrl, resolveShareUrl]);
+
+    const handleShareInstagram = useCallback(async () => {
+        const shareModule = getShareModule();
+        const bannerUri = Image.resolveAssetSource(require('../../assets/imgs/advertisement.png')).uri;
+        const shareUrl = await resolveShareUrl();
+
+        if (shareModule?.default?.shareSingle) {
+            const ShareLib = shareModule.default;
+            try {
+                const localAsset = shareUrl
+                    ? await ensureLocalFile(shareUrl, extensionFromUrl(shareUrl))
+                    : null;
+                if (!localAsset) {
+                    Alert.alert('Share failed', 'Unable to download the media file.');
+                    return;
+                }
+                await ShareLib.shareSingle({
+                    social: ShareLib.Social.INSTAGRAM_STORIES,
+                    backgroundImage: localAsset && !localAsset.includes('.mp4') ? localAsset : bannerUri,
+                    backgroundVideo: localAsset && localAsset.includes('.mp4') ? localAsset : undefined,
+                    stickerImage: bannerUri,
+                    backgroundTopColor: '#0D0F12',
+                    backgroundBottomColor: '#0D0F12',
+                    attributionURL: 'https://myjourney.coffee',
+                });
+                return;
+            } catch (e: any) {
+                const msg = String(e?.message ?? e);
+                Alert.alert('Instagram Story failed', msg);
+                return;
+            }
+        }
+
+        if (!shareUrl) {
+            Alert.alert('No media available', 'There is no media to share.');
+            return;
+        }
+        await handleShareNative();
+    }, [ensureLocalFile, extensionFromUrl, getShareModule, handleShareNative, resolveShareUrl]);
+
+    const openMoreMenu = useCallback(() => {
+        const actions = [
+            {label: 'Download', onPress: handleDownload},
+            {label: 'Share', onPress: handleShareNative},
+            {label: 'Share to Instagram Story', onPress: handleShareInstagram},
+            {label: 'Report an Issue', onPress: handleReportIssue},
+        ];
+
+        if (Platform.OS === 'ios') {
+            ActionSheetIOS.showActionSheetWithOptions(
+                {
+                    options: [...actions.map((item) => item.label), 'Cancel'],
+                    cancelButtonIndex: actions.length,
+                },
+                (buttonIndex) => {
+                    if (buttonIndex < actions.length) {
+                        actions[buttonIndex].onPress();
+                    }
+                },
+            );
+            return;
+        }
+
+        Alert.alert('More options', 'Choose an action', [
+            {text: actions[0].label, onPress: actions[0].onPress},
+            {text: actions[1].label, onPress: actions[1].onPress},
+            {text: actions[2].label, onPress: actions[2].onPress},
+            {text: actions[3].label, onPress: actions[3].onPress},
+            {text: 'Cancel', style: 'cancel'},
+        ]);
+    }, [handleDownload, handleReportIssue, handleShareInstagram, handleShareNative]);
+
+    useEffect(() => {
+        const parent = navigation.getParent?.();
+        if (!parent) return undefined;
+
+        const hideTabBar = () => parent.setOptions({tabBarStyle: {display: 'none'}});
+        const showTabBar = () => parent.setOptions({tabBarStyle: undefined});
+
+        hideTabBar();
+        const unsubscribeFocus = navigation.addListener?.('focus', hideTabBar);
+        const unsubscribeBlur = navigation.addListener?.('blur', showTabBar);
+
+        return () => {
+            if (typeof unsubscribeFocus === 'function') unsubscribeFocus();
+            if (typeof unsubscribeBlur === 'function') unsubscribeBlur();
+            showTabBar();
+        };
+    }, [navigation]);
+
+
+    const [feedback, setFeedback] = useState<FeedbackChoice>(null);
+    const [isSavingFeedback, setIsSavingFeedback] = useState(false);
+
+    const submitFeedback = useCallback(
+        async (choice: Exclude<FeedbackChoice, null>) => {
+            if (!mediaId) return;
+            if (!apiAccessToken) {
+                Alert.alert('Missing API token', 'Log in or set a Dev API token to label results.');
+                return;
+            }
+
+            setIsSavingFeedback(true);
+            try {
+                await postAiFeedbackLabel(apiAccessToken, {
+                    media_id: mediaId,
+                    label: choice === 'yes',
+                    event_id: eventId,
+                    meta: {source: 'photo_detail'},
+                });
+                setFeedback(choice);
+            } catch (e: any) {
+                const msg = e instanceof ApiError ? e.message : String(e?.message ?? e);
+                Alert.alert('Could not save label', msg);
+            } finally {
+                setIsSavingFeedback(false);
+            }
+        },
+        [apiAccessToken, eventId, mediaId],
+    );
 
     return (
         <View style={Styles.mainContainer}>
@@ -27,60 +589,181 @@ const PhotoDetailScreen = ({ navigation, route }: any) => {
             {/* Header */}
             <View style={Styles.header}>
                 <TouchableOpacity style={Styles.backButton} onPress={() => navigation.goBack()}>
-                    <ArrowLeft2 size={24} color={colors.mainTextColor} variant="Linear" />
+                    <Icons.BackArrow height={24} width={24} />
                 </TouchableOpacity>
-                <Text style={Styles.headerTitle}>{eventTitle}</Text>
-                <View style={Styles.placeholder} />
+                <Text style={Styles.headerTitle}>{headerLabel}</Text>
+                <TouchableOpacity style={Styles.headerAction} onPress={openMoreMenu}>
+                    <Icons.More height={24} width={24} />
+                </TouchableOpacity>
             </View>
 
-            <View style={Styles.content}>
+            <View style={[Styles.content, isVideo && Styles.contentFull]}>
                 {/* Question Card */}
-                <View style={Styles.questionCard}>
-                    <Text style={Styles.questionText}>Is this photo of you or another person</Text>
-                    <View style={Styles.buttonsRow}>
-                        <TouchableOpacity style={Styles.noButton}>
-                            <Text style={Styles.buttonText}>No</Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity style={Styles.yesButton}>
-                            <Text style={Styles.buttonText}>Yes</Text>
-                        </TouchableOpacity>
-                    </View>
-                </View>
-
-                <SizeBox height={18} />
-
-                {/* Photo Preview */}
-                <View style={Styles.photoContainer}>
-                    <FastImage
-                        source={photo.thumbnail}
-                        style={Styles.photoImage}
-                        resizeMode="cover"
-                    />
-
-                    {/* Top Row - Views and More */}
-                    <View style={Styles.topRow}>
-                        <View style={Styles.viewsContainer}>
-                            <Eye size={24} color="#FFFFFF" variant="Linear" />
-                            <Text style={Styles.viewsText}>{photo.views}</Text>
-                        </View>
-                        <TouchableOpacity>
-                            <MoreCircle size={24} color="#FFFFFF" variant="Linear" />
-                        </TouchableOpacity>
-                    </View>
-
-                    {/* Bottom Gradient and Info */}
-                    <LinearGradient
-                        colors={['rgba(0,0,0,0)', 'rgba(0,0,0,0)', 'rgba(0,0,0,0.5)']}
-                        locations={[0, 0.74, 1]}
-                        style={Styles.gradientOverlay}
-                    >
-                        <View style={Styles.bottomRow}>
-                            <Text style={Styles.photoTitle}>{photo.title}</Text>
-                            <TouchableOpacity style={Styles.downloadButton}>
-                                <Text style={Styles.downloadButtonText}>Download</Text>
+                {!isVideo && !!mediaId && !!matchType && (
+                    <View style={Styles.questionCard}>
+                        <Text style={Styles.questionText}>Is this photo/video actually you?</Text>
+                        <View style={Styles.buttonsRow}>
+                            <TouchableOpacity
+                                style={[
+                                    Styles.noButton,
+                                    feedback === 'no' && {opacity: 0.85},
+                                    isSavingFeedback && {opacity: 0.6},
+                                ]}
+                                disabled={isSavingFeedback}
+                                onPress={() => submitFeedback('no')}
+                            >
+                                <Text style={Styles.buttonText}>{feedback === 'no' ? 'Not me' : 'No'}</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                                style={[
+                                    Styles.yesButton,
+                                    feedback === 'yes' && {opacity: 0.85},
+                                    isSavingFeedback && {opacity: 0.6},
+                                ]}
+                                disabled={isSavingFeedback}
+                                onPress={() => submitFeedback('yes')}
+                            >
+                                <Text style={Styles.buttonText}>{feedback === 'yes' ? 'This is me' : 'Yes'}</Text>
                             </TouchableOpacity>
                         </View>
-                    </LinearGradient>
+                        {isSavingFeedback && (
+                            <>
+                                <SizeBox height={10} />
+                                <Text style={[Styles.questionText, {marginBottom: 0}]}>Saving…</Text>
+                            </>
+                        )}
+                    </View>
+                )}
+
+                {!isVideo && <SizeBox height={18} />}
+
+                {/* Photo Preview */}
+                <View style={[Styles.photoContainer, isVideo && Styles.photoContainerFull]}>
+                    {isVideo && activeVideoUrl ? (
+                        <>
+                            <Video
+                                ref={videoRef}
+                                key={activeVideoUrl}
+                                source={{
+                                    uri: activeVideoUrl,
+                                    type: activeVideoUrl.toLowerCase().includes('.m3u8') ? 'm3u8' : undefined,
+                                    headers: videoHeaders,
+                                }}
+                                style={Styles.photoImage}
+                                resizeMode="cover"
+                                paused={!isPlaying}
+                                controls={false}
+                                poster={posterUrl ?? undefined}
+                                posterResizeMode="cover"
+                                onLoad={(meta) => {
+                                    setDuration(meta.duration || 0);
+                                    setVideoError(null);
+                                }}
+                                onProgress={(progress) => {
+                                    if (!isSeeking) {
+                                        setCurrentTime(progress.currentTime || 0);
+                                    }
+                                }}
+                                onEnd={() => {
+                                    setIsPlaying(false);
+                                    setCurrentTime(0);
+                                }}
+                                onError={(err) => {
+                                    const msg = err?.error?.errorString || err?.errorString || 'Video failed to load';
+                                    setVideoError(msg);
+                                    setCurrentTime(0);
+                                    setIsPlaying(false);
+                                    setDuration(0);
+                                    setIsSeeking(false);
+                                    if (videoSourceIndex + 1 < videoCandidates.length) {
+                                        setVideoSourceIndex((prev) => Math.min(prev + 1, videoCandidates.length - 1));
+                                        setVideoError(null);
+                                        setIsPlaying(true);
+                                    }
+                                }}
+                                repeat={false}
+                            />
+                            <TouchableOpacity
+                                style={Styles.videoTapOverlay}
+                                activeOpacity={1}
+                                onPress={togglePlayback}
+                            >
+                                {!isPlaying && (
+                                    <View style={Styles.videoPlayBadge}>
+                                        <Icons.PlayWhite height={26} width={26} />
+                                    </View>
+                                )}
+                            </TouchableOpacity>
+                            <View
+                                style={[Styles.videoControlsOverlay, {paddingBottom: 16 + insets.bottom}]}
+                                pointerEvents="box-none"
+                            >
+                                {isSeeking && (
+                                    <View style={Styles.videoTimeRow}>
+                                        <Text style={Styles.videoTimeText}>
+                                            {formatTime(currentTime)} / {formatTime(duration)}
+                                        </Text>
+                                    </View>
+                                )}
+                                <View style={Styles.videoScrubberWrap} pointerEvents="auto">
+                                    <Slider
+                                        style={Styles.videoScrubber}
+                                        minimumValue={0}
+                                        maximumValue={sliderMax}
+                                        value={Math.min(currentTime, sliderMax)}
+                                        minimumTrackTintColor={colors.primaryColor}
+                                        maximumTrackTintColor="rgba(255,255,255,0.4)"
+                                        thumbTintColor={colors.primaryColor}
+                                        disabled={!duration}
+                                        onSlidingStart={() => setIsSeeking(true)}
+                                        onValueChange={(value) => setCurrentTime(value)}
+                                        onSlidingComplete={(value) => {
+                                            setIsSeeking(false);
+                                            handleSeekComplete(value);
+                                        }}
+                                    />
+                                </View>
+                                {videoError && (
+                                    <Text style={Styles.videoErrorText}>{videoError}</Text>
+                                )}
+                            </View>
+                        </>
+                    ) : bestImageUrl ? (
+                        <FastImage
+                            source={{uri: bestImageUrl}}
+                            style={Styles.photoImage}
+                            resizeMode="cover"
+                        />
+                    ) : (
+                        <View style={Styles.videoPlaceholder}>
+                            {legacyPhoto?.thumbnail ? (
+                                <FastImage
+                                    // legacy local thumbnails
+                                    source={legacyPhoto?.thumbnail}
+                                    style={Styles.photoImage}
+                                    resizeMode="cover"
+                                />
+                            ) : (
+                                <Text style={Styles.videoPlaceholderText}>No preview available</Text>
+                            )}
+                        </View>
+                    )}
+
+                    {/* Top Row - Views and More */}
+                    {!isVideo && (
+                        <View style={Styles.topRow}>
+                        <View style={Styles.viewsContainer}>
+                            <Icons.Eye height={24} width={24} />
+                                <Text style={Styles.viewsText}>
+                                    {matchPercent != null ? `Match ${matchPercent.toFixed(0)}%` : legacyPhoto?.views ?? ''}
+                                </Text>
+                            </View>
+                        <TouchableOpacity>
+                            <Icons.More height={24} width={24} />
+                        </TouchableOpacity>
+                        </View>
+                    )}
+
                 </View>
             </View>
         </View>

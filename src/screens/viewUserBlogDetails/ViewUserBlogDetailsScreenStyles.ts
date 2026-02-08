@@ -34,69 +34,58 @@ export const createStyles = (colors: ThemeColors) => StyleSheet.create({
         paddingHorizontal: 20,
         paddingTop: 24,
     },
+    headerCard: {
+        backgroundColor: 'transparent',
+        paddingVertical: 4,
+        paddingHorizontal: 0,
+        gap: 8,
+    },
     blogImage: {
         width: '100%',
         height: 230,
         borderRadius: 10,
+        overflow: 'hidden',
+    },
+    playOverlay: {
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: 'rgba(0,0,0,0.2)',
     },
     galleryContainer: {
-        gap: 8,
+        gap: 4,
     },
     galleryImage: {
-        width: 64,
-        height: 64,
-        borderRadius: 6,
+        width: '100%',
+        height: '100%',
+        borderRadius: 16,
     },
     galleryImageSelected: {
         borderWidth: 2,
         borderColor: colors.primaryColor,
     },
-    titleRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-    },
     blogTitle: {
-        ...Fonts.medium16,
+        ...Fonts.semibold22,
         color: colors.mainTextColor,
-        flex: 1,
+        lineHeight: 28,
     },
-    blogDate: {
-        ...Fonts.regular14,
+    metaInline: {
+        ...Fonts.regular12,
         color: colors.subTextColor,
     },
-    metaRow: {
+    authorRow: {
         flexDirection: 'row',
         alignItems: 'center',
-        justifyContent: 'space-between',
-    },
-    readCountContainer: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 6,
-    },
-    readCountText: {
-        ...Fonts.regular14,
-        color: colors.grayColor,
-    },
-    writerContainer: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 9,
-    },
-    writerLabel: {
-        ...Fonts.regular14,
-        color: colors.grayColor,
-    },
-    writerInfo: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 6,
+        gap: 10,
     },
     writerImage: {
-        width: 24,
-        height: 24,
-        borderRadius: 12,
+        width: 28,
+        height: 28,
+        borderRadius: 14,
     },
     writerName: {
         ...Fonts.medium14,
@@ -106,6 +95,13 @@ export const createStyles = (colors: ThemeColors) => StyleSheet.create({
         ...Fonts.regular12,
         color: colors.subTextColor,
         lineHeight: 20,
+        backgroundColor: 'transparent',
+        paddingHorizontal: 0,
+        paddingVertical: 0,
+    },
+    sectionLabel: {
+        ...Fonts.medium16,
+        color: colors.mainTextColor,
     },
     shareButton: {
         flexDirection: 'row',
@@ -115,6 +111,23 @@ export const createStyles = (colors: ThemeColors) => StyleSheet.create({
         borderRadius: 10,
         paddingVertical: 16,
         gap: 8,
+    },
+    galleryThumbWrap: {
+        width: 132,
+        height: 132,
+        borderRadius: 16,
+        overflow: 'hidden',
+        backgroundColor: 'transparent',
+    },
+    galleryPlayOverlay: {
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: 'transparent',
     },
     shareButtonText: {
         ...Fonts.medium16,

@@ -228,6 +228,12 @@ export const createStyles = (colors: ThemeColors) => StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'space-between',
     },
+    quickActionChevronCircle: {
+        width: 16,
+        height: 16,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
     quickActionText: {
         ...Fonts.medium14,
         color: colors.mainTextColor,
@@ -267,6 +273,39 @@ export const createStyles = (colors: ThemeColors) => StyleSheet.create({
         color: colors.pureWhite,
     },
 
+    // Feed grid (media/view_all)
+    feedColumnWrapper: {
+        paddingHorizontal: 20,
+        gap: 12,
+        marginBottom: 12,
+    },
+    feedItemCard: {
+        flex: 1,
+        backgroundColor: colors.cardBackground,
+        borderWidth: 0.5,
+        borderColor: colors.lightGrayColor,
+        borderRadius: 12,
+        overflow: 'hidden',
+    },
+    feedItemImage: {
+        width: '100%',
+        height: 160,
+    },
+    feedVideoBadge: {
+        position: 'absolute',
+        top: 10,
+        right: 10,
+        backgroundColor: 'rgba(0,0,0,0.6)',
+        borderRadius: 8,
+        paddingHorizontal: 10,
+        paddingVertical: 6,
+    },
+    feedVideoBadgeText: {
+        ...Fonts.medium14,
+        fontSize: 10,
+        color: colors.pureWhite,
+        letterSpacing: 0.4,
+    },
     // Context Search Modal Styles
     modalOverlay: {
         flex: 1,

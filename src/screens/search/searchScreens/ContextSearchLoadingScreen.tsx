@@ -1,24 +1,47 @@
-import { View, Text, TouchableOpacity, Animated, Easing } from 'react-native';
-import React, { useEffect, useRef, useState } from 'react';
+import {View, Text, TouchableOpacity, Animated, Easing} from 'react-native';
+import React, {useEffect, useMemo, useRef, useState} from 'react';
 import SizeBox from '../../../constants/SizeBox';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../../context/ThemeContext';
 import Icons from '../../../constants/Icons';
 import LinearGradient from 'react-native-linear-gradient';
 import MaskedView from '@react-native-masked-view/masked-view';
-import { ArrowLeft2, Notification } from 'iconsax-react-nativejs';
+import {ArrowLeft2} from 'iconsax-react-nativejs';
 import { createStyles } from './ContextSearchLoadingScreenStyles';
+import {useAuth} from '../../../context/AuthContext';
+import {ApiError, searchObject} from '../../../services/apiGateway';
 
 const ContextSearchLoadingScreen = ({ navigation, route }: any) => {
     const insets = useSafeAreaInsets();
     const { colors } = useTheme();
     const styles = createStyles(colors);
+    const {apiAccessToken} = useAuth();
     const rotateAnim = useRef(new Animated.Value(0)).current;
-    const [scannedCount, setScannedCount] = useState(0);
-    const [matchedCount, setMatchedCount] = useState(0);
+    const [matchedCount, setMatchedCount] = useState<number | null>(null);
+    const [errorText, setErrorText] = useState<string | null>(null);
 
     const contextSearch = route?.params?.contextSearch || '';
     const filters = route?.params?.filters || [];
+
+    const queryText = useMemo(() => {
+        const base = String(contextSearch || '').trim();
+        const parts: string[] = [];
+
+        if (Array.isArray(filters)) {
+            for (const f of filters) {
+                const v = String(f || '').trim();
+                if (v) parts.push(v);
+            }
+        } else if (filters && typeof filters === 'object') {
+            for (const [k, v0] of Object.entries(filters)) {
+                const v = String(v0 || '').trim();
+                if (!v) continue;
+                parts.push(`${String(k).trim()} ${v}`.trim());
+            }
+        }
+
+        return [base, ...parts].filter(Boolean).join(' ').trim();
+    }, [contextSearch, filters]);
 
     // Rotation animation for loading spinner
     useEffect(() => {
@@ -35,49 +58,47 @@ const ContextSearchLoadingScreen = ({ navigation, route }: any) => {
         return () => rotateAnimation.stop();
     }, [rotateAnim]);
 
-    // Simulate scanning progress
     useEffect(() => {
-        const scanInterval = setInterval(() => {
-            setScannedCount(prev => {
-                if (prev >= 1000) {
-                    clearInterval(scanInterval);
-                    return 1000;
-                }
-                return prev + Math.floor(Math.random() * 50) + 20;
-            });
-        }, 100);
+        let cancelled = false;
 
-        const matchInterval = setInterval(() => {
-            setMatchedCount(prev => {
-                if (prev >= 3) {
-                    clearInterval(matchInterval);
-                    return 3;
-                }
-                return prev + 1;
-            });
-        }, 800);
+        const run = async () => {
+            if (!apiAccessToken) {
+                setErrorText('Missing API token. Log in or set a Dev API token to use Context Search.');
+                return;
+            }
 
-        // Navigate to results after loading completes
-        const timeout = setTimeout(() => {
-            navigation.replace('BottomTabBar', {
-                screen: 'Search',
-                params: {
-                    screen: 'AISearchResultsScreen',
-                    params: {
-                        contextSearch,
-                        filters,
-                        matchedCount: 3,
-                    }
-                }
-            });
-        }, 3000);
+            const q = queryText;
+            if (!q) {
+                setErrorText('Missing query. Please go back and enter a search phrase.');
+                return;
+            }
 
-        return () => {
-            clearInterval(scanInterval);
-            clearInterval(matchInterval);
-            clearTimeout(timeout);
+            setErrorText(null);
+            setMatchedCount(null);
+            try {
+                const results = await searchObject(apiAccessToken, {q, top: 150});
+                if (cancelled) return;
+                setMatchedCount(results.length);
+                navigation.replace('AISearchResultsScreen', {
+                    matchedCount: results.length,
+                    results,
+                });
+            } catch (e: any) {
+                if (cancelled) return;
+                if (e instanceof ApiError && e.status === 402) {
+                    setErrorText('Insufficient AI tokens to run this search.');
+                    return;
+                }
+                const msg = e instanceof ApiError ? e.message : String(e?.message ?? e);
+                setErrorText(msg);
+            }
         };
-    }, [navigation, contextSearch, filters]);
+
+        run();
+        return () => {
+            cancelled = true;
+        };
+    }, [apiAccessToken, navigation, queryText]);
 
     const spin = rotateAnim.interpolate({
         inputRange: [0, 1],
@@ -93,10 +114,8 @@ const ContextSearchLoadingScreen = ({ navigation, route }: any) => {
                 <TouchableOpacity style={styles.headerButton} onPress={() => navigation.goBack()}>
                     <ArrowLeft2 size={24} color={colors.primaryColor} variant="Linear" />
                 </TouchableOpacity>
-                <View style={{ width: 44 }} />
-                <TouchableOpacity style={styles.headerButton} onPress={() => navigation.navigate('NotificationsScreen')}>
-                    <Notification size={24} color={colors.primaryColor} variant="Linear" />
-                </TouchableOpacity>
+                <View style={{width: 44}} />
+                <View style={{width: 44}} />
             </View>
 
             {/* Center Content */}
@@ -110,14 +129,12 @@ const ContextSearchLoadingScreen = ({ navigation, route }: any) => {
 
                 {/* Status Box */}
                 <View style={styles.statusBox}>
-                    <Text style={styles.scannedText}>
-                        Scanned {Math.min(scannedCount, 1000)}
-                    </Text>
+                    <Text style={styles.scannedText}>{errorText ? 'Error' : 'Searching'}</Text>
                     <MaskedView
                         style={styles.maskedView}
                         maskElement={
                             <Text style={styles.matchedText}>
-                                Matched {matchedCount}
+                                {errorText ? errorText : `Matched ${matchedCount ?? '…'}`}
                             </Text>
                         }>
                         <LinearGradient
@@ -126,7 +143,7 @@ const ContextSearchLoadingScreen = ({ navigation, route }: any) => {
                             end={{ x: 1, y: 0 }}
                             style={styles.gradientText}>
                             <Text style={[styles.matchedText, { opacity: 0 }]}>
-                                Matched {matchedCount}
+                                {errorText ? errorText : `Matched ${matchedCount ?? '…'}`}
                             </Text>
                         </LinearGradient>
                     </MaskedView>

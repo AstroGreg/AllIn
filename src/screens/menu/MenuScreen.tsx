@@ -1,4 +1,4 @@
-import { View, Text, ScrollView, TouchableOpacity } from 'react-native'
+import { View, Text, ScrollView, TouchableOpacity, Alert } from 'react-native'
 import React, { useState } from 'react'
 import { createStyles } from './MenuStyles'
 import SizeBox from '../../constants/SizeBox'
@@ -8,6 +8,7 @@ import Icons from '../../constants/Icons'
 import FastImage from 'react-native-fast-image'
 import { useTheme } from '../../context/ThemeContext'
 import { ArrowLeft2, Notification, Money3, UserOctagon, MainComponent, Eye, Copy, SecurityUser } from 'iconsax-react-nativejs'
+import { useAuth } from '../../context/AuthContext'
 
 interface SocialLink {
     platform: string;
@@ -20,6 +21,7 @@ const MenuScreen = ({ navigation }: any) => {
     const insets = useSafeAreaInsets();
     const { mode, colors, setTheme } = useTheme();
     const Styles = createStyles(colors);
+    const { logout, isAuthenticated } = useAuth();
     const [pushNotifications, setPushNotifications] = useState(true);
     const [aiPhotoRecognition, setAiPhotoRecognition] = useState(true);
     const [ghostMode, setGhostMode] = useState(true);
@@ -156,6 +158,16 @@ const MenuScreen = ({ navigation }: any) => {
                     title='AI'
                     onPress={() => navigation.navigate('AISearchScreen')}
                 />
+                {__DEV__ && (
+                  <>
+                    <SizeBox height={12} />
+                    <MenuContainers
+                      icon={<SecurityUser size={20} color={colors.primaryColor} variant="Linear" />}
+                      title='Dev API Token'
+                      onPress={() => navigation.navigate('DevApiTokenScreen')}
+                    />
+                  </>
+                )}
                 <SizeBox height={12} />
                 <MenuContainers
                     icon={<Money3 size={20} color={colors.primaryColor} variant="Linear" />}
@@ -186,6 +198,21 @@ const MenuScreen = ({ navigation }: any) => {
                     title='Right to be Forgotten'
                     onPress={() => navigation.navigate('RightToBeForgotten')}
                 />
+                {isAuthenticated && (
+                  <>
+                    <SizeBox height={12} />
+                    <MenuContainers
+                      icon={<SecurityUser size={20} color={colors.primaryColor} variant="Linear" />}
+                      title='Log out'
+                      onPress={() => {
+                        Alert.alert('Log out', 'Do you want to log out?', [
+                          { text: 'Cancel', style: 'cancel' },
+                          { text: 'Log out', style: 'destructive', onPress: () => logout() },
+                        ]);
+                      }}
+                    />
+                  </>
+                )}
 
                 <SizeBox height={24} />
 

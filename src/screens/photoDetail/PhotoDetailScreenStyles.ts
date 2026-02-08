@@ -24,18 +24,24 @@ export const createStyles = (colors: ThemeColors) => StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'center',
     },
+    headerAction: {
+        width: 44,
+        height: 44,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
     headerTitle: {
         ...Fonts.medium14,
         color: colors.mainTextColor,
-    },
-    placeholder: {
-        width: 44,
-        height: 44,
     },
     content: {
         flex: 1,
         paddingHorizontal: 20,
         paddingTop: 16,
+    },
+    contentFull: {
+        paddingHorizontal: 0,
+        paddingTop: 0,
     },
     questionCard: {
         backgroundColor: colors.cardBackground,
@@ -93,9 +99,79 @@ export const createStyles = (colors: ThemeColors) => StyleSheet.create({
         marginBottom: 20,
         position: 'relative',
     },
+    photoContainerFull: {
+        borderRadius: 0,
+        marginBottom: 0,
+    },
     photoImage: {
         width: '100%',
         height: '100%',
+    },
+    videoControlsOverlay: {
+        position: 'absolute',
+        left: 0,
+        right: 0,
+        bottom: 0,
+        paddingHorizontal: 16,
+        paddingBottom: 16,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        flexWrap: 'wrap',
+    },
+    videoTimeRow: {
+        paddingHorizontal: 10,
+        paddingVertical: 4,
+        borderRadius: 10,
+        backgroundColor: 'rgba(0,0,0,0.45)',
+        marginBottom: 8,
+    },
+    videoTapOverlay: {
+        ...StyleSheet.absoluteFillObject,
+        alignItems: 'center',
+        justifyContent: 'center',
+        paddingHorizontal: 16,
+        paddingVertical: 12,
+    },
+    videoTimeText: {
+        ...Fonts.regular12,
+        color: colors.pureWhite,
+    },
+    videoScrubber: {
+        width: '100%',
+        height: 24,
+    },
+    videoScrubberWrap: {
+        width: '100%',
+    },
+    videoPlayBadge: {
+        width: 72,
+        height: 72,
+        borderRadius: 36,
+        backgroundColor: 'rgba(0,0,0,0.45)',
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    videoErrorText: {
+        ...Fonts.regular12,
+        color: colors.pureWhite,
+        textAlign: 'center',
+        marginTop: 10,
+        paddingHorizontal: 10,
+        paddingVertical: 6,
+        borderRadius: 10,
+        backgroundColor: 'rgba(0,0,0,0.55)',
+    },
+    videoPlaceholder: {
+        width: '100%',
+        height: '100%',
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: colors.cardBackground,
+    },
+    videoPlaceholderText: {
+        ...Fonts.regular14,
+        color: colors.subTextColor,
     },
     topRow: {
         position: 'absolute',
@@ -113,39 +189,6 @@ export const createStyles = (colors: ThemeColors) => StyleSheet.create({
     },
     viewsText: {
         ...Fonts.regular16,
-        color: colors.pureWhite,
-    },
-    gradientOverlay: {
-        position: 'absolute',
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
-        justifyContent: 'flex-end',
-    },
-    bottomRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        paddingHorizontal: 14,
-        paddingBottom: 10,
-    },
-    photoTitle: {
-        ...Fonts.medium16,
-        color: colors.pureWhite,
-        flex: 1,
-    },
-    downloadButton: {
-        backgroundColor: colors.primaryColor,
-        borderRadius: 8,
-        paddingHorizontal: 16,
-        paddingVertical: 10,
-        height: 38,
-        alignItems: 'center',
-        justifyContent: 'center',
-    },
-    downloadButtonText: {
-        ...Fonts.regular14,
         color: colors.pureWhite,
     },
     buyButton: {

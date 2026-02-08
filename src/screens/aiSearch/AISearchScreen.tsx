@@ -6,7 +6,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../context/ThemeContext';
 import Icons from '../../constants/Icons';
 import LinearGradient from 'react-native-linear-gradient';
-import { ArrowLeft2, Notification, ArrowRight } from 'iconsax-react-nativejs';
+import { ArrowLeft2, ArrowRight } from 'iconsax-react-nativejs';
 
 const AISearchScreen = ({ navigation }: any) => {
     const insets = useSafeAreaInsets();
@@ -159,9 +159,7 @@ const AISearchScreen = ({ navigation }: any) => {
                     <ArrowLeft2 size={24} color={colors.primaryColor} variant="Linear" />
                 </TouchableOpacity>
                 <Text style={Styles.headerTitle}>AI Search</Text>
-                <TouchableOpacity style={Styles.headerButton} onPress={() => navigation.navigate('NotificationsScreen')}>
-                    <Notification size={24} color={colors.primaryColor} variant="Linear" />
-                </TouchableOpacity>
+                <View style={{width: 44, height: 44}} />
             </View>
 
             {/* Top Section with Gradient Background */}

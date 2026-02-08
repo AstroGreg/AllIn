@@ -5,7 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../../context/ThemeContext';
 import Icons from '../../../constants/Icons';
 import LinearGradient from 'react-native-linear-gradient';
-import { ArrowLeft2, Notification, ArrowRight, SearchNormal1, TickSquare, Category } from 'iconsax-react-nativejs';
+import { ArrowLeft2, ArrowRight, SearchNormal1, TickSquare, Category } from 'iconsax-react-nativejs';
 import { createStyles } from './AISearchOptionsStyles';
 import { useRoute } from '@react-navigation/native';
 
@@ -227,9 +227,7 @@ const AISearchOptions = ({ navigation }: any) => {
                     <ArrowLeft2 size={24} color={colors.primaryColor} variant="Linear" />
                 </TouchableOpacity>
                 <Text style={styles.headerTitle}>AI</Text>
-                <TouchableOpacity style={styles.headerButton} onPress={() => navigation.navigate('NotificationsScreen')}>
-                    <Notification size={24} color={colors.primaryColor} variant="Linear" />
-                </TouchableOpacity>
+                <View style={{width: 44, height: 44}} />
             </View>
 
             {/* Top Section with Gradient Background */}

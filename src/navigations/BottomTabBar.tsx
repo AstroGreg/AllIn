@@ -59,6 +59,7 @@ import NameThisFaceScreen from "../screens/search/searchScreens/NameThisFaceScre
 import SearchCompetitionDetailsScreen from "../screens/search/searchScreens/CompetitionDetailsScreen";
 import AISearchOptions from "../screens/search/searchScreens/AISearchOptions";
 import FaceSearchScreen from "../screens/search/searchScreens/FaceSearchScreen";
+import BibSearchScreen from "../screens/search/searchScreens/BibSearchScreen";
 import ContextSearchLoadingScreen from "../screens/search/searchScreens/ContextSearchLoadingScreen";
 import SearchFaceCaptureScreen from "../screens/search/searchScreens/SearchFaceCaptureScreen";
 import AISearchResultsScreen from "../screens/search/searchScreens/AISearchResultsScreen";
@@ -93,6 +94,7 @@ import RightToBeForgotten from "../screens/menu/menuScreens/RightToBeForgotten";
 import Authentication from "../screens/menu/menuScreens/Authentication";
 import AuthenticatorSetup from "../screens/menu/menuScreens/AuthenticatorSetup";
 import VerificationCode from "../screens/menu/menuScreens/VerificationCode";
+import DevApiTokenScreen from "../screens/menu/menuScreens/DevApiTokenScreen";
 import Fonts from "../constants/Fonts";
 
 const Tab = createBottomTabNavigator();
@@ -207,6 +209,7 @@ const MenuStackNavigator = () => {
             <MenuStack.Screen name="Authentication" component={Authentication} />
             <MenuStack.Screen name="AuthenticatorSetup" component={AuthenticatorSetup} />
             <MenuStack.Screen name="VerificationCode" component={VerificationCode} />
+            <MenuStack.Screen name="DevApiTokenScreen" component={DevApiTokenScreen} />
         </MenuStack.Navigator>
     );
 };
@@ -241,6 +244,7 @@ const SearchStackNavigator = () => {
             <SearchStack.Screen name="AISearchOptions" component={AISearchOptions} />
             <SearchStack.Screen name="AISearchScreen" component={AISearchScreen} />
             <SearchStack.Screen name="FaceSearchScreen" component={FaceSearchScreen} />
+            <SearchStack.Screen name="BibSearchScreen" component={BibSearchScreen} />
             <SearchStack.Screen name="ContextSearchLoadingScreen" component={ContextSearchLoadingScreen} />
             <SearchStack.Screen name="AISearchResultsScreen" component={AISearchResultsScreen} />
         </SearchStack.Navigator>

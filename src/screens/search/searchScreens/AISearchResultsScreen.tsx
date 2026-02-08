@@ -1,20 +1,27 @@
-import React from 'react';
-import {View, Text, TouchableOpacity, ScrollView} from 'react-native';
+import React, {useCallback, useMemo, useState} from 'react';
+import {Alert, Share, Text, TouchableOpacity, View, ScrollView} from 'react-native';
 import SizeBox from '../../../constants/SizeBox';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import {useTheme} from '../../../context/ThemeContext';
 import FastImage from 'react-native-fast-image';
 import LinearGradient from 'react-native-linear-gradient';
 import MaskedView from '@react-native-masked-view/masked-view';
-import {ArrowLeft2, Notification, ArrowRight} from 'iconsax-react-nativejs';
+import {ArrowLeft2, ArrowRight} from 'iconsax-react-nativejs';
 import Icons from '../../../constants/Icons';
 import {createStyles} from './AISearchResultsScreenStyles';
+import {useAuth} from '../../../context/AuthContext';
+import {ApiError, getMediaById, recordDownload} from '../../../services/apiGateway';
 
 interface PhotoResult {
-  id: number;
-  image: string;
-  price: string;
-  resolution: string;
+  id: string;
+  imageUrl: string;
+  eventId?: string;
+  type?: 'image' | 'video';
+  matchPercent?: number;
+  previewUrl?: string;
+  originalUrl?: string;
+  matchType?: string;
+  bibNumber?: string;
 }
 
 interface PhotoGroup {
@@ -26,85 +33,122 @@ const AISearchResultsScreen = ({navigation, route}: any) => {
   const insets = useSafeAreaInsets();
   const {colors} = useTheme();
   const styles = createStyles(colors);
-  const matchedCount = route?.params?.matchedCount || 5;
+  const {apiAccessToken} = useAuth();
+  const results = Array.isArray(route?.params?.results) ? route.params.results : null;
+  const defaultMatchType = route?.params?.matchType ? String(route.params.matchType) : undefined;
 
-  // Mock data for photo results
-  const photoGroups: PhotoGroup[] = [
-    {
-      id: 1,
-      photos: [
-        {
-          id: 1,
-          image:
-            'https://images.unsplash.com/photo-1552674605-db6ffd4facb5?w=400',
-          price: '€0,10',
-          resolution: '3840x2160',
-        },
-        {
-          id: 2,
-          image:
-            'https://images.unsplash.com/photo-1571008887538-b36bb32f4571?w=400',
-          price: '€0,15',
-          resolution: '3840x2160',
-        },
-      ],
+  const photoResults: PhotoResult[] = useMemo(() => {
+    if (!results) return [];
+
+    return results.map((r: any, idx: number) => ({
+      id: String(r.media_id ?? r.id ?? idx),
+      imageUrl: String(r.thumbnail_url ?? r.preview_url ?? r.original_url ?? ''),
+      type: r.type === 'video' || r.type === 'image' ? r.type : undefined,
+      previewUrl: r.preview_url ? String(r.preview_url) : undefined,
+      originalUrl: r.original_url ? String(r.original_url) : undefined,
+      eventId: r.event_id ? String(r.event_id) : undefined,
+      matchPercent:
+        typeof r.match_percent === 'number'
+          ? r.match_percent
+          : typeof r.confidence === 'number'
+            ? r.confidence <= 1
+              ? r.confidence * 100
+              : r.confidence
+            : undefined,
+      matchType: r.match_type ? String(r.match_type) : r.bib_number ? 'bib' : defaultMatchType,
+      bibNumber: r.bib_number ? String(r.bib_number) : undefined,
+    }));
+  }, [defaultMatchType, results]);
+
+  const matchedCount = route?.params?.matchedCount ?? photoResults.length;
+
+  const photoGroups: PhotoGroup[] = useMemo(() => {
+    const groups: PhotoGroup[] = [];
+    for (let i = 0; i < photoResults.length; i += 2) {
+      groups.push({
+        id: Math.floor(i / 2) + 1,
+        photos: photoResults.slice(i, i + 2),
+      });
+    }
+    return groups;
+  }, [photoResults]);
+
+  const downloadOne = useCallback(
+    async (photo: PhotoResult) => {
+      if (!apiAccessToken) {
+        Alert.alert('Missing API token', 'Log in or set a Dev API token to download.');
+        return;
+      }
+
+      const mediaId = String(photo.id || '').trim();
+      if (!mediaId) return;
+
+      const startUrl = (photo.originalUrl || photo.previewUrl || '').trim();
+
+      try {
+        let url = startUrl || null;
+        if (!url) {
+          const fresh = await getMediaById(apiAccessToken, mediaId);
+          url = (fresh.original_url || fresh.full_url || fresh.raw_url || fresh.preview_url || fresh.thumbnail_url || null) as any;
+          url = url ? String(url) : null;
+        }
+
+        if (!url) {
+          Alert.alert('No download URL', 'The API did not provide a downloadable URL for this media.');
+          return;
+        }
+
+        try {
+          await recordDownload(apiAccessToken, {media_id: mediaId, event_id: photo.eventId});
+        } catch {
+          // ignore
+        }
+
+        await Share.share({message: url, url});
+      } catch (e: any) {
+        const msg = e instanceof ApiError ? e.message : String(e?.message ?? e);
+        Alert.alert('Download failed', msg);
+      }
     },
-    {
-      id: 2,
-      photos: [
-        {
-          id: 3,
-          image:
-            'https://images.unsplash.com/photo-1552674605-db6ffd4facb5?w=400',
-          price: '€0,10',
-          resolution: '3840x2160',
-        },
-        {
-          id: 4,
-          image:
-            'https://images.unsplash.com/photo-1571008887538-b36bb32f4571?w=400',
-          price: '€0,15',
-          resolution: '3840x2160',
-        },
-      ],
-    },
-    {
-      id: 3,
-      photos: [
-        {
-          id: 5,
-          image:
-            'https://images.unsplash.com/photo-1552674605-db6ffd4facb5?w=400',
-          price: '€0,10',
-          resolution: '3840x2160',
-        },
-        {
-          id: 6,
-          image:
-            'https://images.unsplash.com/photo-1571008887538-b36bb32f4571?w=400',
-          price: '€0,15',
-          resolution: '3840x2160',
-        },
-      ],
-    },
-  ];
+    [apiAccessToken],
+  );
 
   const renderPhotoCard = (photo: PhotoResult) => (
     <View key={photo.id} style={styles.photoCard}>
       <FastImage
-        source={{uri: photo.image}}
+        source={{uri: photo.imageUrl}}
         style={styles.photoImage}
         resizeMode={FastImage.resizeMode.cover}
       />
       <SizeBox height={10} />
       <View style={styles.photoInfo}>
         <View style={styles.photoLeftInfo}>
-          <Text style={styles.priceText}>{photo.price}</Text>
+          <Text style={styles.priceText}>
+            {photo.matchPercent != null ? `Match ${photo.matchPercent.toFixed(0)}%` : 'Match'}
+          </Text>
           <SizeBox height={10} />
           <TouchableOpacity
-            onPress={() =>
-              navigation.navigate('PhotoDetailScreen', {photoId: photo.id})
-            }>
+            onPress={async () => {
+              const url = photo.previewUrl ?? photo.originalUrl ?? photo.imageUrl;
+              if (!url) {
+                Alert.alert('Missing URL', 'No preview/original URL was provided for this result.');
+                return;
+              }
+              navigation.navigate('PhotoDetailScreen', {
+                eventTitle: photo.eventId ? `Event ${photo.eventId.slice(0, 8)}…` : 'Result',
+                media: {
+                  id: photo.id,
+                  eventId: photo.eventId,
+                  thumbnailUrl: photo.imageUrl,
+                  previewUrl: photo.previewUrl,
+                  originalUrl: photo.originalUrl,
+                  type: photo.type,
+                  matchPercent: photo.matchPercent,
+                  matchType: photo.matchType,
+                  bibNumber: photo.bibNumber,
+                },
+              });
+            }}>
             <LinearGradient
               colors={['#155DFC', '#7F22FE']}
               start={{x: 0, y: 0}}
@@ -116,9 +160,11 @@ const AISearchResultsScreen = ({navigation, route}: any) => {
           </TouchableOpacity>
         </View>
         <View style={styles.photoRightInfo}>
-          <Text style={styles.resolutionText}>{photo.resolution}</Text>
+          <Text style={styles.resolutionText}>
+            {photo.eventId ? `${photo.eventId.slice(0, 8)}…` : ''}
+          </Text>
           <SizeBox height={10} />
-          <TouchableOpacity style={styles.downloadButton}>
+          <TouchableOpacity style={styles.downloadButton} onPress={() => downloadOne(photo)}>
             <Icons.DownloadBlue width={16} height={16} />
           </TouchableOpacity>
         </View>
@@ -154,15 +200,7 @@ const AISearchResultsScreen = ({navigation, route}: any) => {
           <ArrowLeft2 size={24} color={colors.primaryColor} variant="Linear" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>AI</Text>
-        <TouchableOpacity
-          style={styles.headerButton}
-          onPress={() => navigation.navigate('NotificationsScreen')}>
-          <Notification
-            size={24}
-            color={colors.primaryColor}
-            variant="Linear"
-          />
-        </TouchableOpacity>
+        <View style={{width: 44, height: 44}} />
       </View>
 
       <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
@@ -193,7 +231,11 @@ const AISearchResultsScreen = ({navigation, route}: any) => {
         <SizeBox height={24} />
 
         {/* Photo Groups */}
-        {photoGroups.map(renderPhotoGroup)}
+        {photoGroups.length === 0 ? (
+          <Text style={styles.emptyText}>No results found.</Text>
+        ) : (
+          photoGroups.map(renderPhotoGroup)
+        )}
 
         <SizeBox height={insets.bottom > 0 ? insets.bottom + 20 : 40} />
       </ScrollView>

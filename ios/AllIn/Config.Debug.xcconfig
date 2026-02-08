@@ -1,0 +1,5 @@
+#include? "../Pods/Target Support Files/Pods-AllIn/Pods-AllIn.debug.xcconfig"
+#include? "../Pods/Target Support Files/react-native-config/ReactNativeConfig.xcconfig"
+
+API_GATEWAY_URL = http://192.168.0.153:3000
+HLS_BASE_URL = http://192.168.0.153:3000

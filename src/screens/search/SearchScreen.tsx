@@ -8,7 +8,7 @@ import Icons from '../../constants/Icons'
 import Images from '../../constants/Images'
 import FastImage from 'react-native-fast-image'
 import LinearGradient from 'react-native-linear-gradient'
-import { ArrowLeft2, Notification, SearchNormal1, Calendar, Location, CloseCircle, Clock, ArrowDown2, Camera, Add, Note, ArrowRight } from 'iconsax-react-nativejs'
+import { ArrowLeft2, SearchNormal1, Calendar, Location, CloseCircle, Clock, ArrowDown2, Camera, Add, Note, ArrowRight } from 'iconsax-react-nativejs'
 import { useRoute } from '@react-navigation/native'
 
 interface FilterChip {
@@ -673,9 +673,7 @@ const SearchScreen = ({ navigation }: any) => {
                     <ArrowLeft2 size={24} color={colors.primaryColor} variant="Linear" />
                 </TouchableOpacity>
                 <Text style={Styles.headerTitle}>Search</Text>
-                <TouchableOpacity style={Styles.headerButton}>
-                    <Notification size={24} color={colors.primaryColor} variant="Linear" />
-                </TouchableOpacity>
+                <View style={{width: 44, height: 44}} />
             </View>
 
             <ScrollView style={Styles.container} showsVerticalScrollIndicator={false}>

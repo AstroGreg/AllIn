@@ -1,7 +1,6 @@
 import React, { useState, useRef, useCallback } from 'react';
 import { View, Text, TouchableOpacity, Dimensions, FlatList, ViewToken } from 'react-native';
 import FastImage from 'react-native-fast-image';
-import Video from 'react-native-video';
 import { createStyles } from '../HomeStyles';
 import Icons from '../../../constants/Icons';
 import { useTheme } from '../../../context/ThemeContext';
@@ -44,9 +43,7 @@ const NewsFeedCard = ({
     const { colors } = useTheme();
     const Styles = createStyles(colors);
     const [currentIndex, setCurrentIndex] = useState(0);
-    const [isPlaying, setIsPlaying] = useState(false);
     const flatListRef = useRef<FlatList>(null);
-    const videoRef = useRef<any>(null);
 
     // Calculate image width based on whether card has border
     const imageWidth = hasBorder ? screenWidth - 72 : screenWidth - 40;
@@ -67,13 +64,10 @@ const NewsFeedCard = ({
         index,
     }), [imageWidth]);
 
-    const handlePlayPause = () => {
-        setIsPlaying(!isPlaying);
-    };
-
     const handleImagePress = (index: number) => {
         if (isVideo) {
-            handlePlayPause();
+            if (onPress) onPress();
+            return;
         } else if (onImagePress) {
             onImagePress(index);
         } else if (onPress) {
@@ -87,30 +81,17 @@ const NewsFeedCard = ({
             onPress={() => handleImagePress(index)}
             style={[Styles.newsFeedImageContainer, { width: imageWidth }]}
         >
-            {isVideo && videoUri && isPlaying ? (
-                <Video
-                    ref={videoRef}
-                    source={{ uri: videoUri }}
-                    style={Styles.newsFeedImage}
-                    resizeMode="cover"
-                    paused={!isPlaying}
-                    repeat={true}
-                />
-            ) : (
-                <>
-                    <FastImage
-                        source={item}
-                        style={Styles.newsFeedImage}
-                        resizeMode="cover"
-                    />
-                    {isVideo && index === currentIndex && (
-                        <View style={Styles.videoOverlay}>
-                            <View style={Styles.playButtonLarge}>
-                                <Icons.PlayWhite height={30} width={30} />
-                            </View>
-                        </View>
-                    )}
-                </>
+            <FastImage
+                source={item}
+                style={Styles.newsFeedImage}
+                resizeMode="cover"
+            />
+            {isVideo && index === currentIndex && (
+                <View style={Styles.videoOverlay}>
+                    <View style={Styles.playButtonLarge}>
+                        <Icons.PlayWhite height={30} width={30} />
+                    </View>
+                </View>
             )}
         </TouchableOpacity>
     );
@@ -170,16 +151,16 @@ const NewsFeedCard = ({
                     getItemLayout={getItemLayout}
                     onViewableItemsChanged={onViewableItemsChanged}
                     viewabilityConfig={viewabilityConfig}
-                    scrollEnabled={!isPlaying}
+                    scrollEnabled={true}
                 />
-                {images.length > 1 && !isPlaying && (
+                {images.length > 1 && (
                     <View style={Styles.paginationBadge}>
                         <Text style={Styles.paginationText}>{currentIndex + 1}/{images.length}</Text>
                     </View>
                 )}
             </View>
 
-            {images.length > 1 && !isPlaying && renderPaginationDots()}
+            {images.length > 1 && renderPaginationDots()}
 
             {onViewBlog && (
                 <TouchableOpacity style={Styles.viewBlogButton} onPress={onViewBlog}>

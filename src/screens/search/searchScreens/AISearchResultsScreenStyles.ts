@@ -133,6 +133,12 @@ export const createStyles = (colors: ThemeColors) => StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  emptyText: {
+    ...Fonts.regular14,
+    color: colors.grayColor,
+    textAlign: 'center',
+    paddingVertical: 24,
+  },
 });
 
 // Backward compatibility

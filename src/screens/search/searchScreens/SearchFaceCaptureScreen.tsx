@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useCallback } from 'react';
+import React, { useMemo, useState, useRef, useEffect, useCallback } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Alert, Linking, Dimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import FastImage from 'react-native-fast-image';
@@ -14,6 +14,8 @@ import { Worklets } from 'react-native-worklets-core';
 import SizeBox from '../../../constants/SizeBox';
 import { useTheme } from '../../../context/ThemeContext';
 import Fonts from '../../../constants/Fonts';
+import {useAuth} from '../../../context/AuthContext';
+import {ApiError, enrollFace, FaceAngleClass, verifyFaceAngle} from '../../../services/apiGateway';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const CAMERA_WIDTH = SCREEN_WIDTH - 54;
@@ -29,16 +31,39 @@ interface CaptureAngle {
     pitchMax: number;
 }
 
+type AngleVerifyStatus = 'empty' | 'verifying' | 'accepted' | 'rejected';
+
+interface AngleVerifyState {
+    status: AngleVerifyStatus;
+    reason?: string;
+}
+
 // Only 3 angles for search face capture
-const CAPTURE_ANGLES: CaptureAngle[] = [
+const SAVE_FACE_CAPTURE_ANGLES: CaptureAngle[] = [
     { id: 'front', title: 'Front', instruction: 'Look straight at the camera and hold still', yawMin: -10, yawMax: 10, pitchMin: -10, pitchMax: 10 },
     { id: 'left', title: 'Left Side', instruction: 'Turn your head to the left and hold still', yawMin: 15, yawMax: 45, pitchMin: -15, pitchMax: 15 },
     { id: 'right', title: 'Right Side', instruction: 'Turn your head to the right and hold still', yawMin: -45, yawMax: -15, pitchMin: -15, pitchMax: 15 },
 ];
 
-const SearchFaceCaptureScreen = ({ navigation }: any) => {
+// 5 angles for backend enrollment (/ai/enrol/face)
+const ENROLL_FACE_CAPTURE_ANGLES: CaptureAngle[] = [
+    { id: 'frontal', title: 'Front', instruction: 'Look straight at the camera and hold still', yawMin: -10, yawMax: 10, pitchMin: -10, pitchMax: 10 },
+    { id: 'left_profile', title: 'Left Profile', instruction: 'Turn your head to the left and hold still', yawMin: 15, yawMax: 45, pitchMin: -15, pitchMax: 15 },
+    { id: 'right_profile', title: 'Right Profile', instruction: 'Turn your head to the right and hold still', yawMin: -45, yawMax: -15, pitchMin: -15, pitchMax: 15 },
+    { id: 'upward', title: 'Upward', instruction: 'Tilt your head up and hold still', yawMin: -10, yawMax: 10, pitchMin: 10, pitchMax: 35 },
+    { id: 'downward', title: 'Downward', instruction: 'Tilt your head down and hold still', yawMin: -10, yawMax: 10, pitchMin: -35, pitchMax: -10 },
+];
+
+const SearchFaceCaptureScreen = ({ navigation, route }: any) => {
     const { colors } = useTheme();
     const insets = useSafeAreaInsets();
+    const {apiAccessToken} = useAuth();
+
+    const mode: 'saveFace' | 'enrolFace' = route?.params?.mode === 'enrolFace' ? 'enrolFace' : 'saveFace';
+    const captureAngles = useMemo(() => (
+        mode === 'enrolFace' ? ENROLL_FACE_CAPTURE_ANGLES : SAVE_FACE_CAPTURE_ANGLES
+    ), [mode]);
+    const afterEnroll = route?.params?.afterEnroll ?? null;
 
     const cameraRef = useRef<Camera>(null);
     const device = useCameraDevice('front');
@@ -57,6 +82,15 @@ const SearchFaceCaptureScreen = ({ navigation }: any) => {
     const [angleMatched, setAngleMatched] = useState(false);
     const [countdown, setCountdown] = useState<number | null>(null);
     const [isTransitioning, setIsTransitioning] = useState(false);
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [angleVerification, setAngleVerification] = useState<Record<string, AngleVerifyState>>(() => {
+        if (mode !== 'enrolFace') return {};
+        const init: Record<string, AngleVerifyState> = {};
+        for (const a of ENROLL_FACE_CAPTURE_ANGLES) {
+            init[a.id] = {status: 'empty'};
+        }
+        return init;
+    });
 
     const currentAngleIndexRef = useRef(currentAngleIndex);
     const isCapturingRef = useRef(false);
@@ -71,14 +105,20 @@ const SearchFaceCaptureScreen = ({ navigation }: any) => {
     }, [currentAngleIndex]);
 
     useEffect(() => {
-        const currentAngle = CAPTURE_ANGLES[currentAngleIndex];
+        const currentAngle = captureAngles[currentAngleIndex];
         hasCurrentImageRef.current = !!capturedImages[currentAngle?.id];
-    }, [capturedImages, currentAngleIndex]);
+    }, [capturedImages, currentAngleIndex, captureAngles]);
 
-    const currentAngle = CAPTURE_ANGLES[currentAngleIndex];
+    const currentAngle = captureAngles[currentAngleIndex];
     const currentImage = capturedImages[currentAngle?.id];
-    const allCaptured = Object.keys(capturedImages).length === CAPTURE_ANGLES.length;
-    const progress = Object.keys(capturedImages).length / CAPTURE_ANGLES.length;
+    const verifiedCount = useMemo(() => {
+        if (mode !== 'enrolFace') return 0;
+        return captureAngles.filter(a => capturedImages[a.id] && angleVerification[a.id]?.status === 'accepted').length;
+    }, [angleVerification, captureAngles, capturedImages, mode]);
+
+    const completedCount = mode === 'enrolFace' ? verifiedCount : Object.keys(capturedImages).length;
+    const allCaptured = completedCount === captureAngles.length;
+    const progress = captureAngles.length > 0 ? completedCount / captureAngles.length : 0;
 
     const handleRequestPermission = useCallback(async () => {
         try {
@@ -116,12 +156,12 @@ const SearchFaceCaptureScreen = ({ navigation }: any) => {
     }, []);
 
     const checkAngleMatch = useCallback((yaw: number, pitch: number, angleIndex: number) => {
-        const angle = CAPTURE_ANGLES[angleIndex];
+        const angle = captureAngles[angleIndex];
         if (!angle) return false;
         const yawMatch = yaw >= angle.yawMin && yaw <= angle.yawMax;
         const pitchMatch = pitch >= angle.pitchMin && pitch <= angle.pitchMax;
         return yawMatch && pitchMatch;
-    }, []);
+    }, [captureAngles]);
 
     const capturePhoto = useCallback(async () => {
         if (!cameraRef.current || isCapturingRef.current || hasCurrentImageRef.current || isTransitioningRef.current) {
@@ -132,22 +172,59 @@ const SearchFaceCaptureScreen = ({ navigation }: any) => {
         setIsCapturing(true);
 
         try {
-            const photo = await cameraRef.current.takePhoto({
-                qualityPrioritization: 'quality',
-            });
+            const photo = await cameraRef.current.takePhoto();
 
             if (!isMountedRef.current) return;
 
             const photoUri = `file://${photo.path}`;
             const capturedAngleIndex = currentAngleIndexRef.current;
-            const capturedAngle = CAPTURE_ANGLES[capturedAngleIndex];
+            const capturedAngle = captureAngles[capturedAngleIndex];
+            if (!capturedAngle?.id) return;
 
             setCapturedImages(prev => ({
                 ...prev,
                 [capturedAngle.id]: photoUri
             }));
 
-            if (capturedAngleIndex < CAPTURE_ANGLES.length - 1) {
+            let canProceed = true;
+            if (mode === 'enrolFace') {
+                if (!apiAccessToken) {
+                    Alert.alert('Missing API token', 'Log in or set a Dev API token to enroll your face.');
+                    return;
+                }
+
+                setAngleVerification(prev => ({
+                    ...prev,
+                    [capturedAngle.id]: {status: 'verifying'},
+                }));
+
+                try {
+                    const verified = await verifyFaceAngle(apiAccessToken, {
+                        angle: capturedAngle.id as FaceAngleClass,
+                        uri: photoUri,
+                    });
+
+                    if (!isMountedRef.current) return;
+
+                    canProceed = !!verified?.accepted;
+                    setAngleVerification(prev => ({
+                        ...prev,
+                        [capturedAngle.id]: canProceed
+                            ? {status: 'accepted'}
+                            : {status: 'rejected', reason: String(verified?.reason ?? 'angle_mismatch')},
+                    }));
+                } catch (e: any) {
+                    canProceed = false;
+                    const msg = e instanceof ApiError ? e.message : String(e?.message ?? e);
+                    setAngleVerification(prev => ({
+                        ...prev,
+                        [capturedAngle.id]: {status: 'rejected', reason: msg},
+                    }));
+                    Alert.alert('Angle check failed', msg);
+                }
+            }
+
+            if (canProceed && capturedAngleIndex < captureAngles.length - 1) {
                 isTransitioningRef.current = true;
                 setIsTransitioning(true);
 
@@ -174,7 +251,7 @@ const SearchFaceCaptureScreen = ({ navigation }: any) => {
                 setIsCapturing(false);
             }
         }
-    }, []);
+    }, [apiAccessToken, captureAngles, mode]);
 
     const clearCountdown = useCallback(() => {
         if (countdownRef.current) {
@@ -184,6 +261,23 @@ const SearchFaceCaptureScreen = ({ navigation }: any) => {
         countdownActiveRef.current = false;
         setCountdown(null);
     }, []);
+
+    const handleRetakeAngle = useCallback((angleId: string) => {
+        clearCountdown();
+        countdownActiveRef.current = false;
+        setAngleMatched(false);
+        setCapturedImages(prev => {
+            const next = {...prev};
+            delete next[angleId];
+            return next;
+        });
+        if (mode === 'enrolFace') {
+            setAngleVerification(prev => ({
+                ...prev,
+                [angleId]: {status: 'empty'},
+            }));
+        }
+    }, [clearCountdown, mode]);
 
     const startCountdown = useCallback(() => {
         if (countdownActiveRef.current || isCapturingRef.current || hasCurrentImageRef.current || isTransitioningRef.current) {
@@ -258,20 +352,81 @@ const SearchFaceCaptureScreen = ({ navigation }: any) => {
         }
     }, [detectFaces, handleFaceDetected]);
 
-    const handleSaveFace = useCallback(() => {
-        // Navigate to NameThisFaceScreen with all captured images
+    const handleSaveFace = useCallback(async () => {
+        if (mode === 'enrolFace') {
+            if (!apiAccessToken) {
+                Alert.alert('Missing API token', 'Log in or set a Dev API token to enroll your face.');
+                return;
+            }
+
+            const required = ['frontal', 'left_profile', 'right_profile', 'upward', 'downward'] as const;
+            const missing = required.filter(k => !capturedImages[k] || angleVerification[k]?.status !== 'accepted');
+            if (missing.length > 0) {
+                Alert.alert('Missing angles', `Please capture: ${missing.join(', ')}`);
+                const firstMissingIndex = captureAngles.findIndex(a => missing.includes(a.id as any));
+                if (firstMissingIndex >= 0) {
+                    setCurrentAngleIndex(firstMissingIndex);
+                }
+                return;
+            }
+
+            setIsSubmitting(true);
+            try {
+                await enrollFace(apiAccessToken, {
+                    frontal: capturedImages.frontal,
+                    left_profile: capturedImages.left_profile,
+                    right_profile: capturedImages.right_profile,
+                    upward: capturedImages.upward,
+                    downward: capturedImages.downward,
+                });
+
+                if (afterEnroll?.screen) {
+                    navigation.navigate(afterEnroll.screen, afterEnroll.params ?? {});
+                } else {
+                    navigation.navigate('FaceSearchScreen', {autoSearch: true});
+                }
+            } catch (e: any) {
+                if (e instanceof ApiError && e.status === 403 && String(e.message).toLowerCase().includes('consent')) {
+                    Alert.alert('Consent required', 'Enable face recognition consent first, then try again.');
+                    return;
+                }
+                const msg = e instanceof ApiError ? e.message : String(e?.message ?? e);
+                Alert.alert('Enrollment failed', msg);
+            } finally {
+                setIsSubmitting(false);
+            }
+            return;
+        }
+
+        // Legacy: Navigate to NameThisFaceScreen with captured images
         navigation.navigate('NameThisFaceScreen', {
             frontFaceImage: capturedImages['front'],
             leftSideImage: capturedImages['left'],
             rightSideImage: capturedImages['right'],
         });
-    }, [navigation, capturedImages]);
+    }, [apiAccessToken, afterEnroll, angleVerification, captureAngles, capturedImages, mode, navigation]);
 
     const handleCancel = useCallback(() => {
         navigation.goBack();
     }, [navigation]);
 
     const getInstructionText = () => {
+        if (mode === 'enrolFace') {
+            const verify = angleVerification[currentAngle?.id];
+            if (verify?.status === 'verifying') {
+                return 'Checking this angle…';
+            }
+            if (verify?.status === 'rejected') {
+                if (verify.reason === 'no_face_detected_or_too_small') {
+                    return 'No face detected. Move closer and retake.';
+                }
+                if (verify.reason === 'angle_mismatch') {
+                    return 'Angle mismatch. Tap Retake and try again.';
+                }
+                return 'This angle was not accepted. Tap Retake and try again.';
+            }
+        }
+
         if (isTransitioning) {
             return 'Great! Moving to the next angle...';
         }
@@ -322,21 +477,71 @@ const SearchFaceCaptureScreen = ({ navigation }: any) => {
     }
 
     const showCameraPreview = !currentImage;
+    const currentVerify = mode === 'enrolFace' ? angleVerification[currentAngle?.id] : null;
 
     return (
         <View style={[styles.mainContainer, { backgroundColor: colors.backgroundColor }]}>
-            <SizeBox height={insets.top + 10} />
+        <SizeBox height={insets.top + 10} />
 
             {/* Header */}
             <View style={styles.header}>
                 <TouchableOpacity onPress={handleCancel} style={[styles.backButton, { backgroundColor: colors.cardBackground }]}>
                     <ArrowLeft size={24} color={colors.mainTextColor} />
                 </TouchableOpacity>
-                <Text style={[styles.headerTitle, { color: colors.mainTextColor }]}>Add Face</Text>
+                <Text style={[styles.headerTitle, { color: colors.mainTextColor }]}>
+                    {mode === 'enrolFace' ? 'Enroll Face' : 'Add Face'}
+                </Text>
                 <View style={{ width: 40 }} />
             </View>
 
             <View style={styles.contentContainer}>
+                {mode === 'enrolFace' && (
+                    <>
+                        <View style={styles.angleSelectorRow}>
+                            {captureAngles.map((a, idx) => {
+                                const status = angleVerification[a.id]?.status ?? 'empty';
+                                const isSelected = idx === currentAngleIndex;
+                                const dotColor =
+                                    status === 'accepted'
+                                        ? '#22C55E'
+                                        : status === 'rejected'
+                                            ? '#EF4444'
+                                            : status === 'verifying'
+                                                ? colors.primaryColor
+                                                : colors.lightGrayColor;
+
+                                const disabled = isSubmitting || status === 'verifying';
+
+                                return (
+                                    <TouchableOpacity
+                                        key={a.id}
+                                        activeOpacity={0.8}
+                                        disabled={disabled}
+                                        onPress={() => {
+                                            clearCountdown();
+                                            setAngleMatched(false);
+                                            setCurrentAngleIndex(idx);
+                                        }}
+                                        style={[
+                                            styles.angleChip,
+                                            {
+                                                backgroundColor: colors.cardBackground,
+                                                borderColor: isSelected ? colors.primaryColor : colors.lightGrayColor,
+                                            },
+                                        ]}
+                                    >
+                                        <View style={[styles.angleStatusDot, {backgroundColor: dotColor}]} />
+                                        <Text style={[styles.angleChipText, {color: colors.mainTextColor}]}>
+                                            {a.title}
+                                        </Text>
+                                    </TouchableOpacity>
+                                );
+                            })}
+                        </View>
+                        <SizeBox height={14} />
+                    </>
+                )}
+
                 {/* Camera Container */}
                 <View style={[styles.cameraOuterContainer, { width: CAMERA_WIDTH, height: CAMERA_HEIGHT }]}>
                     {/* Corner borders */}
@@ -428,10 +633,14 @@ const SearchFaceCaptureScreen = ({ navigation }: any) => {
                         ]}
                         activeOpacity={0.7}
                         onPress={handleSaveFace}
-                        disabled={!allCaptured}
+                        disabled={!allCaptured || isSubmitting}
                     >
                         <Text style={[styles.primaryButtonText, { color: colors.pureWhite }]}>
-                            {allCaptured ? 'Continue' : `${currentAngleIndex + 1} of ${CAPTURE_ANGLES.length}`}
+                            {isSubmitting
+                                ? 'Saving…'
+                                : allCaptured
+                                    ? 'Continue'
+                                    : `${currentAngleIndex + 1} of ${captureAngles.length}`}
                         </Text>
                         <ArrowRight size={24} color={colors.pureWhite} />
                     </TouchableOpacity>
@@ -439,9 +648,18 @@ const SearchFaceCaptureScreen = ({ navigation }: any) => {
                     <TouchableOpacity
                         style={[styles.secondaryButton, { backgroundColor: colors.backgroundColor, borderColor: colors.lightGrayColor }]}
                         activeOpacity={0.7}
-                        onPress={handleCancel}
+                        onPress={() => {
+                            if (currentAngle?.id && currentImage) {
+                                handleRetakeAngle(currentAngle.id);
+                                return;
+                            }
+                            handleCancel();
+                        }}
+                        disabled={!!currentImage && currentVerify?.status === 'verifying'}
                     >
-                        <Text style={[styles.secondaryButtonText, { color: colors.grayColor }]}>Cancel</Text>
+                        <Text style={[styles.secondaryButtonText, { color: colors.grayColor }]}>
+                            {currentImage ? 'Retake' : 'Cancel'}
+                        </Text>
                     </TouchableOpacity>
                 </View>
 
@@ -476,6 +694,32 @@ const styles = StyleSheet.create({
         flex: 1,
         paddingHorizontal: 20,
         alignItems: 'center',
+    },
+    angleSelectorRow: {
+        width: '100%',
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        justifyContent: 'center',
+        gap: 8,
+        paddingHorizontal: 4,
+    },
+    angleChip: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 8,
+        borderWidth: 1,
+        paddingHorizontal: 12,
+        paddingVertical: 8,
+        borderRadius: 999,
+    },
+    angleStatusDot: {
+        width: 8,
+        height: 8,
+        borderRadius: 4,
+    },
+    angleChipText: {
+        ...Fonts.medium12,
+        lineHeight: 16,
     },
     cameraOuterContainer: {
         position: 'relative',

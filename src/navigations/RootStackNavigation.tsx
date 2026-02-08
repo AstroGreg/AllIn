@@ -22,7 +22,6 @@ import EventsScreen from '../screens/Events/EventsScreen';
 import ParticipantScreen from '../screens/participant/ParticipantScreen';
 import ChooseEventScreen from '../screens/chooseEvent/ChooseEventScreen';
 import CongratulationsScreen from '../screens/congratulations/CongratulationsScreen';
-import DownloadsScreens from '../screens/downloads/DownloadsScreens';
 import Language from '../screens/menu/menuScreens/Language';
 import DeleteAndPause from '../screens/menu/menuScreens/DeleteAndPause';
 import PaymentMethod from '../screens/menu/menuScreens/PaymentMethod';
@@ -117,7 +116,6 @@ const RootStackNavigation = () => {
             <Stack.Screen name="ParticipantScreen" component={ParticipantScreen} />
             <Stack.Screen name="ChooseEventScreen" component={ChooseEventScreen} />
             <Stack.Screen name="CongratulationsScreen" component={CongratulationsScreen} />
-            <Stack.Screen name="DownloadsScreens" component={DownloadsScreens} />
             <Stack.Screen name="Language" component={Language} />
             <Stack.Screen name="DeleteAndPause" component={DeleteAndPause} />
             <Stack.Screen name="PaymentMethod" component={PaymentMethod} />

@@ -11,7 +11,6 @@ interface HeaderProps {
     userName: string;
     profilePic?: string;
     onPressFeed?: () => void;
-    onPressNotification?: () => void;
     onPressProfile?: () => void;
 }
 
@@ -19,7 +18,6 @@ const Header = ({
     userName,
     profilePic,
     onPressFeed,
-    onPressNotification,
     onPressProfile
 }: HeaderProps) => {
     const { colors } = useTheme();
@@ -42,10 +40,6 @@ const Header = ({
             <View style={Styles.headerIconsContainer}>
                 <TouchableOpacity onPress={onPressFeed} style={Styles.headerIconBtn}>
                     <Icons.FeedBlue height={24} width={24} />
-                </TouchableOpacity>
-                <SizeBox width={10} />
-                <TouchableOpacity onPress={onPressNotification} style={Styles.headerIconBtn}>
-                    <Icons.NotificationBoldBlue height={24} width={24} />
                 </TouchableOpacity>
             </View>
         </View>

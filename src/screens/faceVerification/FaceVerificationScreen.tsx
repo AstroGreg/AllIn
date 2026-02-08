@@ -142,9 +142,7 @@ const FaceVerificationScreen = ({ navigation }: any) => {
         setIsCapturing(true);
 
         try {
-            const photo = await cameraRef.current.takePhoto({
-                qualityPrioritization: 'quality',
-            });
+            const photo = await cameraRef.current.takePhoto();
 
             if (!isMountedRef.current) return;
 
@@ -395,7 +393,7 @@ const FaceVerificationScreen = ({ navigation }: any) => {
                                         <View style={[
                                             Styles.faceGuide,
                                             angleMatched && { borderColor: colors.greenColor },
-                                            faceDetected && !angleMatched && { borderColor: colors.yellowColor || '#FFA500' },
+                                            faceDetected && !angleMatched && { borderColor: colors.pendingColor },
                                             !faceDetected && { borderColor: colors.primaryColor }
                                         ]} />
                                     </View>

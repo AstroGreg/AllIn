@@ -1,17 +1,52 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import Auth0, { Credentials, User } from 'react-native-auth0';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { AppConfig } from '../constants/AppConfig';
 
-// Auth0 credentials - update these with your values
-const AUTH0_DOMAIN = 'dev-lfzk0n81zjp0c3x3.us.auth0.com';
-const AUTH0_CLIENT_ID = 'czlUtPo1WSw72XpcqHKSzO5MsuUzTV5P';
+// Auth0 credentials
+const AUTH0_DOMAIN = (AppConfig.AUTH0_DOMAIN || 'dev-lfzk0n81zjp0c3x3.us.auth0.com').trim();
+const AUTH0_CLIENT_ID = (AppConfig.AUTH0_CLIENT_ID || 'czlUtPo1WSw72XpcqHKSzO5MsuUzTV5P').trim();
+const AUTH0_AUDIENCE = (AppConfig.AUTH0_AUDIENCE || '').trim();
 // Custom redirect URI with lowercase package name (required for Android)
 const AUTH0_REDIRECT_URI = 'com.allin.auth0://dev-lfzk0n81zjp0c3x3.us.auth0.com/android/com.allin/callback';
 
-const auth0 = new Auth0({
-    domain: AUTH0_DOMAIN,
-    clientId: AUTH0_CLIENT_ID,
-});
+type User = {
+    sub?: string;
+    name?: string;
+    givenName?: string;
+    familyName?: string;
+    nickname?: string;
+    email?: string;
+    emailVerified?: boolean;
+    picture?: string;
+    [key: string]: any;
+};
+
+type Credentials = {
+    accessToken?: string;
+    idToken?: string;
+    user?: any;
+    [key: string]: any;
+};
+
+const getAuth0 = (() => {
+    let cached: any | null | undefined = undefined;
+    return () => {
+        if (cached !== undefined) return cached;
+        try {
+            const mod = require('react-native-auth0');
+            const Auth0Module = mod?.default ?? mod;
+            cached = new Auth0Module({
+                domain: AUTH0_DOMAIN,
+                clientId: AUTH0_CLIENT_ID,
+            });
+            return cached;
+        } catch (err: any) {
+            console.log('[Auth] Auth0 native module unavailable:', err?.message ?? err);
+            cached = null;
+            return null;
+        }
+    };
+})();
 
 // User profile data structure
 export interface UserProfile {
@@ -58,9 +93,13 @@ interface AuthContextType {
     user: User | null;
     userProfile: UserProfile | null;
     accessToken: string | null;
+    apiAccessToken: string | null;
+    devApiToken: string | null;
     login: (connection?: string) => Promise<void>;
     signup: (connection?: string) => Promise<void>;
     logout: () => Promise<void>;
+    setDevApiToken: (token: string) => Promise<void>;
+    clearDevApiToken: () => Promise<void>;
     updateUserProfile: (profileData: Partial<UserProfile>) => Promise<void>;
     getUserProfile: () => Promise<UserProfile | null>;
     error: string | null;
@@ -71,6 +110,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 const AUTH_STORAGE_KEY = '@auth_credentials';
 const PROFILE_STORAGE_KEY = '@user_profile';
+const DEV_API_TOKEN_KEY = '@dev_api_token';
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -78,6 +118,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const [user, setUser] = useState<User | null>(null);
     const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
     const [accessToken, setAccessToken] = useState<string | null>(null);
+    const [devApiToken, setDevApiTokenState] = useState<string | null>(null);
     const [error, setError] = useState<string | null>(null);
 
     // Check for stored credentials on app start
@@ -90,10 +131,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         try {
             const storedCredentials = await AsyncStorage.getItem(AUTH_STORAGE_KEY);
             const storedProfile = await AsyncStorage.getItem(PROFILE_STORAGE_KEY);
+            const storedDevToken = await AsyncStorage.getItem(DEV_API_TOKEN_KEY);
 
             if (storedProfile) {
                 console.log('[Auth] Found stored profile');
                 setUserProfile(JSON.parse(storedProfile));
+            }
+
+            if (storedDevToken) {
+                setDevApiTokenState(String(storedDevToken));
             }
 
             if (storedCredentials) {
@@ -153,6 +199,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         }
     };
 
+    const setDevApiToken = async (token: string) => {
+        const t = String(token || '').trim();
+        await AsyncStorage.setItem(DEV_API_TOKEN_KEY, t);
+        setDevApiTokenState(t);
+    };
+
+    const clearDevApiToken = async () => {
+        await AsyncStorage.removeItem(DEV_API_TOKEN_KEY);
+        setDevApiTokenState(null);
+    };
+
     const storeCredentials = async (credentials: Credentials) => {
         try {
             await AsyncStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(credentials));
@@ -179,7 +236,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             setUserProfile(updatedProfile);
 
             // If authenticated, also update Auth0 user metadata
-            if (accessToken) {
+            const auth0 = getAuth0();
+            if (accessToken && auth0) {
                 try {
                     await auth0.auth.userInfo({ token: accessToken });
                     // Note: To update user_metadata in Auth0, you typically need to use the Management API
@@ -215,9 +273,18 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         setError(null);
         console.log('[Auth] Starting login...', connection ? `with connection: ${connection}` : 'with Universal Login');
         try {
+            const auth0 = getAuth0();
+            if (!auth0) {
+                setError('Auth0 native module not available. Please reinstall pods and rebuild.');
+                return;
+            }
             console.log('[Auth] Calling auth0.webAuth.authorize...');
             const credentials = await auth0.webAuth.authorize({
-                scope: 'openid profile email',
+                // If AUTH0_AUDIENCE is set, request an API access token with the permissions needed by the gateway.
+                scope: AUTH0_AUDIENCE
+                  ? 'openid profile email read:users access:ai search:media list:media read:media'
+                  : 'openid profile email',
+                ...(AUTH0_AUDIENCE ? { audience: AUTH0_AUDIENCE } : {}),
                 redirectUrl: AUTH0_REDIRECT_URI,
                 ...(connection && { connection }),
                 // Force fresh login by adding prompt parameter
@@ -306,9 +373,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         setError(null);
         console.log('[Auth] Starting signup...', connection ? `with connection: ${connection}` : 'with Universal Login');
         try {
+            const auth0 = getAuth0();
+            if (!auth0) {
+                setError('Auth0 native module not available. Please reinstall pods and rebuild.');
+                return;
+            }
             console.log('[Auth] Calling auth0.webAuth.authorize for signup...');
             const credentials = await auth0.webAuth.authorize({
-                scope: 'openid profile email',
+                scope: AUTH0_AUDIENCE
+                  ? 'openid profile email read:users access:ai search:media list:media read:media'
+                  : 'openid profile email',
+                ...(AUTH0_AUDIENCE ? { audience: AUTH0_AUDIENCE } : {}),
                 redirectUrl: AUTH0_REDIRECT_URI,
                 ...(connection && { connection }),
                 additionalParameters: {
@@ -393,6 +468,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const logout = async () => {
         setIsLoading(true);
         try {
+            const auth0 = getAuth0();
+            if (!auth0) {
+                setError('Auth0 native module not available. Please reinstall pods and rebuild.');
+                return;
+            }
             await auth0.webAuth.clearSession();
             await AsyncStorage.removeItem(AUTH_STORAGE_KEY);
             await AsyncStorage.removeItem(PROFILE_STORAGE_KEY);
@@ -407,6 +487,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         }
     };
 
+    const apiAccessToken = devApiToken || accessToken;
+
     const clearError = () => {
         setError(null);
     };
@@ -419,9 +501,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
                 user,
                 userProfile,
                 accessToken,
+                apiAccessToken,
+                devApiToken,
                 login,
                 signup,
                 logout,
+                setDevApiToken,
+                clearDevApiToken,
                 updateUserProfile,
                 getUserProfile,
                 error,

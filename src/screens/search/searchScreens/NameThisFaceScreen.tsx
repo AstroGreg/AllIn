@@ -5,7 +5,7 @@ import SizeBox from '../../../constants/SizeBox'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useTheme } from '../../../context/ThemeContext'
 import FastImage from 'react-native-fast-image'
-import { ArrowLeft2, Notification, User, ArrowRight2 } from 'iconsax-react-nativejs'
+import { ArrowLeft2, User, ArrowRight2 } from 'iconsax-react-nativejs'
 import { createStyles } from './NameThisFaceScreenStyles'
 
 const NameThisFaceScreen = ({ navigation, route }: any) => {
@@ -60,9 +60,7 @@ const NameThisFaceScreen = ({ navigation, route }: any) => {
                     <ArrowLeft2 size={24} color={colors.primaryColor} variant="Linear" />
                 </TouchableOpacity>
                 <Text style={styles.headerTitle}>Name This Face</Text>
-                <TouchableOpacity style={styles.headerButton}>
-                    <Notification size={24} color={colors.primaryColor} variant="Linear" />
-                </TouchableOpacity>
+                <View style={{width: 44, height: 44}} />
             </View>
 
             <View style={styles.content}>

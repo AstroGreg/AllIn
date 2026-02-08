@@ -132,6 +132,9 @@ import athleteBlue from '../assets/icons/athleteBlue.svg';
 import qrBlack from '../assets/icons/qrBlack.svg';
 import aiWhiteSquare from '../assets/icons/aiWhiteSquare.svg';
 import loadingGradient from '../assets/icons/loadingGradient.svg';
+import quickDownload from '../assets/icons/quickDownload.svg';
+import quickAddMyself from '../assets/icons/quickAddMyself.svg';
+import quickChevron from '../assets/icons/quickChevron.svg';
 
 
 
@@ -268,6 +271,9 @@ const Icons = {
     QrBlack: qrBlack,
     AiWhiteSquare: aiWhiteSquare,
     LoadingGradient: loadingGradient,
+    QuickDownload: quickDownload,
+    QuickAddMyself: quickAddMyself,
+    QuickChevron: quickChevron,
 }
 
 export default Icons;
