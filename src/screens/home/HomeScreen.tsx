@@ -1,5 +1,5 @@
-import { View, ScrollView, Text, TouchableOpacity } from 'react-native'
-import React from 'react'
+import { View, ScrollView, Text, TouchableOpacity, ActivityIndicator } from 'react-native'
+import React, { useEffect, useState, useCallback } from 'react'
 import { createStyles } from './HomeStyles'
 import Header from './components/Header'
 import SizeBox from '../../constants/SizeBox'
@@ -11,29 +11,48 @@ import { useTheme } from '../../context/ThemeContext'
 import { useAuth } from '../../context/AuthContext'
 import LinearGradient from 'react-native-linear-gradient'
 import { UserAdd, ArrowRight } from 'iconsax-react-nativejs'
+import { fetchAllMedia, MediaView } from '../../services/api'
 
 const HomeScreen = ({ navigation }: any) => {
     const insets = useSafeAreaInsets();
     const { colors } = useTheme();
     const Styles = createStyles(colors);
-    const { user, userProfile } = useAuth();
+    const { user, userProfile, accessToken } = useAuth();
 
     const displayName = userProfile?.firstName || 'User';
 
-    const feedImages = [
-        Images.photo1,
-        Images.photo3,
-        Images.photo4,
-        Images.photo5,
-        Images.photo6,
-        Images.photo7,
-        Images.photo8,
-        Images.photo9,
-    ];
+    const [mediaItems, setMediaItems] = useState<MediaView[]>([]);
+    const [isLoadingMedia, setIsLoadingMedia] = useState(false);
 
-    const kbcNachtImages = [
-        Images.photo5,
-    ];
+    const loadMedia = useCallback(async () => {
+        if (!accessToken) return;
+        setIsLoadingMedia(true);
+        try {
+            const data = await fetchAllMedia(accessToken);
+            setMediaItems(data);
+            console.log('[Home] Loaded', data.length, 'media items');
+        } catch (err: any) {
+            console.log('[Home] Failed to load media:', err.message);
+        } finally {
+            setIsLoadingMedia(false);
+        }
+    }, [accessToken]);
+
+    useEffect(() => {
+        loadMedia();
+    }, [loadMedia]);
+
+    const imageItems = mediaItems.filter(m => m.type === 'image');
+    const videoItems = mediaItems.filter(m => m.type === 'video');
+
+    const getImageSource = (item: MediaView) => {
+        const url = item.thumbnail_url || item.preview_url || item.original_url;
+        return url ? { uri: url } : Images.photo1;
+    };
+
+    const getFullImageUrl = (item: MediaView) => {
+        return item.original_url || item.preview_url || item.thumbnail_url || '';
+    };
 
     return (
         <View style={Styles.mainContainer}>
@@ -48,27 +67,6 @@ const HomeScreen = ({ navigation }: any) => {
 
             <ScrollView showsVerticalScrollIndicator={false} nestedScrollEnabled={true} contentContainerStyle={Styles.scrollContent}>
                 <SizeBox height={24} />
-
-                {/* Wallet Balance Card - Commented out for now */}
-                {/* <View style={Styles.walletCard}>
-                    <View style={Styles.walletCardContent}>
-                        <View style={Styles.walletLeftSection}>
-                            <View style={Styles.walletIconContainer}>
-                                <Wallet size={24} color={colors.primaryColor} variant="Linear" />
-                            </View>
-                            <View style={Styles.walletInfoContainer}>
-                                <Text style={Styles.walletTitle}>Wallet Balance</Text>
-                                <Text style={Styles.walletBalance}>€20.09</Text>
-                                <View style={Styles.planBadge}>
-                                    <Text style={Styles.planBadgeText}>Plan Plus</Text>
-                                </View>
-                            </View>
-                        </View>
-                        <TouchableOpacity style={Styles.rechargeButton} onPress={() => navigation.navigate('PaymentMethod')}>
-                            <Text style={Styles.rechargeButtonText}>Recharge</Text>
-                        </TouchableOpacity>
-                    </View>
-                </View> */}
 
                 {/* AI Smart Search Card */}
                 <View style={Styles.aiSearchCard}>
@@ -174,66 +172,51 @@ const HomeScreen = ({ navigation }: any) => {
                     <View style={Styles.newForYouHeader}>
                         <Text style={Styles.newForYouTitle}>New for you</Text>
                         <Text style={Styles.newForYouDescription}>
-                            12 new photos in BK Studentent 23 2 new videos tagged to Chest #17
+                            {mediaItems.length > 0
+                                ? `${imageItems.length} photos and ${videoItems.length} videos available`
+                                : ''}
                         </Text>
                     </View>
 
-                    {/* First card - no border, just title + image carousel */}
-                    <NewsFeedCard
-                        title="Belgium championships 2025"
-                        images={feedImages}
-                        hasBorder={true}
-                        onImagePress={(index) => navigation.navigate('FullPageImageViewerScreen', {
-                            images: feedImages,
-                            initialIndex: index,
-                            title: 'Belgium championships 2025'
-                        })}
-                    />
+                    {isLoadingMedia ? (
+                        <View style={{ paddingVertical: 40, alignItems: 'center' }}>
+                            <ActivityIndicator size="large" color={colors.primaryColor} />
+                        </View>
+                    ) : mediaItems.length > 0 ? (
+                        <>
+                            {/* Photos carousel */}
+                            {imageItems.length > 0 && (
+                                <NewsFeedCard
+                                    title={`Photos (${imageItems.length})`}
+                                    images={imageItems.map(getImageSource)}
+                                    hasBorder={true}
+                                    onImagePress={(index) => navigation.navigate('FullPageImageViewerScreen', {
+                                        images: imageItems.map(item => ({ uri: getFullImageUrl(item) })),
+                                        initialIndex: index,
+                                        title: 'Media Gallery',
+                                    })}
+                                />
+                            )}
 
-                    {/* Second card - has border, user post with single image */}
-                    <NewsFeedCard
-                        title="Belgium championships 2025"
-                        description={`Elias took part in the 800m and achieved a time close to his best 1'50"99`}
-                        images={[Images.photo1]}
-                        hasBorder={true}
-                        user={{
-                            name: "Mia Moon",
-                            avatar: Images.profilePic,
-                            timeAgo: "3 Days Ago"
-                        }}
-                        onFollow={() => {}}
-                        onPressUser={() => navigation.navigate('ViewUserProfileScreen', {
-                            user: {
-                                name: "Mia Moon",
-                                avatar: Images.profilePic,
-                            }
-                        })}
-                        onImagePress={(index) => navigation.navigate('FullPageImageViewerScreen', {
-                            images: [Images.photo1],
-                            initialIndex: index,
-                            title: 'Belgium championships 2025'
-                        })}
-                        onViewBlog={() => navigation.navigate('ViewUserBlogDetailsScreen', {
-                            post: {
-                                title: 'Belgium championships 2025',
-                                date: '27/05/2025',
-                                image: Images.photo1,
-                                readCount: '1k',
-                                writer: 'Mia Moon',
-                                writerImage: Images.profilePic,
-                                description: `Elias took part in the 800m and achieved a time close to his best 1'50"99. The Belgium Championships 2025 showcased incredible athletic talent from across the country, bringing together top competitors in various track and field events.`,
-                            }
-                        })}
-                    />
-
-                    {/* Third card - no border, video with play button */}
-                    <NewsFeedCard
-                        title="KBC Nacht 2025"
-                        images={kbcNachtImages}
-                        hasBorder={true}
-                        isVideo={true}
-                        videoUri="https://awssportreels.s3.eu-central-1.amazonaws.com/PK-800m.mp4"
-                    />
+                            {/* Video cards */}
+                            {videoItems.map((video) => (
+                                <NewsFeedCard
+                                    key={video.media_id}
+                                    title="Video"
+                                    images={[getImageSource(video)]}
+                                    hasBorder={true}
+                                    isVideo={true}
+                                    videoUri={video.full_url || video.raw_url || video.original_url || undefined}
+                                />
+                            ))}
+                        </>
+                    ) : (
+                        <View style={{ paddingVertical: 20, alignItems: 'center' }}>
+                            <Text style={{ color: colors.grayColor, fontSize: 14 }}>
+                                No media available yet
+                            </Text>
+                        </View>
+                    )}
                 </View>
 
                 <SizeBox height={insets.bottom > 0 ? insets.bottom + 20 : 40} />

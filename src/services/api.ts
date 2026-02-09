@@ -1,5 +1,55 @@
 const API_BASE_URL = 'https://myjourney.coffee/api/v1';
 
+export interface MediaAsset {
+    asset_id: string;
+    variant: string;
+    access_level: string;
+    storage_key: string;
+    mime_type: string;
+    file_size_bytes: number;
+    width: number | null;
+    height: number | null;
+    duration_seconds: number | null;
+    url: string | null;
+    url_type: string;
+}
+
+export interface MediaView {
+    media_id: string;
+    type: 'image' | 'video';
+    uploader_profile_id: string;
+    event_id: string | null;
+    created_at: string;
+    thumbnail_url: string | null;
+    preview_url: string | null;
+    original_url: string | null;
+    full_url: string | null;
+    raw_url: string | null;
+    vp9_url: string | null;
+    av1_url: string | null;
+    hls_manifest_path: string | null;
+    assets: MediaAsset[];
+}
+
+/**
+ * Fetch all accessible media.
+ * GET /media/view_all
+ */
+export const fetchAllMedia = async (accessToken: string): Promise<MediaView[]> => {
+    const response = await fetch(`${API_BASE_URL}/media/view_all`, {
+        headers: {
+            Authorization: `Bearer ${accessToken}`,
+        },
+    });
+
+    if (!response.ok) {
+        const error = await response.json().catch(() => ({}));
+        throw new Error(error.error || `Failed to fetch media (${response.status})`);
+    }
+
+    return response.json();
+};
+
 interface FaceVerifyResponse {
     ok: boolean;
     accepted: boolean;
