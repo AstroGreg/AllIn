@@ -187,7 +187,7 @@ const EditVideoCollectionsScreen = ({ navigation }: any) => {
                                         />
                                         {/* Play Icon */}
                                         <View style={Styles.playIconContainer}>
-                                            <Icons.PlayBlue width={16} height={16} />
+                                            <Icons.PlayCricle width={20} height={20} />
                                         </View>
                                         {isSelected && (
                                             <View style={[

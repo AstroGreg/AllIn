@@ -131,7 +131,7 @@ const VideoPlayingScreen = ({ navigation, route }: any) => {
                             <Forward size={28} color={colors.primaryColor} variant="Bold" style={{ transform: [{ rotate: '180deg' }] }} />
                         </TouchableOpacity>
                         <TouchableOpacity style={Styles.playButton}>
-                            <Icons.PlayBlue width={45} height={45} />
+                            <Icons.PlayCricle width={46} height={46} />
                         </TouchableOpacity>
                         <TouchableOpacity style={Styles.skipButton}>
                             <Forward size={28} color={colors.primaryColor} variant="Bold" />

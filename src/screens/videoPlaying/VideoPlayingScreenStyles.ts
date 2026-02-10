@@ -168,7 +168,7 @@ export const createStyles = (colors: ThemeColors) => StyleSheet.create({
         width: 80,
         height: 80,
         borderRadius: 40,
-        backgroundColor: colors.borderColor,
+        backgroundColor: 'rgba(0, 0, 0, 0.25)',
         alignItems: 'center',
         justifyContent: 'center',
     },

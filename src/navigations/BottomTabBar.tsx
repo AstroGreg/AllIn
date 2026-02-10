@@ -45,24 +45,22 @@ import AddAthleteScreen from "../screens/addAthlete/AddAthleteScreen";
 import EventAthletesScreen from "../screens/eventAthletes/EventAthletesScreen";
 import GroupEventsViewAllScreen from "../screens/groupEventsViewAll/GroupEventsViewAllScreen";
 import AthleteProfileScreen from "../screens/athleteProfile/AthleteProfileScreen";
-import AISearchScreen from "../screens/aiSearch/AISearchScreen";
 import { Platform } from "react-native";
 import SearchScreen from "../screens/search/SearchScreen";
 import Videography from "../screens/search/searchScreens/Videography";
 import VideosForEvent from "../screens/search/searchScreens/VideosForEvent";
 import AllPhotosOfEvents from "../screens/search/searchScreens/AllPhotosOfEvents";
 import AllVideosOfEvents from "../screens/search/searchScreens/AllVideosOfEvents";
+import EventDivisionScreen from "../screens/search/searchScreens/EventDivisionScreen";
 import FrontFaceCaptureScreen from "../screens/search/searchScreens/FrontFaceCaptureScreen";
 import LeftSideCaptureScreen from "../screens/search/searchScreens/LeftSideCaptureScreen";
 import RightSideCaptureScreen from "../screens/search/searchScreens/RightSideCaptureScreen";
 import NameThisFaceScreen from "../screens/search/searchScreens/NameThisFaceScreen";
 import SearchCompetitionDetailsScreen from "../screens/search/searchScreens/CompetitionDetailsScreen";
-import AISearchOptions from "../screens/search/searchScreens/AISearchOptions";
-import FaceSearchScreen from "../screens/search/searchScreens/FaceSearchScreen";
-import BibSearchScreen from "../screens/search/searchScreens/BibSearchScreen";
 import ContextSearchLoadingScreen from "../screens/search/searchScreens/ContextSearchLoadingScreen";
 import SearchFaceCaptureScreen from "../screens/search/searchScreens/SearchFaceCaptureScreen";
 import AISearchResultsScreen from "../screens/search/searchScreens/AISearchResultsScreen";
+import CombinedSearchScreen from "../screens/search/searchScreens/CombinedSearchScreen";
 import EventsScreen from "../screens/Events/EventsScreen";
 import UploadScreen from "../screens/upload/UploadScreen";
 import UploadDetailsScreen from "../screens/upload/UploadDetailsScreen";
@@ -127,7 +125,7 @@ const HomeStackNavigator = () => {
             <HomeStack.Screen name="PhotoBuyScreen" component={PhotoBuyScreen} />
             <HomeStack.Screen name="VideosScreen" component={VideosScreen} />
             <HomeStack.Screen name="VideoPlayingScreen" component={VideoPlayingScreen} />
-            <HomeStack.Screen name="AISearchScreen" component={AISearchScreen} />
+            <HomeStack.Screen name="AISearchScreen" component={CombinedSearchScreen} />
             <HomeStack.Screen name="SelectEventInterestScreen" component={SelectEventInterestScreen} />
             <HomeStack.Screen name="DownloadsDetailsScreen" component={DownloadsDetailsScreen} />
             <HomeStack.Screen name="ViewUserBlogDetailsScreen" component={ViewUserBlogDetailsScreen} />
@@ -205,7 +203,7 @@ const MenuStackNavigator = () => {
             <MenuStack.Screen name="ChangeNationality" component={ChangeNationality} />
             <MenuStack.Screen name="DateOfBirth" component={DateOfBirth} />
             <MenuStack.Screen name="RightToBeForgotten" component={RightToBeForgotten} />
-            <MenuStack.Screen name="AISearchScreen" component={AISearchScreen} />
+            <MenuStack.Screen name="AISearchScreen" component={CombinedSearchScreen} />
             <MenuStack.Screen name="Authentication" component={Authentication} />
             <MenuStack.Screen name="AuthenticatorSetup" component={AuthenticatorSetup} />
             <MenuStack.Screen name="VerificationCode" component={VerificationCode} />
@@ -231,6 +229,7 @@ const SearchStackNavigator = () => {
             {/* Search-related screens */}
             <SearchStack.Screen name="Videography" component={Videography} />
             <SearchStack.Screen name="VideosForEvent" component={VideosForEvent} />
+            <SearchStack.Screen name="EventDivisionScreen" component={EventDivisionScreen} />
             <SearchStack.Screen name="AllPhotosOfEvents" component={AllPhotosOfEvents} />
             <SearchStack.Screen name="AllVideosOfEvents" component={AllVideosOfEvents} />
             <SearchStack.Screen name="CompetitionDetailsScreen" component={SearchCompetitionDetailsScreen} />
@@ -241,10 +240,7 @@ const SearchStackNavigator = () => {
             <SearchStack.Screen name="LeftSideCaptureScreen" component={LeftSideCaptureScreen} />
             <SearchStack.Screen name="RightSideCaptureScreen" component={RightSideCaptureScreen} />
             <SearchStack.Screen name="NameThisFaceScreen" component={NameThisFaceScreen} />
-            <SearchStack.Screen name="AISearchOptions" component={AISearchOptions} />
-            <SearchStack.Screen name="AISearchScreen" component={AISearchScreen} />
-            <SearchStack.Screen name="FaceSearchScreen" component={FaceSearchScreen} />
-            <SearchStack.Screen name="BibSearchScreen" component={BibSearchScreen} />
+            <SearchStack.Screen name="AISearchScreen" component={CombinedSearchScreen} />
             <SearchStack.Screen name="ContextSearchLoadingScreen" component={ContextSearchLoadingScreen} />
             <SearchStack.Screen name="AISearchResultsScreen" component={AISearchResultsScreen} />
         </SearchStack.Navigator>
@@ -316,7 +312,10 @@ const BottomTabBar = () => {
                     tabPress: (e) => {
                         navigation.reset({
                             index: 0,
-                            routes: [{ name: 'Search' }],
+                            routes: [{
+                                name: 'Search',
+                                state: { index: 0, routes: [{ name: 'SearchScreen' }] },
+                            }],
                         });
                     },
                 })}

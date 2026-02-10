@@ -160,7 +160,7 @@ const VideoDetailsScreen = ({ navigation }: any) => {
                                 resizeMode="cover"
                             />
                             <View style={Styles.playButtonOverlay}>
-                                <Icons.PlayWhite height={28} width={28} />
+                                <Icons.PlayCricle height={34} width={34} />
                             </View>
                         </>
                     )}

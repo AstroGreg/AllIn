@@ -25,6 +25,10 @@ const VideoContainer = ({ onPressVideo, videoUri, CompetitionName, event, timer 
 
     const [isPlaying, setIsPlaying] = useState(false);
     const handleVideoPress = () => {
+        if (onPressVideo) {
+            onPressVideo();
+            return;
+        }
         setIsPlaying(!isPlaying);
     };
 
@@ -69,7 +73,7 @@ const VideoContainer = ({ onPressVideo, videoUri, CompetitionName, event, timer 
                     {!isPlaying && (
                         <View style={Styles.playButtonOverlay}>
                             <View style={Styles.playButton}>
-                                <Icons.Play width={40} height={40} />
+                                <Icons.PlayCricle width={32} height={32} />
                             </View>
                         </View>
                     )}

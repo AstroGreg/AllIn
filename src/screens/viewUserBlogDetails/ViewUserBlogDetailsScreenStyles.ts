@@ -129,6 +129,13 @@ export const createStyles = (colors: ThemeColors) => StyleSheet.create({
         justifyContent: 'center',
         backgroundColor: 'transparent',
     },
+    galleryPlayButton: {
+        backgroundColor: 'rgba(0,0,0,0.25)',
+        borderRadius: 20,
+        padding: 6,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
     shareButtonText: {
         ...Fonts.medium16,
         color: colors.pureWhite,

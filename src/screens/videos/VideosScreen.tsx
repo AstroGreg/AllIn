@@ -44,7 +44,7 @@ const VideosScreen = ({ navigation, route }: any) => {
                     resizeMode="cover"
                 />
                 <View style={Styles.playIconContainer}>
-                    <Icons.PlayBlue width={16} height={16} />
+                    <Icons.PlayCricle width={22} height={22} />
                 </View>
             </TouchableOpacity>
             <View style={Styles.videoInfo}>

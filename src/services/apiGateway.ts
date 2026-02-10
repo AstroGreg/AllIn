@@ -102,6 +102,42 @@ export async function getAuthMe(accessToken: string): Promise<AuthMeResponse> {
   return apiRequest<AuthMeResponse>('/auth/me', {method: 'GET', accessToken});
 }
 
+export interface SubscribedEvent {
+  event_id: string;
+  event_name?: string | null;
+  event_title?: string | null;
+  event_location?: string | null;
+  event_date?: string | null;
+}
+
+export interface SubscribedEventsResponse {
+  ok: boolean;
+  count: number;
+  events: SubscribedEvent[];
+}
+
+export async function getSubscribedEvents(accessToken: string): Promise<SubscribedEventsResponse> {
+  return apiRequest<SubscribedEventsResponse>('/events/subscribed', {method: 'GET', accessToken});
+}
+
+export interface EventSearchResponse {
+  ok: boolean;
+  count: number;
+  events: SubscribedEvent[];
+}
+
+export async function searchEvents(
+  accessToken: string,
+  params: {q?: string; limit?: number; offset?: number},
+): Promise<EventSearchResponse> {
+  const qs = toQueryString({
+    q: params.q ?? undefined,
+    limit: params.limit ?? undefined,
+    offset: params.offset ?? undefined,
+  });
+  return apiRequest<EventSearchResponse>(`/events/search${qs}`, {method: 'GET', accessToken});
+}
+
 export async function grantFaceRecognitionConsent(accessToken: string): Promise<{ok: boolean; message?: string}> {
   return apiRequest<{ok: boolean; message?: string}>('/consents/face_recognition/grant', {
     method: 'POST',
@@ -397,6 +433,73 @@ export async function getMediaById(accessToken: string, mediaId: string): Promis
     throw new ApiError({status: 400, message: 'Missing media_id'});
   }
   return apiRequest<MediaViewAllItem>(`/media/${encodeURIComponent(safeId)}`, {method: 'GET', accessToken});
+}
+
+export interface CompetitionMapSummary {
+  id: string;
+  event_id: string;
+  competition_id: string;
+  name?: string | null;
+  image_url?: string | null;
+  mime_type?: string | null;
+  file_size_bytes?: number | null;
+  checksum_sha256?: string | null;
+  created_at?: string | null;
+  storage_key?: string | null;
+  checkpoints?: CompetitionMapCheckpoint[];
+}
+
+export interface CompetitionMapCheckpoint {
+  id: string;
+  checkpoint_index: number;
+  label?: string | null;
+  latitude?: number | null;
+  longitude?: number | null;
+  metadata_json?: any;
+  created_at?: string | null;
+}
+
+export interface CompetitionMapsResponse {
+  ok: boolean;
+  count: number;
+  maps: CompetitionMapSummary[];
+}
+
+export interface CompetitionMapResponse {
+  ok: boolean;
+  map: CompetitionMapSummary;
+  checkpoints: CompetitionMapCheckpoint[];
+}
+
+export async function getCompetitionMaps(
+  accessToken: string,
+  params: {
+    event_id?: string;
+    competition_id?: string;
+    limit?: number;
+    offset?: number;
+    include_checkpoints?: boolean;
+  },
+): Promise<CompetitionMapsResponse> {
+  const qs = toQueryString({
+    event_id: params.event_id ?? undefined,
+    competition_id: params.competition_id ?? undefined,
+    limit: params.limit ?? undefined,
+    offset: params.offset ?? undefined,
+    include_checkpoints: params.include_checkpoints ? 'true' : undefined,
+  });
+  return apiRequest<CompetitionMapsResponse>(`/maps${qs}`, {method: 'GET', accessToken});
+}
+
+export async function getCompetitionMapById(
+  accessToken: string,
+  mapId: string,
+): Promise<CompetitionMapResponse> {
+  const safeId = String(mapId || '').trim();
+  if (!safeId) {
+    throw new ApiError({status: 400, message: 'Missing map_id'});
+  }
+  return apiRequest<CompetitionMapResponse>(`/maps/${encodeURIComponent(safeId)}`, {method: 'GET', accessToken});
 }
 
 export interface DownloadRecord {

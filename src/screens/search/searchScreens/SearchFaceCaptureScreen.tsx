@@ -383,7 +383,7 @@ const SearchFaceCaptureScreen = ({ navigation, route }: any) => {
                 if (afterEnroll?.screen) {
                     navigation.navigate(afterEnroll.screen, afterEnroll.params ?? {});
                 } else {
-                    navigation.navigate('FaceSearchScreen', {autoSearch: true});
+                    navigation.navigate('AISearchScreen', {autoSearch: true});
                 }
             } catch (e: any) {
                 if (e instanceof ApiError && e.status === 403 && String(e.message).toLowerCase().includes('consent')) {

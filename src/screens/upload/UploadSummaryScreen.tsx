@@ -55,7 +55,7 @@ const UploadSummaryScreen = ({ navigation, route }: any) => {
             <View style={Styles.thumbnailContainer}>
                 <FastImage source={item.thumbnail} style={Styles.thumbnail} resizeMode="cover" />
                 <View style={Styles.playButton}>
-                    <Icons.PlayWhite width={16} height={16} />
+                    <Icons.PlayCricle width={22} height={22} />
                 </View>
             </View>
             <View style={Styles.itemInfo}>

@@ -49,6 +49,11 @@ const Styles = StyleSheet.create({
         justifyContent: 'space-evenly',
         alignItems: 'center',
     },
+    playButton: {
+        backgroundColor: 'rgba(0,0,0,0.25)',
+        borderRadius: 48,
+        padding: 10,
+    },
     progressContainer: {
         position: 'absolute',
         bottom: 140,

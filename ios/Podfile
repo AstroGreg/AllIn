@@ -1,5 +1,6 @@
 # Resolve react_native_pods.rb with node to allow for hoisting
 ENV['RCT_NEW_ARCH_ENABLED'] = '0'
+$CODEGEN_OUTPUT_DIR = 'generated/ios'
 require Pod::Executable.execute_command('node', ['-p',
   'require.resolve(
     "react-native/scripts/react_native_pods.rb",
@@ -40,6 +41,15 @@ target 'AllIn' do
     installer.pods_project.targets.each do |target|
       target.build_configurations.each do |build_config|
         build_config.build_settings['EXCLUDED_ARCHS[sdk=iphonesimulator*]'] = 'arm64'
+      end
+    end
+
+    # Hermes xcframework script uses bash arrays; force bash to avoid /bin/sh syntax errors.
+    hermes_script = File.join(installer.sandbox.root.to_s, 'Target Support Files', 'hermes-engine', 'hermes-engine-xcframeworks.sh')
+    if File.exist?(hermes_script)
+      content = File.read(hermes_script)
+      if content.start_with?('#!/bin/sh')
+        File.write(hermes_script, content.sub('#!/bin/sh', '#!/bin/bash'))
       end
     end
   end

@@ -39,6 +39,28 @@ export const createStyles = (colors: any) => StyleSheet.create({
         color: colors.grayColor,
         marginTop: 8,
     },
+    appliedLabel: {
+        ...Fonts.semibold12,
+        color: colors.subTextColor,
+    },
+    appliedChipsRow: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        gap: 8,
+        marginTop: 8,
+    },
+    appliedChip: {
+        borderWidth: 1,
+        borderColor: colors.borderColor,
+        borderRadius: 999,
+        paddingHorizontal: 10,
+        paddingVertical: 6,
+        backgroundColor: colors.cardBackground,
+    },
+    appliedChipText: {
+        ...Fonts.regular12,
+        color: colors.mainTextColor,
+    },
     inputContainer: {
         flexDirection: 'row',
         alignItems: 'center',
@@ -130,47 +152,34 @@ export const createStyles = (colors: any) => StyleSheet.create({
         ...Fonts.semibold18,
         color: colors.mainTextColor,
     },
-    modalInputContainer: {
-        backgroundColor: colors.cardBackground,
-        borderRadius: 12,
+    modalList: {
+        maxHeight: 360,
+    },
+    modalListContent: {
+        paddingVertical: 4,
+        gap: 8,
+    },
+    modalOption: {
         borderWidth: 1,
-        borderColor: colors.borderColor,
+        borderColor: colors.lightGrayColor,
+        borderRadius: 12,
+        paddingHorizontal: 12,
+        paddingVertical: 10,
+        backgroundColor: colors.secondaryColor,
     },
-    modalInput: {
-        ...Fonts.regular14,
-        color: colors.mainTextColor,
-        paddingHorizontal: 16,
-        paddingVertical: 14,
-    },
-    modalButtonRow: {
-        flexDirection: 'row',
-        gap: 12,
-    },
-    modalCancelButton: {
-        flex: 1,
-        paddingVertical: 14,
-        borderRadius: 10,
-        backgroundColor: colors.cardBackground,
-        alignItems: 'center',
-        justifyContent: 'center',
-    },
-    modalCancelText: {
-        ...Fonts.semibold14,
+    modalOptionText: {
+        ...Fonts.medium14,
         color: colors.mainTextColor,
     },
-    modalSubmitButton: {
-        flex: 1,
-        paddingVertical: 14,
-        borderRadius: 10,
-        backgroundColor: colors.primaryColor,
-        alignItems: 'center',
-        justifyContent: 'center',
+    modalOptionSubText: {
+        ...Fonts.regular12,
+        color: colors.subTextColor,
+        marginTop: 2,
     },
-    modalSubmitButtonDisabled: {
-        backgroundColor: '#B0D4FF',
-    },
-    modalSubmitText: {
-        ...Fonts.semibold14,
-        color: '#FFFFFF',
+    modalEmpty: {
+        ...Fonts.regular12,
+        color: colors.subTextColor,
+        textAlign: 'center',
+        paddingVertical: 16,
     },
 });

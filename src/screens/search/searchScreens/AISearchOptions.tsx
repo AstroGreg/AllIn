@@ -3,8 +3,6 @@ import React, { useState, useRef, useEffect } from 'react';
 import SizeBox from '../../../constants/SizeBox';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../../context/ThemeContext';
-import Icons from '../../../constants/Icons';
-import LinearGradient from 'react-native-linear-gradient';
 import { ArrowLeft2, ArrowRight, SearchNormal1, TickSquare, Category } from 'iconsax-react-nativejs';
 import { createStyles } from './AISearchOptionsStyles';
 import { useRoute } from '@react-navigation/native';
@@ -17,7 +15,7 @@ interface FilterOption {
 
 const AISearchOptions = ({ navigation }: any) => {
     const insets = useSafeAreaInsets();
-    const { colors, isDark } = useTheme();
+    const { colors } = useTheme();
     const styles = createStyles(colors);
     const route = useRoute<any>();
     const [selectedOption, setSelectedOption] = useState<string>('face');
@@ -44,7 +42,9 @@ const AISearchOptions = ({ navigation }: any) => {
 
     const handleOptionPress = (optionId: string) => {
         setSelectedOption(optionId);
-        if (optionId === 'face') {
+        if (optionId === 'bib') {
+            navigation.navigate('BibSearchScreen');
+        } else if (optionId === 'face') {
             // Navigate to Face Search screen
             navigation.navigate('FaceSearchScreen');
         } else if (optionId === 'context') {
@@ -80,57 +80,10 @@ const AISearchOptions = ({ navigation }: any) => {
     };
 
     const searchOptions = [
-        {
-            id: 'face',
-            title: 'Face Search',
-            description: 'Add your face once. AI finds you forever.',
-            badge: 'Best Results',
-            badgeIcon: 'target',
-            gradientColors: ['#615FFF', '#7F22FE'],
-            icon: 'facescan',
-            badgeBgColor: '#E0E7FF',
-            badgeBorderColor: '#C6D2FF',
-            badgeTextColor: '#432DD7',
-        },
-        {
-            id: 'context',
-            title: 'Context Search',
-            description: 'Describe the picture. For example "podium"',
-            badge: 'AI Magic',
-            badgeIcon: 'ai',
-            gradientColors: ['#8E51FF', '#9810FA'],
-            icon: 'image',
-            badgeBgColor: '#F3E8FF',
-            badgeBorderColor: '#E9D4FF',
-            badgeTextColor: '#8200DB',
-        },
+        { id: 'bib', title: 'Chest number' },
+        { id: 'face', title: 'Face' },
+        { id: 'context', title: 'Context' },
     ];
-
-    const getIcon = (iconName: string) => {
-        switch (iconName) {
-            case 'hash':
-                return <Icons.HashWhite width={32} height={32} />;
-            case 'image':
-                return <Icons.ImageWhite width={32} height={32} />;
-            case 'facescan':
-                return <Icons.FacescanWhite width={32} height={32} />;
-            default:
-                return null;
-        }
-    };
-
-    const getBadgeIcon = (iconName: string) => {
-        switch (iconName) {
-            case 'bolt':
-                return <Icons.BoltBlue width={16} height={16} />;
-            case 'ai':
-                return <Icons.AiViolate width={16} height={16} />;
-            case 'target':
-                return <Icons.TargetBlue width={16} height={16} />;
-            default:
-                return null;
-        }
-    };
 
     const renderSearchOption = (option: any) => {
         const isSelected = selectedOption === option.id;
@@ -139,61 +92,18 @@ const AISearchOptions = ({ navigation }: any) => {
             <TouchableOpacity
                 key={option.id}
                 style={[
-                    styles.searchOptionCard,
-                    isSelected && styles.searchOptionCardSelected,
+                    styles.optionButton,
+                    isSelected && styles.optionButtonActive,
                 ]}
-                activeOpacity={0.8}
+                activeOpacity={0.85}
                 onPress={() => handleOptionPress(option.id)}
             >
-                <View style={styles.searchOptionContent}>
-                    {/* Icon Container with blur effect */}
-                    <View style={styles.iconWrapper}>
-                        {isSelected && <View style={styles.iconBlurEffect} />}
-                        <LinearGradient
-                            colors={option.gradientColors}
-                            start={{ x: 0, y: 0 }}
-                            end={{ x: 1, y: 1 }}
-                            style={styles.iconContainer}
-                        >
-                            {getIcon(option.icon)}
-                        </LinearGradient>
-                    </View>
-
-                    {/* Text Content */}
-                    <View style={styles.textContainer}>
-                        <Text style={styles.optionTitle}>{option.title}</Text>
-                        <SizeBox height={8} />
-                        <Text style={styles.optionDescription}>{option.description}</Text>
-                        <SizeBox height={12} />
-
-                        {/* Badge */}
-                        <View
-                            style={[
-                                styles.badge,
-                                {
-                                    backgroundColor: option.badgeBgColor,
-                                    borderColor: option.badgeBorderColor,
-                                },
-                            ]}
-                        >
-                            {getBadgeIcon(option.badgeIcon)}
-                            <SizeBox width={6} />
-                            <Text style={[styles.badgeText, { color: option.badgeTextColor }]}>
-                                {option.badge}
-                            </Text>
-                        </View>
-                    </View>
-                </View>
-
-                {/* Bottom Progress Bar */}
-                {isSelected && (
-                    <LinearGradient
-                        colors={option.gradientColors}
-                        start={{ x: 0, y: 0 }}
-                        end={{ x: 1, y: 0 }}
-                        style={styles.progressBar}
-                    />
-                )}
+                <Text style={[
+                    styles.optionButtonText,
+                    isSelected && styles.optionButtonTextActive,
+                ]}>
+                    {option.title}
+                </Text>
             </TouchableOpacity>
         );
     };
@@ -230,13 +140,8 @@ const AISearchOptions = ({ navigation }: any) => {
                 <View style={{width: 44, height: 44}} />
             </View>
 
-            {/* Top Section with Gradient Background */}
-            <LinearGradient
-                colors={isDark ? [colors.backgroundColor, colors.backgroundColor] : ['#F5F3FF', '#FFFFFF']}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 0, y: 1 }}
-                style={styles.topSection}
-            >
+            {/* Top Section */}
+            <View style={styles.topSection}>
                 {/* Title Section */}
                 <View style={styles.titleSection}>
                     <Text style={styles.mainTitle}>How Should AI</Text>
@@ -245,7 +150,7 @@ const AISearchOptions = ({ navigation }: any) => {
                     <Text style={styles.subtitle}>Choose what you remember.</Text>
                     <Text style={styles.subtitle}>AI handles the rest.</Text>
                 </View>
-            </LinearGradient>
+            </View>
 
             {/* Search Options */}
             <ScrollView
@@ -253,7 +158,10 @@ const AISearchOptions = ({ navigation }: any) => {
                 contentContainerStyle={styles.optionsContent}
                 showsVerticalScrollIndicator={false}
             >
-                {searchOptions.map(renderSearchOption)}
+                <Text style={styles.searchByLabel}>Search by</Text>
+                <View style={styles.optionsRow}>
+                    {searchOptions.map(renderSearchOption)}
+                </View>
                 <SizeBox height={insets.bottom > 0 ? insets.bottom + 20 : 40} />
             </ScrollView>
 
@@ -295,15 +203,10 @@ const AISearchOptions = ({ navigation }: any) => {
 
                         {/* Next Button */}
                         <TouchableOpacity onPress={handleContextNext}>
-                            <LinearGradient
-                                colors={['#3B82F6', '#8B5CF6']}
-                                start={{ x: 0, y: 0 }}
-                                end={{ x: 1, y: 0 }}
-                                style={styles.nextButton}
-                            >
+                            <View style={styles.nextButton}>
                                 <Text style={styles.nextButtonText}>Next</Text>
                                 <ArrowRight size={20} color="#FFFFFF" variant="Linear" />
-                            </LinearGradient>
+                            </View>
                         </TouchableOpacity>
                     </TouchableOpacity>
                 </TouchableOpacity>
@@ -334,15 +237,10 @@ const AISearchOptions = ({ navigation }: any) => {
 
                         {/* Start Button */}
                         <TouchableOpacity onPress={handleStartSearch}>
-                            <LinearGradient
-                                colors={['#3B82F6', '#8B5CF6']}
-                                start={{ x: 0, y: 0 }}
-                                end={{ x: 1, y: 0 }}
-                                style={styles.nextButton}
-                            >
+                            <View style={styles.nextButton}>
                                 <Text style={styles.nextButtonText}>Start</Text>
                                 <ArrowRight size={20} color="#FFFFFF" variant="Linear" />
-                            </LinearGradient>
+                            </View>
                         </TouchableOpacity>
                     </TouchableOpacity>
                 </TouchableOpacity>

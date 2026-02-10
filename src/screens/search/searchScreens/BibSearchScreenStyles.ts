@@ -42,6 +42,115 @@ export const createStyles = (colors: ThemeColors) =>
       color: colors.subTextColor,
       lineHeight: 20,
     },
+    appliedLabel: {
+      ...Fonts.semibold12,
+      color: colors.subTextColor,
+    },
+    appliedChipsRow: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: 8,
+      marginTop: 8,
+    },
+    appliedChip: {
+      borderWidth: 1,
+      borderColor: colors.lightGrayColor,
+      borderRadius: 999,
+      paddingHorizontal: 10,
+      paddingVertical: 6,
+      backgroundColor: colors.secondaryColor,
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 6,
+    },
+    appliedChipText: {
+      ...Fonts.regular12,
+      color: colors.mainTextColor,
+    },
+    appliedChipRemove: {
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    filtersSection: {
+      marginTop: 14,
+    },
+    filtersTitle: {
+      ...Fonts.semibold12,
+      color: colors.subTextColor,
+    },
+    filtersHelper: {
+      ...Fonts.regular12,
+      color: colors.subTextColor,
+      marginTop: 6,
+    },
+    filterButtonsRow: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: 8,
+      marginTop: 10,
+    },
+    filterButton: {
+      borderWidth: 1,
+      borderColor: colors.lightGrayColor,
+      borderRadius: 999,
+      paddingHorizontal: 12,
+      paddingVertical: 6,
+      backgroundColor: colors.secondaryColor,
+    },
+    filterButtonText: {
+      ...Fonts.regular12,
+      color: colors.mainTextColor,
+    },
+    filterModalOverlay: {
+      flex: 1,
+      backgroundColor: 'rgba(0,0,0,0.4)',
+      alignItems: 'center',
+      justifyContent: 'center',
+      paddingHorizontal: 20,
+    },
+    filterModalCard: {
+      width: '100%',
+      backgroundColor: colors.cardBackground,
+      borderRadius: 14,
+      padding: 16,
+      borderWidth: 1,
+      borderColor: colors.lightGrayColor,
+    },
+    filterModalTitle: {
+      ...Fonts.medium16,
+      color: colors.mainTextColor,
+      marginBottom: 10,
+    },
+    filterModalList: {
+      maxHeight: 320,
+    },
+    filterModalListContent: {
+      paddingVertical: 4,
+      gap: 8,
+    },
+    filterModalOption: {
+      borderWidth: 1,
+      borderColor: colors.lightGrayColor,
+      borderRadius: 12,
+      paddingHorizontal: 12,
+      paddingVertical: 10,
+      backgroundColor: colors.secondaryColor,
+    },
+    filterModalOptionText: {
+      ...Fonts.medium14,
+      color: colors.mainTextColor,
+    },
+    filterModalOptionSubText: {
+      ...Fonts.regular12,
+      color: colors.subTextColor,
+      marginTop: 2,
+    },
+    filterModalEmpty: {
+      ...Fonts.regular12,
+      color: colors.subTextColor,
+      textAlign: 'center',
+      paddingVertical: 16,
+    },
     inputLabel: {
       ...Fonts.semibold14,
       color: colors.mainTextColor,
@@ -117,4 +226,3 @@ export const createStyles = (colors: ThemeColors) =>
 // Backward compatibility (some screens still import default)
 const styles = createStyles(lightColors);
 export default styles;
-

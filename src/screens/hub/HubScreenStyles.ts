@@ -282,7 +282,7 @@ export const createStyles = (colors: ThemeColors) =>
       width: 40,
       height: 40,
       borderRadius: 20,
-      backgroundColor: colors.secondaryBlueColor,
+      backgroundColor: 'rgba(0,0,0,0.25)',
       alignItems: 'center',
       justifyContent: 'center',
     },
@@ -328,4 +328,3 @@ export const createStyles = (colors: ThemeColors) =>
       marginRight: 6,
     },
   });
-

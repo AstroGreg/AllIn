@@ -6,6 +6,7 @@ import FastImage from 'react-native-fast-image';
 import { ArrowLeft2, ArrowRight } from 'iconsax-react-nativejs';
 import {useTheme} from '../../context/ThemeContext';
 import {useAuth} from '../../context/AuthContext';
+import {useEvents} from '../../context/EventsContext';
 import {ApiError, getDownloads, type DownloadItem} from '../../services/apiGateway';
 import {createStyles} from './DownloadsDetailsStyles';
 import {useFocusEffect} from '@react-navigation/native';
@@ -15,6 +16,7 @@ const DownloadsDetailsScreen = ({ navigation }: any) => {
     const {colors} = useTheme();
     const Styles = createStyles(colors);
     const {apiAccessToken} = useAuth();
+    const {eventNameById} = useEvents();
 
     const [downloads, setDownloads] = useState<DownloadItem[]>([]);
     const [isLoading, setIsLoading] = useState(false);
@@ -66,7 +68,7 @@ const DownloadsDetailsScreen = ({ navigation }: any) => {
                         style={Styles.viewButton}
                         onPress={() => {
                             navigation.navigate('PhotoDetailScreen', {
-                                    eventTitle: media.event_id ? `Event ${String(media.event_id).slice(0, 8)}…` : 'Media',
+                                    eventTitle: eventNameById(media.event_id),
                                     media: {
                                         id: media.media_id,
                                         eventId: media.event_id,
@@ -87,7 +89,7 @@ const DownloadsDetailsScreen = ({ navigation }: any) => {
                 </View>
             </View>
         );
-    }, [Styles.card, Styles.cardImage, Styles.cardMetaRow, Styles.cardMetaText, Styles.viewButton, Styles.viewButtonText, colors.btnBackgroundColor, navigation]);
+    }, [Styles.card, Styles.cardImage, Styles.cardMetaRow, Styles.cardMetaText, Styles.viewButton, Styles.viewButtonText, colors.btnBackgroundColor, eventNameById, navigation]);
 
     return (
         <View style={Styles.mainContainer}>

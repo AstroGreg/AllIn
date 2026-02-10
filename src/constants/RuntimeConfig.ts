@@ -24,12 +24,19 @@ export const getApiBaseUrl = () => {
         }
         const devOverride = (AppConfig.DEV_API_GATEWAY_URL ?? '').trim();
         if (devOverride) return devOverride;
-        return 'http://192.168.0.153:3000';
+        return 'http://172.20.10.14:3000';
     }
 
     return 'https://myjourney.coffee';
 };
 
 export const getHlsBaseUrl = () => {
-    return 'http://192.168.0.153:3000';
+    const raw = (
+        AppConfig.HLS_BASE_URL ??
+        AppConfig.MEDIA_BASE_URL ??
+        process.env.HLS_BASE_URL ??
+        ''
+    ).trim();
+    if (raw) return raw;
+    return getApiBaseUrl();
 };

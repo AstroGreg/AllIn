@@ -13,9 +13,10 @@ interface PhotoContainerProps {
     photo?: any;
     name?: string;
     price?: string;
+    uploadedAt?: string;
 }
 
-const PhotoContainer = ({ onPressImg, photo, name, price }: PhotoContainerProps) => {
+const PhotoContainer = ({ onPressImg, photo, name, price, uploadedAt }: PhotoContainerProps) => {
     const deviceWidth = Dimensions.get('window').width;
     const horizontalPadding = 20; // Padding from screen edges
     const spacing = 6; // Spacing between items
@@ -48,6 +49,12 @@ const PhotoContainer = ({ onPressImg, photo, name, price }: PhotoContainerProps)
             <Text style={[Styles.downloadCount, { fontWeight: '400' }]} numberOfLines={1}>{name}</Text>
             <SizeBox height={4} />
             <Text style={[Styles.downloadCount, { fontWeight: '600' }]}>{price}</Text>
+            {uploadedAt ? (
+                <>
+                    <SizeBox height={4} />
+                    <Text style={[Styles.downloadCount, { fontWeight: '400' }]} numberOfLines={1}>{uploadedAt}</Text>
+                </>
+            ) : null}
             <View style={[Styles.btnRight, { bottom: 8, gap: 10 }, Styles.row]}>
                 <TouchableOpacity style={[Styles.btnRight, { bottom: 0, right: -5 }]}>
                     <Icons.Download height={18} width={18} />

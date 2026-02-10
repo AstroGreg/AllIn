@@ -47,7 +47,7 @@ const ViewUserCollectionsPhotosScreen = ({ navigation }: any) => {
             <View style={Styles.thumbnailContainer}>
                 <FastImage source={video.thumbnail} style={Styles.thumbnail} resizeMode="cover" />
                 <View style={Styles.playIconContainer}>
-                    <Icons.PlayBlue width={24} height={24} />
+                    <Icons.PlayCricle width={26} height={26} />
                 </View>
             </View>
             <Text style={Styles.videoTitle}>{video.title}</Text>

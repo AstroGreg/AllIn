@@ -184,7 +184,7 @@ const HubScreen = ({ navigation }: any) => {
             <View style={Styles.videoThumbnailWrapper}>
                 <FastImage source={Images.photo7} style={Styles.videoThumbnail} resizeMode="cover" />
                 <View style={Styles.videoPlayButton}>
-                    <Icons.PlayBlue height={20} width={20} />
+                    <Icons.PlayCricle height={26} width={26} />
                 </View>
             </View>
             <View style={Styles.videoInfo}>

@@ -155,8 +155,8 @@ const VideoScreen = ({ navigation, route }: any) => {
                         <Icons.PreviousVideo height={50} width={50} />
                     </TouchableOpacity>
 
-                    <TouchableOpacity onPress={handlePlayPause}>
-                        <Icons.Play height={80} width={80} />
+                    <TouchableOpacity onPress={handlePlayPause} style={Styles.playButton}>
+                        <Icons.PlayCricle height={52} width={52} />
                     </TouchableOpacity>
 
                     <TouchableOpacity onPress={handleNext10Seconds}>

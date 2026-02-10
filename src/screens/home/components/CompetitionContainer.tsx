@@ -67,7 +67,7 @@ const CompetitionContainer = ({
                     {!isPlaying && (
                         <View style={Styles.playButtonOverlay}>
                             <View style={Styles.playButton}>
-                                <Icons.Play width={40} height={40} />
+                                <Icons.PlayCricle width={32} height={32} />
                             </View>
                         </View>
                     )}

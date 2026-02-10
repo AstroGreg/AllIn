@@ -31,15 +31,11 @@ const Subscription = ({ navigation, route }: any) => {
     const filters = route?.params?.filters;
 
     const handleGetStarted = () => {
-        if (redirectTo === 'ContextSearch') {
-            navigation.navigate('ContextSearchScreen');
-        } else if (redirectTo === 'FaceSearch') {
-            navigation.navigate('BottomTabBar', { screen: 'Search', params: { screen: 'FaceSearchScreen' } });
-        } else if (redirectTo === 'BIBSearch') {
-            navigation.navigate('BottomTabBar', { screen: 'Search', params: { screen: 'SearchScreen', params: { openBIB: true } } });
-        } else {
-            navigation.goBack();
+        if (redirectTo) {
+            navigation.navigate('BottomTabBar', { screen: 'Search', params: { screen: 'AISearchScreen' } });
+            return;
         }
+        navigation.goBack();
     };
 
     const monthlyPlans: Plan[] = [

@@ -4,6 +4,7 @@ import { LogBox } from 'react-native'
 import RootStackNavigation from './src/navigations/RootStackNavigation'
 import { ThemeProvider, useTheme } from './src/context/ThemeContext'
 import { AuthProvider } from './src/context/AuthContext'
+import { EventsProvider } from './src/context/EventsContext'
 
 const AppNavigation = () => {
   const { colors, isDark } = useTheme();
@@ -34,9 +35,11 @@ const App = () => {
 
   return (
     <AuthProvider>
-      <ThemeProvider>
-        <AppNavigation />
-      </ThemeProvider>
+      <EventsProvider>
+        <ThemeProvider>
+          <AppNavigation />
+        </ThemeProvider>
+      </EventsProvider>
     </AuthProvider>
   )
 }

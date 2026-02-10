@@ -10,6 +10,7 @@ import {ArrowLeft2} from 'iconsax-react-nativejs';
 import { createStyles } from './ContextSearchLoadingScreenStyles';
 import {useAuth} from '../../../context/AuthContext';
 import {ApiError, searchObject} from '../../../services/apiGateway';
+import {useEvents} from '../../../context/EventsContext';
 
 const ContextSearchLoadingScreen = ({ navigation, route }: any) => {
     const insets = useSafeAreaInsets();
@@ -22,6 +23,35 @@ const ContextSearchLoadingScreen = ({ navigation, route }: any) => {
 
     const contextSearch = route?.params?.contextSearch || '';
     const filters = route?.params?.filters || [];
+    const filterState = route?.params?.filterState;
+    const {events} = useEvents();
+
+    const eventIdFromFilters = useMemo(() => {
+        const competitionQuery = String(filterState?.competition ?? '').trim().toLowerCase();
+        const range = filterState?.timeRange ?? null;
+        const rangeStart = range?.start ? new Date(range.start) : null;
+        const rangeEnd = range?.end ? new Date(range.end) : null;
+        const hasConstraints = Boolean(competitionQuery || rangeStart || rangeEnd);
+        if (!hasConstraints) return null;
+        const isWithinRange = (dateValue?: string | null) => {
+            if (!rangeStart && !rangeEnd) return true;
+            if (!dateValue) return false;
+            const date = new Date(dateValue);
+            if (Number.isNaN(date.getTime())) return false;
+            if (rangeStart && rangeEnd) return date >= rangeStart && date <= rangeEnd;
+            if (rangeStart) return date >= rangeStart;
+            if (rangeEnd) return date <= rangeEnd;
+            return true;
+        };
+        const matches = events.filter((event) => {
+            const name = String(event.event_name || event.event_title || '').toLowerCase();
+            const nameOk = competitionQuery ? name.includes(competitionQuery) : true;
+            const dateOk = isWithinRange(event.event_date);
+            return nameOk && dateOk;
+        });
+        if (matches.length === 1) return String(matches[0].event_id);
+        return null;
+    }, [events, filterState?.competition, filterState?.timeRange]);
 
     const queryText = useMemo(() => {
         const base = String(contextSearch || '').trim();
@@ -76,7 +106,7 @@ const ContextSearchLoadingScreen = ({ navigation, route }: any) => {
             setErrorText(null);
             setMatchedCount(null);
             try {
-                const results = await searchObject(apiAccessToken, {q, top: 150});
+                const results = await searchObject(apiAccessToken, {q, top: 150, event_id: eventIdFromFilters ?? undefined});
                 if (cancelled) return;
                 setMatchedCount(results.length);
                 navigation.replace('AISearchResultsScreen', {
@@ -98,7 +128,7 @@ const ContextSearchLoadingScreen = ({ navigation, route }: any) => {
         return () => {
             cancelled = true;
         };
-    }, [apiAccessToken, navigation, queryText]);
+    }, [apiAccessToken, eventIdFromFilters, navigation, queryText]);
 
     const spin = rotateAnim.interpolate({
         inputRange: [0, 1],

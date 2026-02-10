@@ -59,6 +59,39 @@ export const createStyles = (colors: ThemeColors) => StyleSheet.create({
         paddingHorizontal: 20,
         paddingTop: 32,
     },
+    searchByLabel: {
+        ...Fonts.semibold12,
+        color: colors.subTextColor,
+        marginBottom: 10,
+    },
+    optionsRow: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        gap: 10,
+    },
+    optionButton: {
+        paddingHorizontal: 14,
+        paddingVertical: 10,
+        borderRadius: 12,
+        borderWidth: 1,
+        borderColor: colors.lightGrayColor,
+        backgroundColor: colors.cardBackground,
+        minWidth: 120,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    optionButtonActive: {
+        borderColor: colors.primaryColor,
+        backgroundColor: colors.secondaryBlueColor,
+    },
+    optionButtonText: {
+        ...Fonts.medium14,
+        fontSize: 13,
+        color: colors.mainTextColor,
+    },
+    optionButtonTextActive: {
+        color: colors.primaryColor,
+    },
     searchOptionCard: {
         backgroundColor: colors.cardBackground,
         borderWidth: 1,
@@ -199,6 +232,7 @@ export const createStyles = (colors: ThemeColors) => StyleSheet.create({
         height: 50,
         borderRadius: 10,
         gap: 8,
+        backgroundColor: colors.primaryColor,
     },
     nextButtonText: {
         ...Fonts.medium16,

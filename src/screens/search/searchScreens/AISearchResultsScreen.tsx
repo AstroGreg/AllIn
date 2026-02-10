@@ -1,32 +1,32 @@
-import React, {useCallback, useMemo, useState} from 'react';
+import React, {useCallback, useMemo} from 'react';
 import {Alert, Share, Text, TouchableOpacity, View, ScrollView} from 'react-native';
 import SizeBox from '../../../constants/SizeBox';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import {useTheme} from '../../../context/ThemeContext';
+import {useEvents} from '../../../context/EventsContext';
 import FastImage from 'react-native-fast-image';
-import LinearGradient from 'react-native-linear-gradient';
-import MaskedView from '@react-native-masked-view/masked-view';
-import {ArrowLeft2, ArrowRight} from 'iconsax-react-nativejs';
+import {ArrowLeft2} from 'iconsax-react-nativejs';
 import Icons from '../../../constants/Icons';
 import {createStyles} from './AISearchResultsScreenStyles';
 import {useAuth} from '../../../context/AuthContext';
 import {ApiError, getMediaById, recordDownload} from '../../../services/apiGateway';
 
-interface PhotoResult {
+interface ResultItem {
   id: string;
   imageUrl: string;
   eventId?: string;
+  eventName?: string;
   type?: 'image' | 'video';
-  matchPercent?: number;
   previewUrl?: string;
   originalUrl?: string;
   matchType?: string;
   bibNumber?: string;
 }
 
-interface PhotoGroup {
-  id: number;
-  photos: PhotoResult[];
+interface ResultGroup {
+  id: string;
+  name: string;
+  items: ResultItem[];
 }
 
 const AISearchResultsScreen = ({navigation, route}: any) => {
@@ -34,12 +34,11 @@ const AISearchResultsScreen = ({navigation, route}: any) => {
   const {colors} = useTheme();
   const styles = createStyles(colors);
   const {apiAccessToken} = useAuth();
-  const results = Array.isArray(route?.params?.results) ? route.params.results : null;
+  const {eventNameById} = useEvents();
+  const results = Array.isArray(route?.params?.results) ? route.params.results : [];
   const defaultMatchType = route?.params?.matchType ? String(route.params.matchType) : undefined;
 
-  const photoResults: PhotoResult[] = useMemo(() => {
-    if (!results) return [];
-
+  const parsedResults: ResultItem[] = useMemo(() => {
     return results.map((r: any, idx: number) => ({
       id: String(r.media_id ?? r.id ?? idx),
       imageUrl: String(r.thumbnail_url ?? r.preview_url ?? r.original_url ?? ''),
@@ -47,43 +46,46 @@ const AISearchResultsScreen = ({navigation, route}: any) => {
       previewUrl: r.preview_url ? String(r.preview_url) : undefined,
       originalUrl: r.original_url ? String(r.original_url) : undefined,
       eventId: r.event_id ? String(r.event_id) : undefined,
-      matchPercent:
-        typeof r.match_percent === 'number'
-          ? r.match_percent
-          : typeof r.confidence === 'number'
-            ? r.confidence <= 1
-              ? r.confidence * 100
-              : r.confidence
-            : undefined,
+      eventName: r.event_name ? String(r.event_name) : undefined,
       matchType: r.match_type ? String(r.match_type) : r.bib_number ? 'bib' : defaultMatchType,
       bibNumber: r.bib_number ? String(r.bib_number) : undefined,
     }));
   }, [defaultMatchType, results]);
 
-  const matchedCount = route?.params?.matchedCount ?? photoResults.length;
+  const matchedCount = route?.params?.matchedCount ?? parsedResults.length;
 
-  const photoGroups: PhotoGroup[] = useMemo(() => {
-    const groups: PhotoGroup[] = [];
-    for (let i = 0; i < photoResults.length; i += 2) {
-      groups.push({
-        id: Math.floor(i / 2) + 1,
-        photos: photoResults.slice(i, i + 2),
-      });
-    }
-    return groups;
-  }, [photoResults]);
+  const groupedResults: ResultGroup[] = useMemo(() => {
+    const map = new Map<string, ResultGroup>();
+    parsedResults.forEach((item) => {
+      const eventId = item.eventId ? String(item.eventId) : 'unknown';
+      const name = item.eventName || eventNameById(item.eventId) || 'Competition';
+      if (!map.has(eventId)) {
+        map.set(eventId, {id: eventId, name, items: []});
+      }
+      map.get(eventId)!.items.push(item);
+    });
+    return Array.from(map.values()).sort((a, b) => a.name.localeCompare(b.name));
+  }, [eventNameById, parsedResults]);
+
+  const matchLabel = useCallback((matchType?: string) => {
+    const key = String(matchType ?? '').toLowerCase();
+    if (key === 'bib') return 'Chest number';
+    if (key === 'context') return 'Context';
+    if (key === 'face') return 'Face';
+    return 'AI';
+  }, []);
 
   const downloadOne = useCallback(
-    async (photo: PhotoResult) => {
+    async (item: ResultItem) => {
       if (!apiAccessToken) {
         Alert.alert('Missing API token', 'Log in or set a Dev API token to download.');
         return;
       }
 
-      const mediaId = String(photo.id || '').trim();
+      const mediaId = String(item.id || '').trim();
       if (!mediaId) return;
 
-      const startUrl = (photo.originalUrl || photo.previewUrl || '').trim();
+      const startUrl = (item.originalUrl || item.previewUrl || '').trim();
 
       try {
         let url = startUrl || null;
@@ -99,7 +101,7 @@ const AISearchResultsScreen = ({navigation, route}: any) => {
         }
 
         try {
-          await recordDownload(apiAccessToken, {media_id: mediaId, event_id: photo.eventId});
+          await recordDownload(apiAccessToken, {media_id: mediaId, event_id: item.eventId});
         } catch {
           // ignore
         }
@@ -113,128 +115,96 @@ const AISearchResultsScreen = ({navigation, route}: any) => {
     [apiAccessToken],
   );
 
-  const renderPhotoCard = (photo: PhotoResult) => (
-    <View key={photo.id} style={styles.photoCard}>
-      <FastImage
-        source={{uri: photo.imageUrl}}
-        style={styles.photoImage}
-        resizeMode={FastImage.resizeMode.cover}
-      />
-      <SizeBox height={10} />
-      <View style={styles.photoInfo}>
-        <View style={styles.photoLeftInfo}>
-          <Text style={styles.priceText}>
-            {photo.matchPercent != null ? `Match ${photo.matchPercent.toFixed(0)}%` : 'Match'}
-          </Text>
-          <SizeBox height={10} />
-          <TouchableOpacity
-            onPress={async () => {
-              const url = photo.previewUrl ?? photo.originalUrl ?? photo.imageUrl;
-              if (!url) {
-                Alert.alert('Missing URL', 'No preview/original URL was provided for this result.');
-                return;
-              }
-              navigation.navigate('PhotoDetailScreen', {
-                eventTitle: photo.eventId ? `Event ${photo.eventId.slice(0, 8)}…` : 'Result',
-                media: {
-                  id: photo.id,
-                  eventId: photo.eventId,
-                  thumbnailUrl: photo.imageUrl,
-                  previewUrl: photo.previewUrl,
-                  originalUrl: photo.originalUrl,
-                  type: photo.type,
-                  matchPercent: photo.matchPercent,
-                  matchType: photo.matchType,
-                  bibNumber: photo.bibNumber,
-                },
-              });
-            }}>
-            <LinearGradient
-              colors={['#155DFC', '#7F22FE']}
-              start={{x: 0, y: 0}}
-              end={{x: 1, y: 0}}
-              style={styles.viewButton}>
-              <Text style={styles.viewButtonText}>View</Text>
-              <ArrowRight size={13} color="#FFFFFF" variant="Linear" />
-            </LinearGradient>
-          </TouchableOpacity>
-        </View>
-        <View style={styles.photoRightInfo}>
-          <Text style={styles.resolutionText}>
-            {photo.eventId ? `${photo.eventId.slice(0, 8)}…` : ''}
-          </Text>
-          <SizeBox height={10} />
-          <TouchableOpacity style={styles.downloadButton} onPress={() => downloadOne(photo)}>
-            <Icons.DownloadBlue width={16} height={16} />
-          </TouchableOpacity>
-        </View>
-      </View>
-    </View>
-  );
-
-  const renderPhotoGroup = (group: PhotoGroup) => (
-    <View key={group.id} style={styles.photoGroupWrapper}>
-      <LinearGradient
-        colors={['#155DFC', '#7F22FE']}
-        start={{x: 0, y: 0}}
-        end={{x: 1, y: 0}}
-        style={styles.photoGroupGradientBorder}
-      />
-      <View style={styles.photoGroupCard}>
-        <View style={styles.photoGroupRow}>
-          {group.photos.map(renderPhotoCard)}
-        </View>
-      </View>
-    </View>
-  );
+  const openMedia = (item: ResultItem) => {
+    const url = item.previewUrl ?? item.originalUrl ?? item.imageUrl;
+    if (!url) {
+      Alert.alert('Missing URL', 'No preview/original URL was provided for this result.');
+      return;
+    }
+    navigation.navigate('PhotoDetailScreen', {
+      eventTitle: item.eventName || eventNameById(item.eventId),
+      media: {
+        id: item.id,
+        eventId: item.eventId,
+        thumbnailUrl: item.imageUrl,
+        previewUrl: item.previewUrl,
+        originalUrl: item.originalUrl,
+        type: item.type,
+        matchType: item.matchType,
+        bibNumber: item.bibNumber,
+      },
+    });
+  };
 
   return (
     <View style={styles.mainContainer}>
       <SizeBox height={insets.top} />
 
-      {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity
           style={styles.headerButton}
           onPress={() => navigation.goBack()}>
           <ArrowLeft2 size={24} color={colors.primaryColor} variant="Linear" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>AI</Text>
+        <Text style={styles.headerTitle}>AI results</Text>
         <View style={{width: 44, height: 44}} />
       </View>
 
       <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
         <SizeBox height={16} />
 
-        {/* Results Header */}
         <View style={styles.resultsHeader}>
-          <Text style={styles.resultsTitle}>Searched results</Text>
+          <Text style={styles.resultsTitle}>Results</Text>
           <View style={styles.resultsBadge}>
-            <MaskedView
-              maskElement={
-                <Text style={styles.resultsBadgeText}>
-                  {matchedCount} Results
-                </Text>
-              }>
-              <LinearGradient
-                colors={['#155DFC', '#7F22FE']}
-                start={{x: 0, y: 0}}
-                end={{x: 1, y: 0}}>
-                <Text style={styles.resultsBadgeTextHidden}>
-                  {matchedCount} Results
-                </Text>
-              </LinearGradient>
-            </MaskedView>
+            <Text style={styles.resultsBadgeText}>{matchedCount} found</Text>
           </View>
         </View>
 
-        <SizeBox height={24} />
+        <SizeBox height={20} />
 
-        {/* Photo Groups */}
-        {photoGroups.length === 0 ? (
+        {groupedResults.length === 0 ? (
           <Text style={styles.emptyText}>No results found.</Text>
         ) : (
-          photoGroups.map(renderPhotoGroup)
+          groupedResults.map((group) => (
+            <View key={group.id} style={styles.groupSection}>
+              <View style={styles.groupHeader}>
+                <Text style={styles.groupTitle}>{group.name}</Text>
+                <View style={styles.groupCountBadge}>
+                  <Text style={styles.groupCountText}>{group.items.length}</Text>
+                </View>
+              </View>
+              <View style={styles.groupGrid}>
+                {group.items.map((item) => (
+                  <TouchableOpacity
+                    key={item.id}
+                    style={styles.resultCard}
+                    onPress={() => openMedia(item)}
+                    activeOpacity={0.85}
+                  >
+                    <FastImage
+                      source={{uri: item.imageUrl}}
+                      style={styles.resultImage}
+                      resizeMode={FastImage.resizeMode.cover}
+                    />
+                    <View style={styles.resultInfo}>
+                      <View style={styles.matchChip}>
+                        <Text style={styles.matchChipText}>{matchLabel(item.matchType)}</Text>
+                      </View>
+                      {item.type === 'video' && (
+                        <Text style={styles.mediaType}>Video</Text>
+                      )}
+                    </View>
+                    <TouchableOpacity
+                      style={styles.downloadButton}
+                      onPress={() => downloadOne(item)}
+                    >
+                      <Icons.DownloadBlue width={16} height={16} />
+                    </TouchableOpacity>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </View>
+          ))
         )}
 
         <SizeBox height={insets.bottom > 0 ? insets.bottom + 20 : 40} />

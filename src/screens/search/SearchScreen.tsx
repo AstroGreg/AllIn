@@ -1,5 +1,6 @@
-import { View, Text, ScrollView, TouchableOpacity, TextInput, Modal, Image } from 'react-native'
-import React, { useState, useRef, useEffect } from 'react'
+import { View, Text, ScrollView, TouchableOpacity, TextInput, Image, Modal, Pressable, useWindowDimensions } from 'react-native'
+import React, { useMemo, useState } from 'react'
+import { CalendarList } from 'react-native-calendars'
 import { createStyles } from './SearchStyles'
 import SizeBox from '../../constants/SizeBox'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
@@ -7,36 +8,37 @@ import { useTheme } from '../../context/ThemeContext'
 import Icons from '../../constants/Icons'
 import Images from '../../constants/Images'
 import FastImage from 'react-native-fast-image'
-import LinearGradient from 'react-native-linear-gradient'
-import { ArrowLeft2, SearchNormal1, Calendar, Location, CloseCircle, Clock, ArrowDown2, Camera, Add, Note, ArrowRight } from 'iconsax-react-nativejs'
-import { useRoute } from '@react-navigation/native'
+import { SearchNormal1, Calendar, Location, CloseCircle, Clock, ArrowDown2, Camera } from 'iconsax-react-nativejs'
+ 
 
-interface FilterChip {
-    id: number;
-    label: string;
-    value: string;
-}
+const FILTERS = ['Competition', 'Person', 'Group', 'Location'] as const
+const COMPETITION_TYPE_FILTERS: Array<{ key: CompetitionTypeFilter; label: string }> = [
+    { key: 'all', label: 'All' },
+    { key: 'track', label: 'Track&Field' },
+    { key: 'marathon', label: 'Road&Trail' },
+];
+
+type FilterKey = typeof FILTERS[number]
+
+type CompetitionType = 'track' | 'marathon'
+type CompetitionTypeFilter = 'all' | CompetitionType
 
 interface EventResult {
     id: number;
     name: string;
     date: string;
     location: string;
+    competitionType: CompetitionType;
 }
 
-interface UserResult {
+interface PersonResult {
     id: number;
     name: string;
-    type: 'Athlete' | 'Photographer';
+    role: 'Athlete' | 'Photographer';
     activity: string;
     location: string;
     isFollowing?: boolean;
-}
-
-interface SavedFace {
-    id: number;
-    name: string;
-    image: string;
+    events?: string[];
 }
 
 interface GroupResult {
@@ -45,101 +47,57 @@ interface GroupResult {
     activity: string;
     location: string;
     images: string[];
-}
-
-interface ContextResult {
-    id: number;
-    name: string;
-    type: string;
-    bib: string;
-    avatar: string;
-    isAiSearched?: boolean;
-}
-
-interface BibResult {
-    id: number;
-    name: string;
-    type: string;
-    bib?: string;
-    place?: string;
-    time?: string;
-    status?: string;
-    avatar: string;
-    isAiSearched?: boolean;
+    events?: string[];
 }
 
 const SearchScreen = ({ navigation }: any) => {
     const insets = useSafeAreaInsets();
     const { colors } = useTheme();
+    const { width: windowWidth } = useWindowDimensions();
     const Styles = createStyles(colors);
-    const route = useRoute<any>();
-    const [search, setSearch] = useState('');
-    const [hasSearched, setHasSearched] = useState(false);
-    const [selectedFilter, setSelectedFilter] = useState('Competition');
-    const [showFaceSaved, setShowFaceSaved] = useState(false);
-    const [selectedFaces, setSelectedFaces] = useState<number[]>([]);
-    const [showFilterModal, setShowFilterModal] = useState(false);
-    const [modalFilterType, setModalFilterType] = useState('');
-    const [modalInputValue, setModalInputValue] = useState('');
-    const modalInputRef = useRef<TextInput>(null);
 
-    // Handle openBIB param from navigation
-    useEffect(() => {
-        if (route.params?.openBIB) {
-            setSelectedFilter('BIB');
-            setModalFilterType('BIB');
-            setModalInputValue('');
-            setShowFilterModal(true);
-            setTimeout(() => modalInputRef.current?.focus(), 100);
-        }
-    }, [route.params?.openBIB]);
+    const [activeFilter, setActiveFilter] = useState<FilterKey>('Competition');
+    const [filterValues, setFilterValues] = useState<Record<FilterKey, string>>({
+        Competition: '',
+        Person: '',
+        Group: '',
+        Location: '',
+    });
+    const [competitionTypeFilter, setCompetitionTypeFilter] = useState<CompetitionTypeFilter>('all');
+    const [timeRange, setTimeRange] = useState<{ start: Date | null; end: Date | null }>({
+        start: null,
+        end: null,
+    });
+    const [showIosPicker, setShowIosPicker] = useState(false);
+    const [calendarStart, setCalendarStart] = useState<string | null>(null);
+    const [calendarEnd, setCalendarEnd] = useState<string | null>(null);
+ 
 
-    const filters = ['Competition', 'Athelete', 'Location', 'Photographer', 'Chest Number', 'Face saved', 'BIB', 'Add Face', 'Group', 'Context'];
-
-    const [activeChips, setActiveChips] = useState<FilterChip[]>([]);
-
-    const savedFaces: SavedFace[] = [
-        { id: 1, name: 'Kevin', image: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=200' },
-        { id: 2, name: 'James', image: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200' },
-        { id: 3, name: 'Jhon', image: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=200' },
-        { id: 4, name: 'Ray', image: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=200' },
-        { id: 5, name: 'Kevin', image: 'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=200' },
-        { id: 6, name: 'Kevin', image: 'https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?w=200' },
-        { id: 7, name: 'Kevin', image: 'https://images.unsplash.com/photo-1504257432389-52343af06ae3?w=200' },
-        { id: 8, name: 'Kevin', image: 'https://images.unsplash.com/photo-1463453091185-61582044d556?w=200' },
-        { id: 9, name: 'Kevin', image: 'https://images.unsplash.com/photo-1507591064344-4c6ce005b128?w=200' },
-        { id: 10, name: 'Kevin', image: 'https://images.unsplash.com/photo-1531746020798-e6953c6e8e04?w=200' },
-        { id: 11, name: 'Kevin', image: 'https://images.unsplash.com/photo-1568602471122-7832951cc4c5?w=200' },
-        { id: 12, name: 'Kevin', image: 'https://images.unsplash.com/photo-1560250097-0b93528c311a?w=200' },
-    ];
+    const activeValue = filterValues[activeFilter] ?? '';
 
     const eventResults: EventResult[] = [
-        { id: 1, name: 'BK Studenten 23', date: '27/05/2025', location: 'Gent' },
-        { id: 2, name: 'Vlaams Kampioenschap', date: '27/05/2025', location: 'Hasselt' },
-        { id: 3, name: 'IFAM 2024', date: '27/05/2025', location: 'Brussels' },
-        { id: 4, name: 'KBC Nacht 2024', date: '27/05/2025', location: 'Hasselt' },
-        { id: 5, name: 'Meeting voor mon', date: '27/05/2025', location: 'Leuven' },
+        { id: 1, name: 'BK Studenten 23', date: '27/05/2025', location: 'Gent', competitionType: 'track' },
+        { id: 2, name: 'Vlaams Kampioenschap', date: '27/05/2025', location: 'Hasselt', competitionType: 'track' },
+        { id: 3, name: 'IFAM 2024', date: '27/05/2025', location: 'Brussels', competitionType: 'track' },
+        { id: 4, name: 'KBC Nacht 2024', date: '27/05/2025', location: 'Hasselt', competitionType: 'track' },
+        { id: 5, name: 'Brussels City Run 2026', date: '12/06/2026', location: 'Brussels', competitionType: 'marathon' },
     ];
 
-    const userResults: UserResult[] = [
-        { id: 1, name: 'James Ray', type: 'Athlete', activity: 'Marathon', location: 'Dhaka', isFollowing: false },
-        { id: 2, name: 'James Ray', type: 'Athlete', activity: 'Marathon', location: 'Dhaka', isFollowing: false },
-        { id: 3, name: 'James Ray', type: 'Athlete', activity: 'Marathon', location: 'Dhaka', isFollowing: false },
-        { id: 4, name: 'James Ray', type: 'Athlete', activity: 'Marathon', location: 'Dhaka', isFollowing: false },
-        { id: 5, name: 'James Ray', type: 'Photographer', activity: 'Sports Events', location: 'Dhaka' },
-        { id: 6, name: 'James Ray', type: 'Photographer', activity: 'Sports Events', location: 'Dhaka' },
-        { id: 7, name: 'James Ray', type: 'Photographer', activity: 'Sports Events', location: 'Dhaka' },
-        { id: 8, name: 'James Ray', type: 'Photographer', activity: 'Sports Events', location: 'Dhaka' },
-        { id: 9, name: 'James Ray', type: 'Photographer', activity: 'Sports Events', location: 'Dhaka' },
-        { id: 10, name: 'James Ray', type: 'Photographer', activity: 'Sports Events', location: 'Dhaka' },
+    const peopleResults: PersonResult[] = [
+        { id: 1, name: 'James Ray', role: 'Athlete', activity: 'Marathon', location: 'Dhaka', isFollowing: false, events: ['Brussels City Run 2026'] },
+        { id: 2, name: 'Sofia Klein', role: 'Athlete', activity: '800m', location: 'Berlin', isFollowing: false, events: ['IFAM 2024'] },
+        { id: 3, name: 'Liam Carter', role: 'Photographer', activity: 'Sports Events', location: 'Brussels', events: ['IFAM 2024', 'BK Studenten 23'] },
+        { id: 4, name: 'Emma Novak', role: 'Photographer', activity: 'Track Events', location: 'Gent', events: ['BK Studenten 23'] },
+        { id: 5, name: 'Greg Reynders', role: 'Athlete', activity: '1500m', location: 'Hasselt', events: ['IFAM 2024', 'BK Studenten 23'] },
     ];
 
     const groupResults: GroupResult[] = [
         {
             id: 1,
-            name: 'Group 1',
-            activity: 'Sports Events',
-            location: 'Dhaka',
+            name: 'Olympic Track Club',
+            activity: 'Track & Field',
+            location: 'Brussels',
+            events: ['IFAM 2024', 'BK Studenten 23'],
             images: [
                 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100',
                 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=100',
@@ -149,9 +107,10 @@ const SearchScreen = ({ navigation }: any) => {
         },
         {
             id: 2,
-            name: 'Group 2',
-            activity: 'Sports Events',
-            location: 'Dhaka',
+            name: 'Marathon Pacers',
+            activity: 'Road Running',
+            location: 'Gent',
+            events: ['Brussels City Run 2026'],
             images: [
                 'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=100',
                 'https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?w=100',
@@ -159,194 +118,161 @@ const SearchScreen = ({ navigation }: any) => {
                 'https://images.unsplash.com/photo-1463453091185-61582044d556?w=100',
             ]
         },
-        {
-            id: 3,
-            name: 'Group 3',
-            activity: 'Sports Events',
-            location: 'Dhaka',
-            images: [
-                'https://images.unsplash.com/photo-1507591064344-4c6ce005b128?w=100',
-                'https://images.unsplash.com/photo-1531746020798-e6953c6e8e04?w=100',
-                'https://images.unsplash.com/photo-1568602471122-7832951cc4c5?w=100',
-                'https://images.unsplash.com/photo-1560250097-0b93528c311a?w=100',
-            ]
-        },
-        {
-            id: 4,
-            name: 'Group 4',
-            activity: 'Sports Events',
-            location: 'Dhaka',
-            images: [
-                'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100',
-                'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=100',
-                'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=100',
-                'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100',
-            ]
-        },
-        {
-            id: 5,
-            name: 'Group 5',
-            activity: 'Sports Events',
-            location: 'Dhaka',
-            images: [
-                'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=100',
-                'https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?w=100',
-                'https://images.unsplash.com/photo-1504257432389-52343af06ae3?w=100',
-                'https://images.unsplash.com/photo-1463453091185-61582044d556?w=100',
-            ]
-        },
-        {
-            id: 6,
-            name: 'Group 6',
-            activity: 'Sports Events',
-            location: 'Dhaka',
-            images: [
-                'https://images.unsplash.com/photo-1507591064344-4c6ce005b128?w=100',
-                'https://images.unsplash.com/photo-1531746020798-e6953c6e8e04?w=100',
-                'https://images.unsplash.com/photo-1568602471122-7832951cc4c5?w=100',
-                'https://images.unsplash.com/photo-1560250097-0b93528c311a?w=100',
-            ]
-        },
     ];
 
-    const contextResults: ContextResult[] = [
-        {
-            id: 1,
-            name: 'James Ray',
-            type: 'Athlete',
-            bib: '#2827',
-            avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200',
-            isAiSearched: true,
-        },
-        {
-            id: 2,
-            name: 'James Ray',
-            type: 'Athlete',
-            bib: '#2827',
-            avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200',
-        },
-        {
-            id: 3,
-            name: 'James Ray',
-            type: 'Athlete',
-            bib: '#2827',
-            avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200',
-        },
-        {
-            id: 4,
-            name: 'James Ray',
-            type: 'Athlete',
-            bib: '#2827',
-            avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200',
-        },
-    ];
+    const competitionQuery = filterValues.Competition.trim().toLowerCase();
+    const personQuery = filterValues.Person.trim().toLowerCase();
+    const groupQuery = filterValues.Group.trim().toLowerCase();
+    const locationQuery = filterValues.Location.trim().toLowerCase();
+    const hasActiveFilters = Object.values(filterValues).some((value) => value.trim().length > 0) ||
+        !!timeRange.start ||
+        !!timeRange.end ||
+        competitionTypeFilter !== 'all';
+    const activeFilters = FILTERS.filter((filter) => filterValues[filter].trim().length > 0);
 
-    const bibResults: BibResult[] = [
-        {
-            id: 1,
-            name: 'James Ray',
-            type: 'Athlete',
-            bib: '#2827',
-            avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200',
-            isAiSearched: true,
-        },
-        {
-            id: 2,
-            name: 'James Ray',
-            type: 'Athlete',
-            place: '1st',
-            time: '1:23:45',
-            status: 'Finished',
-            avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200',
-        },
-        {
-            id: 3,
-            name: 'James Ray',
-            type: 'Athlete',
-            place: '1st',
-            time: '1:23:45',
-            status: 'Finished',
-            avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200',
-        },
-        {
-            id: 4,
-            name: 'James Ray',
-            type: 'Athlete',
-            place: '1st',
-            time: '1:23:45',
-            status: 'Finished',
-            avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200',
-        },
-    ];
+    const matchValue = (value: string, q: string) => (q ? value.toLowerCase().includes(q) : true);
+    const matchAny = (values: string[] | undefined, q: string) =>
+        q ? (values ?? []).some((value) => value.toLowerCase().includes(q)) : true;
 
-    const removeChip = (chipId: number) => {
-        setActiveChips(prev => prev.filter(chip => chip.id !== chipId));
+    const shouldShowPeople = personQuery.length > 0 || locationQuery.length > 0;
+    const shouldShowGroups = groupQuery.length > 0 || locationQuery.length > 0;
+
+    const parseEventDate = (value: string) => {
+        const [day, month, year] = value.split('/').map(Number);
+        if (!day || !month || !year) return null;
+        return new Date(year, month - 1, day, 12, 0, 0, 0);
     };
 
-    const toggleFace = (faceId: number) => {
-        setSelectedFaces(prev => {
-            if (prev.includes(faceId)) {
-                return prev.filter(id => id !== faceId);
-            } else {
-                return [...prev, faceId];
-            }
+    const toDateString = (date: Date) => {
+        const yyyy = date.getFullYear();
+        const mm = String(date.getMonth() + 1).padStart(2, '0');
+        const dd = String(date.getDate()).padStart(2, '0');
+        return `${yyyy}-${mm}-${dd}`;
+    };
+
+    const fromDateString = (value: string, isEnd: boolean) => {
+        const [year, month, day] = value.split('-').map(Number);
+        if (!year || !month || !day) return null;
+        if (isEnd) {
+            return new Date(year, month - 1, day, 23, 59, 59, 999);
+        }
+        return new Date(year, month - 1, day, 0, 0, 0, 0);
+    };
+
+    const isWithinRange = (date: Date | null) => {
+        if (!date) return false;
+        const start = timeRange.start;
+        const end = timeRange.end;
+        if (start && end) return date >= start && date <= end;
+        if (start) return date >= start;
+        if (end) return date <= end;
+        return true;
+    };
+
+    const filteredEvents = useMemo(() => {
+        return eventResults.filter((event) => {
+            const eventDate = parseEventDate(event.date);
+            const rangeOk = timeRange.start || timeRange.end ? isWithinRange(eventDate) : true;
+            const typeOk = competitionTypeFilter === 'all' ? true : event.competitionType === competitionTypeFilter;
+            return (
+                matchValue(event.name, competitionQuery) &&
+                matchValue(event.location, locationQuery) &&
+                rangeOk &&
+                typeOk
+            );
         });
+    }, [competitionQuery, competitionTypeFilter, locationQuery, timeRange.end, timeRange.start]);
+
+    const filteredPeople = useMemo(() => {
+        if (!shouldShowPeople) return [];
+        const competitionFilter = personQuery.length > 0 ? competitionQuery : '';
+        const eventFilteredNames = new Set(filteredEvents.map((event) => event.name.toLowerCase()));
+        const shouldApplyEventFilters = Boolean(timeRange.start || timeRange.end || competitionTypeFilter !== 'all');
+        return peopleResults.filter((person) => {
+            const hasEventMatch = matchAny(person.events, competitionFilter);
+            const withinEventFilters = !shouldApplyEventFilters
+                ? true
+                : (person.events ?? []).some((eventName) => eventFilteredNames.has(eventName.toLowerCase()));
+            return (
+                matchValue(person.name, personQuery) &&
+                matchValue(person.location, locationQuery) &&
+                hasEventMatch &&
+                withinEventFilters
+            );
+        });
+    }, [
+        competitionQuery,
+        competitionTypeFilter,
+        filteredEvents,
+        locationQuery,
+        personQuery,
+        shouldShowPeople,
+        timeRange.end,
+        timeRange.start,
+    ]);
+
+    const filteredGroups = useMemo(() => {
+        if (!shouldShowGroups) return [];
+        const competitionFilter = groupQuery.length > 0 ? competitionQuery : '';
+        const eventFilteredNames = new Set(filteredEvents.map((event) => event.name.toLowerCase()));
+        const shouldApplyEventFilters = Boolean(timeRange.start || timeRange.end || competitionTypeFilter !== 'all');
+        return groupResults.filter((group) => {
+            const hasEventMatch = matchAny(group.events, competitionFilter);
+            const withinEventFilters = !shouldApplyEventFilters
+                ? true
+                : (group.events ?? []).some((eventName) => eventFilteredNames.has(eventName.toLowerCase()));
+            return (
+                matchValue(group.name, groupQuery) &&
+                matchValue(group.location, locationQuery) &&
+                hasEventMatch &&
+                withinEventFilters
+            );
+        });
+    }, [
+        competitionQuery,
+        competitionTypeFilter,
+        filteredEvents,
+        groupQuery,
+        locationQuery,
+        shouldShowGroups,
+        timeRange.end,
+        timeRange.start,
+    ]);
+
+    const totalCount = useMemo(() => (
+        filteredEvents.length + filteredPeople.length + filteredGroups.length
+    ), [filteredEvents.length, filteredGroups.length, filteredPeople.length]);
+    const hasAnyResults = totalCount > 0;
+
+    const handleFilterPress = (filter: FilterKey) => {
+        setActiveFilter(filter);
     };
 
-    const removeFaceFilter = (faceId: number) => {
-        setSelectedFaces(prev => prev.filter(id => id !== faceId));
+    const handleSearchChange = (text: string) => {
+        setFilterValues(prev => ({
+            ...prev,
+            [activeFilter]: text,
+        }));
     };
 
-    const handleFilterPress = (filter: string) => {
-        if (filter === 'Add Face') {
-            navigation.navigate('SearchFaceCaptureScreen');
-            return;
-        }
-        setSelectedFilter(filter);
-        setHasSearched(true);
-        if (filter === 'Face saved') {
-            setShowFaceSaved(!showFaceSaved);
-        } else {
-            setShowFaceSaved(false);
-            // Show modal for value-based filters (Location, Chest Number, BIB, Context)
-            if (filter === 'Location' || filter === 'Chest Number' || filter === 'BIB' || filter === 'Context') {
-                setModalFilterType(filter);
-                setModalInputValue('');
-                setShowFilterModal(true);
-                setTimeout(() => modalInputRef.current?.focus(), 100);
-            }
-        }
+    const clearFilterValue = (filter: FilterKey) => {
+        setFilterValues(prev => ({ ...prev, [filter]: '' }));
     };
 
-    const handleModalSubmit = () => {
-        if (modalInputValue.trim()) {
-            const newChip: FilterChip = {
-                id: Date.now(),
-                label: modalFilterType,
-                value: modalInputValue.trim()
-            };
-            setActiveChips(prev => [...prev, newChip]);
-            setHasSearched(true);
-        }
-        setShowFilterModal(false);
-        setModalInputValue('');
+    const getCompetitionTypeLabel = (type: CompetitionType) => {
+        if (type === 'marathon') return 'Road&Trail';
+        return 'Track&Field';
     };
 
-    const handleModalClose = () => {
-        setShowFilterModal(false);
-        setModalInputValue('');
-    };
-
-    const renderEventCard = (event: EventResult, showCompetitionBadge: boolean = false) => (
+    const renderEventCard = (event: EventResult) => (
         <TouchableOpacity
             key={event.id}
             style={Styles.eventCard}
-            onPress={() => navigation.navigate(
-                showCompetitionBadge ? 'CompetitionDetailsScreen' : 'Videography',
-                showCompetitionBadge
-                    ? { name: event.name, description: `Competition held in ${event.location}` }
-                    : { type: 'photo' }
-            )}
+            onPress={() => navigation.navigate('CompetitionDetailsScreen', {
+                name: event.name,
+                description: `Competition held in ${event.location}`,
+                competitionType: event.competitionType,
+            })}
         >
             <View style={Styles.eventIconContainer}>
                 <Calendar size={20} color={colors.primaryColor} variant="Linear" />
@@ -355,11 +281,9 @@ const SearchScreen = ({ navigation }: any) => {
             <View style={Styles.eventContent}>
                 <View style={Styles.eventNameRow}>
                     <Text style={Styles.eventName}>{event.name}</Text>
-                    {showCompetitionBadge && (
-                        <View style={Styles.competitionBadge}>
-                            <Text style={Styles.competitionBadgeText}>Competition</Text>
-                        </View>
-                    )}
+                    <View style={Styles.eventTypeBadge}>
+                        <Text style={Styles.eventTypeBadgeText}>{getCompetitionTypeLabel(event.competitionType)}</Text>
+                    </View>
                 </View>
                 <SizeBox height={4} />
                 <View style={Styles.eventDetails}>
@@ -378,11 +302,11 @@ const SearchScreen = ({ navigation }: any) => {
         </TouchableOpacity>
     );
 
-    const renderUserCard = (user: UserResult) => (
+    const renderPersonCard = (person: PersonResult) => (
         <TouchableOpacity
-            key={user.id}
+            key={person.id}
             style={Styles.userCard}
-            onPress={() => navigation.navigate('ViewUserProfileScreen', { user })}
+            onPress={() => navigation.navigate('ViewUserProfileScreen', { user: person })}
         >
             <View style={Styles.userCardContent}>
                 <View style={Styles.userHeader}>
@@ -393,35 +317,35 @@ const SearchScreen = ({ navigation }: any) => {
                     <SizeBox width={8} />
                     <View style={Styles.userInfo}>
                         <View style={Styles.userNameRow}>
-                            <Text style={Styles.userName}>{user.name}</Text>
+                            <Text style={Styles.userName}>{person.name}</Text>
                             <View style={Styles.userTypeBadge}>
-                                <Text style={Styles.userTypeText}>{user.type}</Text>
+                                <Text style={Styles.userTypeText}>{person.role}</Text>
                             </View>
                         </View>
                         <View style={Styles.userDetails}>
                             <View style={Styles.userDetailItem}>
-                                {user.type === 'Athlete' ? (
+                                {person.role === 'Athlete' ? (
                                     <Icons.Run height={16} width={16} />
                                 ) : (
                                     <Camera size={16} color="#9B9F9F" variant="Linear" />
                                 )}
                                 <SizeBox width={4} />
-                                <Text style={Styles.userDetailText}>{user.activity}</Text>
+                                <Text style={Styles.userDetailText}>{person.activity}</Text>
                             </View>
                             <View style={Styles.userDetailItem}>
                                 <Location size={16} color="#9B9F9F" variant="Linear" />
                                 <SizeBox width={4} />
-                                <Text style={Styles.userDetailText}>{user.location}</Text>
+                                <Text style={Styles.userDetailText}>{person.location}</Text>
                             </View>
                         </View>
                     </View>
                 </View>
-                {user.type === 'Athlete' && (
+                {person.role === 'Athlete' && (
                     <>
                         <SizeBox height={10} />
                         <TouchableOpacity
                             style={Styles.followBtn}
-                            onPress={() => navigation.navigate('ViewUserProfileScreen', { user })}
+                            onPress={() => navigation.navigate('ViewUserProfileScreen', { user: person })}
                         >
                             <Text style={Styles.followBtnText}>Follow</Text>
                         </TouchableOpacity>
@@ -435,11 +359,7 @@ const SearchScreen = ({ navigation }: any) => {
         <TouchableOpacity
             key={group.id}
             style={Styles.userCard}
-            onPress={() => navigation.navigate('EventsScreen', {
-                name: group.name,
-                activity: group.activity,
-                location: group.location
-            })}
+            onPress={() => navigation.navigate('GroupProfileScreen')}
         >
             <View style={Styles.userCardContent}>
                 <View style={Styles.userHeader}>
@@ -470,7 +390,7 @@ const SearchScreen = ({ navigation }: any) => {
                         <View style={Styles.userNameRow}>
                             <Text style={Styles.userName}>{group.name}</Text>
                             <View style={Styles.userTypeBadge}>
-                                <Text style={Styles.userTypeText}>Photographer</Text>
+                                <Text style={Styles.userTypeText}>Group</Text>
                             </View>
                         </View>
                         <View style={Styles.userDetails}>
@@ -491,155 +411,7 @@ const SearchScreen = ({ navigation }: any) => {
         </TouchableOpacity>
     );
 
-    const renderContextResultCard = (result: ContextResult) => (
-        <View key={result.id} style={Styles.contextResultCardWrapper}>
-            <View
-                style={[
-                    Styles.contextResultCard,
-                    result.isAiSearched && Styles.contextResultCardAiSearched,
-                ]}
-            >
-                <View style={Styles.contextResultHeader}>
-                    <FastImage
-                        source={{ uri: result.avatar }}
-                        style={Styles.contextAvatar}
-                        resizeMode={FastImage.resizeMode.cover}
-                    />
-                    <SizeBox width={8} />
-                    <View style={Styles.contextResultInfo}>
-                        <View style={Styles.contextResultNameRow}>
-                            <Text style={Styles.contextResultName}>{result.name}</Text>
-                            <View style={Styles.contextTypeBadge}>
-                                <Text style={Styles.contextTypeBadgeText}>{result.type}</Text>
-                            </View>
-                        </View>
-                        <View style={Styles.contextBibRow}>
-                            <Note size={16} color="#9B9F9F" variant="Linear" />
-                            <SizeBox width={4} />
-                            <Text style={Styles.contextBibLabel}>Bib:</Text>
-                            <View style={{ flex: 1 }} />
-                            <Text style={Styles.contextBibValue}>{result.bib}</Text>
-                        </View>
-                    </View>
-                </View>
-
-                <SizeBox height={10} />
-
-                <View style={Styles.contextCardFooter}>
-                    <TouchableOpacity
-                        style={Styles.contextViewDetailsButton}
-                        onPress={() => navigation.navigate('ViewUserProfileScreen', { user: result })}
-                    >
-                        <Text style={Styles.contextViewDetailsText}>View Details</Text>
-                        <ArrowRight size={24} color="#FFFFFF" variant="Linear" />
-                    </TouchableOpacity>
-
-                    {result.isAiSearched && (
-                        <LinearGradient
-                            colors={['#155DFC', '#7F22FE']}
-                            start={{ x: 0, y: 0 }}
-                            end={{ x: 1, y: 0 }}
-                            style={Styles.contextAiSearchedBadge}
-                        >
-                            <Text style={Styles.contextAiSearchedText}>Ai Searched</Text>
-                        </LinearGradient>
-                    )}
-                </View>
-            </View>
-        </View>
-    );
-
-    const renderContextResults = () => (
-        <View>
-            {contextResults.map(renderContextResultCard)}
-        </View>
-    );
-
-    const renderBibResultCard = (result: BibResult) => (
-        <View key={result.id} style={Styles.bibResultCardWrapper}>
-            <View
-                style={[
-                    Styles.bibResultCard,
-                    result.isAiSearched && Styles.bibResultCardAiSearched,
-                ]}
-            >
-                <View style={Styles.bibResultHeader}>
-                    <FastImage
-                        source={{ uri: result.avatar }}
-                        style={Styles.bibAvatar}
-                        resizeMode={FastImage.resizeMode.cover}
-                    />
-                    <SizeBox width={8} />
-                    <View style={Styles.bibResultInfo}>
-                        <View style={Styles.bibResultNameRow}>
-                            <Text style={Styles.bibResultName}>{result.name}</Text>
-                            <View style={Styles.bibTypeBadge}>
-                                <Text style={Styles.bibTypeBadgeText}>{result.type}</Text>
-                            </View>
-                        </View>
-                        {result.isAiSearched && result.bib ? (
-                            <View style={Styles.bibBibRow}>
-                                <View style={Styles.bibBibLeft}>
-                                    <Note size={16} color="#9B9F9F" variant="Linear" />
-                                    <SizeBox width={4} />
-                                    <Text style={Styles.bibBibLabel}>Bib:</Text>
-                                </View>
-                                <Text style={Styles.bibBibValue}>{result.bib}</Text>
-                            </View>
-                        ) : (
-                            <View style={Styles.bibDetailsRow}>
-                                <View style={Styles.bibDetailItem}>
-                                    <Note size={16} color="#9B9F9F" variant="Linear" />
-                                    <SizeBox width={4} />
-                                    <Text style={Styles.bibDetailText}>Place: {result.place}</Text>
-                                </View>
-                                <View style={Styles.bibDetailItem}>
-                                    <Clock size={16} color="#9B9F9F" variant="Linear" />
-                                    <SizeBox width={4} />
-                                    <Text style={Styles.bibDetailText}>{result.time}</Text>
-                                </View>
-                                <View style={Styles.bibDetailItem}>
-                                    <Note size={16} color="#9B9F9F" variant="Linear" />
-                                    <SizeBox width={4} />
-                                    <Text style={Styles.bibDetailText}>Status: {result.status}</Text>
-                                </View>
-                            </View>
-                        )}
-                    </View>
-                </View>
-
-                <SizeBox height={10} />
-
-                <View style={Styles.bibCardFooter}>
-                    <TouchableOpacity
-                        style={Styles.bibViewDetailsButton}
-                        onPress={() => navigation.navigate('ViewUserProfileScreen', { user: result })}
-                    >
-                        <Text style={Styles.bibViewDetailsButtonText}>View Details</Text>
-                    </TouchableOpacity>
-
-                    {result.isAiSearched && (
-                        <LinearGradient
-                            colors={['#155DFC', '#7F22FE']}
-                            start={{ x: 0, y: 0 }}
-                            end={{ x: 1, y: 0 }}
-                            style={Styles.bibAiSearchedBadge}
-                        >
-                            <Text style={Styles.bibAiSearchedText}>Ai Searched</Text>
-                        </LinearGradient>
-                    )}
-                </View>
-            </View>
-        </View>
-    );
-
-    const renderBibResults = () => (
-        <View>
-            {bibResults.map(renderBibResultCard)}
-        </View>
-    );
-
-    const renderNoResults = () => (
+    const renderNoResults = (label: string) => (
         <View style={Styles.noResultsContainer}>
             <Image
                 source={Images.noResult}
@@ -647,286 +419,384 @@ const SearchScreen = ({ navigation }: any) => {
                 resizeMode="cover"
             />
             <SizeBox height={14} />
-            <Text style={Styles.noResultsText}>No results found</Text>
+            <Text style={Styles.noResultsText}>{label}</Text>
         </View>
     );
 
-    // Check if there are results based on selected filter
-    const hasResults = () => {
-        if (!hasSearched) return false;
-        if (selectedFilter === 'Competition') return eventResults.length > 0;
-        if (selectedFilter === 'Athelete') return userResults.filter(u => u.type === 'Athlete').length > 0;
-        if (selectedFilter === 'Photographer') return userResults.filter(u => u.type === 'Photographer').length > 0;
-        if (selectedFilter === 'Group') return groupResults.length > 0;
-        if (selectedFilter === 'Context') return contextResults.length > 0;
-        if (selectedFilter === 'BIB') return bibResults.length > 0;
-        return eventResults.length > 0 || userResults.length > 0;
+    const openDateTimePicker = () => {
+        const startSeed = timeRange.start ? toDateString(timeRange.start) : null;
+        const endSeed = timeRange.end ? toDateString(timeRange.end) : null;
+        setCalendarStart(startSeed);
+        setCalendarEnd(endSeed);
+        setShowIosPicker(true);
     };
+
+    const modalWidth = Math.min(windowWidth * 0.9, 420);
+    const calendarWidth = Math.max(0, modalWidth - 40);
+
+    const setQuickRange = (preset: 'week' | 'month' | 'year') => {
+        const today = new Date();
+        if (preset === 'week') {
+            const day = today.getDay(); // 0 (Sun) - 6 (Sat)
+            const diffToMonday = (day + 6) % 7;
+            const start = new Date(today);
+            start.setDate(today.getDate() - diffToMonday);
+            const end = new Date(start);
+            end.setDate(start.getDate() + 6);
+            setCalendarStart(toDateString(start));
+            setCalendarEnd(toDateString(end));
+            return;
+        }
+        if (preset === 'month') {
+            const start = new Date(today.getFullYear(), today.getMonth(), 1);
+            const end = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+            setCalendarStart(toDateString(start));
+            setCalendarEnd(toDateString(end));
+            return;
+        }
+        const start = new Date(today.getFullYear(), 0, 1);
+        const end = new Date(today.getFullYear(), 11, 31);
+        setCalendarStart(toDateString(start));
+        setCalendarEnd(toDateString(end));
+    };
+
+    const applyIosDateTime = () => {
+        if (!calendarStart) {
+            setShowIosPicker(false);
+            return;
+        }
+        const start = fromDateString(calendarStart, false);
+        const endSeed = calendarEnd ?? calendarStart;
+        const end = fromDateString(endSeed, true);
+        if (!start || !end) {
+            setShowIosPicker(false);
+            return;
+        }
+        const finalEnd = end < start ? new Date(start.getTime()) : end;
+        setTimeRange({ start, end: finalEnd });
+        setShowIosPicker(false);
+    };
+
+    const formatDateRange = (start: Date, end: Date) => {
+        const sameDay = start.toDateString() === end.toDateString();
+        const startText = start.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+        if (sameDay) return startText;
+        const endText = end.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+        return `${startText} → ${endText}`;
+    };
+
+    const timeRangeLabel = timeRange.start && timeRange.end
+        ? formatDateRange(timeRange.start, timeRange.end)
+        : '';
+
+ 
+
+    const searchPlaceholder = (() => {
+        if (activeFilter === 'Competition') return 'Type competition name';
+        if (activeFilter === 'Person') return 'Type person name';
+        if (activeFilter === 'Group') return 'Type group name';
+        return 'Search by location';
+    })();
 
     return (
         <View style={Styles.mainContainer}>
             <SizeBox height={insets.top} />
 
-            {/* Header */}
             <View style={Styles.header}>
-                <TouchableOpacity style={Styles.headerButton} onPress={() => navigation.goBack()}>
-                    <ArrowLeft2 size={24} color={colors.primaryColor} variant="Linear" />
-                </TouchableOpacity>
+                <View style={Styles.headerSpacer} />
                 <Text style={Styles.headerTitle}>Search</Text>
-                <View style={{width: 44, height: 44}} />
+                <View style={Styles.headerSpacer} />
             </View>
 
             <ScrollView style={Styles.container} showsVerticalScrollIndicator={false}>
                 <SizeBox height={24} />
 
-                {/* Search Bar */}
                 <View style={Styles.searchRow}>
-                    <View style={Styles.searchInputContainer}>
+                <View style={Styles.searchInputContainer}>
                         <SearchNormal1 size={16} color="#9B9F9F" variant="Linear" />
-                        <SizeBox width={6} />
+                        <SizeBox width={8} />
+                        <View style={Styles.searchInputPill}>
+                            <Text style={Styles.searchInputPillText}>{activeFilter}:</Text>
+                        </View>
                         <TextInput
                             style={Styles.searchInput}
-                            placeholder="Running...."
+                            placeholder={searchPlaceholder}
                             placeholderTextColor="#9B9F9F"
-                            value={search}
-                            onChangeText={setSearch}
+                            value={activeValue}
+                            onChangeText={handleSearchChange}
+                            returnKeyType="search"
                         />
                     </View>
-                    <TouchableOpacity onPress={() => navigation.navigate('AISearchOptions')}>
-                        <LinearGradient
-                            colors={['#6366F1', '#3B82F6']}
-                            start={{ x: 0, y: 0 }}
-                            end={{ x: 1, y: 1 }}
-                            style={Styles.aiButton}
-                        >
-                            <Icons.AiWhiteSquare width={24} height={24} />
-                        </LinearGradient>
+                    <TouchableOpacity onPress={() => navigation.navigate('AISearchScreen')}>
+                        <View style={Styles.aiButton}>
+                            <Icons.AiBlueBordered width={24} height={24} />
+                        </View>
                     </TouchableOpacity>
                 </View>
 
                 <SizeBox height={16} />
 
-                {/* Filter Tabs */}
                 <View style={Styles.filterTabsContainer}>
                     <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-                        {filters.map((filter) => (
+                        {FILTERS.map((filter) => (
                             <TouchableOpacity
                                 key={filter}
                                 style={[
                                     Styles.filterTab,
-                                    (selectedFilter === filter || (filter === 'Face saved' && showFaceSaved)) && Styles.filterTabActive
+                                    activeFilter === filter && Styles.filterTabActive
                                 ]}
                                 onPress={() => handleFilterPress(filter)}
                             >
-                                {filter === 'Add Face' && (
-                                    <Add size={14} color={selectedFilter === filter ? colors.whiteColor : '#777777'} variant="Linear" />
-                                )}
-                                {filter === 'Add Face' && <SizeBox width={4} />}
                                 <Text style={[
                                     Styles.filterTabText,
-                                    (selectedFilter === filter || (filter === 'Face saved' && showFaceSaved)) && Styles.filterTabTextActive
+                                    activeFilter === filter && Styles.filterTabTextActive
                                 ]}>
                                     {filter}
                                 </Text>
                             </TouchableOpacity>
                         ))}
-                        {/* Selected Face Chips in filter row */}
-                        {selectedFaces.map((faceId) => {
-                            const face = savedFaces.find(f => f.id === faceId);
-                            if (!face) return null;
-                            return (
-                                <TouchableOpacity
-                                    key={`face-${faceId}`}
-                                    style={[Styles.filterTab, Styles.filterTabActive]}
-                                    onPress={() => removeFaceFilter(faceId)}
-                                >
-                                    <Text style={[Styles.filterTabText, Styles.filterTabTextActive]}>
-                                        {face.name}
-                                    </Text>
-                                </TouchableOpacity>
-                            );
-                        })}
                     </ScrollView>
                 </View>
 
                 <SizeBox height={16} />
 
-                {/* Active Filter Chips */}
+                <View style={Styles.typeFilterRow}>
+                    <Text style={Styles.typeFilterLabel}>Competition Type</Text>
+                    <View style={Styles.typeFilterChips}>
+                        {COMPETITION_TYPE_FILTERS.map((option) => (
+                            <TouchableOpacity
+                                key={option.key}
+                                style={[
+                                    Styles.typeFilterChip,
+                                    competitionTypeFilter === option.key && Styles.typeFilterChipActive,
+                                ]}
+                                onPress={() => setCompetitionTypeFilter(option.key)}
+                            >
+                                <Text
+                                    style={[
+                                        Styles.typeFilterChipText,
+                                        competitionTypeFilter === option.key && Styles.typeFilterChipTextActive,
+                                    ]}
+                                >
+                                    {option.label}
+                                </Text>
+                            </TouchableOpacity>
+                        ))}
+                    </View>
+                </View>
+
+                <SizeBox height={12} />
+
                 <View style={Styles.activeChipsContainer}>
-                    {activeChips.map((chip) => (
+                    {activeFilters.map((filter) => (
                         <TouchableOpacity
-                            key={chip.id}
+                            key={filter}
                             style={Styles.activeChip}
-                            onPress={() => removeChip(chip.id)}
+                            onPress={() => clearFilterValue(filter)}
                         >
-                            <Text style={Styles.activeChipText}>
-                                {chip.label}: {chip.value}
-                            </Text>
+                            <Text style={Styles.activeChipText}>{filter}: {filterValues[filter]}</Text>
                             <CloseCircle size={16} color="#FFFFFF" variant="Linear" />
                         </TouchableOpacity>
                     ))}
-                    {/* Selected Face Active Chips */}
-                    {selectedFaces.map((faceId) => {
-                        const face = savedFaces.find(f => f.id === faceId);
-                        if (!face) return null;
-                        return (
-                            <TouchableOpacity
-                                key={`active-face-${faceId}`}
-                                style={Styles.activeChip}
-                                onPress={() => removeFaceFilter(faceId)}
-                            >
-                                <Text style={Styles.activeChipText}>
-                                    {face.name}
-                                </Text>
-                                <CloseCircle size={16} color="#FFFFFF" variant="Linear" />
+                    {timeRange.start && timeRange.end ? (
+                        <TouchableOpacity
+                            style={Styles.timeRangeChipActive}
+                            onPress={openDateTimePicker}
+                        >
+                            <Clock size={14} color={colors.primaryColor} variant="Linear" />
+                            <Text style={Styles.timeRangeTextActive}>{formatDateRange(timeRange.start, timeRange.end)}</Text>
+                            <TouchableOpacity onPress={() => setTimeRange({ start: null, end: null })}>
+                                <CloseCircle size={16} color={colors.primaryColor} variant="Linear" />
                             </TouchableOpacity>
-                        );
-                    })}
-                    <TouchableOpacity style={Styles.timeRangeChip}>
-                        <Clock size={14} color="#9B9F9F" variant="Linear" />
-                        <SizeBox width={4} />
-                        <Text style={Styles.timeRangeText}>Time Range</Text>
-                        <SizeBox width={4} />
-                        <ArrowDown2 size={14} color="#9B9F9F" variant="Linear" />
-                    </TouchableOpacity>
+                        </TouchableOpacity>
+                    ) : (
+                        <TouchableOpacity style={Styles.timeRangeChip} onPress={openDateTimePicker}>
+                            <Clock size={14} color="#9B9F9F" variant="Linear" />
+                            <SizeBox width={4} />
+                            <Text style={Styles.timeRangeText}>Select date range</Text>
+                            <SizeBox width={4} />
+                            <ArrowDown2 size={14} color="#9B9F9F" variant="Linear" />
+                        </TouchableOpacity>
+                    )}
                 </View>
-
-                {/* Face Saved Grid */}
-                {showFaceSaved && (
-                    <>
-                        <SizeBox height={16} />
-                        <View style={Styles.faceSavedContainer}>
-                            <View style={Styles.faceSavedGrid}>
-                                {savedFaces.map((face) => (
-                                    <TouchableOpacity
-                                        key={face.id}
-                                        style={Styles.faceItem}
-                                        onPress={() => toggleFace(face.id)}
-                                    >
-                                        <FastImage
-                                            source={{ uri: face.image }}
-                                            style={[
-                                                Styles.faceImage,
-                                                selectedFaces.includes(face.id) && Styles.faceImageSelected
-                                            ]}
-                                        />
-                                        <SizeBox height={4} />
-                                        <Text style={Styles.faceName}>{face.name}</Text>
-                                    </TouchableOpacity>
-                                ))}
-                            </View>
-                        </View>
-                    </>
-                )}
 
                 <SizeBox height={24} />
 
-                {/* Results Header */}
                 <View style={Styles.resultsHeader}>
-                    <Text style={Styles.resultsTitle}>Searched results</Text>
-                    {hasSearched && (
+                    <Text style={Styles.resultsTitle}>Results</Text>
+                    {hasActiveFilters && (
                         <View style={Styles.resultsBadge}>
-                            <Text style={Styles.resultsBadgeText}>430 Events Available</Text>
+                            <Text style={Styles.resultsBadgeText}>{totalCount} found</Text>
                         </View>
                     )}
                 </View>
 
                 <SizeBox height={16} />
 
-                {/* Results based on selected filter */}
-                {!hasSearched ? (
-                    // Show no results initially
-                    renderNoResults()
-                ) : selectedFilter === 'Competition' ? (
-                    // Show only competition/event results
-                    eventResults.length > 0 ? eventResults.map(event => renderEventCard(event, true)) : renderNoResults()
-                ) : selectedFilter === 'Athelete' || selectedFilter === 'Photographer' ? (
-                    // Show only user results for Athlete/Photographer
-                    userResults.filter(user => selectedFilter === 'Athelete' ? user.type === 'Athlete' : user.type === 'Photographer').length > 0 ? (
-                        userResults
-                            .filter(user =>
-                                selectedFilter === 'Athelete' ? user.type === 'Athlete' : user.type === 'Photographer'
-                            )
-                            .map(renderUserCard)
-                    ) : renderNoResults()
-                ) : selectedFilter === 'Group' ? (
-                    // Show only group results
-                    groupResults.length > 0 ? groupResults.map(renderGroupCard) : renderNoResults()
-                ) : selectedFilter === 'Context' ? (
-                    // Show context/AI search results
-                    contextResults.length > 0 ? renderContextResults() : renderNoResults()
-                ) : selectedFilter === 'BIB' ? (
-                    // Show BIB search results
-                    bibResults.length > 0 ? renderBibResults() : renderNoResults()
+                {!hasActiveFilters ? (
+                    renderNoResults('Start typing to search')
+                ) : !hasAnyResults ? (
+                    renderNoResults('No results found')
                 ) : (
-                    // Show mixed results for other filters
-                    eventResults.length > 0 || userResults.length > 0 ? (
-                        <>
-                            {eventResults.slice(0, 2).map(event => renderEventCard(event, false))}
-                            <SizeBox height={24} />
-                            {userResults.map(renderUserCard)}
-                        </>
-                    ) : renderNoResults()
+                    <>
+                        {filteredEvents.length > 0 && (
+                            <>
+                                <Text style={Styles.sectionTitle}>Competitions</Text>
+                                <SizeBox height={10} />
+                                {filteredEvents.map(renderEventCard)}
+                                <SizeBox height={20} />
+                            </>
+                        )}
+
+                        {filteredPeople.length > 0 && (
+                            <>
+                                <Text style={Styles.sectionTitle}>People</Text>
+                                <SizeBox height={10} />
+                                {filteredPeople.map(renderPersonCard)}
+                                <SizeBox height={20} />
+                            </>
+                        )}
+
+                        {filteredGroups.length > 0 && (
+                            <>
+                                <Text style={Styles.sectionTitle}>Groups</Text>
+                                <SizeBox height={10} />
+                                {filteredGroups.map(renderGroupCard)}
+                            </>
+                        )}
+                    </>
                 )}
 
                 <SizeBox height={insets.bottom > 0 ? insets.bottom + 100 : 120} />
             </ScrollView>
 
-            {/* Filter Input Modal */}
             <Modal
-                visible={showFilterModal}
+                visible={showIosPicker}
                 transparent
                 animationType="fade"
-                onRequestClose={handleModalClose}
+                onRequestClose={() => setShowIosPicker(false)}
             >
-                <TouchableOpacity
-                    style={Styles.modalOverlay}
-                    activeOpacity={1}
-                    onPress={handleModalClose}
-                >
-                    <View style={Styles.modalContainer}>
-                        <TouchableOpacity activeOpacity={1}>
-                            <Text style={Styles.modalTitle}>{modalFilterType}</Text>
-                            <SizeBox height={16} />
-                            <View style={Styles.modalInputContainer}>
-                                <TextInput
-                                    ref={modalInputRef}
-                                    style={Styles.modalInput}
-                                    placeholder={
-                                        modalFilterType === 'BIB' ? 'Enter BIB number (e.g., 2827)' :
-                                        modalFilterType === 'Context' ? 'Enter context (e.g., Podium, Finish Line)' :
-                                        `Enter ${modalFilterType}`
+                <View style={Styles.modalOverlay}>
+                    <Pressable
+                        style={{ position: 'absolute', top: 0, bottom: 0, left: 0, right: 0 }}
+                        onPress={() => setShowIosPicker(false)}
+                    />
+                    <View style={Styles.dateModalContainer}>
+                        <Text style={Styles.dateModalTitle}>Select date range</Text>
+                        <SizeBox height={10} />
+                        <View style={Styles.quickRangeRow}>
+                            <TouchableOpacity
+                                style={Styles.quickRangeChip}
+                                onPress={() => setQuickRange('week')}
+                            >
+                                <Text style={Styles.quickRangeChipText}>This week</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                                style={Styles.quickRangeChip}
+                                onPress={() => setQuickRange('month')}
+                            >
+                                <Text style={Styles.quickRangeChipText}>This month</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                                style={Styles.quickRangeChip}
+                                onPress={() => setQuickRange('year')}
+                            >
+                                <Text style={Styles.quickRangeChipText}>This year</Text>
+                            </TouchableOpacity>
+                        </View>
+                        <SizeBox height={8} />
+                        <View style={Styles.rangeHeaderRow}>
+                            <View style={Styles.rangePill}>
+                                <Text style={Styles.rangePillLabel}>Start</Text>
+                                <Text style={Styles.rangePillValue}>{calendarStart ?? 'Select'}</Text>
+                            </View>
+                            <View style={Styles.rangePill}>
+                                <Text style={Styles.rangePillLabel}>End</Text>
+                                <Text style={Styles.rangePillValue}>{calendarEnd ?? 'Select'}</Text>
+                            </View>
+                        </View>
+                        <SizeBox height={12} />
+                        <CalendarList
+                            style={Styles.calendarContainer}
+                            current={calendarStart ?? undefined}
+                            firstDay={1}
+                            calendarWidth={calendarWidth}
+                            onDayPress={(day) => {
+                                const selected = day.dateString;
+                                if (!calendarStart || (calendarStart && calendarEnd)) {
+                                    setCalendarStart(selected);
+                                    setCalendarEnd(null);
+                                    return;
+                                }
+                                if (calendarStart && !calendarEnd) {
+                                    if (selected < calendarStart) {
+                                        setCalendarStart(selected);
+                                        setCalendarEnd(null);
+                                    } else {
+                                        setCalendarEnd(selected);
                                     }
-                                    placeholderTextColor="#9B9F9F"
-                                    value={modalInputValue}
-                                    onChangeText={setModalInputValue}
-                                    onSubmitEditing={handleModalSubmit}
-                                    returnKeyType="done"
-                                />
-                            </View>
-                            <SizeBox height={20} />
-                            <View style={Styles.modalButtonRow}>
-                                <TouchableOpacity
-                                    style={Styles.modalCancelButton}
-                                    onPress={handleModalClose}
-                                >
-                                    <Text style={Styles.modalCancelText}>Cancel</Text>
-                                </TouchableOpacity>
-                                <TouchableOpacity
-                                    style={[
-                                        Styles.modalSubmitButton,
-                                        !modalInputValue.trim() && Styles.modalSubmitButtonDisabled
-                                    ]}
-                                    onPress={handleModalSubmit}
-                                    disabled={!modalInputValue.trim()}
-                                >
-                                    <Text style={Styles.modalSubmitText}>Add Filter</Text>
-                                </TouchableOpacity>
-                            </View>
-                        </TouchableOpacity>
+                                }
+                            }}
+                            markingType="period"
+                            markedDates={(() => {
+                                if (!calendarStart) return {};
+                                const start = calendarStart;
+                                const end = calendarEnd ?? calendarStart;
+                                const marks: Record<string, any> = {};
+                                let current = new Date(start);
+                                const endDate = new Date(end);
+                                while (current <= endDate) {
+                                    const key = toDateString(current);
+                                    const isStart = key === start;
+                                    const isEnd = key === end;
+                                    marks[key] = {
+                                        startingDay: isStart,
+                                        endingDay: isEnd,
+                                        color: isStart || isEnd ? colors.primaryColor : colors.secondaryBlueColor,
+                                        textColor: isStart || isEnd ? colors.pureWhite : colors.mainTextColor,
+                                    };
+                                    current.setDate(current.getDate() + 1);
+                                }
+                                return marks;
+                            })()}
+                            theme={{
+                                calendarBackground: colors.modalBackground,
+                                backgroundColor: colors.modalBackground,
+                                dayTextColor: colors.mainTextColor,
+                                monthTextColor: colors.mainTextColor,
+                                textSectionTitleColor: colors.subTextColor,
+                                selectedDayBackgroundColor: colors.primaryColor,
+                                selectedDayTextColor: colors.pureWhite,
+                                todayTextColor: colors.primaryColor,
+                                weekVerticalMargin: 0,
+                                textDayHeaderFontSize: 11,
+                                textDayFontSize: 14,
+                            }}
+                            pastScrollRange={12}
+                            futureScrollRange={12}
+                            scrollEnabled
+                            showScrollIndicator
+                        />
+                        <SizeBox height={12} />
+                        <View style={Styles.modalButtonRow}>
+                            <TouchableOpacity
+                                style={Styles.modalCancelButton}
+                                onPress={() => setShowIosPicker(false)}
+                            >
+                                <Text style={Styles.modalCancelText}>Cancel</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                                style={[Styles.modalSubmitButton, !calendarStart && Styles.modalSubmitButtonDisabled]}
+                                onPress={applyIosDateTime}
+                                disabled={!calendarStart}
+                            >
+                                <Text style={Styles.modalSubmitText}>Apply</Text>
+                            </TouchableOpacity>
+                        </View>
                     </View>
-                </TouchableOpacity>
+                </View>
             </Modal>
+
         </View>
     )
 }

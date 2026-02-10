@@ -1,13 +1,16 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { View, Text, TouchableOpacity, TextInput, ScrollView, Modal } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import LinearGradient from 'react-native-linear-gradient';
 import { SearchNormal1, ArrowRight, ArrowLeft, CloseCircle } from 'iconsax-react-nativejs';
 import { useTheme } from '../../../context/ThemeContext';
+import { useEvents } from '../../../context/EventsContext';
+import { AI_GROUPS, AI_PEOPLE } from '../../../constants/AiFilterOptions';
 import SizeBox from '../../../constants/SizeBox';
 import { createStyles } from './ContextSearchScreenStyles';
+import { useRoute } from '@react-navigation/native';
 
-const FILTERS = ['Location', 'Athlete', 'Competition', 'Photographer'];
+const FILTERS = ['Competition', 'Person', 'Group', 'Location'];
 
 interface FilterChip {
     id: number;
@@ -20,41 +23,57 @@ const ContextSearchScreen = ({ navigation }: any) => {
     const { colors } = useTheme();
     const Styles = createStyles(colors);
     const contextInputRef = useRef<TextInput>(null);
-    const modalInputRef = useRef<TextInput>(null);
+    const route = useRoute<any>();
+    const filterState = route?.params?.filterState;
+    const origin = route?.params?.origin;
 
     const [contextSearchText, setContextSearchText] = useState('');
     const [activeChips, setActiveChips] = useState<FilterChip[]>([]);
     const [showFilterModal, setShowFilterModal] = useState(false);
     const [modalFilterType, setModalFilterType] = useState('');
-    const [modalInputValue, setModalInputValue] = useState('');
+    const { events } = useEvents();
 
     useEffect(() => {
         setTimeout(() => contextInputRef.current?.focus(), 300);
     }, []);
 
+    useEffect(() => {
+        if (!filterState) return;
+        const seeded: FilterChip[] = [];
+        if (filterState.location) {
+            seeded.push({ id: Date.now() + 1, label: 'Location', value: String(filterState.location) });
+        }
+        if (filterState.competition) {
+            seeded.push({ id: Date.now() + 2, label: 'Competition', value: String(filterState.competition) });
+        }
+        if (filterState.person) {
+            seeded.push({ id: Date.now() + 3, label: 'Person', value: String(filterState.person) });
+        }
+        if (filterState.group) {
+            seeded.push({ id: Date.now() + 4, label: 'Group', value: String(filterState.group) });
+        }
+        if (seeded.length > 0) {
+            setActiveChips((prev) => (prev.length > 0 ? prev : seeded));
+        }
+    }, [filterState]);
+
     const handleFilterPress = (filter: string) => {
         setModalFilterType(filter);
-        setModalInputValue('');
         setShowFilterModal(true);
-        setTimeout(() => modalInputRef.current?.focus(), 100);
     };
 
-    const handleModalSubmit = () => {
-        if (modalInputValue.trim()) {
-            const newChip: FilterChip = {
-                id: Date.now(),
-                label: modalFilterType,
-                value: modalInputValue.trim()
-            };
-            setActiveChips(prev => [...prev, newChip]);
-        }
+    const handleSelectOption = (label: string, value: string) => {
+        const newChip: FilterChip = {
+            id: Date.now(),
+            label,
+            value,
+        };
+        setActiveChips(prev => [...prev, newChip]);
         setShowFilterModal(false);
-        setModalInputValue('');
     };
 
     const handleModalClose = () => {
         setShowFilterModal(false);
-        setModalInputValue('');
     };
 
     const removeChip = (chipId: number) => {
@@ -62,6 +81,12 @@ const ContextSearchScreen = ({ navigation }: any) => {
     };
 
     const handleStartSearch = () => {
+        const hasCompetition = activeChips.some((chip) => chip.label === 'Competition');
+        if (!hasCompetition) {
+            setModalFilterType('Competition');
+            setShowFilterModal(true);
+            return;
+        }
         if (contextSearchText.trim()) {
             const filters = activeChips.reduce((acc, chip) => {
                 acc[chip.label.toLowerCase()] = chip.value;
@@ -70,29 +95,48 @@ const ContextSearchScreen = ({ navigation }: any) => {
 
             navigation.navigate('ContextSearchLoadingScreen', {
                 contextSearch: contextSearchText.trim(),
-                filters: filters
+                filters: filters,
+                filterState,
             });
         }
     };
 
     const handleBack = () => {
-        navigation.goBack();
+        const parent = navigation.getParent?.();
+        if (origin === 'home' && parent) {
+            parent.navigate('Home');
+            return;
+        }
+        if (navigation.canGoBack()) {
+            navigation.goBack();
+            return;
+        }
+        if (parent) {
+            parent.navigate('Search');
+            return;
+        }
+        navigation.navigate('SearchScreen');
     };
 
-    const getPlaceholderText = (filterType: string) => {
-        switch (filterType) {
-            case 'Location':
-                return 'Enter location (e.g., Brussels, Gent)';
-            case 'Athlete':
-                return 'Enter athlete name';
-            case 'Competition':
-                return 'Enter competition name';
-            case 'Photographer':
-                return 'Enter photographer name';
-            default:
-                return `Enter ${filterType}`;
-        }
-    };
+    const filterOptions = useMemo(() => {
+        const competitions = events.map((event) => {
+            const name = String(event.event_name || event.event_title || 'Competition');
+            const date = event.event_date ? new Date(event.event_date).toLocaleDateString() : '';
+            const location = event.event_location ? String(event.event_location) : '';
+            const sublabel = [date, location].filter(Boolean).join(' • ');
+            return { label: name, value: name, sublabel };
+        });
+        const locations = Array.from(
+            new Set([
+                ...events.map((event) => String(event.event_location || '').trim()).filter(Boolean),
+                ...AI_PEOPLE.map((p) => p.location || '').filter(Boolean),
+                ...AI_GROUPS.map((g) => g.location || '').filter(Boolean),
+            ])
+        ).map((loc) => ({ label: loc, value: loc }));
+        const people = AI_PEOPLE.map((p) => ({ label: p.name, value: p.name }));
+        const groups = AI_GROUPS.map((g) => ({ label: g.name, value: g.name }));
+        return { competitions, locations, people, groups };
+    }, [events]);
 
     return (
         <View style={Styles.container}>
@@ -200,7 +244,7 @@ const ContextSearchScreen = ({ navigation }: any) => {
                 <SizeBox height={insets.bottom + 20} />
             </ScrollView>
 
-            {/* Filter Input Modal */}
+            {/* Filter Selection Modal */}
             <Modal
                 visible={showFilterModal}
                 transparent
@@ -216,37 +260,31 @@ const ContextSearchScreen = ({ navigation }: any) => {
                         <TouchableOpacity activeOpacity={1}>
                             <Text style={Styles.modalTitle}>{modalFilterType}</Text>
                             <SizeBox height={16} />
-                            <View style={Styles.modalInputContainer}>
-                                <TextInput
-                                    ref={modalInputRef}
-                                    style={Styles.modalInput}
-                                    placeholder={getPlaceholderText(modalFilterType)}
-                                    placeholderTextColor={colors.grayColor}
-                                    value={modalInputValue}
-                                    onChangeText={setModalInputValue}
-                                    onSubmitEditing={handleModalSubmit}
-                                    returnKeyType="done"
-                                />
-                            </View>
-                            <SizeBox height={20} />
-                            <View style={Styles.modalButtonRow}>
-                                <TouchableOpacity
-                                    style={Styles.modalCancelButton}
-                                    onPress={handleModalClose}
-                                >
-                                    <Text style={Styles.modalCancelText}>Cancel</Text>
-                                </TouchableOpacity>
-                                <TouchableOpacity
-                                    style={[
-                                        Styles.modalSubmitButton,
-                                        !modalInputValue.trim() && Styles.modalSubmitButtonDisabled
-                                    ]}
-                                    onPress={handleModalSubmit}
-                                    disabled={!modalInputValue.trim()}
-                                >
-                                    <Text style={Styles.modalSubmitText}>Add Filter</Text>
-                                </TouchableOpacity>
-                            </View>
+                            <ScrollView style={Styles.modalList} contentContainerStyle={Styles.modalListContent}>
+                                {(modalFilterType === 'Competition' ? filterOptions.competitions
+                                    : modalFilterType === 'Location' ? filterOptions.locations
+                                    : modalFilterType === 'Person' ? filterOptions.people
+                                    : modalFilterType === 'Group' ? filterOptions.groups
+                                    : []).map((option, index) => (
+                                    <TouchableOpacity
+                                        key={`${option.value}-${index}`}
+                                        style={Styles.modalOption}
+                                        onPress={() => handleSelectOption(modalFilterType, option.value)}
+                                    >
+                                        <Text style={Styles.modalOptionText}>{option.label}</Text>
+                                        {!!option.sublabel && (
+                                            <Text style={Styles.modalOptionSubText}>{option.sublabel}</Text>
+                                        )}
+                                    </TouchableOpacity>
+                                ))}
+                                {(modalFilterType === 'Competition' ? filterOptions.competitions
+                                    : modalFilterType === 'Location' ? filterOptions.locations
+                                    : modalFilterType === 'Person' ? filterOptions.people
+                                    : modalFilterType === 'Group' ? filterOptions.groups
+                                    : []).length === 0 && (
+                                    <Text style={Styles.modalEmpty}>No options available.</Text>
+                                )}
+                            </ScrollView>
                         </TouchableOpacity>
                     </View>
                 </TouchableOpacity>

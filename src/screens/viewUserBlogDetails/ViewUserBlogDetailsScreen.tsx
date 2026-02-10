@@ -8,11 +8,13 @@ import SizeBox from '../../constants/SizeBox';
 import Images from '../../constants/Images';
 import Icons from '../../constants/Icons';
 import { useTheme } from '../../context/ThemeContext';
+import { useEvents } from '../../context/EventsContext';
 
 const ViewUserBlogDetailsScreen = ({ navigation, route }: any) => {
     const insets = useSafeAreaInsets();
     const { colors } = useTheme();
     const Styles = createStyles(colors);
+    const { eventNameById } = useEvents();
     const post = route?.params?.post || {
         title: 'IFAM Outdoor Oordegem',
         date: '09/08/2025',
@@ -46,7 +48,7 @@ const ViewUserBlogDetailsScreen = ({ navigation, route }: any) => {
         const media = item?.media;
         if (!media) return;
         navigation.navigate('PhotoDetailScreen', {
-            eventTitle: media.event_id ? `Event ${String(media.event_id).slice(0, 8)}…` : 'Media',
+            eventTitle: eventNameById(media.event_id),
             media: {
                 id: media.media_id,
                 eventId: media.event_id,
@@ -60,7 +62,7 @@ const ViewUserBlogDetailsScreen = ({ navigation, route }: any) => {
                 assets: media.assets ?? [],
             },
         });
-    }, [navigation]);
+    }, [eventNameById, navigation]);
 
     return (
         <View style={Styles.mainContainer}>
@@ -140,7 +142,9 @@ const ViewUserBlogDetailsScreen = ({ navigation, route }: any) => {
                                         />
                                         {item?.type === 'video' && (
                                             <View style={Styles.galleryPlayOverlay}>
-                                                <Icons.PlayWhite height={16} width={16} />
+                                                <View style={Styles.galleryPlayButton}>
+                                                    <Icons.PlayCricle height={28} width={28} />
+                                                </View>
                                             </View>
                                         )}
                                     </View>

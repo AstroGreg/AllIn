@@ -350,7 +350,7 @@ const UserProfileScreen = ({ navigation }: any) => {
                                     <View style={Styles.videoThumbnailContainer}>
                                         <FastImage source={video.thumbnail} style={Styles.videoThumbnail} resizeMode="cover" />
                                         <View style={Styles.videoPlayIconContainer}>
-                                            <Icons.PlayBlue width={20} height={20} />
+                                            <Icons.PlayCricle width={26} height={26} />
                                         </View>
                                     </View>
                                     <Text style={Styles.videoCardTitle}>{video.title}</Text>

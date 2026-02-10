@@ -8,7 +8,7 @@ export const createStyles = (colors: ThemeColors) => StyleSheet.create({
     header: {
         paddingVertical: 15,
         backgroundColor: colors.backgroundColor,
-        paddingHorizontal: 20,
+        paddingHorizontal: 10,
         borderBottomWidth: 0.5,
         borderBottomColor: colors.lightGrayColor,
         flexDirection: 'row',
@@ -54,10 +54,10 @@ export const createStyles = (colors: ThemeColors) => StyleSheet.create({
     //Home screen
     mainContainer: {
         flex: 1,
-        backgroundColor: colors.backgroundColor,
+        backgroundColor: colors.pureWhite,
     },
     scrollContent: {
-        paddingHorizontal: 20,
+        paddingHorizontal: 0,
     },
 
     // Wallet Balance Card
@@ -177,18 +177,46 @@ export const createStyles = (colors: ThemeColors) => StyleSheet.create({
     },
 
     // Quick Actions Section
-    sectionContainer: {
+    sectionQuickActions: {
         marginBottom: 24,
+        paddingHorizontal: 10,
+    },
+    sectionOverview: {
+        marginBottom: 24,
+        backgroundColor: 'transparent',
+    },
+    sectionOverviewActive: {
+        backgroundColor: '#F2F4F7'
+    },
+    sectionOverviewEmpty: {
+        backgroundColor: 'transparent',
+        paddingVertical: 0,
     },
     sectionHeader: {
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
-        marginBottom: 16,
+        marginBottom: 16
+    },
+    sectionHeaderCentered: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginBottom: 12,
     },
     sectionTitle: {
         ...Fonts.medium18,
         color: colors.mainTextColor,
+    },
+    sectionTitleCentered: {
+        ...Fonts.medium18,
+        color: colors.mainTextColor,
+        textAlign: 'center',
+    },
+    timelineDivider: {
+        height: 1,
+        backgroundColor: colors.borderColor,
+        marginVertical: 8,
     },
     seeAllText: {
         ...Fonts.regular14,
@@ -403,33 +431,81 @@ export const createStyles = (colors: ThemeColors) => StyleSheet.create({
 
     // News Feed Card
     newsFeedCard: {
-        backgroundColor: colors.cardBackground,
-        borderWidth: 0.5,
-        borderColor: colors.borderColor,
-        borderRadius: 10,
-        padding: 16,
-        marginBottom: 24,
+        backgroundColor: colors.pureWhite,
+        marginBottom: 3,
+        marginHorizontal: 0,
+        borderRadius: 0,
+        borderWidth: 0,
+        overflow: 'hidden',
+    },
+    newsFeedCardFull: {
+        marginHorizontal: 0,
     },
     newsFeedCardNoBorder: {
-        backgroundColor: colors.cardBackground,
-        marginBottom: 24,
+        backgroundColor: colors.pureWhite,
+        marginBottom: 12,
+        marginHorizontal: 0,
+        borderRadius: 0,
+        borderWidth: 0,
+        overflow: 'hidden',
     },
     newsFeedTitle: {
-        ...Fonts.medium16,
-        fontSize: 18,
-        lineHeight: 22,
+        ...Fonts.semibold16,
+        fontSize: 16,
+        lineHeight: 20,
         color: colors.mainTextColor,
-        marginBottom: 10,
+        marginBottom: 4,
+    },
+    feedPadding: {
+        paddingHorizontal: 10,
+        paddingVertical: 12,
     },
     newsFeedImageContainer: {
         width: '100%',
-        height: 414,
-        borderRadius: 10,
+        height: 360,
+        borderRadius: 0,
         overflow: 'hidden',
+        backgroundColor: colors.pureWhite,
+    },
+    mediaWrapper: {
+        width: '100%',
+        alignSelf: 'center',
+        backgroundColor: 'transparent',
+        overflow: 'hidden',
+        position: 'relative',
+    },
+    textSlideContainer: {
+        backgroundColor: '#0F172A',
+    },
+    textSlideContent: {
+        flex: 1,
+        paddingHorizontal: 24,
+        paddingVertical: 24,
+        justifyContent: 'center',
+    },
+    textSlideTitle: {
+        ...Fonts.semibold22,
+        color: colors.pureWhite,
+        lineHeight: 28,
+        marginBottom: 12,
+    },
+    textSlideDescription: {
+        ...Fonts.regular14,
+        color: 'rgba(255,255,255,0.85)',
+        lineHeight: 22,
     },
     newsFeedImage: {
         width: '100%',
         height: '100%',
+    },
+    newsFeedVideoLayer: {
+        ...StyleSheet.absoluteFillObject,
+        zIndex: 2,
+    },
+    newsFeedSkeleton: {
+        ...StyleSheet.absoluteFillObject,
+        backgroundColor: colors.cardBackground,
+        zIndex: 1,
     },
     paginationBadge: {
         position: 'absolute',
@@ -448,7 +524,7 @@ export const createStyles = (colors: ThemeColors) => StyleSheet.create({
         flexDirection: 'row',
         justifyContent: 'center',
         alignItems: 'center',
-        marginTop: 16,
+        marginTop: 12,
         gap: 6,
     },
     paginationDot: {
@@ -466,22 +542,29 @@ export const createStyles = (colors: ThemeColors) => StyleSheet.create({
     userPostHeader: {
         flexDirection: 'row',
         alignItems: 'center',
-        justifyContent: 'space-between',
-        marginBottom: 10,
+        justifyContent: 'space-between'
+        
+    },
+    userPostHeaderSeparated: {
+
+        borderBottomWidth: 0,
     },
     userPostInfo: {
         flexDirection: 'row',
         alignItems: 'center',
-        gap: 6,
+        gap: 10,
+        flex: 1,
     },
     userPostAvatar: {
-        width: 40,
-        height: 40,
-        borderRadius: 20,
+        width: 36,
+        height: 36,
+        borderRadius: 18,
     },
     userPostName: {
-        ...Fonts.medium14,
+        ...Fonts.medium16,
+        fontSize: 16,
         color: colors.mainTextColor,
+        flexShrink: 1,
     },
     userPostTime: {
         ...Fonts.regular12,
@@ -500,9 +583,197 @@ export const createStyles = (colors: ThemeColors) => StyleSheet.create({
         color: colors.pureWhite,
     },
     userPostDescription: {
-        ...Fonts.medium14,
+        ...Fonts.regular14,
+        color: colors.subTextColor,
+        lineHeight: 20,
+        marginBottom: 6,
+    },
+    feedLikeButton: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 6,
+        paddingHorizontal: 0,
+        paddingVertical: 0,
+        borderRadius: 0,
+        backgroundColor: 'transparent',
+    },
+    feedLikeText: {
+        ...Fonts.regular14,
+        color: colors.subTextColor,
+    },
+    feedMetaRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        paddingBottom: 14,
+        borderTopWidth: 0,
+    },
+    feedActionsRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 10,
+    },
+    feedActionButton: {
+        width: 40,
+        height: 40,
+        borderRadius: 20,
+        backgroundColor: colors.btnBackgroundColor,
+        borderWidth: 0,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    likePulse: {
+        position: 'absolute',
+        top: '50%',
+        left: '50%',
+        marginLeft: -60,
+        marginTop: -60,
+        width: 120,
+        height: 120,
+        borderRadius: 60,
+        backgroundColor: 'rgba(0,0,0,0.25)',
+        alignItems: 'center',
+        justifyContent: 'center',
+        zIndex: 6,
+    },
+    feedActionIcon: {
+        width: 20,
+        height: 20,
+        tintColor: colors.primaryColor,
+    },
+    // Instant video overlay
+    videoOverlayContainer: {
+        flex: 1,
+        backgroundColor: colors.backgroundColor,
+    },
+    videoOverlayHeader: {
+        paddingHorizontal: 20,
+        paddingTop: 12,
+        paddingBottom: 10,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        borderBottomWidth: 0.5,
+        borderBottomColor: colors.borderColor,
+    },
+    videoOverlayBack: {
+        width: 40,
+        height: 40,
+        borderRadius: 20,
+        backgroundColor: colors.btnBackgroundColor,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    videoOverlayTitle: {
+        ...Fonts.medium16,
         color: colors.mainTextColor,
-        marginBottom: 10,
+        flex: 1,
+        textAlign: 'center',
+        marginHorizontal: 10,
+    },
+    videoOverlayActions: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 8,
+    },
+    videoOverlayActionButton: {
+        width: 36,
+        height: 36,
+        borderRadius: 18,
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: colors.btnBackgroundColor,
+    },
+    videoOverlayActionIcon: {
+        width: 18,
+        height: 18,
+        tintColor: colors.primaryColor,
+    },
+    videoOverlayPlayer: {
+        flex: 1,
+        backgroundColor: Colors.black,
+        position: 'relative',
+    },
+    videoOverlayVideo: {
+        width: '100%',
+        height: '100%',
+    },
+    videoOverlaySkeleton: {
+        ...StyleSheet.absoluteFillObject,
+        backgroundColor: colors.cardBackground,
+        zIndex: 2,
+    },
+    videoOverlayPlayBadge: {
+        position: 'absolute',
+        alignSelf: 'center',
+        top: '45%',
+        width: 68,
+        height: 68,
+        borderRadius: 34,
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: 'rgba(0,0,0,0.35)',
+    },
+    videoOverlayTap: {
+        ...StyleSheet.absoluteFillObject,
+    },
+    videoOverlayControls: {
+        paddingHorizontal: 20,
+        paddingVertical: 14,
+        borderTopWidth: 0.5,
+        borderTopColor: colors.borderColor,
+        backgroundColor: colors.backgroundColor,
+    },
+    videoOverlayTime: {
+        ...Fonts.regular12,
+        color: colors.subTextColor,
+        marginBottom: 8,
+    },
+    videoOverlaySlider: {
+        width: '100%',
+        height: 24,
+    },
+    sharedVideoLayer: {
+        ...StyleSheet.absoluteFillObject,
+        zIndex: 5,
+        elevation: 5,
+    },
+    sharedVideoWrapper: {
+        position: 'absolute',
+        overflow: 'hidden',
+        backgroundColor: Colors.black,
+    },
+    sharedVideoFullscreen: {
+        left: 0,
+        top: 0,
+        right: 0,
+        bottom: 0,
+        width: '100%',
+        height: '100%',
+    },
+    sharedVideo: {
+        width: '100%',
+        height: '100%',
+    },
+    sharedVideoTap: {
+        ...StyleSheet.absoluteFillObject,
+    },
+    sharedVideoChrome: {
+        ...StyleSheet.absoluteFillObject,
+        zIndex: 3,
+        justifyContent: 'space-between',
+        backgroundColor: 'transparent',
+    },
+    feedTag: {
+        paddingHorizontal: 0,
+        paddingVertical: 0,
+        borderRadius: 0,
+        backgroundColor: 'transparent',
+        borderWidth: 0,
+    },
+    feedTagText: {
+        ...Fonts.regular12,
+        color: colors.subTextColor,
     },
     viewBlogButton: {
         backgroundColor: colors.primaryColor,
@@ -542,14 +813,50 @@ export const createStyles = (colors: ThemeColors) => StyleSheet.create({
         ...StyleSheet.absoluteFillObject,
         justifyContent: 'center',
         alignItems: 'center',
+        zIndex: 4,
     },
     playButtonLarge: {
-        width: 74,
-        height: 74,
-        borderRadius: 37,
-        backgroundColor: colors.primaryColor,
+        backgroundColor: 'rgba(0,0,0,0.25)',
+        borderRadius: 30,
+        padding: 10,
         justifyContent: 'center',
         alignItems: 'center',
+    },
+    downloadOverlay: {
+        ...StyleSheet.absoluteFillObject,
+        backgroundColor: 'rgba(0,0,0,0.35)',
+        justifyContent: 'center',
+        alignItems: 'center',
+        zIndex: 20,
+    },
+    downloadCard: {
+        width: '78%',
+        backgroundColor: colors.pureWhite,
+        borderRadius: 18,
+        paddingHorizontal: 20,
+        paddingVertical: 18,
+        alignItems: 'center',
+        gap: 12,
+    },
+    downloadTitle: {
+        ...Fonts.semibold16,
+        color: colors.mainTextColor,
+    },
+    downloadProgressTrack: {
+        width: '100%',
+        height: 8,
+        borderRadius: 8,
+        backgroundColor: '#E5E7EB',
+        overflow: 'hidden',
+    },
+    downloadProgressFill: {
+        height: '100%',
+        backgroundColor: colors.primaryColor,
+        borderRadius: 8,
+    },
+    downloadProgressLabel: {
+        ...Fonts.regular12,
+        color: colors.textSecondary,
     },
 
     rowCenter: {
@@ -641,10 +948,9 @@ export const createStyles = (colors: ThemeColors) => StyleSheet.create({
         alignItems: 'center',
     },
     playButton: {
-        width: 40,
-        height: 40,
-        borderRadius: 25,
-        overflow: 'hidden',
+        backgroundColor: 'rgba(0,0,0,0.25)',
+        borderRadius: 24,
+        padding: 8,
         justifyContent: 'center',
         alignItems: 'center',
     },

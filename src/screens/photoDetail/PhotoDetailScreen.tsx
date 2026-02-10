@@ -1,5 +1,5 @@
 import React, {useCallback, useMemo, useState, useEffect, useRef} from 'react';
-import {ActionSheetIOS, Alert, Image, Linking, Platform, Share, Text, TouchableOpacity, View} from 'react-native';
+import {ActionSheetIOS, ActivityIndicator, Alert, Image, Linking, Platform, Share, Text, TouchableOpacity, View} from 'react-native';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 // useFocusEffect not available in some runtime bundles; use navigation listeners instead.
 import FastImage from 'react-native-fast-image';
@@ -7,8 +7,10 @@ import {createStyles} from './PhotoDetailScreenStyles';
 import SizeBox from '../../constants/SizeBox';
 import {useTheme} from '../../context/ThemeContext';
 import {useAuth} from '../../context/AuthContext';
+import {useEvents} from '../../context/EventsContext';
 import {ApiError, getMediaById, postAiFeedbackLabel, recordDownload, type MediaViewAllItem} from '../../services/apiGateway';
 import Video from 'react-native-video';
+import ShimmerEffect from '../../components/shimmerEffect/ShimmerEffect';
 import {getApiBaseUrl, getHlsBaseUrl} from '../../constants/RuntimeConfig';
 import Slider from '@react-native-community/slider';
 import {CameraRoll, iosRequestAddOnlyGalleryPermission} from '@react-native-camera-roll/camera-roll';
@@ -21,10 +23,13 @@ const PhotoDetailScreen = ({navigation, route}: any) => {
     const {colors} = useTheme();
     const Styles = createStyles(colors);
     const {apiAccessToken} = useAuth();
+    const {eventNameById} = useEvents();
 
     const eventTitle = route?.params?.eventTitle || '';
     const legacyPhoto = route?.params?.photo ?? null;
     const media = route?.params?.media ?? null;
+    const startAt = Number(route?.params?.startAt ?? 0);
+    const preferredVideoUrl = route?.params?.preferredVideoUrl ?? null;
 
     const mediaId: string | null = media?.id ? String(media.id) : null;
     const eventId: string | null = media?.eventId ? String(media.eventId) : null;
@@ -59,12 +64,25 @@ const PhotoDetailScreen = ({navigation, route}: any) => {
     const [resolvedMedia, setResolvedMedia] = useState<ReturnType<typeof normalizeMedia> | null>(null);
     const activeMedia = resolvedMedia ?? media;
     const matchPercent = typeof media?.matchPercent === 'number' ? media.matchPercent : null;
-    const headerLabel = eventTitle || (eventId ? `Event ${eventId}` : 'Media');
+    const headerLabel = eventTitle || eventNameById(eventId) || 'Media';
+
+    const shouldFetchMedia = useMemo(() => {
+        if (!apiAccessToken || !mediaId) return false;
+        if (!media) return true;
+        const hasUrls =
+            Boolean(media.previewUrl || media.preview_url) ||
+            Boolean(media.originalUrl || media.original_url) ||
+            Boolean(media.fullUrl || media.full_url) ||
+            Boolean(media.rawUrl || media.raw_url) ||
+            Boolean(media.hlsManifestPath || media.hls_manifest_path);
+        const hasAssets = Array.isArray((media as any).assets) && (media as any).assets.length > 0;
+        return !(hasUrls || hasAssets);
+    }, [apiAccessToken, media, mediaId]);
 
     useEffect(() => {
         let isMounted = true;
         const loadMedia = async () => {
-            if (!apiAccessToken || !mediaId) return;
+            if (!shouldFetchMedia) return;
             try {
                 const fresh = await getMediaById(apiAccessToken, mediaId);
                 if (isMounted) setResolvedMedia(normalizeMedia(fresh));
@@ -76,7 +94,7 @@ const PhotoDetailScreen = ({navigation, route}: any) => {
         return () => {
             isMounted = false;
         };
-    }, [apiAccessToken, mediaId, normalizeMedia]);
+    }, [apiAccessToken, mediaId, normalizeMedia, shouldFetchMedia]);
 
     const hlsUrl = useMemo(() => {
         const path = activeMedia?.hlsManifestPath || activeMedia?.hls_manifest_path;
@@ -113,12 +131,6 @@ const PhotoDetailScreen = ({navigation, route}: any) => {
         if (candidates.length > 0) return toAbsoluteUrl(String(candidates[0]));
         return null;
     }, [activeMedia?.originalUrl, activeMedia?.previewUrl, activeMedia?.thumbnailUrl, toAbsoluteUrl]);
-
-    const posterUrl = useMemo(() => {
-        const candidates = [activeMedia?.thumbnailUrl, activeMedia?.previewUrl, activeMedia?.originalUrl].filter(Boolean);
-        if (candidates.length > 0) return toAbsoluteUrl(String(candidates[0]));
-        return bestImageUrl;
-    }, [activeMedia?.originalUrl, activeMedia?.previewUrl, activeMedia?.thumbnailUrl, bestImageUrl, toAbsoluteUrl]);
 
     const assetMp4Url = useMemo(() => {
         const assets = activeMedia?.assets ?? [];
@@ -178,6 +190,7 @@ const PhotoDetailScreen = ({navigation, route}: any) => {
 
     const videoCandidates = useMemo(() => {
         const rawCandidates = [
+            preferredVideoUrl,
             assetMp4Url,
             activeMedia?.fullUrl,
             activeMedia?.rawUrl,
@@ -205,7 +218,7 @@ const PhotoDetailScreen = ({navigation, route}: any) => {
             if (!unique.includes(value)) unique.push(value);
         });
         return unique;
-    }, [activeMedia?.fullUrl, activeMedia?.originalUrl, activeMedia?.previewUrl, activeMedia?.rawUrl, activeMedia?.type, assetHlsUrl, assetMp4Url, hlsUrlWithToken, isVideoFile, toAbsoluteUrl]);
+    }, [activeMedia?.fullUrl, activeMedia?.originalUrl, activeMedia?.previewUrl, activeMedia?.rawUrl, activeMedia?.type, assetHlsUrl, assetMp4Url, hlsUrlWithToken, isVideoFile, preferredVideoUrl, toAbsoluteUrl]);
 
     const bestVideoUrl = useMemo(() => videoCandidates[0] ?? null, [videoCandidates]);
     const [videoSourceIndex, setVideoSourceIndex] = useState(0);
@@ -218,11 +231,17 @@ const PhotoDetailScreen = ({navigation, route}: any) => {
     }, [bestImageUrl, bestVideoUrl, activeMedia?.type]);
 
     const videoRef = useRef<Video>(null);
+    const hasSeekedRef = useRef(false);
     const [isPlaying, setIsPlaying] = useState(true);
     const [duration, setDuration] = useState(0);
     const [currentTime, setCurrentTime] = useState(0);
     const [isSeeking, setIsSeeking] = useState(false);
     const [videoError, setVideoError] = useState<string | null>(null);
+    const [isVideoLoading, setIsVideoLoading] = useState(true);
+    const [hasInitialTime, setHasInitialTime] = useState(false);
+    const downloadInFlightRef = useRef(false);
+    const [downloadVisible, setDownloadVisible] = useState(false);
+    const [downloadProgress, setDownloadProgress] = useState<number | null>(null);
 
     const formatTime = useCallback((value: number) => {
         const safeValue = Number.isFinite(value) ? Math.max(0, value) : 0;
@@ -264,7 +283,15 @@ const PhotoDetailScreen = ({navigation, route}: any) => {
         setVideoSourceIndex(0);
         setVideoError(null);
         setCurrentTime(0);
+        setIsVideoLoading(true);
+        setHasInitialTime(false);
+        hasSeekedRef.current = false;
     }, [mediaId, bestVideoUrl]);
+
+    useEffect(() => {
+        setIsVideoLoading(true);
+        setHasInitialTime(false);
+    }, [activeVideoUrl]);
 
     const getShareModule = useCallback(() => {
         try {
@@ -295,15 +322,16 @@ const PhotoDetailScreen = ({navigation, route}: any) => {
     }, []);
 
     const handleReportIssue = useCallback(async () => {
-        const subject = `Report issue${eventId ? `: Event ${eventId}` : ''}`;
-        const body = `Event ID: ${eventId ?? 'n/a'}\nMedia ID: ${mediaId ?? 'n/a'}\n`;
+        const eventLabel = eventTitle || eventNameById(eventId);
+        const subject = eventLabel ? `Report issue: ${eventLabel}` : 'Report issue';
+        const body = `Event: ${eventLabel || 'n/a'}\nMedia ID: ${mediaId ?? 'n/a'}\n`;
         const mailto = `mailto:support@bcs.com?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
         try {
             await Linking.openURL(mailto);
         } catch {
             Alert.alert('Unable to open email', 'Please email support@bcs.com with the issue details.');
         }
-    }, [eventId, mediaId]);
+    }, [eventId, eventNameById, eventTitle, mediaId]);
 
     const isHlsUrl = useCallback((value?: string | null) => {
         if (!value) return false;
@@ -366,7 +394,7 @@ const PhotoDetailScreen = ({navigation, route}: any) => {
     }, [bestImageUrl, isHlsUrl, resolveDownloadUrl]);
 
     const ensureLocalFile = useCallback(
-        async (remoteUrl: string, extensionHint: string) => {
+        async (remoteUrl: string, extensionHint: string, onProgress?: (ratio: number | null) => void) => {
             const fsModule = getFsModule();
             if (!fsModule?.downloadFile || !fsModule?.CachesDirectoryPath) {
                 return null;
@@ -377,7 +405,20 @@ const PhotoDetailScreen = ({navigation, route}: any) => {
             const destPath = `${fsModule.CachesDirectoryPath}/${baseName}${safeExt}`;
 
             try {
-                const result = await fsModule.downloadFile({fromUrl: remoteUrl, toFile: destPath}).promise;
+                const result = await fsModule.downloadFile({
+                    fromUrl: remoteUrl,
+                    toFile: destPath,
+                    background: true,
+                    progressDivider: 5,
+                    progress: (res: any) => {
+                        if (!res?.bytesExpected) {
+                            onProgress?.(null);
+                            return;
+                        }
+                        const ratio = Math.min(1, Math.max(0, res.bytesWritten / res.bytesExpected));
+                        onProgress?.(ratio);
+                    },
+                }).promise;
                 if (result?.statusCode && result.statusCode >= 400) {
                     return null;
                 }
@@ -390,6 +431,7 @@ const PhotoDetailScreen = ({navigation, route}: any) => {
     );
 
     const handleDownload = useCallback(async () => {
+        if (downloadInFlightRef.current) return;
         if (!apiAccessToken) {
             Alert.alert('Missing API token', 'Log in or set a Dev API token to download.');
             return;
@@ -406,9 +448,15 @@ const PhotoDetailScreen = ({navigation, route}: any) => {
             return;
         }
 
-        const fileUrl = await ensureLocalFile(downloadUrl, extensionFromUrl(downloadUrl));
+        downloadInFlightRef.current = true;
+        setDownloadProgress(null);
+        setDownloadVisible(true);
+        const fileUrl = await ensureLocalFile(downloadUrl, extensionFromUrl(downloadUrl), setDownloadProgress);
         if (!fileUrl) {
             Alert.alert('Download failed', 'Unable to download the media file.');
+            setDownloadVisible(false);
+            setDownloadProgress(null);
+            downloadInFlightRef.current = false;
             return;
         }
         try {
@@ -416,32 +464,28 @@ const PhotoDetailScreen = ({navigation, route}: any) => {
         } catch {
             // ignore
         }
-        const permissionOk = await requestPhotoPermission();
-        if (!permissionOk) {
-            Alert.alert('Photos permission required', 'Enable Photos access to save media.', [
-                {text: 'Cancel', style: 'cancel'},
-                {text: 'Open Settings', onPress: () => Linking.openSettings()},
-            ]);
-            return;
-        }
-
         try {
-            const ext = extensionFromUrl(fileUrl);
-            const saveType = ['jpg', 'jpeg', 'png'].includes(ext) ? 'photo' : 'video';
-            if (CameraRoll.saveAsset) {
-                await CameraRoll.saveAsset(fileUrl, {type: saveType});
+            const shareModule = getShareModule();
+            if (shareModule?.default?.open) {
+                await shareModule.default.open({
+                    urls: [fileUrl],
+                    type: fileUrl.toLowerCase().includes('.mp4') ? 'video/mp4' : 'image/jpeg',
+                    filename: mediaId ? `allin_${mediaId}` : `allin_${Date.now()}`,
+                    failOnCancel: false,
+                    showAppsToView: true,
+                });
             } else {
-                await CameraRoll.save(fileUrl, {type: saveType});
+                await Share.share({url: fileUrl, message: 'AllIn media'});
             }
-            Alert.alert('Saved', 'Media saved to Photos.');
         } catch (err: any) {
             const msg = String(err?.message ?? err);
-            Alert.alert('Save failed', msg, [
-                {text: 'Cancel', style: 'cancel'},
-                {text: 'Open Settings', onPress: () => Linking.openSettings()},
-            ]);
+            Alert.alert('Download failed', msg);
+        } finally {
+            setDownloadVisible(false);
+            setDownloadProgress(null);
+            downloadInFlightRef.current = false;
         }
-    }, [apiAccessToken, ensureLocalFile, eventId, extensionFromUrl, mediaId, requestPhotoPermission, resolveDownloadUrl]);
+    }, [apiAccessToken, ensureLocalFile, eventId, extensionFromUrl, getShareModule, mediaId, resolveDownloadUrl]);
 
     const handleShareNative = useCallback(async () => {
         const shareUrl = await resolveShareUrl();
@@ -641,6 +685,11 @@ const PhotoDetailScreen = ({navigation, route}: any) => {
                 <View style={[Styles.photoContainer, isVideo && Styles.photoContainerFull]}>
                     {isVideo && activeVideoUrl ? (
                         <>
+                            {isVideoLoading && (
+                                <View style={Styles.videoSkeleton}>
+                                    <ShimmerEffect width="100%" height="100%" borderRadius={0} />
+                                </View>
+                            )}
                             <Video
                                 ref={videoRef}
                                 key={activeVideoUrl}
@@ -653,15 +702,28 @@ const PhotoDetailScreen = ({navigation, route}: any) => {
                                 resizeMode="cover"
                                 paused={!isPlaying}
                                 controls={false}
-                                poster={posterUrl ?? undefined}
-                                posterResizeMode="cover"
+                                onLoadStart={() => setIsVideoLoading(true)}
                                 onLoad={(meta) => {
                                     setDuration(meta.duration || 0);
                                     setVideoError(null);
+                                    if (!hasSeekedRef.current && Number.isFinite(startAt) && startAt > 0) {
+                                        const seekToTime = Math.min(startAt, meta.duration || startAt);
+                                        hasSeekedRef.current = true;
+                                        videoRef.current?.seek(seekToTime);
+                                        setCurrentTime(seekToTime);
+                                        setHasInitialTime(true);
+                                    } else {
+                                        setHasInitialTime(false);
+                                    }
+                                    setIsVideoLoading(false);
                                 }}
                                 onProgress={(progress) => {
+                                    const nextTime = progress.currentTime || 0;
+                                    if (!hasInitialTime && nextTime > 0) {
+                                        setHasInitialTime(true);
+                                    }
                                     if (!isSeeking) {
-                                        setCurrentTime(progress.currentTime || 0);
+                                        setCurrentTime(nextTime);
                                     }
                                 }}
                                 onEnd={() => {
@@ -675,6 +737,7 @@ const PhotoDetailScreen = ({navigation, route}: any) => {
                                     setIsPlaying(false);
                                     setDuration(0);
                                     setIsSeeking(false);
+                                    setIsVideoLoading(false);
                                     if (videoSourceIndex + 1 < videoCandidates.length) {
                                         setVideoSourceIndex((prev) => Math.min(prev + 1, videoCandidates.length - 1));
                                         setVideoError(null);
@@ -683,50 +746,54 @@ const PhotoDetailScreen = ({navigation, route}: any) => {
                                 }}
                                 repeat={false}
                             />
-                            <TouchableOpacity
-                                style={Styles.videoTapOverlay}
-                                activeOpacity={1}
-                                onPress={togglePlayback}
-                            >
-                                {!isPlaying && (
-                                    <View style={Styles.videoPlayBadge}>
-                                        <Icons.PlayWhite height={26} width={26} />
+                            {!isVideoLoading && hasInitialTime && (
+                                <>
+                                    <TouchableOpacity
+                                        style={Styles.videoTapOverlay}
+                                        activeOpacity={1}
+                                        onPress={togglePlayback}
+                                    >
+                                        {!isPlaying && (
+                                            <View style={Styles.videoPlayBadge}>
+                                                <Icons.PlayCricle height={36} width={36} />
+                                            </View>
+                                        )}
+                                    </TouchableOpacity>
+                                    <View
+                                        style={[Styles.videoControlsOverlay, {paddingBottom: 16 + insets.bottom}]}
+                                        pointerEvents="box-none"
+                                    >
+                                        {isSeeking && (
+                                            <View style={Styles.videoTimeRow}>
+                                                <Text style={Styles.videoTimeText}>
+                                                    {formatTime(currentTime)} / {formatTime(duration)}
+                                                </Text>
+                                            </View>
+                                        )}
+                                        <View style={Styles.videoScrubberWrap} pointerEvents="auto">
+                                            <Slider
+                                                style={Styles.videoScrubber}
+                                                minimumValue={0}
+                                                maximumValue={sliderMax}
+                                                value={Math.min(currentTime, sliderMax)}
+                                                minimumTrackTintColor={colors.primaryColor}
+                                                maximumTrackTintColor="rgba(255,255,255,0.4)"
+                                                thumbTintColor={colors.primaryColor}
+                                                disabled={!duration}
+                                                onSlidingStart={() => setIsSeeking(true)}
+                                                onValueChange={(value) => setCurrentTime(value)}
+                                                onSlidingComplete={(value) => {
+                                                    setIsSeeking(false);
+                                                    handleSeekComplete(value);
+                                                }}
+                                            />
+                                        </View>
+                                        {videoError && (
+                                            <Text style={Styles.videoErrorText}>{videoError}</Text>
+                                        )}
                                     </View>
-                                )}
-                            </TouchableOpacity>
-                            <View
-                                style={[Styles.videoControlsOverlay, {paddingBottom: 16 + insets.bottom}]}
-                                pointerEvents="box-none"
-                            >
-                                {isSeeking && (
-                                    <View style={Styles.videoTimeRow}>
-                                        <Text style={Styles.videoTimeText}>
-                                            {formatTime(currentTime)} / {formatTime(duration)}
-                                        </Text>
-                                    </View>
-                                )}
-                                <View style={Styles.videoScrubberWrap} pointerEvents="auto">
-                                    <Slider
-                                        style={Styles.videoScrubber}
-                                        minimumValue={0}
-                                        maximumValue={sliderMax}
-                                        value={Math.min(currentTime, sliderMax)}
-                                        minimumTrackTintColor={colors.primaryColor}
-                                        maximumTrackTintColor="rgba(255,255,255,0.4)"
-                                        thumbTintColor={colors.primaryColor}
-                                        disabled={!duration}
-                                        onSlidingStart={() => setIsSeeking(true)}
-                                        onValueChange={(value) => setCurrentTime(value)}
-                                        onSlidingComplete={(value) => {
-                                            setIsSeeking(false);
-                                            handleSeekComplete(value);
-                                        }}
-                                    />
-                                </View>
-                                {videoError && (
-                                    <Text style={Styles.videoErrorText}>{videoError}</Text>
-                                )}
-                            </View>
+                                </>
+                            )}
                         </>
                     ) : bestImageUrl ? (
                         <FastImage
@@ -766,6 +833,26 @@ const PhotoDetailScreen = ({navigation, route}: any) => {
 
                 </View>
             </View>
+
+            {downloadVisible && (
+                <View style={Styles.downloadOverlay} pointerEvents="auto">
+                    <View style={Styles.downloadCard}>
+                        <Text style={Styles.downloadTitle}>Preparing download</Text>
+                        {downloadProgress == null ? (
+                            <ActivityIndicator color={colors.primaryColor} />
+                        ) : (
+                            <>
+                                <View style={Styles.downloadProgressTrack}>
+                                    <View style={[Styles.downloadProgressFill, { width: `${Math.round(downloadProgress * 100)}%` }]} />
+                                </View>
+                                <Text style={Styles.downloadProgressLabel}>
+                                    {Math.round(downloadProgress * 100)}%
+                                </Text>
+                            </>
+                        )}
+                    </View>
+                </View>
+            )}
         </View>
     );
 };

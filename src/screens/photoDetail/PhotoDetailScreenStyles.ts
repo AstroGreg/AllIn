@@ -107,6 +107,11 @@ export const createStyles = (colors: ThemeColors) => StyleSheet.create({
         width: '100%',
         height: '100%',
     },
+    videoSkeleton: {
+        ...StyleSheet.absoluteFillObject,
+        backgroundColor: colors.cardBackground,
+        zIndex: 2,
+    },
     videoControlsOverlay: {
         position: 'absolute',
         left: 0,
@@ -118,6 +123,42 @@ export const createStyles = (colors: ThemeColors) => StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'space-between',
         flexWrap: 'wrap',
+    },
+    downloadOverlay: {
+        ...StyleSheet.absoluteFillObject,
+        backgroundColor: 'rgba(0,0,0,0.35)',
+        justifyContent: 'center',
+        alignItems: 'center',
+        zIndex: 20,
+    },
+    downloadCard: {
+        width: '78%',
+        backgroundColor: colors.pureWhite,
+        borderRadius: 18,
+        paddingHorizontal: 20,
+        paddingVertical: 18,
+        alignItems: 'center',
+        gap: 12,
+    },
+    downloadTitle: {
+        ...Fonts.semibold16,
+        color: colors.mainTextColor,
+    },
+    downloadProgressTrack: {
+        width: '100%',
+        height: 8,
+        borderRadius: 8,
+        backgroundColor: '#E5E7EB',
+        overflow: 'hidden',
+    },
+    downloadProgressFill: {
+        height: '100%',
+        backgroundColor: colors.primaryColor,
+        borderRadius: 8,
+    },
+    downloadProgressLabel: {
+        ...Fonts.regular12,
+        color: colors.textSecondary,
     },
     videoTimeRow: {
         paddingHorizontal: 10,
@@ -148,7 +189,7 @@ export const createStyles = (colors: ThemeColors) => StyleSheet.create({
         width: 72,
         height: 72,
         borderRadius: 36,
-        backgroundColor: 'rgba(0,0,0,0.45)',
+        backgroundColor: 'rgba(0,0,0,0.25)',
         alignItems: 'center',
         justifyContent: 'center',
     },

@@ -17,6 +17,10 @@ export const createStyles = (colors: ThemeColors) => StyleSheet.create({
         borderBottomWidth: 0.3,
         borderBottomColor: colors.lightGrayColor,
     },
+    headerSpacer: {
+        width: 44,
+        height: 44,
+    },
     headerButton: {
         width: 44,
         height: 44,
@@ -50,6 +54,17 @@ export const createStyles = (colors: ThemeColors) => StyleSheet.create({
         paddingHorizontal: 16,
         height: 54,
     },
+    searchInputPill: {
+        backgroundColor: colors.secondaryBlueColor,
+        paddingHorizontal: 10,
+        paddingVertical: 6,
+        borderRadius: 8,
+        marginRight: 8,
+    },
+    searchInputPillText: {
+        ...Fonts.medium12,
+        color: colors.primaryColor,
+    },
     searchInput: {
         flex: 1,
         ...Fonts.regular14,
@@ -69,6 +84,9 @@ export const createStyles = (colors: ThemeColors) => StyleSheet.create({
         borderRadius: 10,
         alignItems: 'center',
         justifyContent: 'center',
+        borderWidth: 1,
+        borderColor: colors.lightGrayColor,
+        backgroundColor: colors.cardBackground,
     },
 
     // Filter Tabs
@@ -96,6 +114,37 @@ export const createStyles = (colors: ThemeColors) => StyleSheet.create({
     filterTabTextActive: {
         color: colors.pureWhite,
     },
+    typeFilterRow: {
+        gap: 8,
+    },
+    typeFilterLabel: {
+        ...Fonts.regular12,
+        color: colors.subTextColor,
+    },
+    typeFilterChips: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        gap: 8,
+    },
+    typeFilterChip: {
+        paddingHorizontal: 12,
+        paddingVertical: 6,
+        borderRadius: 6,
+        borderWidth: 0.5,
+        borderColor: colors.lightGrayColor,
+        backgroundColor: colors.whiteColor,
+    },
+    typeFilterChipActive: {
+        backgroundColor: colors.primaryColor,
+        borderColor: colors.primaryColor,
+    },
+    typeFilterChipText: {
+        ...Fonts.regular12,
+        color: colors.subTextColor,
+    },
+    typeFilterChipTextActive: {
+        color: colors.pureWhite,
+    },
 
     // Active Filter Chips
     activeChipsContainer: {
@@ -111,6 +160,7 @@ export const createStyles = (colors: ThemeColors) => StyleSheet.create({
         paddingVertical: 6,
         borderRadius: 6,
         height: 32,
+        gap: 6,
     },
     activeChipText: {
         ...Fonts.regular12,
@@ -128,9 +178,24 @@ export const createStyles = (colors: ThemeColors) => StyleSheet.create({
         borderRadius: 6,
         height: 32,
     },
+    timeRangeChipActive: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: colors.secondaryBlueColor,
+        borderWidth: 0.5,
+        borderColor: colors.primaryColor,
+        paddingHorizontal: 10,
+        paddingVertical: 6,
+        borderRadius: 6,
+        gap: 6,
+    },
     timeRangeText: {
         ...Fonts.regular12,
         color: colors.subTextColor,
+    },
+    timeRangeTextActive: {
+        ...Fonts.regular12,
+        color: colors.primaryColor,
     },
 
     // Results Header
@@ -185,6 +250,17 @@ export const createStyles = (colors: ThemeColors) => StyleSheet.create({
         ...Fonts.medium14,
         color: colors.mainTextColor,
         flex: 1,
+    },
+    eventTypeBadge: {
+        backgroundColor: colors.btnBackgroundColor,
+        paddingHorizontal: 10,
+        paddingVertical: 4,
+        borderRadius: 6,
+        marginLeft: 8,
+    },
+    eventTypeBadgeText: {
+        ...Fonts.regular12,
+        color: colors.subTextColor,
     },
     competitionBadge: {
         backgroundColor: colors.btnBackgroundColor,
@@ -281,6 +357,68 @@ export const createStyles = (colors: ThemeColors) => StyleSheet.create({
     followBtnText: {
         ...Fonts.regular14,
         color: colors.pureWhite,
+    },
+    sectionTitle: {
+        ...Fonts.medium16,
+        color: colors.mainTextColor,
+    },
+
+    // Date/Time Modal
+    dateModalContainer: {
+        width: '90%',
+        backgroundColor: colors.modalBackground,
+        borderRadius: 16,
+        padding: 20,
+        maxHeight: '85%',
+    },
+    dateModalTitle: {
+        ...Fonts.medium16,
+        color: colors.mainTextColor,
+        textAlign: 'center',
+    },
+    rangeHeaderRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        gap: 10,
+    },
+    quickRangeRow: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        gap: 8,
+    },
+    quickRangeChip: {
+        paddingHorizontal: 12,
+        paddingVertical: 6,
+        borderRadius: 999,
+        borderWidth: 0.5,
+        borderColor: colors.lightGrayColor,
+        backgroundColor: colors.secondaryColor,
+    },
+    quickRangeChipText: {
+        ...Fonts.regular12,
+        color: colors.mainTextColor,
+    },
+    rangePill: {
+        flex: 1,
+        backgroundColor: colors.secondaryColor,
+        borderRadius: 10,
+        paddingHorizontal: 12,
+        paddingVertical: 8,
+        borderWidth: 0.5,
+        borderColor: colors.lightGrayColor,
+    },
+    rangePillLabel: {
+        ...Fonts.regular12,
+        color: colors.subTextColor,
+    },
+    rangePillValue: {
+        ...Fonts.medium14,
+        color: colors.mainTextColor,
+        marginTop: 2,
+    },
+    calendarContainer: {
+        height: 320,
+        alignSelf: 'center',
     },
 
     // Legacy styles (kept for compatibility)

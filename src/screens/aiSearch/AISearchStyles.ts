@@ -64,6 +64,38 @@ export const createStyles = (colors: ThemeColors) => StyleSheet.create({
         paddingTop: 32,
         gap: 16,
     },
+    searchByLabel: {
+        ...Fonts.semibold12,
+        color: colors.subTextColor,
+    },
+    optionsRow: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        gap: 10,
+    },
+    optionButton: {
+        paddingHorizontal: 14,
+        paddingVertical: 10,
+        borderRadius: 12,
+        borderWidth: 1,
+        borderColor: colors.lightGrayColor,
+        backgroundColor: colors.cardBackground,
+        minWidth: 120,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    optionButtonActive: {
+        borderColor: colors.primaryColor,
+        backgroundColor: colors.secondaryBlueColor,
+    },
+    optionButtonText: {
+        ...Fonts.medium14,
+        fontSize: 13,
+        color: colors.mainTextColor,
+    },
+    optionButtonTextActive: {
+        color: colors.primaryColor,
+    },
 
     // Search Option Card
     searchOptionCard: {
@@ -241,6 +273,7 @@ export const createStyles = (colors: ThemeColors) => StyleSheet.create({
         shadowOpacity: 0.5,
         shadowRadius: 15,
         elevation: 8,
+        backgroundColor: colors.primaryColor,
     },
     subscribeButtonText: {
         ...Fonts.bold16,
