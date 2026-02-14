@@ -8,13 +8,17 @@ import {
     TickSquare,
     User,
 } from 'iconsax-react-nativejs';
-import Styles from './AddToEventScreenStyles';
+import { createStyles } from './AddToEventScreenStyles';
 import SizeBox from '../../constants/SizeBox';
-import Colors from '../../constants/Colors';
 import Icons from '../../constants/Icons';
+import { useTheme } from '../../context/ThemeContext';
+import { useTranslation } from 'react-i18next';
 
 const AddToEventScreen = ({ navigation, route }: any) => {
     const insets = useSafeAreaInsets();
+    const { colors } = useTheme();
+    const { t } = useTranslation();
+    const styles = createStyles(colors);
     const [chestNumber, setChestNumber] = useState('');
     const [selectedEvents, setSelectedEvents] = useState<string[]>(['100m', '200m']);
     const [showEventPicker, setShowEventPicker] = useState(false);
@@ -56,93 +60,93 @@ const AddToEventScreen = ({ navigation, route }: any) => {
     };
 
     return (
-        <View style={Styles.mainContainer}>
+        <View style={styles.mainContainer}>
             <SizeBox height={insets.top} />
 
             {/* Header */}
-            <View style={Styles.header}>
-                <TouchableOpacity style={Styles.backButton} onPress={() => navigation.goBack()}>
-                    <ArrowLeft2 size={24} color={Colors.mainTextColor} variant="Linear" />
+            <View style={styles.header}>
+                <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
+                    <ArrowLeft2 size={24} color={colors.mainTextColor} variant="Linear" />
                 </TouchableOpacity>
-                <Text style={Styles.headerTitle}>Subscribe</Text>
+                <Text style={styles.headerTitle}>{t('Subscribe')}</Text>
                 <TouchableOpacity
-                    style={Styles.notificationButton}
+                    style={styles.notificationButton}
                     onPress={() => navigation.navigate('NotificationsScreen')}
                 >
                     <Icons.NotificationBoldBlue height={24} width={24} />
                 </TouchableOpacity>
             </View>
 
-            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={Styles.scrollContent}>
+            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
                 {/* Event Details Section */}
-                <Text style={Styles.sectionTitle}>Event Details</Text>
+                <Text style={styles.sectionTitle}>{t('Event Details')}</Text>
                 <SizeBox height={16} />
 
-                <View style={Styles.eventDetailsCard}>
-                    <View style={Styles.detailRow}>
-                        <Text style={Styles.detailLabel}>Event Name</Text>
-                        <Text style={Styles.detailValue}>{eventData.title}</Text>
+                <View style={styles.eventDetailsCard}>
+                    <View style={styles.detailRow}>
+                        <Text style={styles.detailLabel}>{t('Event Name')}</Text>
+                        <Text style={styles.detailValue}>{eventData.title}</Text>
                     </View>
-                    <View style={Styles.divider} />
-                    <View style={Styles.detailRow}>
-                        <Text style={Styles.detailLabel}>Date</Text>
-                        <Text style={Styles.detailValue}>{eventData.date}</Text>
+                    <View style={styles.divider} />
+                    <View style={styles.detailRow}>
+                        <Text style={styles.detailLabel}>{t('Date')}</Text>
+                        <Text style={styles.detailValue}>{eventData.date}</Text>
                     </View>
-                    <View style={Styles.divider} />
-                    <View style={Styles.detailRow}>
-                        <Text style={Styles.detailLabel}>Location</Text>
-                        <Text style={Styles.detailValue}>{eventData.location}</Text>
+                    <View style={styles.divider} />
+                    <View style={styles.detailRow}>
+                        <Text style={styles.detailLabel}>{t('Location')}</Text>
+                        <Text style={styles.detailValue}>{eventData.location}</Text>
                     </View>
                 </View>
 
                 <SizeBox height={40} />
 
                 {/* Events Selection */}
-                <Text style={Styles.descriptionText}>
-                    Select the event types you participated in.
+                <Text style={styles.descriptionText}>
+                    {t('Select the event types you participated in.')}
                 </Text>
                 <SizeBox height={12} />
 
-                <Text style={Styles.inputLabel}>Events</Text>
+                <Text style={styles.inputLabel}>{t('Events')}</Text>
                 <SizeBox height={8} />
 
-                <View style={Styles.eventsInputContainer}>
-                    <View style={Styles.eventChipsContainer}>
+                <View style={styles.eventsInputContainer}>
+                    <View style={styles.eventChipsContainer}>
                         {selectedEvents.map((event, index) => (
                             <TouchableOpacity
                                 key={`${event}-${index}`}
-                                style={Styles.eventChip}
+                                style={styles.eventChip}
                                 onPress={() => removeEvent(event)}
                                 activeOpacity={0.8}
                             >
-                                <Text style={Styles.eventChipText}>{event}</Text>
-                                <CloseCircle size={14} color={Colors.grayColor} variant="Linear" />
+                                <Text style={styles.eventChipText}>{event}</Text>
+                                <CloseCircle size={14} color={colors.grayColor} variant="Linear" />
                             </TouchableOpacity>
                         ))}
                     </View>
                     <TouchableOpacity
-                        style={Styles.addEventIconButton}
+                        style={styles.addEventIconButton}
                         onPress={() => setShowEventPicker((prev) => !prev)}
                         activeOpacity={0.8}
                     >
-                        <AddSquare size={20} color={Colors.primaryColor} variant="Linear" />
+                        <AddSquare size={20} color={colors.primaryColor} variant="Linear" />
                     </TouchableOpacity>
                 </View>
 
                 {showEventPicker && (
-                    <View style={Styles.eventPicker}>
-                        <Text style={Styles.eventPickerTitle}>Select disciplines</Text>
-                        <View style={Styles.eventPickerGrid}>
+                    <View style={styles.eventPicker}>
+                        <Text style={styles.eventPickerTitle}>{t('Select disciplines')}</Text>
+                        <View style={styles.eventPickerGrid}>
                             {suggestedEvents.map((item) => {
                                 const isSelected = selectedEvents.includes(item);
                                 return (
                                     <TouchableOpacity
                                         key={item}
-                                        style={[Styles.suggestionChip, isSelected && Styles.suggestionChipActive]}
+                                        style={[styles.suggestionChip, isSelected && styles.suggestionChipActive]}
                                         onPress={() => addEvent(item)}
                                         activeOpacity={0.8}
                                     >
-                                        <Text style={[Styles.suggestionText, isSelected && Styles.suggestionTextActive]}>
+                                        <Text style={[styles.suggestionText, isSelected && styles.suggestionTextActive]}>
                                             {item}
                                         </Text>
                                     </TouchableOpacity>
@@ -155,38 +159,40 @@ const AddToEventScreen = ({ navigation, route }: any) => {
                 <SizeBox height={16} />
 
                 {/* Chest Number Input */}
-                <Text style={Styles.inputLabelBold}>Chest Number</Text>
+                <Text style={styles.inputLabelBold}>{t('Chest Number')}</Text>
                 <SizeBox height={8} />
 
-                <View style={Styles.chestNumberInput}>
-                    <User size={16} color="#9B9F9F" variant="Linear" />
+                <View style={styles.chestNumberInput}>
+                    <User size={16} color={colors.subTextColor} variant="Linear" />
                     <TextInput
-                        style={Styles.textInput}
-                        placeholder="Enter Chest Number"
-                        placeholderTextColor="#777777"
+                        style={styles.textInput}
+                        placeholder={t('Enter Chest Number')}
+                        placeholderTextColor={colors.grayColor}
                         value={chestNumber}
                         onChangeText={setChestNumber}
                         editable={!useDefaultChest}
                     />
                 </View>
                 <TouchableOpacity
-                    style={Styles.defaultChestRow}
+                    style={styles.defaultChestRow}
                     onPress={() => setUseDefaultChest((prev) => !prev)}
                     activeOpacity={0.8}
                 >
-                    <View style={[Styles.defaultChestBox, useDefaultChest && Styles.defaultChestBoxActive]}>
-                        {useDefaultChest && <TickSquare size={14} color={Colors.whiteColor} variant="Bold" />}
+                    <View style={[styles.defaultChestBox, useDefaultChest && styles.defaultChestBoxActive]}>
+                        {useDefaultChest && <TickSquare size={14} color={colors.pureWhite} variant="Bold" />}
                     </View>
-                    <Text style={Styles.defaultChestText}>Use default number ({defaultChestNumber})</Text>
+                    <Text style={styles.defaultChestText}>
+                        {t('Use default number')} ({defaultChestNumber})
+                    </Text>
                 </TouchableOpacity>
 
                 <SizeBox height={40} />
             </ScrollView>
 
             {/* Confirm Button */}
-            <View style={Styles.bottomContainer}>
-                <TouchableOpacity style={Styles.confirmButton} onPress={handleConfirm}>
-                    <Text style={Styles.confirmButtonText}>Continue</Text>
+            <View style={styles.bottomContainer}>
+                <TouchableOpacity style={styles.confirmButton} onPress={handleConfirm}>
+                    <Text style={styles.confirmButtonText}>{t('Continue')}</Text>
                 </TouchableOpacity>
                 <SizeBox height={insets.bottom > 0 ? insets.bottom : 20} />
             </View>

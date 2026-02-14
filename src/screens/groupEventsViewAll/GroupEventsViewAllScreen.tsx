@@ -4,13 +4,17 @@ import SizeBox from '../../constants/SizeBox';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import FastImage from 'react-native-fast-image';
 import Images from '../../constants/Images';
-import Colors from '../../constants/Colors';
-import Styles from './GroupEventsViewAllStyles';
+import { createStyles } from './GroupEventsViewAllStyles';
 import { ArrowLeft2, SearchNormal1, Setting4, Location, Calendar, Add, CloseCircle, ArrowRight } from 'iconsax-react-nativejs';
 import Icons from '../../constants/Icons';
+import { useTheme } from '../../context/ThemeContext';
+import { useTranslation } from 'react-i18next';
 
 const GroupEventsViewAllScreen = ({ navigation }: any) => {
     const insets = useSafeAreaInsets();
+    const { colors } = useTheme();
+    const Styles = createStyles(colors);
+    const { t } = useTranslation();
     const [searchText, setSearchText] = useState('');
     const [joinModalVisible, setJoinModalVisible] = useState(false);
     const [joinOption, setJoinOption] = useState<'myself' | 'team'>('team');
@@ -54,7 +58,7 @@ const GroupEventsViewAllScreen = ({ navigation }: any) => {
 
                         {/* Distance Row */}
                         <View style={Styles.eventDetailRow}>
-                            <Text style={Styles.eventDetailLabel}>Distance</Text>
+                        <Text style={Styles.eventDetailLabel}>{t('Distance')}</Text>
                             <View style={Styles.eventDetailValueRow}>
                                 <Icons.Map width={16} height={16} />
                                 <Text style={Styles.eventDetailValue}>{event.distance}</Text>
@@ -63,28 +67,28 @@ const GroupEventsViewAllScreen = ({ navigation }: any) => {
 
                         {/* Location Row */}
                         <View style={Styles.eventDetailRow}>
-                            <Text style={Styles.eventDetailLabel}>Location</Text>
-                            <View style={Styles.eventDetailValueRow}>
-                                <Location size={16} color="#9B9F9F" variant="Linear" />
-                                <Text style={Styles.eventDetailValue}>{event.location}</Text>
-                            </View>
+                        <Text style={Styles.eventDetailLabel}>{t('Location')}</Text>
+                        <View style={Styles.eventDetailValueRow}>
+                            <Location size={16} color={colors.subTextColor} variant="Linear" />
+                            <Text style={Styles.eventDetailValue}>{event.location}</Text>
+                        </View>
                         </View>
 
                         {/* Date Row */}
                         <View style={Styles.eventDetailRow}>
-                            <Text style={Styles.eventDetailLabel}>Date</Text>
-                            <View style={Styles.eventDetailValueRow}>
-                                <Calendar size={16} color="#9B9F9F" variant="Linear" />
-                                <Text style={Styles.eventDetailValue}>{event.date}</Text>
-                            </View>
+                        <Text style={Styles.eventDetailLabel}>{t('Date')}</Text>
+                        <View style={Styles.eventDetailValueRow}>
+                            <Calendar size={16} color={colors.subTextColor} variant="Linear" />
+                            <Text style={Styles.eventDetailValue}>{event.date}</Text>
+                        </View>
                         </View>
                     </View>
                 </View>
 
                 {/* Add Button */}
                 <TouchableOpacity style={Styles.addButton} onPress={(e) => { e.stopPropagation(); setJoinModalVisible(true); }}>
-                    <Text style={Styles.addButtonText}>Add</Text>
-                    <Add size={18} color={Colors.whiteColor} variant="Linear" />
+                    <Text style={Styles.addButtonText}>{t('Add')}</Text>
+                    <Add size={18} color={colors.pureWhite} variant="Linear" />
                 </TouchableOpacity>
             </View>
         </TouchableOpacity>
@@ -97,9 +101,9 @@ const GroupEventsViewAllScreen = ({ navigation }: any) => {
             {/* Header */}
             <View style={Styles.header}>
                 <TouchableOpacity style={Styles.headerButton} onPress={() => navigation.goBack()}>
-                    <ArrowLeft2 size={24} color={Colors.primaryColor} variant="Linear" />
+                    <ArrowLeft2 size={24} color={colors.primaryColor} variant="Linear" />
                 </TouchableOpacity>
-                <Text style={Styles.headerTitle}>Events</Text>
+                <Text style={Styles.headerTitle}>{t('Events')}</Text>
                 <View style={Styles.headerButtonPlaceholder} />
             </View>
 
@@ -110,22 +114,22 @@ const GroupEventsViewAllScreen = ({ navigation }: any) => {
                         <SearchNormal1 size={20} color="#9B9F9F" variant="Linear" />
                         <TextInput
                             style={Styles.searchInput}
-                            placeholder="Search......."
-                            placeholderTextColor="#9B9F9F"
+                            placeholder={t('Search...')}
+                            placeholderTextColor={colors.subTextColor}
                             value={searchText}
                             onChangeText={setSearchText}
                         />
                     </View>
                     <TouchableOpacity style={Styles.filterButton}>
-                        <Setting4 size={24} color={Colors.whiteColor} variant="Linear" />
+                        <Setting4 size={24} color={colors.pureWhite} variant="Linear" />
                     </TouchableOpacity>
                 </View>
 
                 {/* Section Header */}
                 <View style={Styles.sectionHeader}>
-                    <Text style={Styles.sectionTitle}>Events</Text>
+                    <Text style={Styles.sectionTitle}>{t('Events')}</Text>
                     <TouchableOpacity style={Styles.viewAllButton}>
-                        <Text style={Styles.viewAllText}>View All</Text>
+                        <Text style={Styles.viewAllText}>{t('View all')}</Text>
                         <Icons.RightBtnIcon width={18} height={18} />
                     </TouchableOpacity>
                 </View>
@@ -155,13 +159,13 @@ const GroupEventsViewAllScreen = ({ navigation }: any) => {
                                 setSelectedMembers([]);
                             }}
                         >
-                            <CloseCircle size={24} color="#9B9F9F" variant="Linear" />
+                            <CloseCircle size={24} color={colors.subTextColor} variant="Linear" />
                         </TouchableOpacity>
 
                         {/* Title */}
-                        <Text style={Styles.joinModalTitle}>Want to Join the Team?</Text>
+                        <Text style={Styles.joinModalTitle}>{t('Want to join the team?')}</Text>
                         <Text style={Styles.joinModalSubtitle}>
-                            Add yourself and become a part of our creative journey.
+                            {t('Add yourself and become a part of our creative journey.')}
                         </Text>
 
                         {/* Options */}
@@ -177,7 +181,7 @@ const GroupEventsViewAllScreen = ({ navigation }: any) => {
                                 <Text style={[
                                     Styles.joinModalOptionText,
                                     joinOption === 'myself' && Styles.joinModalOptionTextSelected
-                                ]}>Add Myself</Text>
+                                ]}>{t('Add myself')}</Text>
                                 <View style={[
                                     Styles.joinModalRadio,
                                     joinOption === 'myself' && Styles.joinModalRadioSelected
@@ -197,7 +201,7 @@ const GroupEventsViewAllScreen = ({ navigation }: any) => {
                                 <Text style={[
                                     Styles.joinModalOptionText,
                                     joinOption === 'team' && Styles.joinModalOptionTextSelected
-                                ]}>Add Team</Text>
+                                ]}>{t('Add team')}</Text>
                                 <View style={[
                                     Styles.joinModalRadio,
                                     joinOption === 'team' && Styles.joinModalRadioSelected
@@ -210,7 +214,7 @@ const GroupEventsViewAllScreen = ({ navigation }: any) => {
                         {/* Team Members Selection (shown when Add Team is selected) */}
                         {joinOption === 'team' && (
                             <View style={Styles.joinModalMembersSection}>
-                                <Text style={Styles.joinModalMembersTitle}>Select participants for the event</Text>
+                        <Text style={Styles.joinModalMembersTitle}>{t('Select participants for the event')}</Text>
 
                                 {teamMembers.map((member) => (
                                     <TouchableOpacity
@@ -239,8 +243,8 @@ const GroupEventsViewAllScreen = ({ navigation }: any) => {
                                 navigation.navigate('CongratulationsScreen');
                             }}
                         >
-                            <Text style={Styles.joinModalConfirmButtonText}>Confirm Selection</Text>
-                            <ArrowRight size={20} color={Colors.whiteColor} variant="Linear" />
+                            <Text style={Styles.joinModalConfirmButtonText}>{t('Confirm selection')}</Text>
+                            <ArrowRight size={20} color={colors.pureWhite} variant="Linear" />
                         </TouchableOpacity>
                     </View>
                 </View>

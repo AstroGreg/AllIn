@@ -5,6 +5,7 @@ import RootStackNavigation from './src/navigations/RootStackNavigation'
 import { ThemeProvider, useTheme } from './src/context/ThemeContext'
 import { AuthProvider } from './src/context/AuthContext'
 import { EventsProvider } from './src/context/EventsContext'
+import './src/i18n'
 
 const AppNavigation = () => {
   const { colors, isDark } = useTheme();

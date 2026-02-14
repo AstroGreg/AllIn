@@ -1,12 +1,14 @@
 import { View, Text, FlatList, TouchableOpacity, Image } from 'react-native'
 import React, { useMemo, useEffect, useState, useCallback } from 'react'
 import SizeBox from '../../../constants/SizeBox'
-import Styles from '../SearchStyles';
+import { createStyles } from '../SearchStyles';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import CustomHeader from '../../../components/customHeader/CustomHeader';
 import { useAuth } from '../../../context/AuthContext';
 import { getMediaById } from '../../../services/apiGateway';
 import { getApiBaseUrl } from '../../../constants/RuntimeConfig';
+import { useTheme } from '../../../context/ThemeContext';
+import { useTranslation } from 'react-i18next';
 
 const AllPhotosOfEvents = ({ navigation, route }: any) => {
     const insets = useSafeAreaInsets();
@@ -14,6 +16,9 @@ const AllPhotosOfEvents = ({ navigation, route }: any) => {
     const division = route?.params?.division;
     const gender = route?.params?.gender;
     const { apiAccessToken } = useAuth();
+    const { colors } = useTheme();
+    const { t } = useTranslation();
+    const styles = createStyles(colors);
     const photoIds = useMemo(
         () => [
             '87873d40-addf-4289-aa82-7cd300acdd94',
@@ -120,9 +125,9 @@ const AllPhotosOfEvents = ({ navigation, route }: any) => {
     );
 
     return (
-        <View style={Styles.mainContainer}>
+        <View style={styles.mainContainer}>
             <SizeBox height={insets.top} />
-            <CustomHeader title='All Photograph' onBackPress={() => navigation.goBack()} />
+            <CustomHeader title={t('All Photograph')} onBackPress={() => navigation.goBack()} />
 
             <FlatList
                 data={data}
@@ -134,9 +139,9 @@ const AllPhotosOfEvents = ({ navigation, route }: any) => {
                             marginBottom: 16,
                             borderRadius: 14,
                             overflow: 'hidden',
-                            backgroundColor: '#FFFFFF',
+                            backgroundColor: colors.cardBackground,
                             borderWidth: 1,
-                            borderColor: '#E8ECF2',
+                            borderColor: colors.borderColor,
                         }}
                         onPress={() => navigation.navigate('PhotoDetailScreen', {
                             eventTitle: eventName,
@@ -158,17 +163,17 @@ const AllPhotosOfEvents = ({ navigation, route }: any) => {
                                 resizeMode="cover"
                             />
                         ) : (
-                            <View style={{ width: '100%', height: 180, backgroundColor: '#F2F4F7' }} />
+                            <View style={{ width: '100%', height: 180, backgroundColor: colors.secondaryColor }} />
                         )}
                         <View style={{ paddingHorizontal: 14, paddingVertical: 12 }}>
-                            <Text style={[Styles.titleText, { fontSize: 16 }]} numberOfLines={1}>{eventName}</Text>
+                            <Text style={[styles.titleText, { fontSize: 16 }]} numberOfLines={1}>{eventName}</Text>
                             <SizeBox height={6} />
-                            <Text style={Styles.subText} numberOfLines={1}>
+                            <Text style={styles.subText} numberOfLines={1}>
                                 {item.name} • {item.price}
                             </Text>
                             <SizeBox height={4} />
-                            <Text style={Styles.subText} numberOfLines={1}>
-                                Uploaded {formatDate(item.uploadedAt)}
+                            <Text style={styles.subText} numberOfLines={1}>
+                                {t('Uploaded')} {formatDate(item.uploadedAt)}
                             </Text>
                         </View>
                     </TouchableOpacity>
@@ -181,11 +186,11 @@ const AllPhotosOfEvents = ({ navigation, route }: any) => {
                 }}
                 ListHeaderComponent={
                     <View style={{ marginLeft: 20 }}>
-                        <Text style={Styles.titleText}>{eventName}</Text>
+                        <Text style={styles.titleText}>{eventName}</Text>
                         {(division || gender) && (
                             <>
                                 <SizeBox height={6} />
-                                <Text style={Styles.filterText}>{[division, gender].filter(Boolean).join(' • ')}</Text>
+                                <Text style={styles.filterText}>{[division, gender].filter(Boolean).join(' • ')}</Text>
                             </>
                         )}
                         <SizeBox height={16} />

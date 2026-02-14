@@ -1,9 +1,9 @@
 import { View, Text, StyleSheet } from 'react-native'
 import React from 'react'
 
-import Styles from './StatusContainerStyles'
+import { createStyles } from './StatusContainerStyles'
 import Icons from '../../constants/Icons'
-import Colors from '../../constants/Colors';
+import { useTheme } from '../../context/ThemeContext';
 
 interface StatusContainerProps {
     text?: string;
@@ -14,9 +14,11 @@ const StatusContainer = ({
     text,
     isFixed
 }: StatusContainerProps) => {
+    const { colors } = useTheme();
+    const Styles = createStyles(colors);
     return (
         <View style={Styles.container}>
-            <Text style={[Styles.text, !isFixed && { color: Colors.pendingColor }]}>{text}</Text>
+            <Text style={[Styles.text, !isFixed && { color: colors.pendingColor }]}>{text}</Text>
             {isFixed ? <Icons.GreenTick height={16} width={16} /> : <Icons.Pending height={16} width={16} />}
         </View>
     )

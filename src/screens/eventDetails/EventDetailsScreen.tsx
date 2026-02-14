@@ -12,19 +12,23 @@ import {
     Refresh,
     People,
 } from 'iconsax-react-nativejs';
-import Styles from './EventDetailsScreenStyles';
+import { createStyles } from './EventDetailsScreenStyles';
 import SizeBox from '../../constants/SizeBox';
 import Images from '../../constants/Images';
-import Colors from '../../constants/Colors';
 import Icons from '../../constants/Icons';
+import { useTheme } from '../../context/ThemeContext';
+import { useTranslation } from 'react-i18next';
 
 const EventDetailsScreen = ({ navigation }: any) => {
     const insets = useSafeAreaInsets();
+    const { colors } = useTheme();
+    const { t } = useTranslation();
+    const styles = createStyles(colors);
 
     const eventData = {
-        title: 'BK Studentent 23',
-        location: 'Berlin, Germany',
-        participants: 'Participants',
+        title: t('BK Studentent 23'),
+        location: t('Berlin, Germany'),
+        participants: t('Participants'),
         date: '27.5.2025',
         thumbnail: Images.photo6,
     };
@@ -32,28 +36,28 @@ const EventDetailsScreen = ({ navigation }: any) => {
     const editRequests = [
         {
             id: 1,
-            title: 'Enhance Lighting & Colors',
+            title: t('Enhance Lighting & Colors'),
             date: '12.12.2024',
             time: '12:00',
             status: 'fixed',
         },
         {
             id: 2,
-            title: 'Remove Watermark/Text',
+            title: t('Remove Watermark/Text'),
             date: '12.12.2024',
             time: '12:00',
             status: 'fixed',
         },
         {
             id: 3,
-            title: 'Enhance Lighting & Colors',
+            title: t('Enhance Lighting & Colors'),
             date: '12.12.2024',
             time: '12:00',
             status: 'pending',
         },
         {
             id: 4,
-            title: 'Slow Motion Effect',
+            title: t('Slow Motion Effect'),
             date: '12.12.2024',
             time: '12:00',
             status: 'fixed',
@@ -61,37 +65,37 @@ const EventDetailsScreen = ({ navigation }: any) => {
     ];
 
     const renderEditRequestCard = (item: any) => (
-        <View key={item.id} style={Styles.editRequestCard}>
-            <View style={Styles.editRequestHeader}>
-                <View style={Styles.receiptIconContainer}>
+        <View key={item.id} style={styles.editRequestCard}>
+            <View style={styles.editRequestHeader}>
+                <View style={styles.receiptIconContainer}>
                     <Icons.ReceiptEdit height={22} width={22} />
                 </View>
-                <TouchableOpacity style={Styles.editButton}>
-                    <Edit2 size={12} color="#9B9F9F" variant="Linear" />
-                    <Text style={Styles.editButtonText}>Edit</Text>
+                <TouchableOpacity style={styles.editButton}>
+                    <Edit2 size={12} color={colors.subTextColor} variant="Linear" />
+                    <Text style={styles.editButtonText}>{t('Edit')}</Text>
                 </TouchableOpacity>
             </View>
-            <View style={Styles.editRequestContent}>
-                <Text style={Styles.editRequestTitle}>{item.title}</Text>
-                <View style={Styles.editRequestMeta}>
-                    <View style={Styles.metaItem}>
-                        <Calendar size={12} color="#9B9F9F" variant="Linear" />
-                        <Text style={Styles.metaText}>{item.date}</Text>
+            <View style={styles.editRequestContent}>
+                <Text style={styles.editRequestTitle}>{item.title}</Text>
+                <View style={styles.editRequestMeta}>
+                    <View style={styles.metaItem}>
+                        <Calendar size={12} color={colors.subTextColor} variant="Linear" />
+                        <Text style={styles.metaText}>{item.date}</Text>
                     </View>
-                    <View style={Styles.metaItem}>
-                        <Clock size={12} color="#9B9F9F" variant="Linear" />
-                        <Text style={Styles.metaText}>{item.time}</Text>
+                    <View style={styles.metaItem}>
+                        <Clock size={12} color={colors.subTextColor} variant="Linear" />
+                        <Text style={styles.metaText}>{item.time}</Text>
                     </View>
                 </View>
             </View>
             {item.status === 'fixed' ? (
-                <View style={Styles.fixedBadge}>
-                    <Text style={Styles.fixedBadgeText}>Fixed</Text>
+                <View style={styles.fixedBadge}>
+                    <Text style={styles.fixedBadgeText}>{t('Fixed')}</Text>
                     <TickCircle size={14} color="#00BD48" variant="Linear" />
                 </View>
             ) : (
-                <View style={Styles.pendingBadge}>
-                    <Text style={Styles.pendingBadgeText}>Pending</Text>
+                <View style={styles.pendingBadge}>
+                    <Text style={styles.pendingBadgeText}>{t('Pending')}</Text>
                     <Refresh size={14} color="#FF8000" variant="Linear" />
                 </View>
             )}
@@ -99,66 +103,66 @@ const EventDetailsScreen = ({ navigation }: any) => {
     );
 
     return (
-        <View style={Styles.mainContainer}>
+        <View style={styles.mainContainer}>
             <SizeBox height={insets.top} />
 
             {/* Header */}
-            <View style={Styles.header}>
-                <TouchableOpacity style={Styles.backButton} onPress={() => navigation.goBack()}>
-                    <ArrowLeft2 size={20} color={Colors.mainTextColor} variant="Linear" />
+            <View style={styles.header}>
+                <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
+                    <ArrowLeft2 size={20} color={colors.mainTextColor} variant="Linear" />
                 </TouchableOpacity>
-                <Text style={Styles.headerTitle}>Event Details</Text>
+                <Text style={styles.headerTitle}>{t('Event Details')}</Text>
                 <TouchableOpacity
-                    style={Styles.notificationButton}
+                    style={styles.notificationButton}
                     onPress={() => navigation.navigate('NotificationsScreen')}
                 >
                     <Icons.NotificationBoldBlue height={24} width={24} />
                 </TouchableOpacity>
             </View>
 
-            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={Styles.scrollContent}>
+            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
                 {/* Event Thumbnail */}
-                <View style={Styles.eventContainer}>
-                    <FastImage source={eventData.thumbnail} style={Styles.eventThumbnail} resizeMode="cover" />
+                <View style={styles.eventContainer}>
+                    <FastImage source={eventData.thumbnail} style={styles.eventThumbnail} resizeMode="cover" />
                 </View>
 
                 {/* Event Info */}
-                <View style={Styles.eventInfo}>
-                    <View style={Styles.eventInfoRow}>
-                        <Text style={Styles.eventTitle}>{eventData.title}</Text>
-                        <View style={Styles.locationContainer}>
-                            <Location size={16} color="#9B9F9F" variant="Linear" />
-                            <Text style={Styles.locationText}>{eventData.location}</Text>
+                <View style={styles.eventInfo}>
+                    <View style={styles.eventInfoRow}>
+                        <Text style={styles.eventTitle}>{eventData.title}</Text>
+                        <View style={styles.locationContainer}>
+                            <Location size={16} color={colors.subTextColor} variant="Linear" />
+                            <Text style={styles.locationText}>{eventData.location}</Text>
                         </View>
                     </View>
-                    <View style={Styles.eventInfoRow}>
-                        <View style={Styles.participantsContainer}>
-                            <People size={16} color="#9B9F9F" variant="Linear" />
-                            <Text style={Styles.participantsText}>{eventData.participants}</Text>
+                    <View style={styles.eventInfoRow}>
+                        <View style={styles.participantsContainer}>
+                            <People size={16} color={colors.subTextColor} variant="Linear" />
+                            <Text style={styles.participantsText}>{eventData.participants}</Text>
                         </View>
-                        <View style={Styles.dateContainer}>
-                            <Calendar size={16} color="#9B9F9F" variant="Linear" />
-                            <Text style={Styles.dateText}>{eventData.date}</Text>
+                        <View style={styles.dateContainer}>
+                            <Calendar size={16} color={colors.subTextColor} variant="Linear" />
+                            <Text style={styles.dateText}>{eventData.date}</Text>
                         </View>
                     </View>
                 </View>
 
                 {/* Request for Edits Section */}
-                <Text style={Styles.sectionTitle}>Request for Edits</Text>
+                <Text style={styles.sectionTitle}>{t('Request for Edits')}</Text>
                 <SizeBox height={16} />
 
-                <View style={Styles.receivedLabel}>
-                    <Text style={Styles.receivedText}>Received</Text>
+                <View style={styles.receivedLabel}>
+                    <Text style={styles.receivedText}>{t('Received')}</Text>
                 </View>
 
                 <SizeBox height={16} />
 
                 {/* Edit Requests Grid */}
-                <View style={Styles.editRequestsGrid}>
-                    <View style={Styles.editRequestsRow}>
+                <View style={styles.editRequestsGrid}>
+                    <View style={styles.editRequestsRow}>
                         {editRequests.slice(0, 2).map(renderEditRequestCard)}
                     </View>
-                    <View style={Styles.editRequestsRow}>
+                    <View style={styles.editRequestsRow}>
                         {editRequests.slice(2, 4).map(renderEditRequestCard)}
                     </View>
                 </View>
@@ -167,11 +171,11 @@ const EventDetailsScreen = ({ navigation }: any) => {
 
                 {/* Edit Button */}
                 <TouchableOpacity
-                    style={Styles.primaryButton}
+                    style={styles.primaryButton}
                     onPress={() => navigation.navigate('SentRequestStateScreen')}
                 >
-                    <Text style={Styles.primaryButtonText}>Edit</Text>
-                    <Edit2 size={18} color={Colors.whiteColor} variant="Linear" />
+                    <Text style={styles.primaryButtonText}>{t('Edit')}</Text>
+                    <Edit2 size={18} color={colors.pureWhite} variant="Linear" />
                 </TouchableOpacity>
 
                 <SizeBox height={20} />

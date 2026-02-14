@@ -1,11 +1,11 @@
 import { StyleSheet } from "react-native";
-import Colors from "../../constants/Colors";
+import { ThemeColors, lightColors } from '../../constants/Theme';
 import Fonts from "../../constants/Fonts";
 
-const Styles = StyleSheet.create({
+export const createStyles = (colors: ThemeColors) => StyleSheet.create({
     mainContainer: {
         flex: 1,
-        backgroundColor: Colors.whiteColor
+        backgroundColor: colors.whiteColor
     },
     container: {
         paddingHorizontal: 20
@@ -21,7 +21,7 @@ const Styles = StyleSheet.create({
     participantCont: {
         borderRadius: 10,
         borderWidth: 0.5,
-        borderColor: Colors.lightGrayColor,
+        borderColor: colors.lightGrayColor,
         padding: 16,
         flexDirection: 'row',
         alignItems: 'center',
@@ -33,7 +33,7 @@ const Styles = StyleSheet.create({
         borderRadius: 18,
         overflow: 'hidden',
         borderWidth: 0.5,
-        borderColor: Colors.primaryColor
+        borderColor: colors.primaryColor
     },
     img: {
         height: '100%',
@@ -42,7 +42,7 @@ const Styles = StyleSheet.create({
     userNameText: {
         ...Fonts.regular14,
         fontWeight: '500',
-        color: Colors.mainTextColor
+        color: colors.mainTextColor
     },
     viewProfileBtn: {
         position: 'absolute',
@@ -54,18 +54,20 @@ const Styles = StyleSheet.create({
     btnText: {
         ...Fonts.regular12,
         fontWeight: '400',
-        color: Colors.primaryColor
+        color: colors.primaryColor
     },
     sportsName: {
         ...Fonts.regular16,
         fontWeight: '500',
-        color: Colors.mainTextColor
+        color: colors.mainTextColor
     },
     subSportsName: {
         ...Fonts.regular12,
         fontWeight: '400',
-        color: Colors.grayColor
+        color: colors.grayColor
     }
 })
+
+const Styles = createStyles(lightColors);
 
 export default Styles;

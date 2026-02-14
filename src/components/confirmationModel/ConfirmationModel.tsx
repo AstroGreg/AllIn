@@ -1,7 +1,8 @@
 import { View, Text, Modal, TouchableOpacity } from 'react-native'
 import React from 'react'
-import Styles from './ConfirmationModelStyles'
+import { createStyles } from './ConfirmationModelStyles'
 import SizeBox from '../../constants/SizeBox';
+import { useTheme } from '../../context/ThemeContext';
 
 interface ConfirmationModelProps {
     onClose?: any;
@@ -28,6 +29,8 @@ const ConfirmationModel = ({
     leftBtnBorderColor,
     iconBgColor
 }: ConfirmationModelProps) => {
+    const { colors } = useTheme();
+    const Styles = createStyles(colors);
     return (
         <Modal
             visible={isVisible}

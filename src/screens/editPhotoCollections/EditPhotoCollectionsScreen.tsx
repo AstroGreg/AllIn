@@ -4,10 +4,11 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import FastImage from 'react-native-fast-image'
 import { ArrowLeft2, ArrowRight, Add, Minus } from 'iconsax-react-nativejs'
 import { launchImageLibrary } from 'react-native-image-picker'
-import Colors from '../../constants/Colors'
 import Images from '../../constants/Images'
 import SizeBox from '../../constants/SizeBox'
-import Styles from './EditPhotoCollectionsStyles'
+import { createStyles } from './EditPhotoCollectionsStyles'
+import { useTheme } from '../../context/ThemeContext'
+import { useTranslation } from 'react-i18next'
 
 type SelectionMode = 'none' | 'top4' | 'delete';
 
@@ -15,6 +16,9 @@ const EditPhotoCollectionsScreen = ({ navigation }: any) => {
     const insets = useSafeAreaInsets();
     const { width } = Dimensions.get('window');
     const imageWidth = Math.floor((width - 40 - 24 - 30) / 4);
+    const { colors } = useTheme();
+    const { t } = useTranslation();
+    const styles = createStyles(colors);
 
     const [selectionMode, setSelectionMode] = useState<SelectionMode>('none');
     const [selectedPhotos, setSelectedPhotos] = useState<number[]>([]);
@@ -105,11 +109,11 @@ const EditPhotoCollectionsScreen = ({ navigation }: any) => {
     const getTitle = () => {
         switch (selectionMode) {
             case 'top4':
-                return 'Select Top 4 Picks';
+                return t('Select Top 4 Picks');
             case 'delete':
-                return 'Select Photos to Delete';
+                return t('Select Photos to Delete');
             default:
-                return 'My Photo Collections';
+                return t('My Photo Collections');
         }
     };
 
@@ -117,35 +121,35 @@ const EditPhotoCollectionsScreen = ({ navigation }: any) => {
     const isDeleteMode = selectionMode === 'delete';
 
     return (
-        <View style={Styles.mainContainer}>
+        <View style={styles.mainContainer}>
             <SizeBox height={insets.top} />
 
             {/* Header */}
-            <View style={Styles.header}>
-                <TouchableOpacity style={Styles.headerButton} onPress={() => navigation.goBack()}>
-                    <ArrowLeft2 size={24} color={Colors.mainTextColor} variant="Linear" />
+            <View style={styles.header}>
+                <TouchableOpacity style={styles.headerButton} onPress={() => navigation.goBack()}>
+                    <ArrowLeft2 size={24} color={colors.mainTextColor} variant="Linear" />
                 </TouchableOpacity>
-                <Text style={Styles.headerTitle}>Edit Photo Collections</Text>
+                <Text style={styles.headerTitle}>{t('Edit Photo Collections')}</Text>
                 <TouchableOpacity
-                    style={Styles.headerSwitchButton}
+                    style={styles.headerSwitchButton}
                     onPress={() => navigation.navigate('EditVideoCollectionsScreen')}
                 >
-                    <Text style={Styles.headerSwitchText}>Videos</Text>
-                    <ArrowRight size={18} color={Colors.primaryColor} variant="Linear" />
+                    <Text style={styles.headerSwitchText}>{t('Videos')}</Text>
+                    <ArrowRight size={18} color={colors.primaryColor} variant="Linear" />
                 </TouchableOpacity>
             </View>
 
-            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={Styles.scrollContent}>
+            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
                 {/* Title Row */}
-                <View style={Styles.titleRow}>
-                    <Text style={Styles.title}>{getTitle()}</Text>
+                <View style={styles.titleRow}>
+                    <Text style={styles.title}>{getTitle()}</Text>
                     {isInSelectionMode ? (
-                        <TouchableOpacity style={Styles.cancelButton} onPress={handleCancel}>
-                            <Text style={Styles.cancelButtonText}>Cancel</Text>
+                        <TouchableOpacity style={styles.cancelButton} onPress={handleCancel}>
+                            <Text style={styles.cancelButtonText}>{t('Cancel')}</Text>
                         </TouchableOpacity>
                     ) : (
-                        <TouchableOpacity style={Styles.selectTopButton} onPress={handleSelectTop4}>
-                            <Text style={Styles.selectTopButtonText}>Select Top 4</Text>
+                        <TouchableOpacity style={styles.selectTopButton} onPress={handleSelectTop4}>
+                            <Text style={styles.selectTopButtonText}>{t('Select Top 4')}</Text>
                         </TouchableOpacity>
                     )}
                 </View>
@@ -154,13 +158,13 @@ const EditPhotoCollectionsScreen = ({ navigation }: any) => {
                     <>
                         <SizeBox height={16} />
 
-                        <View style={Styles.actionRow}>
-                            <TouchableOpacity style={Styles.addButton} onPress={handleAddPhotos}>
-                                <Text style={Styles.addButtonText}>Add Photos</Text>
-                                <Add size={18} color={Colors.whiteColor} variant="Linear" />
+                        <View style={styles.actionRow}>
+                            <TouchableOpacity style={styles.addButton} onPress={handleAddPhotos}>
+                                <Text style={styles.addButtonText}>{t('Add Photos')}</Text>
+                                <Add size={18} color={colors.pureWhite} variant="Linear" />
                             </TouchableOpacity>
-                            <TouchableOpacity style={Styles.deleteButton} onPress={handleDeletePhotos}>
-                                <Text style={Styles.deleteButtonText}>Delete Photos</Text>
+                            <TouchableOpacity style={styles.deleteButton} onPress={handleDeletePhotos}>
+                                <Text style={styles.deleteButtonText}>{t('Delete Photos')}</Text>
                                 <Minus size={18} color="#FF0000" variant="Linear" />
                             </TouchableOpacity>
                         </View>
@@ -170,11 +174,11 @@ const EditPhotoCollectionsScreen = ({ navigation }: any) => {
                 {selectionMode === 'top4' && selectedPhotos.length > 0 && (
                     <>
                         <SizeBox height={16} />
-                        <TouchableOpacity style={Styles.confirmTopButton} onPress={handleConfirmTop4}>
-                            <Text style={Styles.confirmTopButtonText}>
-                                Confirm Top {selectedPhotos.length}
+                        <TouchableOpacity style={styles.confirmTopButton} onPress={handleConfirmTop4}>
+                            <Text style={styles.confirmTopButtonText}>
+                                {t('Confirm Top')} {selectedPhotos.length}
                             </Text>
-                            <Add size={18} color={Colors.whiteColor} variant="Linear" />
+                            <Add size={18} color={colors.pureWhite} variant="Linear" />
                         </TouchableOpacity>
                     </>
                 )}
@@ -182,11 +186,11 @@ const EditPhotoCollectionsScreen = ({ navigation }: any) => {
                 {isDeleteMode && selectedPhotos.length > 0 && (
                     <>
                         <SizeBox height={16} />
-                        <TouchableOpacity style={Styles.confirmDeleteButton} onPress={handleConfirmDelete}>
-                            <Text style={Styles.confirmDeleteButtonText}>
-                                Delete {selectedPhotos.length} Photo{selectedPhotos.length > 1 ? 's' : ''}
+                        <TouchableOpacity style={styles.confirmDeleteButton} onPress={handleConfirmDelete}>
+                            <Text style={styles.confirmDeleteButtonText}>
+                                {t('Delete')} {selectedPhotos.length} {t('Photo')}{selectedPhotos.length > 1 ? 's' : ''}
                             </Text>
-                            <Minus size={18} color={Colors.whiteColor} variant="Linear" />
+                            <Minus size={18} color={colors.pureWhite} variant="Linear" />
                         </TouchableOpacity>
                     </>
                 )}
@@ -194,8 +198,8 @@ const EditPhotoCollectionsScreen = ({ navigation }: any) => {
                 <SizeBox height={isInSelectionMode ? 24 : 16} />
 
                 {/* Photos Grid */}
-                <View style={Styles.photosContainer}>
-                    <View style={Styles.photosGrid}>
+                <View style={styles.photosContainer}>
+                    <View style={styles.photosGrid}>
                         {photos.map((photo) => {
                             const selectionNumber = getSelectionNumber(photo.id);
                             const isSelected = selectionNumber !== null;
@@ -207,23 +211,23 @@ const EditPhotoCollectionsScreen = ({ navigation }: any) => {
                                     activeOpacity={isInSelectionMode ? 0.7 : 1}
                                 >
                                     <View style={[
-                                        Styles.photoImageContainer,
+                                        styles.photoImageContainer,
                                         { width: imageWidth },
                                         isSelected && (isDeleteMode
-                                            ? Styles.photoImageContainerSelectedDelete
-                                            : Styles.photoImageContainerSelected)
+                                            ? styles.photoImageContainerSelectedDelete
+                                            : styles.photoImageContainerSelected)
                                     ]}>
                                         <FastImage
                                             source={photo.image}
-                                            style={[Styles.photoImage, { width: imageWidth - 2 }]}
+                                            style={[styles.photoImage, { width: imageWidth - 2 }]}
                                             resizeMode="cover"
                                         />
                                         {isSelected && (
                                             <View style={[
-                                                Styles.selectionBadge,
-                                                isDeleteMode && Styles.selectionBadgeDelete
+                                                styles.selectionBadge,
+                                                isDeleteMode && styles.selectionBadgeDelete
                                             ]}>
-                                                <Text style={Styles.selectionBadgeText}>{selectionNumber}</Text>
+                                                <Text style={styles.selectionBadgeText}>{selectionNumber}</Text>
                                             </View>
                                         )}
                                     </View>

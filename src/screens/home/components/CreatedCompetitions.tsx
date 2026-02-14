@@ -2,7 +2,6 @@ import { View, Text, FlatList } from 'react-native'
 import React from 'react'
 import CompetitionContainer from './CompetitionContainer'
 import SizeBox from '../../../constants/SizeBox'
-import Colors from '../../../constants/Colors'
 import CustomButton from '../../../components/customButton/CustomButton'
 import { useNavigation } from '@react-navigation/native'
 

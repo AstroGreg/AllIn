@@ -3,16 +3,18 @@ import { View, Text, ScrollView, TouchableOpacity } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import FastImage from 'react-native-fast-image';
 import { ArrowLeft2 } from 'iconsax-react-nativejs';
-import Styles from './PhotosScreenStyles';
+import { createStyles } from './PhotosScreenStyles';
 import SizeBox from '../../constants/SizeBox';
-import Colors from '../../constants/Colors';
 import { useAuth } from '../../context/AuthContext';
 import { getMediaById } from '../../services/apiGateway';
 import { getApiBaseUrl } from '../../constants/RuntimeConfig';
+import { useTheme } from '../../context/ThemeContext';
 
 const PhotosScreen = ({ navigation, route }: any) => {
     const insets = useSafeAreaInsets();
     const { apiAccessToken } = useAuth();
+    const { colors } = useTheme();
+    const Styles = createStyles(colors);
     const eventTitle = route?.params?.eventTitle || 'BK Studentent 23';
     const photoIds = useMemo(
         () => [
@@ -146,7 +148,7 @@ const PhotosScreen = ({ navigation, route }: any) => {
             {/* Header */}
             <View style={Styles.header}>
                 <TouchableOpacity style={Styles.backButton} onPress={() => navigation.goBack()}>
-                    <ArrowLeft2 size={24} color={Colors.mainTextColor} variant="Linear" />
+                    <ArrowLeft2 size={24} color={colors.mainTextColor} variant="Linear" />
                 </TouchableOpacity>
                 <Text style={Styles.headerTitle}>{eventTitle}</Text>
                 <View style={Styles.headerSpacer} />

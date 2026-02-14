@@ -1,11 +1,11 @@
 import { StyleSheet } from 'react-native';
-import Colors from '../../constants/Colors';
+import { ThemeColors, lightColors } from '../../constants/Theme';
 import Fonts from '../../constants/Fonts';
 
-const Styles = StyleSheet.create({
+export const createStyles = (colors: ThemeColors) => StyleSheet.create({
     mainContainer: {
         flex: 1,
-        backgroundColor: Colors.whiteColor,
+        backgroundColor: colors.whiteColor,
     },
     header: {
         flexDirection: 'row',
@@ -45,7 +45,7 @@ const Styles = StyleSheet.create({
     title: {
         ...Fonts.medium22,
         fontSize: 24,
-        color: Colors.mainTextColor,
+        color: colors.mainTextColor,
         textAlign: 'center',
         lineHeight: 32,
     },
@@ -58,7 +58,7 @@ const Styles = StyleSheet.create({
 
     // Options Card
     optionsCard: {
-        backgroundColor: Colors.whiteColor,
+        backgroundColor: colors.whiteColor,
         borderRadius: 10,
         borderWidth: 0.5,
         borderColor: '#DEDEDE',
@@ -71,7 +71,7 @@ const Styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
-        backgroundColor: Colors.whiteColor,
+        backgroundColor: colors.whiteColor,
         borderRadius: 10,
         borderWidth: 0.5,
         borderColor: '#DEDEDE',
@@ -80,7 +80,7 @@ const Styles = StyleSheet.create({
     },
     eventOptionSelected: {
         backgroundColor: 'rgba(60, 130, 246, 0.14)',
-        borderColor: Colors.primaryColor,
+        borderColor: colors.primaryColor,
     },
     eventOptionDisabled: {
         backgroundColor: '#F5F5F5',
@@ -97,7 +97,7 @@ const Styles = StyleSheet.create({
     },
     eventOptionText: {
         ...Fonts.regular14,
-        color: Colors.mainTextColor,
+        color: colors.mainTextColor,
     },
     eventOptionTextDisabled: {
         color: '#9B9F9F',
@@ -108,7 +108,7 @@ const Styles = StyleSheet.create({
         flexDirection: 'row',
         paddingHorizontal: 20,
         paddingTop: 16,
-        backgroundColor: Colors.whiteColor,
+        backgroundColor: colors.whiteColor,
         gap: 16,
     },
     backButton: {
@@ -133,7 +133,7 @@ const Styles = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'center',
         gap: 8,
-        backgroundColor: Colors.primaryColor,
+        backgroundColor: colors.primaryColor,
         borderRadius: 10,
         paddingVertical: 16,
         height: 54,
@@ -143,8 +143,10 @@ const Styles = StyleSheet.create({
     },
     nextButtonText: {
         ...Fonts.medium16,
-        color: Colors.whiteColor,
+        color: colors.whiteColor,
     },
 });
+
+const Styles = createStyles(lightColors);
 
 export default Styles;

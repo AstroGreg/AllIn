@@ -156,13 +156,25 @@ const HubScreen = ({ navigation }: any) => {
         },
     ];
 
+    const formatDateOnly = (value?: string | null) => {
+        if (!value || value === '—') return '—';
+        const parsed = new Date(value);
+        if (Number.isNaN(parsed.getTime())) {
+            return value;
+        }
+        const day = String(parsed.getDate()).padStart(2, '0');
+        const month = String(parsed.getMonth() + 1).padStart(2, '0');
+        const year = parsed.getFullYear();
+        return `${day}/${month}/${year}`;
+    };
+
     const myCompetitions = useMemo(() => {
         return (events || []).map((event, index) => {
             const eventId = String(event.event_id);
             const mediaInfo = mediaByEvent[eventId];
             const title = event.event_name || event.event_title || 'Competition';
             const location = event.event_location || '—';
-            const date = event.event_date || '—';
+            const date = formatDateOnly(event.event_date || '—');
             const videoCount = mediaInfo?.videoCount ?? 0;
             return {
                 id: eventId || `${index}`,
@@ -341,7 +353,9 @@ const HubScreen = ({ navigation }: any) => {
                             <Text style={Styles.cardSubtitle}>{card.found}</Text>
                             <View style={Styles.detailValue}>
                                 <Location size={14} color={colors.grayColor} variant="Linear" />
-                                <Text style={Styles.detailText}>{card.location}</Text>
+                                <Text style={[Styles.detailText, Styles.detailTextTruncate]} numberOfLines={1} ellipsizeMode="tail">
+                                    {card.location}
+                                </Text>
                                 <View style={Styles.detailDot} />
                                 <Calendar size={14} color={colors.grayColor} variant="Linear" />
                                 <Text style={Styles.detailText}>{card.date}</Text>
@@ -368,7 +382,9 @@ const HubScreen = ({ navigation }: any) => {
                         <View style={Styles.cardHeaderRow}>
                             <Text style={Styles.cardTitle} numberOfLines={2}>{card.title}</Text>
                             <View style={[Styles.statusBadge, card.status === 'Completed' ? Styles.statusDone : Styles.statusActive]}>
-                                <Text style={Styles.statusText}>{card.status}</Text>
+                                <Text style={[Styles.statusText, card.status !== 'Completed' && Styles.statusTextActive]}>
+                                    {card.status}
+                                </Text>
                             </View>
                         </View>
                             <Text style={Styles.cardSubtitle}>Subscribed competition</Text>
@@ -377,9 +393,11 @@ const HubScreen = ({ navigation }: any) => {
                                 <Text style={Styles.detailText}>{card.media}</Text>
                                 <View style={Styles.detailDot} />
                                 <Location size={14} color={colors.grayColor} variant="Linear" />
-                                <Text style={Styles.detailText}>{card.location}</Text>
+                                <Text style={[Styles.detailText, Styles.detailTextTruncate]} numberOfLines={1} ellipsizeMode="tail">
+                                    {card.location}
+                                </Text>
                             </View>
-                            <Text style={Styles.detailText}>{card.date}</Text>
+                            <Text style={Styles.detailText}>{formatDateOnly(card.date)}</Text>
                         </View>
                     </View>
                 </TouchableOpacity>

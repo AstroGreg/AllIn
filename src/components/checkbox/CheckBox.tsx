@@ -1,7 +1,8 @@
 import { View, Text, TouchableOpacity } from 'react-native'
 import React from 'react'
-import Styles from './CheckBoxStyle'
+import { createStyles } from './CheckBoxStyle'
 import Icons from '../../constants/Icons'
+import { useTheme } from '../../context/ThemeContext'
 
 interface CheckBoxProps {
     onPressCheckBox: (checked?: boolean) => void;
@@ -10,6 +11,8 @@ interface CheckBoxProps {
 
 const CheckBox = ({ onPressCheckBox, isChecked }: CheckBoxProps) => {
     const [internalChecked, setInternalChecked] = React.useState(false);
+    const { colors } = useTheme();
+    const Styles = createStyles(colors);
 
     // Use external isChecked if provided, otherwise use internal state
     const checked = isChecked !== undefined ? isChecked : internalChecked;

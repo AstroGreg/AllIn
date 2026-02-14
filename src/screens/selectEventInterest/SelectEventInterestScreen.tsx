@@ -4,26 +4,30 @@ import SizeBox from '../../constants/SizeBox';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import FastImage from 'react-native-fast-image';
 import Images from '../../constants/Images';
-import Colors from '../../constants/Colors';
-import Styles from './SelectEventInterestStyles';
+import { createStyles } from './SelectEventInterestStyles';
 import Icons from '../../constants/Icons';
 import { ArrowLeft2, ArrowRight } from 'iconsax-react-nativejs';
+import { useTheme } from '../../context/ThemeContext';
+import { useTranslation } from 'react-i18next';
 
 const SelectEventInterestScreen = ({ navigation, route }: any) => {
     const insets = useSafeAreaInsets();
+    const { colors } = useTheme();
+    const { t } = useTranslation();
+    const styles = createStyles(colors);
     const [selectedEvent, setSelectedEvent] = useState<number | null>(1);
     const category = route?.params?.category || 1; // 1 = Individual, 2 = Photographer
 
     const eventTypes = [
         {
             id: 1,
-            title: 'Track and Field',
+            title: t('Track and Field'),
             image: Images.trackAndField,
             enabled: true,
         },
         {
             id: 2,
-            title: 'Boxing (Coming in the near future)',
+            title: t('Boxing (Coming in the near future)'),
             image: Images.boxing,
             enabled: false,
         },
@@ -33,19 +37,19 @@ const SelectEventInterestScreen = ({ navigation, route }: any) => {
         <TouchableOpacity
             key={event.id}
             style={[
-                Styles.eventOption,
-                selectedEvent === event.id && Styles.eventOptionSelected,
-                !event.enabled && Styles.eventOptionDisabled
+                styles.eventOption,
+                selectedEvent === event.id && styles.eventOptionSelected,
+                !event.enabled && styles.eventOptionDisabled
             ]}
             onPress={() => event.enabled && setSelectedEvent(event.id)}
             activeOpacity={event.enabled ? 0.8 : 1}
             disabled={!event.enabled}
         >
-            <View style={Styles.eventOptionContent}>
-                <FastImage source={event.image} style={Styles.eventIcon} resizeMode="contain" />
+            <View style={styles.eventOptionContent}>
+                <FastImage source={event.image} style={styles.eventIcon} resizeMode="contain" />
                 <Text style={[
-                    Styles.eventOptionText,
-                    !event.enabled && Styles.eventOptionTextDisabled
+                    styles.eventOptionText,
+                    !event.enabled && styles.eventOptionTextDisabled
                 ]}>{event.title}</Text>
             </View>
             {!event.enabled && (
@@ -55,48 +59,48 @@ const SelectEventInterestScreen = ({ navigation, route }: any) => {
     );
 
     return (
-        <View style={Styles.mainContainer}>
+        <View style={styles.mainContainer}>
             <SizeBox height={insets.top} />
 
             {/* Header */}
-            <View style={Styles.header}>
-                <TouchableOpacity style={Styles.headerButton} onPress={() => navigation.goBack()}>
-                    <ArrowLeft2 size={24} color={Colors.primaryColor} variant="Linear" />
+            <View style={styles.header}>
+                <TouchableOpacity style={styles.headerButton} onPress={() => navigation.goBack()}>
+                    <ArrowLeft2 size={24} color={colors.primaryColor} variant="Linear" />
                 </TouchableOpacity>
             </View>
 
-            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={Styles.scrollContent}>
+            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
                 {/* Illustration */}
-                <View style={Styles.illustrationContainer}>
-                    <FastImage source={Images.signup3} style={Styles.illustration} resizeMode="contain" />
+                <View style={styles.illustrationContainer}>
+                    <FastImage source={Images.signup3} style={styles.illustration} resizeMode="contain" />
                 </View>
 
                 {/* Title Section */}
-                <View style={Styles.titleSection}>
-                    <Text style={Styles.title}>Which kinds of events are you interested in?</Text>
-                    <Text style={Styles.subtitle}>Choose Your Interest</Text>
+                <View style={styles.titleSection}>
+                    <Text style={styles.title}>{t('Which kinds of events are you interested in?')}</Text>
+                    <Text style={styles.subtitle}>{t('Choose Your Interest')}</Text>
                 </View>
 
                 {/* Event Options Card */}
-                <View style={Styles.optionsCard}>
+                <View style={styles.optionsCard}>
                     {eventTypes.map(renderEventOption)}
                 </View>
             </ScrollView>
 
             {/* Bottom Buttons */}
-            <View style={[Styles.bottomContainer, { paddingBottom: insets.bottom > 0 ? insets.bottom : 20 }]}>
+            <View style={[styles.bottomContainer, { paddingBottom: insets.bottom > 0 ? insets.bottom : 20 }]}>
                 <TouchableOpacity
-                    style={Styles.backButton}
+                    style={styles.backButton}
                     onPress={() => navigation.goBack()}
                 >
-                    <Text style={Styles.backButtonText}>Back</Text>
-                    <ArrowRight size={18} color="#9B9F9F" variant="Linear" />
+                    <Text style={styles.backButtonText}>{t('Back')}</Text>
+                    <ArrowRight size={18} color={colors.subTextColor} variant="Linear" />
                 </TouchableOpacity>
 
                 <TouchableOpacity
                     style={[
-                        Styles.nextButton,
-                        !selectedEvent && Styles.nextButtonDisabled
+                        styles.nextButton,
+                        !selectedEvent && styles.nextButtonDisabled
                     ]}
                     disabled={!selectedEvent}
                     onPress={() => {
@@ -112,8 +116,8 @@ const SelectEventInterestScreen = ({ navigation, route }: any) => {
                         }
                     }}
                 >
-                    <Text style={Styles.nextButtonText}>Next</Text>
-                    <ArrowRight size={18} color={Colors.whiteColor} variant="Linear" />
+                    <Text style={styles.nextButtonText}>{t('Next')}</Text>
+                    <ArrowRight size={18} color={colors.pureWhite} variant="Linear" />
                 </TouchableOpacity>
             </View>
         </View>

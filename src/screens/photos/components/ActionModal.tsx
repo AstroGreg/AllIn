@@ -1,9 +1,11 @@
 import { View, Text, Modal, TouchableOpacity } from 'react-native'
 import React from 'react'
-import Styles from '../PhotosStyles';
+import { createStyles } from '../PhotosStyles';
 import Icons from '../../../constants/Icons';
 import SizeBox from '../../../constants/SizeBox';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useTheme } from '../../../context/ThemeContext';
+import { useTranslation } from 'react-i18next';
 
 interface ActionModalProps {
     visible: boolean;
@@ -14,6 +16,9 @@ interface ActionModalProps {
 
 const ActionModal = ({ visible, onClose, onEdit, onDelete }: ActionModalProps) => {
     const insets = useSafeAreaInsets();
+    const { colors } = useTheme();
+    const Styles = createStyles(colors);
+    const { t } = useTranslation();
     return (
         <Modal
             transparent
@@ -34,11 +39,11 @@ const ActionModal = ({ visible, onClose, onEdit, onDelete }: ActionModalProps) =
                 >
                     <TouchableOpacity style={Styles.actionButton} onPress={onEdit}>
                         <Icons.Edit height={21} width={21} />
-                        <Text style={Styles.actionText}>Edit</Text>
+                        <Text style={Styles.actionText}>{t('Edit')}</Text>
                     </TouchableOpacity>
                     <TouchableOpacity style={Styles.actionButton} onPress={onDelete}>
                         <Icons.DeleteCompetition height={21} width={21} />
-                        <Text style={Styles.actionText}>Delete</Text>
+                        <Text style={Styles.actionText}>{t('Delete')}</Text>
                     </TouchableOpacity>
                 </TouchableOpacity>
             </TouchableOpacity>

@@ -4,7 +4,7 @@ import { createStyles } from '../MenuStyles'
 import SizeBox from '../../../constants/SizeBox'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useTheme } from '../../../context/ThemeContext'
-import { ArrowLeft2, Notification, Unlock, ArrowRight2 } from 'iconsax-react-nativejs'
+import { ArrowLeft2, Unlock } from 'iconsax-react-nativejs'
 
 const ChangePassword = ({ navigation }: any) => {
     const insets = useSafeAreaInsets();
@@ -12,6 +12,7 @@ const ChangePassword = ({ navigation }: any) => {
     const Styles = createStyles(colors);
     const [currentPassword, setCurrentPassword] = useState('');
     const [newPassword, setNewPassword] = useState('');
+    const [isEditing, setIsEditing] = useState(false);
 
     return (
         <View style={Styles.mainContainer}>
@@ -23,9 +24,7 @@ const ChangePassword = ({ navigation }: any) => {
                     <ArrowLeft2 size={24} color={colors.primaryColor} variant="Linear" />
                 </TouchableOpacity>
                 <Text style={Styles.headerTitle}>Change Password</Text>
-                <TouchableOpacity style={Styles.headerButton}>
-                    <Notification size={24} color={colors.primaryColor} variant="Linear" />
-                </TouchableOpacity>
+                <View style={Styles.headerSpacer} />
             </View>
 
             <ScrollView style={Styles.container} showsVerticalScrollIndicator={false}>
@@ -34,51 +33,72 @@ const ChangePassword = ({ navigation }: any) => {
                 <Text style={Styles.changePasswordTitle}>Change Password</Text>
                 <SizeBox height={16} />
 
-                {/* Current Password */}
-                <View style={Styles.addCardInputGroup}>
-                    <Text style={Styles.addCardLabel}>Current Password</Text>
-                    <SizeBox height={8} />
-                    <View style={Styles.addCardInputContainer}>
-                        <Unlock size={16} color={colors.primaryColor} variant="Linear" />
-                        <SizeBox width={10} />
-                        <TextInput
-                            style={Styles.addCardInput}
-                            placeholder="Enter Password"
-                            placeholderTextColor={colors.grayColor}
-                            value={currentPassword}
-                            onChangeText={setCurrentPassword}
-                            secureTextEntry
-                        />
+                <View style={Styles.currentValueCard}>
+                    <View>
+                        <Text style={Styles.currentValueLabel}>Current password</Text>
+                        <Text style={Styles.currentValueText}>••••••••</Text>
                     </View>
+                    <TouchableOpacity style={Styles.editActionButton} onPress={() => setIsEditing(true)}>
+                        <Text style={Styles.editActionText}>Edit</Text>
+                    </TouchableOpacity>
                 </View>
 
-                <SizeBox height={30} />
+                {isEditing && (
+                    <>
+                        <SizeBox height={24} />
+                        <View style={Styles.addCardInputGroup}>
+                            <Text style={Styles.addCardLabel}>Current password</Text>
+                            <SizeBox height={8} />
+                            <View style={Styles.addCardInputContainer}>
+                                <Unlock size={16} color={colors.primaryColor} variant="Linear" />
+                                <SizeBox width={10} />
+                                <TextInput
+                                    style={Styles.addCardInput}
+                                    placeholder="Enter current password"
+                                    placeholderTextColor={colors.grayColor}
+                                    value={currentPassword}
+                                    onChangeText={setCurrentPassword}
+                                    secureTextEntry
+                                />
+                            </View>
+                        </View>
 
-                {/* New Password */}
-                <View style={Styles.addCardInputGroup}>
-                    <Text style={Styles.addCardLabel}>New Password</Text>
-                    <SizeBox height={8} />
-                    <View style={Styles.addCardInputContainer}>
-                        <Unlock size={16} color={colors.primaryColor} variant="Linear" />
-                        <SizeBox width={10} />
-                        <TextInput
-                            style={Styles.addCardInput}
-                            placeholder="Enter Password"
-                            placeholderTextColor={colors.grayColor}
-                            value={newPassword}
-                            onChangeText={setNewPassword}
-                            secureTextEntry
-                        />
-                    </View>
-                </View>
+                        <SizeBox height={20} />
 
-                <SizeBox height={30} />
+                        <View style={Styles.addCardInputGroup}>
+                            <Text style={Styles.addCardLabel}>New password</Text>
+                            <SizeBox height={8} />
+                            <View style={Styles.addCardInputContainer}>
+                                <Unlock size={16} color={colors.primaryColor} variant="Linear" />
+                                <SizeBox width={10} />
+                                <TextInput
+                                    style={Styles.addCardInput}
+                                    placeholder="Enter new password"
+                                    placeholderTextColor={colors.grayColor}
+                                    value={newPassword}
+                                    onChangeText={setNewPassword}
+                                    secureTextEntry
+                                />
+                            </View>
+                        </View>
 
-                {/* Continue Button */}
-                <TouchableOpacity style={Styles.continueBtn} onPress={() => navigation.goBack()}>
-                    <Text style={Styles.continueBtnText}>Continue</Text>
-                    <ArrowRight2 size={18} color={colors.pureWhite} variant="Linear" />
-                </TouchableOpacity>
+                        <View style={Styles.editActionsRow}>
+                            <TouchableOpacity style={Styles.cancelButton} onPress={() => setIsEditing(false)}>
+                                <Text style={Styles.cancelButtonText}>Cancel</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                                style={Styles.saveButton}
+                                onPress={() => {
+                                    if (!currentPassword.trim() || !newPassword.trim()) return;
+                                    setIsEditing(false);
+                                    navigation.goBack();
+                                }}
+                            >
+                                <Text style={Styles.saveButtonText}>Save</Text>
+                            </TouchableOpacity>
+                        </View>
+                    </>
+                )}
 
                 <SizeBox height={insets.bottom > 0 ? insets.bottom + 20 : 40} />
             </ScrollView>

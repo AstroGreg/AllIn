@@ -1,12 +1,14 @@
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native'
 import React, { useState } from 'react'
-import Styles from '../HomeStyles'
+import { createStyles } from '../HomeStyles'
 import Icons from '../../../constants/Icons'
 import SizeBox from '../../../constants/SizeBox'
 import BorderButton from '../../../components/borderButton/BorderButton'
 import Video from 'react-native-video'
 import ActionBtn from './ActionBtn'
 import ShimmerEffect from '../../../components/shimmerEffect/ShimmerEffect'
+import { useTheme } from '../../../context/ThemeContext'
+import { useTranslation } from 'react-i18next'
 
 interface CompetitionContainerProps {
     videoUri?: string;
@@ -31,16 +33,19 @@ const CompetitionContainer = ({
 }: CompetitionContainerProps) => {
     const [isPlaying, setIsPlaying] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
+    const { colors } = useTheme();
+    const { t } = useTranslation();
+    const styles = createStyles(colors);
 
     const handleVideoPress = () => {
         setIsPlaying(!isPlaying);
     };
 
     return (
-        <TouchableOpacity activeOpacity={0.7} style={Styles.CompetitionContainer} onPress={onPressContainer}>
-            <View style={Styles.VideoContainer}>
+        <TouchableOpacity activeOpacity={0.7} style={styles.CompetitionContainer} onPress={onPressContainer}>
+            <View style={styles.VideoContainer}>
                 <TouchableOpacity
-                    style={Styles.videoWrapper}
+                    style={styles.videoWrapper}
                     onPress={handleVideoPress}
                     activeOpacity={0.9}>
                     {isLoading && (
@@ -65,8 +70,8 @@ const CompetitionContainer = ({
                         onError={() => setIsLoading(false)}
                     />
                     {!isPlaying && (
-                        <View style={Styles.playButtonOverlay}>
-                            <View style={Styles.playButton}>
+                        <View style={styles.playButtonOverlay}>
+                            <View style={styles.playButton}>
                                 <Icons.PlayCricle width={32} height={32} />
                             </View>
                         </View>
@@ -75,45 +80,45 @@ const CompetitionContainer = ({
             </View>
             <SizeBox height={11} />
 
-            <View style={Styles.rowCenter}>
+            <View style={styles.rowCenter}>
                 <Icons.competitionCalendar height={20} width={20} />
                 <SizeBox width={6} />
-                <Text numberOfLines={1} style={Styles.eventTitle} >{CompetitionName}</Text>
+                <Text numberOfLines={1} style={styles.eventTitle} >{CompetitionName}</Text>
             </View>
 
             <SizeBox height={6} />
             {
                 map &&   
-                <View style={Styles.rowCenter}>
+                <View style={styles.rowCenter}>
                     <Icons.Map height={16} width={16} />
                     <SizeBox width={6} />
-                    <Text numberOfLines={1} style={Styles.eventSubText}>{map}</Text>
+                    <Text numberOfLines={1} style={styles.eventSubText}>{map}</Text>
                 </View>
             }
         
             <SizeBox height={6} />
 
-            <View style={[Styles.rowCenter]}>
-                <View style={[Styles.rowCenter, { width: '50%' }]}>
+            <View style={[styles.rowCenter]}>
+                <View style={[styles.rowCenter, { width: '50%' }]}>
                     <Icons.Location height={16} width={16} />
                     <SizeBox width={6} />
-                    <Text numberOfLines={1} style={Styles.eventSubText}>{location}</Text>
+                    <Text numberOfLines={1} style={styles.eventSubText}>{location}</Text>
                 </View>
-                <View style={[Styles.rowCenter, { width: '50%' }]}>
+                <View style={[styles.rowCenter, { width: '50%' }]}>
                     <Icons.CalendarGrey height={16} width={16} />
                     <SizeBox width={6} />
-                    <Text numberOfLines={1} style={Styles.eventSubText} >{date}</Text>
+                    <Text numberOfLines={1} style={styles.eventSubText} >{date}</Text>
                 </View>
             </View>
 
             <SizeBox height={12} />
 
             {isActions ?
-                <View style={[Styles.rowCenter, { justifyContent: 'space-between' }]}>
-                    <ActionBtn title='Edit' icon={<Icons.Edit height={14} width={14} />} />
-                    <ActionBtn title='Delete' icon={<Icons.DeleteCompetition height={14} width={14} />} />
+                <View style={[styles.rowCenter, { justifyContent: 'space-between' }]}>
+                    <ActionBtn title={t('Edit')} icon={<Icons.Edit height={14} width={14} />} />
+                    <ActionBtn title={t('Delete')} icon={<Icons.DeleteCompetition height={14} width={14} />} />
                 </View>
-                : <BorderButton title='Participant' onPress={onPress} />}
+                : <BorderButton title={t('Participant')} onPress={onPress} />}
 
         </TouchableOpacity>
     )

@@ -1,9 +1,11 @@
 import { View, Text, Modal, TouchableOpacity } from 'react-native'
 import React, { useState } from 'react'
 import SizeBox from '../../../constants/SizeBox';
-import Styles from './ModalsStyles';
+import { createStyles } from './ModalsStyles';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import BorderButton from '../../../components/borderButton/BorderButton';
+import { useTheme } from '../../../context/ThemeContext';
+import { useTranslation } from 'react-i18next';
 
 interface ReportMistakeModalProps {
     isVisible?: boolean;
@@ -14,23 +16,26 @@ interface ReportMistakeModalProps {
 const ReportMistakeModal = ({ isVisible, onClose, onPressNext }: ReportMistakeModalProps) => {
     const insets = useSafeAreaInsets();
     const [selectedItem, setSelectedItem] = useState(0);
+    const { colors } = useTheme();
+    const Styles = createStyles(colors);
+    const { t } = useTranslation();
 
     const data = [
         {
             id: 1,
-            name: 'Wrong Heat',
+            name: t('Wrong heat'),
         },
         {
             id: 2,
-            name: 'Wrong Competition',
+            name: t('Wrong competition'),
         },
         {
             id: 3,
-            name: 'Wrong Results or People Tagged',
+            name: t('Wrong results or people tagged'),
         },
         {
             id: 4,
-            name: 'Other',
+            name: t('Other'),
         },
     ]
 
@@ -52,9 +57,9 @@ const ReportMistakeModal = ({ isVisible, onClose, onPressNext }: ReportMistakeMo
                     activeOpacity={1}
                     onPress={(e) => e.stopPropagation()}
                 >
-                    <Text style={Styles.titleText}>Report Mistake</Text>
+                    <Text style={Styles.titleText}>{t('Report mistake')}</Text>
                     <SizeBox height={4} />
-                    <Text style={Styles.titleText}>Choose a reason for the report:</Text>
+                    <Text style={Styles.titleText}>{t('Choose a reason for the report:')}</Text>
                     <SizeBox height={10} />
                     <View style={Styles.divider} />
                     <SizeBox height={19} />
@@ -72,7 +77,7 @@ const ReportMistakeModal = ({ isVisible, onClose, onPressNext }: ReportMistakeMo
                     </View>
                     <SizeBox height={16} />
                     <View style={Styles.btn}>
-                        <BorderButton isFilled={true} title='Next' onPress={onPressNext} />
+                        <BorderButton isFilled={true} title={t('Next')} onPress={onPressNext} />
                     </View>
                 </TouchableOpacity>
             </TouchableOpacity>

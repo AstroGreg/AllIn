@@ -27,6 +27,7 @@ import DeleteAndPause from '../screens/menu/menuScreens/DeleteAndPause';
 import PaymentMethod from '../screens/menu/menuScreens/PaymentMethod';
 import AddNewCard from '../screens/menu/menuScreens/AddNewCard';
 import ProfileSettings from '../screens/menu/menuScreens/ProfileSettings';
+import FacialRecognitionSettings from '../screens/menu/menuScreens/FacialRecognitionSettings';
 import EditProfile from '../screens/menu/menuScreens/EditProfile';
 import EditBioScreens from '../screens/viewUserProfile/profileScreens/EditBioScreens';
 import MediaScreens from '../screens/viewUserProfile/profileScreens/MediaScreens';
@@ -120,6 +121,7 @@ const RootStackNavigation = () => {
             <Stack.Screen name="PaymentMethod" component={PaymentMethod} />
             <Stack.Screen name="AddNewCard" component={AddNewCard} />
             <Stack.Screen name="ProfileSettings" component={ProfileSettings} />
+            <Stack.Screen name="FacialRecognitionSettings" component={FacialRecognitionSettings} />
             <Stack.Screen name="EditProfile" component={EditProfile} />
             <Stack.Screen name="EditBioScreens" component={EditBioScreens} />
             <Stack.Screen name="MediaScreens" component={MediaScreens} />

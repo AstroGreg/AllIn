@@ -1,15 +1,15 @@
 import { StyleSheet, Dimensions } from 'react-native';
-import Colors from '../../constants/Colors';
 import Fonts from '../../constants/Fonts';
+import { ThemeColors } from '../../constants/Theme';
 
 const { width } = Dimensions.get('window');
 // 20px padding on each side (40px) + 24px gap between cards = 64px
 const cardWidth = (width - 64) / 2;
 
-const Styles = StyleSheet.create({
+export const createStyles = (colors: ThemeColors) => StyleSheet.create({
     mainContainer: {
         flex: 1,
-        backgroundColor: Colors.whiteColor,
+        backgroundColor: colors.backgroundColor,
     },
     header: {
         flexDirection: 'row',
@@ -18,25 +18,25 @@ const Styles = StyleSheet.create({
         paddingHorizontal: 20,
         paddingVertical: 16,
         borderBottomWidth: 0.5,
-        borderBottomColor: '#DEDEDE',
+        borderBottomColor: colors.lightGrayColor,
     },
     backButton: {
         width: 44,
         height: 44,
         borderRadius: 22,
-        backgroundColor: '#F5F5F5',
+        backgroundColor: colors.btnBackgroundColor,
         alignItems: 'center',
         justifyContent: 'center',
     },
     headerTitle: {
         ...Fonts.medium14,
-        color: Colors.mainTextColor,
+        color: colors.mainTextColor,
     },
     imageButton: {
         width: 44,
         height: 44,
         borderRadius: 22,
-        backgroundColor: '#F5F5F5',
+        backgroundColor: colors.btnBackgroundColor,
         alignItems: 'center',
         justifyContent: 'center',
     },
@@ -51,25 +51,25 @@ const Styles = StyleSheet.create({
     },
     videosLabel: {
         ...Fonts.medium14,
-        color: Colors.mainTextColor,
+        color: colors.mainTextColor,
     },
     downloadAllButton: {
-        backgroundColor: Colors.primaryColor,
+        backgroundColor: colors.primaryColor,
         borderRadius: 7,
         paddingHorizontal: 11,
         paddingVertical: 4,
     },
     downloadAllText: {
         ...Fonts.regular14,
-        color: Colors.whiteColor,
+        color: colors.pureWhite,
     },
     infoCard: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: Colors.whiteColor,
+        backgroundColor: colors.cardBackground,
         borderRadius: 10,
         borderWidth: 0.5,
-        borderColor: '#DEDEDE',
+        borderColor: colors.lightGrayColor,
         paddingHorizontal: 16,
         paddingVertical: 12,
         gap: 6,
@@ -77,7 +77,7 @@ const Styles = StyleSheet.create({
     infoText: {
         flex: 1,
         ...Fonts.regular14,
-        color: '#9B9F9F',
+        color: colors.subTextColor,
         lineHeight: 22,
     },
     videosGrid: {
@@ -88,10 +88,10 @@ const Styles = StyleSheet.create({
     },
     videoCard: {
         width: cardWidth,
-        backgroundColor: Colors.whiteColor,
+        backgroundColor: colors.cardBackground,
         borderRadius: 10,
         borderWidth: 0.5,
-        borderColor: '#DEDEDE',
+        borderColor: colors.lightGrayColor,
         padding: 16,
     },
     videoThumbnailContainer: {
@@ -128,13 +128,13 @@ const Styles = StyleSheet.create({
     },
     videoPrice: {
         ...Fonts.semibold12,
-        color: Colors.mainTextColor,
+        color: colors.mainTextColor,
     },
     viewButton: {
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',
-        backgroundColor: Colors.primaryColor,
+        backgroundColor: colors.primaryColor,
         borderRadius: 4.41,
         paddingHorizontal: 9,
         paddingVertical: 5.5,
@@ -143,7 +143,7 @@ const Styles = StyleSheet.create({
     viewButtonText: {
         fontSize: 8,
         fontFamily: 'Inter-Regular',
-        color: Colors.whiteColor,
+        color: colors.pureWhite,
         lineHeight: 12,
     },
     videoRightInfo: {
@@ -153,8 +153,6 @@ const Styles = StyleSheet.create({
     },
     videoResolution: {
         ...Fonts.regular12,
-        color: Colors.mainTextColor,
+        color: colors.mainTextColor,
     },
 });
-
-export default Styles;

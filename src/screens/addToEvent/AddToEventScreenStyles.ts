@@ -1,11 +1,11 @@
 import { StyleSheet } from 'react-native';
-import Colors from '../../constants/Colors';
+import { ThemeColors, lightColors } from '../../constants/Theme';
 import Fonts from '../../constants/Fonts';
 
-const Styles = StyleSheet.create({
+export const createStyles = (colors: ThemeColors) => StyleSheet.create({
     mainContainer: {
         flex: 1,
-        backgroundColor: Colors.whiteColor,
+        backgroundColor: colors.whiteColor,
     },
     header: {
         flexDirection: 'row',
@@ -24,7 +24,7 @@ const Styles = StyleSheet.create({
     },
     headerTitle: {
         ...Fonts.medium18,
-        color: Colors.mainTextColor,
+        color: colors.mainTextColor,
     },
     notificationButton: {
         width: 44,
@@ -40,10 +40,10 @@ const Styles = StyleSheet.create({
     },
     sectionTitle: {
         ...Fonts.medium18,
-        color: Colors.mainTextColor,
+        color: colors.mainTextColor,
     },
     eventDetailsCard: {
-        backgroundColor: Colors.whiteColor,
+        backgroundColor: colors.whiteColor,
         borderRadius: 10,
         padding: 16,
         borderWidth: 0.5,
@@ -61,7 +61,7 @@ const Styles = StyleSheet.create({
     },
     detailValue: {
         ...Fonts.medium14,
-        color: Colors.mainTextColor,
+        color: colors.mainTextColor,
     },
     divider: {
         height: 1,
@@ -74,11 +74,11 @@ const Styles = StyleSheet.create({
     },
     inputLabel: {
         ...Fonts.medium14,
-        color: Colors.mainTextColor,
+        color: colors.mainTextColor,
     },
     inputLabelBold: {
         ...Fonts.semibold14,
-        color: Colors.mainTextColor,
+        color: colors.mainTextColor,
     },
     eventsInputContainer: {
         flexDirection: 'row',
@@ -118,13 +118,13 @@ const Styles = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'center',
         borderRadius: 10,
-        backgroundColor: Colors.whiteColor,
+        backgroundColor: colors.whiteColor,
         borderWidth: 0.5,
         borderColor: '#E0ECFE',
     },
     eventPicker: {
         marginTop: 12,
-        backgroundColor: Colors.whiteColor,
+        backgroundColor: colors.whiteColor,
         borderWidth: 0.5,
         borderColor: '#E0ECFE',
         borderRadius: 12,
@@ -132,7 +132,7 @@ const Styles = StyleSheet.create({
     },
     eventPickerTitle: {
         ...Fonts.medium14,
-        color: Colors.mainTextColor,
+        color: colors.mainTextColor,
         marginBottom: 10,
     },
     eventPickerGrid: {
@@ -141,7 +141,7 @@ const Styles = StyleSheet.create({
         gap: 10,
     },
     suggestionChip: {
-        backgroundColor: Colors.whiteColor,
+        backgroundColor: colors.whiteColor,
         borderRadius: 16,
         borderWidth: 0.5,
         borderColor: '#E0ECFE',
@@ -151,15 +151,15 @@ const Styles = StyleSheet.create({
         justifyContent: 'center',
     },
     suggestionChipActive: {
-        backgroundColor: Colors.primaryColor,
-        borderColor: Colors.primaryColor,
+        backgroundColor: colors.primaryColor,
+        borderColor: colors.primaryColor,
     },
     suggestionText: {
         ...Fonts.regular12,
-        color: Colors.grayColor,
+        color: colors.grayColor,
     },
     suggestionTextActive: {
-        color: Colors.whiteColor,
+        color: colors.whiteColor,
     },
     chestNumberInput: {
         flexDirection: 'row',
@@ -175,7 +175,7 @@ const Styles = StyleSheet.create({
     textInput: {
         flex: 1,
         ...Fonts.regular14,
-        color: Colors.mainTextColor,
+        color: colors.mainTextColor,
         padding: 0,
     },
     defaultChestRow: {
@@ -192,7 +192,7 @@ const Styles = StyleSheet.create({
         borderColor: '#D6D6D6',
         alignItems: 'center',
         justifyContent: 'center',
-        backgroundColor: Colors.whiteColor,
+        backgroundColor: colors.whiteColor,
     },
     defaultChestBoxActive: {
         backgroundColor: '#2F6BFF',
@@ -200,7 +200,7 @@ const Styles = StyleSheet.create({
     },
     defaultChestText: {
         ...Fonts.regular12,
-        color: Colors.grayColor,
+        color: colors.grayColor,
     },
     bottomContainer: {
         paddingHorizontal: 20,
@@ -209,14 +209,14 @@ const Styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',
-        backgroundColor: Colors.primaryColor,
+        backgroundColor: colors.primaryColor,
         borderRadius: 10,
         height: 54,
         gap: 8,
     },
     confirmButtonText: {
         ...Fonts.medium16,
-        color: Colors.whiteColor,
+        color: colors.whiteColor,
     },
     modalBackdrop: {
         flex: 1,
@@ -227,23 +227,23 @@ const Styles = StyleSheet.create({
     },
     modalCard: {
         width: '100%',
-        backgroundColor: Colors.whiteColor,
+        backgroundColor: colors.whiteColor,
         borderRadius: 16,
         padding: 16,
     },
     modalTitle: {
         ...Fonts.medium18,
-        color: Colors.mainTextColor,
+        color: colors.mainTextColor,
     },
     modalSubtitle: {
         ...Fonts.regular13,
-        color: Colors.grayColor,
+        color: colors.grayColor,
         marginTop: 4,
         marginBottom: 12,
     },
     modalSectionTitle: {
         ...Fonts.medium14,
-        color: Colors.mainTextColor,
+        color: colors.mainTextColor,
         marginTop: 12,
         marginBottom: 8,
     },
@@ -261,7 +261,7 @@ const Styles = StyleSheet.create({
     modalSearchInput: {
         flex: 1,
         ...Fonts.regular14,
-        color: Colors.mainTextColor,
+        color: colors.mainTextColor,
         padding: 0,
     },
     modalChipsGrid: {
@@ -270,7 +270,7 @@ const Styles = StyleSheet.create({
         gap: 10,
     },
     modalChip: {
-        backgroundColor: Colors.whiteColor,
+        backgroundColor: colors.whiteColor,
         borderRadius: 16,
         borderWidth: 0.5,
         borderColor: '#E0ECFE',
@@ -280,15 +280,15 @@ const Styles = StyleSheet.create({
         justifyContent: 'center',
     },
     modalChipActive: {
-        backgroundColor: Colors.primaryColor,
-        borderColor: Colors.primaryColor,
+        backgroundColor: colors.primaryColor,
+        borderColor: colors.primaryColor,
     },
     modalChipText: {
         ...Fonts.regular12,
-        color: Colors.grayColor,
+        color: colors.grayColor,
     },
     modalChipTextActive: {
-        color: Colors.whiteColor,
+        color: colors.whiteColor,
     },
     modalButtonsRow: {
         flexDirection: 'row',
@@ -305,11 +305,11 @@ const Styles = StyleSheet.create({
         borderColor: '#E0ECFE',
         alignItems: 'center',
         justifyContent: 'center',
-        backgroundColor: Colors.whiteColor,
+        backgroundColor: colors.whiteColor,
     },
     modalCancelText: {
         ...Fonts.medium14,
-        color: Colors.grayColor,
+        color: colors.grayColor,
     },
     modalConfirmButton: {
         flex: 1,
@@ -317,12 +317,14 @@ const Styles = StyleSheet.create({
         borderRadius: 10,
         alignItems: 'center',
         justifyContent: 'center',
-        backgroundColor: Colors.primaryColor,
+        backgroundColor: colors.primaryColor,
     },
     modalConfirmText: {
         ...Fonts.medium14,
-        color: Colors.whiteColor,
+        color: colors.whiteColor,
     },
 });
+
+const Styles = createStyles(lightColors);
 
 export default Styles;

@@ -1,15 +1,14 @@
 import { StyleSheet } from "react-native";
-import Colors from "../../constants/Colors";
 import Fonts from "../../constants/Fonts";
+import { ThemeColors } from "../../constants/Theme";
 
-
-const Styles = StyleSheet.create({
+export const createStyles = (colors: ThemeColors) => StyleSheet.create({
     searchContainer: {
         height: 54,
         borderWidth: 1,
-        borderColor: Colors.borderColor,
+        borderColor: colors.borderColor,
         borderRadius: 10,
-        backgroundColor: Colors.secondaryColor,
+        backgroundColor: colors.secondaryColor,
         alignItems: 'center',
         paddingHorizontal: 16,
         flexDirection: 'row',
@@ -20,9 +19,7 @@ const Styles = StyleSheet.create({
     searchBarText: {
         height: '100%',
         ...Fonts.regular14,
-        color: Colors.mainTextColor,
+        color: colors.mainTextColor,
         width: '90%'
     }
 });
-
-export default Styles;

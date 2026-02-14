@@ -1,12 +1,12 @@
 import { StyleSheet } from "react-native";
-import Colors from "../../constants/Colors";
 import Fonts from "../../constants/Fonts";
+import { ThemeColors } from "../../constants/Theme";
 
-const Styles = StyleSheet.create({
+export const createStyles = (colors: ThemeColors) => StyleSheet.create({
     buttonContainer: {
         height: 54,
         borderRadius: 10,
-        backgroundColor: Colors.primaryColor,
+        backgroundColor: colors.primaryColor,
         alignItems: 'center',
         justifyContent: 'center',
         flexDirection: 'row',
@@ -14,9 +14,7 @@ const Styles = StyleSheet.create({
     },
     btnText: {
         ...Fonts.regular16,
-        color: Colors.whiteColor,
+        color: colors.pureWhite,
         fontWeight: '500',
     }
-})
-
-export default Styles;
+});

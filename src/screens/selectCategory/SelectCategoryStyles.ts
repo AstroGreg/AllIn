@@ -1,11 +1,11 @@
 import { StyleSheet } from 'react-native';
-import Colors from '../../constants/Colors';
+import { ThemeColors, lightColors } from '../../constants/Theme';
 import Fonts from '../../constants/Fonts';
 
-const Styles = StyleSheet.create({
+export const createStyles = (colors: ThemeColors) => StyleSheet.create({
     mainContainer: {
         flex: 1,
-        backgroundColor: Colors.whiteColor,
+        backgroundColor: colors.whiteColor,
     },
     header: {
         flexDirection: 'row',
@@ -35,7 +35,7 @@ const Styles = StyleSheet.create({
     title: {
         ...Fonts.medium22,
         fontSize: 24,
-        color: Colors.mainTextColor,
+        color: colors.mainTextColor,
         textAlign: 'center',
     },
     subtitle: {
@@ -54,14 +54,14 @@ const Styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
-        backgroundColor: Colors.whiteColor,
+        backgroundColor: colors.whiteColor,
         borderRadius: 10,
         borderWidth: 0.5,
         borderColor: '#DEDEDE',
         padding: 16,
     },
     categoryCardSelected: {
-        borderColor: Colors.primaryColor,
+        borderColor: colors.primaryColor,
         borderWidth: 1,
     },
     categoryCardContent: {
@@ -83,7 +83,7 @@ const Styles = StyleSheet.create({
     },
     categoryTitle: {
         ...Fonts.medium18,
-        color: Colors.mainTextColor,
+        color: colors.mainTextColor,
     },
     categoryDescription: {
         ...Fonts.regular14,
@@ -103,27 +103,27 @@ const Styles = StyleSheet.create({
         marginLeft: 12,
     },
     radioButtonSelected: {
-        borderColor: Colors.primaryColor,
+        borderColor: colors.primaryColor,
     },
     radioButtonInner: {
         width: 10,
         height: 10,
         borderRadius: 5,
-        backgroundColor: Colors.primaryColor,
+        backgroundColor: colors.primaryColor,
     },
 
     // Bottom Container
     bottomContainer: {
         paddingHorizontal: 20,
         paddingTop: 16,
-        backgroundColor: Colors.whiteColor,
+        backgroundColor: colors.whiteColor,
     },
     continueButton: {
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',
         gap: 8,
-        backgroundColor: Colors.primaryColor,
+        backgroundColor: colors.primaryColor,
         borderRadius: 10,
         paddingVertical: 16,
         height: 54,
@@ -133,8 +133,10 @@ const Styles = StyleSheet.create({
     },
     continueButtonText: {
         ...Fonts.medium16,
-        color: Colors.whiteColor,
+        color: colors.whiteColor,
     },
 });
+
+const Styles = createStyles(lightColors);
 
 export default Styles;

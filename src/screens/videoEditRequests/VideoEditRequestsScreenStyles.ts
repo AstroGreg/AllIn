@@ -1,11 +1,11 @@
 import { StyleSheet } from 'react-native';
-import Colors from '../../constants/Colors';
+import { ThemeColors, lightColors } from '../../constants/Theme';
 import Fonts from '../../constants/Fonts';
 
-const Styles = StyleSheet.create({
+export const createStyles = (colors: ThemeColors) => StyleSheet.create({
     mainContainer: {
         flex: 1,
-        backgroundColor: Colors.whiteColor,
+        backgroundColor: colors.backgroundColor,
     },
     header: {
         flexDirection: 'row',
@@ -14,26 +14,26 @@ const Styles = StyleSheet.create({
         paddingHorizontal: 20,
         paddingVertical: 15,
         borderBottomWidth: 0.5,
-        borderBottomColor: Colors.lightGrayColor,
+        borderBottomColor: colors.lightGrayColor,
     },
     backButton: {
         width: 44,
         height: 44,
         borderRadius: 22,
-        backgroundColor: Colors.btnBackgroundColor,
+        backgroundColor: colors.btnBackgroundColor,
         alignItems: 'center',
         justifyContent: 'center',
     },
     headerTitle: {
         ...Fonts.medium16,
         fontSize: 18,
-        color: Colors.mainTextColor,
+        color: colors.mainTextColor,
     },
     notificationButton: {
         width: 44,
         height: 44,
         borderRadius: 22,
-        backgroundColor: Colors.btnBackgroundColor,
+        backgroundColor: colors.btnBackgroundColor,
         alignItems: 'center',
         justifyContent: 'center',
     },
@@ -77,7 +77,7 @@ const Styles = StyleSheet.create({
     },
     videoTitle: {
         ...Fonts.medium16,
-        color: Colors.mainTextColor,
+        color: colors.mainTextColor,
     },
     locationContainer: {
         flexDirection: 'row',
@@ -86,7 +86,7 @@ const Styles = StyleSheet.create({
     },
     locationText: {
         ...Fonts.regular14,
-        color: '#9B9F9F',
+        color: colors.subTextColor,
     },
     durationContainer: {
         flexDirection: 'row',
@@ -95,7 +95,7 @@ const Styles = StyleSheet.create({
     },
     durationText: {
         ...Fonts.regular14,
-        color: '#9B9F9F',
+        color: colors.subTextColor,
     },
     dateContainer: {
         flexDirection: 'row',
@@ -104,12 +104,12 @@ const Styles = StyleSheet.create({
     },
     dateText: {
         ...Fonts.regular14,
-        color: '#9B9F9F',
+        color: colors.subTextColor,
     },
     sectionTitle: {
         ...Fonts.medium16,
         fontSize: 18,
-        color: Colors.mainTextColor,
+        color: colors.mainTextColor,
         marginTop: 16,
     },
     emptyStateContainer: {
@@ -120,9 +120,10 @@ const Styles = StyleSheet.create({
     emptyStateText: {
         ...Fonts.medium16,
         fontSize: 20,
-        color: Colors.mainTextColor,
+        color: colors.mainTextColor,
         textAlign: 'center',
     },
 });
 
+const Styles = createStyles(lightColors);
 export default Styles;

@@ -7,15 +7,19 @@ import {
     ArrowRight,
     Image,
 } from 'iconsax-react-nativejs';
-import Styles from './VideosScreenStyles';
+import { createStyles } from './VideosScreenStyles';
 import SizeBox from '../../constants/SizeBox';
-import Colors from '../../constants/Colors';
 import Images from '../../constants/Images';
 import Icons from '../../constants/Icons';
+import { useTheme } from '../../context/ThemeContext';
+import { useTranslation } from 'react-i18next';
 
 const VideosScreen = ({ navigation, route }: any) => {
     const insets = useSafeAreaInsets();
     const eventTitle = route?.params?.eventTitle || 'BK Studentent 23';
+    const { colors } = useTheme();
+    const Styles = createStyles(colors);
+    const { t } = useTranslation();
 
     const videos = [
         { id: 1, price: '€0,10', resolution: '720p', thumbnail: Images.photo1 },
@@ -62,8 +66,8 @@ const VideosScreen = ({ navigation, route }: any) => {
                             showBuyModal: true,
                         })}
                     >
-                        <Text style={Styles.viewButtonText}>View</Text>
-                        <ArrowRight size={12} color={Colors.whiteColor} variant="Linear" />
+                    <Text style={Styles.viewButtonText}>{t('View')}</Text>
+                        <ArrowRight size={12} color={colors.pureWhite} variant="Linear" />
                     </TouchableOpacity>
                 </View>
                 <View style={Styles.videoRightInfo}>
@@ -83,23 +87,23 @@ const VideosScreen = ({ navigation, route }: any) => {
             {/* Header */}
             <View style={Styles.header}>
                 <TouchableOpacity style={Styles.backButton} onPress={() => navigation.goBack()}>
-                    <ArrowLeft2 size={24} color={Colors.mainTextColor} variant="Linear" />
+                    <ArrowLeft2 size={24} color={colors.mainTextColor} variant="Linear" />
                 </TouchableOpacity>
                 <Text style={Styles.headerTitle}>{eventTitle}</Text>
                 <TouchableOpacity
                     style={Styles.imageButton}
                     onPress={() => navigation.goBack()}
                 >
-                    <Image size={24} color={Colors.primaryColor} variant="Bold" />
+                    <Image size={24} color={colors.primaryColor} variant="Bold" />
                 </TouchableOpacity>
             </View>
 
             <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={Styles.scrollContent}>
                 {/* Videos Header */}
                 <View style={Styles.videosHeader}>
-                    <Text style={Styles.videosLabel}>Videos</Text>
+                    <Text style={Styles.videosLabel}>{t('Videos')}</Text>
                     <TouchableOpacity style={Styles.downloadAllButton}>
-                        <Text style={Styles.downloadAllText}>Download All</Text>
+                        <Text style={Styles.downloadAllText}>{t('Download all')}</Text>
                     </TouchableOpacity>
                 </View>
 
@@ -109,7 +113,7 @@ const VideosScreen = ({ navigation, route }: any) => {
                 <View style={Styles.infoCard}>
                     <Icons.LightbulbColorful height={30} width={30} />
                     <Text style={Styles.infoText}>
-                        These videos were found based on the competitions you subscribed to.
+                        {t('These videos were found based on the competitions you subscribed to.')}
                     </Text>
                 </View>
 

@@ -1,13 +1,15 @@
 import { StyleSheet } from "react-native";
-import Colors from "../../constants/Colors";
+import { ThemeColors, lightColors } from '../../constants/Theme';
 
-const Styles = StyleSheet.create({
+export const createStyles = (colors: ThemeColors) => StyleSheet.create({
     mainContainer: {
         flex: 1,
-        backgroundColor: Colors.primaryColor,
+        backgroundColor: colors.primaryColor,
         alignItems: 'center',
         justifyContent: 'center'
     }
 });
+
+const Styles = createStyles(lightColors);
 
 export default Styles;

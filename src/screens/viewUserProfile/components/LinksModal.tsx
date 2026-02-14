@@ -5,6 +5,7 @@ import FastImage from 'react-native-fast-image';
 import Icons from '../../../constants/Icons';
 import { createStyles } from '../ViewUserProfileStyles';
 import { useTheme } from '../../../context/ThemeContext';
+import { useTranslation } from 'react-i18next';
 
 interface LinksModalProps {
     isVisible: boolean;
@@ -13,6 +14,7 @@ interface LinksModalProps {
 
 const LinksModal = ({ isVisible, onClose }: LinksModalProps) => {
     const { colors } = useTheme();
+    const { t } = useTranslation();
     const Styles = createStyles(colors);
 
     return (
@@ -35,7 +37,7 @@ const LinksModal = ({ isVisible, onClose }: LinksModalProps) => {
                     <TouchableOpacity style={Styles.socialLinks}>
                         <FastImage source={Icons.Strava} style={Styles.icons} />
                         <SizeBox width={12} />
-                        <Text style={Styles.eventText}>Connect with Strava</Text>
+                        <Text style={Styles.eventText}>{t('Connect with Strava')}</Text>
                         <View style={[Styles.nextArrow, { right: 0 }]}>
                             <Icons.ArrowNext height={24} width={24} />
                         </View>
@@ -60,7 +62,7 @@ const LinksModal = ({ isVisible, onClose }: LinksModalProps) => {
                     <TouchableOpacity style={Styles.socialLinks}>
                         <FastImage source={Icons.Instagram} style={Styles.icons} />
                         <SizeBox width={12} />
-                        <Text style={Styles.eventText}>Connect with Instagram</Text>
+                        <Text style={Styles.eventText}>{t('Connect with Instagram')}</Text>
                         <View style={[Styles.nextArrow, { right: 0 }]}>
                             <Icons.ArrowNext height={24} width={24} />
                         </View>

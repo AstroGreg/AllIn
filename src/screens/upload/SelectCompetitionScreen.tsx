@@ -10,6 +10,7 @@ import { useAuth } from '../../context/AuthContext'
 import { ApiError, getMediaViewAll, searchEvents, type MediaViewAllItem, type SubscribedEvent } from '../../services/apiGateway'
 import { getApiBaseUrl } from '../../constants/RuntimeConfig'
 import { CalendarList } from 'react-native-calendars'
+import { useTranslation } from 'react-i18next'
 
 interface Competition {
     id: string;
@@ -24,6 +25,7 @@ interface Competition {
 const SelectCompetitionScreen = ({ navigation, route }: any) => {
     const insets = useSafeAreaInsets();
     const { colors } = useTheme();
+    const { t } = useTranslation();
     const Styles = createStyles(colors);
     const { apiAccessToken } = useAuth();
     const anonymous = route?.params?.anonymous;
@@ -364,7 +366,7 @@ const SelectCompetitionScreen = ({ navigation, route }: any) => {
                 <TouchableOpacity style={Styles.headerButton} onPress={() => navigation.goBack()}>
                     <ArrowLeft2 size={24} color={colors.primaryColor} variant="Linear" />
                 </TouchableOpacity>
-                <Text style={Styles.headerTitle}>Upload</Text>
+                <Text style={Styles.headerTitle}>{t('upload')}</Text>
                 {isAnonymous ? (
                     <View style={Styles.headerGhost}>
                         <Ghost size={22} color={colors.primaryColor} variant="Linear" />
@@ -377,7 +379,7 @@ const SelectCompetitionScreen = ({ navigation, route }: any) => {
             <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={Styles.scrollContent}>
                 <View style={Styles.uploadModeBanner}>
                     <Text style={Styles.uploadModeText}>
-                        {isAnonymous ? 'Anonymous upload' : 'Upload to a competition'}
+                        {isAnonymous ? t('anonymousUpload') : t('uploadToCompetition')}
                     </Text>
                 </View>
 
@@ -393,7 +395,7 @@ const SelectCompetitionScreen = ({ navigation, route }: any) => {
                         </View>
                         <TextInput
                             style={Styles.searchInput}
-                            placeholder={activeFilter === 'Competition' ? 'Search competitions to upload' : 'Search by location'}
+                            placeholder={activeFilter === 'Competition' ? t('searchCompetitionsToUpload') : t('searchByLocation')}
                             placeholderTextColor={colors.grayColor}
                             value={activeValue}
                             onChangeText={handleSearchChange}
@@ -411,7 +413,7 @@ const SelectCompetitionScreen = ({ navigation, route }: any) => {
                             onPress={() => setActiveFilter(filter as 'Competition' | 'Location')}
                         >
                             <Text style={[Styles.filterTabText, activeFilter === filter && Styles.filterTabTextActive]}>
-                                {filter}
+                                {filter === 'Competition' ? t('competition') : t('location')}
                             </Text>
                         </TouchableOpacity>
                     ))}
@@ -420,12 +422,12 @@ const SelectCompetitionScreen = ({ navigation, route }: any) => {
                 <SizeBox height={12} />
 
                 <View style={Styles.typeFilterRow}>
-                    <Text style={Styles.typeFilterLabel}>Competition type</Text>
+                    <Text style={Styles.typeFilterLabel}>{t('competitionType')}</Text>
                     <View style={Styles.typeFilterChips}>
                         {[
-                            { key: 'all', label: 'All' },
-                            { key: 'track', label: 'Track&Field' },
-                            { key: 'road', label: 'Road&Trail' },
+                            { key: 'all', label: t('all') },
+                            { key: 'track', label: t('trackAndField') },
+                            { key: 'road', label: t('roadAndTrail') },
                         ].map((tab) => (
                             <TouchableOpacity
                                 key={tab.key}
@@ -459,17 +461,17 @@ const SelectCompetitionScreen = ({ navigation, route }: any) => {
                     >
                         <Calendar size={14} color={timeRange.start ? colors.primaryColor : colors.grayColor} variant="Linear" />
                         <Text style={[Styles.timeRangeText, timeRange.start && Styles.timeRangeTextActive]}>
-                            {timeRange.start && timeRange.end ? timeRangeLabel : 'Select date range'}
+                            {timeRange.start && timeRange.end ? timeRangeLabel : t('selectDateRange')}
                         </Text>
                     </TouchableOpacity>
                 </View>
 
                 {/* Results Header */}
                 <View style={Styles.resultsHeader}>
-                    <Text style={Styles.resultsTitle}>Available Competitions</Text>
+                    <Text style={Styles.resultsTitle}>{t('availableCompetitions')}</Text>
                     <View style={Styles.resultsCountBadge}>
                         <Text style={Styles.resultsCountText}>
-                            {isLoading ? '...' : `${filteredCompetitions.length} competitions`}
+                            {isLoading ? '...' : `${filteredCompetitions.length} ${t('competitions')}`}
                         </Text>
                     </View>
                 </View>
@@ -479,7 +481,7 @@ const SelectCompetitionScreen = ({ navigation, route }: any) => {
                 {isLoading && filteredCompetitions.length === 0 && (
                     <View style={Styles.loadingRow}>
                         <ActivityIndicator color={colors.primaryColor} />
-                        <Text style={Styles.loadingText}>Loading competitions...</Text>
+                        <Text style={Styles.loadingText}>{t('loadingCompetitions')}</Text>
                     </View>
                 )}
 
@@ -500,28 +502,28 @@ const SelectCompetitionScreen = ({ navigation, route }: any) => {
                         onPress={() => setShowCalendar(false)}
                     />
                     <View style={Styles.dateModalContainer}>
-                        <Text style={Styles.dateModalTitle}>Select date range</Text>
+                        <Text style={Styles.dateModalTitle}>{t('selectDateRange')}</Text>
                         <SizeBox height={10} />
                         <View style={Styles.quickRangeRow}>
                             <TouchableOpacity style={Styles.quickRangeChip} onPress={() => setQuickRange('week')}>
-                                <Text style={Styles.quickRangeChipText}>This week</Text>
+                                <Text style={Styles.quickRangeChipText}>{t('thisWeek')}</Text>
                             </TouchableOpacity>
                             <TouchableOpacity style={Styles.quickRangeChip} onPress={() => setQuickRange('month')}>
-                                <Text style={Styles.quickRangeChipText}>This month</Text>
+                                <Text style={Styles.quickRangeChipText}>{t('thisMonth')}</Text>
                             </TouchableOpacity>
                             <TouchableOpacity style={Styles.quickRangeChip} onPress={() => setQuickRange('year')}>
-                                <Text style={Styles.quickRangeChipText}>This year</Text>
+                                <Text style={Styles.quickRangeChipText}>{t('thisYear')}</Text>
                             </TouchableOpacity>
                         </View>
                         <SizeBox height={8} />
                         <View style={Styles.rangeHeaderRow}>
                             <View style={Styles.rangePill}>
-                                <Text style={Styles.rangePillLabel}>Start</Text>
-                                <Text style={Styles.rangePillValue}>{calendarStart ?? 'Select'}</Text>
+                                <Text style={Styles.rangePillLabel}>{t('start')}</Text>
+                                <Text style={Styles.rangePillValue}>{calendarStart ?? t('selectDate')}</Text>
                             </View>
                             <View style={Styles.rangePill}>
-                                <Text style={Styles.rangePillLabel}>End</Text>
-                                <Text style={Styles.rangePillValue}>{calendarEnd ?? 'Select'}</Text>
+                                <Text style={Styles.rangePillLabel}>{t('end')}</Text>
+                                <Text style={Styles.rangePillValue}>{calendarEnd ?? t('selectDate')}</Text>
                             </View>
                         </View>
                         <SizeBox height={12} />
@@ -574,14 +576,14 @@ const SelectCompetitionScreen = ({ navigation, route }: any) => {
                         <SizeBox height={12} />
                         <View style={Styles.modalButtonRow}>
                             <TouchableOpacity style={Styles.modalCancelButton} onPress={() => setShowCalendar(false)}>
-                                <Text style={Styles.modalCancelText}>Cancel</Text>
+                                <Text style={Styles.modalCancelText}>{t('cancel')}</Text>
                             </TouchableOpacity>
                             <TouchableOpacity
                                 style={[Styles.modalSubmitButton, !calendarStart && Styles.modalSubmitButtonDisabled]}
                                 onPress={applyDateRange}
                                 disabled={!calendarStart}
                             >
-                                <Text style={Styles.modalSubmitText}>Apply</Text>
+                                <Text style={Styles.modalSubmitText}>{t('apply')}</Text>
                             </TouchableOpacity>
                         </View>
                     </View>

@@ -1,11 +1,12 @@
 import { View, Text, Modal, TouchableOpacity, TextInput } from 'react-native'
 import React, { useState } from 'react'
 import SizeBox from '../../../constants/SizeBox';
-import Styles from './ModalsStyles';
+import { createStyles } from './ModalsStyles';
 import BorderButton from '../../../components/borderButton/BorderButton';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Icons from '../../../constants/Icons';
-import Colors from '../../../constants/Colors';
+import { useTheme } from '../../../context/ThemeContext';
+import { useTranslation } from 'react-i18next';
 
 interface DescriptionModalProps {
     isVisible?: boolean;
@@ -18,6 +19,9 @@ interface DescriptionModalProps {
 const DescriptionModal = ({ isVisible, onClose, onPressPrevious, onPressNext }: DescriptionModalProps) => {
     const insets = useSafeAreaInsets();
     const [bio, setBio] = useState('');
+    const { colors } = useTheme();
+    const Styles = createStyles(colors);
+    const { t } = useTranslation();
 
     return (
         <Modal
@@ -37,7 +41,7 @@ const DescriptionModal = ({ isVisible, onClose, onPressPrevious, onPressNext }: 
                     activeOpacity={1}
                     onPress={(e) => e.stopPropagation()}
                 >
-                    <Text style={Styles.titleText}>Report Mistake</Text>
+                    <Text style={Styles.titleText}>{t('Report mistake')}</Text>
                     <SizeBox height={10} />
                     <View style={Styles.divider} />
                     <SizeBox height={19} />
@@ -49,8 +53,8 @@ const DescriptionModal = ({ isVisible, onClose, onPressPrevious, onPressNext }: 
                             </View>
                             <TextInput
                                 style={Styles.textInput}
-                                placeholder="Add a shot description"
-                                placeholderTextColor={Colors.subTextColor}
+                                placeholder={t('Add a shot description')}
+                                placeholderTextColor={colors.subTextColor}
                                 multiline
                                 value={bio}
                                 onChangeText={setBio}
@@ -60,8 +64,8 @@ const DescriptionModal = ({ isVisible, onClose, onPressPrevious, onPressNext }: 
 
                     <SizeBox height={16} />
                     <View style={[Styles.row, { justifyContent: 'space-between' }]}>
-                        <BorderButton title='Previous' onPress={onPressPrevious} />
-                        <BorderButton isFilled={true} title='Next' onPress={onPressNext} />
+                        <BorderButton title={t('Previous')} onPress={onPressPrevious} />
+                        <BorderButton isFilled={true} title={t('Next')} onPress={onPressNext} />
                     </View>
                 </TouchableOpacity>
             </TouchableOpacity>

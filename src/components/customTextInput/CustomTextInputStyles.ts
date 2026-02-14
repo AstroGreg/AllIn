@@ -1,23 +1,23 @@
 import { StyleSheet } from "react-native";
-import Colors from "../../constants/Colors";
 import Fonts from "../../constants/Fonts";
+import { ThemeColors } from "../../constants/Theme";
 
-const Styles = StyleSheet.create({
+export const createStyles = (colors: ThemeColors) => StyleSheet.create({
     label: {
         ...Fonts.regular14,
-        color: Colors.mainTextColor,
+        color: colors.mainTextColor,
         fontWeight: '400'
     },
     subLabel: {
         ...Fonts.regular13,
-        color: Colors.subTextColor,
+        color: colors.subTextColor,
     },
     inputContainer: {
         height: 54,
         borderWidth: 1,
         borderRadius: 10,
-        borderColor: Colors.borderColor,
-        backgroundColor: Colors.secondaryColor,
+        borderColor: colors.borderColor,
+        backgroundColor: colors.secondaryColor,
         alignItems: 'center',
         flexDirection: 'row',
         paddingHorizontal: 16,
@@ -25,11 +25,11 @@ const Styles = StyleSheet.create({
     },
     inputTitle: {
         ...Fonts.regular14,
-        color: Colors.grayColor,
+        color: colors.grayColor,
     },
     input: {
         ...Fonts.regular14,
-        color: Colors.mainTextColor,
+        color: colors.mainTextColor,
     },
     inputBox: {
         flexDirection: 'column',
@@ -40,6 +40,4 @@ const Styles = StyleSheet.create({
         right: 16,
         zIndex: 1
     }
-})
-
-export default Styles;
+});

@@ -1,11 +1,11 @@
 import { StyleSheet } from 'react-native';
-import Colors from '../../constants/Colors';
 import Fonts from '../../constants/Fonts';
+import { ThemeColors, lightColors } from '../../constants/Theme';
 
-const Styles = StyleSheet.create({
+export const createStyles = (colors: ThemeColors) => StyleSheet.create({
     mainContainer: {
         flex: 1,
-        backgroundColor: Colors.whiteColor,
+        backgroundColor: colors.backgroundColor,
     },
     header: {
         flexDirection: 'row',
@@ -14,26 +14,26 @@ const Styles = StyleSheet.create({
         paddingHorizontal: 20,
         paddingVertical: 15,
         borderBottomWidth: 0.5,
-        borderBottomColor: Colors.lightGrayColor,
+        borderBottomColor: colors.lightGrayColor,
     },
     backButton: {
         width: 44,
         height: 44,
         borderRadius: 22,
-        backgroundColor: Colors.btnBackgroundColor,
+        backgroundColor: colors.btnBackgroundColor,
         alignItems: 'center',
         justifyContent: 'center',
     },
     headerTitle: {
         ...Fonts.medium16,
         fontSize: 18,
-        color: Colors.mainTextColor,
+        color: colors.mainTextColor,
     },
     notificationButton: {
         width: 44,
         height: 44,
         borderRadius: 22,
-        backgroundColor: Colors.btnBackgroundColor,
+        backgroundColor: colors.btnBackgroundColor,
         alignItems: 'center',
         justifyContent: 'center',
     },
@@ -50,11 +50,11 @@ const Styles = StyleSheet.create({
     sectionTitle: {
         ...Fonts.medium16,
         fontSize: 18,
-        color: Colors.mainTextColor,
+        color: colors.mainTextColor,
     },
     viewAllText: {
         ...Fonts.regular14,
-        color: '#9B9F9F',
+        color: colors.subTextColor,
     },
     notificationsList: {
         gap: 24,
@@ -63,9 +63,9 @@ const Styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
-        backgroundColor: Colors.whiteColor,
+        backgroundColor: colors.cardBackground,
         borderWidth: 0.5,
-        borderColor: '#DEDEDE',
+        borderColor: colors.lightGrayColor,
         borderRadius: 10,
         padding: 16,
         minHeight: 78,
@@ -80,7 +80,7 @@ const Styles = StyleSheet.create({
         width: 40,
         height: 40,
         borderRadius: 6,
-        backgroundColor: 'rgba(60, 130, 246, 0.14)',
+        backgroundColor: colors.secondaryBlueColor,
         alignItems: 'center',
         justifyContent: 'center',
     },
@@ -90,21 +90,21 @@ const Styles = StyleSheet.create({
     },
     notificationTitle: {
         ...Fonts.medium14,
-        color: Colors.mainTextColor,
+        color: colors.mainTextColor,
     },
     notificationDescription: {
         ...Fonts.regular12,
-        color: '#9B9F9F',
+        color: colors.subTextColor,
     },
     notificationRight: {
         alignItems: 'center',
         gap: 6,
-        width: 64,
+        width: 70,
     },
     newBadge: {
-        backgroundColor: '#D2E3FF',
+        backgroundColor: colors.secondaryBlueColor,
         borderRadius: 4,
-        paddingHorizontal: 21,
+        paddingHorizontal: 18,
         paddingVertical: 4,
         alignItems: 'center',
         justifyContent: 'center',
@@ -113,20 +113,21 @@ const Styles = StyleSheet.create({
         fontFamily: 'Inter-Regular',
         fontSize: 10,
         lineHeight: 18,
-        color: Colors.primaryColor,
+        color: colors.primaryColor,
     },
     dateText: {
         ...Fonts.regular12,
-        color: '#9B9F9F',
+        color: colors.subTextColor,
     },
     detailsLink: {
         fontFamily: 'Inter-Regular',
         fontSize: 10,
         lineHeight: 18,
-        color: '#9B9F9F',
+        color: colors.primaryColor,
         textDecorationLine: 'underline',
         textAlign: 'center',
     },
 });
 
+const Styles = createStyles(lightColors);
 export default Styles;

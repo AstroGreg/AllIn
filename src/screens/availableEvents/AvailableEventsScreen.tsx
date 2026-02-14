@@ -12,24 +12,28 @@ import {
     SearchNormal1,
     User,
 } from 'iconsax-react-nativejs';
-import Styles from './AvailableEventsScreenStyles';
+import { createStyles } from './AvailableEventsScreenStyles';
 import SizeBox from '../../constants/SizeBox';
 import Images from '../../constants/Images';
-import Colors from '../../constants/Colors';
+import { useTheme } from '../../context/ThemeContext';
+import { useTranslation } from 'react-i18next';
 
 const EVENT_FILTERS = ['Competition', 'Location'] as const;
 type EventFilterKey = typeof EVENT_FILTERS[number];
 type CompetitionType = 'track' | 'marathon';
 type CompetitionTypeFilter = 'all' | CompetitionType;
-const COMPETITION_TYPE_FILTERS: Array<{ key: CompetitionTypeFilter; label: string }> = [
-    { key: 'all', label: 'All' },
-    { key: 'track', label: 'Track&Field' },
-    { key: 'marathon', label: 'Road&Trail' },
+const COMPETITION_TYPE_FILTERS: Array<{ key: CompetitionTypeFilter; labelKey: string }> = [
+    { key: 'all', labelKey: 'all' },
+    { key: 'track', labelKey: 'trackAndField' },
+    { key: 'marathon', labelKey: 'roadAndTrail' },
 ];
 
 const AvailableEventsScreen = ({ navigation }: any) => {
     const insets = useSafeAreaInsets();
     const { width: windowWidth } = useWindowDimensions();
+    const { colors } = useTheme();
+    const { t } = useTranslation();
+    const Styles = createStyles(colors);
     const [activeFilter, setActiveFilter] = useState<EventFilterKey>('Competition');
     const [filterValues, setFilterValues] = useState<Record<EventFilterKey, string>>({
         Competition: '',
@@ -52,7 +56,7 @@ const AvailableEventsScreen = ({ navigation }: any) => {
     const defaultChestNumber = '32';
 
     const activeValue = filterValues[activeFilter] ?? '';
-    const searchPlaceholder = activeFilter === 'Competition' ? 'Type competition...' : 'Type location...';
+    const searchPlaceholder = activeFilter === 'Competition' ? t('typeCompetition') : t('typeLocation');
 
     const suggestedEvents = useMemo(
         () => ['60m', '100m', '200m', '400m', '800m', '1500m', '5K', '10K', 'Long jump', 'Shot put'],
@@ -64,8 +68,8 @@ const AvailableEventsScreen = ({ navigation }: any) => {
     );
 
     const getCompetitionTypeLabel = (type: CompetitionType) => {
-        if (type === 'marathon') return 'Road&Trail';
-        return 'Track&Field';
+        if (type === 'marathon') return t('roadAndTrail');
+        return t('trackAndField');
     };
 
     const toDateString = (date: Date) => {
@@ -302,7 +306,7 @@ const AvailableEventsScreen = ({ navigation }: any) => {
             onPress={() => openSubscribeModal(item)}
         >
             <View style={Styles.eventIconContainer}>
-                <Calendar size={20} color={Colors.primaryColor} variant="Linear" />
+                            <Calendar size={20} color={colors.primaryColor} variant="Linear" />
             </View>
             <SizeBox width={16} />
             <View style={Styles.eventContent}>
@@ -315,12 +319,12 @@ const AvailableEventsScreen = ({ navigation }: any) => {
                 <SizeBox height={6} />
                 <View style={Styles.eventDetails}>
                     <View style={Styles.eventDetailItem}>
-                        <Calendar size={14} color="#9B9F9F" variant="Linear" />
+                        <Calendar size={14} color={colors.subTextColor} variant="Linear" />
                         <SizeBox width={4} />
                         <Text style={Styles.eventDetailText}>{item.date}</Text>
                     </View>
                     <View style={Styles.eventDetailItem}>
-                        <Location size={14} color="#9B9F9F" variant="Linear" />
+                        <Location size={14} color={colors.subTextColor} variant="Linear" />
                         <SizeBox width={4} />
                         <Text style={Styles.eventDetailText}>{item.location}</Text>
                     </View>
@@ -336,24 +340,26 @@ const AvailableEventsScreen = ({ navigation }: any) => {
             {/* Header */}
             <View style={Styles.header}>
                 <TouchableOpacity style={Styles.backButton} onPress={() => navigation.goBack()}>
-                    <ArrowLeft2 size={20} color={Colors.mainTextColor} variant="Linear" />
+                    <ArrowLeft2 size={20} color={colors.mainTextColor} variant="Linear" />
                 </TouchableOpacity>
-                <Text style={Styles.headerTitle}>Events</Text>
+                <Text style={Styles.headerTitle}>{t('events')}</Text>
                 <View style={Styles.headerSpacer} />
             </View>
 
             <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={Styles.scrollContent}>
                 <View style={Styles.searchRow}>
                     <View style={Styles.searchInputContainer}>
-                        <SearchNormal1 size={16} color="#9B9F9F" variant="Linear" />
+                        <SearchNormal1 size={16} color={colors.subTextColor} variant="Linear" />
                         <SizeBox width={8} />
                         <View style={Styles.searchInputPill}>
-                            <Text style={Styles.searchInputPillText}>{activeFilter}:</Text>
+                            <Text style={Styles.searchInputPillText}>
+                                {activeFilter === 'Competition' ? t('competition') : t('location')}:
+                            </Text>
                         </View>
                         <TextInput
                             style={Styles.searchInput}
                             placeholder={searchPlaceholder}
-                            placeholderTextColor="#9B9F9F"
+                            placeholderTextColor={colors.subTextColor}
                             value={activeValue}
                             onChangeText={handleSearchChange}
                             returnKeyType="search"
@@ -378,7 +384,7 @@ const AvailableEventsScreen = ({ navigation }: any) => {
                                     Styles.filterTabText,
                                     activeFilter === filter && Styles.filterTabTextActive
                                 ]}>
-                                    {filter}
+                                    {filter === 'Competition' ? t('competition') : t('location')}
                                 </Text>
                             </TouchableOpacity>
                         ))}
@@ -388,7 +394,7 @@ const AvailableEventsScreen = ({ navigation }: any) => {
                 <SizeBox height={16} />
 
                 <View style={Styles.typeFilterRow}>
-                    <Text style={Styles.typeFilterLabel}>Competition Type</Text>
+                    <Text style={Styles.typeFilterLabel}>{t('competitionType')}</Text>
                     <View style={Styles.typeFilterChips}>
                         {COMPETITION_TYPE_FILTERS.map((option) => (
                             <TouchableOpacity
@@ -405,7 +411,7 @@ const AvailableEventsScreen = ({ navigation }: any) => {
                                         competitionTypeFilter === option.key && Styles.typeFilterChipTextActive,
                                     ]}
                                 >
-                                    {option.label}
+                                    {t(option.labelKey)}
                                 </Text>
                             </TouchableOpacity>
                         ))}
@@ -421,7 +427,9 @@ const AvailableEventsScreen = ({ navigation }: any) => {
                             style={Styles.activeChip}
                             onPress={() => clearFilterValue(filter)}
                         >
-                            <Text style={Styles.activeChipText}>{filter}: {filterValues[filter]}</Text>
+                            <Text style={Styles.activeChipText}>
+                                {(filter === 'Competition' ? t('competition') : t('location'))}: {filterValues[filter]}
+                            </Text>
                             <CloseCircle size={16} color="#FFFFFF" variant="Linear" />
                         </TouchableOpacity>
                     ))}
@@ -430,19 +438,19 @@ const AvailableEventsScreen = ({ navigation }: any) => {
                             style={Styles.timeRangeChipActive}
                             onPress={openDateTimePicker}
                         >
-                            <Clock size={14} color={Colors.primaryColor} variant="Linear" />
+                            <Clock size={14} color={colors.primaryColor} variant="Linear" />
                             <Text style={Styles.timeRangeTextActive}>{formatDateRange(timeRange.start, timeRange.end)}</Text>
                             <TouchableOpacity onPress={() => setTimeRange({ start: null, end: null })}>
-                                <CloseCircle size={16} color={Colors.primaryColor} variant="Linear" />
+                                <CloseCircle size={16} color={colors.primaryColor} variant="Linear" />
                             </TouchableOpacity>
                         </TouchableOpacity>
                     ) : (
                         <TouchableOpacity style={Styles.timeRangeChip} onPress={openDateTimePicker}>
-                            <Clock size={14} color="#9B9F9F" variant="Linear" />
+                            <Clock size={14} color={colors.subTextColor} variant="Linear" />
                             <SizeBox width={4} />
-                            <Text style={Styles.timeRangeText}>Select date range</Text>
+                            <Text style={Styles.timeRangeText}>{t('selectDateRange')}</Text>
                             <SizeBox width={4} />
-                            <ArrowDown2 size={14} color="#9B9F9F" variant="Linear" />
+                            <ArrowDown2 size={14} color={colors.subTextColor} variant="Linear" />
                         </TouchableOpacity>
                     )}
                 </View>
@@ -451,9 +459,9 @@ const AvailableEventsScreen = ({ navigation }: any) => {
 
                 {/* Available Events Section */}
                 <View style={Styles.sectionHeader}>
-                    <Text style={Styles.sectionTitle}>Available Events</Text>
+                    <Text style={Styles.sectionTitle}>{t('availableEvents')}</Text>
                     <View style={Styles.eventsCountBadge}>
-                        <Text style={Styles.eventsCountText}>{filteredEvents.length} events</Text>
+                        <Text style={Styles.eventsCountText}>{filteredEvents.length} {t('events').toLowerCase()}</Text>
                     </View>
                 </View>
 
@@ -471,7 +479,7 @@ const AvailableEventsScreen = ({ navigation }: any) => {
                 <View style={Styles.modalBackdrop}>
                     <View style={Styles.modalCard}>
                         <View style={Styles.modalHeaderRow}>
-                            <Text style={Styles.modalTitle}>Subscribe to event</Text>
+                            <Text style={Styles.modalTitle}>{t('subscribeToEvent')}</Text>
                             <TouchableOpacity
                                 style={Styles.modalHeaderAction}
                                 onPress={() => {
@@ -484,14 +492,14 @@ const AvailableEventsScreen = ({ navigation }: any) => {
                                     });
                                 }}
                             >
-                                <Text style={Styles.modalHeaderActionText}>View competition</Text>
+                                <Text style={Styles.modalHeaderActionText}>{t('viewCompetition')}</Text>
                             </TouchableOpacity>
                         </View>
                         <Text style={Styles.modalSubtitle}>
-                            {modalEvent?.title ?? 'Select disciplines and chest number.'}
+                            {modalEvent?.title ?? t('selectDisciplineChest')}
                         </Text>
 
-                        <Text style={Styles.modalSectionTitle}>Disciplines</Text>
+                        <Text style={Styles.modalSectionTitle}>{t('disciplines')}</Text>
                         <ScrollView contentContainerStyle={Styles.modalChipsGrid}>
                             {suggestedEvents.map((item) => {
                                 const isSelected = selectedEvents.includes(item);
@@ -510,11 +518,11 @@ const AvailableEventsScreen = ({ navigation }: any) => {
                             })}
                         </ScrollView>
 
-                        <Text style={Styles.modalSectionTitle}>Notifications for</Text>
+                        <Text style={Styles.modalSectionTitle}>{t('notificationsFor')}</Text>
                         <View style={Styles.modalChipsGrid}>
                             {selectedCategories.includes('All') && (
                                 <View style={[Styles.modalChip, Styles.modalChipActive]}>
-                                    <Text style={[Styles.modalChipText, Styles.modalChipTextActive]}>All</Text>
+                                    <Text style={[Styles.modalChipText, Styles.modalChipTextActive]}>{t('all')}</Text>
                                 </View>
                             )}
                             {categoryOptions.map((item) => {
@@ -527,21 +535,21 @@ const AvailableEventsScreen = ({ navigation }: any) => {
                                         activeOpacity={0.8}
                                     >
                                         <Text style={[Styles.modalChipText, isSelected && Styles.modalChipTextActive]}>
-                                            {item}
+                                            {t(item.toLowerCase())}
                                         </Text>
                                     </TouchableOpacity>
                                 );
                             })}
                         </View>
 
-                        <Text style={Styles.modalSectionTitle}>Chest number</Text>
+                        <Text style={Styles.modalSectionTitle}>{t('chestNumber')}</Text>
                         <View style={Styles.modalChestInput}>
-                            <User size={16} color="#9B9F9F" variant="Linear" />
+                            <User size={16} color={colors.subTextColor} variant="Linear" />
                             <TextInput
                                 style={Styles.modalChestTextInput}
-                                placeholder="Enter Chest Number"
-                                placeholderTextColor="#777777"
-                                value={chestNumber}
+                                placeholder={t('enterChestNumber')}
+                                placeholderTextColor={colors.subTextColor}
+                                value={useDefaultChest ? defaultChestNumber : chestNumber}
                                 onChangeText={setChestNumber}
                                 editable={!useDefaultChest}
                             />
@@ -554,12 +562,14 @@ const AvailableEventsScreen = ({ navigation }: any) => {
                             <View style={[Styles.defaultChestBox, useDefaultChest && Styles.defaultChestBoxActive]}>
                                 {useDefaultChest && <Text style={Styles.defaultChestCheck}>✓</Text>}
                             </View>
-                            <Text style={Styles.defaultChestText}>Use default number ({defaultChestNumber})</Text>
+                            <Text style={Styles.defaultChestText}>
+                                {t('useDefaultNumber')} ({defaultChestNumber})
+                            </Text>
                         </TouchableOpacity>
 
                         <View style={Styles.modalButtonsRow}>
                             <TouchableOpacity style={Styles.modalCancelButton} onPress={closeSubscribeModal}>
-                                <Text style={Styles.modalCancelText}>Cancel</Text>
+                                <Text style={Styles.modalCancelText}>{t('cancel')}</Text>
                             </TouchableOpacity>
                             <TouchableOpacity
                                 style={[Styles.modalConfirmButton, !canContinue && Styles.modalConfirmButtonDisabled]}
@@ -567,7 +577,7 @@ const AvailableEventsScreen = ({ navigation }: any) => {
                                 disabled={!canContinue}
                             >
                                 <Text style={[Styles.modalConfirmText, !canContinue && Styles.modalConfirmTextDisabled]}>
-                                    Continue
+                                    {t('continue')}
                                 </Text>
                             </TouchableOpacity>
                         </View>
@@ -587,28 +597,28 @@ const AvailableEventsScreen = ({ navigation }: any) => {
                         onPress={() => setShowIosPicker(false)}
                     />
                     <View style={[Styles.dateModalContainer, { width: modalWidth }]}>
-                        <Text style={Styles.dateModalTitle}>Select date range</Text>
+                        <Text style={Styles.dateModalTitle}>{t('selectDateRange')}</Text>
                         <SizeBox height={10} />
                         <View style={Styles.quickRangeRow}>
                             <TouchableOpacity style={Styles.quickRangeChip} onPress={() => setQuickRange('week')}>
-                                <Text style={Styles.quickRangeChipText}>This week</Text>
+                                <Text style={Styles.quickRangeChipText}>{t('thisWeek')}</Text>
                             </TouchableOpacity>
                             <TouchableOpacity style={Styles.quickRangeChip} onPress={() => setQuickRange('month')}>
-                                <Text style={Styles.quickRangeChipText}>This month</Text>
+                                <Text style={Styles.quickRangeChipText}>{t('thisMonth')}</Text>
                             </TouchableOpacity>
                             <TouchableOpacity style={Styles.quickRangeChip} onPress={() => setQuickRange('year')}>
-                                <Text style={Styles.quickRangeChipText}>This year</Text>
+                                <Text style={Styles.quickRangeChipText}>{t('thisYear')}</Text>
                             </TouchableOpacity>
                         </View>
                         <SizeBox height={8} />
                         <View style={Styles.rangeHeaderRow}>
                             <View style={Styles.rangePill}>
-                                <Text style={Styles.rangePillLabel}>Start</Text>
-                                <Text style={Styles.rangePillValue}>{calendarStart ?? 'Select'}</Text>
+                                <Text style={Styles.rangePillLabel}>{t('start')}</Text>
+                                <Text style={Styles.rangePillValue}>{calendarStart ?? t('selectDate')}</Text>
                             </View>
                             <View style={Styles.rangePill}>
-                                <Text style={Styles.rangePillLabel}>End</Text>
-                                <Text style={Styles.rangePillValue}>{calendarEnd ?? 'Select'}</Text>
+                                <Text style={Styles.rangePillLabel}>{t('end')}</Text>
+                                <Text style={Styles.rangePillValue}>{calendarEnd ?? t('selectDate')}</Text>
                             </View>
                         </View>
                         <SizeBox height={12} />
@@ -649,22 +659,22 @@ const AvailableEventsScreen = ({ navigation }: any) => {
                                     marks[key] = {
                                         startingDay: isStart,
                                         endingDay: isEnd,
-                                        color: isStart || isEnd ? Colors.primaryColor : '#D9E6FF',
-                                        textColor: isStart || isEnd ? Colors.whiteColor : Colors.mainTextColor,
+                                        color: isStart || isEnd ? colors.primaryColor : colors.secondaryBlueColor,
+                                        textColor: isStart || isEnd ? colors.pureWhite : colors.mainTextColor,
                                     };
                                     current.setDate(current.getDate() + 1);
                                 }
                                 return marks;
                             })()}
                             theme={{
-                                calendarBackground: Colors.whiteColor,
-                                backgroundColor: Colors.whiteColor,
-                                dayTextColor: Colors.mainTextColor,
-                                monthTextColor: Colors.mainTextColor,
-                                textSectionTitleColor: Colors.grayColor,
-                                selectedDayBackgroundColor: Colors.primaryColor,
-                                selectedDayTextColor: Colors.whiteColor,
-                                todayTextColor: Colors.primaryColor,
+                                calendarBackground: colors.modalBackground,
+                                backgroundColor: colors.modalBackground,
+                                dayTextColor: colors.mainTextColor,
+                                monthTextColor: colors.mainTextColor,
+                                textSectionTitleColor: colors.subTextColor,
+                                selectedDayBackgroundColor: colors.primaryColor,
+                                selectedDayTextColor: colors.pureWhite,
+                                todayTextColor: colors.primaryColor,
                                 weekVerticalMargin: 0,
                                 textDayHeaderFontSize: 11,
                                 textDayFontSize: 14,
@@ -677,14 +687,14 @@ const AvailableEventsScreen = ({ navigation }: any) => {
                         <SizeBox height={12} />
                         <View style={Styles.dateModalButtonRow}>
                             <TouchableOpacity style={Styles.dateModalCancelButton} onPress={() => setShowIosPicker(false)}>
-                                <Text style={Styles.dateModalCancelText}>Cancel</Text>
+                                <Text style={Styles.dateModalCancelText}>{t('cancel')}</Text>
                             </TouchableOpacity>
                             <TouchableOpacity
                                 style={[Styles.dateModalSubmitButton, !calendarStart && Styles.dateModalSubmitButtonDisabled]}
                                 onPress={applyIosDateTime}
                                 disabled={!calendarStart}
                             >
-                                <Text style={Styles.dateModalSubmitText}>Apply</Text>
+                                <Text style={Styles.dateModalSubmitText}>{t('apply')}</Text>
                             </TouchableOpacity>
                         </View>
                     </View>

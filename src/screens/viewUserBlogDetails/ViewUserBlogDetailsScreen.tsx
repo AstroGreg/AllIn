@@ -9,10 +9,13 @@ import Images from '../../constants/Images';
 import Icons from '../../constants/Icons';
 import { useTheme } from '../../context/ThemeContext';
 import { useEvents } from '../../context/EventsContext';
+import { useTranslation } from 'react-i18next';
+import { translateText } from '../../i18n';
 
 const ViewUserBlogDetailsScreen = ({ navigation, route }: any) => {
     const insets = useSafeAreaInsets();
     const { colors } = useTheme();
+    const { t, i18n } = useTranslation();
     const Styles = createStyles(colors);
     const { eventNameById } = useEvents();
     const post = route?.params?.post || {
@@ -40,9 +43,14 @@ const ViewUserBlogDetailsScreen = ({ navigation, route }: any) => {
     }, [post.gallery, post.galleryItems, post.image]);
 
     const [selectedIndex, setSelectedIndex] = useState(0);
+    const [showTranslation, setShowTranslation] = useState(false);
     const selectedItem = galleryItems[selectedIndex] ?? galleryItems[0];
     const isSelectedVideo = selectedItem?.type === 'video' && !!selectedItem?.videoUri;
     const canOpenDetail = Boolean(selectedItem?.media);
+
+    const translatedDescription = useMemo(() => {
+        return translateText(post.description ?? '', i18n.language);
+    }, [i18n.language, post.description]);
 
     const openMediaDetail = useCallback((item: any) => {
         const media = item?.media;
@@ -73,7 +81,7 @@ const ViewUserBlogDetailsScreen = ({ navigation, route }: any) => {
                 <TouchableOpacity style={Styles.headerButton} onPress={() => navigation.goBack()}>
                     <ArrowLeft2 size={24} color={colors.mainTextColor} variant="Linear" />
                 </TouchableOpacity>
-                <Text style={Styles.headerTitle}>Blogs Details</Text>
+                <Text style={Styles.headerTitle}>{t('blogDetails')}</Text>
                 <View style={[Styles.headerButton, { opacity: 0 }]} />
             </View>
 
@@ -84,7 +92,7 @@ const ViewUserBlogDetailsScreen = ({ navigation, route }: any) => {
                 <View style={Styles.headerCard}>
                     <Text style={Styles.blogTitle}>{post.title}</Text>
                     <Text style={Styles.metaInline}>
-                        {[post.readCount ? `${post.readCount} read` : '', post.date || ''].filter(Boolean).join(' • ')}
+                        {[post.readCount ? `${post.readCount} ${t('read')}` : '', post.date || ''].filter(Boolean).join(' • ')}
                     </Text>
                 </View>
 
@@ -99,13 +107,24 @@ const ViewUserBlogDetailsScreen = ({ navigation, route }: any) => {
                 <SizeBox height={8} />
 
                 {/* Description */}
-                <Text style={Styles.description}>{post.description}</Text>
+                <TouchableOpacity
+                    style={Styles.translateToggle}
+                    onPress={() => setShowTranslation((prev) => !prev)}
+                    activeOpacity={0.8}
+                >
+                    <Text style={Styles.translateToggleText}>
+                        {showTranslation ? t('showOriginal') : t('showTranslation')}
+                    </Text>
+                </TouchableOpacity>
+                <Text style={Styles.description}>
+                    {showTranslation ? translatedDescription : post.description}
+                </Text>
 
                 <SizeBox height={8} />
 
                 {/* Share Button */}
                 <TouchableOpacity style={Styles.shareButton}>
-                    <Text style={Styles.shareButtonText}>Share</Text>
+                    <Text style={Styles.shareButtonText}>{t('share')}</Text>
                     <Image source={Icons.ShareBlue} style={{ width: 18, height: 18, tintColor: '#FFFFFF' }} />
                 </TouchableOpacity>
 
@@ -114,7 +133,7 @@ const ViewUserBlogDetailsScreen = ({ navigation, route }: any) => {
                 {/* Media Carousel (bottom) */}
                 {galleryItems.length > 0 && (
                     <>
-                        <Text style={Styles.sectionLabel}>Media</Text>
+                        <Text style={Styles.sectionLabel}>{t('media')}</Text>
                         <SizeBox height={4} />
                         <ScrollView
                             horizontal

@@ -1,8 +1,8 @@
 import { View, Text, TextInput } from 'react-native'
 import React from 'react'
-import Styles from './CustomSearchStyles'
+import { createStyles } from './CustomSearchStyles'
 import Icons from '../../constants/Icons'
-import Colors from '../../constants/Colors';
+import { useTheme } from '../../context/ThemeContext';
 
 interface CustomSearchProps {
     value: string;
@@ -15,6 +15,8 @@ const CustomSearch = ({
     onChangeText,
     placeholder
 }: CustomSearchProps) => {
+    const { colors } = useTheme();
+    const Styles = createStyles(colors);
     return (
         <View style={Styles.searchContainer}>
             <Icons.Search height={20} width={20} />
@@ -23,7 +25,7 @@ const CustomSearch = ({
                 onChangeText={onChangeText}
                 placeholder={placeholder}
                 style={Styles.searchBarText}
-                placeholderTextColor={Colors.subTextColor}
+                placeholderTextColor={colors.subTextColor}
             />
         </View>
     )

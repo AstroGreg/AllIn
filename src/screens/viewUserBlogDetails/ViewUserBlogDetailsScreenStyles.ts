@@ -99,6 +99,20 @@ export const createStyles = (colors: ThemeColors) => StyleSheet.create({
         paddingHorizontal: 0,
         paddingVertical: 0,
     },
+    translateToggle: {
+        alignSelf: 'flex-start',
+        paddingHorizontal: 10,
+        paddingVertical: 6,
+        borderRadius: 8,
+        borderWidth: 0.5,
+        borderColor: colors.borderColor,
+        backgroundColor: colors.secondaryColor,
+        marginBottom: 6,
+    },
+    translateToggleText: {
+        ...Fonts.medium12,
+        color: colors.primaryColor,
+    },
     sectionLabel: {
         ...Fonts.medium16,
         color: colors.mainTextColor,

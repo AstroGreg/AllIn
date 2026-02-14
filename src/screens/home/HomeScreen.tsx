@@ -8,6 +8,7 @@ import { useTheme } from '../../context/ThemeContext'
 import { useEvents } from '../../context/EventsContext'
 import Icons from '../../constants/Icons'
 import { useAuth } from '../../context/AuthContext'
+import { useTranslation } from 'react-i18next'
 import {
     ApiError,
     getAllPhotos,
@@ -46,6 +47,7 @@ const homeCache: {
 const HomeScreen = ({ navigation }: any) => {
     const insets = useSafeAreaInsets();
     const { colors } = useTheme();
+    const { t } = useTranslation();
     const Styles = createStyles(colors);
     const { height: windowHeight } = useWindowDimensions();
     const { user, userProfile, apiAccessToken } = useAuth();
@@ -886,7 +888,7 @@ const HomeScreen = ({ navigation }: any) => {
                 {/* Quick Actions */}
                 <View style={Styles.sectionQuickActions}>
                     <View style={Styles.sectionHeader}>
-                        <Text style={Styles.sectionTitle}>Quick Actions</Text>
+                        <Text style={Styles.sectionTitle}>{t('quickActions')}</Text>
                     </View>
                     <View style={Styles.quickActionsGrid}>
                         {/* First Row - My downloads & Add myself */}
@@ -895,14 +897,14 @@ const HomeScreen = ({ navigation }: any) => {
                                 style={Styles.quickActionCard}
                                 onPress={() => navigation.navigate('DownloadsDetailsScreen')}
                             >
-                                <Text style={Styles.quickActionText} numberOfLines={1}>My downloads</Text>
+                                <Text style={Styles.quickActionText} numberOfLines={1}>{t('myDownloads')}</Text>
                             </TouchableOpacity>
                             <TouchableOpacity
                                 style={Styles.quickActionCard}
                                 activeOpacity={0.8}
                                 onPress={() => navigation.navigate('Search', { screen: 'AISearchScreen', params: { origin: 'home' } })}
                             >
-                                <Text style={Styles.quickActionText} numberOfLines={1}>AI Search</Text>
+                                <Text style={Styles.quickActionText} numberOfLines={1}>{t('aiSearch')}</Text>
                             </TouchableOpacity>
                         </View>
 
@@ -912,7 +914,7 @@ const HomeScreen = ({ navigation }: any) => {
                                 style={[Styles.quickActionCard, Styles.quickActionCardFull]}
                                 onPress={() => navigation.navigate('AvailableEventsScreen')}
                             >
-                                <Text style={Styles.quickActionText} numberOfLines={1}>Subscribe to a competition</Text>
+                                <Text style={Styles.quickActionText} numberOfLines={1}>{t('subscribeCompetition')}</Text>
                             </TouchableOpacity>
                         </View>
                     </View>
@@ -1177,6 +1179,7 @@ const HomeScreen = ({ navigation }: any) => {
                 userName={userName}
                 profilePic={profilePic}
                 onPressFeed={() => navigation.navigate('HubScreen')}
+                onPressNotifications={() => navigation.navigate('NotificationsScreen')}
                 onPressProfile={() => navigation.navigate('BottomTabBar', { screen: 'Profile' })}
             />
             <ScrollView

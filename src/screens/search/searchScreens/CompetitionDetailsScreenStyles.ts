@@ -1,11 +1,11 @@
 import { StyleSheet } from 'react-native';
-import Colors from '../../../constants/Colors';
 import Fonts from '../../../constants/Fonts';
+import { ThemeColors } from '../../../constants/Theme';
 
-const styles = StyleSheet.create({
+export const createStyles = (colors: ThemeColors) => StyleSheet.create({
     mainContainer: {
         flex: 1,
-        backgroundColor: Colors.whiteColor,
+        backgroundColor: colors.backgroundColor,
     },
     header: {
         flexDirection: 'row',
@@ -14,19 +14,19 @@ const styles = StyleSheet.create({
         paddingHorizontal: 20,
         paddingVertical: 16,
         borderBottomWidth: 0.3,
-        borderBottomColor: '#DEDEDE',
+        borderBottomColor: colors.lightGrayColor,
     },
     headerButton: {
         width: 44,
         height: 44,
         borderRadius: 22,
-        backgroundColor: '#F5F5F5',
+        backgroundColor: colors.btnBackgroundColor,
         alignItems: 'center',
         justifyContent: 'center',
     },
     headerTitle: {
         ...Fonts.medium18,
-        color: Colors.mainTextColor,
+        color: colors.mainTextColor,
     },
     content: {
         flex: 1,
@@ -35,16 +35,16 @@ const styles = StyleSheet.create({
     },
     competitionName: {
         ...Fonts.medium18,
-        color: Colors.mainTextColor,
+        color: colors.mainTextColor,
     },
     competitionDescription: {
         ...Fonts.regular14,
-        color: '#9B9F9F',
+        color: colors.subTextColor,
     },
     tabsContainer: {
         flexDirection: 'row',
         borderWidth: 0.5,
-        borderColor: '#DEDEDE',
+        borderColor: colors.lightGrayColor,
         borderRadius: 10,
         padding: 8,
         gap: 8,
@@ -61,14 +61,14 @@ const styles = StyleSheet.create({
         borderRadius: 8,
     },
     tabActive: {
-        backgroundColor: 'rgba(60, 130, 246, 0.3)',
+        backgroundColor: colors.secondaryBlueColor,
     },
     tabText: {
         ...Fonts.regular14,
-        color: '#9B9F9F',
+        color: colors.subTextColor,
     },
     tabTextActive: {
-        color: Colors.mainTextColor,
+        color: colors.mainTextColor,
     },
     sectionHeader: {
         flexDirection: 'row',
@@ -77,7 +77,7 @@ const styles = StyleSheet.create({
     },
     sectionTitle: {
         ...Fonts.medium16,
-        color: Colors.mainTextColor,
+        color: colors.mainTextColor,
     },
     sectionIcons: {
         flexDirection: 'row',
@@ -86,7 +86,7 @@ const styles = StyleSheet.create({
         width: 36,
         height: 36,
         borderRadius: 8,
-        backgroundColor: Colors.primaryColor,
+        backgroundColor: colors.primaryColor,
         alignItems: 'center',
         justifyContent: 'center',
     },
@@ -96,9 +96,9 @@ const styles = StyleSheet.create({
         justifyContent: 'space-between',
         padding: 16,
         borderWidth: 0.5,
-        borderColor: '#DEDEDE',
+        borderColor: colors.lightGrayColor,
         borderRadius: 10,
-        backgroundColor: Colors.whiteColor,
+        backgroundColor: colors.cardBackground,
         marginBottom: 12,
     },
     eventCardLeft: {
@@ -111,11 +111,11 @@ const styles = StyleSheet.create({
         width: 44,
         height: 44,
         borderRadius: 10,
-        backgroundColor: '#F3F4F6',
+        backgroundColor: colors.btnBackgroundColor,
     },
     eventCardName: {
         ...Fonts.medium14,
-        color: Colors.mainTextColor,
+        color: colors.mainTextColor,
         flexShrink: 1,
     },
     eventCardRight: {
@@ -124,14 +124,14 @@ const styles = StyleSheet.create({
         gap: 8,
     },
     badge: {
-        backgroundColor: '#F5F5F5',
+        backgroundColor: colors.btnBackgroundColor,
         paddingHorizontal: 10,
         paddingVertical: 4,
         borderRadius: 6,
     },
     badgeText: {
         ...Fonts.regular12,
-        color: '#9B9F9F',
+        color: colors.subTextColor,
     },
     showAllButton: {
         flexDirection: 'row',
@@ -139,12 +139,12 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         height: 54,
         borderRadius: 10,
-        backgroundColor: Colors.primaryColor,
+        backgroundColor: colors.primaryColor,
         gap: 8,
     },
     showAllButtonText: {
         ...Fonts.medium16,
-        color: Colors.whiteColor,
+        color: colors.pureWhite,
     },
     showAllPhotosButton: {
         flexDirection: 'row',
@@ -153,13 +153,13 @@ const styles = StyleSheet.create({
         height: 54,
         borderRadius: 10,
         borderWidth: 1,
-        borderColor: Colors.primaryColor,
-        backgroundColor: Colors.whiteColor,
+        borderColor: colors.primaryColor,
+        backgroundColor: colors.cardBackground,
         gap: 8,
     },
     showAllPhotosButtonText: {
         ...Fonts.medium16,
-        color: Colors.primaryColor,
+        color: colors.primaryColor,
     },
     toggleRow: {
         flexDirection: 'row',
@@ -168,30 +168,30 @@ const styles = StyleSheet.create({
         paddingVertical: 10,
         paddingHorizontal: 12,
         borderWidth: 0.5,
-        borderColor: '#DEDEDE',
+        borderColor: colors.lightGrayColor,
         borderRadius: 10,
-        backgroundColor: '#FFFFFF',
+        backgroundColor: colors.cardBackground,
     },
     toggleLabel: {
         ...Fonts.medium14,
-        color: Colors.mainTextColor,
+        color: colors.mainTextColor,
     },
     toggleHint: {
         ...Fonts.regular12,
-        color: '#9B9F9F',
+        color: colors.subTextColor,
         marginTop: 2,
     },
     emptyState: {
         paddingVertical: 18,
         paddingHorizontal: 16,
         borderWidth: 0.5,
-        borderColor: '#DEDEDE',
+        borderColor: colors.lightGrayColor,
         borderRadius: 10,
-        backgroundColor: '#FFFFFF',
+        backgroundColor: colors.cardBackground,
     },
     emptyStateText: {
         ...Fonts.regular14,
-        color: '#9B9F9F',
+        color: colors.subTextColor,
     },
     courseList: {
         flexDirection: 'row',
@@ -207,15 +207,15 @@ const styles = StyleSheet.create({
         backgroundColor: '#FFFFFF',
     },
     courseCardActive: {
-        borderColor: Colors.primaryColor,
+        borderColor: colors.primaryColor,
         backgroundColor: 'rgba(60, 130, 246, 0.12)',
     },
     courseTitle: {
         ...Fonts.medium16,
-        color: Colors.mainTextColor,
+        color: colors.mainTextColor,
     },
     courseTitleActive: {
-        color: Colors.primaryColor,
+        color: colors.primaryColor,
     },
     courseDescription: {
         ...Fonts.regular12,
@@ -223,7 +223,7 @@ const styles = StyleSheet.create({
         marginTop: 6,
     },
     courseDescriptionActive: {
-        color: Colors.primaryColor,
+        color: colors.primaryColor,
     },
     mapCard: {
         borderWidth: 0.5,
@@ -247,7 +247,7 @@ const styles = StyleSheet.create({
     },
     checkpointChipText: {
         ...Fonts.medium12,
-        color: Colors.mainTextColor,
+        color: colors.mainTextColor,
     },
     helperText: {
         ...Fonts.regular12,
@@ -266,12 +266,12 @@ const styles = StyleSheet.create({
     },
     modalTitle: {
         ...Fonts.medium16,
-        color: Colors.mainTextColor,
+        color: colors.mainTextColor,
         textAlign: 'center',
     },
     modalLabel: {
         ...Fonts.medium12,
-        color: Colors.mainTextColor,
+        color: colors.mainTextColor,
         marginBottom: 6,
     },
     modalInputRow: {
@@ -285,7 +285,7 @@ const styles = StyleSheet.create({
     },
     modalInput: {
         ...Fonts.regular14,
-        color: Colors.mainTextColor,
+        color: colors.mainTextColor,
         paddingVertical: 0,
     },
     modalErrorText: {
@@ -299,7 +299,7 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         height: 48,
         borderRadius: 10,
-        backgroundColor: Colors.primaryColor,
+        backgroundColor: colors.primaryColor,
         gap: 8,
     },
     modalPrimaryButtonDisabled: {
@@ -307,7 +307,7 @@ const styles = StyleSheet.create({
     },
     modalPrimaryButtonText: {
         ...Fonts.medium14,
-        color: Colors.whiteColor,
+        color: colors.whiteColor,
     },
     modalSecondaryButton: {
         flexDirection: 'row',
@@ -316,13 +316,13 @@ const styles = StyleSheet.create({
         height: 48,
         borderRadius: 10,
         borderWidth: 1,
-        borderColor: Colors.primaryColor,
+        borderColor: colors.primaryColor,
         backgroundColor: '#FFFFFF',
         gap: 8,
     },
     modalSecondaryButtonText: {
         ...Fonts.medium14,
-        color: Colors.primaryColor,
+        color: colors.primaryColor,
     },
     modalTertiaryButton: {
         flexDirection: 'row',
@@ -337,8 +337,6 @@ const styles = StyleSheet.create({
     },
     modalTertiaryButtonText: {
         ...Fonts.medium14,
-        color: Colors.mainTextColor,
+        color: colors.mainTextColor,
     },
 });
-
-export default styles;

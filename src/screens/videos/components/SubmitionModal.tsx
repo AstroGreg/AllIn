@@ -1,10 +1,12 @@
 import { Text, Modal, TouchableOpacity, Vibration, View, } from 'react-native'
 import React from 'react'
 import SizeBox from '../../../constants/SizeBox';
-import Styles from './ModalsStyles';
+import { createStyles } from './ModalsStyles';
 import BorderButton from '../../../components/borderButton/BorderButton';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import CustomButton from '../../../components/customButton/CustomButton';
+import { useTheme } from '../../../context/ThemeContext';
+import { useTranslation } from 'react-i18next';
 
 interface SubmitionModalProps {
     isVisible?: boolean;
@@ -13,6 +15,9 @@ interface SubmitionModalProps {
 
 const SubmitionModal = ({ isVisible, onClose, }: SubmitionModalProps) => {
     const insets = useSafeAreaInsets();
+    const { colors } = useTheme();
+    const Styles = createStyles(colors);
+    const { t } = useTranslation();
     return (
         <Modal
             transparent
@@ -31,10 +36,10 @@ const SubmitionModal = ({ isVisible, onClose, }: SubmitionModalProps) => {
                     activeOpacity={1}
                     onPress={(e) => e.stopPropagation()}
                 >
-                    <Text style={[Styles.titleText, { textAlign: 'center' }]}>Report has been submitted</Text>
+                    <Text style={[Styles.titleText, { textAlign: 'center' }]}>{t('Report has been submitted')}</Text>
                     <SizeBox height={16} />
                     <TouchableOpacity style={Styles.btnContianer} onPress={onClose}>
-                        <Text style={Styles.btnText}>Close</Text>
+                        <Text style={Styles.btnText}>{t('Close')}</Text>
                     </TouchableOpacity>
                 </TouchableOpacity>
 

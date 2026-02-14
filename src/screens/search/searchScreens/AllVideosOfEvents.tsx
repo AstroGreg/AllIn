@@ -1,6 +1,6 @@
 import { View, Text, FlatList, TouchableOpacity, Image } from 'react-native'
 import React, { useMemo, useEffect, useState, useCallback } from 'react'
-import Styles from '../SearchStyles'
+import { createStyles } from '../SearchStyles'
 import SizeBox from '../../../constants/SizeBox'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import CustomHeader from '../../../components/customHeader/CustomHeader'
@@ -9,6 +9,8 @@ import { useAuth } from '../../../context/AuthContext'
 import { getMediaById } from '../../../services/apiGateway'
 import { getApiBaseUrl, getHlsBaseUrl } from '../../../constants/RuntimeConfig'
 import Images from '../../../constants/Images'
+import { useTheme } from '../../../context/ThemeContext'
+import { useTranslation } from 'react-i18next'
 
 const AllVideosOfEvents = ({ navigation, route }: any) => {
     const insets = useSafeAreaInsets();
@@ -16,6 +18,9 @@ const AllVideosOfEvents = ({ navigation, route }: any) => {
     const division = route?.params?.division;
     const gender = route?.params?.gender;
     const { apiAccessToken } = useAuth();
+    const { colors } = useTheme();
+    const { t } = useTranslation();
+    const styles = createStyles(colors);
     const mediaId = '86db92e8-1b8e-44a5-95c4-fb4764f6783e';
     const [sharedThumbUrl, setSharedThumbUrl] = useState<string | null>(null);
     const [sharedVideoUrl, setSharedVideoUrl] = useState<string | null>(null);
@@ -145,10 +150,10 @@ const AllVideosOfEvents = ({ navigation, route }: any) => {
     ]), [eventName, sharedThumbUrl, sharedVideoUrl]);
 
     return (
-        <View style={Styles.mainContainer}>
+        <View style={styles.mainContainer}>
             <SizeBox height={insets.top} />
             <CustomHeader
-                title='All Videos'
+                title={t('All Videos')}
                 onBackPress={() => navigation.goBack()}
             />
             <FlatList
@@ -161,9 +166,9 @@ const AllVideosOfEvents = ({ navigation, route }: any) => {
                             marginBottom: 16,
                             borderRadius: 14,
                             overflow: 'hidden',
-                            backgroundColor: '#FFFFFF',
+                            backgroundColor: colors.cardBackground,
                             borderWidth: 1,
-                            borderColor: '#E8ECF2',
+                            borderColor: colors.borderColor,
                         }}
                         onPress={() => navigation.navigate('VideoPlayingScreen', {
                             mediaId,
@@ -185,14 +190,14 @@ const AllVideosOfEvents = ({ navigation, route }: any) => {
                             </View>
                         </View>
                         <View style={{ paddingHorizontal: 14, paddingVertical: 12 }}>
-                            <Text style={[Styles.titleText, { fontSize: 16 }]} numberOfLines={1}>{eventName}</Text>
+                            <Text style={[styles.titleText, { fontSize: 16 }]} numberOfLines={1}>{eventName}</Text>
                             <SizeBox height={6} />
-                            <Text style={Styles.subText} numberOfLines={1}>
-                                By {item.name} • {formatDuration(item.timer)}
+                            <Text style={styles.subText} numberOfLines={1}>
+                                {t('By')} {item.name} • {formatDuration(item.timer)}
                             </Text>
                             <SizeBox height={4} />
-                            <Text style={Styles.subText} numberOfLines={1}>
-                                Uploaded {formatDate(item.uploadedAt)}
+                            <Text style={styles.subText} numberOfLines={1}>
+                                {t('Uploaded')} {formatDate(item.uploadedAt)}
                             </Text>
                         </View>
                     </TouchableOpacity>
@@ -206,11 +211,11 @@ const AllVideosOfEvents = ({ navigation, route }: any) => {
                 style={{ flex: 1 }}
                 ListHeaderComponent={
                     <View style={{ marginLeft: 20 }}>
-                        <Text style={Styles.titleText}>{eventName}</Text>
+                        <Text style={styles.titleText}>{eventName}</Text>
                         {(division || gender) && (
                             <>
                                 <SizeBox height={6} />
-                                <Text style={Styles.filterText}>{[division, gender].filter(Boolean).join(' • ')}</Text>
+                                <Text style={styles.filterText}>{[division, gender].filter(Boolean).join(' • ')}</Text>
                             </>
                         )}
                         <SizeBox height={16} />

@@ -1,5 +1,4 @@
 import { StyleSheet } from "react-native";
-import Colors from "../../constants/Colors";
 import Fonts from "../../constants/Fonts";
 import { ThemeColors } from "../../constants/Theme";
 
@@ -24,6 +23,10 @@ export const createStyles = (colors: ThemeColors) => StyleSheet.create({
         backgroundColor: colors.btnBackgroundColor,
         alignItems: 'center',
         justifyContent: 'center',
+    },
+    headerSpacer: {
+        width: 44,
+        height: 44,
     },
     headerTitle: {
         ...Fonts.medium18,
@@ -821,12 +824,177 @@ export const createStyles = (colors: ThemeColors) => StyleSheet.create({
         color: colors.mainTextColor,
         lineHeight: 22,
     },
+    currentValueCard: {
+        borderWidth: 0.5,
+        borderColor: colors.lightGrayColor,
+        borderRadius: 10,
+        padding: 16,
+        backgroundColor: colors.cardBackground,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+    },
+    currentValueLabel: {
+        ...Fonts.regular12,
+        color: colors.subTextColor,
+        marginBottom: 4,
+    },
+    currentValueText: {
+        ...Fonts.medium14,
+        color: colors.mainTextColor,
+    },
+    editActionButton: {
+        backgroundColor: colors.primaryColor,
+        borderRadius: 8,
+        paddingHorizontal: 14,
+        paddingVertical: 8,
+        height: 34,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    editActionText: {
+        ...Fonts.medium12,
+        color: colors.pureWhite,
+    },
+    editActionsRow: {
+        flexDirection: 'row',
+        gap: 12,
+        marginTop: 20,
+    },
+    cancelButton: {
+        flex: 1,
+        borderWidth: 1,
+        borderColor: colors.lightGrayColor,
+        borderRadius: 8,
+        paddingVertical: 12,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    cancelButtonText: {
+        ...Fonts.medium12,
+        color: colors.grayColor,
+    },
+    saveButton: {
+        flex: 1,
+        backgroundColor: colors.primaryColor,
+        borderRadius: 8,
+        paddingVertical: 12,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    saveButtonText: {
+        ...Fonts.medium12,
+        color: colors.pureWhite,
+    },
 
     // Change Password
     changePasswordTitle: {
         ...Fonts.medium18,
         color: colors.mainTextColor,
         lineHeight: 26,
+    },
+
+    // Calendar modal (shared)
+    calendarModalOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0,0,0,0.4)',
+        alignItems: 'center',
+        justifyContent: 'center',
+        paddingHorizontal: 20,
+    },
+    calendarModalCard: {
+        width: '100%',
+        maxWidth: 420,
+        backgroundColor: colors.modalBackground,
+        borderRadius: 16,
+        padding: 16,
+    },
+    calendarModalTitle: {
+        ...Fonts.medium16,
+        color: colors.mainTextColor,
+    },
+    calendarContainer: {
+        height: 320,
+        alignSelf: 'center',
+    },
+    calendarYearRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        paddingHorizontal: 6,
+    },
+    calendarYearLabel: {
+        ...Fonts.regular12,
+        color: colors.subTextColor,
+    },
+    calendarYearButton: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 6,
+        paddingHorizontal: 10,
+        paddingVertical: 6,
+        borderRadius: 8,
+        borderWidth: 0.5,
+        borderColor: colors.lightGrayColor,
+        backgroundColor: colors.secondaryColor,
+    },
+    calendarYearText: {
+        ...Fonts.medium14,
+        color: colors.mainTextColor,
+    },
+    calendarButtonRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        gap: 12,
+    },
+    calendarCancelButton: {
+        flex: 1,
+        borderWidth: 1,
+        borderColor: colors.lightGrayColor,
+        borderRadius: 10,
+        alignItems: 'center',
+        paddingVertical: 12,
+    },
+    calendarCancelText: {
+        ...Fonts.medium14,
+        color: colors.grayColor,
+    },
+    calendarApplyButton: {
+        flex: 1,
+        backgroundColor: colors.primaryColor,
+        borderRadius: 10,
+        alignItems: 'center',
+        paddingVertical: 12,
+    },
+    calendarApplyText: {
+        ...Fonts.medium14,
+        color: colors.pureWhite,
+    },
+    selectionModalOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0,0,0,0.4)',
+        justifyContent: 'center',
+        paddingHorizontal: 20,
+    },
+    selectionModalCard: {
+        backgroundColor: colors.cardBackground,
+        borderRadius: 16,
+        padding: 16,
+        maxHeight: '70%',
+    },
+    selectionModalTitle: {
+        ...Fonts.medium16,
+        color: colors.mainTextColor,
+        marginBottom: 12,
+    },
+    selectionOption: {
+        paddingVertical: 10,
+        borderBottomWidth: 0.5,
+        borderBottomColor: colors.lightGrayColor,
+    },
+    selectionOptionText: {
+        ...Fonts.regular14,
+        color: colors.mainTextColor,
     },
 
     // Date Picker

@@ -1,11 +1,11 @@
 import { StyleSheet } from 'react-native';
-import Colors from '../../constants/Colors';
+import { ThemeColors, lightColors } from '../../constants/Theme';
 import Fonts from '../../constants/Fonts';
 
-const Styles = StyleSheet.create({
+export const createStyles = (colors: ThemeColors) => StyleSheet.create({
     mainContainer: {
         flex: 1,
-        backgroundColor: Colors.whiteColor,
+        backgroundColor: colors.whiteColor,
     },
     header: {
         flexDirection: 'row',
@@ -14,26 +14,26 @@ const Styles = StyleSheet.create({
         paddingHorizontal: 20,
         paddingVertical: 15,
         borderBottomWidth: 0.5,
-        borderBottomColor: Colors.lightGrayColor,
+        borderBottomColor: colors.lightGrayColor,
     },
     backButton: {
         width: 44,
         height: 44,
         borderRadius: 22,
-        backgroundColor: Colors.btnBackgroundColor,
+        backgroundColor: colors.btnBackgroundColor,
         alignItems: 'center',
         justifyContent: 'center',
     },
     headerTitle: {
         ...Fonts.medium16,
         fontSize: 18,
-        color: Colors.mainTextColor,
+        color: colors.mainTextColor,
     },
     notificationButton: {
         width: 44,
         height: 44,
         borderRadius: 22,
-        backgroundColor: Colors.btnBackgroundColor,
+        backgroundColor: colors.btnBackgroundColor,
         alignItems: 'center',
         justifyContent: 'center',
     },
@@ -45,10 +45,10 @@ const Styles = StyleSheet.create({
     sectionTitle: {
         ...Fonts.medium16,
         fontSize: 18,
-        color: Colors.mainTextColor,
+        color: colors.mainTextColor,
     },
     summaryCard: {
-        backgroundColor: Colors.whiteColor,
+        backgroundColor: colors.whiteColor,
         borderWidth: 0.5,
         borderColor: '#DEDEDE',
         borderRadius: 10,
@@ -57,7 +57,7 @@ const Styles = StyleSheet.create({
     },
     summaryTitle: {
         ...Fonts.medium14,
-        color: Colors.mainTextColor,
+        color: colors.mainTextColor,
     },
     summaryMeta: {
         flexDirection: 'row',
@@ -75,7 +75,7 @@ const Styles = StyleSheet.create({
     },
     inputLabel: {
         ...Fonts.medium14,
-        color: Colors.mainTextColor,
+        color: colors.mainTextColor,
     },
     textAreaContainer: {
         flexDirection: 'row',
@@ -92,7 +92,7 @@ const Styles = StyleSheet.create({
     textArea: {
         flex: 1,
         ...Fonts.regular14,
-        color: Colors.mainTextColor,
+        color: colors.mainTextColor,
         height: '100%',
     },
     statusRow: {
@@ -104,7 +104,7 @@ const Styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
-        backgroundColor: Colors.whiteColor,
+        backgroundColor: colors.whiteColor,
         borderWidth: 0.5,
         borderColor: '#DEDEDE',
         borderRadius: 6,
@@ -113,7 +113,7 @@ const Styles = StyleSheet.create({
     },
     statusText: {
         ...Fonts.regular14,
-        color: Colors.mainTextColor,
+        color: colors.mainTextColor,
     },
     checkbox: {
         width: 16,
@@ -154,15 +154,17 @@ const Styles = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'center',
         height: 44,
-        backgroundColor: Colors.primaryColor,
+        backgroundColor: colors.primaryColor,
         borderRadius: 8,
         gap: 6,
         marginLeft: 8,
     },
     updateButtonText: {
         ...Fonts.regular14,
-        color: Colors.whiteColor,
+        color: colors.whiteColor,
     },
 });
+
+const Styles = createStyles(lightColors);
 
 export default Styles;

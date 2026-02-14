@@ -1,6 +1,7 @@
 import { View, Text, TouchableOpacity, Animated } from 'react-native'
 import React, { useEffect, useState } from 'react'
-import Styles from './CustomSwitchStyles';
+import { createStyles } from './CustomSwitchStyles';
+import { useTheme } from '../../context/ThemeContext';
 
 interface CustomSwitchProps {
     isEnabled?: boolean;
@@ -10,6 +11,8 @@ interface CustomSwitchProps {
 const CustomSwitch = ({ isEnabled, toggleSwitch }: CustomSwitchProps) => {
 
     const [position] = useState(new Animated.Value(24));
+    const { colors } = useTheme();
+    const Styles = createStyles(colors);
 
     useEffect(() => {
         // Animate whenever isEnabled changes

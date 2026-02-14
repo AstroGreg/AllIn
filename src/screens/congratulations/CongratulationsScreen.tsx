@@ -3,13 +3,17 @@ import { View, Text, TouchableOpacity } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ArrowRight } from 'iconsax-react-nativejs';
 import ConfettiCannon from 'react-native-confetti-cannon';
-import Styles from './CongratulationsScreenStyles';
+import { createStyles } from './CongratulationsScreenStyles';
 import SizeBox from '../../constants/SizeBox';
-import Colors from '../../constants/Colors';
 import Icons from '../../constants/Icons';
+import { useTheme } from '../../context/ThemeContext';
+import { useTranslation } from 'react-i18next';
 
 const CongratulationsScreen = ({ navigation, route }: any) => {
     const insets = useSafeAreaInsets();
+    const { colors } = useTheme();
+    const { t } = useTranslation();
+    const styles = createStyles(colors);
     const confettiRef = useRef<any>(null);
     const confettiRef2 = useRef<any>(null);
 
@@ -36,7 +40,7 @@ const CongratulationsScreen = ({ navigation, route }: any) => {
     };
 
     return (
-        <View style={Styles.mainContainer}>
+        <View style={styles.mainContainer}>
             <SizeBox height={insets.top} />
 
             {/* Confetti from left */}
@@ -63,27 +67,27 @@ const CongratulationsScreen = ({ navigation, route }: any) => {
                 colors={['#3C82F6', '#FF6B6B', '#4ECDC4', '#FFE66D', '#95E1D3', '#F38181', '#AA96DA']}
             />
 
-            <View style={Styles.content}>
+            <View style={styles.content}>
                 {/* Success Icon */}
-                <View style={Styles.iconContainer}>
+                <View style={styles.iconContainer}>
                     <Icons.CheckCircleGreen height={122} width={122} />
                 </View>
 
                 <SizeBox height={35} />
 
                 {/* Text Content */}
-                <View style={Styles.textContainer}>
-                    <Text style={Styles.title}>Congratulations</Text>
+                <View style={styles.textContainer}>
+                    <Text style={styles.title}>{t('Congratulations')}</Text>
                     <SizeBox height={8} />
-                    <Text style={Styles.subtitle}>Your upload is complete.</Text>
+                    <Text style={styles.subtitle}>{t('Your upload is complete.')}</Text>
                 </View>
 
                 <SizeBox height={90} />
 
                 {/* Back Home Button */}
-                <TouchableOpacity style={Styles.backHomeButton} onPress={handleBackHome}>
-                    <Text style={Styles.backHomeButtonText}>OK</Text>
-                    <ArrowRight size={18} color={Colors.whiteColor} variant="Linear" />
+                <TouchableOpacity style={styles.backHomeButton} onPress={handleBackHome}>
+                    <Text style={styles.backHomeButtonText}>{t('OK')}</Text>
+                    <ArrowRight size={18} color={colors.pureWhite} variant="Linear" />
                 </TouchableOpacity>
             </View>
 

@@ -1,11 +1,11 @@
 import { StyleSheet } from 'react-native';
-import Colors from '../../constants/Colors';
+import { ThemeColors, lightColors } from '../../constants/Theme';
 import Fonts from '../../constants/Fonts';
 
-const Styles = StyleSheet.create({
+export const createStyles = (colors: ThemeColors) => StyleSheet.create({
     mainContainer: {
         flex: 1,
-        backgroundColor: Colors.whiteColor,
+        backgroundColor: colors.whiteColor,
     },
     header: {
         flexDirection: 'row',
@@ -26,7 +26,7 @@ const Styles = StyleSheet.create({
     },
     headerTitle: {
         ...Fonts.medium18,
-        color: Colors.mainTextColor,
+        color: colors.mainTextColor,
     },
     headerSwitchButton: {
         flexDirection: 'row',
@@ -39,7 +39,7 @@ const Styles = StyleSheet.create({
     },
     headerSwitchText: {
         ...Fonts.regular14,
-        color: Colors.primaryColor,
+        color: colors.primaryColor,
     },
     scrollContent: {
         paddingHorizontal: 20,
@@ -52,11 +52,11 @@ const Styles = StyleSheet.create({
     },
     title: {
         ...Fonts.medium18,
-        color: Colors.mainTextColor,
+        color: colors.mainTextColor,
         flex: 1,
     },
     selectTopButton: {
-        backgroundColor: Colors.primaryColor,
+        backgroundColor: colors.primaryColor,
         paddingHorizontal: 16,
         paddingVertical: 10,
         borderRadius: 8,
@@ -66,7 +66,7 @@ const Styles = StyleSheet.create({
     },
     selectTopButtonText: {
         ...Fonts.regular14,
-        color: Colors.whiteColor,
+        color: colors.whiteColor,
     },
     cancelButton: {
         backgroundColor: '#FDCCCC',
@@ -86,14 +86,14 @@ const Styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',
-        backgroundColor: Colors.primaryColor,
+        backgroundColor: colors.primaryColor,
         height: 54,
         borderRadius: 10,
         gap: 8,
     },
     addButtonText: {
         ...Fonts.medium16,
-        color: Colors.whiteColor,
+        color: colors.whiteColor,
     },
     deleteButton: {
         flex: 1,
@@ -126,20 +126,20 @@ const Styles = StyleSheet.create({
     },
     confirmDeleteButtonText: {
         ...Fonts.medium16,
-        color: Colors.whiteColor,
+        color: colors.whiteColor,
     },
     confirmTopButton: {
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',
-        backgroundColor: Colors.primaryColor,
+        backgroundColor: colors.primaryColor,
         height: 54,
         borderRadius: 10,
         gap: 8,
     },
     confirmTopButtonText: {
         ...Fonts.medium16,
-        color: Colors.whiteColor,
+        color: colors.whiteColor,
     },
     videosContainer: {
         borderWidth: 0.5,
@@ -160,7 +160,7 @@ const Styles = StyleSheet.create({
         overflow: 'hidden',
     },
     videoImageContainerSelected: {
-        borderColor: Colors.primaryColor,
+        borderColor: colors.primaryColor,
         borderWidth: 1,
     },
     videoImageContainerSelectedDelete: {
@@ -191,7 +191,7 @@ const Styles = StyleSheet.create({
         width: 16,
         height: 16,
         borderRadius: 4,
-        backgroundColor: Colors.primaryColor,
+        backgroundColor: colors.primaryColor,
         alignItems: 'center',
         justifyContent: 'center',
     },
@@ -200,9 +200,11 @@ const Styles = StyleSheet.create({
     },
     selectionBadgeText: {
         fontSize: 11,
-        color: Colors.whiteColor,
+        color: colors.whiteColor,
         fontWeight: '400',
     },
 });
+
+const Styles = createStyles(lightColors);
 
 export default Styles;

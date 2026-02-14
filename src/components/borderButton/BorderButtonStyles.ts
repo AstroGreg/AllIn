@@ -1,12 +1,12 @@
 import { StyleSheet } from "react-native";
-import Colors from "../../constants/Colors";
 import Fonts from "../../constants/Fonts";
+import { ThemeColors } from "../../constants/Theme";
 
-const Styles = StyleSheet.create({
+export const createStyles = (colors: ThemeColors) => StyleSheet.create({
     btnContainre: {
         paddingHorizontal: 16,
         borderWidth: 0.5,
-        borderColor: Colors.lightGrayColor,
+        borderColor: colors.lightGrayColor,
         borderRadius: 6,
         maxWidth: 128,
         height: 38,
@@ -16,8 +16,6 @@ const Styles = StyleSheet.create({
     },
     btnText: {
         ...Fonts.regular14,
-        color: Colors.subTextColor
+        color: colors.subTextColor
     }
 });
-
-export default Styles;

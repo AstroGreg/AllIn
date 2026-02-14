@@ -1,11 +1,11 @@
 import { StyleSheet } from "react-native";
-import Colors from "../../constants/Colors";
 import Fonts from "../../constants/Fonts";
+import { ThemeColors } from "../../constants/Theme";
 
-const Styles = StyleSheet.create({
+export const createStyles = (colors: ThemeColors) => StyleSheet.create({
     mainContainer: {
         flex: 1,
-        backgroundColor: Colors.whiteColor
+        backgroundColor: colors.backgroundColor
     },
     container: {
         // paddingHorizontal: 20
@@ -29,12 +29,12 @@ const Styles = StyleSheet.create({
     titleText: {
         ...Fonts.regular16,
         fontWeight: '500',
-        color: Colors.mainTextColor
+        color: colors.mainTextColor
     },
     actionText: {
         ...Fonts.regular12,
         fontWeight: '400',
-        color: Colors.subTextColor
+        color: colors.subTextColor
     },
 
     // Featured Events Container
@@ -42,7 +42,7 @@ const Styles = StyleSheet.create({
         padding: 16,
         borderRadius: 10,
         borderWidth: 0.5,
-        borderColor: Colors.lightGrayColor,
+        borderColor: colors.lightGrayColor,
         maxWidth: 253,
         marginRight: 20,
     },
@@ -59,7 +59,7 @@ const Styles = StyleSheet.create({
     CompetitionName: {
         ...Fonts.regular14,
         fontWeight: '500',
-        color: Colors.mainTextColor
+        color: colors.mainTextColor
     },
 
     // SimilarEvents
@@ -67,7 +67,7 @@ const Styles = StyleSheet.create({
         padding: 16,
         borderRadius: 10,
         borderWidth: 0.5,
-        borderColor: Colors.lightGrayColor,
+        borderColor: colors.lightGrayColor,
         marginBottom: 16,
         maxHeight: 106,
         flexDirection: 'row',
@@ -81,6 +81,4 @@ const Styles = StyleSheet.create({
         overflow: 'hidden'
     },
 
-})
-
-export default Styles;
+});

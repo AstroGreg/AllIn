@@ -13,13 +13,17 @@ import {
     ArrowRight,
     TickSquare,
 } from 'iconsax-react-nativejs';
-import Styles from './SentRequestStateScreenStyles';
+import { createStyles } from './SentRequestStateScreenStyles';
 import SizeBox from '../../constants/SizeBox';
-import Colors from '../../constants/Colors';
 import Icons from '../../constants/Icons';
+import { useTheme } from '../../context/ThemeContext';
+import { useTranslation } from 'react-i18next';
 
 const SentRequestStateScreen = ({ navigation }: any) => {
     const insets = useSafeAreaInsets();
+    const { colors } = useTheme();
+    const Styles = createStyles(colors);
+    const { t } = useTranslation();
     const [eventName, setEventName] = useState('');
     const [location, setLocation] = useState('');
     const [date, setDate] = useState<Date | null>(null);
@@ -59,9 +63,9 @@ const SentRequestStateScreen = ({ navigation }: any) => {
             {/* Header */}
             <View style={Styles.header}>
                 <TouchableOpacity style={Styles.backButton} onPress={() => navigation.goBack()}>
-                    <ArrowLeft2 size={20} color={Colors.mainTextColor} variant="Linear" />
+                    <ArrowLeft2 size={20} color={colors.mainTextColor} variant="Linear" />
                 </TouchableOpacity>
-                <Text style={Styles.headerTitle}>Sent Request State</Text>
+                <Text style={Styles.headerTitle}>{t('Sent request state')}</Text>
                 <TouchableOpacity
                     style={Styles.notificationButton}
                     onPress={() => navigation.navigate('NotificationsScreen')}
@@ -72,18 +76,18 @@ const SentRequestStateScreen = ({ navigation }: any) => {
 
             <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={Styles.scrollContent}>
                 {/* Request Summary */}
-                <Text style={Styles.sectionTitle}>Request Summary</Text>
+                <Text style={Styles.sectionTitle}>{t('Request summary')}</Text>
                 <SizeBox height={16} />
 
                 <View style={Styles.summaryCard}>
-                    <Text style={Styles.summaryTitle}>Enhance Lighting & Colors</Text>
+                    <Text style={Styles.summaryTitle}>{t('Enhance lighting & colors')}</Text>
                     <View style={Styles.summaryMeta}>
                         <View style={Styles.metaItem}>
-                            <Calendar size={12} color="#9B9F9F" variant="Linear" />
+                            <Calendar size={12} color={colors.subTextColor} variant="Linear" />
                             <Text style={Styles.metaText}>12.12.2024</Text>
                         </View>
                         <View style={Styles.metaItem}>
-                            <Clock size={12} color="#9B9F9F" variant="Linear" />
+                            <Clock size={12} color={colors.subTextColor} variant="Linear" />
                             <Text style={Styles.metaText}>12:00</Text>
                         </View>
                     </View>
@@ -92,18 +96,18 @@ const SentRequestStateScreen = ({ navigation }: any) => {
                 <SizeBox height={24} />
 
                 {/* Edit Requested Comment */}
-                <Text style={Styles.sectionTitle}>Edit Requested Comment</Text>
+                <Text style={Styles.sectionTitle}>{t('Edit requested comment')}</Text>
                 <SizeBox height={16} />
 
                 {/* Event Name */}
-                <Text style={Styles.inputLabel}>Event Name</Text>
+                <Text style={Styles.inputLabel}>{t('Event name')}</Text>
                 <SizeBox height={8} />
                 <View style={Styles.inputContainer}>
-                    <Note size={16} color="#3C82F6" variant="Linear" />
+                    <Note size={16} color={colors.primaryColor} variant="Linear" />
                     <TextInput
                         style={Styles.textInput}
-                        placeholder="Enter Event Name"
-                        placeholderTextColor="#777777"
+                        placeholder={t('Enter event name')}
+                        placeholderTextColor={colors.grayColor}
                         value={eventName}
                         onChangeText={setEventName}
                     />
@@ -112,14 +116,14 @@ const SentRequestStateScreen = ({ navigation }: any) => {
                 <SizeBox height={16} />
 
                 {/* Location */}
-                <Text style={Styles.inputLabel}>Location</Text>
+                <Text style={Styles.inputLabel}>{t('Location')}</Text>
                 <SizeBox height={8} />
                 <View style={Styles.inputContainer}>
-                    <Location size={16} color="#3C82F6" variant="Linear" />
+                    <Location size={16} color={colors.primaryColor} variant="Linear" />
                     <TextInput
                         style={Styles.textInput}
-                        placeholder="Enter Location"
-                        placeholderTextColor="#777777"
+                        placeholder={t('Enter location')}
+                        placeholderTextColor={colors.grayColor}
                         value={location}
                         onChangeText={setLocation}
                     />
@@ -128,17 +132,17 @@ const SentRequestStateScreen = ({ navigation }: any) => {
                 <SizeBox height={16} />
 
                 {/* Date */}
-                <Text style={Styles.inputLabel}>Date</Text>
+                <Text style={Styles.inputLabel}>{t('Date')}</Text>
                 <SizeBox height={8} />
                 <TouchableOpacity
                     style={Styles.inputContainer}
                     onPress={() => setShowDatePicker(!showDatePicker)}
                 >
-                    <Calendar size={16} color="#3C82F6" variant="Linear" />
-                    <Text style={[Styles.textInput, { color: date ? Colors.mainTextColor : '#777777' }]}>
-                        {date ? formatDate(date) : 'Select Date'}
+                    <Calendar size={16} color={colors.primaryColor} variant="Linear" />
+                    <Text style={[Styles.textInput, { color: date ? colors.mainTextColor : colors.grayColor }]}>
+                        {date ? formatDate(date) : t('Select date')}
                     </Text>
-                    <ArrowDown2 size={20} color="#9B9F9F" variant="Linear" />
+                    <ArrowDown2 size={20} color={colors.subTextColor} variant="Linear" />
                 </TouchableOpacity>
 
                 {showDatePicker && (
@@ -153,14 +157,14 @@ const SentRequestStateScreen = ({ navigation }: any) => {
                 <SizeBox height={16} />
 
                 {/* Description */}
-                <Text style={Styles.inputLabel}>Description</Text>
+                <Text style={Styles.inputLabel}>{t('Description')}</Text>
                 <SizeBox height={8} />
                 <View style={Styles.textAreaContainer}>
-                    <Edit2 size={16} color="#3C82F6" variant="Linear" />
+                    <Edit2 size={16} color={colors.primaryColor} variant="Linear" />
                     <TextInput
                         style={Styles.textArea}
-                        placeholder="Write Something....."
-                        placeholderTextColor="#777777"
+                        placeholder={t('Write something...')}
+                        placeholderTextColor={colors.grayColor}
                         value={description}
                         onChangeText={setDescription}
                         multiline
@@ -171,7 +175,7 @@ const SentRequestStateScreen = ({ navigation }: any) => {
                 <SizeBox height={24} />
 
                 {/* Update Status */}
-                <Text style={Styles.sectionTitle}>Update Status</Text>
+                <Text style={Styles.sectionTitle}>{t('Update status')}</Text>
                 <SizeBox height={16} />
 
                 <View style={Styles.statusRow}>
@@ -179,9 +183,9 @@ const SentRequestStateScreen = ({ navigation }: any) => {
                         style={Styles.statusOption}
                         onPress={() => handleStatusChange('sent')}
                     >
-                        <Text style={Styles.statusText}>Keep as Sent</Text>
+                        <Text style={Styles.statusText}>{t('Keep as sent')}</Text>
                         <View style={[Styles.checkbox, keepAsSent && Styles.checkboxChecked]}>
-                            {keepAsSent && <TickSquare size={16} color="#3C82F6" variant="Bold" />}
+                            {keepAsSent && <TickSquare size={16} color={colors.primaryColor} variant="Bold" />}
                         </View>
                     </TouchableOpacity>
 
@@ -189,9 +193,9 @@ const SentRequestStateScreen = ({ navigation }: any) => {
                         style={Styles.statusOption}
                         onPress={() => handleStatusChange('nonIssue')}
                     >
-                        <Text style={Styles.statusText}>Mark as Non Issue</Text>
+                        <Text style={Styles.statusText}>{t('Mark as non issue')}</Text>
                         <View style={[Styles.checkbox, markAsNonIssue && Styles.checkboxChecked]}>
-                            {markAsNonIssue && <TickSquare size={16} color="#3C82F6" variant="Bold" />}
+                            {markAsNonIssue && <TickSquare size={16} color={colors.primaryColor} variant="Bold" />}
                         </View>
                     </TouchableOpacity>
                 </View>
@@ -215,7 +219,7 @@ const SentRequestStateScreen = ({ navigation }: any) => {
                             onPress={() => navigation.navigate('ReceivedRequestStateScreen')}
                         >
                             <Text style={Styles.submitButtonText}>Submit</Text>
-                            <ArrowRight size={18} color={Colors.whiteColor} variant="Linear" />
+                            <ArrowRight size={18} color={colors.pureWhite} variant="Linear" />
                         </TouchableOpacity>
                     </View>
                 </View>

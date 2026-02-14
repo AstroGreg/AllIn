@@ -1,11 +1,11 @@
 import { View, Text, Dimensions, TouchableOpacity, StyleSheet } from 'react-native'
 import React, { useState } from 'react'
-import Styles from '../ViewUserProfileStyles';
-import Colors from '../../../constants/Colors';
+import { createStyles } from '../ViewUserProfileStyles';
 import SizeBox from '../../../constants/SizeBox';
 import Icons from '../../../constants/Icons';
 import Video from 'react-native-video';
 import ShimmerEffect from '../../../components/shimmerEffect/ShimmerEffect';
+import { useTheme } from '../../../context/ThemeContext';
 
 
 interface VideoContainerProps {
@@ -21,6 +21,8 @@ const VideoContainer = ({ onPressVideo, videoUri, CompetitionName, event, timer 
     const deviceWidth = Dimensions.get('window').width;
     const spacing = 20;
     const containerWidth = (deviceWidth - (spacing * 3)) / 2; // 3 spaces: left, middle, right
+    const { colors } = useTheme();
+    const styles = createStyles(colors);
     const [isLoading, setIsLoading] = useState(true);
 
     const [isPlaying, setIsPlaying] = useState(false);
@@ -42,11 +44,11 @@ const VideoContainer = ({ onPressVideo, videoUri, CompetitionName, event, timer 
             overflow: 'hidden',
             padding: 8,
             borderWidth: 0.5,
-            borderColor: Colors.lightGrayColor
+            borderColor: colors.lightGrayColor
         }}>
-            <View style={Styles.photoImgCont}>
+            <View style={styles.photoImgCont}>
                 <TouchableOpacity
-                    style={Styles.videoWrapper}
+                    style={styles.videoWrapper}
                     onPress={handleVideoPress}
                     activeOpacity={0.9}>
                     {isLoading && (
@@ -71,8 +73,8 @@ const VideoContainer = ({ onPressVideo, videoUri, CompetitionName, event, timer 
                         onError={() => setIsLoading(false)}
                     />
                     {!isPlaying && (
-                        <View style={Styles.playButtonOverlay}>
-                            <View style={Styles.playButton}>
+                        <View style={styles.playButtonOverlay}>
+                            <View style={styles.playButton}>
                                 <Icons.PlayCricle width={32} height={32} />
                             </View>
                         </View>
@@ -82,27 +84,27 @@ const VideoContainer = ({ onPressVideo, videoUri, CompetitionName, event, timer 
 
             <TouchableOpacity activeOpacity={0.8} onPress={onPressVideo}>
                 <SizeBox height={8} />
-                <Text style={[Styles.downloadCount, { fontWeight: '400' }]} numberOfLines={1}>{event}</Text>
+                <Text style={[styles.downloadCount, { fontWeight: '400' }]} numberOfLines={1}>{event}</Text>
                 <SizeBox height={4} />
 
 
-                <View style={Styles.row}>
-                    <View style={Styles.row}>
+                <View style={styles.row}>
+                    <View style={styles.row}>
                         <Icons.Map height={16} width={16} />
                         <SizeBox width={4} />
-                        <Text style={Styles.subText}>{CompetitionName}</Text>
+                        <Text style={styles.subText}>{CompetitionName}</Text>
                     </View>
                     <SizeBox width={4} />
-                    <View style={Styles.dot} />
+                    <View style={styles.dot} />
                     <SizeBox width={4} />
-                    <View style={Styles.row}>
+                    <View style={styles.row}>
                         <Icons.Timer height={16} width={16} />
                         <SizeBox width={4} />
-                        <Text style={Styles.subText}>{timer}</Text>
+                        <Text style={styles.subText}>{timer}</Text>
                     </View>
                 </View>
 
-                <TouchableOpacity style={[Styles.btnRight, { bottom: 20, right: 0 }]}>
+                <TouchableOpacity style={[styles.btnRight, { bottom: 20, right: 0 }]}>
                     <Icons.Download height={20} width={20} />
                 </TouchableOpacity>
             </TouchableOpacity>

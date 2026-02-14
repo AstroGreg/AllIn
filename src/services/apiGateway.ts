@@ -292,11 +292,11 @@ export async function getHomeOverview(accessToken: string, userId: string): Prom
 export async function enrollFace(
   accessToken: string,
   images: {
-    frontal: string;
-    left_profile: string;
-    right_profile: string;
-    upward: string;
-    downward: string;
+    frontal: string | string[];
+    left_profile: string | string[];
+    right_profile: string | string[];
+    upward: string | string[];
+    downward: string | string[];
   },
   params?: {label?: string; replace?: boolean},
 ): Promise<{ok: boolean; label?: string; enrolled?: any}> {
@@ -304,13 +304,18 @@ export async function enrollFace(
   if (params?.label) form.append('label', params.label);
   if (params?.replace != null) form.append('replace', params.replace ? 'true' : 'false');
 
-  const parts: Array<[keyof typeof images, string]> = Object.entries(images) as any;
-  for (const [field, uri] of parts) {
-    form.append(field, {
-      uri,
-      name: `${field}.jpg`,
-      type: 'image/jpeg',
-    } as any);
+  const parts: Array<[keyof typeof images, string | string[]]> = Object.entries(images) as any;
+  for (const [field, value] of parts) {
+    const uris = Array.isArray(value) ? value : [value];
+    for (let i = 0; i < uris.length; i++) {
+      const uri = uris[i];
+      if (!uri) continue;
+      form.append(field, {
+        uri,
+        name: `${field}-${i + 1}.jpg`,
+        type: 'image/jpeg',
+      } as any);
+    }
   }
 
   return apiRequest('/ai/enrol/face', {
@@ -343,6 +348,60 @@ export async function verifyFaceAngle(
   } as any);
 
   return apiRequest('/ai/face/verify', {
+    method: 'POST',
+    accessToken,
+    body: form,
+  });
+}
+
+
+export interface FaceLivenessStartResponse {
+  ok: boolean;
+  challenge_id: string;
+  steps: FaceAngleClass[];
+  ttl_seconds?: number;
+}
+
+export async function startFaceLivenessChallenge(
+  accessToken: string,
+  params?: {count?: number},
+): Promise<FaceLivenessStartResponse> {
+  const qs = toQueryString({
+    count: params?.count ?? undefined,
+  });
+  return apiRequest<FaceLivenessStartResponse>(`/ai/face/liveness/start${qs}`, {
+    method: 'POST',
+    accessToken,
+    body: {},
+  });
+}
+
+export interface FaceLivenessStepResponse {
+  ok: boolean;
+  accepted: boolean;
+  completed?: boolean;
+  reason?: string;
+  expected_angle?: FaceAngleClass | string;
+  detected_angle?: FaceAngleClass | string | null;
+  step_index?: number;
+  remaining?: number;
+  next_expected_angle?: FaceAngleClass | string | null;
+  [k: string]: any;
+}
+
+export async function submitFaceLivenessStep(
+  accessToken: string,
+  params: {challenge_id: string; uri: string},
+): Promise<FaceLivenessStepResponse> {
+  const form = new FormData();
+  form.append('challenge_id', params.challenge_id);
+  form.append('file', {
+    uri: params.uri,
+    name: `liveness.jpg`,
+    type: 'image/jpeg',
+  } as any);
+
+  return apiRequest<FaceLivenessStepResponse>('/ai/face/liveness/step', {
     method: 'POST',
     accessToken,
     body: form,

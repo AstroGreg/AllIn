@@ -1,11 +1,11 @@
 import { StyleSheet } from 'react-native';
-import Colors from '../../constants/Colors';
 import Fonts from '../../constants/Fonts';
+import { ThemeColors } from '../../constants/Theme';
 
-const Styles = StyleSheet.create({
+export const createStyles = (colors: ThemeColors) => StyleSheet.create({
     mainContainer: {
         flex: 1,
-        backgroundColor: Colors.whiteColor,
+        backgroundColor: colors.backgroundColor,
     },
     header: {
         flexDirection: 'row',
@@ -17,7 +17,7 @@ const Styles = StyleSheet.create({
         width: 44,
         height: 44,
         borderRadius: 22,
-        backgroundColor: '#F5F5F5',
+        backgroundColor: colors.btnBackgroundColor,
         alignItems: 'center',
         justifyContent: 'center',
     },
@@ -45,13 +45,13 @@ const Styles = StyleSheet.create({
     title: {
         ...Fonts.medium22,
         fontSize: 24,
-        color: Colors.mainTextColor,
+        color: colors.mainTextColor,
         textAlign: 'center',
         lineHeight: 32,
     },
     subtitle: {
         ...Fonts.regular14,
-        color: '#9B9F9F',
+        color: colors.subTextColor,
         textAlign: 'center',
         marginTop: 8,
     },
@@ -65,14 +65,14 @@ const Styles = StyleSheet.create({
     },
     inputLabel: {
         ...Fonts.medium14,
-        color: Colors.mainTextColor,
+        color: colors.mainTextColor,
     },
     inputContainer: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: '#F7FAFF',
+        backgroundColor: colors.secondaryColor,
         borderWidth: 0.5,
-        borderColor: '#E0ECFE',
+        borderColor: colors.borderColor,
         borderRadius: 10,
         paddingHorizontal: 16,
         height: 54,
@@ -81,16 +81,16 @@ const Styles = StyleSheet.create({
     textInput: {
         flex: 1,
         ...Fonts.regular14,
-        color: Colors.mainTextColor,
+        color: colors.mainTextColor,
         height: '100%',
     },
     dropdownText: {
         flex: 1,
         ...Fonts.regular14,
-        color: Colors.mainTextColor,
+        color: colors.mainTextColor,
     },
     placeholderText: {
-        color: '#777777',
+        color: colors.grayColor,
     },
 
     // Bottom Container
@@ -98,7 +98,7 @@ const Styles = StyleSheet.create({
         flexDirection: 'row',
         paddingHorizontal: 20,
         paddingTop: 16,
-        backgroundColor: Colors.whiteColor,
+        backgroundColor: colors.backgroundColor,
         gap: 16,
     },
     skipButton: {
@@ -108,14 +108,14 @@ const Styles = StyleSheet.create({
         justifyContent: 'center',
         gap: 8,
         borderWidth: 0.5,
-        borderColor: '#DEDEDE',
+        borderColor: colors.lightGrayColor,
         borderRadius: 10,
         paddingVertical: 16,
         height: 54,
     },
     skipButtonText: {
         ...Fonts.medium16,
-        color: '#9B9F9F',
+        color: colors.subTextColor,
     },
     nextButton: {
         flex: 1,
@@ -123,15 +123,13 @@ const Styles = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'center',
         gap: 8,
-        backgroundColor: Colors.primaryColor,
+        backgroundColor: colors.primaryColor,
         borderRadius: 10,
         paddingVertical: 16,
         height: 54,
     },
     nextButtonText: {
         ...Fonts.medium16,
-        color: Colors.whiteColor,
+        color: colors.pureWhite,
     },
 });
-
-export default Styles;

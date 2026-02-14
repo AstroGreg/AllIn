@@ -2,12 +2,16 @@ import { View, Text, TouchableOpacity, ScrollView, TextInput } from 'react-nativ
 import React, { useState } from 'react';
 import SizeBox from '../../constants/SizeBox';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import Colors from '../../constants/Colors';
-import Styles from './AddAthleteStyles';
+import { createStyles } from './AddAthleteStyles';
 import { ArrowLeft2, User, Sms, Location, Global, DocumentText, Export, ArrowRight } from 'iconsax-react-nativejs';
+import { useTheme } from '../../context/ThemeContext';
+import { useTranslation } from 'react-i18next';
 
 const AddAthleteScreen = ({ navigation }: any) => {
     const insets = useSafeAreaInsets();
+    const { colors } = useTheme();
+    const { t } = useTranslation();
+    const styles = createStyles(colors);
     const [athleteName, setAthleteName] = useState('');
     const [athleteEmail, setAthleteEmail] = useState('');
     const [location, setLocation] = useState('');
@@ -17,48 +21,48 @@ const AddAthleteScreen = ({ navigation }: any) => {
     const isFormValid = athleteName && athleteEmail && location && specialized && representedClub;
 
     return (
-        <View style={Styles.mainContainer}>
+        <View style={styles.mainContainer}>
             <SizeBox height={insets.top} />
 
             {/* Header */}
-            <View style={Styles.header}>
-                <TouchableOpacity style={Styles.headerButton} onPress={() => navigation.goBack()}>
-                    <ArrowLeft2 size={24} color={Colors.primaryColor} variant="Linear" />
+            <View style={styles.header}>
+                <TouchableOpacity style={styles.headerButton} onPress={() => navigation.goBack()}>
+                    <ArrowLeft2 size={24} color={colors.primaryColor} variant="Linear" />
                 </TouchableOpacity>
-                <Text style={Styles.headerTitle}>Add Athlete</Text>
-                <View style={Styles.headerButtonPlaceholder} />
+                <Text style={styles.headerTitle}>{t('Add Athlete')}</Text>
+                <View style={styles.headerButtonPlaceholder} />
             </View>
 
-            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={Styles.scrollContent}>
+            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
                 {/* Section Title */}
-                <Text style={Styles.sectionTitle}>Create New Add Athlete</Text>
+                <Text style={styles.sectionTitle}>{t('Create New Add Athlete')}</Text>
 
                 {/* Upload Photo Section */}
-                <View style={Styles.inputGroup}>
-                    <Text style={Styles.inputLabel}>Upload Photo</Text>
+                <View style={styles.inputGroup}>
+                    <Text style={styles.inputLabel}>{t('Upload Photo')}</Text>
                     <SizeBox height={8} />
-                    <TouchableOpacity style={Styles.uploadContainer}>
-                        <Export size={24} color={Colors.primaryColor} variant="Linear" />
+                    <TouchableOpacity style={styles.uploadContainer}>
+                        <Export size={24} color={colors.primaryColor} variant="Linear" />
                         <SizeBox height={4} />
-                        <Text style={Styles.uploadText}>Drag and Drop here</Text>
-                        <Text style={Styles.uploadOrText}>or</Text>
+                        <Text style={styles.uploadText}>{t('Drag and Drop here')}</Text>
+                        <Text style={styles.uploadOrText}>{t('or')}</Text>
                         <TouchableOpacity>
-                            <Text style={Styles.browseFilesText}>Browse Files</Text>
+                            <Text style={styles.browseFilesText}>{t('Browse Files')}</Text>
                         </TouchableOpacity>
                     </TouchableOpacity>
                 </View>
 
                 {/* Athlete Name */}
-                <View style={Styles.inputGroup}>
-                    <Text style={Styles.inputLabel}>Athlete name</Text>
+                <View style={styles.inputGroup}>
+                    <Text style={styles.inputLabel}>{t('Athlete name')}</Text>
                     <SizeBox height={8} />
-                    <View style={Styles.inputContainer}>
-                        <User size={24} color={Colors.primaryColor} variant="Linear" />
+                    <View style={styles.inputContainer}>
+                        <User size={24} color={colors.primaryColor} variant="Linear" />
                         <SizeBox width={10} />
                         <TextInput
-                            style={Styles.textInput}
-                            placeholder="Enter name"
-                            placeholderTextColor="#777777"
+                            style={styles.textInput}
+                            placeholder={t('Enter name')}
+                            placeholderTextColor={colors.grayColor}
                             value={athleteName}
                             onChangeText={setAthleteName}
                         />
@@ -66,16 +70,16 @@ const AddAthleteScreen = ({ navigation }: any) => {
                 </View>
 
                 {/* Athlete Email */}
-                <View style={Styles.inputGroup}>
-                    <Text style={Styles.inputLabel}>Athlete email</Text>
+                <View style={styles.inputGroup}>
+                    <Text style={styles.inputLabel}>{t('Athlete email')}</Text>
                     <SizeBox height={8} />
-                    <View style={Styles.inputContainer}>
-                        <Sms size={24} color={Colors.primaryColor} variant="Linear" />
+                    <View style={styles.inputContainer}>
+                        <Sms size={24} color={colors.primaryColor} variant="Linear" />
                         <SizeBox width={10} />
                         <TextInput
-                            style={Styles.textInput}
-                            placeholder="Enter email"
-                            placeholderTextColor="#777777"
+                            style={styles.textInput}
+                            placeholder={t('Enter email')}
+                            placeholderTextColor={colors.grayColor}
                             value={athleteEmail}
                             onChangeText={setAthleteEmail}
                             keyboardType="email-address"
@@ -85,16 +89,16 @@ const AddAthleteScreen = ({ navigation }: any) => {
                 </View>
 
                 {/* Location */}
-                <View style={Styles.inputGroup}>
-                    <Text style={Styles.inputLabel}>Location</Text>
+                <View style={styles.inputGroup}>
+                    <Text style={styles.inputLabel}>{t('Location')}</Text>
                     <SizeBox height={8} />
-                    <View style={Styles.inputContainer}>
-                        <Location size={24} color={Colors.primaryColor} variant="Linear" />
+                    <View style={styles.inputContainer}>
+                        <Location size={24} color={colors.primaryColor} variant="Linear" />
                         <SizeBox width={10} />
                         <TextInput
-                            style={Styles.textInput}
-                            placeholder="Enter location"
-                            placeholderTextColor="#777777"
+                            style={styles.textInput}
+                            placeholder={t('Enter location')}
+                            placeholderTextColor={colors.grayColor}
                             value={location}
                             onChangeText={setLocation}
                         />
@@ -102,30 +106,30 @@ const AddAthleteScreen = ({ navigation }: any) => {
                 </View>
 
                 {/* Specialized */}
-                <View style={Styles.inputGroup}>
-                    <Text style={Styles.inputLabel}>Specialized</Text>
+                <View style={styles.inputGroup}>
+                    <Text style={styles.inputLabel}>{t('Specialized')}</Text>
                     <SizeBox height={8} />
-                    <TouchableOpacity style={Styles.inputContainer}>
-                        <Global size={24} color={Colors.primaryColor} variant="Linear" />
+                    <TouchableOpacity style={styles.inputContainer}>
+                        <Global size={24} color={colors.primaryColor} variant="Linear" />
                         <SizeBox width={10} />
-                        <Text style={[Styles.textInput, !specialized && Styles.placeholderText]}>
-                            {specialized || 'Select specialized'}
+                        <Text style={[styles.textInput, !specialized && styles.placeholderText]}>
+                            {specialized || t('Select specialized')}
                         </Text>
-                        <ArrowRight size={24} color={Colors.primaryColor} variant="Linear" style={{ transform: [{ rotate: '90deg' }] }} />
+                        <ArrowRight size={24} color={colors.primaryColor} variant="Linear" style={{ transform: [{ rotate: '90deg' }] }} />
                     </TouchableOpacity>
                 </View>
 
                 {/* Represented Club */}
-                <View style={Styles.inputGroup}>
-                    <Text style={Styles.inputLabel}>Represented Club</Text>
+                <View style={styles.inputGroup}>
+                    <Text style={styles.inputLabel}>{t('Represented Club')}</Text>
                     <SizeBox height={8} />
-                    <View style={Styles.inputContainer}>
-                        <DocumentText size={24} color={Colors.primaryColor} variant="Linear" />
+                    <View style={styles.inputContainer}>
+                        <DocumentText size={24} color={colors.primaryColor} variant="Linear" />
                         <SizeBox width={10} />
                         <TextInput
-                            style={Styles.textInput}
-                            placeholder="Enter Represented Club"
-                            placeholderTextColor="#777777"
+                            style={styles.textInput}
+                            placeholder={t('Enter Represented Club')}
+                            placeholderTextColor={colors.grayColor}
                             value={representedClub}
                             onChangeText={setRepresentedClub}
                         />
@@ -136,24 +140,24 @@ const AddAthleteScreen = ({ navigation }: any) => {
             </ScrollView>
 
             {/* Bottom Buttons */}
-            <View style={[Styles.bottomContainer, { paddingBottom: insets.bottom > 0 ? insets.bottom : 20 }]}>
+            <View style={[styles.bottomContainer, { paddingBottom: insets.bottom > 0 ? insets.bottom : 20 }]}>
                 <TouchableOpacity
-                    style={Styles.cancelButton}
+                    style={styles.cancelButton}
                     onPress={() => navigation.goBack()}
                 >
-                    <Text style={Styles.cancelButtonText}>Cancel</Text>
-                    <ArrowRight size={18} color="#9B9F9F" variant="Linear" />
+                    <Text style={styles.cancelButtonText}>{t('Cancel')}</Text>
+                    <ArrowRight size={18} color={colors.subTextColor} variant="Linear" />
                 </TouchableOpacity>
 
                 <TouchableOpacity
-                    style={[Styles.saveButton, !isFormValid && Styles.saveButtonDisabled]}
+                    style={[styles.saveButton, !isFormValid && styles.saveButtonDisabled]}
                     onPress={() => {
                         // Handle save
                         navigation.goBack();
                     }}
                 >
-                    <Text style={Styles.saveButtonText}>Save</Text>
-                    <ArrowRight size={18} color={Colors.whiteColor} variant="Linear" />
+                    <Text style={styles.saveButtonText}>{t('Save')}</Text>
+                    <ArrowRight size={18} color={colors.pureWhite} variant="Linear" />
                 </TouchableOpacity>
             </View>
         </View>

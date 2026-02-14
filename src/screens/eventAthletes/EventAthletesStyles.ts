@@ -1,11 +1,11 @@
 import { StyleSheet } from 'react-native';
-import Colors from '../../constants/Colors';
+import { ThemeColors, lightColors } from '../../constants/Theme';
 import Fonts from '../../constants/Fonts';
 
-const Styles = StyleSheet.create({
+export const createStyles = (colors: ThemeColors) => StyleSheet.create({
     mainContainer: {
         flex: 1,
-        backgroundColor: Colors.whiteColor,
+        backgroundColor: colors.whiteColor,
     },
     header: {
         flexDirection: 'row',
@@ -30,7 +30,7 @@ const Styles = StyleSheet.create({
     },
     headerTitle: {
         ...Fonts.medium18,
-        color: Colors.mainTextColor,
+        color: colors.mainTextColor,
     },
     scrollContent: {
         paddingHorizontal: 20,
@@ -38,16 +38,16 @@ const Styles = StyleSheet.create({
     },
     competitionTitle: {
         ...Fonts.medium18,
-        color: Colors.mainTextColor,
+        color: colors.mainTextColor,
         marginBottom: 16,
     },
     athletesSectionTitle: {
         ...Fonts.medium14,
-        color: Colors.mainTextColor,
+        color: colors.mainTextColor,
         marginBottom: 12,
     },
     athletesCard: {
-        backgroundColor: Colors.whiteColor,
+        backgroundColor: colors.whiteColor,
         borderRadius: 10,
         borderWidth: 0.5,
         borderColor: '#DEDEDE',
@@ -69,12 +69,14 @@ const Styles = StyleSheet.create({
     athleteName: {
         flex: 1,
         ...Fonts.medium14,
-        color: Colors.mainTextColor,
+        color: colors.mainTextColor,
     },
     athleteEventType: {
         ...Fonts.regular12,
         color: '#9B9F9F',
     },
 });
+
+const Styles = createStyles(lightColors);
 
 export default Styles;

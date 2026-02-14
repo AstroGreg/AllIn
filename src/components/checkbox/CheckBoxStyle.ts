@@ -1,18 +1,14 @@
 import { StyleSheet } from "react-native";
-import Colors from "../../constants/Colors";
-import Fonts from "../../constants/Fonts";
+import { ThemeColors } from "../../constants/Theme";
 
-const Styles = StyleSheet.create({
+export const createStyles = (colors: ThemeColors) => StyleSheet.create({
     checkBoxContainer: {
         height: 18,
         width: 18,
         borderRadius: 6,
         borderWidth: 1,
-        borderColor: Colors.primaryColor,
+        borderColor: colors.primaryColor,
         alignItems: 'center',
         justifyContent: 'center'
     }
-
-})
-
-export default Styles;
+});

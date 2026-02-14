@@ -8,14 +8,18 @@ import {
     Location,
     VideoSquare,
 } from 'iconsax-react-nativejs';
-import Styles from './MyAllEventsScreenStyles';
+import { createStyles } from './MyAllEventsScreenStyles';
 import SizeBox from '../../constants/SizeBox';
 import Images from '../../constants/Images';
-import Colors from '../../constants/Colors';
 import Icons from '../../constants/Icons';
+import { useTheme } from '../../context/ThemeContext';
+import { useTranslation } from 'react-i18next';
 
 const MyAllEventsScreen = ({ navigation }: any) => {
     const insets = useSafeAreaInsets();
+    const { colors } = useTheme();
+    const Styles = createStyles(colors);
+    const { t } = useTranslation();
 
     const myEvents = [
         {
@@ -59,21 +63,21 @@ const MyAllEventsScreen = ({ navigation }: any) => {
                 <View style={Styles.eventTitleRow}>
                     <Text style={Styles.cardTitle}>{item.title}</Text>
                     <View style={Styles.videosCount}>
-                        <VideoSquare size={16} color="#9B9F9F" variant="Linear" />
+                        <VideoSquare size={16} color={colors.subTextColor} variant="Linear" />
                         <Text style={Styles.detailText}>{item.videos}</Text>
                     </View>
                 </View>
                 <View style={Styles.detailRow}>
-                    <Text style={Styles.detailLabel}>Location</Text>
+                    <Text style={Styles.detailLabel}>{t('Location')}</Text>
                     <View style={Styles.detailValue}>
-                        <Location size={16} color="#9B9F9F" variant="Linear" />
+                        <Location size={16} color={colors.subTextColor} variant="Linear" />
                         <Text style={Styles.detailText}>{item.location}</Text>
                     </View>
                 </View>
                 <View style={Styles.detailRow}>
-                    <Text style={Styles.detailLabel}>Date</Text>
+                    <Text style={Styles.detailLabel}>{t('Date')}</Text>
                     <View style={Styles.detailValue}>
-                        <Calendar size={16} color="#9B9F9F" variant="Linear" />
+                        <Calendar size={16} color={colors.subTextColor} variant="Linear" />
                         <Text style={Styles.detailText}>{item.date}</Text>
                     </View>
                 </View>
@@ -88,9 +92,9 @@ const MyAllEventsScreen = ({ navigation }: any) => {
             {/* Header */}
             <View style={Styles.header}>
                 <TouchableOpacity style={Styles.backButton} onPress={() => navigation.goBack()}>
-                    <ArrowLeft2 size={20} color={Colors.mainTextColor} variant="Linear" />
+                    <ArrowLeft2 size={20} color={colors.mainTextColor} variant="Linear" />
                 </TouchableOpacity>
-                <Text style={Styles.headerTitle}>My All Events</Text>
+                <Text style={Styles.headerTitle}>{t('My all events')}</Text>
                 <TouchableOpacity
                     style={Styles.notificationButton}
                     onPress={() => navigation.navigate('NotificationsScreen')}
@@ -102,16 +106,16 @@ const MyAllEventsScreen = ({ navigation }: any) => {
             <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={Styles.scrollContent}>
                 {/* My All Events Section */}
                 <View style={Styles.sectionHeader}>
-                    <Text style={Styles.sectionTitle}>My All Events</Text>
+                    <Text style={Styles.sectionTitle}>{t('My all events')}</Text>
                     <TouchableOpacity>
-                        <Text style={Styles.viewAllText}>View all</Text>
+                        <Text style={Styles.viewAllText}>{t('View all')}</Text>
                     </TouchableOpacity>
                 </View>
 
                 {myEvents.map(renderMyEventCard)}
 
                 <TouchableOpacity style={Styles.primaryButton}>
-                    <Text style={Styles.primaryButtonText}>Add Myself To Events</Text>
+                    <Text style={Styles.primaryButtonText}>{t('Add myself to events')}</Text>
                     <Icons.RightBtnIcon height={18} width={18} />
                 </TouchableOpacity>
 

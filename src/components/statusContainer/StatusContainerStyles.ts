@@ -1,12 +1,12 @@
 import { StyleSheet } from "react-native";
-import Colors from "../../constants/Colors";
 import Fonts from "../../constants/Fonts";
+import { ThemeColors } from "../../constants/Theme";
 
-const Styles = StyleSheet.create({
+export const createStyles = (colors: ThemeColors) => StyleSheet.create({
     container: {
         borderWidth: 0.5,
         borderRadius: 6,
-        borderColor: Colors.lightGrayColor,
+        borderColor: colors.lightGrayColor,
         paddingHorizontal: 12,
         alignItems: 'center',
         justifyContent: 'center',
@@ -18,8 +18,6 @@ const Styles = StyleSheet.create({
     },
     text: {
         ...Fonts.regular12,
-        color: Colors.greenColor
+        color: colors.greenColor
     }
-})
-
-export default Styles;
+});

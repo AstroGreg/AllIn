@@ -1,6 +1,6 @@
 import { View, Text, FlatList, TouchableOpacity, Image } from 'react-native'
 import React, { useMemo, useEffect, useState, useCallback } from 'react'
-import Styles from '../SearchStyles'
+import { createStyles } from '../SearchStyles'
 import CustomHeader from '../../../components/customHeader/CustomHeader'
 import SizeBox from '../../../constants/SizeBox'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
@@ -9,6 +9,8 @@ import { useAuth } from '../../../context/AuthContext'
 import { getMediaById } from '../../../services/apiGateway'
 import { getApiBaseUrl, getHlsBaseUrl } from '../../../constants/RuntimeConfig'
 import Images from '../../../constants/Images'
+import { useTheme } from '../../../context/ThemeContext'
+import { useTranslation } from 'react-i18next'
 
 const VideosForEvent = ({ navigation, route }: any) => {
     const insets = useSafeAreaInsets();
@@ -16,6 +18,9 @@ const VideosForEvent = ({ navigation, route }: any) => {
     const division = route?.params?.division;
     const gender = route?.params?.gender;
     const { apiAccessToken } = useAuth();
+    const { colors } = useTheme();
+    const { t } = useTranslation();
+    const styles = createStyles(colors);
     const mediaId = '86db92e8-1b8e-44a5-95c4-fb4764f6783e';
     const [sharedThumbUrl, setSharedThumbUrl] = useState<string | null>(null);
     const [sharedVideoUrl, setSharedVideoUrl] = useState<string | null>(null);
@@ -118,13 +123,13 @@ const VideosForEvent = ({ navigation, route }: any) => {
 
     const renderItem = ({ item }: any) => {
         return (
-            <View style={[Styles.borderBox, { marginBottom: 24 }]}>
-                <Text style={Styles.subText}>{item.event}</Text>
+            <View style={[styles.borderBox, { marginBottom: 24 }]}>
+                <Text style={styles.subText}>{item.event}</Text>
                 <SizeBox height={16} />
-                <View style={[Styles.row, Styles.spaceBetween]}>
-                    <Text style={Styles.subText}>Author: {item.name}</Text>
-                    <Text style={Styles.subText}>5:06 Mins</Text>
-                    <Text style={Styles.subText}>5k Views</Text>
+                <View style={[styles.row, styles.spaceBetween]}>
+                    <Text style={styles.subText}>{t('Author')}: {item.name}</Text>
+                    <Text style={styles.subText}>5:06 {t('Mins')}</Text>
+                    <Text style={styles.subText}>{t('5k Views')}</Text>
                 </View>
                 <SizeBox height={12} />
                 <TouchableOpacity
@@ -151,9 +156,9 @@ const VideosForEvent = ({ navigation, route }: any) => {
     }
 
     return (
-        <View style={Styles.mainContainer}>
+        <View style={styles.mainContainer}>
             <SizeBox height={insets.top} />
-            <CustomHeader title='Video' onBackPress={() => navigation.goBack()} onPressSetting={() => navigation.navigate('ProfileSettings')} />
+            <CustomHeader title={t('Video')} onBackPress={() => navigation.goBack()} onPressSetting={() => navigation.navigate('ProfileSettings')} />
 
             <FlatList
                 data={data}
@@ -164,13 +169,13 @@ const VideosForEvent = ({ navigation, route }: any) => {
                     <>
                         <SizeBox height={24} />
                         <View style={{ marginHorizontal: 20 }}>
-                            <Text style={Styles.titleText}>{eventName}</Text>
+                            <Text style={styles.titleText}>{eventName}</Text>
                             <SizeBox height={2} />
-                            <Text style={Styles.filterText}>
+                            <Text style={styles.filterText}>
                                 {[eventName, division, gender].filter(Boolean).join(' • ')}
                             </Text>
                             <SizeBox height={10} />
-                            <View style={Styles.separator} />
+                            <View style={styles.separator} />
                         </View>
                         <SizeBox height={27} />
                     </>

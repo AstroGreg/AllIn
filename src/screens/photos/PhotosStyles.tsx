@@ -1,11 +1,11 @@
 import { StyleSheet } from "react-native";
-import Colors from "../../constants/Colors";
 import Fonts from "../../constants/Fonts";
+import { ThemeColors } from "../../constants/Theme";
 
-const Styles = StyleSheet.create({
+export const createStyles = (colors: ThemeColors) => StyleSheet.create({
     mainContainer: {
         flex: 1,
-        backgroundColor: Colors.whiteColor
+        backgroundColor: colors.backgroundColor
     },
     moreActionIcon: {
         position: 'absolute',
@@ -21,7 +21,7 @@ const Styles = StyleSheet.create({
     },
     viewCount: {
         ...Fonts.regular16,
-        color: Colors.whiteColor
+        color: colors.pureWhite
     },
     imgText: {
         position: 'absolute',
@@ -35,7 +35,7 @@ const Styles = StyleSheet.create({
     downBtn: {
         height: 38,
         paddingHorizontal: 16,
-        backgroundColor: Colors.primaryColor,
+        backgroundColor: colors.primaryColor,
         alignItems: 'center',
         justifyContent: 'center',
         borderRadius: 8,
@@ -51,7 +51,7 @@ const Styles = StyleSheet.create({
         backgroundColor: 'rgba(0,0,0,0.1)', // optional dark background
     },
     modalContent: {
-        backgroundColor: '#fff',
+        backgroundColor: colors.cardBackground,
         borderRadius: 12,
         paddingVertical: 12,
         paddingHorizontal: 20,
@@ -70,9 +70,7 @@ const Styles = StyleSheet.create({
     actionText: {
         marginLeft: 10,
         ...Fonts.regular12,
-        color: Colors.grayColor,
+        color: colors.grayColor,
         fontWeight: '500'
     },
 });
-
-export default Styles;

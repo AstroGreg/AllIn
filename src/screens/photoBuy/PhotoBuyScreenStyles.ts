@@ -1,11 +1,11 @@
 import { StyleSheet } from 'react-native';
-import Colors from '../../constants/Colors';
+import { ThemeColors, lightColors } from '../../constants/Theme';
 import Fonts from '../../constants/Fonts';
 
-const Styles = StyleSheet.create({
+export const createStyles = (colors: ThemeColors) => StyleSheet.create({
     mainContainer: {
         flex: 1,
-        backgroundColor: Colors.whiteColor,
+        backgroundColor: colors.whiteColor,
     },
     header: {
         flexDirection: 'row',
@@ -26,7 +26,7 @@ const Styles = StyleSheet.create({
     },
     headerTitle: {
         ...Fonts.medium14,
-        color: Colors.mainTextColor,
+        color: colors.mainTextColor,
     },
     placeholder: {
         width: 44,
@@ -64,7 +64,7 @@ const Styles = StyleSheet.create({
     },
     viewsText: {
         ...Fonts.regular16,
-        color: Colors.whiteColor,
+        color: colors.whiteColor,
     },
     gradientOverlay: {
         position: 'absolute',
@@ -83,11 +83,11 @@ const Styles = StyleSheet.create({
     },
     photoTitle: {
         ...Fonts.medium16,
-        color: Colors.whiteColor,
+        color: colors.whiteColor,
         flex: 1,
     },
     buyButton: {
-        backgroundColor: Colors.primaryColor,
+        backgroundColor: colors.primaryColor,
         borderRadius: 8,
         paddingHorizontal: 16,
         paddingVertical: 10,
@@ -97,7 +97,7 @@ const Styles = StyleSheet.create({
     },
     buyButtonText: {
         ...Fonts.regular14,
-        color: Colors.whiteColor,
+        color: colors.whiteColor,
     },
     // Modal Styles
     modalOverlay: {
@@ -108,7 +108,7 @@ const Styles = StyleSheet.create({
     },
     modalContainer: {
         width: 310,
-        backgroundColor: Colors.whiteColor,
+        backgroundColor: colors.whiteColor,
         borderRadius: 8,
         borderWidth: 0.4,
         borderColor: '#E0ECFE',
@@ -135,11 +135,11 @@ const Styles = StyleSheet.create({
     },
     modalTitle: {
         ...Fonts.medium14,
-        color: Colors.mainTextColor,
+        color: colors.mainTextColor,
     },
     modalPrice: {
         ...Fonts.medium14,
-        color: Colors.mainTextColor,
+        color: colors.mainTextColor,
     },
     modalDivider: {
         width: '100%',
@@ -163,7 +163,7 @@ const Styles = StyleSheet.create({
         justifyContent: 'center',
     },
     payButton: {
-        backgroundColor: Colors.primaryColor,
+        backgroundColor: colors.primaryColor,
         borderRadius: 8,
         paddingHorizontal: 13,
         paddingVertical: 8,
@@ -174,14 +174,14 @@ const Styles = StyleSheet.create({
     modalButtonText: {
         fontSize: 11,
         fontFamily: 'Inter-Regular',
-        color: Colors.whiteColor,
+        color: colors.whiteColor,
         lineHeight: 17,
     },
     // Success Modal Styles
     successModalContainer: {
         width: 297,
         height: 192,
-        backgroundColor: Colors.whiteColor,
+        backgroundColor: colors.whiteColor,
         borderRadius: 10,
         borderWidth: 0.5,
         borderColor: '#E0ECFE',
@@ -201,7 +201,7 @@ const Styles = StyleSheet.create({
     },
     successTitle: {
         ...Fonts.medium16,
-        color: Colors.mainTextColor,
+        color: colors.mainTextColor,
         textAlign: 'center',
         marginTop: 5,
     },
@@ -213,7 +213,7 @@ const Styles = StyleSheet.create({
         lineHeight: 15,
     },
     downloadButton: {
-        backgroundColor: Colors.primaryColor,
+        backgroundColor: colors.primaryColor,
         borderRadius: 10,
         paddingHorizontal: 13,
         paddingVertical: 13,
@@ -225,14 +225,14 @@ const Styles = StyleSheet.create({
     },
     downloadButtonText: {
         ...Fonts.medium14,
-        color: Colors.whiteColor,
+        color: colors.whiteColor,
         fontSize: 13,
     },
     // Failed Modal Styles
     failedModalContainer: {
         width: 297,
         height: 192,
-        backgroundColor: Colors.whiteColor,
+        backgroundColor: colors.whiteColor,
         borderRadius: 10,
         borderWidth: 0.5,
         borderColor: '#E0ECFE',
@@ -252,7 +252,7 @@ const Styles = StyleSheet.create({
     },
     failedTitle: {
         ...Fonts.medium16,
-        color: Colors.mainTextColor,
+        color: colors.mainTextColor,
         textAlign: 'center',
         marginTop: 5,
     },
@@ -280,7 +280,7 @@ const Styles = StyleSheet.create({
         justifyContent: 'center',
     },
     rechargeButton: {
-        backgroundColor: Colors.primaryColor,
+        backgroundColor: colors.primaryColor,
         borderRadius: 6,
         paddingHorizontal: 16,
         paddingVertical: 10,
@@ -290,8 +290,10 @@ const Styles = StyleSheet.create({
     },
     failedButtonText: {
         ...Fonts.regular14,
-        color: Colors.whiteColor,
+        color: colors.whiteColor,
     },
 });
+
+const Styles = createStyles(lightColors);
 
 export default Styles;

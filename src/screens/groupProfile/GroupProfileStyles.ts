@@ -1,11 +1,11 @@
 import { StyleSheet } from 'react-native';
-import Colors from '../../constants/Colors';
+import { ThemeColors, lightColors } from '../../constants/Theme';
 import Fonts from '../../constants/Fonts';
 
-const Styles = StyleSheet.create({
+export const createStyles = (colors: ThemeColors) => StyleSheet.create({
     mainContainer: {
         flex: 1,
-        backgroundColor: Colors.whiteColor,
+        backgroundColor: colors.whiteColor,
     },
     header: {
         flexDirection: 'row',
@@ -26,7 +26,7 @@ const Styles = StyleSheet.create({
     },
     headerTitle: {
         ...Fonts.medium18,
-        color: Colors.mainTextColor,
+        color: colors.mainTextColor,
     },
     scrollContent: {
         paddingHorizontal: 20,
@@ -35,7 +35,7 @@ const Styles = StyleSheet.create({
 
     // Profile Card
     profileCard: {
-        backgroundColor: Colors.whiteColor,
+        backgroundColor: colors.whiteColor,
         borderRadius: 10,
         borderWidth: 0.5,
         borderColor: '#DEDEDE',
@@ -77,7 +77,7 @@ const Styles = StyleSheet.create({
     },
     profileName: {
         ...Fonts.medium14,
-        color: Colors.mainTextColor,
+        color: colors.mainTextColor,
     },
     profileUsername: {
         ...Fonts.regular12,
@@ -101,7 +101,7 @@ const Styles = StyleSheet.create({
     },
     statValue: {
         ...Fonts.medium16,
-        color: Colors.mainTextColor,
+        color: colors.mainTextColor,
     },
     statLabel: {
         ...Fonts.regular12,
@@ -152,7 +152,7 @@ const Styles = StyleSheet.create({
     },
     additionalStatValue: {
         ...Fonts.medium16,
-        color: Colors.mainTextColor,
+        color: colors.mainTextColor,
         marginTop: 4,
     },
 
@@ -167,7 +167,7 @@ const Styles = StyleSheet.create({
     },
     bioTitle: {
         ...Fonts.medium16,
-        color: Colors.mainTextColor,
+        color: colors.mainTextColor,
     },
     bioText: {
         ...Fonts.regular12,
@@ -212,7 +212,7 @@ const Styles = StyleSheet.create({
     toggleTabBar: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: Colors.whiteColor,
+        backgroundColor: colors.whiteColor,
         borderRadius: 10,
         borderWidth: 0.5,
         borderColor: '#DEDEDE',
@@ -235,7 +235,7 @@ const Styles = StyleSheet.create({
     },
     toggleTabTextActive: {
         ...Fonts.regular12,
-        color: Colors.mainTextColor,
+        color: colors.mainTextColor,
     },
 
     // Club Athletes Section
@@ -249,13 +249,13 @@ const Styles = StyleSheet.create({
     },
     clubAthletesTitle: {
         ...Fonts.medium18,
-        color: Colors.mainTextColor,
+        color: colors.mainTextColor,
     },
     addAthleteButton: {
         flexDirection: 'row',
         alignItems: 'center',
         gap: 6,
-        backgroundColor: Colors.primaryColor,
+        backgroundColor: colors.primaryColor,
         borderRadius: 8,
         paddingHorizontal: 16,
         paddingVertical: 10,
@@ -263,7 +263,7 @@ const Styles = StyleSheet.create({
     },
     addAthleteText: {
         ...Fonts.regular14,
-        color: Colors.whiteColor,
+        color: colors.whiteColor,
     },
 
     // Athletes List
@@ -274,7 +274,7 @@ const Styles = StyleSheet.create({
 
     // Athlete Card
     athleteCard: {
-        backgroundColor: Colors.whiteColor,
+        backgroundColor: colors.whiteColor,
         borderRadius: 10,
         borderWidth: 0.5,
         borderColor: '#DEDEDE',
@@ -304,7 +304,7 @@ const Styles = StyleSheet.create({
     },
     athleteName: {
         ...Fonts.medium14,
-        color: Colors.mainTextColor,
+        color: colors.mainTextColor,
     },
     athleteTypeBadge: {
         backgroundColor: '#F5F5F5',
@@ -386,7 +386,7 @@ const Styles = StyleSheet.create({
     },
     coachClubValue: {
         ...Fonts.regular12,
-        color: Colors.mainTextColor,
+        color: colors.mainTextColor,
     },
     coachButtonsRow: {
         flexDirection: 'row',
@@ -428,7 +428,7 @@ const Styles = StyleSheet.create({
 
     // Event Card styles
     eventCard: {
-        backgroundColor: Colors.whiteColor,
+        backgroundColor: colors.whiteColor,
         borderRadius: 10,
         borderWidth: 0.5,
         borderColor: '#DEDEDE',
@@ -453,7 +453,7 @@ const Styles = StyleSheet.create({
     },
     eventTitle: {
         ...Fonts.medium14,
-        color: Colors.mainTextColor,
+        color: colors.mainTextColor,
     },
     eventDetailRow: {
         flexDirection: 'row',
@@ -500,7 +500,7 @@ const Styles = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'center',
         gap: 6,
-        backgroundColor: Colors.primaryColor,
+        backgroundColor: colors.primaryColor,
         borderRadius: 8,
         paddingVertical: 10,
         paddingHorizontal: 16,
@@ -510,7 +510,7 @@ const Styles = StyleSheet.create({
     },
     viewAllText: {
         ...Fonts.regular14,
-        color: Colors.whiteColor,
+        color: colors.whiteColor,
     },
 
     // Email Modal Styles
@@ -521,7 +521,7 @@ const Styles = StyleSheet.create({
         alignItems: 'center',
     },
     emailModalContainer: {
-        backgroundColor: Colors.whiteColor,
+        backgroundColor: colors.whiteColor,
         borderRadius: 16,
         padding: 20,
         width: '85%',
@@ -529,7 +529,7 @@ const Styles = StyleSheet.create({
     },
     emailModalTitle: {
         ...Fonts.medium16,
-        color: Colors.mainTextColor,
+        color: colors.mainTextColor,
         textAlign: 'center',
         marginBottom: 20,
     },
@@ -538,7 +538,7 @@ const Styles = StyleSheet.create({
     },
     emailModalInputLabel: {
         ...Fonts.medium14,
-        color: Colors.mainTextColor,
+        color: colors.mainTextColor,
     },
     emailModalInputContainer: {
         height: 54,
@@ -553,7 +553,7 @@ const Styles = StyleSheet.create({
     emailModalInput: {
         flex: 1,
         ...Fonts.regular14,
-        color: Colors.mainTextColor,
+        color: colors.mainTextColor,
     },
     emailModalButtonsRow: {
         flexDirection: 'row',
@@ -577,18 +577,18 @@ const Styles = StyleSheet.create({
         flex: 1,
         height: 48,
         borderRadius: 10,
-        backgroundColor: Colors.primaryColor,
+        backgroundColor: colors.primaryColor,
         alignItems: 'center',
         justifyContent: 'center',
     },
     emailModalSaveButtonText: {
         ...Fonts.medium14,
-        color: Colors.whiteColor,
+        color: colors.whiteColor,
     },
 
     // Coach Details Modal Styles
     coachModalContainer: {
-        backgroundColor: Colors.whiteColor,
+        backgroundColor: colors.whiteColor,
         borderRadius: 16,
         padding: 20,
         width: '85%',
@@ -610,7 +610,7 @@ const Styles = StyleSheet.create({
     },
     coachModalName: {
         ...Fonts.medium14,
-        color: Colors.mainTextColor,
+        color: colors.mainTextColor,
     },
     coachModalLocationRow: {
         flexDirection: 'row',
@@ -636,7 +636,7 @@ const Styles = StyleSheet.create({
     },
     coachModalAthletesTitle: {
         ...Fonts.medium14,
-        color: Colors.mainTextColor,
+        color: colors.mainTextColor,
         marginBottom: 16,
     },
     coachModalAthleteRow: {
@@ -650,7 +650,7 @@ const Styles = StyleSheet.create({
     },
     coachModalAthleteName: {
         ...Fonts.medium14,
-        color: Colors.mainTextColor,
+        color: colors.mainTextColor,
     },
     coachModalAthleteEvent: {
         ...Fonts.regular12,
@@ -666,20 +666,22 @@ const Styles = StyleSheet.create({
     },
     coachModalAthletePBValue: {
         ...Fonts.medium14,
-        color: Colors.mainTextColor,
+        color: colors.mainTextColor,
         marginTop: 2,
     },
     coachModalCloseButton: {
         height: 48,
         borderRadius: 10,
-        backgroundColor: Colors.primaryColor,
+        backgroundColor: colors.primaryColor,
         alignItems: 'center',
         justifyContent: 'center',
     },
     coachModalCloseButtonText: {
         ...Fonts.medium14,
-        color: Colors.whiteColor,
+        color: colors.whiteColor,
     },
 });
+
+const Styles = createStyles(lightColors);
 
 export default Styles;

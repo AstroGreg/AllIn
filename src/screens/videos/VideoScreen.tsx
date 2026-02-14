@@ -4,19 +4,23 @@ import Video from 'react-native-video';
 import Icons from '../../constants/Icons';
 import SizeBox from '../../constants/SizeBox';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import Styles from './VideoStyles';
+import { createStyles } from './VideoStyles';
 import Slider from '@react-native-community/slider';
-import Colors from '../../constants/Colors';
 import ReportMistakeModal from './components/ReportMistakeModal';
 import DescriptionModal from './components/DescriptionModal';
 import ReviewReport from './components/ReviewReport';
 import SubmitionModal from './components/SubmitionModal';
 import ShimmerEffect from '../../components/shimmerEffect/ShimmerEffect';
+import { useTheme } from '../../context/ThemeContext';
+import { useTranslation } from 'react-i18next';
 
 const VideoScreen = ({ navigation, route }: any) => {
     // const videoUrl = 'https://awssportreels.s3.eu-central-1.amazonaws.com/BK+studenten+2023.MP4'; // sample video
     const { videoUrl } = route.params || { videoUrl: 'https://awssportreels.s3.eu-central-1.amazonaws.com/BK+studenten+2023.MP4' };
     const insets = useSafeAreaInsets();
+    const { colors } = useTheme();
+    const Styles = createStyles(colors);
+    const { t } = useTranslation();
     const videoRef = useRef<any>(null);
     const [isMuted, setIsMuted] = useState(false);
     const [isPlaying, setIsPlaying] = useState(true);
@@ -81,8 +85,8 @@ const VideoScreen = ({ navigation, route }: any) => {
                 </TouchableOpacity>
 
                 <View style={{ flex: 1, marginLeft: 10 }}>
-                    <Text style={Styles.title}>PK 800m 2023 indoor</Text>
-                    <Text style={Styles.subtitle}>Senioren, Heat 1</Text>
+                    <Text style={Styles.title}>{t('PK 800m 2023 indoor')}</Text>
+                    <Text style={Styles.subtitle}>{t('Senioren, Heat 1')}</Text>
                 </View>
 
                 <TouchableOpacity onPress={() => setReportModal(true)}>
@@ -97,9 +101,9 @@ const VideoScreen = ({ navigation, route }: any) => {
                         value={currentTime}
                         minimumValue={0}
                         maximumValue={duration}
-                        minimumTrackTintColor={Colors.primaryColor}
-                        maximumTrackTintColor={Colors.whiteColor}
-                        thumbTintColor={Colors.primaryColor}
+                        minimumTrackTintColor={colors.primaryColor}
+                        maximumTrackTintColor={colors.lightGrayColor}
+                        thumbTintColor={colors.primaryColor}
                         onSlidingComplete={onSeek}
                     />
                 </View>

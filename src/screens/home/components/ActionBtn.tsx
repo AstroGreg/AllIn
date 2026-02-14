@@ -1,8 +1,8 @@
 import { View, Text, TouchableOpacity } from 'react-native'
 import React from 'react'
 import SizeBox from '../../../constants/SizeBox';
-import Icons from '../../../constants/Icons';
-import Styles from '../HomeStyles';
+import { createStyles } from '../HomeStyles';
+import { useTheme } from '../../../context/ThemeContext';
 
 interface ActionBtnProps {
     title?: string;
@@ -12,9 +12,12 @@ interface ActionBtnProps {
 }
 
 const ActionBtn = ({ title, action, onPress, icon }: ActionBtnProps) => {
+    const { colors } = useTheme();
+    const styles = createStyles(colors);
+
     return (
-        <TouchableOpacity activeOpacity={0.4} style={Styles.btnContainre} onPress={onPress}>
-            <Text style={Styles.btnText}>{title}</Text>
+        <TouchableOpacity activeOpacity={0.4} style={styles.btnContainre} onPress={onPress}>
+            <Text style={styles.btnText}>{title}</Text>
             <SizeBox width={6} />
             {icon}
 

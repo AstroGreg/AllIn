@@ -1,11 +1,14 @@
 import { Image, View } from 'react-native';
-import Styles from './SplashStyles';
+import { createStyles } from './SplashStyles';
 import Images from '../../constants/Images';
 import { useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
+import { useTheme } from '../../context/ThemeContext';
 
 const SplashScreen = ({ navigation }: any) => {
     const { isAuthenticated, isLoading } = useAuth();
+    const { colors } = useTheme();
+    const styles = createStyles(colors);
 
     useEffect(() => {
         // Wait for auth check to complete
@@ -30,7 +33,7 @@ const SplashScreen = ({ navigation }: any) => {
     }, [navigation, isAuthenticated, isLoading]);
 
     return (
-        <View style={Styles.mainContainer}>
+        <View style={styles.mainContainer}>
             <Image
                 source={Images.logo}
                 style={{ width: 150, height: 163 }}

@@ -1,15 +1,15 @@
 import { StyleSheet } from "react-native";
 import Fonts from "../../../constants/Fonts";
-import Colors from "../../../constants/Colors";
+import { ThemeColors } from "../../../constants/Theme";
 
-const Styles = StyleSheet.create({
+export const createStyles = (colors: ThemeColors) => StyleSheet.create({
     overlay: {
         flex: 1,
         backgroundColor: 'rgba(0,0,0,0.5)',
         justifyContent: 'center'
     },
     modalContent: {
-        backgroundColor: Colors.whiteColor,
+        backgroundColor: colors.cardBackground,
         borderRadius: 10,
         paddingVertical: 16,
         paddingHorizontal: 16,
@@ -22,15 +22,15 @@ const Styles = StyleSheet.create({
     },
     titleText: {
         ...Fonts.regular16,
-        color: Colors.mainTextColor
+        color: colors.mainTextColor
     },
     subTitleText: {
         ...Fonts.regular14,
-        color: Colors.mainTextColor
+        color: colors.mainTextColor
     },
     divider: {
         borderBottomWidth: 1,
-        borderBottomColor: Colors.lightGrayColor
+        borderBottomColor: colors.lightGrayColor
     },
     container: {
         gap: 10
@@ -40,7 +40,7 @@ const Styles = StyleSheet.create({
         width: 18,
         borderRadius: 9,
         borderWidth: 1,
-        borderColor: Colors.primaryColor,
+        borderColor: colors.primaryColor,
         alignItems: 'center',
         justifyContent: 'center'
     },
@@ -48,18 +48,18 @@ const Styles = StyleSheet.create({
         height: 12,
         width: 12,
         borderRadius: 6,
-        backgroundColor: Colors.primaryColor
+        backgroundColor: colors.primaryColor
     },
     selectionText: {
         ...Fonts.regular14,
-        color: Colors.subTextColor
+        color: colors.subTextColor
     },
     btn: {
         alignSelf: 'flex-end'
     },
     btnContianer: {
         paddingHorizontal: 16,
-        backgroundColor: Colors.primaryColor,
+        backgroundColor: colors.primaryColor,
         borderRadius: 8,
         alignSelf: 'center',
         height: 38,
@@ -68,16 +68,16 @@ const Styles = StyleSheet.create({
     },
     btnText: {
         ...Fonts.regular14,
-        color: Colors.whiteColor
+        color: colors.pureWhite
     },
 
     // second modal
     bioContainer: {
-        backgroundColor: '#F7FAFF',
+        backgroundColor: colors.secondaryColor,
         borderRadius: 12,
         padding: 12,
         borderWidth: 1,
-        borderColor: Colors.borderColor,
+        borderColor: colors.borderColor,
     },
     iconRow: {
         flexDirection: 'row',
@@ -89,16 +89,11 @@ const Styles = StyleSheet.create({
     },
     textInput: {
         flex: 1,
-        color: Colors.mainTextColor,
+        color: colors.mainTextColor,
         ...Fonts.regular14,
         minHeight: 65,
         maxHeight: 100,
         textAlignVertical: 'top', // Important for Android to start at the top-left
     },
 
-
-
-
-})
-
-export default Styles;
+});

@@ -4,7 +4,7 @@ import { createStyles } from '../MenuStyles'
 import SizeBox from '../../../constants/SizeBox'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useTheme } from '../../../context/ThemeContext'
-import { ArrowLeft2, Notification, Lock, User, Card, Calendar, ArrowRight2 } from 'iconsax-react-nativejs'
+import { ArrowLeft2, Lock, User, Card, Calendar, ArrowRight2, Scan } from 'iconsax-react-nativejs'
 
 interface SettingsItem {
     icon: React.ReactNode;
@@ -38,6 +38,11 @@ const ProfileSettings = ({ navigation }: any) => {
             title: 'Date of Birth',
             onPress: () => navigation.navigate('DateOfBirth'),
         },
+        {
+            icon: <Scan size={20} color={colors.primaryColor} variant="Linear" />,
+            title: 'Facial Recognition',
+            onPress: () => navigation.navigate('FacialRecognitionSettings'),
+        },
     ];
 
     return (
@@ -50,9 +55,7 @@ const ProfileSettings = ({ navigation }: any) => {
                     <ArrowLeft2 size={24} color={colors.primaryColor} variant="Linear" />
                 </TouchableOpacity>
                 <Text style={Styles.headerTitle}>Account Settings</Text>
-                <TouchableOpacity style={Styles.headerButton}>
-                    <Notification size={24} color={colors.primaryColor} variant="Linear" />
-                </TouchableOpacity>
+                <View style={Styles.headerSpacer} />
             </View>
 
             <ScrollView style={Styles.container} showsVerticalScrollIndicator={false}>

@@ -1,8 +1,8 @@
 import { StyleSheet } from "react-native";
-import Colors from "../../constants/Colors";
 import Fonts from "../../constants/Fonts";
+import { ThemeColors } from "../../constants/Theme";
 
-const Styles = StyleSheet.create({
+export const createStyles = (colors: ThemeColors) => StyleSheet.create({
     mainContainer: {
         flex: 1,
         backgroundColor: 'rgba(0, 0, 0, 0.5)',
@@ -14,12 +14,12 @@ const Styles = StyleSheet.create({
         borderRadius: 16,
         paddingVertical: 24,
         paddingHorizontal: 20,
-        backgroundColor: Colors.whiteColor,
+        backgroundColor: colors.cardBackground,
         alignItems: 'center',
     },
     text: {
         ...Fonts.medium14,
-        color: Colors.mainTextColor,
+        color: colors.mainTextColor,
         textAlign: 'center',
         lineHeight: 20,
     },
@@ -29,7 +29,7 @@ const Styles = StyleSheet.create({
         borderRadius: 32,
         alignItems: 'center',
         justifyContent: 'center',
-        backgroundColor: Colors.primaryColor,
+        backgroundColor: colors.primaryColor,
     },
     row: {
         flexDirection: 'row',
@@ -41,26 +41,24 @@ const Styles = StyleSheet.create({
         paddingVertical: 14,
         borderRadius: 10,
         borderWidth: 1,
-        borderColor: '#DEDEDE',
+        borderColor: colors.lightGrayColor,
         alignItems: 'center',
         justifyContent: 'center',
     },
     noText: {
         ...Fonts.medium14,
-        color: Colors.subTextColor,
+        color: colors.subTextColor,
     },
     yesBtn: {
         flex: 1,
         paddingVertical: 14,
         borderRadius: 10,
-        backgroundColor: Colors.primaryColor,
+        backgroundColor: colors.primaryColor,
         alignItems: 'center',
         justifyContent: 'center',
     },
     yesText: {
         ...Fonts.medium14,
-        color: Colors.whiteColor,
+        color: colors.pureWhite,
     }
 });
-
-export default Styles;

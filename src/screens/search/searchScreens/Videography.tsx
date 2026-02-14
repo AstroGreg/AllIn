@@ -1,16 +1,21 @@
 import { View, Text, FlatList, TouchableOpacity } from 'react-native'
 import React, { useState } from 'react'
-import Styles from '../SearchStyles'
+import { createStyles } from '../SearchStyles'
 import CustomHeader from '../../../components/customHeader/CustomHeader'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import SizeBox from '../../../constants/SizeBox'
 import TabBar from '../../authFlow/setUpTalent/components/TabBar'
 import Icons from '../../../constants/Icons'
 import CustomButton from '../../../components/customButton/CustomButton'
+import { useTheme } from '../../../context/ThemeContext'
+import { useTranslation } from 'react-i18next'
 
 const Videography = ({ navigation, route }: any) => {
     const insets = useSafeAreaInsets();
     const { type: initialType } = route.params || {};
+    const { colors } = useTheme();
+    const { t } = useTranslation();
+    const styles = createStyles(colors);
 
     const [seletedTab, setSelectedTab] = useState(0);
     const [currentType, setCurrentType] = useState(initialType || 'video');
@@ -76,36 +81,36 @@ const Videography = ({ navigation, route }: any) => {
 
     // Update title based on media type
     const getMediaTypeTitle = () => {
-        return currentType === 'video' ? 'Videos' : 'Photography';
+        return currentType === 'video' ? t('Videos') : t('Photography');
     };
 
 
 
     const RenderItem = ({ item }: any) => {
         return (
-            <TouchableOpacity onPress={() => navigation.navigate('VideosForEvent')} activeOpacity={0.7} style={[Styles.borderBox, Styles.row, Styles.spaceBetween, { marginBottom: 24 }]}>
-                <Text style={Styles.titleText}>{item.title}</Text>
+            <TouchableOpacity onPress={() => navigation.navigate('VideosForEvent')} activeOpacity={0.7} style={[styles.borderBox, styles.row, styles.spaceBetween, { marginBottom: 24 }]}>
+                <Text style={styles.titleText}>{item.title}</Text>
                 <Icons.ArrowNext height={24} width={24} />
             </TouchableOpacity>
         )
     }
 
     return (
-        <View style={Styles.mainContainer}>
+        <View style={styles.mainContainer}>
             <SizeBox height={insets.top} />
-            <CustomHeader title='BK Studentent 23' onBackPress={() => navigation.goBack()} onPressSetting={() => navigation.navigate('ProfileSettings')} />
+            <CustomHeader title={t('BK Studentent 23')} onBackPress={() => navigation.goBack()} onPressSetting={() => navigation.navigate('ProfileSettings')} />
             <SizeBox height={24} />
             <View style={{ marginHorizontal: 20 }}>
-                <Text style={Styles.titleText}>Running</Text>
+                <Text style={styles.titleText}>{t('Running')}</Text>
                 <SizeBox height={2} />
-                <Text style={Styles.filterText}>Here are your Loop and Veld Events</Text>
+                <Text style={styles.filterText}>{t('Here are your Loop and Veld Events')}</Text>
 
                 <TouchableOpacity
-                    style={[Styles.eventbtns, Styles.row, { position: 'absolute', right: 0 }]}
+                    style={[styles.eventbtns, styles.row, { position: 'absolute', right: 0 }]}
                     onPress={toggleMediaType}
                     activeOpacity={0.7}
                 >
-                    <Text style={Styles.eventBtnText}>{getMediaTypeTitle()}</Text>
+                    <Text style={styles.eventBtnText}>{getMediaTypeTitle()}</Text>
                     <SizeBox width={6} />
                     {currentType === 'video' ? (
                         <Icons.Video height={18} width={18} />
@@ -133,8 +138,8 @@ const Videography = ({ navigation, route }: any) => {
                 keyExtractor={(item, index) => index.toString()}
             />}
 
-            <View style={Styles.btn}>
-                <CustomButton title='Show All' onPress={() => { currentType === 'video' ? navigation.navigate('AllVideosOfEvents') : navigation.navigate('AllPhotosOfEvents') }} />
+            <View style={styles.btn}>
+                <CustomButton title={t('Show All')} onPress={() => { currentType === 'video' ? navigation.navigate('AllVideosOfEvents') : navigation.navigate('AllPhotosOfEvents') }} />
             </View>
             <SizeBox height={insets.bottom} />
         </View>

@@ -1,23 +1,28 @@
 import { FlatList, View, Text } from 'react-native'
 import React from 'react'
-import Styles from './ParticipantStyles';
+import { createStyles } from './ParticipantStyles';
 import SizeBox from '../../constants/SizeBox';
 import CustomHeader from '../../components/customHeader/CustomHeader';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import ParticipantContainer from './components/ParticipantContainer';
+import { useTheme } from '../../context/ThemeContext';
+import { useTranslation } from 'react-i18next';
 
 const ParticipantScreen = ({ navigation }: any) => {
     const insets = useSafeAreaInsets();
+    const { colors } = useTheme();
+    const { t } = useTranslation();
+    const styles = createStyles(colors);
 
     const headerComponent = () => {
         return (
             <>
                 <SizeBox height={24} />
-                <Text style={Styles.sportsName}>800m</Text>
-                <View style={Styles.rowCenter}>
-                    <Text style={Styles.subSportsName}>Beligian Championships 2024</Text>
+                <Text style={styles.sportsName}>{t('800m')}</Text>
+                <View style={styles.rowCenter}>
+                    <Text style={styles.subSportsName}>{t('Beligian Championships 2024')}</Text>
                     <SizeBox height={2} />
-                    <Text style={Styles.subSportsName}>1k +Participant</Text>
+                    <Text style={styles.subSportsName}>{t('1k +Participant')}</Text>
                 </View>
                 <SizeBox height={16} />
             </>
@@ -25,9 +30,9 @@ const ParticipantScreen = ({ navigation }: any) => {
     }
 
     return (
-        <View style={Styles.mainContainer}>
+        <View style={styles.mainContainer}>
             <SizeBox height={insets.top} />
-            <CustomHeader title='Participant' onBackPress={() => navigation.goBack()} onPressSetting={() => navigation.navigate('ProfileSettings')} />
+            <CustomHeader title={t('Participant')} onBackPress={() => navigation.goBack()} onPressSetting={() => navigation.navigate('ProfileSettings')} />
 
             <FlatList
                 data={['', '', '', '', '']}

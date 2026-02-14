@@ -2,13 +2,15 @@ import { View, Text, FlatList, ScrollView, TouchableOpacity } from 'react-native
 import React from 'react'
 import CompetitionContainer from './CompetitionContainer'
 import SizeBox from '../../../constants/SizeBox'
-import Styles from '../HomeStyles'
+import { createStyles } from '../HomeStyles'
 import CustomButton from '../../../components/customButton/CustomButton'
 import Icons from '../../../constants/Icons'
 import Images from '../../../constants/Images'
 import RequestContainers from './RequestContainers'
 import SimilarEvents from '../../Events/components/SimilarEvents'
 import { useNavigation } from '@react-navigation/native';
+import { useTheme } from '../../../context/ThemeContext'
+import { useTranslation } from 'react-i18next'
 
 interface PotentialVideosProps {
     data: any;
@@ -20,6 +22,9 @@ interface PotentialVideosProps {
 
 const PotentialVideos = ({ data, onPressAddEvent, onPressParticipant, onPressDownloads, onPressContainer }: PotentialVideosProps,) => {
     const navigation: any = useNavigation();
+    const { colors } = useTheme();
+    const { t } = useTranslation();
+    const styles = createStyles(colors);
 
     return (
         <View style={{}}>
@@ -35,8 +40,8 @@ const PotentialVideos = ({ data, onPressAddEvent, onPressParticipant, onPressDow
                         onPress={onPressParticipant}
                         onPressContainer={() => navigation.navigate('VideoPlayingScreen', {
                             video: {
-                                title: item.CompetitionName || 'BK Studenten 2023',
-                                subtitle: item.map || 'Senioren, Heat 1',
+                                title: item.CompetitionName || t('BK Studenten 2023'),
+                                subtitle: item.map || t('Senioren, Heat 1'),
                                 thumbnail: Images.photo1,
                             }
                         })}
@@ -50,7 +55,7 @@ const PotentialVideos = ({ data, onPressAddEvent, onPressParticipant, onPressDow
 
             <SizeBox height={4} />
 
-            <Text style={Styles.tabText}>Followers & Spotlight</Text>
+            <Text style={styles.tabText}>{t('Followers & Spotlight')}</Text>
             <SizeBox height={16} />
             <FlatList
                 data={data}
@@ -64,8 +69,8 @@ const PotentialVideos = ({ data, onPressAddEvent, onPressParticipant, onPressDow
                         onPress={onPressParticipant}
                         onPressContainer={() => navigation.navigate('VideoPlayingScreen', {
                             video: {
-                                title: item.CompetitionName || 'BK Studenten 2023',
-                                subtitle: item.map || 'Senioren, Heat 1',
+                                title: item.CompetitionName || t('BK Studenten 2023'),
+                                subtitle: item.map || t('Senioren, Heat 1'),
                                 thumbnail: Images.photo1,
                             }
                         })}
@@ -77,75 +82,75 @@ const PotentialVideos = ({ data, onPressAddEvent, onPressParticipant, onPressDow
                 showsHorizontalScrollIndicator={false}
             />
 
-            <Text style={Styles.headings}>My events</Text>
+            <Text style={styles.headings}>{t('My events')}</Text>
             <SizeBox height={12} />
             <SimilarEvents isSubscription={false} />
 
             <View style={{ marginHorizontal: 20 }}>
-                <CustomButton title='Add Myself To Events' onPress={onPressAddEvent} />
+                <CustomButton title={t('Add Myself To Events')} onPress={onPressAddEvent} />
             </View>
             <SizeBox height={20} />
 
-            <Text style={Styles.headings}>Downloads</Text>
+            <Text style={styles.headings}>{t('Downloads')}</Text>
             <SizeBox height={12} />
 
-            <TouchableOpacity style={Styles.downloadContainer} onPress={onPressDownloads}>
+            <TouchableOpacity style={styles.downloadContainer} onPress={onPressDownloads}>
                 <Icons.Downloads height={22} width={22} />
-                <View style={Styles.rowCenter}>
-                    <Text style={Styles.downloadText}>
-                        Total Downloads:
+                <View style={styles.rowCenter}>
+                    <Text style={styles.downloadText}>
+                        {t('Total Downloads')}:
                     </Text>
-                    <Text style={Styles.downloadCount}>
+                    <Text style={styles.downloadCount}>
                         346,456
                     </Text>
                 </View>
             </TouchableOpacity>
 
             <SizeBox height={20} />
-            <View style={Styles.rowCenter}>
-                <Text style={Styles.headings}>Request for edits</Text>
-                <TouchableOpacity style={[Styles.btnRight, { right: 20 }]}>
-                    <Text style={[Styles.eventSubText, { width: '100%', }]}>View all</Text>
+            <View style={styles.rowCenter}>
+                <Text style={styles.headings}>{t('Request for edits')}</Text>
+                <TouchableOpacity style={[styles.btnRight, { right: 20 }]}>
+                    <Text style={[styles.eventSubText, { width: '100%', }]}>{t('View all')}</Text>
                 </TouchableOpacity>
             </View>
 
             <SizeBox height={16} />
 
-            <Text style={[Styles.eventSubText, { width: '100%', marginLeft: 20 }]}>Sent</Text>
+            <Text style={[styles.eventSubText, { width: '100%', marginLeft: 20 }]}>{t('Sent')}</Text>
 
             <SizeBox height={10} />
 
             <RequestContainers
-                title='Enhance Lighting & Colors'
+                title={t('Enhance Lighting & Colors')}
                 date='12.12.2024'
                 time='12:00'
-                status='Fixed'
+                status={t('Fixed')}
                 isFixed={true}
             />
             <RequestContainers
-                title='Remove Watermark/Text'
+                title={t('Remove Watermark/Text')}
                 date='12.12.2024'
                 time='12:00'
-                status='Fixed'
+                status={t('Fixed')}
                 isFixed={true}
             />
 
-            <Text style={[Styles.eventSubText, { width: '100%', marginLeft: 20 }]}>Received</Text>
+            <Text style={[styles.eventSubText, { width: '100%', marginLeft: 20 }]}>{t('Received')}</Text>
 
             <SizeBox height={10} />
 
             <RequestContainers
-                title='Enhance Lighting & Colors'
+                title={t('Enhance Lighting & Colors')}
                 date='12.12.2024'
                 time='12:00'
-                status='Pending'
+                status={t('Pending')}
                 isFixed={false}
             />
             <RequestContainers
-                title='Slow Motion Effect'
+                title={t('Slow Motion Effect')}
                 date='12.12.2024'
                 time='12:00'
-                status='Fixed'
+                status={t('Fixed')}
                 isFixed={true}
             />
 

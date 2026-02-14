@@ -4,22 +4,26 @@ import SizeBox from '../../constants/SizeBox';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import FastImage from 'react-native-fast-image';
 import Images from '../../constants/Images';
-import Colors from '../../constants/Colors';
-import Styles from './GroupProfileStyles';
+import { createStyles } from './GroupProfileStyles';
 import { ArrowLeft2, User, ArrowRight, Edit2, Trash, Add, Location, Note, Sms, Map, Calendar } from 'iconsax-react-nativejs';
 import Icons from '../../constants/Icons';
 import ShareModal from '../../components/shareModal/ShareModal';
+import { useTheme } from '../../context/ThemeContext';
+import { useTranslation } from 'react-i18next';
 
 const GroupProfileScreen = ({ navigation }: any) => {
     const insets = useSafeAreaInsets();
-    const [activeTab, setActiveTab] = useState('Athletes');
+    const { colors } = useTheme();
+    const { t } = useTranslation();
+    const styles = createStyles(colors);
+    const [activeTab, setActiveTab] = useState<'athletes' | 'coaches' | 'events'>('athletes');
     const [emailModalVisible, setEmailModalVisible] = useState(false);
     const [emailInput, setEmailInput] = useState('');
     const [coachModalVisible, setCoachModalVisible] = useState(false);
     const [selectedCoach, setSelectedCoach] = useState<any>(null);
     const [showShareModal, setShowShareModal] = useState(false);
 
-    const tabs = ['Athletes', 'Coaches', 'Events'];
+    const tabs: Array<'athletes' | 'coaches' | 'events'> = ['athletes', 'coaches', 'events'];
 
     const athletes = [
         { id: 1, name: 'James Ray', type: 'Athlete', category: 'Marathon', location: 'Dhaka' },
@@ -84,47 +88,47 @@ const GroupProfileScreen = ({ navigation }: any) => {
     const renderAthleteCard = (athlete: any) => (
         <TouchableOpacity
             key={athlete.id}
-            style={Styles.athleteCard}
+            style={styles.athleteCard}
             activeOpacity={0.8}
             onPress={() => navigation.navigate('AthleteProfileScreen', { athlete })}
         >
-            <View style={Styles.athleteCardContent}>
+            <View style={styles.athleteCardContent}>
                 {/* Top Row - Avatar and Info */}
-                <View style={Styles.athleteTopRow}>
-                    <FastImage source={Images.profilePic} style={Styles.athleteAvatar} resizeMode="cover" />
-                    <View style={Styles.athleteInfo}>
+                <View style={styles.athleteTopRow}>
+                    <FastImage source={Images.profilePic} style={styles.athleteAvatar} resizeMode="cover" />
+                    <View style={styles.athleteInfo}>
                         {/* Name and Type Badge */}
-                        <View style={Styles.athleteNameRow}>
-                            <Text style={Styles.athleteName}>{athlete.name}</Text>
-                            <View style={Styles.athleteTypeBadge}>
-                                <Text style={Styles.athleteTypeText}>{athlete.type}</Text>
-                            </View>
+                        <View style={styles.athleteNameRow}>
+                        <Text style={styles.athleteName}>{athlete.name}</Text>
+                        <View style={styles.athleteTypeBadge}>
+                            <Text style={styles.athleteTypeText}>{athlete.type}</Text>
                         </View>
+                    </View>
                         {/* Category and Location */}
-                        <View style={Styles.athleteDetailsRow}>
-                            <View style={Styles.athleteCategoryRow}>
+                        <View style={styles.athleteDetailsRow}>
+                            <View style={styles.athleteCategoryRow}>
                                 <Icons.Run width={16} height={16} />
-                                <Text style={Styles.athleteCategory}>{athlete.category}</Text>
+                                <Text style={styles.athleteCategory}>{athlete.category}</Text>
                             </View>
-                            <View style={Styles.athleteLocationRow}>
-                                <Location size={16} color="#9B9F9F" variant="Linear" />
-                                <Text style={Styles.athleteLocation}>{athlete.location}</Text>
+                            <View style={styles.athleteLocationRow}>
+                                <Location size={16} color={colors.subTextColor} variant="Linear" />
+                                <Text style={styles.athleteLocation}>{athlete.location}</Text>
                             </View>
                         </View>
                     </View>
                 </View>
 
                 {/* Bottom Row - Delete Button and Social Icons */}
-                <View style={Styles.athleteBottomRow}>
-                    <TouchableOpacity style={Styles.deleteButton} onPress={(e) => e.stopPropagation()}>
-                        <Text style={Styles.deleteButtonText}>Delete</Text>
+                <View style={styles.athleteBottomRow}>
+                    <TouchableOpacity style={styles.deleteButton} onPress={(e) => e.stopPropagation()}>
+                        <Text style={styles.deleteButtonText}>{t('Delete')}</Text>
                     </TouchableOpacity>
-                    <View style={Styles.socialIcons}>
+                    <View style={styles.socialIcons}>
                         <TouchableOpacity onPress={(e) => e.stopPropagation()}>
-                            <FastImage source={Icons.Strava} style={Styles.socialIcon} resizeMode="cover" />
+                            <FastImage source={Icons.Strava} style={styles.socialIcon} resizeMode="cover" />
                         </TouchableOpacity>
                         <TouchableOpacity onPress={(e) => e.stopPropagation()}>
-                            <FastImage source={Icons.Instagram} style={Styles.socialIcon} resizeMode="cover" />
+                            <FastImage source={Icons.Instagram} style={styles.socialIcon} resizeMode="cover" />
                         </TouchableOpacity>
                     </View>
                 </View>
@@ -135,56 +139,56 @@ const GroupProfileScreen = ({ navigation }: any) => {
     const renderCoachCard = (coach: any) => (
         <TouchableOpacity
             key={coach.id}
-            style={Styles.athleteCard}
+            style={styles.athleteCard}
             activeOpacity={0.8}
             onPress={() => {
                 setSelectedCoach(coach);
                 setCoachModalVisible(true);
             }}
         >
-            <View style={Styles.athleteCardContent}>
+            <View style={styles.athleteCardContent}>
                 {/* Top Row - Avatar and Info */}
-                <View style={Styles.athleteTopRow}>
-                    <FastImage source={Images.profilePic} style={Styles.athleteAvatar} resizeMode="cover" />
-                    <View style={Styles.athleteInfo}>
+                <View style={styles.athleteTopRow}>
+                    <FastImage source={Images.profilePic} style={styles.athleteAvatar} resizeMode="cover" />
+                    <View style={styles.athleteInfo}>
                         {/* Name and Type Badge */}
-                        <View style={Styles.athleteNameRow}>
-                            <Text style={Styles.athleteName}>{coach.name}</Text>
-                            <View style={Styles.athleteTypeBadge}>
-                                <Text style={Styles.athleteTypeText}>{coach.type}</Text>
+                        <View style={styles.athleteNameRow}>
+                            <Text style={styles.athleteName}>{coach.name}</Text>
+                            <View style={styles.athleteTypeBadge}>
+                                <Text style={styles.athleteTypeText}>{coach.type}</Text>
                             </View>
                         </View>
                         {/* Category and Location */}
-                        <View style={Styles.athleteDetailsRow}>
-                            <View style={Styles.athleteCategoryRow}>
+                        <View style={styles.athleteDetailsRow}>
+                            <View style={styles.athleteCategoryRow}>
                                 <Icons.Run width={16} height={16} />
-                                <Text style={Styles.athleteCategory}>{coach.category}</Text>
+                                <Text style={styles.athleteCategory}>{coach.category}</Text>
                             </View>
-                            <View style={Styles.athleteLocationRow}>
-                                <Location size={16} color="#9B9F9F" variant="Linear" />
-                                <Text style={Styles.athleteLocation}>{coach.location}</Text>
+                            <View style={styles.athleteLocationRow}>
+                                <Location size={16} color={colors.subTextColor} variant="Linear" />
+                                <Text style={styles.athleteLocation}>{coach.location}</Text>
                             </View>
                         </View>
                     </View>
                 </View>
 
                 {/* Club Row */}
-                <View style={Styles.coachClubRow}>
-                    <View style={Styles.coachClubLabelRow}>
-                        <Note size={16} color="#9B9F9F" variant="Linear" />
-                        <Text style={Styles.coachClubLabel}>Club:</Text>
+                <View style={styles.coachClubRow}>
+                    <View style={styles.coachClubLabelRow}>
+                        <Note size={16} color={colors.subTextColor} variant="Linear" />
+                        <Text style={styles.coachClubLabel}>{t('Club')}:</Text>
                     </View>
-                    <Text style={Styles.coachClubValue}>{coach.club}</Text>
+                    <Text style={styles.coachClubValue}>{coach.club}</Text>
                 </View>
 
                 {/* Bottom Row - Email and Delete Buttons */}
-                <View style={Styles.coachButtonsRow}>
-                    <TouchableOpacity style={Styles.emailButton} onPress={(e) => { e.stopPropagation(); setEmailModalVisible(true); }}>
-                        <Text style={Styles.emailButtonText}>Email</Text>
-                        <Sms size={16} color="#9B9F9F" variant="Linear" />
+                <View style={styles.coachButtonsRow}>
+                    <TouchableOpacity style={styles.emailButton} onPress={(e) => { e.stopPropagation(); setEmailModalVisible(true); }}>
+                        <Text style={styles.emailButtonText}>{t('Email')}</Text>
+                        <Sms size={16} color={colors.subTextColor} variant="Linear" />
                     </TouchableOpacity>
-                    <TouchableOpacity style={Styles.coachDeleteButton} onPress={(e) => e.stopPropagation()}>
-                        <Text style={Styles.coachDeleteButtonText}>Delete</Text>
+                    <TouchableOpacity style={styles.coachDeleteButton} onPress={(e) => e.stopPropagation()}>
+                        <Text style={styles.coachDeleteButtonText}>{t('Delete')}</Text>
                     </TouchableOpacity>
                 </View>
             </View>
@@ -194,52 +198,52 @@ const GroupProfileScreen = ({ navigation }: any) => {
     const renderEventCard = (event: any) => (
         <TouchableOpacity
             key={event.id}
-            style={Styles.eventCard}
+            style={styles.eventCard}
             activeOpacity={0.8}
             onPress={() => navigation.navigate('EventAthletesScreen', { event })}
         >
-            <View style={Styles.eventCardContent}>
+            <View style={styles.eventCardContent}>
                 {/* Top Row - Image and Info */}
-                <View style={Styles.eventTopRow}>
-                    <FastImage source={event.image} style={Styles.eventImage} resizeMode="cover" />
-                    <View style={Styles.eventInfo}>
+                <View style={styles.eventTopRow}>
+                    <FastImage source={event.image} style={styles.eventImage} resizeMode="cover" />
+                    <View style={styles.eventInfo}>
                         {/* Title */}
-                        <Text style={Styles.eventTitle}>{event.title}</Text>
+                        <Text style={styles.eventTitle}>{event.title}</Text>
 
                         {/* Distance Row */}
-                        <View style={Styles.eventDetailRow}>
-                            <Text style={Styles.eventDetailLabel}>Distance</Text>
-                            <View style={Styles.eventDetailValueRow}>
-                                <Map size={16} color="#9B9F9F" variant="Linear" />
-                                <Text style={Styles.eventDetailValue}>{event.distance}</Text>
+                        <View style={styles.eventDetailRow}>
+                            <Text style={styles.eventDetailLabel}>{t('Distance')}</Text>
+                            <View style={styles.eventDetailValueRow}>
+                                <Map size={16} color={colors.subTextColor} variant="Linear" />
+                                <Text style={styles.eventDetailValue}>{event.distance}</Text>
                             </View>
                         </View>
 
                         {/* Location Row */}
-                        <View style={Styles.eventDetailRow}>
-                            <Text style={Styles.eventDetailLabel}>Location</Text>
-                            <View style={Styles.eventDetailValueRow}>
-                                <Location size={16} color="#9B9F9F" variant="Linear" />
-                                <Text style={Styles.eventDetailValue}>{event.location}</Text>
+                        <View style={styles.eventDetailRow}>
+                            <Text style={styles.eventDetailLabel}>{t('Location')}</Text>
+                            <View style={styles.eventDetailValueRow}>
+                                <Location size={16} color={colors.subTextColor} variant="Linear" />
+                                <Text style={styles.eventDetailValue}>{event.location}</Text>
                             </View>
                         </View>
 
                         {/* Date Row */}
-                        <View style={Styles.eventDetailRow}>
-                            <Text style={Styles.eventDetailLabel}>Date</Text>
-                            <View style={Styles.eventDetailValueRow}>
-                                <Calendar size={16} color="#9B9F9F" variant="Linear" />
-                                <Text style={Styles.eventDetailValue}>{event.date}</Text>
+                        <View style={styles.eventDetailRow}>
+                            <Text style={styles.eventDetailLabel}>{t('Date')}</Text>
+                            <View style={styles.eventDetailValueRow}>
+                                <Calendar size={16} color={colors.subTextColor} variant="Linear" />
+                                <Text style={styles.eventDetailValue}>{event.date}</Text>
                             </View>
                         </View>
                     </View>
                 </View>
 
-                <View style={Styles.eventDivider} />
+                <View style={styles.eventDivider} />
 
                 {/* Delete Button */}
-                <TouchableOpacity style={Styles.eventDeleteButton} onPress={(e) => e.stopPropagation()}>
-                    <Text style={Styles.eventDeleteButtonText}>Delete</Text>
+                <TouchableOpacity style={styles.eventDeleteButton} onPress={(e) => e.stopPropagation()}>
+                    <Text style={styles.eventDeleteButtonText}>{t('Delete')}</Text>
                 </TouchableOpacity>
             </View>
         </TouchableOpacity>
@@ -247,60 +251,60 @@ const GroupProfileScreen = ({ navigation }: any) => {
 
     const renderTabContent = () => {
         switch (activeTab) {
-            case 'Athletes':
+            case 'athletes':
                 return (
-                    <View style={Styles.clubAthletesSection}>
-                        <View style={Styles.clubAthletesHeader}>
-                            <Text style={Styles.clubAthletesTitle}>Club Athletes</Text>
-                            <TouchableOpacity style={Styles.addAthleteButton} onPress={() => navigation.navigate('AddAthleteScreen')}>
-                                <Text style={Styles.addAthleteText}>Add Athlete</Text>
-                                <Add size={24} color={Colors.whiteColor} variant="Linear" />
+                    <View style={styles.clubAthletesSection}>
+                        <View style={styles.clubAthletesHeader}>
+                            <Text style={styles.clubAthletesTitle}>{t('Club Athletes')}</Text>
+                            <TouchableOpacity style={styles.addAthleteButton} onPress={() => navigation.navigate('AddAthleteScreen')}>
+                                <Text style={styles.addAthleteText}>{t('Add Athlete')}</Text>
+                                <Add size={24} color={colors.pureWhite} variant="Linear" />
                             </TouchableOpacity>
                         </View>
-                        <View style={Styles.athletesList}>
+                        <View style={styles.athletesList}>
                             {athletes.map(renderAthleteCard)}
                         </View>
-                        <TouchableOpacity style={Styles.viewAllButton}>
-                            <Text style={Styles.viewAllText}>View All</Text>
-                            <ArrowRight size={24} color={Colors.whiteColor} variant="Linear" />
+                        <TouchableOpacity style={styles.viewAllButton}>
+                            <Text style={styles.viewAllText}>{t('View All')}</Text>
+                            <ArrowRight size={24} color={colors.pureWhite} variant="Linear" />
                         </TouchableOpacity>
                     </View>
                 );
-            case 'Coaches':
+            case 'coaches':
                 return (
-                    <View style={Styles.clubAthletesSection}>
-                        <View style={Styles.clubAthletesHeader}>
-                            <Text style={Styles.clubAthletesTitle}>Club Coaches</Text>
-                            <TouchableOpacity style={Styles.addAthleteButton} onPress={() => navigation.navigate('AddCoachScreen')}>
-                                <Text style={Styles.addAthleteText}>Add Coach</Text>
-                                <Add size={24} color={Colors.whiteColor} variant="Linear" />
+                    <View style={styles.clubAthletesSection}>
+                        <View style={styles.clubAthletesHeader}>
+                            <Text style={styles.clubAthletesTitle}>{t('Club Coaches')}</Text>
+                            <TouchableOpacity style={styles.addAthleteButton} onPress={() => navigation.navigate('AddCoachScreen')}>
+                                <Text style={styles.addAthleteText}>{t('Add Coach')}</Text>
+                                <Add size={24} color={colors.pureWhite} variant="Linear" />
                             </TouchableOpacity>
                         </View>
-                        <View style={Styles.athletesList}>
+                        <View style={styles.athletesList}>
                             {coaches.map(renderCoachCard)}
                         </View>
-                        <TouchableOpacity style={Styles.viewAllButton}>
-                            <Text style={Styles.viewAllText}>View All</Text>
-                            <ArrowRight size={24} color={Colors.whiteColor} variant="Linear" />
+                        <TouchableOpacity style={styles.viewAllButton}>
+                            <Text style={styles.viewAllText}>{t('View All')}</Text>
+                            <ArrowRight size={24} color={colors.pureWhite} variant="Linear" />
                         </TouchableOpacity>
                     </View>
                 );
-            case 'Events':
+            case 'events':
                 return (
-                    <View style={Styles.clubAthletesSection}>
-                        <View style={Styles.clubAthletesHeader}>
-                            <Text style={Styles.clubAthletesTitle}>Events</Text>
-                            <TouchableOpacity style={Styles.addAthleteButton}>
-                                <Text style={Styles.addAthleteText}>Add Event</Text>
-                                <Add size={24} color={Colors.whiteColor} variant="Linear" />
+                    <View style={styles.clubAthletesSection}>
+                        <View style={styles.clubAthletesHeader}>
+                            <Text style={styles.clubAthletesTitle}>{t('Events')}</Text>
+                            <TouchableOpacity style={styles.addAthleteButton}>
+                                <Text style={styles.addAthleteText}>{t('Add Event')}</Text>
+                                <Add size={24} color={colors.pureWhite} variant="Linear" />
                             </TouchableOpacity>
                         </View>
-                        <View style={Styles.athletesList}>
+                        <View style={styles.athletesList}>
                             {events.map(renderEventCard)}
                         </View>
-                        <TouchableOpacity style={Styles.viewAllButton} onPress={() => navigation.navigate('GroupEventsViewAllScreen')}>
-                            <Text style={Styles.viewAllText}>View All</Text>
-                            <ArrowRight size={24} color={Colors.whiteColor} variant="Linear" />
+                        <TouchableOpacity style={styles.viewAllButton} onPress={() => navigation.navigate('GroupEventsViewAllScreen')}>
+                            <Text style={styles.viewAllText}>{t('View All')}</Text>
+                            <ArrowRight size={24} color={colors.pureWhite} variant="Linear" />
                         </TouchableOpacity>
                     </View>
                 );
@@ -310,117 +314,119 @@ const GroupProfileScreen = ({ navigation }: any) => {
     };
 
     return (
-        <View style={Styles.mainContainer}>
+        <View style={styles.mainContainer}>
             <SizeBox height={insets.top} />
 
             {/* Header */}
-            <View style={Styles.header}>
-                <TouchableOpacity style={Styles.headerButton} onPress={() => navigation.goBack()}>
-                    <ArrowLeft2 size={24} color={Colors.primaryColor} variant="Linear" />
+            <View style={styles.header}>
+                <TouchableOpacity style={styles.headerButton} onPress={() => navigation.goBack()}>
+                    <ArrowLeft2 size={24} color={colors.primaryColor} variant="Linear" />
                 </TouchableOpacity>
-                <Text style={Styles.headerTitle}>Profile</Text>
-                <TouchableOpacity style={Styles.headerButton}>
-                    <User size={24} color={Colors.primaryColor} variant="Linear" />
+                <Text style={styles.headerTitle}>{t('Profile')}</Text>
+                <TouchableOpacity style={styles.headerButton}>
+                    <User size={24} color={colors.primaryColor} variant="Linear" />
                 </TouchableOpacity>
             </View>
 
-            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={Styles.scrollContent}>
+            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
                 {/* Profile Card */}
-                <View style={Styles.profileCard}>
+                <View style={styles.profileCard}>
                     {/* Share Button */}
-                    <TouchableOpacity style={Styles.shareButton} onPress={() => setShowShareModal(true)}>
-                        <Text style={Styles.shareButtonText}>Share</Text>
-                        <ArrowRight size={24} color="#9B9F9F" variant="Linear" />
+                    <TouchableOpacity style={styles.shareButton} onPress={() => setShowShareModal(true)}>
+                        <Text style={styles.shareButtonText}>{t('Share')}</Text>
+                        <ArrowRight size={24} color={colors.subTextColor} variant="Linear" />
                     </TouchableOpacity>
 
                     {/* Profile Info */}
-                    <View style={Styles.profileInfoContainer}>
-                        <FastImage source={Images.profilePic} style={Styles.profileAvatar} resizeMode="cover" />
-                        <View style={Styles.profileNameRow}>
-                            <Text style={Styles.profileName}>James Ray</Text>
+                    <View style={styles.profileInfoContainer}>
+                        <FastImage source={Images.profilePic} style={styles.profileAvatar} resizeMode="cover" />
+                        <View style={styles.profileNameRow}>
+                            <Text style={styles.profileName}>{t('James Ray')}</Text>
                             <Icons.BlueTick width={16} height={16} />
                         </View>
-                        <Text style={Styles.profileUsername}>jamesray2@</Text>
+                        <Text style={styles.profileUsername}>jamesray2@</Text>
                     </View>
 
                     {/* Stats Row */}
-                    <View style={Styles.statsRow}>
-                        <View style={Styles.statItem}>
-                            <Text style={Styles.statValue}>1.2K</Text>
-                            <Text style={Styles.statLabel}>Posts</Text>
+                    <View style={styles.statsRow}>
+                        <View style={styles.statItem}>
+                            <Text style={styles.statValue}>1.2K</Text>
+                            <Text style={styles.statLabel}>{t('Posts')}</Text>
                         </View>
-                        <View style={Styles.statDivider} />
-                        <View style={Styles.statItem}>
-                            <Text style={Styles.statValue}>45.8K</Text>
-                            <Text style={Styles.statLabel}>Followers</Text>
+                        <View style={styles.statDivider} />
+                        <View style={styles.statItem}>
+                            <Text style={styles.statValue}>45.8K</Text>
+                            <Text style={styles.statLabel}>{t('Followers')}</Text>
                         </View>
                     </View>
 
                     {/* Categories */}
-                    <View style={Styles.categoriesRow}>
-                        <Text style={Styles.categoryText}>Track and Field</Text>
-                        <View style={Styles.categoryDivider} />
-                        <Text style={Styles.categoryText}>Boxing</Text>
-                        <View style={Styles.categoryDivider} />
-                        <Text style={Styles.categoryText}>Cross Country</Text>
+                    <View style={styles.categoriesRow}>
+                        <Text style={styles.categoryText}>{t('Track and Field')}</Text>
+                        <View style={styles.categoryDivider} />
+                        <Text style={styles.categoryText}>{t('Boxing')}</Text>
+                        <View style={styles.categoryDivider} />
+                        <Text style={styles.categoryText}>{t('Cross Country')}</Text>
                     </View>
 
                     {/* Additional Stats */}
-                    <View style={Styles.additionalStatsRow}>
-                        <View style={Styles.additionalStatItem}>
-                            <Text style={Styles.additionalStatLabel}>Coaches</Text>
-                            <Text style={Styles.additionalStatValue}>3</Text>
+                    <View style={styles.additionalStatsRow}>
+                        <View style={styles.additionalStatItem}>
+                            <Text style={styles.additionalStatLabel}>{t('Coaches')}</Text>
+                            <Text style={styles.additionalStatValue}>3</Text>
                         </View>
-                        <View style={Styles.additionalStatItemCenter}>
-                            <Text style={Styles.additionalStatLabel}>Athletes</Text>
-                            <Text style={Styles.additionalStatValue}>17</Text>
+                        <View style={styles.additionalStatItemCenter}>
+                            <Text style={styles.additionalStatLabel}>{t('Athletes')}</Text>
+                            <Text style={styles.additionalStatValue}>17</Text>
                         </View>
-                        <View style={Styles.additionalStatItemEnd}>
-                            <Text style={Styles.additionalStatLabel}>Upcoming Events</Text>
-                            <Text style={Styles.additionalStatValue}>4</Text>
+                        <View style={styles.additionalStatItemEnd}>
+                            <Text style={styles.additionalStatLabel}>{t('Upcoming Events')}</Text>
+                            <Text style={styles.additionalStatValue}>4</Text>
                         </View>
                     </View>
 
                     {/* Bio Section */}
-                    <View style={Styles.bioSection}>
-                        <View style={Styles.bioHeader}>
-                            <Text style={Styles.bioTitle}>Bio</Text>
+                    <View style={styles.bioSection}>
+                        <View style={styles.bioHeader}>
+                            <Text style={styles.bioTitle}>{t('Bio')}</Text>
                             <TouchableOpacity>
-                                <Edit2 size={24} color="#9B9F9F" variant="Linear" />
+                                <Edit2 size={24} color={colors.subTextColor} variant="Linear" />
                             </TouchableOpacity>
                         </View>
-                        <Text style={Styles.bioText}>
-                            Premier athletics club in Belgium, dedicated to developing world-class athletes through professional coaching, state-of-the-art facilities, and comprehensive training programs. Established in 2010.
+                        <Text style={styles.bioText}>
+                            {t('Premier athletics club in Belgium, dedicated to developing world-class athletes through professional coaching, state-of-the-art facilities, and comprehensive training programs. Established in 2010.')}
                         </Text>
-                        <View style={Styles.bioDivider} />
+                        <View style={styles.bioDivider} />
                     </View>
 
                     {/* Website Link */}
-                    <View style={Styles.websiteContainer}>
+                    <View style={styles.websiteContainer}>
                         <Icons.Website width={16} height={16} />
-                        <Text style={Styles.websiteText}>georgia.young@example.com</Text>
-                        <View style={Styles.websiteActions}>
+                        <Text style={styles.websiteText}>georgia.young@example.com</Text>
+                        <View style={styles.websiteActions}>
                             <TouchableOpacity>
-                                <Trash size={24} color="#9B9F9F" variant="Linear" />
+                                <Trash size={24} color={colors.subTextColor} variant="Linear" />
                             </TouchableOpacity>
                             <TouchableOpacity>
-                                <Edit2 size={24} color="#9B9F9F" variant="Linear" />
+                                <Edit2 size={24} color={colors.subTextColor} variant="Linear" />
                             </TouchableOpacity>
                         </View>
                     </View>
 
-                    <View style={Styles.sectionDivider} />
+                    <View style={styles.sectionDivider} />
                 </View>
 
                 {/* Toggle Tab Bar */}
-                <View style={Styles.toggleTabBar}>
+                <View style={styles.toggleTabBar}>
                     {tabs.map((tab) => (
                         <TouchableOpacity
                             key={tab}
-                            style={[Styles.toggleTab, activeTab === tab && Styles.toggleTabActive]}
+                            style={[styles.toggleTab, activeTab === tab && styles.toggleTabActive]}
                             onPress={() => setActiveTab(tab)}
                         >
-                            <Text style={[Styles.toggleTabText, activeTab === tab && Styles.toggleTabTextActive]}>{tab}</Text>
+                            <Text style={[styles.toggleTabText, activeTab === tab && styles.toggleTabTextActive]}>
+                                {t(tab === 'athletes' ? 'Athletes' : tab === 'coaches' ? 'Coaches' : 'Events')}
+                            </Text>
                         </TouchableOpacity>
                     ))}
                 </View>
@@ -438,20 +444,20 @@ const GroupProfileScreen = ({ navigation }: any) => {
                 visible={emailModalVisible}
                 onRequestClose={() => setEmailModalVisible(false)}
             >
-                <View style={Styles.modalOverlay}>
-                    <View style={Styles.emailModalContainer}>
-                        <Text style={Styles.emailModalTitle}>Edit your Email</Text>
+                <View style={styles.modalOverlay}>
+                    <View style={styles.emailModalContainer}>
+                        <Text style={styles.emailModalTitle}>{t('Edit your Email')}</Text>
 
-                        <View style={Styles.emailModalInputGroup}>
-                            <Text style={Styles.emailModalInputLabel}>Email</Text>
+                        <View style={styles.emailModalInputGroup}>
+                            <Text style={styles.emailModalInputLabel}>{t('Email')}</Text>
                             <SizeBox height={8} />
-                            <View style={Styles.emailModalInputContainer}>
-                                <Sms size={24} color={Colors.primaryColor} variant="Linear" />
+                            <View style={styles.emailModalInputContainer}>
+                                <Sms size={24} color={colors.primaryColor} variant="Linear" />
                                 <SizeBox width={10} />
                                 <TextInput
-                                    style={Styles.emailModalInput}
-                                    placeholder="Enter email"
-                                    placeholderTextColor="#777777"
+                                    style={styles.emailModalInput}
+                                    placeholder={t('Enter email')}
+                                    placeholderTextColor={colors.grayColor}
                                     value={emailInput}
                                     onChangeText={setEmailInput}
                                     keyboardType="email-address"
@@ -460,26 +466,26 @@ const GroupProfileScreen = ({ navigation }: any) => {
                             </View>
                         </View>
 
-                        <View style={Styles.emailModalButtonsRow}>
+                        <View style={styles.emailModalButtonsRow}>
                             <TouchableOpacity
-                                style={Styles.emailModalCancelButton}
+                                style={styles.emailModalCancelButton}
                                 onPress={() => {
                                     setEmailModalVisible(false);
                                     setEmailInput('');
                                 }}
                             >
-                                <Text style={Styles.emailModalCancelButtonText}>Cancel</Text>
+                                <Text style={styles.emailModalCancelButtonText}>{t('Cancel')}</Text>
                             </TouchableOpacity>
 
                             <TouchableOpacity
-                                style={Styles.emailModalSaveButton}
+                                style={styles.emailModalSaveButton}
                                 onPress={() => {
                                     // Handle save email
                                     setEmailModalVisible(false);
                                     setEmailInput('');
                                 }}
                             >
-                                <Text style={Styles.emailModalSaveButtonText}>Save</Text>
+                                <Text style={styles.emailModalSaveButtonText}>{t('Save')}</Text>
                             </TouchableOpacity>
                         </View>
                     </View>
@@ -493,41 +499,41 @@ const GroupProfileScreen = ({ navigation }: any) => {
                 visible={coachModalVisible}
                 onRequestClose={() => setCoachModalVisible(false)}
             >
-                <View style={Styles.modalOverlay}>
-                    <View style={Styles.coachModalContainer}>
+                <View style={styles.modalOverlay}>
+                    <View style={styles.coachModalContainer}>
                         {selectedCoach && (
                             <>
                                 {/* Coach Header */}
-                                <View style={Styles.coachModalHeader}>
-                                    <FastImage source={Images.profilePic} style={Styles.coachModalAvatar} resizeMode="cover" />
-                                    <View style={Styles.coachModalInfo}>
-                                        <Text style={Styles.coachModalName}>{selectedCoach.name}</Text>
-                                        <View style={Styles.coachModalLocationRow}>
-                                            <Location size={14} color="#9B9F9F" variant="Linear" />
-                                            <Text style={Styles.coachModalLocation}>{selectedCoach.club}</Text>
+                                <View style={styles.coachModalHeader}>
+                                    <FastImage source={Images.profilePic} style={styles.coachModalAvatar} resizeMode="cover" />
+                                    <View style={styles.coachModalInfo}>
+                                        <Text style={styles.coachModalName}>{selectedCoach.name}</Text>
+                                        <View style={styles.coachModalLocationRow}>
+                                            <Location size={14} color={colors.subTextColor} variant="Linear" />
+                                            <Text style={styles.coachModalLocation}>{selectedCoach.club}</Text>
                                         </View>
                                     </View>
-                                    <View style={Styles.coachModalCategoryRow}>
+                                    <View style={styles.coachModalCategoryRow}>
                                         <Icons.Run width={16} height={16} />
-                                        <Text style={Styles.coachModalCategory}>{selectedCoach.category}</Text>
+                                        <Text style={styles.coachModalCategory}>{selectedCoach.category}</Text>
                                     </View>
                                 </View>
 
                                 {/* Athletes Section */}
-                                <View style={Styles.coachModalAthletesSection}>
-                                    <Text style={Styles.coachModalAthletesTitle}>
-                                        Athletes ({selectedCoach.athletes?.length || 0})
+                                <View style={styles.coachModalAthletesSection}>
+                                    <Text style={styles.coachModalAthletesTitle}>
+                                        {t('Athletes')} ({selectedCoach.athletes?.length || 0})
                                     </Text>
 
                                     {selectedCoach.athletes?.map((athlete: any, index: number) => (
-                                        <View key={index} style={Styles.coachModalAthleteRow}>
-                                            <View style={Styles.coachModalAthleteInfo}>
-                                                <Text style={Styles.coachModalAthleteName}>{athlete.name}</Text>
-                                                <Text style={Styles.coachModalAthleteEvent}>{athlete.event}</Text>
+                                        <View key={index} style={styles.coachModalAthleteRow}>
+                                            <View style={styles.coachModalAthleteInfo}>
+                                                <Text style={styles.coachModalAthleteName}>{athlete.name}</Text>
+                                                <Text style={styles.coachModalAthleteEvent}>{athlete.event}</Text>
                                             </View>
-                                            <View style={Styles.coachModalAthletePB}>
-                                                <Text style={Styles.coachModalAthletePBLabel}>Personal Best</Text>
-                                                <Text style={Styles.coachModalAthletePBValue}>{athlete.personalBest}</Text>
+                                            <View style={styles.coachModalAthletePB}>
+                                                <Text style={styles.coachModalAthletePBLabel}>{t('Personal Best')}</Text>
+                                                <Text style={styles.coachModalAthletePBValue}>{athlete.personalBest}</Text>
                                             </View>
                                         </View>
                                     ))}
@@ -535,13 +541,13 @@ const GroupProfileScreen = ({ navigation }: any) => {
 
                                 {/* Close Button */}
                                 <TouchableOpacity
-                                    style={Styles.coachModalCloseButton}
+                                    style={styles.coachModalCloseButton}
                                     onPress={() => {
                                         setCoachModalVisible(false);
                                         setSelectedCoach(null);
                                     }}
                                 >
-                                    <Text style={Styles.coachModalCloseButtonText}>Close</Text>
+                                    <Text style={styles.coachModalCloseButtonText}>{t('Close')}</Text>
                                 </TouchableOpacity>
                             </>
                         )}

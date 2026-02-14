@@ -1,11 +1,11 @@
 import { StyleSheet } from 'react-native';
-import Colors from '../../constants/Colors';
+import { ThemeColors, lightColors } from '../../constants/Theme';
 import Fonts from '../../constants/Fonts';
 
-const Styles = StyleSheet.create({
+export const createStyles = (colors: ThemeColors) => StyleSheet.create({
     mainContainer: {
         flex: 1,
-        backgroundColor: Colors.whiteColor,
+        backgroundColor: colors.whiteColor,
     },
     header: {
         flexDirection: 'row',
@@ -14,26 +14,26 @@ const Styles = StyleSheet.create({
         paddingHorizontal: 20,
         paddingVertical: 15,
         borderBottomWidth: 0.5,
-        borderBottomColor: Colors.lightGrayColor,
+        borderBottomColor: colors.lightGrayColor,
     },
     backButton: {
         width: 44,
         height: 44,
         borderRadius: 22,
-        backgroundColor: Colors.btnBackgroundColor,
+        backgroundColor: colors.btnBackgroundColor,
         alignItems: 'center',
         justifyContent: 'center',
     },
     headerTitle: {
         ...Fonts.medium16,
         fontSize: 18,
-        color: Colors.mainTextColor,
+        color: colors.mainTextColor,
     },
     settingsButton: {
         width: 44,
         height: 44,
         borderRadius: 22,
-        backgroundColor: Colors.btnBackgroundColor,
+        backgroundColor: colors.btnBackgroundColor,
         alignItems: 'center',
         justifyContent: 'center',
     },
@@ -47,7 +47,7 @@ const Styles = StyleSheet.create({
     },
     competitionTitle: {
         ...Fonts.medium16,
-        color: Colors.mainTextColor,
+        color: colors.mainTextColor,
     },
     competitionDescription: {
         ...Fonts.regular12,
@@ -55,7 +55,7 @@ const Styles = StyleSheet.create({
     },
     toggleContainer: {
         flexDirection: 'row',
-        backgroundColor: Colors.whiteColor,
+        backgroundColor: colors.whiteColor,
         borderWidth: 0.5,
         borderColor: '#DEDEDE',
         borderRadius: 10,
@@ -77,7 +77,7 @@ const Styles = StyleSheet.create({
         color: '#9B9F9F',
     },
     toggleTextActive: {
-        color: Colors.mainTextColor,
+        color: colors.mainTextColor,
     },
     sectionHeaderContainer: {
         zIndex: 10,
@@ -89,13 +89,13 @@ const Styles = StyleSheet.create({
     },
     sectionTitle: {
         ...Fonts.medium16,
-        color: Colors.mainTextColor,
+        color: colors.mainTextColor,
     },
     filterButton: {
         width: 36,
         height: 36,
         borderRadius: 6.67,
-        backgroundColor: Colors.primaryColor,
+        backgroundColor: colors.primaryColor,
         alignItems: 'center',
         justifyContent: 'center',
     },
@@ -103,7 +103,7 @@ const Styles = StyleSheet.create({
         position: 'absolute',
         top: 44,
         right: 0,
-        backgroundColor: Colors.whiteColor,
+        backgroundColor: colors.whiteColor,
         borderRadius: 20,
         paddingVertical: 24,
         paddingLeft: 16,
@@ -137,7 +137,7 @@ const Styles = StyleSheet.create({
         height: 24,
         borderRadius: 4,
         borderWidth: 0.5,
-        borderColor: Colors.primaryColor,
+        borderColor: colors.primaryColor,
         alignItems: 'center',
         justifyContent: 'center',
     },
@@ -151,7 +151,7 @@ const Styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
-        backgroundColor: Colors.whiteColor,
+        backgroundColor: colors.whiteColor,
         borderWidth: 0.5,
         borderColor: '#DEDEDE',
         borderRadius: 10,
@@ -159,7 +159,7 @@ const Styles = StyleSheet.create({
     },
     eventName: {
         ...Fonts.medium16,
-        color: Colors.mainTextColor,
+        color: colors.mainTextColor,
     },
     eventRight: {
         flexDirection: 'row',
@@ -184,10 +184,10 @@ const Styles = StyleSheet.create({
     },
     photosTitle: {
         ...Fonts.medium16,
-        color: Colors.mainTextColor,
+        color: colors.mainTextColor,
     },
     primaryButton: {
-        backgroundColor: Colors.primaryColor,
+        backgroundColor: colors.primaryColor,
         borderRadius: 10,
         height: 54,
         flexDirection: 'row',
@@ -197,8 +197,10 @@ const Styles = StyleSheet.create({
     },
     primaryButtonText: {
         ...Fonts.medium16,
-        color: Colors.whiteColor,
+        color: colors.whiteColor,
     },
 });
+
+const Styles = createStyles(lightColors);
 
 export default Styles;

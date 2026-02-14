@@ -1,8 +1,8 @@
 import { StyleSheet } from "react-native";
-import Colors from "../../constants/Colors";
 import Fonts from "../../constants/Fonts";
+import { ThemeColors } from "../../constants/Theme";
 
-const Styles = StyleSheet.create({
+export const createStyles = (colors: ThemeColors) => StyleSheet.create({
     tabContainer: {
         flexDirection: 'row',
         justifyContent: 'space-between',
@@ -19,10 +19,8 @@ const Styles = StyleSheet.create({
     },
     tabText: {
         ...Fonts.regular14,
-        color: Colors.subTextColor,
+        color: colors.subTextColor,
         fontWeight: '400',
         paddingBottom: 12
     },
-})
-
-export default Styles;
+});

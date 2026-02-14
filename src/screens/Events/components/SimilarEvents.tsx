@@ -1,12 +1,13 @@
 import { View, Text, TouchableOpacity } from 'react-native'
 import React from 'react'
-import Styles from '../EventsStyles'
+import { createStyles } from '../EventsStyles'
 import FastImage from 'react-native-fast-image'
 import Images from '../../../constants/Images'
 import SizeBox from '../../../constants/SizeBox'
 import Icons from '../../../constants/Icons'
 import SubscribedUsers from './SubscribedUsers'
-import Colors from '../../../constants/Colors'
+import { useTheme } from '../../../context/ThemeContext'
+import { useTranslation } from 'react-i18next'
 
 const subscribedUsers = [
     'https://picsum.photos/200/300',
@@ -24,6 +25,9 @@ const SimilarEvents = ({
     onPressSubscribe,
     isSubscription = true
 }: SimilarEventsProps) => {
+    const { colors } = useTheme();
+    const Styles = createStyles(colors);
+    const { t } = useTranslation();
     return (
         <View style={Styles.similarEvents}>
             <View style={Styles.eventImg}>
@@ -39,7 +43,7 @@ const SimilarEvents = ({
                 <View style={Styles.row}>
                     <SubscribedUsers users={subscribedUsers} />
                     <SizeBox width={6} />
-                    <Text style={Styles.actionText}>20+ subscribed</Text>
+                    <Text style={Styles.actionText}>{t('20+ subscribed')}</Text>
                 </View>
                 <SizeBox height={6} />
                 <View style={Styles.row}>
@@ -57,7 +61,7 @@ const SimilarEvents = ({
                 </View>
             </View>
             {isSubscription && <TouchableOpacity style={Styles.right} onPress={onPressSubscribe}>
-                <Text style={[Styles.CompetitionName, { color: Colors.primaryColor, fontWeight: '400', }]}>Subscribe</Text>
+                <Text style={[Styles.CompetitionName, { color: colors.primaryColor, fontWeight: '400', }]}>{t('Subscribe')}</Text>
             </TouchableOpacity>}
         </View>
     )

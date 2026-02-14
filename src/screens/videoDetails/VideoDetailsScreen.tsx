@@ -11,19 +11,23 @@ import {
     Refresh,
     ArrowDown2,
 } from 'iconsax-react-nativejs';
-import Styles from './VideoDetailsScreenStyles';
+import { createStyles } from './VideoDetailsScreenStyles';
 import SizeBox from '../../constants/SizeBox';
-import Colors from '../../constants/Colors';
 import Icons from '../../constants/Icons';
 import Images from '../../constants/Images';
 import { launchImageLibrary } from 'react-native-image-picker';
 import { useAuth } from '../../context/AuthContext';
 import { getMediaById } from '../../services/apiGateway';
 import { getApiBaseUrl, getHlsBaseUrl } from '../../constants/RuntimeConfig';
+import { useTheme } from '../../context/ThemeContext';
+import { useTranslation } from 'react-i18next';
 
 const VideoDetailsScreen = ({ navigation, route }: any) => {
     const insets = useSafeAreaInsets();
     const { apiAccessToken } = useAuth();
+    const { colors } = useTheme();
+    const Styles = createStyles(colors);
+    const { t } = useTranslation();
     const [showManageModal, setShowManageModal] = useState(false);
     const [uploadFileName, setUploadFileName] = useState<string | null>(null);
     const [editLocation, setEditLocation] = useState('Berlin, Germany');
@@ -125,7 +129,7 @@ const VideoDetailsScreen = ({ navigation, route }: any) => {
     const baseEditRequests = [
         {
             id: 1,
-            title: 'Request new title',
+            title: t('Request new title'),
             date: '12/12/2024',
             time: '12:00',
             status: 'pending',
@@ -133,7 +137,7 @@ const VideoDetailsScreen = ({ navigation, route }: any) => {
         },
         {
             id: 2,
-            title: 'Wrong competition',
+            title: t('Wrong competition'),
             date: '12/12/2024',
             time: '12:00',
             status: 'pending',
@@ -141,7 +145,7 @@ const VideoDetailsScreen = ({ navigation, route }: any) => {
         },
         {
             id: 3,
-            title: 'Wrong event',
+            title: t('Wrong event'),
             date: '12/12/2024',
             time: '12:00',
             status: 'fixed',
@@ -229,17 +233,17 @@ const VideoDetailsScreen = ({ navigation, route }: any) => {
             </View>
             {item.status === 'fixed' ? (
                 <View style={Styles.fixedBadge}>
-                    <Text style={Styles.fixedBadgeText}>Fixed</Text>
+                    <Text style={Styles.fixedBadgeText}>{t('Fixed')}</Text>
                     <TickCircle size={14} color="#00BD48" variant="Linear" />
                 </View>
             ) : item.status === 'wont_fix' ? (
                 <View style={Styles.wontFixBadge}>
-                    <Text style={Styles.wontFixBadgeText}>Won't fix</Text>
+                    <Text style={Styles.wontFixBadgeText}>{t("Won't fix")}</Text>
                     <Refresh size={14} color="#FF3B30" variant="Linear" />
                 </View>
             ) : (
                 <View style={Styles.pendingBadge}>
-                    <Text style={Styles.pendingBadgeText}>Pending</Text>
+                    <Text style={Styles.pendingBadgeText}>{t('Pending')}</Text>
                     <Refresh size={14} color="#FF8000" variant="Linear" />
                 </View>
             )}
@@ -253,9 +257,9 @@ const VideoDetailsScreen = ({ navigation, route }: any) => {
             {/* Header */}
             <View style={Styles.header}>
                 <TouchableOpacity style={Styles.backButton} onPress={() => navigation.goBack()}>
-                    <ArrowLeft2 size={20} color={Colors.mainTextColor} variant="Linear" />
+                    <ArrowLeft2 size={20} color={colors.mainTextColor} variant="Linear" />
                 </TouchableOpacity>
-                <Text style={Styles.headerTitle}>Video Details</Text>
+                <Text style={Styles.headerTitle}>{t('Video details')}</Text>
                 <View style={{ width: 44, height: 44 }} />
             </View>
 
@@ -298,19 +302,19 @@ const VideoDetailsScreen = ({ navigation, route }: any) => {
                 </View>
 
                 {/* Request for Edits Section */}
-                <Text style={Styles.sectionTitle}>Request for Edits</Text>
+                <Text style={Styles.sectionTitle}>{t('Request for edits')}</Text>
                 <SizeBox height={16} />
 
                 {editRequests.length === 0 ? (
                     <View style={Styles.emptyStateContainer}>
                         <Icons.FileEmptyColorful height={120} width={120} />
                         <SizeBox height={12} />
-                        <Text style={Styles.emptyStateText}>No edit request found</Text>
+                        <Text style={Styles.emptyStateText}>{t('No edit request found')}</Text>
                     </View>
                 ) : (
                     <>
                         <View style={Styles.receivedLabel}>
-                            <Text style={Styles.receivedText}>Received</Text>
+                            <Text style={Styles.receivedText}>{t('Received')}</Text>
                         </View>
 
                         <SizeBox height={16} />
@@ -323,7 +327,7 @@ const VideoDetailsScreen = ({ navigation, route }: any) => {
 
                         {canLoadMore && (
                             <TouchableOpacity style={Styles.loadMoreButton} onPress={() => setRequestsExpanded(true)}>
-                                <Text style={Styles.loadMoreText}>Load more</Text>
+                                <Text style={Styles.loadMoreText}>{t('Load more')}</Text>
                             </TouchableOpacity>
                         )}
                     </>
@@ -335,7 +339,7 @@ const VideoDetailsScreen = ({ navigation, route }: any) => {
                     style={Styles.primaryButton}
                     onPress={() => setShowManageModal(true)}
                 >
-                    <Text style={Styles.primaryButtonText}>Manage upload</Text>
+                    <Text style={Styles.primaryButtonText}>{t('Manage upload')}</Text>
                 </TouchableOpacity>
 
                 <SizeBox height={20} />
@@ -344,27 +348,27 @@ const VideoDetailsScreen = ({ navigation, route }: any) => {
             <Modal visible={showManageModal} transparent animationType="fade" onRequestClose={() => setShowManageModal(false)}>
                 <View style={Styles.modalBackdrop}>
                     <View style={Styles.modalCard}>
-                        <Text style={Styles.modalTitle}>Edit upload</Text>
-                        <Text style={Styles.modalSubtitle}>Update your media details.</Text>
+                        <Text style={Styles.modalTitle}>{t('Edit upload')}</Text>
+                        <Text style={Styles.modalSubtitle}>{t('Update your media details.')}</Text>
 
-                        <Text style={Styles.modalLabel}>Reupload video</Text>
+                        <Text style={Styles.modalLabel}>{t('Reupload video')}</Text>
                         <TouchableOpacity style={Styles.modalUploadButton} onPress={handlePickVideo}>
-                            <Text style={Styles.modalUploadText}>Choose file</Text>
+                            <Text style={Styles.modalUploadText}>{t('Choose file')}</Text>
                         </TouchableOpacity>
                         {uploadFileName ? (
-                            <Text style={Styles.modalFileName}>Selected: {uploadFileName}</Text>
+                            <Text style={Styles.modalFileName}>{t('Selected:')} {uploadFileName}</Text>
                         ) : null}
 
-                        <Text style={Styles.modalLabel}>Location</Text>
+                        <Text style={Styles.modalLabel}>{t('Location')}</Text>
                         <TextInput style={Styles.modalInput} value={editLocation} onChangeText={setEditLocation} />
 
-                        <Text style={Styles.modalLabel}>Description</Text>
+                        <Text style={Styles.modalLabel}>{t('Description')}</Text>
                         <TextInput style={Styles.modalInput} value={editDescription} onChangeText={setEditDescription} />
 
-                        <Text style={Styles.modalLabel}>Watermark</Text>
+                        <Text style={Styles.modalLabel}>{t('Watermark')}</Text>
                         <TextInput style={Styles.modalInput} value={editWatermark} onChangeText={setEditWatermark} />
 
-                        <Text style={Styles.modalLabel}>Competition</Text>
+                        <Text style={Styles.modalLabel}>{t('Competition')}</Text>
                         <TouchableOpacity
                             style={Styles.modalSelectRow}
                             onPress={() => setShowCompetitionOptions((prev) => !prev)}
@@ -389,7 +393,7 @@ const VideoDetailsScreen = ({ navigation, route }: any) => {
                             </View>
                         )}
 
-                        <Text style={Styles.modalLabel}>Event label</Text>
+                        <Text style={Styles.modalLabel}>{t('Event label')}</Text>
                         <TouchableOpacity
                             style={Styles.modalSelectRow}
                             onPress={() => setShowEventOptions((prev) => !prev)}
@@ -416,10 +420,10 @@ const VideoDetailsScreen = ({ navigation, route }: any) => {
 
                         <View style={Styles.modalButtonRow}>
                             <TouchableOpacity style={Styles.modalCancelButton} onPress={() => setShowManageModal(false)}>
-                                <Text style={Styles.modalCancelText}>Cancel</Text>
+                                <Text style={Styles.modalCancelText}>{t('Cancel')}</Text>
                             </TouchableOpacity>
                             <TouchableOpacity style={Styles.modalSaveButton} onPress={() => setShowManageModal(false)}>
-                                <Text style={Styles.modalSaveText}>Save</Text>
+                                <Text style={Styles.modalSaveText}>{t('Save')}</Text>
                             </TouchableOpacity>
                         </View>
                     </View>
@@ -429,26 +433,26 @@ const VideoDetailsScreen = ({ navigation, route }: any) => {
             <Modal visible={statusModalVisible} transparent animationType="fade" onRequestClose={() => setStatusModalVisible(false)}>
                 <View style={Styles.modalBackdrop}>
                     <View style={Styles.modalCard}>
-                        <Text style={Styles.modalTitle}>Update request status</Text>
+                        <Text style={Styles.modalTitle}>{t('Update request status')}</Text>
                         <Text style={Styles.modalSubtitle}>{selectedRequest?.title}</Text>
 
                         <TouchableOpacity
                             style={[Styles.statusOption, statusChoice === 'fixed' && Styles.statusOptionActive]}
                             onPress={() => setStatusChoice('fixed')}
                         >
-                            <Text style={Styles.statusOptionText}>Mark as fixed</Text>
+                            <Text style={Styles.statusOptionText}>{t('Mark as fixed')}</Text>
                         </TouchableOpacity>
 
                         <TouchableOpacity
                             style={[Styles.statusOption, statusChoice === 'wont_fix' && Styles.statusOptionActive]}
                             onPress={() => setStatusChoice('wont_fix')}
                         >
-                            <Text style={Styles.statusOptionText}>Won't fix</Text>
+                            <Text style={Styles.statusOptionText}>{t("Won't fix")}</Text>
                         </TouchableOpacity>
 
                         {statusChoice === 'wont_fix' && (
                             <>
-                                <Text style={Styles.modalLabel}>Reason</Text>
+                                <Text style={Styles.modalLabel}>{t('Reason')}</Text>
                                 <TextInput
                                     style={Styles.modalInput}
                                     placeholder="Explain why"
@@ -461,7 +465,7 @@ const VideoDetailsScreen = ({ navigation, route }: any) => {
 
                         <View style={Styles.modalButtonRow}>
                             <TouchableOpacity style={Styles.modalCancelButton} onPress={() => setStatusModalVisible(false)}>
-                                <Text style={Styles.modalCancelText}>Cancel</Text>
+                                <Text style={Styles.modalCancelText}>{t('Cancel')}</Text>
                             </TouchableOpacity>
                             <TouchableOpacity
                                 style={[
@@ -471,7 +475,7 @@ const VideoDetailsScreen = ({ navigation, route }: any) => {
                                 onPress={applyStatusChange}
                                 disabled={statusChoice === 'wont_fix' && !wontFixReason.trim()}
                             >
-                                <Text style={Styles.modalSaveText}>Save</Text>
+                                <Text style={Styles.modalSaveText}>{t('Save')}</Text>
                             </TouchableOpacity>
                         </View>
                     </View>

@@ -4,12 +4,16 @@ import SizeBox from '../../constants/SizeBox';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import FastImage from 'react-native-fast-image';
 import Images from '../../constants/Images';
-import Colors from '../../constants/Colors';
-import Styles from './CompleteAthleteDetailsStyles';
+import { createStyles } from './CompleteAthleteDetailsStyles';
 import { ArrowLeft2, ArrowRight, User, Global, Building, ArrowDown2 } from 'iconsax-react-nativejs';
+import { useTheme } from '../../context/ThemeContext';
+import { useTranslation } from 'react-i18next';
 
 const CompleteAthleteDetailsScreen = ({ navigation }: any) => {
     const insets = useSafeAreaInsets();
+    const { colors } = useTheme();
+    const Styles = createStyles(colors);
+    const { t } = useTranslation();
     const [chestNumber, setChestNumber] = useState('');
     const [website, setWebsite] = useState('');
     const [runningClub, setRunningClub] = useState('');
@@ -21,7 +25,7 @@ const CompleteAthleteDetailsScreen = ({ navigation }: any) => {
             {/* Header */}
             <View style={Styles.header}>
                 <TouchableOpacity style={Styles.headerButton} onPress={() => navigation.goBack()}>
-                    <ArrowLeft2 size={24} color={Colors.primaryColor} variant="Linear" />
+                    <ArrowLeft2 size={24} color={colors.primaryColor} variant="Linear" />
                 </TouchableOpacity>
             </View>
 
@@ -33,21 +37,21 @@ const CompleteAthleteDetailsScreen = ({ navigation }: any) => {
 
                 {/* Title Section */}
                 <View style={Styles.titleSection}>
-                    <Text style={Styles.title}>Complete Your Athlete Details</Text>
-                    <Text style={Styles.subtitle}>Add your information and club details</Text>
+                    <Text style={Styles.title}>{t('Complete your athlete details')}</Text>
+                    <Text style={Styles.subtitle}>{t('Add your information and club details')}</Text>
                 </View>
 
                 {/* Form Fields */}
                 <View style={Styles.formContainer}>
                     {/* Chest Number */}
                     <View style={Styles.inputGroup}>
-                        <Text style={Styles.inputLabel}>Chest Number</Text>
+                        <Text style={Styles.inputLabel}>{t('Chest number')}</Text>
                         <View style={Styles.inputContainer}>
-                            <User size={24} color={Colors.primaryColor} variant="Linear" />
+                            <User size={24} color={colors.primaryColor} variant="Linear" />
                             <TextInput
                                 style={Styles.textInput}
-                                placeholder="Enter Chest Number"
-                                placeholderTextColor="#777777"
+                                placeholder={t('Enter chest number')}
+                                placeholderTextColor={colors.grayColor}
                                 value={chestNumber}
                                 onChangeText={setChestNumber}
                             />
@@ -56,13 +60,13 @@ const CompleteAthleteDetailsScreen = ({ navigation }: any) => {
 
                     {/* Website */}
                     <View style={Styles.inputGroup}>
-                        <Text style={Styles.inputLabel}>Website</Text>
+                        <Text style={Styles.inputLabel}>{t('Website')}</Text>
                         <View style={Styles.inputContainer}>
-                            <Global size={24} color={Colors.primaryColor} variant="Linear" />
+                            <Global size={24} color={colors.primaryColor} variant="Linear" />
                             <TextInput
                                 style={Styles.textInput}
-                                placeholder="Enter website link"
-                                placeholderTextColor="#777777"
+                                placeholder={t('Enter website link')}
+                                placeholderTextColor={colors.grayColor}
                                 value={website}
                                 onChangeText={setWebsite}
                                 keyboardType="url"
@@ -73,13 +77,13 @@ const CompleteAthleteDetailsScreen = ({ navigation }: any) => {
 
                     {/* Running Club */}
                     <View style={Styles.inputGroup}>
-                        <Text style={Styles.inputLabel}>Running Club</Text>
+                        <Text style={Styles.inputLabel}>{t('Running club')}</Text>
                         <TouchableOpacity style={Styles.inputContainer}>
-                            <Building size={24} color={Colors.primaryColor} variant="Linear" />
+                            <Building size={24} color={colors.primaryColor} variant="Linear" />
                             <Text style={[Styles.dropdownText, !runningClub && Styles.placeholderText]}>
-                                {runningClub || 'Choose Running Club'}
+                                {runningClub || t('Choose running club')}
                             </Text>
-                            <ArrowDown2 size={24} color="#777777" variant="Linear" />
+                            <ArrowDown2 size={24} color={colors.grayColor} variant="Linear" />
                         </TouchableOpacity>
                     </View>
                 </View>
@@ -91,8 +95,8 @@ const CompleteAthleteDetailsScreen = ({ navigation }: any) => {
                     style={Styles.skipButton}
                     onPress={() => navigation.goBack()}
                 >
-                    <Text style={Styles.skipButtonText}>Skip</Text>
-                    <ArrowRight size={18} color="#9B9F9F" variant="Linear" />
+                    <Text style={Styles.skipButtonText}>{t('Skip')}</Text>
+                    <ArrowRight size={18} color={colors.subTextColor} variant="Linear" />
                 </TouchableOpacity>
 
                 <TouchableOpacity
@@ -102,8 +106,8 @@ const CompleteAthleteDetailsScreen = ({ navigation }: any) => {
                         navigation.navigate('EventsViewAllScreen');
                     }}
                 >
-                    <Text style={Styles.nextButtonText}>Next</Text>
-                    <ArrowRight size={18} color={Colors.whiteColor} variant="Linear" />
+                    <Text style={Styles.nextButtonText}>{t('Next')}</Text>
+                    <ArrowRight size={18} color={colors.pureWhite} variant="Linear" />
                 </TouchableOpacity>
             </View>
         </View>

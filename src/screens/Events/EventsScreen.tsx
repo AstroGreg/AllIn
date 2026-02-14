@@ -1,18 +1,23 @@
 import { View, Text, FlatList, ScrollView } from 'react-native'
 import React, { useState } from 'react'
 import CustomHeader from '../../components/customHeader/CustomHeader'
-import Styles from './EventsStyles'
+import { createStyles } from './EventsStyles'
 import SizeBox from '../../constants/SizeBox'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import CustomSearch from '../../components/customSearch/CustomSearch'
 import TitleContainers from '../Events/components/TitleContainers'
 import FeaturedEvents from '../Events/components/FeaturedEvents'
 import SimilarEvents from '../Events/components/SimilarEvents'
+import { useTheme } from '../../context/ThemeContext'
+import { useTranslation } from 'react-i18next'
 
 const EventsScreen = ({ navigation }: any) => {
 
   const insets = useSafeAreaInsets();
   const [search, setSearch] = useState('');
+  const { colors } = useTheme();
+  const Styles = createStyles(colors);
+  const { t } = useTranslation();
 
   const RenderFeaturedEvents = () => {
     return (
@@ -33,14 +38,14 @@ const EventsScreen = ({ navigation }: any) => {
   return (
     <View style={Styles.mainContainer}>
       <SizeBox height={insets.top} />
-      <CustomHeader title='Events' onBackPress={() => navigation.navigate('BottomTabBar')} onPressSetting={() => navigation.navigate('ProfileSettings')} />
+      <CustomHeader title={t('Events')} onBackPress={() => navigation.navigate('BottomTabBar')} onPressSetting={() => navigation.navigate('ProfileSettings')} />
 
       <ScrollView style={Styles.container} showsVerticalScrollIndicator={false} nestedScrollEnabled={true}>
         <SizeBox height={24} />
-        <CustomSearch value={search} placeholder='Search....' onChangeText={(text) => setSearch(text)} />
+        <CustomSearch value={search} placeholder={t('Search...')} onChangeText={(text) => setSearch(text)} />
         <SizeBox height={24} />
 
-        <TitleContainers title={'Featured events'} onActionPress={() => { }} />
+        <TitleContainers title={t('Featured events')} onActionPress={() => { }} />
         <SizeBox height={16} />
         <FlatList
           data={['', '', '']}
@@ -52,7 +57,7 @@ const EventsScreen = ({ navigation }: any) => {
         />
 
         <SizeBox height={24} />
-        <TitleContainers title={'Similar events'} onActionPress={() => { }} />
+        <TitleContainers title={t('Similar events')} onActionPress={() => { }} />
         <SizeBox height={16} />
         <FlatList
           data={['', '', '']}

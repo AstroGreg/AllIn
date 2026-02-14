@@ -2,13 +2,14 @@ import { View, Text, TouchableOpacity, ScrollView, Switch, Modal, Image, TextInp
 import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import SizeBox from '../../../constants/SizeBox'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import Colors from '../../../constants/Colors'
 import { ArrowLeft2, ArrowRight } from 'iconsax-react-nativejs'
 import Icons from '../../../constants/Icons'
 import Images from '../../../constants/Images'
-import styles from './CompetitionDetailsScreenStyles'
+import { createStyles } from './CompetitionDetailsScreenStyles'
 import { useAuth } from '../../../context/AuthContext'
 import { ApiError, CompetitionMapCheckpoint, CompetitionMapSummary, getCompetitionMapById, getCompetitionMaps, searchEvents, searchFaceByEnrollment, searchMediaByBib, grantFaceRecognitionConsent } from '../../../services/apiGateway'
+import { useTheme } from '../../../context/ThemeContext'
+import { useTranslation } from 'react-i18next'
 
 interface EventCategory {
     id: number;
@@ -66,6 +67,9 @@ const FALLBACK_COURSES: Course[] = [
 const CompetitionDetailsScreen = ({ navigation, route }: any) => {
     const insets = useSafeAreaInsets();
     const { apiAccessToken, userProfile } = useAuth();
+    const { colors } = useTheme();
+    const styles = createStyles(colors);
+    const { t } = useTranslation();
     const [selectedTab, setSelectedTab] = useState<'track' | 'field'>('track');
     const [showRelevantOnly, setShowRelevantOnly] = useState(false);
     const [selectedCourseId, setSelectedCourseId] = useState('course-10k');
@@ -307,7 +311,7 @@ const CompetitionDetailsScreen = ({ navigation, route }: any) => {
                     label: 'default',
                     limit: 600,
                     top: 100,
-                });
+                    });
                 const results = Array.isArray(res?.results) ? res.results : [];
                 addResults(results, 'face');
             } catch (e: any) {
@@ -370,9 +374,9 @@ const CompetitionDetailsScreen = ({ navigation, route }: any) => {
             {/* Header */}
             <View style={styles.header}>
                 <TouchableOpacity style={styles.headerButton} onPress={() => navigation.goBack()}>
-                    <ArrowLeft2 size={24} color={Colors.primaryColor} variant="Linear" />
+                    <ArrowLeft2 size={24} color={colors.primaryColor} variant="Linear" />
                 </TouchableOpacity>
-                <Text style={styles.headerTitle}>Competitions</Text>
+                <Text style={styles.headerTitle}>{t('Competitions')}</Text>
                 <View style={{ width: 44, height: 44 }} />
             </View>
 
@@ -386,7 +390,7 @@ const CompetitionDetailsScreen = ({ navigation, route }: any) => {
 
                 {competitionType === 'marathon' ? (
                     <>
-                        <Text style={styles.sectionTitle}>Courses</Text>
+                        <Text style={styles.sectionTitle}>{t('Courses')}</Text>
                         <SizeBox height={12} />
                         <View style={styles.courseList}>
                             {visibleCourses.map((course) => {
@@ -406,7 +410,7 @@ const CompetitionDetailsScreen = ({ navigation, route }: any) => {
 
                         <SizeBox height={20} />
 
-                        <Text style={styles.sectionTitle}>Course Map</Text>
+                        <Text style={styles.sectionTitle}>{t('Course map')}</Text>
                         <SizeBox height={12} />
                         <View style={styles.mapCard}>
                             <Image
@@ -451,11 +455,11 @@ const CompetitionDetailsScreen = ({ navigation, route }: any) => {
                                 onPress={() => setSelectedTab('track')}
                             >
                                 <Text style={[styles.tabText, selectedTab === 'track' && styles.tabTextActive]}>
-                                    Track Events
+                                    {t('Track events')}
                                 </Text>
                                 <ArrowRight
                                     size={16}
-                                    color={selectedTab === 'track' ? Colors.mainTextColor : '#9B9F9F'}
+                                    color={selectedTab === 'track' ? colors.mainTextColor : colors.subTextColor}
                                     variant="Linear"
                                 />
                             </TouchableOpacity>
@@ -465,11 +469,11 @@ const CompetitionDetailsScreen = ({ navigation, route }: any) => {
                                 onPress={() => setSelectedTab('field')}
                             >
                                 <Text style={[styles.tabText, selectedTab === 'field' && styles.tabTextActive]}>
-                                    Field Events
+                                    {t('Field events')}
                                 </Text>
                                 <ArrowRight
                                     size={16}
-                                    color={selectedTab === 'field' ? Colors.mainTextColor : '#9B9F9F'}
+                                    color={selectedTab === 'field' ? colors.mainTextColor : colors.subTextColor}
                                     variant="Linear"
                                 />
                             </TouchableOpacity>
@@ -479,14 +483,14 @@ const CompetitionDetailsScreen = ({ navigation, route }: any) => {
 
                         <View style={styles.toggleRow}>
                             <View>
-                                <Text style={styles.toggleLabel}>Relevant</Text>
-                                <Text style={styles.toggleHint}>Show events where we found you</Text>
+                                <Text style={styles.toggleLabel}>{t('Relevant')}</Text>
+                                <Text style={styles.toggleHint}>{t('Show events where we found you')}</Text>
                             </View>
                             <Switch
                                 value={showRelevantOnly}
                                 onValueChange={setShowRelevantOnly}
-                                trackColor={{ false: '#E5E7EB', true: '#2563EB' }}
-                                thumbColor={showRelevantOnly ? '#FFFFFF' : '#FFFFFF'}
+                                trackColor={{ false: colors.lightGrayColor, true: colors.primaryColor }}
+                                thumbColor={colors.pureWhite}
                             />
                         </View>
 
@@ -494,7 +498,7 @@ const CompetitionDetailsScreen = ({ navigation, route }: any) => {
 
                         {/* Videos Section */}
                         <View style={styles.sectionHeader}>
-                            <Text style={styles.sectionTitle}>Videos</Text>
+                            <Text style={styles.sectionTitle}>{t('Videos')}</Text>
                             <View style={styles.sectionIcons}>
                             <TouchableOpacity
                                 style={styles.sectionIconButton}
@@ -527,7 +531,7 @@ const CompetitionDetailsScreen = ({ navigation, route }: any) => {
                             onPress={() => navigation.navigate('AllVideosOfEvents', { eventName: competitionName })}
                         >
                             <Text style={styles.showAllButtonText}>Show All Videos</Text>
-                            <ArrowRight size={18} color={Colors.whiteColor} variant="Linear" />
+                            <ArrowRight size={18} color={colors.pureWhite} variant="Linear" />
                         </TouchableOpacity>
 
                         <SizeBox height={24} />
@@ -543,7 +547,7 @@ const CompetitionDetailsScreen = ({ navigation, route }: any) => {
                             onPress={() => navigation.navigate('AllPhotosOfEvents', { eventName: competitionName })}
                         >
                             <Text style={styles.showAllPhotosButtonText}>Show All Photos</Text>
-                            <ArrowRight size={18} color={Colors.primaryColor} variant="Linear" />
+                            <ArrowRight size={18} color={colors.primaryColor} variant="Linear" />
                         </TouchableOpacity>
 
                         <SizeBox height={insets.bottom > 0 ? insets.bottom + 100 : 120} />
@@ -573,7 +577,7 @@ const CompetitionDetailsScreen = ({ navigation, route }: any) => {
                             }}
                         >
                             <Text style={styles.modalPrimaryButtonText}>Search Photos</Text>
-                            <ArrowRight size={18} color={Colors.whiteColor} variant="Linear" />
+                            <ArrowRight size={18} color={colors.pureWhite} variant="Linear" />
                         </TouchableOpacity>
                         <SizeBox height={12} />
                         <TouchableOpacity
@@ -584,7 +588,7 @@ const CompetitionDetailsScreen = ({ navigation, route }: any) => {
                             }}
                         >
                             <Text style={styles.modalSecondaryButtonText}>Search Videos</Text>
-                            <ArrowRight size={18} color={Colors.primaryColor} variant="Linear" />
+                            <ArrowRight size={18} color={colors.primaryColor} variant="Linear" />
                         </TouchableOpacity>
                         <SizeBox height={12} />
                         <TouchableOpacity
@@ -598,7 +602,7 @@ const CompetitionDetailsScreen = ({ navigation, route }: any) => {
                             }}
                         >
                             <Text style={styles.modalTertiaryButtonText}>AI Search</Text>
-                            <ArrowRight size={18} color={Colors.primaryColor} variant="Linear" />
+                            <ArrowRight size={18} color={colors.primaryColor} variant="Linear" />
                         </TouchableOpacity>
                     </TouchableOpacity>
                 </TouchableOpacity>
@@ -662,11 +666,11 @@ const CompetitionDetailsScreen = ({ navigation, route }: any) => {
                             disabled={quickSearchLoading}
                         >
                             {quickSearchLoading ? (
-                                <ActivityIndicator color={Colors.whiteColor} />
+                                <ActivityIndicator color={colors.pureWhite} />
                             ) : (
                                 <>
                                     <Text style={styles.modalPrimaryButtonText}>Compare now</Text>
-                                    <ArrowRight size={18} color={Colors.whiteColor} variant="Linear" />
+                                    <ArrowRight size={18} color={colors.pureWhite} variant="Linear" />
                                 </>
                             )}
                         </TouchableOpacity>

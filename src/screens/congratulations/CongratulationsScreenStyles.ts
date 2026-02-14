@@ -1,11 +1,11 @@
 import { StyleSheet } from 'react-native';
-import Colors from '../../constants/Colors';
+import { ThemeColors, lightColors } from '../../constants/Theme';
 import Fonts from '../../constants/Fonts';
 
-const Styles = StyleSheet.create({
+export const createStyles = (colors: ThemeColors) => StyleSheet.create({
     mainContainer: {
         flex: 1,
-        backgroundColor: Colors.whiteColor,
+        backgroundColor: colors.whiteColor,
     },
     content: {
         flex: 1,
@@ -23,7 +23,7 @@ const Styles = StyleSheet.create({
     },
     title: {
         ...Fonts.semibold24,
-        color: Colors.mainTextColor,
+        color: colors.mainTextColor,
         textAlign: 'center',
     },
     subtitle: {
@@ -35,7 +35,7 @@ const Styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',
-        backgroundColor: Colors.primaryColor,
+        backgroundColor: colors.primaryColor,
         borderRadius: 10,
         height: 54,
         width: '100%',
@@ -43,8 +43,10 @@ const Styles = StyleSheet.create({
     },
     backHomeButtonText: {
         ...Fonts.medium16,
-        color: Colors.whiteColor,
+        color: colors.whiteColor,
     },
 });
+
+const Styles = createStyles(lightColors);
 
 export default Styles;

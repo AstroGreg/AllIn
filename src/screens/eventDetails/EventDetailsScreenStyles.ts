@@ -1,11 +1,11 @@
 import { StyleSheet } from 'react-native';
-import Colors from '../../constants/Colors';
+import { ThemeColors, lightColors } from '../../constants/Theme';
 import Fonts from '../../constants/Fonts';
 
-const Styles = StyleSheet.create({
+export const createStyles = (colors: ThemeColors) => StyleSheet.create({
     mainContainer: {
         flex: 1,
-        backgroundColor: Colors.whiteColor,
+        backgroundColor: colors.backgroundColor,
     },
     header: {
         flexDirection: 'row',
@@ -14,26 +14,26 @@ const Styles = StyleSheet.create({
         paddingHorizontal: 20,
         paddingVertical: 15,
         borderBottomWidth: 0.5,
-        borderBottomColor: Colors.lightGrayColor,
+        borderBottomColor: colors.lightGrayColor,
     },
     backButton: {
         width: 44,
         height: 44,
         borderRadius: 22,
-        backgroundColor: Colors.btnBackgroundColor,
+        backgroundColor: colors.btnBackgroundColor,
         alignItems: 'center',
         justifyContent: 'center',
     },
     headerTitle: {
         ...Fonts.medium16,
         fontSize: 18,
-        color: Colors.mainTextColor,
+        color: colors.mainTextColor,
     },
     notificationButton: {
         width: 44,
         height: 44,
         borderRadius: 22,
-        backgroundColor: Colors.btnBackgroundColor,
+        backgroundColor: colors.btnBackgroundColor,
         alignItems: 'center',
         justifyContent: 'center',
     },
@@ -63,7 +63,7 @@ const Styles = StyleSheet.create({
     },
     eventTitle: {
         ...Fonts.medium16,
-        color: Colors.mainTextColor,
+        color: colors.mainTextColor,
     },
     locationContainer: {
         flexDirection: 'row',
@@ -72,7 +72,7 @@ const Styles = StyleSheet.create({
     },
     locationText: {
         ...Fonts.regular14,
-        color: '#9B9F9F',
+        color: colors.subTextColor,
     },
     participantsContainer: {
         flexDirection: 'row',
@@ -81,7 +81,7 @@ const Styles = StyleSheet.create({
     },
     participantsText: {
         ...Fonts.regular14,
-        color: '#9B9F9F',
+        color: colors.subTextColor,
     },
     dateContainer: {
         flexDirection: 'row',
@@ -90,12 +90,12 @@ const Styles = StyleSheet.create({
     },
     dateText: {
         ...Fonts.regular14,
-        color: '#9B9F9F',
+        color: colors.subTextColor,
     },
     sectionTitle: {
         ...Fonts.medium16,
         fontSize: 18,
-        color: Colors.mainTextColor,
+        color: colors.mainTextColor,
         marginTop: 16,
     },
     receivedLabel: {
@@ -108,7 +108,7 @@ const Styles = StyleSheet.create({
     },
     receivedText: {
         ...Fonts.regular14,
-        color: '#9B9F9F',
+        color: colors.subTextColor,
     },
     editRequestsGrid: {
         gap: 16,
@@ -119,9 +119,9 @@ const Styles = StyleSheet.create({
     },
     editRequestCard: {
         width: '48%',
-        backgroundColor: Colors.whiteColor,
+        backgroundColor: colors.backgroundColor,
         borderWidth: 0.5,
-        borderColor: '#DEDEDE',
+        borderColor: colors.lightGrayColor,
         borderRadius: 10,
         padding: 16,
         gap: 8,
@@ -146,14 +146,14 @@ const Styles = StyleSheet.create({
     },
     editButtonText: {
         ...Fonts.regular12,
-        color: '#9B9F9F',
+        color: colors.subTextColor,
     },
     editRequestContent: {
         gap: 6,
     },
     editRequestTitle: {
         ...Fonts.medium14,
-        color: Colors.mainTextColor,
+        color: colors.mainTextColor,
     },
     editRequestMeta: {
         flexDirection: 'row',
@@ -167,7 +167,7 @@ const Styles = StyleSheet.create({
     },
     metaText: {
         ...Fonts.regular12,
-        color: '#9B9F9F',
+        color: colors.subTextColor,
     },
     fixedBadge: {
         flexDirection: 'row',
@@ -200,7 +200,7 @@ const Styles = StyleSheet.create({
         color: '#FF8000',
     },
     primaryButton: {
-        backgroundColor: Colors.primaryColor,
+        backgroundColor: colors.primaryColor,
         borderRadius: 10,
         height: 54,
         flexDirection: 'row',
@@ -210,8 +210,9 @@ const Styles = StyleSheet.create({
     },
     primaryButtonText: {
         ...Fonts.medium16,
-        color: Colors.whiteColor,
+        color: colors.whiteColor,
     },
 });
 
+const Styles = createStyles(lightColors);
 export default Styles;

@@ -1,7 +1,7 @@
 import { StyleSheet } from "react-native";
-import Colors from "../../constants/Colors";
+import { ThemeColors } from "../../constants/Theme";
 
-const Styles = StyleSheet.create({
+export const createStyles = (colors: ThemeColors) => StyleSheet.create({
     switchBase: {
         width: 35,
         height: 18,
@@ -10,19 +10,17 @@ const Styles = StyleSheet.create({
         padding: 3,
     },
     switchOn: {
-        backgroundColor: Colors.primaryColor,
+        backgroundColor: colors.primaryColor,
     },
     switchOff: {
-        backgroundColor: "#E5E5E5",
+        backgroundColor: colors.lightGrayColor,
     },
     switchThumb: {
         width: 14,
         height: 14,
         borderRadius: 11,
-        backgroundColor: "#FFFFFF",
+        backgroundColor: colors.pureWhite,
         position: "absolute",
         top: 2,
     },
 });
-
-export default Styles;

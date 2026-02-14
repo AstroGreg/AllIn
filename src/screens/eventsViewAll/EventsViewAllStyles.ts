@@ -1,11 +1,11 @@
 import { StyleSheet } from 'react-native';
-import Colors from '../../constants/Colors';
+import { ThemeColors, lightColors } from '../../constants/Theme';
 import Fonts from '../../constants/Fonts';
 
-const Styles = StyleSheet.create({
+export const createStyles = (colors: ThemeColors) => StyleSheet.create({
     mainContainer: {
         flex: 1,
-        backgroundColor: Colors.whiteColor,
+        backgroundColor: colors.whiteColor,
     },
     header: {
         flexDirection: 'row',
@@ -26,7 +26,7 @@ const Styles = StyleSheet.create({
     },
     headerTitle: {
         ...Fonts.medium18,
-        color: Colors.mainTextColor,
+        color: colors.mainTextColor,
     },
     scrollContent: {
         paddingHorizontal: 20,
@@ -41,7 +41,7 @@ const Styles = StyleSheet.create({
     },
     sectionTitle: {
         ...Fonts.medium18,
-        color: Colors.mainTextColor,
+        color: colors.mainTextColor,
     },
     eventsBadge: {
         backgroundColor: '#F5F5F5',
@@ -62,7 +62,7 @@ const Styles = StyleSheet.create({
 
     // Event Card
     eventCard: {
-        backgroundColor: Colors.whiteColor,
+        backgroundColor: colors.whiteColor,
         borderRadius: 10,
         borderWidth: 0.5,
         borderColor: '#DEDEDE',
@@ -96,13 +96,13 @@ const Styles = StyleSheet.create({
         width: 20,
         height: 20,
         borderRadius: 10,
-        backgroundColor: Colors.primaryColor,
+        backgroundColor: colors.primaryColor,
         alignItems: 'center',
         justifyContent: 'center',
     },
     eventTitle: {
         ...Fonts.medium14,
-        color: Colors.mainTextColor,
+        color: colors.mainTextColor,
     },
     eventInfoRow: {
         flexDirection: 'row',
@@ -156,7 +156,7 @@ const Styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         gap: 6,
-        backgroundColor: Colors.primaryColor,
+        backgroundColor: colors.primaryColor,
         borderRadius: 8,
         paddingHorizontal: 16,
         paddingVertical: 10,
@@ -164,7 +164,7 @@ const Styles = StyleSheet.create({
     },
     eventEditButtonText: {
         ...Fonts.regular14,
-        color: Colors.whiteColor,
+        color: colors.whiteColor,
     },
 
     // Modal Styles
@@ -175,7 +175,7 @@ const Styles = StyleSheet.create({
         alignItems: 'center',
     },
     modalContainer: {
-        backgroundColor: Colors.whiteColor,
+        backgroundColor: colors.whiteColor,
         borderRadius: 16,
         padding: 24,
         width: '85%',
@@ -203,14 +203,14 @@ const Styles = StyleSheet.create({
     },
     modalOptionText: {
         ...Fonts.medium16,
-        color: Colors.mainTextColor,
+        color: colors.mainTextColor,
     },
     modalAddButton: {
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',
         gap: 8,
-        backgroundColor: Colors.primaryColor,
+        backgroundColor: colors.primaryColor,
         borderRadius: 10,
         paddingHorizontal: 20,
         paddingVertical: 16,
@@ -218,8 +218,10 @@ const Styles = StyleSheet.create({
     },
     modalAddButtonText: {
         ...Fonts.medium16,
-        color: Colors.whiteColor,
+        color: colors.whiteColor,
     },
 });
+
+const Styles = createStyles(lightColors);
 
 export default Styles;

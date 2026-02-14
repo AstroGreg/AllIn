@@ -1,9 +1,11 @@
 import { View, Text } from 'react-native'
 import React from 'react'
-import Styles from '../HomeStyles'
+import { createStyles } from '../HomeStyles'
 import Icons from '../../../constants/Icons'
 import SizeBox from '../../../constants/SizeBox'
 import StatusContainer from '../../../components/statusContainer/StatusContainer';
+import { useTheme } from '../../../context/ThemeContext';
+import { useTranslation } from 'react-i18next';
 
 interface RequestContainersProps {
     title?: string;
@@ -20,32 +22,36 @@ const RequestContainers = ({
     status,
     isFixed
 }: RequestContainersProps) => {
+    const { colors } = useTheme();
+    const { t } = useTranslation();
+    const styles = createStyles(colors);
+
     return (
-        <View style={Styles.requestContainer}>
-            <View style={Styles.iconContainer}>
+        <View style={styles.requestContainer}>
+            <View style={styles.iconContainer}>
                 <Icons.ReceiptEdit height={22} width={22} />
             </View>
             <SizeBox width={12} />
             <View style={{}}>
-                <Text style={Styles.eventTitle} numberOfLines={1}>{title}</Text>
+                <Text style={styles.eventTitle} numberOfLines={1}>{title}</Text>
                 <SizeBox height={6} />
-                <View style={Styles.rowCenter}>
-                    <View style={Styles.rowCenter}>
+                <View style={styles.rowCenter}>
+                    <View style={styles.rowCenter}>
                         <Icons.CalendarGrey height={12} width={12} />
                         <SizeBox width={2} />
-                        <Text style={Styles.requestSubText}>{date}</Text>
+                        <Text style={styles.requestSubText}>{date}</Text>
                     </View>
-                    <View style={Styles.dot} />
-                    <View style={Styles.rowCenter}>
+                    <View style={styles.dot} />
+                    <View style={styles.rowCenter}>
                         <Icons.Timer height={12} width={12} />
                         <SizeBox width={2} />
-                        <Text style={Styles.requestSubText}>{time}</Text>
+                        <Text style={styles.requestSubText}>{time}</Text>
                     </View>
-                    <View style={Styles.dot} />
-                    <View style={Styles.rowCenter}>
+                    <View style={styles.dot} />
+                    <View style={styles.rowCenter}>
                         <Icons.Edit height={12} width={12} />
                         <SizeBox width={2} />
-                        <Text style={Styles.requestSubText}>Edit</Text>
+                        <Text style={styles.requestSubText}>{t('Edit')}</Text>
                     </View>
                 </View>
             </View>

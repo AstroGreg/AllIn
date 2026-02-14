@@ -1,15 +1,20 @@
 import { View, Text, TouchableOpacity, FlatList } from 'react-native'
 import React, { useState } from 'react'
-import Styles from '../ViewUserProfileStyles'
+import { createStyles } from '../ViewUserProfileStyles'
 import SizeBox from '../../../constants/SizeBox'
 import CustomHeader from '../../../components/customHeader/CustomHeader'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import PhotosContainer from '../components/PhotosContainer'
 import VideoContainer from '../components/VideoContainer'
 import Images from '../../../constants/Images'
+import { useTheme } from '../../../context/ThemeContext'
+import { useTranslation } from 'react-i18next'
 
 const MediaScreens = ({ navigation }: any) => {
     const insets = useSafeAreaInsets();
+    const { colors } = useTheme();
+    const { t } = useTranslation();
+    const styles = createStyles(colors);
     const [selectedTab, setSelectedTab] = useState(0); // 0 for Photos, 1 for videos
 
     const VideoData = [
@@ -142,19 +147,19 @@ const MediaScreens = ({ navigation }: any) => {
     ]
 
     return (
-        <View style={Styles.mainContainer}>
+        <View style={styles.mainContainer}>
             <SizeBox height={insets.top} />
-            <CustomHeader title='Media' onBackPress={() => navigation.goBack()} onPressSetting={() => navigation.navigate('ProfileSettings')} />
+            <CustomHeader title={t('Media')} onBackPress={() => navigation.goBack()} onPressSetting={() => navigation.navigate('ProfileSettings')} />
 
             <SizeBox height={24} />
 
-            <View style={Styles.toggleBtnContainer}>
-                <TouchableOpacity style={[selectedTab === 0 && Styles.selectedTab, { height: '100%' }]} onPress={() => setSelectedTab(0)}>
-                    <Text style={[Styles.btnText, { textAlign: 'right' }, selectedTab === 0 && Styles.selectedTabText]}>Photos</Text>
+            <View style={styles.toggleBtnContainer}>
+                <TouchableOpacity style={[selectedTab === 0 && styles.selectedTab, { height: '100%' }]} onPress={() => setSelectedTab(0)}>
+                    <Text style={[styles.btnText, { textAlign: 'right' }, selectedTab === 0 && styles.selectedTabText]}>{t('Photos')}</Text>
                 </TouchableOpacity>
                 <SizeBox width={48} />
-                <TouchableOpacity style={[selectedTab === 1 && Styles.selectedTab, { height: '100%' }]} onPress={() => setSelectedTab(1)}>
-                    <Text style={[Styles.btnText, selectedTab === 1 && Styles.selectedTabText, { textAlign: 'left' }]}>Video</Text>
+                <TouchableOpacity style={[selectedTab === 1 && styles.selectedTab, { height: '100%' }]} onPress={() => setSelectedTab(1)}>
+                    <Text style={[styles.btnText, selectedTab === 1 && styles.selectedTabText, { textAlign: 'left' }]}>{t('Video')}</Text>
                 </TouchableOpacity>
             </View>
 
@@ -167,9 +172,9 @@ const MediaScreens = ({ navigation }: any) => {
                             name={item.name}
                             price={item.price}
                             onPressImg={() => navigation.navigate('PhotoDetailScreen', {
-                            eventTitle: 'BK Studenten 2023',
+                            eventTitle: t('BK Studenten 2023'),
                             photo: {
-                                title: `PK 2025 indoor ${item.name}`,
+                                title: t(`PK 2025 indoor ${item.name}`),
                                 views: '122K+',
                                 thumbnail: item.photo,
                             }
@@ -198,7 +203,7 @@ const MediaScreens = ({ navigation }: any) => {
                             timer={item.timer}
                             onPressVideo={() => navigation.navigate('VideoPlayingScreen', {
                             video: {
-                                title: 'BK Studenten 2023',
+                                title: t('BK Studenten 2023'),
                                 subtitle: item.event,
                                 thumbnail: Images.photo1,
                             }

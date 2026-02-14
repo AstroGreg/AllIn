@@ -1,11 +1,11 @@
 import { StyleSheet } from 'react-native';
-import Colors from '../../constants/Colors';
+import { ThemeColors, lightColors } from '../../constants/Theme';
 import Fonts from '../../constants/Fonts';
 
-const Styles = StyleSheet.create({
+export const createStyles = (colors: ThemeColors) => StyleSheet.create({
     mainContainer: {
         flex: 1,
-        backgroundColor: Colors.whiteColor,
+        backgroundColor: colors.whiteColor,
     },
     header: {
         flexDirection: 'row',
@@ -30,7 +30,7 @@ const Styles = StyleSheet.create({
     },
     headerTitle: {
         ...Fonts.medium18,
-        color: Colors.mainTextColor,
+        color: colors.mainTextColor,
     },
     scrollContent: {
         paddingHorizontal: 20,
@@ -38,7 +38,7 @@ const Styles = StyleSheet.create({
     },
     sectionTitle: {
         ...Fonts.medium18,
-        color: Colors.mainTextColor,
+        color: colors.mainTextColor,
         marginBottom: 16,
     },
 
@@ -48,7 +48,7 @@ const Styles = StyleSheet.create({
     },
     inputLabel: {
         ...Fonts.medium14,
-        color: Colors.mainTextColor,
+        color: colors.mainTextColor,
     },
     inputContainer: {
         height: 54,
@@ -63,7 +63,7 @@ const Styles = StyleSheet.create({
     textInput: {
         flex: 1,
         ...Fonts.regular14,
-        color: Colors.mainTextColor,
+        color: colors.mainTextColor,
     },
     placeholderText: {
         color: '#777777',
@@ -73,7 +73,7 @@ const Styles = StyleSheet.create({
     uploadContainer: {
         backgroundColor: '#F7FAFF',
         borderWidth: 1,
-        borderColor: Colors.primaryColor,
+        borderColor: colors.primaryColor,
         borderStyle: 'dashed',
         borderRadius: 10,
         paddingVertical: 32,
@@ -92,7 +92,7 @@ const Styles = StyleSheet.create({
     },
     browseFilesText: {
         ...Fonts.medium14,
-        color: Colors.primaryColor,
+        color: colors.primaryColor,
     },
 
     // Bottom Container
@@ -123,7 +123,7 @@ const Styles = StyleSheet.create({
         flex: 1,
         height: 54,
         borderRadius: 10,
-        backgroundColor: Colors.primaryColor,
+        backgroundColor: colors.primaryColor,
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',
@@ -134,8 +134,10 @@ const Styles = StyleSheet.create({
     },
     saveButtonText: {
         ...Fonts.medium16,
-        color: Colors.whiteColor,
+        color: colors.whiteColor,
     },
 });
+
+const Styles = createStyles(lightColors);
 
 export default Styles;

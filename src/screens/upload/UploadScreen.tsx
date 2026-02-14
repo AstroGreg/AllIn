@@ -5,11 +5,13 @@ import SizeBox from '../../constants/SizeBox'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import Icons from '../../constants/Icons'
 import { useTheme } from '../../context/ThemeContext'
+import { useTranslation } from 'react-i18next'
 
 const UploadScreen = ({ navigation }: any) => {
     const insets = useSafeAreaInsets();
     const { colors } = useTheme();
     const Styles = createStyles(colors);
+    const { t } = useTranslation();
 
     const handleUploadAnonymously = () => {
         navigation.navigate('SelectCompetitionScreen', { anonymous: true });
@@ -25,7 +27,7 @@ const UploadScreen = ({ navigation }: any) => {
 
             {/* Header */}
             <View style={Styles.header}>
-                <Text style={Styles.headerTitle}>Upload</Text>
+                <Text style={Styles.headerTitle}>{t('Upload')}</Text>
             </View>
 
             <ScrollView
@@ -36,7 +38,7 @@ const UploadScreen = ({ navigation }: any) => {
                 <View style={Styles.tipCard}>
                     <Icons.LightbulbColorful width={90} height={90} />
                     <SizeBox height={14} />
-                    <Text style={Styles.tipText}>Choose how you want to upload</Text>
+                    <Text style={Styles.tipText}>{t('Choose how you want to upload')}</Text>
                 </View>
 
                 <SizeBox height={16} />
@@ -46,7 +48,7 @@ const UploadScreen = ({ navigation }: any) => {
                     style={Styles.createAccountButton}
                     onPress={handleUpload}
                 >
-                    <Text style={Styles.createAccountButtonText}>Upload</Text>
+                    <Text style={Styles.createAccountButtonText}>{t('Upload')}</Text>
                 </TouchableOpacity>
 
                 <SizeBox height={20} />
@@ -56,7 +58,7 @@ const UploadScreen = ({ navigation }: any) => {
                     style={Styles.anonymousButton}
                     onPress={handleUploadAnonymously}
                 >
-                    <Text style={Styles.anonymousButtonText}>Upload Anonymously</Text>
+                    <Text style={Styles.anonymousButtonText}>{t('Upload anonymously')}</Text>
                 </TouchableOpacity>
 
                 <SizeBox height={insets.bottom > 0 ? insets.bottom + 20 : 40} />

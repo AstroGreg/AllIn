@@ -56,6 +56,7 @@ export interface UserProfile {
     lastName?: string;
     birthDate?: string;
     location?: string;
+    nationality?: string;
 
     // Category selection
     category?: 'find' | 'sell' | 'manage';

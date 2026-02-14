@@ -1,11 +1,11 @@
 import { StyleSheet } from 'react-native';
-import Colors from '../../constants/Colors';
+import { ThemeColors, lightColors } from '../../constants/Theme';
 import Fonts from '../../constants/Fonts';
 
-const Styles = StyleSheet.create({
+export const createStyles = (colors: ThemeColors) => StyleSheet.create({
     mainContainer: {
         flex: 1,
-        backgroundColor: Colors.whiteColor,
+        backgroundColor: colors.backgroundColor,
     },
     header: {
         flexDirection: 'row',
@@ -18,19 +18,19 @@ const Styles = StyleSheet.create({
         width: 44,
         height: 44,
         borderRadius: 22,
-        backgroundColor: '#F5F5F5',
+        backgroundColor: colors.btnBackgroundColor,
         alignItems: 'center',
         justifyContent: 'center',
     },
     headerTitle: {
         ...Fonts.medium18,
-        color: Colors.mainTextColor,
+        color: colors.mainTextColor,
     },
     notificationButton: {
         width: 44,
         height: 44,
         borderRadius: 22,
-        backgroundColor: '#F5F5F5',
+        backgroundColor: colors.btnBackgroundColor,
         alignItems: 'center',
         justifyContent: 'center',
     },
@@ -40,14 +40,14 @@ const Styles = StyleSheet.create({
     },
     sectionTitle: {
         ...Fonts.medium18,
-        color: Colors.mainTextColor,
+        color: colors.mainTextColor,
     },
     detailsCard: {
-        backgroundColor: Colors.whiteColor,
+        backgroundColor: colors.backgroundColor,
         borderRadius: 10,
         padding: 16,
         borderWidth: 0.5,
-        borderColor: '#DEDEDE',
+        borderColor: colors.lightGrayColor,
         gap: 16,
     },
     detailRow: {
@@ -57,15 +57,15 @@ const Styles = StyleSheet.create({
     },
     detailLabel: {
         ...Fonts.regular14,
-        color: '#9B9F9F',
+        color: colors.subTextColor,
     },
     detailValue: {
         ...Fonts.medium14,
-        color: Colors.mainTextColor,
+        color: colors.mainTextColor,
     },
     divider: {
         height: 1,
-        backgroundColor: '#DEDEDE',
+        backgroundColor: colors.lightGrayColor,
     },
     eventChipsContainer: {
         flexDirection: 'row',
@@ -96,31 +96,32 @@ const Styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',
-        backgroundColor: Colors.whiteColor,
+        backgroundColor: colors.backgroundColor,
         borderRadius: 10,
         height: 54,
         gap: 8,
         borderWidth: 0.5,
-        borderColor: '#DEDEDE',
+        borderColor: colors.lightGrayColor,
     },
     cancelButtonText: {
         ...Fonts.medium16,
-        color: '#9B9F9F',
+        color: colors.subTextColor,
     },
     confirmButton: {
         flex: 1,
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',
-        backgroundColor: Colors.primaryColor,
+        backgroundColor: colors.primaryColor,
         borderRadius: 10,
         height: 54,
         gap: 8,
     },
     confirmButtonText: {
         ...Fonts.medium16,
-        color: Colors.whiteColor,
+        color: colors.whiteColor,
     },
 });
 
+const Styles = createStyles(lightColors);
 export default Styles;

@@ -4,14 +4,18 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import FastImage from 'react-native-fast-image';
 import { ArrowLeft2, Eye, MoreCircle, ArrowRight, TickCircle, CloseCircle } from 'iconsax-react-nativejs';
 import LinearGradient from 'react-native-linear-gradient';
-import Styles from './PhotoBuyScreenStyles';
+import { createStyles } from './PhotoBuyScreenStyles';
 import SizeBox from '../../constants/SizeBox';
-import Colors from '../../constants/Colors';
 import Images from '../../constants/Images';
 import SubscriptionModal from '../../components/subscriptionModal/SubscriptionModal';
+import { useTheme } from '../../context/ThemeContext';
+import { useTranslation } from 'react-i18next';
 
 const PhotoBuyScreen = ({ navigation, route }: any) => {
     const insets = useSafeAreaInsets();
+    const { colors } = useTheme();
+    const { t } = useTranslation();
+    const styles = createStyles(colors);
     const [showBuyModal, setShowBuyModal] = useState(false);
     const [showSuccessModal, setShowSuccessModal] = useState(false);
     const [showFailedModal, setShowFailedModal] = useState(false);
@@ -45,35 +49,35 @@ const PhotoBuyScreen = ({ navigation, route }: any) => {
     };
 
     return (
-        <View style={Styles.mainContainer}>
+        <View style={styles.mainContainer}>
             <SizeBox height={insets.top} />
 
             {/* Header */}
-            <View style={Styles.header}>
-                <TouchableOpacity style={Styles.backButton} onPress={() => navigation.goBack()}>
-                    <ArrowLeft2 size={24} color={Colors.mainTextColor} variant="Linear" />
+            <View style={styles.header}>
+                <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
+                    <ArrowLeft2 size={24} color={colors.mainTextColor} variant="Linear" />
                 </TouchableOpacity>
-                <Text style={Styles.headerTitle}>{eventTitle}</Text>
-                <View style={Styles.placeholder} />
+                <Text style={styles.headerTitle}>{eventTitle}</Text>
+                <View style={styles.placeholder} />
             </View>
 
-            <View style={Styles.content}>
+            <View style={styles.content}>
                 {/* Photo Preview */}
-                <View style={Styles.photoContainer}>
+                <View style={styles.photoContainer}>
                     <FastImage
                         source={photo.thumbnail}
-                        style={Styles.photoImage}
+                        style={styles.photoImage}
                         resizeMode="cover"
                     />
 
                     {/* Top Row - Views and More */}
-                    <View style={Styles.topRow}>
-                        <View style={Styles.viewsContainer}>
-                            <Eye size={24} color={Colors.whiteColor} variant="Linear" />
-                            <Text style={Styles.viewsText}>{photo.views}</Text>
+                    <View style={styles.topRow}>
+                        <View style={styles.viewsContainer}>
+                            <Eye size={24} color={colors.pureWhite} variant="Linear" />
+                            <Text style={styles.viewsText}>{photo.views}</Text>
                         </View>
                         <TouchableOpacity>
-                            <MoreCircle size={24} color={Colors.whiteColor} variant="Linear" />
+                            <MoreCircle size={24} color={colors.pureWhite} variant="Linear" />
                         </TouchableOpacity>
                     </View>
 
@@ -81,15 +85,15 @@ const PhotoBuyScreen = ({ navigation, route }: any) => {
                     <LinearGradient
                         colors={['rgba(0,0,0,0)', 'rgba(0,0,0,0)', 'rgba(0,0,0,0.5)']}
                         locations={[0, 0.74, 1]}
-                        style={Styles.gradientOverlay}
+                        style={styles.gradientOverlay}
                     >
-                        <View style={Styles.bottomRow}>
-                            <Text style={Styles.photoTitle}>{photo.title}</Text>
+                        <View style={styles.bottomRow}>
+                            <Text style={styles.photoTitle}>{photo.title}</Text>
                             <TouchableOpacity
-                                style={Styles.buyButton}
+                                style={styles.buyButton}
                                 onPress={() => setShowBuyModal(true)}
                             >
-                                <Text style={Styles.buyButtonText}>Buy</Text>
+                                <Text style={styles.buyButtonText}>{t('Buy')}</Text>
                             </TouchableOpacity>
                         </View>
                     </LinearGradient>
@@ -103,30 +107,30 @@ const PhotoBuyScreen = ({ navigation, route }: any) => {
                 animationType="fade"
                 onRequestClose={() => setShowBuyModal(false)}
             >
-                <View style={Styles.modalOverlay}>
-                    <View style={Styles.modalContainer}>
+                <View style={styles.modalOverlay}>
+                    <View style={styles.modalContainer}>
                         <FastImage
                             source={photo.thumbnail}
-                            style={Styles.modalImage}
+                            style={styles.modalImage}
                             resizeMode="cover"
                         />
-                        <View style={Styles.modalInfoRow}>
-                            <Text style={Styles.modalTitle}>{eventTitle}</Text>
-                            <Text style={Styles.modalPrice}>{photoPrice}</Text>
+                        <View style={styles.modalInfoRow}>
+                            <Text style={styles.modalTitle}>{eventTitle}</Text>
+                            <Text style={styles.modalPrice}>{photoPrice}</Text>
                         </View>
-                        <View style={Styles.modalDivider} />
-                        <View style={Styles.modalButtonsRow}>
+                        <View style={styles.modalDivider} />
+                        <View style={styles.modalButtonsRow}>
                             <TouchableOpacity
-                                style={Styles.cancelButton}
+                                style={styles.cancelButton}
                                 onPress={handleCancel}
                             >
-                                <Text style={Styles.modalButtonText}>Cancel</Text>
+                                <Text style={styles.modalButtonText}>{t('Cancel')}</Text>
                             </TouchableOpacity>
                             <TouchableOpacity
-                                style={Styles.payButton}
+                                style={styles.payButton}
                                 onPress={handlePay}
                             >
-                                <Text style={Styles.modalButtonText}>Pay</Text>
+                                <Text style={styles.modalButtonText}>{t('Pay')}</Text>
                             </TouchableOpacity>
                         </View>
                     </View>
@@ -140,21 +144,21 @@ const PhotoBuyScreen = ({ navigation, route }: any) => {
                 animationType="fade"
                 onRequestClose={() => setShowSuccessModal(false)}
             >
-                <View style={Styles.modalOverlay}>
-                    <View style={Styles.successModalContainer}>
-                        <View style={Styles.successIconContainer}>
+                <View style={styles.modalOverlay}>
+                    <View style={styles.successModalContainer}>
+                        <View style={styles.successIconContainer}>
                             <TickCircle size={50} color="#00BD48" variant="Bold" />
                         </View>
-                        <Text style={Styles.successTitle}>Accepted</Text>
-                        <Text style={Styles.successSubtitle}>
-                            Photo added to your account. Resale is prohibited.
+                        <Text style={styles.successTitle}>{t('Accepted')}</Text>
+                        <Text style={styles.successSubtitle}>
+                            {t('Photo added to your account. Resale is prohibited.')}
                         </Text>
                         <TouchableOpacity
-                            style={Styles.downloadButton}
+                            style={styles.downloadButton}
                             onPress={handleDownload}
                         >
-                            <Text style={Styles.downloadButtonText}>Download</Text>
-                            <ArrowRight size={18} color={Colors.whiteColor} variant="Linear" />
+                            <Text style={styles.downloadButtonText}>{t('Download')}</Text>
+                            <ArrowRight size={18} color={colors.pureWhite} variant="Linear" />
                         </TouchableOpacity>
                     </View>
                 </View>
@@ -167,27 +171,27 @@ const PhotoBuyScreen = ({ navigation, route }: any) => {
                 animationType="fade"
                 onRequestClose={() => setShowFailedModal(false)}
             >
-                <View style={Styles.modalOverlay}>
-                    <View style={Styles.failedModalContainer}>
-                        <View style={Styles.failedIconContainer}>
+                <View style={styles.modalOverlay}>
+                    <View style={styles.failedModalContainer}>
+                        <View style={styles.failedIconContainer}>
                             <CloseCircle size={50} color="#ED5454" variant="Bold" />
                         </View>
-                        <Text style={Styles.failedTitle}>Failed</Text>
-                        <Text style={Styles.failedSubtitle}>
-                            Insufficient balance. Please recharge.
+                        <Text style={styles.failedTitle}>{t('Failed')}</Text>
+                        <Text style={styles.failedSubtitle}>
+                            {t('Insufficient balance. Please recharge.')}
                         </Text>
-                        <View style={Styles.failedButtonsRow}>
+                        <View style={styles.failedButtonsRow}>
                             <TouchableOpacity
-                                style={Styles.failedCancelButton}
+                                style={styles.failedCancelButton}
                                 onPress={() => setShowFailedModal(false)}
                             >
-                                <Text style={Styles.failedButtonText}>Cancel</Text>
+                                <Text style={styles.failedButtonText}>{t('Cancel')}</Text>
                             </TouchableOpacity>
                             <TouchableOpacity
-                                style={Styles.rechargeButton}
+                                style={styles.rechargeButton}
                                 onPress={handleRecharge}
                             >
-                                <Text style={Styles.failedButtonText}>Recharge</Text>
+                                <Text style={styles.failedButtonText}>{t('Recharge')}</Text>
                             </TouchableOpacity>
                         </View>
                     </View>

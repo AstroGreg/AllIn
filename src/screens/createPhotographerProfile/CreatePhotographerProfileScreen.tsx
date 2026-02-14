@@ -4,21 +4,25 @@ import SizeBox from '../../constants/SizeBox';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import FastImage from 'react-native-fast-image';
 import Images from '../../constants/Images';
-import Colors from '../../constants/Colors';
-import Styles from './CreatePhotographerProfileStyles';
+import { createStyles } from './CreatePhotographerProfileStyles';
 import { ArrowRight, User, Global } from 'iconsax-react-nativejs';
 import { useAuth } from '../../context/AuthContext';
+import { useTheme } from '../../context/ThemeContext';
+import { useTranslation } from 'react-i18next';
 
 const CreatePhotographerProfileScreen = ({ navigation }: any) => {
     const insets = useSafeAreaInsets();
     const { updateUserProfile } = useAuth();
+    const { colors } = useTheme();
+    const { t } = useTranslation();
+    const styles = createStyles(colors);
     const [photographerName, setPhotographerName] = useState('');
     const [website, setWebsite] = useState('');
     const [isLoading, setIsLoading] = useState(false);
 
     const handleContinue = async () => {
         if (!photographerName) {
-            Alert.alert('Error', 'Please enter your photographer name');
+            Alert.alert(t('Error'), t('Please enter your photographer name'));
             return;
         }
 
@@ -30,39 +34,39 @@ const CreatePhotographerProfileScreen = ({ navigation }: any) => {
             });
             navigation.navigate('DocumentUploadScreen');
         } catch (err: any) {
-            Alert.alert('Error', 'Failed to save profile. Please try again.');
+            Alert.alert(t('Error'), t('Failed to save profile. Please try again.'));
         } finally {
             setIsLoading(false);
         }
     };
 
     return (
-        <View style={Styles.mainContainer}>
+        <View style={styles.mainContainer}>
             <SizeBox height={insets.top} />
 
-            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={Styles.scrollContent}>
+            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
                 {/* Illustration */}
-                <View style={Styles.illustrationContainer}>
-                    <FastImage source={Images.signup2} style={Styles.illustration} resizeMode="contain" />
+                <View style={styles.illustrationContainer}>
+                    <FastImage source={Images.signup2} style={styles.illustration} resizeMode="contain" />
                 </View>
 
                 {/* Title Section */}
-                <View style={Styles.titleSection}>
-                    <Text style={Styles.title}>Create Photographer Profile</Text>
-                    <Text style={Styles.subtitle}>It only takes a minute to get started—join us now!</Text>
+                <View style={styles.titleSection}>
+                    <Text style={styles.title}>{t('Create Photographer Profile')}</Text>
+                    <Text style={styles.subtitle}>{t('It only takes a minute to get started—join us now!')}</Text>
                 </View>
 
                 {/* Form Fields */}
-                <View style={Styles.formContainer}>
+                <View style={styles.formContainer}>
                     {/* Photographer Name */}
-                    <View style={Styles.inputGroup}>
-                        <Text style={Styles.inputLabel}>Photographer Name</Text>
-                        <View style={Styles.inputContainer}>
-                            <User size={24} color={Colors.primaryColor} variant="Linear" />
+                    <View style={styles.inputGroup}>
+                        <Text style={styles.inputLabel}>{t('Photographer Name')}</Text>
+                        <View style={styles.inputContainer}>
+                            <User size={24} color={colors.primaryColor} variant="Linear" />
                             <TextInput
-                                style={Styles.textInput}
-                                placeholder="Enter Photographer Name"
-                                placeholderTextColor="#777777"
+                                style={styles.textInput}
+                                placeholder={t('Enter Photographer Name')}
+                                placeholderTextColor={colors.grayColor}
                                 value={photographerName}
                                 onChangeText={setPhotographerName}
                             />
@@ -70,14 +74,14 @@ const CreatePhotographerProfileScreen = ({ navigation }: any) => {
                     </View>
 
                     {/* Website */}
-                    <View style={Styles.inputGroup}>
-                        <Text style={Styles.inputLabel}>Website</Text>
-                        <View style={Styles.inputContainer}>
-                            <Global size={24} color={Colors.primaryColor} variant="Linear" />
+                    <View style={styles.inputGroup}>
+                        <Text style={styles.inputLabel}>{t('Website')}</Text>
+                        <View style={styles.inputContainer}>
+                            <Global size={24} color={colors.primaryColor} variant="Linear" />
                             <TextInput
-                                style={Styles.textInput}
-                                placeholder="Enter website link"
-                                placeholderTextColor="#777777"
+                                style={styles.textInput}
+                                placeholder={t('Enter website link')}
+                                placeholderTextColor={colors.grayColor}
                                 value={website}
                                 onChangeText={setWebsite}
                                 keyboardType="url"
@@ -89,16 +93,16 @@ const CreatePhotographerProfileScreen = ({ navigation }: any) => {
 
                 {/* Continue Button */}
                 <TouchableOpacity
-                    style={[Styles.continueButton, isLoading && { opacity: 0.5 }]}
+                    style={[styles.continueButton, isLoading && { opacity: 0.5 }]}
                     onPress={handleContinue}
                     disabled={isLoading}
                 >
                     {isLoading ? (
-                        <ActivityIndicator size="small" color={Colors.whiteColor} />
+                        <ActivityIndicator size="small" color={colors.pureWhite} />
                     ) : (
                         <>
-                            <Text style={Styles.continueButtonText}>Continue</Text>
-                            <ArrowRight size={18} color={Colors.whiteColor} variant="Linear" />
+                            <Text style={styles.continueButtonText}>{t('Continue')}</Text>
+                            <ArrowRight size={18} color={colors.pureWhite} variant="Linear" />
                         </>
                     )}
                 </TouchableOpacity>

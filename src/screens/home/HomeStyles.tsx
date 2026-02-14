@@ -1,5 +1,4 @@
 import { StyleSheet } from "react-native";
-import Colors from "../../constants/Colors";
 import Fonts from "../../constants/Fonts";
 import { ThemeColors, lightColors } from "../../constants/Theme";
 
@@ -41,6 +40,17 @@ export const createStyles = (colors: ThemeColors) => StyleSheet.create({
     headerIconsContainer: {
         flexDirection: 'row',
         alignItems: 'center',
+        gap: 10,
+    },
+    headerIconBtn: {
+        width: 40,
+        height: 40,
+        borderRadius: 20,
+        backgroundColor: colors.btnBackgroundColor,
+        alignItems: 'center',
+        justifyContent: 'center',
+        borderWidth: 0.5,
+        borderColor: colors.lightGrayColor,
     },
     headerTextButton: {
         paddingHorizontal: 14,
@@ -60,7 +70,7 @@ export const createStyles = (colors: ThemeColors) => StyleSheet.create({
     //Home screen
     mainContainer: {
         flex: 1,
-        backgroundColor: colors.pureWhite,
+        backgroundColor: colors.backgroundColor,
     },
     scrollContent: {
         paddingHorizontal: 0,
@@ -192,7 +202,7 @@ export const createStyles = (colors: ThemeColors) => StyleSheet.create({
         backgroundColor: 'transparent',
     },
     sectionOverviewActive: {
-        backgroundColor: '#F2F4F7'
+        backgroundColor: colors.backgroundColor,
     },
     sectionOverviewEmpty: {
         backgroundColor: 'transparent',
@@ -418,22 +428,26 @@ export const createStyles = (colors: ThemeColors) => StyleSheet.create({
 
     // News Feed Card
     newsFeedCard: {
-        backgroundColor: colors.pureWhite,
-        marginBottom: 3,
+        backgroundColor: colors.backgroundColor,
+        marginBottom: 0,
         marginHorizontal: 0,
         borderRadius: 0,
         borderWidth: 0,
+        borderBottomWidth: 6,
+        borderBottomColor: colors.btnBackgroundColor,
         overflow: 'hidden',
     },
     newsFeedCardFull: {
         marginHorizontal: 0,
     },
     newsFeedCardNoBorder: {
-        backgroundColor: colors.pureWhite,
-        marginBottom: 12,
+        backgroundColor: colors.backgroundColor,
+        marginBottom: 0,
         marginHorizontal: 0,
         borderRadius: 0,
         borderWidth: 0,
+        borderBottomWidth: 6,
+        borderBottomColor: colors.btnBackgroundColor,
         overflow: 'hidden',
     },
     newsFeedTitle: {
@@ -452,7 +466,7 @@ export const createStyles = (colors: ThemeColors) => StyleSheet.create({
         height: 360,
         borderRadius: 0,
         overflow: 'hidden',
-        backgroundColor: colors.pureWhite,
+        backgroundColor: colors.cardBackground,
     },
     mediaWrapper: {
         width: '100%',
@@ -690,7 +704,7 @@ export const createStyles = (colors: ThemeColors) => StyleSheet.create({
     },
     videoOverlayPlayer: {
         flex: 1,
-        backgroundColor: Colors.black,
+        backgroundColor: '#000000',
         position: 'relative',
     },
     videoOverlayVideo: {
@@ -740,7 +754,7 @@ export const createStyles = (colors: ThemeColors) => StyleSheet.create({
     sharedVideoWrapper: {
         position: 'absolute',
         overflow: 'hidden',
-        backgroundColor: Colors.black,
+        backgroundColor: '#000000',
     },
     sharedVideoFullscreen: {
         left: 0,

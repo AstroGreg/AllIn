@@ -1,11 +1,11 @@
 import { StyleSheet } from 'react-native';
-import Colors from '../../constants/Colors';
 import Fonts from '../../constants/Fonts';
+import { ThemeColors } from '../../constants/Theme';
 
-const Styles = StyleSheet.create({
+export const createStyles = (colors: ThemeColors) => StyleSheet.create({
     mainContainer: {
         flex: 1,
-        backgroundColor: Colors.whiteColor,
+        backgroundColor: colors.backgroundColor,
     },
     header: {
         flexDirection: 'row',
@@ -14,19 +14,19 @@ const Styles = StyleSheet.create({
         paddingHorizontal: 20,
         paddingVertical: 16,
         borderBottomWidth: 0.5,
-        borderBottomColor: '#DEDEDE',
+        borderBottomColor: colors.lightGrayColor,
     },
     backButton: {
         width: 44,
         height: 44,
         borderRadius: 22,
-        backgroundColor: '#F5F5F5',
+        backgroundColor: colors.btnBackgroundColor,
         alignItems: 'center',
         justifyContent: 'center',
     },
     headerTitle: {
         ...Fonts.medium14,
-        color: Colors.mainTextColor,
+        color: colors.mainTextColor,
     },
     headerSpacer: {
         width: 44,
@@ -48,14 +48,14 @@ const Styles = StyleSheet.create({
     },
     walletLabel: {
         ...Fonts.medium14,
-        color: Colors.mainTextColor,
+        color: colors.mainTextColor,
     },
     walletBalance: {
         ...Fonts.semibold18,
-        color: Colors.mainTextColor,
+        color: colors.mainTextColor,
     },
     rechargeButton: {
-        backgroundColor: Colors.primaryColor,
+        backgroundColor: colors.primaryColor,
         borderRadius: 7,
         paddingHorizontal: 11,
         paddingVertical: 4,
@@ -65,7 +65,7 @@ const Styles = StyleSheet.create({
     },
     rechargeButtonText: {
         ...Fonts.regular14,
-        color: Colors.whiteColor,
+        color: colors.pureWhite,
     },
     photosHeader: {
         flexDirection: 'row',
@@ -74,26 +74,26 @@ const Styles = StyleSheet.create({
     },
     photosLabel: {
         ...Fonts.medium14,
-        color: Colors.mainTextColor,
+        color: colors.mainTextColor,
     },
     downloadAllButton: {
         borderWidth: 0.5,
-        borderColor: Colors.primaryColor,
+        borderColor: colors.primaryColor,
         borderRadius: 7,
         paddingHorizontal: 11,
         paddingVertical: 4,
     },
     downloadAllText: {
         ...Fonts.regular14,
-        color: Colors.primaryColor,
+        color: colors.primaryColor,
     },
     infoCard: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: Colors.whiteColor,
+        backgroundColor: colors.cardBackground,
         borderRadius: 10,
         borderWidth: 0.5,
-        borderColor: '#DEDEDE',
+        borderColor: colors.lightGrayColor,
         paddingHorizontal: 16,
         paddingVertical: 12,
         gap: 12,
@@ -107,15 +107,15 @@ const Styles = StyleSheet.create({
     infoText: {
         flex: 1,
         ...Fonts.regular14,
-        color: '#9B9F9F',
+        color: colors.subTextColor,
         lineHeight: 22,
     },
     mediaCard: {
         width: '100%',
-        backgroundColor: Colors.whiteColor,
+        backgroundColor: colors.cardBackground,
         borderRadius: 10,
         borderWidth: 0.5,
-        borderColor: '#DEDEDE',
+        borderColor: colors.lightGrayColor,
         padding: 12,
         marginBottom: 16,
         flexDirection: 'row',
@@ -130,7 +130,7 @@ const Styles = StyleSheet.create({
         width: 86,
         height: 86,
         borderRadius: 10,
-        backgroundColor: '#F2F4F7',
+        backgroundColor: colors.btnBackgroundColor,
     },
     mediaInfo: {
         flex: 1,
@@ -138,13 +138,11 @@ const Styles = StyleSheet.create({
     },
     mediaTitle: {
         ...Fonts.medium14,
-        color: Colors.mainTextColor,
+        color: colors.mainTextColor,
     },
     mediaMeta: {
         ...Fonts.regular12,
-        color: Colors.grayColor,
+        color: colors.grayColor,
         marginTop: 6,
     },
 });
-
-export default Styles;

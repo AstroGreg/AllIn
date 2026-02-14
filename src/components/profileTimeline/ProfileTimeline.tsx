@@ -35,10 +35,6 @@ type ProfileTimelineProps = {
     onPressItem?: (item: TimelineEntry) => void;
 };
 
-const gradientSets = [
-    ['#EAF1FF', '#FFFFFF'],
-];
-
 const ProfileTimeline = ({
     title = 'Timeline',
     items,
@@ -49,11 +45,22 @@ const ProfileTimeline = ({
 }: ProfileTimelineProps) => {
     const { colors } = useTheme();
     const { width } = useWindowDimensions();
+    const isDark = colors.backgroundColor !== '#FFFFFF';
     const scrollX = useRef(new Animated.Value(0)).current;
     const cardWidth = Math.min(width * 0.78, 340);
     const cardSpacing = 16;
     const snapInterval = cardWidth + cardSpacing;
     const sidePadding = (width - cardWidth) / 2;
+    const gradientSets = useMemo(
+        () =>
+            isDark
+                ? [
+                      ['#0B1220', '#0F172A'],
+                      ['#0B1A2B', '#0E1527'],
+                  ]
+                : [['#EAF1FF', '#FFFFFF']],
+        [isDark],
+    );
 
     const styles = useMemo(
         () =>
@@ -94,8 +101,8 @@ const ProfileTimeline = ({
                     left: 0,
                     right: 0,
                     height: 2,
-                    backgroundColor: colors.lightGrayColor,
-                    opacity: 0.5,
+                    backgroundColor: colors.primaryColor,
+                    opacity: isDark ? 0.45 : 0.25,
                 },
                 scrollContent: {
                     paddingHorizontal: sidePadding,
@@ -106,15 +113,22 @@ const ProfileTimeline = ({
                     width: cardWidth,
                     borderRadius: 20,
                     padding: 16,
-                    borderWidth: 1,
+                    borderWidth: isDark ? 0 : 1,
                     borderColor: colors.lightGrayColor,
                     overflow: 'hidden',
+                    shadowColor: isDark ? '#3C82F6' : '#000000',
+                    shadowOpacity: isDark ? 0.25 : 0.08,
+                    shadowOffset: { width: 0, height: 8 },
+                    shadowRadius: isDark ? 18 : 10,
+                    elevation: isDark ? 6 : 3,
                 },
                 cardInnerWrapper: {
                     borderRadius: 18,
                     overflow: 'hidden',
-                    backgroundColor: colors.whiteColor,
+                    backgroundColor: isDark ? 'rgba(3,4,9,0.85)' : colors.whiteColor,
                     position: 'relative',
+                    borderWidth: isDark ? 1 : 0,
+                    borderColor: isDark ? 'rgba(60,130,246,0.2)' : 'transparent',
                 },
                 cardContent: {
                     padding: 16,
@@ -127,7 +141,7 @@ const ProfileTimeline = ({
                     resizeMode: 'cover',
                 },
                 cardBackgroundOverlay: {
-                    backgroundColor: 'rgba(255,255,255,0.85)',
+                    backgroundColor: isDark ? 'rgba(3,4,9,0.55)' : 'rgba(255,255,255,0.85)',
                     minHeight: 180,
                 },
                 yearBadge: {
@@ -135,9 +149,9 @@ const ProfileTimeline = ({
                     paddingHorizontal: 10,
                     paddingVertical: 6,
                     borderRadius: 999,
-                    backgroundColor: colors.whiteColor,
+                    backgroundColor: isDark ? 'rgba(255,255,255,0.12)' : colors.whiteColor,
                     borderWidth: 1,
-                    borderColor: colors.lightGrayColor,
+                    borderColor: isDark ? 'rgba(255,255,255,0.2)' : colors.lightGrayColor,
                 },
                 yearText: {
                     ...Fonts.medium14,
@@ -159,7 +173,7 @@ const ProfileTimeline = ({
                     paddingHorizontal: 10,
                     paddingVertical: 6,
                     borderRadius: 8,
-                    backgroundColor: '#E7F0FF',
+                    backgroundColor: isDark ? 'rgba(60,130,246,0.2)' : '#E7F0FF',
                 },
                 highlightText: {
                     ...Fonts.medium12,

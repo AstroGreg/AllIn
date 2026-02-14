@@ -1,11 +1,11 @@
 import { StyleSheet } from "react-native";
-import Colors from "../../constants/Colors";
+import { ThemeColors, lightColors } from '../../constants/Theme';
 import Fonts from "../../constants/Fonts";
 
-const Styles = StyleSheet.create({
+export const createStyles = (colors: ThemeColors) => StyleSheet.create({
     mainContainer: {
         flex: 1,
-        backgroundColor: Colors.whiteColor,
+        backgroundColor: colors.whiteColor,
         alignItems: 'center',
         justifyContent: 'center',
         paddingHorizontal: 20
@@ -21,16 +21,18 @@ const Styles = StyleSheet.create({
     screenHeader: {
         ...Fonts.regular24,
         fontWeight: '500',
-        color: Colors.mainTextColor,
+        color: colors.mainTextColor,
         textAlign: 'center'
     },
     subText: {
         ...Fonts.regular16,
         fontWeight: '400',
-        color: Colors.subTextColor,
+        color: colors.subTextColor,
         textAlign: 'center',
         marginHorizontal: 25
     },
 })
+
+const Styles = createStyles(lightColors);
 
 export default Styles;

@@ -9,19 +9,23 @@ import {
     Location,
     Clock,
 } from 'iconsax-react-nativejs';
-import Styles from './VideoEditRequestsScreenStyles';
+import { createStyles } from './VideoEditRequestsScreenStyles';
 import SizeBox from '../../constants/SizeBox';
-import Colors from '../../constants/Colors';
 import Icons from '../../constants/Icons';
 import Images from '../../constants/Images';
 import ShimmerEffect from '../../components/shimmerEffect/ShimmerEffect';
 import { useAuth } from '../../context/AuthContext';
 import { getMediaById } from '../../services/apiGateway';
 import { getApiBaseUrl, getHlsBaseUrl } from '../../constants/RuntimeConfig';
+import { useTheme } from '../../context/ThemeContext';
+import { useTranslation } from 'react-i18next';
 
 const VideoEditRequestsScreen = ({ navigation }: any) => {
     const insets = useSafeAreaInsets();
     const { apiAccessToken } = useAuth();
+    const { colors } = useTheme();
+    const Styles = createStyles(colors);
+    const { t } = useTranslation();
     const [isPlaying, setIsPlaying] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
 
@@ -122,9 +126,9 @@ const VideoEditRequestsScreen = ({ navigation }: any) => {
             {/* Header */}
             <View style={Styles.header}>
                 <TouchableOpacity style={Styles.backButton} onPress={() => navigation.goBack()}>
-                    <ArrowLeft2 size={20} color={Colors.mainTextColor} variant="Linear" />
+                    <ArrowLeft2 size={20} color={colors.mainTextColor} variant="Linear" />
                 </TouchableOpacity>
-                <Text style={Styles.headerTitle}>Video Details</Text>
+                <Text style={Styles.headerTitle}>{t('Video details')}</Text>
                 <View style={{ width: 44, height: 44 }} />
             </View>
 
@@ -179,31 +183,31 @@ const VideoEditRequestsScreen = ({ navigation }: any) => {
                     <View style={Styles.videoInfoRow}>
                         <Text style={Styles.videoTitle}>{videoData.title}</Text>
                         <View style={Styles.locationContainer}>
-                            <Location size={16} color="#9B9F9F" variant="Linear" />
+                            <Location size={16} color={colors.subTextColor} variant="Linear" />
                             <Text style={Styles.locationText}>{videoData.location}</Text>
                         </View>
                     </View>
                     <View style={Styles.videoInfoRow}>
                         <View style={Styles.durationContainer}>
-                            <Clock size={16} color="#9B9F9F" variant="Linear" />
+                            <Clock size={16} color={colors.subTextColor} variant="Linear" />
                             <Text style={Styles.durationText}>{videoData.duration}</Text>
                         </View>
                         <View style={Styles.dateContainer}>
-                            <Calendar size={16} color="#9B9F9F" variant="Linear" />
+                            <Calendar size={16} color={colors.subTextColor} variant="Linear" />
                             <Text style={Styles.dateText}>{videoData.date}</Text>
                         </View>
                     </View>
                 </View>
 
                 {/* Request for Edits Section */}
-                <Text style={Styles.sectionTitle}>Request for Edits</Text>
+                <Text style={Styles.sectionTitle}>{t('Request for edits')}</Text>
                 <SizeBox height={16} />
 
                 {/* Empty State */}
                 <View style={Styles.emptyStateContainer}>
                     <Icons.FileEmptyColorful height={147} width={143} />
                     <SizeBox height={16} />
-                    <Text style={Styles.emptyStateText}>No edit request found</Text>
+                    <Text style={Styles.emptyStateText}>{t('No edit request found')}</Text>
                 </View>
 
                 <SizeBox height={40} />

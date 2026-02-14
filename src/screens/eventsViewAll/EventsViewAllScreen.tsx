@@ -4,12 +4,16 @@ import SizeBox from '../../constants/SizeBox';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import FastImage from 'react-native-fast-image';
 import Images from '../../constants/Images';
-import Colors from '../../constants/Colors';
-import Styles from './EventsViewAllStyles';
+import { createStyles } from './EventsViewAllStyles';
 import { ArrowLeft2, User, Location, Calendar, Camera, VideoPlay, Edit2, CloseCircle, ArrowRight, Add } from 'iconsax-react-nativejs';
+import { useTheme } from '../../context/ThemeContext';
+import { useTranslation } from 'react-i18next';
 
 const EventsViewAllScreen = ({ navigation }: any) => {
     const insets = useSafeAreaInsets();
+    const { colors } = useTheme();
+    const { t } = useTranslation();
+    const styles = createStyles(colors);
     const [modalVisible, setModalVisible] = useState(false);
 
     const events = [
@@ -44,80 +48,80 @@ const EventsViewAllScreen = ({ navigation }: any) => {
     ];
 
     const renderEventCard = (event: any) => (
-        <TouchableOpacity key={event.id} style={Styles.eventCard} onPress={() => setModalVisible(true)} activeOpacity={0.8}>
-            <View style={Styles.eventCardContent}>
-                <View style={Styles.eventImageContainer}>
-                    <FastImage source={event.image} style={Styles.eventImage} resizeMode="cover" />
+        <TouchableOpacity key={event.id} style={styles.eventCard} onPress={() => setModalVisible(true)} activeOpacity={0.8}>
+            <View style={styles.eventCardContent}>
+                <View style={styles.eventImageContainer}>
+                    <FastImage source={event.image} style={styles.eventImage} resizeMode="cover" />
                 </View>
-                <View style={Styles.eventDetails}>
-                    <View style={Styles.eventTitleRow}>
-                        <View style={Styles.eventTitleIcon}>
-                            <Calendar size={14} color={Colors.whiteColor} variant="Linear" />
+                <View style={styles.eventDetails}>
+                    <View style={styles.eventTitleRow}>
+                        <View style={styles.eventTitleIcon}>
+                            <Calendar size={14} color={colors.pureWhite} variant="Linear" />
                         </View>
-                        <Text style={Styles.eventTitle}>{event.title}</Text>
+                        <Text style={styles.eventTitle}>{event.title}</Text>
                     </View>
-                    <View style={Styles.eventInfoRow}>
-                        <Text style={Styles.eventInfoLabel}>Location</Text>
-                        <View style={Styles.eventInfoValue}>
-                            <Location size={16} color="#9B9F9F" variant="Linear" />
-                            <Text style={Styles.eventInfoValueText}>{event.location}</Text>
+                    <View style={styles.eventInfoRow}>
+                        <Text style={styles.eventInfoLabel}>{t('Location')}</Text>
+                        <View style={styles.eventInfoValue}>
+                            <Location size={16} color={colors.subTextColor} variant="Linear" />
+                            <Text style={styles.eventInfoValueText}>{event.location}</Text>
                         </View>
                     </View>
-                    <View style={Styles.eventInfoRow}>
-                        <Text style={Styles.eventInfoLabel}>Date</Text>
-                        <View style={Styles.eventInfoValue}>
-                            <Calendar size={16} color="#9B9F9F" variant="Linear" />
-                            <Text style={Styles.eventInfoValueText}>{event.date}</Text>
+                    <View style={styles.eventInfoRow}>
+                        <Text style={styles.eventInfoLabel}>{t('Date')}</Text>
+                        <View style={styles.eventInfoValue}>
+                            <Calendar size={16} color={colors.subTextColor} variant="Linear" />
+                            <Text style={styles.eventInfoValueText}>{event.date}</Text>
                         </View>
                     </View>
                 </View>
             </View>
-            <View style={Styles.eventDivider} />
-            <View style={Styles.eventActions}>
-                <View style={Styles.eventActionButtons}>
-                    <TouchableOpacity style={Styles.eventActionButton}>
-                        <Text style={Styles.eventActionButtonText}>Photograph</Text>
-                        <Camera size={18} color="#9B9F9F" variant="Linear" />
+            <View style={styles.eventDivider} />
+            <View style={styles.eventActions}>
+                <View style={styles.eventActionButtons}>
+                    <TouchableOpacity style={styles.eventActionButton}>
+                        <Text style={styles.eventActionButtonText}>{t('Photograph')}</Text>
+                        <Camera size={18} color={colors.subTextColor} variant="Linear" />
                     </TouchableOpacity>
-                    <TouchableOpacity style={Styles.eventActionButton}>
-                        <Text style={Styles.eventActionButtonText}>Videos</Text>
-                        <VideoPlay size={18} color="#9B9F9F" variant="Linear" />
+                    <TouchableOpacity style={styles.eventActionButton}>
+                        <Text style={styles.eventActionButtonText}>{t('Videos')}</Text>
+                        <VideoPlay size={18} color={colors.subTextColor} variant="Linear" />
                     </TouchableOpacity>
                 </View>
-                <TouchableOpacity style={Styles.eventEditButton}>
-                    <Text style={Styles.eventEditButtonText}>Edit</Text>
-                    <Edit2 size={18} color={Colors.whiteColor} variant="Linear" />
+                <TouchableOpacity style={styles.eventEditButton}>
+                    <Text style={styles.eventEditButtonText}>{t('Edit')}</Text>
+                    <Edit2 size={18} color={colors.pureWhite} variant="Linear" />
                 </TouchableOpacity>
             </View>
         </TouchableOpacity>
     );
 
     return (
-        <View style={Styles.mainContainer}>
+        <View style={styles.mainContainer}>
             <SizeBox height={insets.top} />
 
             {/* Header */}
-            <View style={Styles.header}>
-                <TouchableOpacity style={Styles.headerButton} onPress={() => navigation.goBack()}>
-                    <ArrowLeft2 size={24} color={Colors.primaryColor} variant="Linear" />
+            <View style={styles.header}>
+                <TouchableOpacity style={styles.headerButton} onPress={() => navigation.goBack()}>
+                    <ArrowLeft2 size={24} color={colors.primaryColor} variant="Linear" />
                 </TouchableOpacity>
-                <Text style={Styles.headerTitle}>Events</Text>
-                <TouchableOpacity style={Styles.headerButton}>
-                    <User size={24} color={Colors.primaryColor} variant="Linear" />
+                <Text style={styles.headerTitle}>{t('Events')}</Text>
+                <TouchableOpacity style={styles.headerButton}>
+                    <User size={24} color={colors.primaryColor} variant="Linear" />
                 </TouchableOpacity>
             </View>
 
-            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={Styles.scrollContent}>
+            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
                 {/* Section Header */}
-                <View style={Styles.sectionHeader}>
-                    <Text style={Styles.sectionTitle}>Events</Text>
-                    <View style={Styles.eventsBadge}>
-                        <Text style={Styles.eventsBadgeText}>430 Events Available</Text>
+                <View style={styles.sectionHeader}>
+                    <Text style={styles.sectionTitle}>{t('Events')}</Text>
+                    <View style={styles.eventsBadge}>
+                        <Text style={styles.eventsBadgeText}>{t('430 Events Available')}</Text>
                     </View>
                 </View>
 
                 {/* Events List */}
-                <View style={Styles.eventsListContainer}>
+                <View style={styles.eventsListContainer}>
                     {events.map(renderEventCard)}
                 </View>
 
@@ -131,43 +135,43 @@ const EventsViewAllScreen = ({ navigation }: any) => {
                 visible={modalVisible}
                 onRequestClose={() => setModalVisible(false)}
             >
-                <View style={Styles.modalOverlay}>
-                    <View style={Styles.modalContainer}>
-                        <TouchableOpacity style={Styles.modalCloseButton} onPress={() => setModalVisible(false)}>
-                            <CloseCircle size={28} color="#9B9F9F" variant="Bold" />
+                <View style={styles.modalOverlay}>
+                    <View style={styles.modalContainer}>
+                        <TouchableOpacity style={styles.modalCloseButton} onPress={() => setModalVisible(false)}>
+                            <CloseCircle size={28} color={colors.subTextColor} variant="Bold" />
                         </TouchableOpacity>
 
-                        <View style={Styles.modalOptionsContainer}>
-                            <TouchableOpacity style={Styles.modalOptionButton} onPress={() => {
+                        <View style={styles.modalOptionsContainer}>
+                            <TouchableOpacity style={styles.modalOptionButton} onPress={() => {
                                 setModalVisible(false);
                                 navigation.navigate('ViewUserProfileScreen');
                             }}>
-                                <Text style={Styles.modalOptionText}>Standaard</Text>
-                                <ArrowRight size={20} color="#9B9F9F" variant="Linear" />
+                                <Text style={styles.modalOptionText}>{t('Standard')}</Text>
+                                <ArrowRight size={20} color={colors.subTextColor} variant="Linear" />
                             </TouchableOpacity>
 
-                            <TouchableOpacity style={Styles.modalOptionButton} onPress={() => {
+                            <TouchableOpacity style={styles.modalOptionButton} onPress={() => {
                                 setModalVisible(false);
                                 navigation.navigate('ViewUserProfileScreen');
                             }}>
-                                <Text style={Styles.modalOptionText}>Photographer</Text>
-                                <ArrowRight size={20} color="#9B9F9F" variant="Linear" />
+                                <Text style={styles.modalOptionText}>{t('Photographer')}</Text>
+                                <ArrowRight size={20} color={colors.subTextColor} variant="Linear" />
                             </TouchableOpacity>
 
-                            <TouchableOpacity style={Styles.modalOptionButton} onPress={() => {
+                            <TouchableOpacity style={styles.modalOptionButton} onPress={() => {
                                 setModalVisible(false);
                                 navigation.navigate('GroupProfileScreen');
                             }}>
-                                <Text style={Styles.modalOptionText}>Group</Text>
-                                <ArrowRight size={20} color="#9B9F9F" variant="Linear" />
+                                <Text style={styles.modalOptionText}>{t('Group')}</Text>
+                                <ArrowRight size={20} color={colors.subTextColor} variant="Linear" />
                             </TouchableOpacity>
 
-                            <TouchableOpacity style={Styles.modalAddButton} onPress={() => {
+                            <TouchableOpacity style={styles.modalAddButton} onPress={() => {
                                 setModalVisible(false);
                                 navigation.navigate('SelectCategoryScreen');
                             }}>
-                                <Text style={Styles.modalAddButtonText}>Add New</Text>
-                                <Add size={20} color={Colors.whiteColor} variant="Linear" />
+                                <Text style={styles.modalAddButtonText}>{t('Add New')}</Text>
+                                <Add size={20} color={colors.pureWhite} variant="Linear" />
                             </TouchableOpacity>
                         </View>
                     </View>

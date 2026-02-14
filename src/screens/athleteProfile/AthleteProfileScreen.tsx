@@ -1,12 +1,11 @@
 import { View, Text, TouchableOpacity, ScrollView, Image } from 'react-native';
 import React, { useState } from 'react';
-import Styles from './AthleteProfileStyles';
+import { createStyles } from './AthleteProfileStyles';
 import SizeBox from '../../constants/SizeBox';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import FastImage from 'react-native-fast-image';
 import Images from '../../constants/Images';
 import Icons from '../../constants/Icons';
-import Colors from '../../constants/Colors';
 import {
     ArrowLeft2,
     User,
@@ -15,9 +14,14 @@ import {
     Calendar,
 } from 'iconsax-react-nativejs';
 import ShareModal from '../../components/shareModal/ShareModal';
+import { useTheme } from '../../context/ThemeContext';
+import { useTranslation } from 'react-i18next';
 
 const AthleteProfileScreen = ({ navigation, route }: any) => {
     const insets = useSafeAreaInsets();
+    const { colors } = useTheme();
+    const { t } = useTranslation();
+    const styles = createStyles(colors);
     const [activeTab, setActiveTab] = useState('athletes');
     const [showShareModal, setShowShareModal] = useState(false);
     const athlete = route?.params?.athlete;
@@ -30,274 +34,274 @@ const AthleteProfileScreen = ({ navigation, route }: any) => {
     ];
 
     const coaches = [
-        { id: 1, name: 'Coach Anderson', specialty: 'Track and Field', avatar: Images.profile1 },
+        { id: 1, name: 'Coach Anderson', specialty: t('Track and Field'), avatar: Images.profile1 },
         { id: 2, name: 'Coach Williams', specialty: 'Boxing', avatar: Images.profile1 },
-        { id: 3, name: 'Coach Martinez', specialty: 'Cross Country', avatar: Images.profile1 },
+        { id: 3, name: 'Coach Martinez', specialty: t('Cross Country'), avatar: Images.profile1 },
     ];
 
     const events = [
-        { id: 1, title: 'City Run Marathon', distance: '800m heat 1', location: 'Dhaka', date: '27/05/2025', image: Images.photo1 },
+        { id: 1, title: t('City Run Marathon'), distance: t('800m heat 1'), location: t('Dhaka'), date: '27/05/2025', image: Images.photo1 },
         { id: 2, title: 'National Championship', distance: '400m finals', location: 'New York', date: '15/06/2025', image: Images.photo1 },
     ];
 
     const posts = [
         {
             id: 1,
-            title: 'IFAM Outdoor Oordegem',
+            title: t('IFAM Outdoor Oordegem'),
             date: '09/08/2025',
-            description: "Elias took part in the 800m and achieved a time close to his best 1'50\"99. For Lode it was a disappointing first half of his match DNF in the 5000m",
+            description: t("Elias took part in the 800m and achieved a time close to his best 1'50\"99. For Lode it was a disappointing first half of his match DNF in the 5000m"),
             image: Images.photo1,
         },
         {
             id: 2,
-            title: 'BK 10000m AC Duffel',
+            title: t('BK 10000m AC Duffel'),
             date: '09/06/2025',
-            description: "This race meant everything to me. Running the European Championships on home soil, with my family and friends lining",
+            description: t('This race meant everything to me. Running the European Championships on home soil, with my family and friends lining'),
             image: Images.photo3,
         },
     ];
 
     const renderAthleteCard = (athleteItem: any) => (
-        <View key={athleteItem.id} style={Styles.clubAthleteCard}>
-            <FastImage source={athleteItem.avatar} style={Styles.clubAthleteAvatar} resizeMode="cover" />
-            <View style={Styles.clubAthleteInfo}>
-                <Text style={Styles.clubAthleteName}>{athleteItem.name}</Text>
-                <Text style={Styles.clubAthleteUsername}>{athleteItem.username}</Text>
+        <View key={athleteItem.id} style={styles.clubAthleteCard}>
+            <FastImage source={athleteItem.avatar} style={styles.clubAthleteAvatar} resizeMode="cover" />
+            <View style={styles.clubAthleteInfo}>
+                <Text style={styles.clubAthleteName}>{athleteItem.name}</Text>
+                <Text style={styles.clubAthleteUsername}>{athleteItem.username}</Text>
             </View>
             <TouchableOpacity
                 style={[
-                    Styles.followButton,
-                    athleteItem.isFollowing && Styles.followingButton
+                    styles.followButton,
+                    athleteItem.isFollowing && styles.followingButton
                 ]}
             >
                 <Text style={[
-                    Styles.followButtonText,
-                    athleteItem.isFollowing && Styles.followingButtonText
+                    styles.followButtonText,
+                    athleteItem.isFollowing && styles.followingButtonText
                 ]}>
-                    {athleteItem.isFollowing ? 'Following' : 'Follow'}
+                    {athleteItem.isFollowing ? t('Following') : t('Follow')}
                 </Text>
             </TouchableOpacity>
         </View>
     );
 
     const renderCoachCard = (coach: any) => (
-        <View key={coach.id} style={Styles.coachCard}>
-            <FastImage source={coach.avatar} style={Styles.coachAvatar} resizeMode="cover" />
-            <View style={Styles.coachInfo}>
-                <Text style={Styles.coachName}>{coach.name}</Text>
-                <Text style={Styles.coachSpecialty}>{coach.specialty}</Text>
+        <View key={coach.id} style={styles.coachCard}>
+            <FastImage source={coach.avatar} style={styles.coachAvatar} resizeMode="cover" />
+            <View style={styles.coachInfo}>
+                <Text style={styles.coachName}>{coach.name}</Text>
+                <Text style={styles.coachSpecialty}>{coach.specialty}</Text>
             </View>
         </View>
     );
 
     const renderEventCard = (event: any) => (
-        <View key={event.id} style={Styles.eventCard}>
-            <FastImage source={event.image} style={Styles.eventImage} resizeMode="cover" />
-            <View style={Styles.eventInfo}>
-                <Text style={Styles.eventTitle}>{event.title}</Text>
-                <View style={Styles.eventDetailRow}>
+        <View key={event.id} style={styles.eventCard}>
+            <FastImage source={event.image} style={styles.eventImage} resizeMode="cover" />
+            <View style={styles.eventInfo}>
+                <Text style={styles.eventTitle}>{event.title}</Text>
+                <View style={styles.eventDetailRow}>
                     <Icons.Map width={14} height={14} />
-                    <Text style={Styles.eventDetailText}>{event.distance}</Text>
+                    <Text style={styles.eventDetailText}>{event.distance}</Text>
                 </View>
-                <View style={Styles.eventDetailRow}>
-                    <Location size={14} color="#9B9F9F" variant="Linear" />
-                    <Text style={Styles.eventDetailText}>{event.location}</Text>
+                <View style={styles.eventDetailRow}>
+                    <Location size={14} color={colors.subTextColor} variant="Linear" />
+                    <Text style={styles.eventDetailText}>{event.location}</Text>
                 </View>
-                <View style={Styles.eventDetailRow}>
-                    <Calendar size={14} color="#9B9F9F" variant="Linear" />
-                    <Text style={Styles.eventDetailText}>{event.date}</Text>
+                <View style={styles.eventDetailRow}>
+                    <Calendar size={14} color={colors.subTextColor} variant="Linear" />
+                    <Text style={styles.eventDetailText}>{event.date}</Text>
                 </View>
             </View>
         </View>
     );
 
     const renderPostCard = (post: any) => (
-        <TouchableOpacity key={post.id} style={Styles.postCard} activeOpacity={0.8}>
-            <View style={Styles.postImageContainer}>
-                <FastImage source={post.image} style={Styles.postImage} resizeMode="cover" />
+        <TouchableOpacity key={post.id} style={styles.postCard} activeOpacity={0.8}>
+            <View style={styles.postImageContainer}>
+                <FastImage source={post.image} style={styles.postImage} resizeMode="cover" />
             </View>
-            <View style={Styles.postInfoBar}>
-                <Text style={Styles.postTitle}>{post.title}</Text>
-                <Text style={Styles.postDate}>{post.date}</Text>
-            </View>
-            <Text style={Styles.postDescription} numberOfLines={3}>{post.description}</Text>
-            <TouchableOpacity style={Styles.sharePostButton}>
-                <Text style={Styles.sharePostButtonText}>Share</Text>
-                <Image source={Icons.ShareBlue} style={{ width: 18, height: 18, tintColor: Colors.whiteColor }} />
-            </TouchableOpacity>
+            <View style={styles.postInfoBar}>
+                <Text style={styles.postTitle}>{post.title}</Text>
+            <Text style={styles.postDate}>{post.date}</Text>
+        </View>
+        <Text style={styles.postDescription} numberOfLines={3}>{post.description}</Text>
+        <TouchableOpacity style={styles.sharePostButton}>
+            <Text style={styles.sharePostButtonText}>{t('Share')}</Text>
+            <Image source={Icons.ShareBlue} style={{ width: 18, height: 18, tintColor: colors.pureWhite }} />
         </TouchableOpacity>
+    </TouchableOpacity>
     );
 
     return (
-        <View style={Styles.mainContainer}>
+        <View style={styles.mainContainer}>
             <SizeBox height={insets.top} />
 
             {/* Header */}
-            <View style={Styles.header}>
-                <TouchableOpacity style={Styles.headerButton} onPress={() => navigation.goBack()}>
-                    <ArrowLeft2 size={24} color={Colors.primaryColor} variant="Linear" />
+            <View style={styles.header}>
+                <TouchableOpacity style={styles.headerButton} onPress={() => navigation.goBack()}>
+                    <ArrowLeft2 size={24} color={colors.primaryColor} variant="Linear" />
                 </TouchableOpacity>
-                <Text style={Styles.headerTitle}>Profile</Text>
-                <View style={Styles.headerButtonPlaceholder} />
+                <Text style={styles.headerTitle}>{t('Profile')}</Text>
+                <View style={styles.headerButtonPlaceholder} />
             </View>
 
-            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={Styles.scrollContent}>
+            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
                 {/* Profile Card */}
-                <View style={Styles.profileCard}>
+                <View style={styles.profileCard}>
                     {/* Share Button */}
-                    <TouchableOpacity style={Styles.shareButton} onPress={() => setShowShareModal(true)}>
-                        <Text style={Styles.shareButtonText}>Share</Text>
+                    <TouchableOpacity style={styles.shareButton} onPress={() => setShowShareModal(true)}>
+                        <Text style={styles.shareButtonText}>{t('Share')}</Text>
                         <Image source={Icons.ShareGray} style={{ width: 18, height: 18 }} />
                     </TouchableOpacity>
 
                     {/* Profile Image */}
-                    <View style={Styles.profileImageContainer}>
-                        <FastImage source={athlete?.avatar || Images.profile1} style={Styles.profileImage} resizeMode="cover" />
+                    <View style={styles.profileImageContainer}>
+                        <FastImage source={athlete?.avatar || Images.profile1} style={styles.profileImage} resizeMode="cover" />
                     </View>
 
                     {/* Name */}
-                    <View style={Styles.nameContainer}>
-                        <Text style={Styles.userName}>{athlete?.name || 'James Ray'}</Text>
+                    <View style={styles.nameContainer}>
+                        <Text style={styles.userName}>{athlete?.name || t('James Ray')}</Text>
                         <Icons.BlueTick width={16} height={16} />
                     </View>
 
                     {/* Handle */}
-                    <Text style={Styles.userHandle}>@{athlete?.username || 'jamesray2'}</Text>
+                    <Text style={styles.userHandle}>@{athlete?.username || 'jamesray2'}</Text>
 
                     {/* Stats Row */}
-                    <View style={Styles.statsRow}>
-                        <View style={Styles.statItem}>
-                            <Text style={Styles.statValue}>1.2K</Text>
-                            <Text style={Styles.statLabel}>Posts</Text>
+                    <View style={styles.statsRow}>
+                        <View style={styles.statItem}>
+                            <Text style={styles.statValue}>1.2K</Text>
+                            <Text style={styles.statLabel}>{t('Posts')}</Text>
                         </View>
-                        <View style={Styles.statDivider} />
-                        <View style={Styles.statItem}>
-                            <Text style={Styles.statValue}>45.8K</Text>
-                            <Text style={Styles.statLabel}>Followers</Text>
+                        <View style={styles.statDivider} />
+                        <View style={styles.statItem}>
+                            <Text style={styles.statValue}>45.8K</Text>
+                            <Text style={styles.statLabel}>{t('Followers')}</Text>
                         </View>
                     </View>
 
                     {/* Categories */}
-                    <View style={Styles.categoriesContainer}>
-                        <Text style={Styles.categoryText}>Track and Field</Text>
-                        <Text style={Styles.categorySeparator}>|</Text>
-                        <Text style={Styles.categoryText}>Boxing</Text>
-                        <Text style={Styles.categorySeparator}>|</Text>
-                        <Text style={Styles.categoryText}>Cross Country</Text>
+                    <View style={styles.categoriesContainer}>
+                        <Text style={styles.categoryText}>{t('Track and Field')}</Text>
+                        <Text style={styles.categorySeparator}>|</Text>
+                        <Text style={styles.categoryText}>{t('Boxing')}</Text>
+                        <Text style={styles.categorySeparator}>|</Text>
+                        <Text style={styles.categoryText}>{t('Cross Country')}</Text>
                     </View>
 
                     {/* Additional Stats */}
-                    <View style={Styles.additionalStatsRow}>
-                        <View style={Styles.additionalStatItem}>
-                            <Text style={Styles.additionalStatValue}>3</Text>
-                            <Text style={Styles.additionalStatLabel}>Coaches</Text>
+                    <View style={styles.additionalStatsRow}>
+                        <View style={styles.additionalStatItem}>
+                            <Text style={styles.additionalStatValue}>3</Text>
+                            <Text style={styles.additionalStatLabel}>{t('Coaches')}</Text>
                         </View>
-                        <View style={Styles.additionalStatItem}>
-                            <Text style={Styles.additionalStatValue}>17</Text>
-                            <Text style={Styles.additionalStatLabel}>Athletes</Text>
+                        <View style={styles.additionalStatItem}>
+                            <Text style={styles.additionalStatValue}>17</Text>
+                            <Text style={styles.additionalStatLabel}>{t('Athletes')}</Text>
                         </View>
-                        <View style={Styles.additionalStatItem}>
-                            <Text style={Styles.additionalStatValue}>4</Text>
-                            <Text style={Styles.additionalStatLabel}>Upcoming Events</Text>
+                        <View style={styles.additionalStatItem}>
+                            <Text style={styles.additionalStatValue}>4</Text>
+                            <Text style={styles.additionalStatLabel}>{t('Upcoming Events')}</Text>
                         </View>
                     </View>
 
                     {/* Bio Section */}
-                    <View style={Styles.bioSection}>
-                        <Text style={Styles.bioTitle}>Bio</Text>
-                        <Text style={Styles.bioText}>
-                            Passionate athlete dedicated to pushing limits and achieving excellence in track and field events.
+                    <View style={styles.bioSection}>
+                        <Text style={styles.bioTitle}>{t('Bio')}</Text>
+                        <Text style={styles.bioText}>
+                            {t('Passionate athlete dedicated to pushing limits and achieving excellence in track and field events.')}
                         </Text>
                     </View>
 
-                    <View style={Styles.separator} />
+                    <View style={styles.separator} />
 
                     {/* Links Section */}
-                    <View style={Styles.linksSection}>
-                        <View style={Styles.linkRow}>
-                            <View style={Styles.linkChip}>
+                    <View style={styles.linksSection}>
+                        <View style={styles.linkRow}>
+                            <View style={styles.linkChip}>
                                 <FastImage source={Icons.Facebook} style={{ width: 16, height: 16 }} />
-                                <Text style={Styles.linkText}>Facebook profile</Text>
+                                <Text style={styles.linkText}>{t('Facebook profile')}</Text>
                             </View>
-                            <View style={Styles.linkChip}>
-                                <Global size={16} color="#9B9F9F" variant="Linear" />
-                                <Text style={Styles.linkText}>Website</Text>
+                            <View style={styles.linkChip}>
+                                <Global size={16} color={colors.subTextColor} variant="Linear" />
+                                <Text style={styles.linkText}>{t('Website')}</Text>
                             </View>
                         </View>
                     </View>
                 </View>
 
                 {/* Toggle Tab Bar */}
-                <View style={Styles.toggleContainer}>
+                <View style={styles.toggleContainer}>
                     <TouchableOpacity
-                        style={[Styles.toggleButton, activeTab === 'athletes' && Styles.toggleButtonActive]}
+                        style={[styles.toggleButton, activeTab === 'athletes' && styles.toggleButtonActive]}
                         onPress={() => setActiveTab('athletes')}
                     >
-                        <Text style={activeTab === 'athletes' ? Styles.toggleTextActive : Styles.toggleText}>Athletes</Text>
+                        <Text style={activeTab === 'athletes' ? styles.toggleTextActive : styles.toggleText}>{t('Athletes')}</Text>
                     </TouchableOpacity>
                     <TouchableOpacity
-                        style={[Styles.toggleButton, activeTab === 'coaches' && Styles.toggleButtonActive]}
+                        style={[styles.toggleButton, activeTab === 'coaches' && styles.toggleButtonActive]}
                         onPress={() => setActiveTab('coaches')}
                     >
-                        <Text style={activeTab === 'coaches' ? Styles.toggleTextActive : Styles.toggleText}>Coaches</Text>
+                        <Text style={activeTab === 'coaches' ? styles.toggleTextActive : styles.toggleText}>{t('Coaches')}</Text>
                     </TouchableOpacity>
                     <TouchableOpacity
-                        style={[Styles.toggleButton, activeTab === 'events' && Styles.toggleButtonActive]}
+                        style={[styles.toggleButton, activeTab === 'events' && styles.toggleButtonActive]}
                         onPress={() => setActiveTab('events')}
                     >
-                        <Text style={activeTab === 'events' ? Styles.toggleTextActive : Styles.toggleText}>Events</Text>
+                        <Text style={activeTab === 'events' ? styles.toggleTextActive : styles.toggleText}>{t('Events')}</Text>
                     </TouchableOpacity>
                 </View>
 
                 {/* Tab Content */}
                 {activeTab === 'athletes' && (
-                    <View style={Styles.tabContent}>
+                    <View style={styles.tabContent}>
                         {/* Club Athletes Header */}
-                        <View style={Styles.sectionHeader}>
-                            <Text style={Styles.sectionTitle}>Club Athletes</Text>
-                            <View style={Styles.athleteCountBadge}>
-                                <Text style={Styles.athleteCountText}>430 Athletes Available</Text>
+                        <View style={styles.sectionHeader}>
+                            <Text style={styles.sectionTitle}>{t('Club Athletes')}</Text>
+                            <View style={styles.athleteCountBadge}>
+                                <Text style={styles.athleteCountText}>{t('430 Athletes Available')}</Text>
                             </View>
                         </View>
 
                         {/* Athletes List */}
-                        <View style={Styles.athletesList}>
+                        <View style={styles.athletesList}>
                             {clubAthletes.map(renderAthleteCard)}
                         </View>
                     </View>
                 )}
 
                 {activeTab === 'coaches' && (
-                    <View style={Styles.tabContent}>
-                        <View style={Styles.sectionHeader}>
-                            <Text style={Styles.sectionTitle}>Coaches</Text>
+                    <View style={styles.tabContent}>
+                        <View style={styles.sectionHeader}>
+                            <Text style={styles.sectionTitle}>{t('Coaches')}</Text>
                         </View>
-                        <View style={Styles.coachesList}>
+                        <View style={styles.coachesList}>
                             {coaches.map(renderCoachCard)}
                         </View>
                     </View>
                 )}
 
                 {activeTab === 'events' && (
-                    <View style={Styles.tabContent}>
-                        <View style={Styles.sectionHeader}>
-                            <Text style={Styles.sectionTitle}>Upcoming Events</Text>
+                    <View style={styles.tabContent}>
+                        <View style={styles.sectionHeader}>
+                            <Text style={styles.sectionTitle}>{t('Upcoming Events')}</Text>
                         </View>
-                        <View style={Styles.eventsList}>
+                        <View style={styles.eventsList}>
                             {events.map(renderEventCard)}
                         </View>
                     </View>
                 )}
 
                 {/* Posts Section */}
-                <View style={Styles.postsSection}>
-                    <View style={Styles.sectionHeader}>
-                        <Text style={Styles.sectionTitle}>Posts</Text>
+                <View style={styles.postsSection}>
+                    <View style={styles.sectionHeader}>
+                        <Text style={styles.sectionTitle}>{t('Posts')}</Text>
                         <TouchableOpacity>
-                            <Text style={Styles.viewAllText}>View All</Text>
+                            <Text style={styles.viewAllText}>{t('View All')}</Text>
                         </TouchableOpacity>
                     </View>
-                    <View style={Styles.postsList}>
+                    <View style={styles.postsList}>
                         {posts.map(renderPostCard)}
                     </View>
                 </View>

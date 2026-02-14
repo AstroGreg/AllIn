@@ -1,12 +1,14 @@
 import { View, Text } from 'react-native'
 import React from 'react'
-import Styles from '../EventsStyles'
+import { createStyles } from '../EventsStyles'
 import FastImage from 'react-native-fast-image'
 import Images from '../../../constants/Images'
 import SizeBox from '../../../constants/SizeBox'
 import Icons from '../../../constants/Icons'
 import SubscribedUsers from './SubscribedUsers'
 import BorderButton from '../../../components/borderButton/BorderButton'
+import { useTheme } from '../../../context/ThemeContext'
+import { useTranslation } from 'react-i18next'
 
 const subscribedUsers = [
     'https://picsum.photos/200/300',
@@ -22,6 +24,9 @@ interface FeaturedEventsProps {
 const FeaturedEvents = ({
     onPressSubscribe
 }: FeaturedEventsProps) => {
+    const { colors } = useTheme();
+    const Styles = createStyles(colors);
+    const { t } = useTranslation();
     return (
         <View style={Styles.featuredEventsContinaer}>
             <View style={Styles.imgContainer}>
@@ -50,10 +55,10 @@ const FeaturedEvents = ({
             <View style={Styles.row}>
                 <SubscribedUsers users={subscribedUsers} />
                 <SizeBox width={6} />
-                <Text style={Styles.actionText}>20+ subscribed already</Text>
+                <Text style={Styles.actionText}>{t('20+ subscribed already')}</Text>
             </View>
             <SizeBox height={20} />
-            <BorderButton isFilled={true} title='Subscribe' onPress={onPressSubscribe} />
+            <BorderButton isFilled={true} title={t('Subscribe')} onPress={onPressSubscribe} />
         </View>
     )
 }

@@ -1,13 +1,13 @@
 import { Dimensions, StyleSheet } from "react-native";
-import Colors from "../../constants/Colors";
 import Fonts from "../../constants/Fonts";
+import { ThemeColors } from "../../constants/Theme";
 
 const { width, height } = Dimensions.get('window');
 
-const Styles = StyleSheet.create({
+export const createStyles = (colors: ThemeColors) => StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: Colors.whiteColor,
+        backgroundColor: colors.backgroundColor,
     },
     video: {
         width: '100%',
@@ -21,12 +21,12 @@ const Styles = StyleSheet.create({
     },
     title: {
         ...Fonts.regular16,
-        color: Colors.mainTextColor,
+        color: colors.mainTextColor,
         fontWeight: '500'
     },
     subtitle: {
         ...Fonts.regular12,
-        color: Colors.mainTextColor,
+        color: colors.mainTextColor,
         fontWeight: '400'
     },
     rightActions: {
@@ -37,7 +37,7 @@ const Styles = StyleSheet.create({
     },
     actionButton: {
         marginVertical: 12,
-        backgroundColor: '#F7FAFF',
+        backgroundColor: colors.secondaryColor,
         padding: 10,
         borderRadius: 30,
     },
@@ -69,9 +69,7 @@ const Styles = StyleSheet.create({
         height: 40,
     },
     timeText: {
-        color: Colors.balckColor,
+        color: colors.mainTextColor,
         ...Fonts.regular12
     },
 });
-
-export default Styles;

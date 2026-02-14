@@ -2,32 +2,36 @@ import { View, Text, TouchableOpacity, ScrollView } from 'react-native';
 import React, { useState } from 'react';
 import SizeBox from '../../constants/SizeBox';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import Colors from '../../constants/Colors';
-import Styles from './SelectCategoryStyles';
+import { createStyles } from './SelectCategoryStyles';
 import Icons from '../../constants/Icons';
 import { ArrowLeft2, ArrowRight } from 'iconsax-react-nativejs';
+import { useTheme } from '../../context/ThemeContext';
+import { useTranslation } from 'react-i18next';
 
 const SelectCategoryScreen = ({ navigation }: any) => {
     const insets = useSafeAreaInsets();
+    const { colors } = useTheme();
+    const { t } = useTranslation();
+    const styles = createStyles(colors);
     const [selectedCategory, setSelectedCategory] = useState<number | null>(null);
 
     const categories = [
         {
             id: 1,
-            title: 'Individual',
-            description: 'Lorem Ipsum is simply dummy text of the printing',
+            title: t('Individual'),
+            description: t('Lorem Ipsum is simply dummy text of the printing'),
             Icon: Icons.IndividualColorful,
         },
         {
             id: 2,
-            title: 'Photographer / Videographer',
-            description: 'Lorem Ipsum is simply dummy text of the printing',
+            title: t('Photographer / Videographer'),
+            description: t('Lorem Ipsum is simply dummy text of the printing'),
             Icon: Icons.PhotographerColorful,
         },
         {
             id: 3,
-            title: 'Group',
-            description: 'Lorem Ipsum is simply dummy text of the printing',
+            title: t('Group'),
+            description: t('Lorem Ipsum is simply dummy text of the printing'),
             Icon: Icons.GroupColorful,
         },
     ];
@@ -36,60 +40,60 @@ const SelectCategoryScreen = ({ navigation }: any) => {
         <TouchableOpacity
             key={category.id}
             style={[
-                Styles.categoryCard,
-                selectedCategory === category.id && Styles.categoryCardSelected
+                styles.categoryCard,
+                selectedCategory === category.id && styles.categoryCardSelected
             ]}
             onPress={() => setSelectedCategory(category.id)}
             activeOpacity={0.8}
         >
-            <View style={Styles.categoryCardContent}>
-                <View style={Styles.categoryIconContainer}>
+            <View style={styles.categoryCardContent}>
+                <View style={styles.categoryIconContainer}>
                     <category.Icon width={60} height={60} />
                 </View>
-                <View style={Styles.categoryDetails}>
-                    <Text style={Styles.categoryTitle}>{category.title}</Text>
-                    <Text style={Styles.categoryDescription}>{category.description}</Text>
+                <View style={styles.categoryDetails}>
+                    <Text style={styles.categoryTitle}>{category.title}</Text>
+                    <Text style={styles.categoryDescription}>{category.description}</Text>
                 </View>
             </View>
             <View style={[
-                Styles.radioButton,
-                selectedCategory === category.id && Styles.radioButtonSelected
+                styles.radioButton,
+                selectedCategory === category.id && styles.radioButtonSelected
             ]}>
-                {selectedCategory === category.id && <View style={Styles.radioButtonInner} />}
+                {selectedCategory === category.id && <View style={styles.radioButtonInner} />}
             </View>
         </TouchableOpacity>
     );
 
     return (
-        <View style={Styles.mainContainer}>
+        <View style={styles.mainContainer}>
             <SizeBox height={insets.top} />
 
             {/* Header */}
-            <View style={Styles.header}>
-                <TouchableOpacity style={Styles.headerButton} onPress={() => navigation.goBack()}>
-                    <ArrowLeft2 size={24} color={Colors.primaryColor} variant="Linear" />
+            <View style={styles.header}>
+                <TouchableOpacity style={styles.headerButton} onPress={() => navigation.goBack()}>
+                    <ArrowLeft2 size={24} color={colors.primaryColor} variant="Linear" />
                 </TouchableOpacity>
             </View>
 
-            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={Styles.scrollContent}>
+            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
                 {/* Title Section */}
-                <View style={Styles.titleSection}>
-                    <Text style={Styles.title}>Select Your Category</Text>
-                    <Text style={Styles.subtitle}>Please choose your Category{'\n'}to continue.</Text>
+                <View style={styles.titleSection}>
+                    <Text style={styles.title}>{t('Select Your Category')}</Text>
+                    <Text style={styles.subtitle}>{t('Please choose your Category')}{'\n'}{t('to continue.')}</Text>
                 </View>
 
                 {/* Categories List */}
-                <View style={Styles.categoriesContainer}>
+                <View style={styles.categoriesContainer}>
                     {categories.map(renderCategoryCard)}
                 </View>
             </ScrollView>
 
             {/* Continue Button */}
-            <View style={[Styles.bottomContainer, { paddingBottom: insets.bottom > 0 ? insets.bottom : 20 }]}>
+            <View style={[styles.bottomContainer, { paddingBottom: insets.bottom > 0 ? insets.bottom : 20 }]}>
                 <TouchableOpacity
                     style={[
-                        Styles.continueButton,
-                        !selectedCategory && Styles.continueButtonDisabled
+                        styles.continueButton,
+                        !selectedCategory && styles.continueButtonDisabled
                     ]}
                     disabled={!selectedCategory}
                     onPress={() => {
@@ -102,8 +106,8 @@ const SelectCategoryScreen = ({ navigation }: any) => {
                         }
                     }}
                 >
-                    <Text style={Styles.continueButtonText}>Continue</Text>
-                    <ArrowRight size={18} color={Colors.whiteColor} variant="Linear" />
+                    <Text style={styles.continueButtonText}>{t('Continue')}</Text>
+                    <ArrowRight size={18} color={colors.pureWhite} variant="Linear" />
                 </TouchableOpacity>
             </View>
         </View>

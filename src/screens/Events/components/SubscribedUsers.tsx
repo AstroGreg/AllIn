@@ -1,12 +1,15 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { View, Image, StyleSheet } from 'react-native';
-import Colors from '../../../constants/Colors';
+import { useTheme } from '../../../context/ThemeContext';
+import { ThemeColors } from '../../../constants/Theme';
 
 interface SubscribedUsers {
     users: any;
 }
 
 const SubscribedUsers = ({ users }: SubscribedUsers) => {
+    const { colors } = useTheme();
+    const styles = useMemo(() => createStyles(colors), [colors]);
     return (
         <View style={styles.container}>
             {users.map((user: any, index: any) => (
@@ -20,7 +23,7 @@ const SubscribedUsers = ({ users }: SubscribedUsers) => {
     );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ThemeColors) => StyleSheet.create({
     container: {
         flexDirection: 'row',
         alignItems: 'center',
@@ -30,7 +33,7 @@ const styles = StyleSheet.create({
         height: 18,
         borderRadius: 9,
         borderWidth: 0.5,
-        borderColor: Colors.whiteColor,
+        borderColor: colors.pureWhite,
     },
 });
 

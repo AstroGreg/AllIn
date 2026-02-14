@@ -5,17 +5,10 @@ import SizeBox from '../../constants/SizeBox'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import MenuContainers from './components/MenuContainers'
 import Icons from '../../constants/Icons'
-import FastImage from 'react-native-fast-image'
 import { useTheme } from '../../context/ThemeContext'
-import { ArrowLeft2, Notification, Money3, UserOctagon, MainComponent, Eye, Copy, SecurityUser } from 'iconsax-react-nativejs'
+import { ArrowLeft2, Money3, UserOctagon, Eye, Copy, SecurityUser } from 'iconsax-react-nativejs'
 import { useAuth } from '../../context/AuthContext'
-
-interface SocialLink {
-    platform: string;
-    icon: any;
-    isConnected: boolean;
-    url?: string;
-}
+import { useTranslation } from 'react-i18next'
 
 const MenuScreen = ({ navigation }: any) => {
     const insets = useSafeAreaInsets();
@@ -23,22 +16,8 @@ const MenuScreen = ({ navigation }: any) => {
     const Styles = createStyles(colors);
     const { logout, isAuthenticated } = useAuth();
     const [pushNotifications, setPushNotifications] = useState(true);
-    const [aiPhotoRecognition, setAiPhotoRecognition] = useState(true);
     const [ghostMode, setGhostMode] = useState(true);
-
-    const [socialLinks, setSocialLinks] = useState<SocialLink[]>([
-        { platform: 'Strava', icon: Icons.Strava, isConnected: false, url: 'www.usertrava.com' },
-        { platform: 'Facebook', icon: Icons.Facebook, isConnected: false, url: 'www.usertrava.com' },
-        { platform: 'Instagram', icon: Icons.Instagram, isConnected: false, url: 'www.usertrava.com' },
-    ]);
-
-    const toggleSocialLink = (platform: string) => {
-        setSocialLinks(prev => prev.map(link =>
-            link.platform === platform
-                ? { ...link, isConnected: !link.isConnected }
-                : link
-        ));
-    };
+    const { t } = useTranslation();
 
     return (
         <View style={Styles.mainContainer}>
@@ -49,47 +28,19 @@ const MenuScreen = ({ navigation }: any) => {
                 <TouchableOpacity style={Styles.headerButton} onPress={() => navigation.goBack()}>
                     <ArrowLeft2 size={24} color={colors.primaryColor} variant="Linear" />
                 </TouchableOpacity>
-                <Text style={Styles.headerTitle}>Menu</Text>
-                <TouchableOpacity style={Styles.headerButton}>
-                    <Notification size={24} color={colors.primaryColor} variant="Linear" />
-                </TouchableOpacity>
+                <Text style={Styles.headerTitle}>{t('settings')}</Text>
+                <View style={Styles.headerSpacer} />
             </View>
 
             <ScrollView showsVerticalScrollIndicator={false} style={Styles.container}>
                 <SizeBox height={24} />
 
-                {/* Social Links */}
-                <Text style={Styles.sectionTitle}>Social links</Text>
-                <SizeBox height={16} />
-                <View style={Styles.socialLinksCard}>
-                    {socialLinks.map((link, index) => (
-                        <React.Fragment key={link.platform}>
-                            <TouchableOpacity style={Styles.socialLinkRow} onPress={() => toggleSocialLink(link.platform)}>
-                                <FastImage source={link.icon} style={Styles.socialIcon} />
-                                {link.isConnected ? (
-                                    <View style={Styles.connectedLinkContent}>
-                                        <Text style={Styles.socialLinkPlatform}>{link.platform}</Text>
-                                        <Icons.Links height={14} width={14} />
-                                        <Text style={Styles.socialLinkUrl}>{link.url}</Text>
-                                    </View>
-                                ) : (
-                                    <Text style={Styles.socialLinkText}>Connect with {link.platform}</Text>
-                                )}
-                                <Icons.ArrowNext height={20} width={20} />
-                            </TouchableOpacity>
-                            {index < socialLinks.length - 1 && <View style={Styles.socialLinkDivider} />}
-                        </React.Fragment>
-                    ))}
-                </View>
-
-                <SizeBox height={24} />
-
                 {/* Appearance */}
-                <Text style={Styles.sectionTitle}>Appearance</Text>
+                <Text style={Styles.sectionTitle}>{t('appearance')}</Text>
                 <SizeBox height={16} />
                 <MenuContainers
                     icon={<Icons.LightMode height={20} width={20} />}
-                    title='Light mode'
+                    title={t('lightMode')}
                     onPress={() => setTheme('light')}
                     isNext={false}
                     isSelected={mode === 'light'}
@@ -97,7 +48,7 @@ const MenuScreen = ({ navigation }: any) => {
                 <SizeBox height={12} />
                 <MenuContainers
                     icon={<Icons.DarkMode height={20} width={20} />}
-                    title='Dark mode'
+                    title={t('darkMode')}
                     onPress={() => setTheme('dark')}
                     isNext={false}
                     isSelected={mode === 'dark'}
@@ -106,11 +57,11 @@ const MenuScreen = ({ navigation }: any) => {
                 <SizeBox height={24} />
 
                 {/* Settings */}
-                <Text style={Styles.sectionTitle}>Settings</Text>
+                <Text style={Styles.sectionTitle}>{t('settingsSection')}</Text>
                 <SizeBox height={16} />
                 <MenuContainers
                     icon={<Icons.Notification height={20} width={20} />}
-                    title='Push Notifications'
+                    title={t('pushNotifications')}
                     onPress={() => { }}
                     isSwitch={true}
                     isNext={false}
@@ -120,43 +71,31 @@ const MenuScreen = ({ navigation }: any) => {
                 <SizeBox height={12} />
                 <MenuContainers
                     icon={<Icons.LanguageSetting height={20} width={20} />}
-                    title='Language'
+                    title={t('language')}
                     onPress={() => navigation.navigate('Language')}
                 />
                 <SizeBox height={12} />
                 <MenuContainers
-                    icon={<Icons.LocationSetting height={20} width={20} />}
-                    title='Location'
-                    onPress={() => navigation.navigate('Location')}
-                />
-                <SizeBox height={12} />
-                <MenuContainers
                     icon={<Icons.ProfileSetting height={20} width={20} />}
-                    title='Account'
+                    title={t('account')}
                     onPress={() => navigation.navigate('ProfileSettings')}
                 />
                 <SizeBox height={12} />
                 <MenuContainers
                     icon={<SecurityUser size={20} color={colors.primaryColor} variant="Linear" />}
-                    title='Authentication'
+                    title={t('authentication')}
                     onPress={() => navigation.navigate('Authentication')}
                 />
 
                 <SizeBox height={24} />
 
                 {/* Other */}
-                <Text style={Styles.sectionTitle}>Other</Text>
+                <Text style={Styles.sectionTitle}>{t('other')}</Text>
                 <SizeBox height={16} />
                 <MenuContainers
                     icon={<Icons.PaymentMethod height={20} width={20} />}
-                    title='Payment Method'
+                    title={t('paymentMethod')}
                     onPress={() => navigation.navigate('PaymentMethod')}
-                />
-                <SizeBox height={12} />
-                <MenuContainers
-                    icon={<Icons.AiBlueBordered height={20} width={20} />}
-                    title='AI'
-                    onPress={() => navigation.navigate('AISearchScreen')}
                 />
                 {__DEV__ && (
                   <>
@@ -171,31 +110,31 @@ const MenuScreen = ({ navigation }: any) => {
                 <SizeBox height={12} />
                 <MenuContainers
                     icon={<Money3 size={20} color={colors.primaryColor} variant="Linear" />}
-                    title='Subscription'
+                    title={t('subscription')}
                     onPress={() => navigation.navigate('Subscription')}
                 />
                 <SizeBox height={12} />
                 <MenuContainers
                     icon={<Icons.Terms height={20} width={20} />}
-                    title='Terms of Service'
+                    title={t('termsOfService')}
                     onPress={() => navigation.navigate('TermsOfService')}
                 />
                 <SizeBox height={12} />
                 <MenuContainers
                     icon={<UserOctagon size={20} color={colors.primaryColor} variant="Linear" />}
-                    title='Help'
+                    title={t('help')}
                     onPress={() => navigation.navigate('Help')}
                 />
                 <SizeBox height={12} />
                 <MenuContainers
                     icon={<Icons.DeleteAccount height={20} width={20} />}
-                    title='Delete/Pause your account'
+                    title={t('deletePauseAccount')}
                     onPress={() => navigation.navigate('DeleteAndPause')}
                 />
                 <SizeBox height={12} />
                 <MenuContainers
                     icon={<Copy size={20} color={colors.primaryColor} variant="Linear" />}
-                    title='Right to be Forgotten'
+                    title={t('rightToBeForgotten')}
                     onPress={() => navigation.navigate('RightToBeForgotten')}
                 />
                 {isAuthenticated && (
@@ -217,42 +156,15 @@ const MenuScreen = ({ navigation }: any) => {
                 <SizeBox height={24} />
 
                 {/* Privacy Settings */}
-                <Text style={Styles.sectionTitle}>Privacy Settings</Text>
+                <Text style={Styles.sectionTitle}>{t('privacySettings')}</Text>
                 <SizeBox height={16} />
-                <View style={Styles.privacyCard}>
-                    <View style={Styles.privacyHeader}>
-                        <View style={Styles.privacyIconContainer}>
-                            <MainComponent size={20} color={colors.primaryColor} variant="Linear" />
-                        </View>
-                        <SizeBox width={16} />
-                        <Text style={Styles.privacyTitle}>AI Photo Recognition</Text>
-                        <View style={Styles.privacySwitch}>
-                            <TouchableOpacity
-                                style={[Styles.switchTrack, aiPhotoRecognition && Styles.switchTrackActive]}
-                                onPress={() => setAiPhotoRecognition(prev => !prev)}
-                            >
-                                <View style={[Styles.switchThumb, aiPhotoRecognition && Styles.switchThumbActive]} />
-                            </TouchableOpacity>
-                        </View>
-                    </View>
-                    <SizeBox height={12} />
-                    <Text style={Styles.privacySubtitle}>How it works:</Text>
-                    <SizeBox height={4} />
-                    <Text style={Styles.privacyDescription}>• AI scans newly uploaded photos for faces.</Text>
-                    <Text style={Styles.privacyDescription}>• Automatically suggests tags when you're detected.</Text>
-                    <Text style={Styles.privacyDescription}>• You'll receive notifications for photo suggestions.</Text>
-                    <Text style={Styles.privacyDescription}>• You can always approve or reject tags.</Text>
-                </View>
-
-                <SizeBox height={16} />
-
                 <View style={Styles.privacyCard}>
                     <View style={Styles.privacyHeader}>
                         <View style={Styles.privacyIconContainer}>
                             <Eye size={20} color={colors.primaryColor} variant="Linear" />
                         </View>
                         <SizeBox width={16} />
-                        <Text style={Styles.privacyTitle}>Ghost Mode</Text>
+                        <Text style={Styles.privacyTitle}>{t('ghostMode')}</Text>
                         <View style={Styles.privacySwitch}>
                             <TouchableOpacity
                                 style={[Styles.switchTrack, ghostMode && Styles.switchTrackActive]}

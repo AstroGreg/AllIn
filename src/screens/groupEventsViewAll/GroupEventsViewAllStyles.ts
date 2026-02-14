@@ -1,11 +1,11 @@
 import { StyleSheet } from 'react-native';
-import Colors from '../../constants/Colors';
+import { ThemeColors } from '../../constants/Theme';
 import Fonts from '../../constants/Fonts';
 
-const Styles = StyleSheet.create({
+export const createStyles = (colors: ThemeColors) => StyleSheet.create({
     mainContainer: {
         flex: 1,
-        backgroundColor: Colors.whiteColor,
+        backgroundColor: colors.backgroundColor,
     },
     header: {
         flexDirection: 'row',
@@ -14,13 +14,13 @@ const Styles = StyleSheet.create({
         paddingHorizontal: 20,
         paddingVertical: 16,
         borderBottomWidth: 0.5,
-        borderBottomColor: '#DEDEDE',
+        borderBottomColor: colors.lightGrayColor,
     },
     headerButton: {
         width: 44,
         height: 44,
         borderRadius: 22,
-        backgroundColor: '#F5F5F5',
+        backgroundColor: colors.btnBackgroundColor,
         alignItems: 'center',
         justifyContent: 'center',
     },
@@ -30,7 +30,7 @@ const Styles = StyleSheet.create({
     },
     headerTitle: {
         ...Fonts.medium18,
-        color: Colors.mainTextColor,
+        color: colors.mainTextColor,
     },
     scrollContent: {
         paddingHorizontal: 20,
@@ -47,7 +47,7 @@ const Styles = StyleSheet.create({
     searchInputContainer: {
         flex: 1,
         height: 48,
-        backgroundColor: '#F5F5F5',
+        backgroundColor: colors.btnBackgroundColor,
         borderRadius: 10,
         flexDirection: 'row',
         alignItems: 'center',
@@ -57,13 +57,13 @@ const Styles = StyleSheet.create({
     searchInput: {
         flex: 1,
         ...Fonts.regular14,
-        color: Colors.mainTextColor,
+        color: colors.mainTextColor,
     },
     filterButton: {
         width: 48,
         height: 48,
         borderRadius: 10,
-        backgroundColor: Colors.primaryColor,
+        backgroundColor: colors.primaryColor,
         alignItems: 'center',
         justifyContent: 'center',
     },
@@ -77,13 +77,13 @@ const Styles = StyleSheet.create({
     },
     sectionTitle: {
         ...Fonts.medium18,
-        color: Colors.mainTextColor,
+        color: colors.mainTextColor,
     },
     viewAllButton: {
         flexDirection: 'row',
         alignItems: 'center',
         gap: 6,
-        backgroundColor: Colors.primaryColor,
+        backgroundColor: colors.primaryColor,
         borderRadius: 8,
         paddingHorizontal: 16,
         paddingVertical: 10,
@@ -91,7 +91,7 @@ const Styles = StyleSheet.create({
     },
     viewAllText: {
         ...Fonts.regular14,
-        color: Colors.whiteColor,
+        color: colors.whiteColor,
     },
 
     // Events List
@@ -101,10 +101,10 @@ const Styles = StyleSheet.create({
 
     // Event Card
     eventCard: {
-        backgroundColor: Colors.whiteColor,
+        backgroundColor: colors.backgroundColor,
         borderRadius: 10,
         borderWidth: 0.5,
-        borderColor: '#DEDEDE',
+        borderColor: colors.lightGrayColor,
         padding: 16,
     },
     eventCardContent: {
@@ -125,7 +125,7 @@ const Styles = StyleSheet.create({
     },
     eventTitle: {
         ...Fonts.medium14,
-        color: Colors.mainTextColor,
+        color: colors.mainTextColor,
     },
     eventDetailRow: {
         flexDirection: 'row',
@@ -134,7 +134,7 @@ const Styles = StyleSheet.create({
     },
     eventDetailLabel: {
         ...Fonts.regular12,
-        color: '#9B9F9F',
+        color: colors.subTextColor,
     },
     eventDetailValueRow: {
         flexDirection: 'row',
@@ -143,14 +143,14 @@ const Styles = StyleSheet.create({
     },
     eventDetailValue: {
         ...Fonts.regular12,
-        color: '#9B9F9F',
+        color: colors.subTextColor,
     },
     addButton: {
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',
         gap: 6,
-        backgroundColor: Colors.primaryColor,
+        backgroundColor: colors.primaryColor,
         borderRadius: 8,
         paddingHorizontal: 16,
         paddingVertical: 10,
@@ -159,7 +159,7 @@ const Styles = StyleSheet.create({
     },
     addButtonText: {
         ...Fonts.regular14,
-        color: Colors.whiteColor,
+        color: colors.whiteColor,
     },
 
     // Join Team Modal Styles
@@ -170,7 +170,7 @@ const Styles = StyleSheet.create({
         alignItems: 'center',
     },
     joinModalContainer: {
-        backgroundColor: Colors.whiteColor,
+        backgroundColor: colors.backgroundColor,
         borderRadius: 16,
         padding: 20,
         width: '85%',
@@ -184,13 +184,13 @@ const Styles = StyleSheet.create({
     },
     joinModalTitle: {
         ...Fonts.medium18,
-        color: Colors.mainTextColor,
+        color: colors.mainTextColor,
         textAlign: 'center',
         marginBottom: 8,
     },
     joinModalSubtitle: {
         ...Fonts.regular14,
-        color: '#9B9F9F',
+        color: colors.subTextColor,
         textAlign: 'center',
         marginBottom: 20,
     },
@@ -205,44 +205,44 @@ const Styles = StyleSheet.create({
         height: 54,
         borderRadius: 10,
         borderWidth: 0.5,
-        borderColor: '#DEDEDE',
+        borderColor: colors.lightGrayColor,
         paddingHorizontal: 16,
     },
     joinModalOptionSelected: {
-        backgroundColor: Colors.primaryColor,
-        borderColor: Colors.primaryColor,
+        backgroundColor: colors.primaryColor,
+        borderColor: colors.primaryColor,
     },
     joinModalOptionText: {
         ...Fonts.regular14,
-        color: Colors.mainTextColor,
+        color: colors.mainTextColor,
     },
     joinModalOptionTextSelected: {
-        color: Colors.whiteColor,
+        color: colors.whiteColor,
     },
     joinModalRadio: {
         width: 24,
         height: 24,
         borderRadius: 12,
         borderWidth: 2,
-        borderColor: Colors.primaryColor,
+        borderColor: colors.primaryColor,
         alignItems: 'center',
         justifyContent: 'center',
     },
     joinModalRadioSelected: {
-        borderColor: Colors.whiteColor,
+        borderColor: colors.whiteColor,
     },
     joinModalRadioInner: {
         width: 12,
         height: 12,
         borderRadius: 6,
-        backgroundColor: Colors.whiteColor,
+        backgroundColor: colors.backgroundColor,
     },
     joinModalMembersSection: {
         marginBottom: 20,
     },
     joinModalMembersTitle: {
         ...Fonts.regular14,
-        color: '#9B9F9F',
+        color: colors.subTextColor,
         textAlign: 'center',
         marginBottom: 16,
     },
@@ -253,31 +253,31 @@ const Styles = StyleSheet.create({
         height: 54,
         borderRadius: 10,
         borderWidth: 0.5,
-        borderColor: '#DEDEDE',
+        borderColor: colors.lightGrayColor,
         paddingHorizontal: 16,
         marginBottom: 12,
     },
     joinModalMemberName: {
         ...Fonts.regular14,
-        color: Colors.mainTextColor,
+        color: colors.mainTextColor,
     },
     joinModalCheckbox: {
         width: 24,
         height: 24,
         borderRadius: 12,
         borderWidth: 2,
-        borderColor: Colors.primaryColor,
+        borderColor: colors.primaryColor,
         alignItems: 'center',
         justifyContent: 'center',
     },
     joinModalCheckboxSelected: {
-        backgroundColor: Colors.primaryColor,
+        backgroundColor: colors.primaryColor,
     },
     joinModalCheckboxInner: {
         width: 10,
         height: 10,
         borderRadius: 5,
-        backgroundColor: Colors.whiteColor,
+        backgroundColor: colors.backgroundColor,
     },
     joinModalConfirmButton: {
         flexDirection: 'row',
@@ -286,12 +286,12 @@ const Styles = StyleSheet.create({
         gap: 8,
         height: 54,
         borderRadius: 10,
-        backgroundColor: Colors.primaryColor,
+        backgroundColor: colors.primaryColor,
     },
     joinModalConfirmButtonText: {
         ...Fonts.medium16,
-        color: Colors.whiteColor,
+        color: colors.whiteColor,
     },
 });
 
-export default Styles;
+

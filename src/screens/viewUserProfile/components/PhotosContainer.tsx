@@ -1,11 +1,12 @@
 import { View, Text, Dimensions, TouchableOpacity } from 'react-native'
 import React, { useState } from 'react'
 import FastImage from 'react-native-fast-image';
-import Styles from '../ViewUserProfileStyles';
-import Colors from '../../../constants/Colors';
+import { createStyles } from '../ViewUserProfileStyles';
 import SizeBox from '../../../constants/SizeBox';
 import Icons from '../../../constants/Icons';
 import ConfirmationModel from '../../../components/confirmationModel/ConfirmationModel';
+import { useTheme } from '../../../context/ThemeContext';
+import { useTranslation } from 'react-i18next';
 
 
 interface PhotosContainerProps {
@@ -19,6 +20,9 @@ const PhotosContainer = ({ onPressImg, photo, name, price }: PhotosContainerProp
     const deviceWidth = Dimensions.get('window').width;
     const spacing = 20;
     const containerWidth = (deviceWidth - (spacing * 3)) / 2; // 3 spaces: left, middle, right
+    const { colors } = useTheme();
+    const { t } = useTranslation();
+    const styles = createStyles(colors);
 
     const [isDeleteVisible, setIsDeleteVisible] = useState(false)
 
@@ -31,9 +35,9 @@ const PhotosContainer = ({ onPressImg, photo, name, price }: PhotosContainerProp
             overflow: 'hidden',
             padding: 8,
             borderWidth: 0.5,
-            borderColor: Colors.lightGrayColor
+            borderColor: colors.lightGrayColor
         }}>
-            <View style={Styles.photoImgCont}>
+            <View style={styles.photoImgCont}>
                 <FastImage
                     source={photo}
                     style={{
@@ -43,10 +47,10 @@ const PhotosContainer = ({ onPressImg, photo, name, price }: PhotosContainerProp
                 />
             </View>
             <SizeBox height={8} />
-            <Text style={[Styles.downloadCount, { fontWeight: '400' }]} numberOfLines={1}>{name}</Text>
+            <Text style={[styles.downloadCount, { fontWeight: '400' }]} numberOfLines={1}>{name}</Text>
             <SizeBox height={4} />
-            <Text style={[Styles.downloadCount, { fontWeight: '600' }]}>{price}</Text>
-            <View style={[Styles.btnRight, { bottom: 8, gap: 10 }, Styles.row]}>
+            <Text style={[styles.downloadCount, { fontWeight: '600' }]}>{price}</Text>
+            <View style={[styles.btnRight, { bottom: 8, gap: 10 }, styles.row]}>
                 <TouchableOpacity>
                     <Icons.Edit height={16} width={16} />
                 </TouchableOpacity>
@@ -58,7 +62,7 @@ const PhotosContainer = ({ onPressImg, photo, name, price }: PhotosContainerProp
             <ConfirmationModel
                 isVisible={isDeleteVisible}
                 onClose={() => setIsDeleteVisible(false)}
-                text='Are You Sure You Want to Delete This photo?'
+                text={t('Are You Sure You Want to Delete This photo?')}
                 onPressYes={() => setIsDeleteVisible(false)}
                 icon={<Icons.DeleteAccount height={24} width={24} />}
             />

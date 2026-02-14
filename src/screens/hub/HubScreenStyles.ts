@@ -228,6 +228,7 @@ export const createStyles = (colors: ThemeColors) =>
       flexDirection: 'row',
       alignItems: 'center',
       gap: 4,
+      flexWrap: 'nowrap',
     },
     detailDot: {
       width: 4,
@@ -239,6 +240,10 @@ export const createStyles = (colors: ThemeColors) =>
     detailText: {
       ...Fonts.regular12,
       color: colors.grayColor,
+    },
+    detailTextTruncate: {
+      flexShrink: 1,
+      minWidth: 0,
     },
     matchBadge: {
       alignSelf: 'flex-start',
@@ -258,7 +263,7 @@ export const createStyles = (colors: ThemeColors) =>
       borderRadius: 12,
     },
     statusActive: {
-      backgroundColor: '#E8F1FF',
+      backgroundColor: colors.primaryColor,
     },
     statusDone: {
       backgroundColor: '#EAF7EF',
@@ -266,6 +271,9 @@ export const createStyles = (colors: ThemeColors) =>
     statusText: {
       ...Fonts.regular12,
       color: colors.mainTextColor,
+    },
+    statusTextActive: {
+      color: colors.pureWhite,
     },
     divider: {
       height: 0.5,

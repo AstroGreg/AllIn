@@ -1,8 +1,9 @@
 import { View, Text, TouchableOpacity } from 'react-native'
 import React from 'react'
-import Styles from './CustomButtonStyle'
+import { createStyles } from './CustomButtonStyle'
 import Icons from '../../constants/Icons'
 import SizeBox from '../../constants/SizeBox'
+import { useTheme } from '../../context/ThemeContext'
 
 interface CustomButtonProps {
     title: string;
@@ -17,6 +18,8 @@ const CustomButton = ({
     isSmall = false,
     isAdd = false
 }: CustomButtonProps) => {
+    const { colors } = useTheme();
+    const Styles = createStyles(colors);
     return (
         <TouchableOpacity style={[Styles.buttonContainer, isSmall && { height: 48 }]} activeOpacity={0.7} onPress={onPress}>
             <Text style={Styles.btnText}>{title}</Text>

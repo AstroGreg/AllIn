@@ -9,6 +9,7 @@ import Icons from '../../constants/Icons'
 import Images from '../../constants/Images'
 import FastImage from 'react-native-fast-image'
 import { SearchNormal1, Calendar, Location, CloseCircle, Clock, ArrowDown2, Camera } from 'iconsax-react-nativejs'
+import { useTranslation } from 'react-i18next'
  
 
 const FILTERS = ['Competition', 'Person', 'Group', 'Location'] as const
@@ -53,6 +54,7 @@ interface GroupResult {
 const SearchScreen = ({ navigation }: any) => {
     const insets = useSafeAreaInsets();
     const { colors } = useTheme();
+    const { t } = useTranslation();
     const { width: windowWidth } = useWindowDimensions();
     const Styles = createStyles(colors);
 
@@ -76,28 +78,28 @@ const SearchScreen = ({ navigation }: any) => {
     const activeValue = filterValues[activeFilter] ?? '';
 
     const eventResults: EventResult[] = [
-        { id: 1, name: 'BK Studenten 23', date: '27/05/2025', location: 'Gent', competitionType: 'track' },
-        { id: 2, name: 'Vlaams Kampioenschap', date: '27/05/2025', location: 'Hasselt', competitionType: 'track' },
-        { id: 3, name: 'IFAM 2024', date: '27/05/2025', location: 'Brussels', competitionType: 'track' },
-        { id: 4, name: 'KBC Nacht 2024', date: '27/05/2025', location: 'Hasselt', competitionType: 'track' },
-        { id: 5, name: 'Brussels City Run 2026', date: '12/06/2026', location: 'Brussels', competitionType: 'marathon' },
+        { id: 1, name: t('BK Studenten 23'), date: '27/05/2025', location: t('Gent'), competitionType: 'track' },
+        { id: 2, name: t('Vlaams Kampioenschap'), date: '27/05/2025', location: t('Hasselt'), competitionType: 'track' },
+        { id: 3, name: t('IFAM 2024'), date: '27/05/2025', location: t('Brussels'), competitionType: 'track' },
+        { id: 4, name: t('KBC Nacht 2024'), date: '27/05/2025', location: t('Hasselt'), competitionType: 'track' },
+        { id: 5, name: t('Brussels City Run 2026'), date: '12/06/2026', location: t('Brussels'), competitionType: 'marathon' },
     ];
 
     const peopleResults: PersonResult[] = [
-        { id: 1, name: 'James Ray', role: 'Athlete', activity: 'Marathon', location: 'Dhaka', isFollowing: false, events: ['Brussels City Run 2026'] },
-        { id: 2, name: 'Sofia Klein', role: 'Athlete', activity: '800m', location: 'Berlin', isFollowing: false, events: ['IFAM 2024'] },
-        { id: 3, name: 'Liam Carter', role: 'Photographer', activity: 'Sports Events', location: 'Brussels', events: ['IFAM 2024', 'BK Studenten 23'] },
-        { id: 4, name: 'Emma Novak', role: 'Photographer', activity: 'Track Events', location: 'Gent', events: ['BK Studenten 23'] },
-        { id: 5, name: 'Greg Reynders', role: 'Athlete', activity: '1500m', location: 'Hasselt', events: ['IFAM 2024', 'BK Studenten 23'] },
+        { id: 1, name: t('James Ray'), role: 'Athlete', activity: t('Marathon'), location: t('Dhaka'), isFollowing: false, events: [t('Brussels City Run 2026')] },
+        { id: 2, name: t('Sofia Klein'), role: 'Athlete', activity: t('800m'), location: t('Berlin'), isFollowing: false, events: [t('IFAM 2024')] },
+        { id: 3, name: t('Liam Carter'), role: 'Photographer', activity: t('Sports Events'), location: t('Brussels'), events: [t('IFAM 2024'), t('BK Studenten 23')] },
+        { id: 4, name: t('Emma Novak'), role: 'Photographer', activity: t('Track Events'), location: t('Gent'), events: [t('BK Studenten 23')] },
+        { id: 5, name: t('Greg Reynders'), role: 'Athlete', activity: t('1500m'), location: t('Hasselt'), events: [t('IFAM 2024'), t('BK Studenten 23')] },
     ];
 
     const groupResults: GroupResult[] = [
         {
             id: 1,
-            name: 'Olympic Track Club',
-            activity: 'Track & Field',
-            location: 'Brussels',
-            events: ['IFAM 2024', 'BK Studenten 23'],
+            name: t('Olympic Track Club'),
+            activity: t('Track & Field'),
+            location: t('Brussels'),
+            events: [t('IFAM 2024'), t('BK Studenten 23')],
             images: [
                 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100',
                 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=100',
@@ -107,10 +109,10 @@ const SearchScreen = ({ navigation }: any) => {
         },
         {
             id: 2,
-            name: 'Marathon Pacers',
-            activity: 'Road Running',
-            location: 'Gent',
-            events: ['Brussels City Run 2026'],
+            name: t('Marathon Pacers'),
+            activity: t('Road Running'),
+            location: t('Gent'),
+            events: [t('Brussels City Run 2026')],
             images: [
                 'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=100',
                 'https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?w=100',
@@ -493,10 +495,10 @@ const SearchScreen = ({ navigation }: any) => {
  
 
     const searchPlaceholder = (() => {
-        if (activeFilter === 'Competition') return 'Type competition name';
-        if (activeFilter === 'Person') return 'Type person name';
-        if (activeFilter === 'Group') return 'Type group name';
-        return 'Search by location';
+        if (activeFilter === 'Competition') return t('Type competition name');
+        if (activeFilter === 'Person') return t('Type person name');
+        if (activeFilter === 'Group') return t('Type group name');
+        return t('Search by location');
     })();
 
     return (
@@ -505,7 +507,7 @@ const SearchScreen = ({ navigation }: any) => {
 
             <View style={Styles.header}>
                 <View style={Styles.headerSpacer} />
-                <Text style={Styles.headerTitle}>Search</Text>
+                <Text style={Styles.headerTitle}>{t('Search')}</Text>
                 <View style={Styles.headerSpacer} />
             </View>
 
@@ -517,12 +519,12 @@ const SearchScreen = ({ navigation }: any) => {
                         <SearchNormal1 size={16} color="#9B9F9F" variant="Linear" />
                         <SizeBox width={8} />
                         <View style={Styles.searchInputPill}>
-                            <Text style={Styles.searchInputPillText}>{activeFilter}:</Text>
+                            <Text style={Styles.searchInputPillText}>{t(activeFilter)}:</Text>
                         </View>
                         <TextInput
                             style={Styles.searchInput}
                             placeholder={searchPlaceholder}
-                            placeholderTextColor="#9B9F9F"
+                            placeholderTextColor={colors.subTextColor}
                             value={activeValue}
                             onChangeText={handleSearchChange}
                             returnKeyType="search"
@@ -552,7 +554,7 @@ const SearchScreen = ({ navigation }: any) => {
                                     Styles.filterTabText,
                                     activeFilter === filter && Styles.filterTabTextActive
                                 ]}>
-                                    {filter}
+                                    {t(filter)}
                                 </Text>
                             </TouchableOpacity>
                         ))}
@@ -562,7 +564,7 @@ const SearchScreen = ({ navigation }: any) => {
                 <SizeBox height={16} />
 
                 <View style={Styles.typeFilterRow}>
-                    <Text style={Styles.typeFilterLabel}>Competition Type</Text>
+                    <Text style={Styles.typeFilterLabel}>{t('Competition Type')}</Text>
                     <View style={Styles.typeFilterChips}>
                         {COMPETITION_TYPE_FILTERS.map((option) => (
                             <TouchableOpacity
@@ -579,7 +581,7 @@ const SearchScreen = ({ navigation }: any) => {
                                         competitionTypeFilter === option.key && Styles.typeFilterChipTextActive,
                                     ]}
                                 >
-                                    {option.label}
+                                    {t(option.label)}
                                 </Text>
                             </TouchableOpacity>
                         ))}
@@ -595,8 +597,8 @@ const SearchScreen = ({ navigation }: any) => {
                             style={Styles.activeChip}
                             onPress={() => clearFilterValue(filter)}
                         >
-                            <Text style={Styles.activeChipText}>{filter}: {filterValues[filter]}</Text>
-                            <CloseCircle size={16} color="#FFFFFF" variant="Linear" />
+                            <Text style={Styles.activeChipText}>{t(filter)}: {filterValues[filter]}</Text>
+                            <CloseCircle size={16} color={colors.pureWhite} variant="Linear" />
                         </TouchableOpacity>
                     ))}
                     {timeRange.start && timeRange.end ? (
@@ -614,7 +616,7 @@ const SearchScreen = ({ navigation }: any) => {
                         <TouchableOpacity style={Styles.timeRangeChip} onPress={openDateTimePicker}>
                             <Clock size={14} color="#9B9F9F" variant="Linear" />
                             <SizeBox width={4} />
-                            <Text style={Styles.timeRangeText}>Select date range</Text>
+                            <Text style={Styles.timeRangeText}>{t('Select date range')}</Text>
                             <SizeBox width={4} />
                             <ArrowDown2 size={14} color="#9B9F9F" variant="Linear" />
                         </TouchableOpacity>
@@ -624,10 +626,10 @@ const SearchScreen = ({ navigation }: any) => {
                 <SizeBox height={24} />
 
                 <View style={Styles.resultsHeader}>
-                    <Text style={Styles.resultsTitle}>Results</Text>
+                    <Text style={Styles.resultsTitle}>{t('Results')}</Text>
                     {hasActiveFilters && (
                         <View style={Styles.resultsBadge}>
-                            <Text style={Styles.resultsBadgeText}>{totalCount} found</Text>
+                            <Text style={Styles.resultsBadgeText}>{totalCount} {t('found')}</Text>
                         </View>
                     )}
                 </View>
@@ -635,9 +637,9 @@ const SearchScreen = ({ navigation }: any) => {
                 <SizeBox height={16} />
 
                 {!hasActiveFilters ? (
-                    renderNoResults('Start typing to search')
+                    renderNoResults(t('Start typing to search'))
                 ) : !hasAnyResults ? (
-                    renderNoResults('No results found')
+                    renderNoResults(t('No results found'))
                 ) : (
                     <>
                         {filteredEvents.length > 0 && (

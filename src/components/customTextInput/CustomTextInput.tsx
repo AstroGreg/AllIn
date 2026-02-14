@@ -1,9 +1,9 @@
 import { View, Text, TextInput, TouchableOpacity, Image } from 'react-native'
 import React, { useState } from 'react'
-import Styles from './CustomTextInputStyles'
+import { createStyles } from './CustomTextInputStyles'
 import SizeBox from '../../constants/SizeBox'
 import Icons from '../../constants/Icons'
-import Colors from '../../constants/Colors'
+import { useTheme } from '../../context/ThemeContext'
 
 interface CustomTextInputProps {
     label?: string;
@@ -34,20 +34,22 @@ const CustomTextInput = ({
 }: CustomTextInputProps) => {
     const [activeInput, setActiveInput] = useState(false);
     const [secureTextEntry, setSecureTextEntry] = useState(true);
+    const { colors } = useTheme();
+    const Styles = createStyles(colors);
 
     return (
         <>
             <Text style={Styles.label}>{label}</Text>
             {subLabel && <SizeBox height={4} />}
             {subLabel && <Text style={Styles.subLabel}>{subLabel}</Text>}
-            <View style={[Styles.inputContainer, activeInput && { borderColor: Colors.primaryColor }]}>
+            <View style={[Styles.inputContainer, activeInput && { borderColor: colors.primaryColor }]}>
                 {isIcon && icon}
                 <SizeBox width={isIcon ? 10 : 0} />
                 <View style={[Styles.inputBox, isPass && { width: '80%' }]}>
                     {activeInput && <Text style={Styles.inputTitle}>{label}</Text>}
                     <TextInput
                         placeholder={activeInput ? '' : placeholder}
-                        placeholderTextColor={Colors.grayColor}
+                        placeholderTextColor={colors.grayColor}
                         style={[Styles.input, !activeInput && { height: '100%' }]}
                         onFocus={() => setActiveInput(true)}
                         onBlur={() => setActiveInput(false)}

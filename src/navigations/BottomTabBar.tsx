@@ -380,6 +380,7 @@ const BottomTabBar = () => {
                 component={MenuStackNavigator}
                 options={({ route }) => ({
                     tabBarStyle: getTabBarStyle(route),
+                    tabBarLabel: 'Settings',
                 })}
                 listeners={({ navigation }) => ({
                     tabPress: (e) => {

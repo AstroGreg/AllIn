@@ -1,11 +1,11 @@
 import { StyleSheet } from 'react-native';
-import Colors from '../../constants/Colors';
+import { ThemeColors, lightColors } from '../../constants/Theme';
 import Fonts from '../../constants/Fonts';
 
-const Styles = StyleSheet.create({
+export const createStyles = (colors: ThemeColors) => StyleSheet.create({
     mainContainer: {
         flex: 1,
-        backgroundColor: Colors.whiteColor,
+        backgroundColor: colors.whiteColor,
     },
     header: {
         flexDirection: 'row',
@@ -30,7 +30,7 @@ const Styles = StyleSheet.create({
     },
     headerTitle: {
         ...Fonts.medium18,
-        color: Colors.mainTextColor,
+        color: colors.mainTextColor,
     },
     scrollContent: {
         paddingHorizontal: 20,
@@ -39,7 +39,7 @@ const Styles = StyleSheet.create({
 
     // Profile Card
     profileCard: {
-        backgroundColor: Colors.whiteColor,
+        backgroundColor: colors.whiteColor,
         borderRadius: 16,
         borderWidth: 0.5,
         borderColor: '#DEDEDE',
@@ -83,7 +83,7 @@ const Styles = StyleSheet.create({
     },
     userName: {
         ...Fonts.semibold18,
-        color: Colors.mainTextColor,
+        color: colors.mainTextColor,
     },
     userHandle: {
         ...Fonts.regular14,
@@ -104,7 +104,7 @@ const Styles = StyleSheet.create({
     },
     statValue: {
         ...Fonts.semibold18,
-        color: Colors.mainTextColor,
+        color: colors.mainTextColor,
     },
     statLabel: {
         ...Fonts.regular12,
@@ -125,7 +125,7 @@ const Styles = StyleSheet.create({
     },
     categoryText: {
         ...Fonts.regular14,
-        color: Colors.primaryColor,
+        color: colors.primaryColor,
     },
     categorySeparator: {
         ...Fonts.regular14,
@@ -149,7 +149,7 @@ const Styles = StyleSheet.create({
     },
     additionalStatValue: {
         ...Fonts.semibold16,
-        color: Colors.mainTextColor,
+        color: colors.mainTextColor,
     },
     additionalStatLabel: {
         ...Fonts.regular12,
@@ -163,7 +163,7 @@ const Styles = StyleSheet.create({
     },
     bioTitle: {
         ...Fonts.medium14,
-        color: Colors.mainTextColor,
+        color: colors.mainTextColor,
         marginBottom: 8,
     },
     bioText: {
@@ -216,7 +216,7 @@ const Styles = StyleSheet.create({
         borderRadius: 8,
     },
     toggleButtonActive: {
-        backgroundColor: Colors.primaryColor,
+        backgroundColor: colors.primaryColor,
     },
     toggleText: {
         ...Fonts.medium14,
@@ -224,7 +224,7 @@ const Styles = StyleSheet.create({
     },
     toggleTextActive: {
         ...Fonts.medium14,
-        color: Colors.whiteColor,
+        color: colors.whiteColor,
     },
 
     // Tab Content
@@ -241,23 +241,23 @@ const Styles = StyleSheet.create({
     },
     sectionTitle: {
         ...Fonts.medium16,
-        color: Colors.mainTextColor,
+        color: colors.mainTextColor,
     },
     viewAllText: {
         ...Fonts.regular14,
-        color: Colors.primaryColor,
+        color: colors.primaryColor,
     },
 
     // Athlete Count Badge
     athleteCountBadge: {
-        backgroundColor: Colors.secondaryBlueColor,
+        backgroundColor: colors.secondaryBlueColor,
         paddingHorizontal: 12,
         paddingVertical: 6,
         borderRadius: 20,
     },
     athleteCountText: {
         ...Fonts.regular12,
-        color: Colors.primaryColor,
+        color: colors.primaryColor,
     },
 
     // Athletes List
@@ -268,7 +268,7 @@ const Styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         padding: 16,
-        backgroundColor: Colors.whiteColor,
+        backgroundColor: colors.whiteColor,
         borderRadius: 10,
         borderWidth: 0.5,
         borderColor: '#DEDEDE',
@@ -284,14 +284,14 @@ const Styles = StyleSheet.create({
     },
     clubAthleteName: {
         ...Fonts.medium14,
-        color: Colors.mainTextColor,
+        color: colors.mainTextColor,
     },
     clubAthleteUsername: {
         ...Fonts.regular12,
         color: '#9B9F9F',
     },
     followButton: {
-        backgroundColor: Colors.primaryColor,
+        backgroundColor: colors.primaryColor,
         paddingHorizontal: 20,
         paddingVertical: 10,
         borderRadius: 8,
@@ -299,14 +299,14 @@ const Styles = StyleSheet.create({
     followingButton: {
         backgroundColor: '#F5F5F5',
         borderWidth: 1,
-        borderColor: Colors.primaryColor,
+        borderColor: colors.primaryColor,
     },
     followButtonText: {
         ...Fonts.medium14,
-        color: Colors.whiteColor,
+        color: colors.whiteColor,
     },
     followingButtonText: {
-        color: Colors.primaryColor,
+        color: colors.primaryColor,
     },
 
     // Coaches List
@@ -317,7 +317,7 @@ const Styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         padding: 16,
-        backgroundColor: Colors.whiteColor,
+        backgroundColor: colors.whiteColor,
         borderRadius: 10,
         borderWidth: 0.5,
         borderColor: '#DEDEDE',
@@ -333,7 +333,7 @@ const Styles = StyleSheet.create({
     },
     coachName: {
         ...Fonts.medium14,
-        color: Colors.mainTextColor,
+        color: colors.mainTextColor,
     },
     coachSpecialty: {
         ...Fonts.regular12,
@@ -347,7 +347,7 @@ const Styles = StyleSheet.create({
     eventCard: {
         flexDirection: 'row',
         padding: 16,
-        backgroundColor: Colors.whiteColor,
+        backgroundColor: colors.whiteColor,
         borderRadius: 10,
         borderWidth: 0.5,
         borderColor: '#DEDEDE',
@@ -364,7 +364,7 @@ const Styles = StyleSheet.create({
     },
     eventTitle: {
         ...Fonts.medium14,
-        color: Colors.mainTextColor,
+        color: colors.mainTextColor,
         marginBottom: 8,
     },
     eventDetailRow: {
@@ -386,7 +386,7 @@ const Styles = StyleSheet.create({
         gap: 16,
     },
     postCard: {
-        backgroundColor: Colors.whiteColor,
+        backgroundColor: colors.whiteColor,
         borderRadius: 10,
         borderWidth: 0.5,
         borderColor: '#DEDEDE',
@@ -409,7 +409,7 @@ const Styles = StyleSheet.create({
     },
     postTitle: {
         ...Fonts.medium14,
-        color: Colors.mainTextColor,
+        color: colors.mainTextColor,
     },
     postDate: {
         ...Fonts.regular12,
@@ -428,13 +428,15 @@ const Styles = StyleSheet.create({
         gap: 8,
         margin: 16,
         paddingVertical: 12,
-        backgroundColor: Colors.primaryColor,
+        backgroundColor: colors.primaryColor,
         borderRadius: 8,
     },
     sharePostButtonText: {
         ...Fonts.medium14,
-        color: Colors.whiteColor,
+        color: colors.whiteColor,
     },
 });
+
+const Styles = createStyles(lightColors);
 
 export default Styles;

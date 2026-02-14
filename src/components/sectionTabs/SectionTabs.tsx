@@ -1,7 +1,8 @@
 import { View, Text, TouchableOpacity } from 'react-native'
 import React from 'react'
-import Colors from '../../constants/Colors';
-import Styles from './SectionTabsStyles';
+import { createStyles } from './SectionTabsStyles';
+import { useTheme } from '../../context/ThemeContext';
+import { useTranslation } from 'react-i18next';
 
 interface SectionTabsProps {
     selectedTab: number;
@@ -9,7 +10,10 @@ interface SectionTabsProps {
 }
 
 const SectionTabs = ({ selectedTab, onTabPress }: SectionTabsProps) => {
-    const tabs = ['Potential Videos of me', 'Created Competitions'];
+    const { colors } = useTheme();
+    const Styles = createStyles(colors);
+    const { t } = useTranslation();
+    const tabs = [t('Potential videos of me'), t('Created competitions')];
 
     return (
         <View style={Styles.tabContainer}>
@@ -25,9 +29,9 @@ const SectionTabs = ({ selectedTab, onTabPress }: SectionTabsProps) => {
                     <Text style={[
                         Styles.tabText,
                         {
-                            color: selectedTab === index ? Colors.primaryColor : Colors.subTextColor,
+                            color: selectedTab === index ? colors.primaryColor : colors.subTextColor,
                             borderBottomWidth: selectedTab === index ? 3 : 0,
-                            borderBottomColor: selectedTab === index ? Colors.primaryColor : 'transparent',
+                            borderBottomColor: selectedTab === index ? colors.primaryColor : 'transparent',
                         }
                     ]}>
                         {tab}

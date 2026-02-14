@@ -1,11 +1,12 @@
 import { View, Text, Dimensions, TouchableOpacity } from 'react-native'
 import React, { useState } from 'react'
 import FastImage from 'react-native-fast-image';
-import Colors from '../../../constants/Colors';
 import SizeBox from '../../../constants/SizeBox';
 import Icons from '../../../constants/Icons';
 import ConfirmationModel from '../../../components/confirmationModel/ConfirmationModel';
-import Styles from '../SearchStyles';
+import { createStyles } from '../SearchStyles';
+import { useTheme } from '../../../context/ThemeContext';
+import { useTranslation } from 'react-i18next';
 
 
 interface PhotoContainerProps {
@@ -24,6 +25,9 @@ const PhotoContainer = ({ onPressImg, photo, name, price, uploadedAt }: PhotoCon
     const containerWidth = (deviceWidth - (2 * horizontalPadding) - (spacing * (numColumns - 1))) / numColumns;
 
     const [isDeleteVisible, setIsDeleteVisible] = useState(false)
+    const { colors } = useTheme();
+    const Styles = createStyles(colors);
+    const { t } = useTranslation();
 
     return (
         <TouchableOpacity onPress={onPressImg} style={{
@@ -34,7 +38,8 @@ const PhotoContainer = ({ onPressImg, photo, name, price, uploadedAt }: PhotoCon
             overflow: 'hidden',
             padding: 8,
             borderWidth: 0.5,
-            borderColor: Colors.lightGrayColor
+            borderColor: colors.lightGrayColor,
+            backgroundColor: colors.cardBackground,
         }}>
             <View style={Styles.photoImgCont}>
                 <FastImage
@@ -64,7 +69,7 @@ const PhotoContainer = ({ onPressImg, photo, name, price, uploadedAt }: PhotoCon
             <ConfirmationModel
                 isVisible={isDeleteVisible}
                 onClose={() => setIsDeleteVisible(false)}
-                text='Are You Sure You Want to Delete This photo?'
+                text={t('Are you sure you want to delete this photo?')}
                 onPressYes={() => setIsDeleteVisible(false)}
                 icon={<Icons.DeleteAccount height={24} width={24} />}
             />
