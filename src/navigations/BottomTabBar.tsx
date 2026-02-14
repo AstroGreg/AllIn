@@ -23,6 +23,9 @@ import PhotoDetailScreen from "../screens/photoDetail/PhotoDetailScreen";
 import PhotoBuyScreen from "../screens/photoBuy/PhotoBuyScreen";
 import VideosScreen from "../screens/videos/VideosScreen";
 import VideoPlayingScreen from "../screens/videoPlaying/VideoPlayingScreen";
+import ProfileTimelineDetailScreen from "../screens/profileTimeline/ProfileTimelineDetailScreen";
+import ProfileTimelineEditScreen from "../screens/profileTimeline/ProfileTimelineEditScreen";
+import ProfileBlogEditorScreen from "../screens/profileBlog/ProfileBlogEditorScreen";
 import ViewUserPostsViewAllScreen from "../screens/viewUserPostsViewAll/ViewUserPostsViewAllScreen";
 import ViewUserBlogDetailsScreen from "../screens/viewUserBlogDetails/ViewUserBlogDetailsScreen";
 import ViewUserCollectionsPhotosScreen from "../screens/viewUserCollectionsPhotos/ViewUserCollectionsPhotosScreen";
@@ -46,6 +49,7 @@ import EventAthletesScreen from "../screens/eventAthletes/EventAthletesScreen";
 import GroupEventsViewAllScreen from "../screens/groupEventsViewAll/GroupEventsViewAllScreen";
 import AthleteProfileScreen from "../screens/athleteProfile/AthleteProfileScreen";
 import { Platform } from "react-native";
+import { getFocusedRouteNameFromRoute } from "@react-navigation/native";
 import SearchScreen from "../screens/search/SearchScreen";
 import Videography from "../screens/search/searchScreens/Videography";
 import VideosForEvent from "../screens/search/searchScreens/VideosForEvent";
@@ -129,6 +133,9 @@ const HomeStackNavigator = () => {
             <HomeStack.Screen name="SelectEventInterestScreen" component={SelectEventInterestScreen} />
             <HomeStack.Screen name="DownloadsDetailsScreen" component={DownloadsDetailsScreen} />
             <HomeStack.Screen name="ViewUserBlogDetailsScreen" component={ViewUserBlogDetailsScreen} />
+            <HomeStack.Screen name="ProfileTimelineDetailScreen" component={ProfileTimelineDetailScreen} />
+            <HomeStack.Screen name="ProfileTimelineEditScreen" component={ProfileTimelineEditScreen} />
+            <HomeStack.Screen name="ProfileBlogEditorScreen" component={ProfileBlogEditorScreen} />
         </HomeStack.Navigator>
     );
 };
@@ -180,6 +187,9 @@ const ProfileStackNavigator = () => {
             <ProfileStack.Screen name="GroupEventsViewAllScreen" component={GroupEventsViewAllScreen} />
             <ProfileStack.Screen name="CongratulationsScreen" component={CongratulationsScreen} />
             <ProfileStack.Screen name="AthleteProfileScreen" component={AthleteProfileScreen} />
+            <ProfileStack.Screen name="ProfileTimelineDetailScreen" component={ProfileTimelineDetailScreen} />
+            <ProfileStack.Screen name="ProfileTimelineEditScreen" component={ProfileTimelineEditScreen} />
+            <ProfileStack.Screen name="ProfileBlogEditorScreen" component={ProfileBlogEditorScreen} />
         </ProfileStack.Navigator>
     );
 };
@@ -243,12 +253,28 @@ const SearchStackNavigator = () => {
             <SearchStack.Screen name="AISearchScreen" component={CombinedSearchScreen} />
             <SearchStack.Screen name="ContextSearchLoadingScreen" component={ContextSearchLoadingScreen} />
             <SearchStack.Screen name="AISearchResultsScreen" component={AISearchResultsScreen} />
+            <SearchStack.Screen name="ProfileTimelineDetailScreen" component={ProfileTimelineDetailScreen} />
         </SearchStack.Navigator>
     );
 };
 
 const BottomTabBar = () => {
     const { colors } = useTheme();
+    const baseTabBarStyle = {
+        backgroundColor: colors.backgroundColor,
+        elevation: 5,
+        height: Platform.OS === 'ios' ? 83 : 60,
+        borderTopWidth: 0.3,
+        borderTopColor: colors.lightGrayColor,
+        paddingTop: Platform.OS === 'ios' ? 10 : 10,
+    };
+    const getTabBarStyle = (route: any) => {
+        const routeName = getFocusedRouteNameFromRoute(route) ?? '';
+        if (routeName === 'VideoPlayingScreen') {
+            return { display: 'none' as const };
+        }
+        return baseTabBarStyle;
+    };
 
     return (
         <Tab.Navigator
@@ -283,19 +309,15 @@ const BottomTabBar = () => {
                     ...Fonts.regular12,
                     color: colors.subTextColor
                 },
-                tabBarStyle: {
-                    backgroundColor: colors.backgroundColor,
-                    elevation: 5,
-                    height: Platform.OS === 'ios' ? 83 : 60,
-                    borderTopWidth: 0.3,
-                    borderTopColor: colors.lightGrayColor,
-                    paddingTop: Platform.OS === 'ios' ? 10 : 10
-                },
+                tabBarStyle: baseTabBarStyle,
             })}
         >
             <Tab.Screen
                 name="Home"
                 component={HomeStackNavigator}
+                options={({ route }) => ({
+                    tabBarStyle: getTabBarStyle(route),
+                })}
                 listeners={({ navigation }) => ({
                     tabPress: (e) => {
                         navigation.reset({
@@ -308,6 +330,9 @@ const BottomTabBar = () => {
             <Tab.Screen
                 name="Search"
                 component={SearchStackNavigator}
+                options={({ route }) => ({
+                    tabBarStyle: getTabBarStyle(route),
+                })}
                 listeners={({ navigation }) => ({
                     tabPress: (e) => {
                         navigation.reset({
@@ -323,6 +348,9 @@ const BottomTabBar = () => {
             <Tab.Screen
                 name="Upload"
                 component={UploadStackNavigator}
+                options={({ route }) => ({
+                    tabBarStyle: getTabBarStyle(route),
+                })}
                 listeners={({ navigation }) => ({
                     tabPress: (e) => {
                         navigation.reset({
@@ -335,6 +363,9 @@ const BottomTabBar = () => {
             <Tab.Screen
                 name="Profile"
                 component={ProfileStackNavigator}
+                options={({ route }) => ({
+                    tabBarStyle: getTabBarStyle(route),
+                })}
                 listeners={({ navigation }) => ({
                     tabPress: (e) => {
                         navigation.reset({
@@ -347,6 +378,9 @@ const BottomTabBar = () => {
             <Tab.Screen
                 name="Menu"
                 component={MenuStackNavigator}
+                options={({ route }) => ({
+                    tabBarStyle: getTabBarStyle(route),
+                })}
                 listeners={({ navigation }) => ({
                     tabPress: (e) => {
                         navigation.reset({

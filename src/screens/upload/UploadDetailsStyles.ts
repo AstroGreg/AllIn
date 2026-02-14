@@ -7,11 +7,42 @@ export const createStyles = (colors: ThemeColors) => StyleSheet.create({
         flex: 1,
         backgroundColor: colors.backgroundColor,
     },
-    container: {
-        // alignItems: 'center',
-        flex: 1,
+    header: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        paddingHorizontal: 20,
+        paddingVertical: 16,
+        borderBottomWidth: 0.3,
+        borderBottomColor: colors.lightGrayColor,
+    },
+    headerButton: {
+        width: 44,
+        height: 44,
+        borderRadius: 22,
+        backgroundColor: colors.btnBackgroundColor,
+        alignItems: 'center',
         justifyContent: 'center',
-        marginHorizontal: 20
+    },
+    headerSpacer: {
+        width: 44,
+        height: 44,
+    },
+    headerGhost: {
+        width: 44,
+        height: 44,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    headerTitle: {
+        ...Fonts.medium18,
+        color: colors.mainTextColor,
+    },
+    container: {
+        flex: 1,
+        justifyContent: 'flex-start',
+        marginHorizontal: 20,
+        paddingTop: 24,
     },
     titleText: {
         ...Fonts.regular14,

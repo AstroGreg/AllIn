@@ -424,7 +424,8 @@ const SearchScreen = ({ navigation }: any) => {
     );
 
     const openDateTimePicker = () => {
-        const startSeed = timeRange.start ? toDateString(timeRange.start) : null;
+        const todaySeed = toDateString(new Date());
+        const startSeed = timeRange.start ? toDateString(timeRange.start) : todaySeed;
         const endSeed = timeRange.end ? toDateString(timeRange.end) : null;
         setCalendarStart(startSeed);
         setCalendarEnd(endSeed);
@@ -718,7 +719,8 @@ const SearchScreen = ({ navigation }: any) => {
                         <SizeBox height={12} />
                         <CalendarList
                             style={Styles.calendarContainer}
-                            current={calendarStart ?? undefined}
+                            current={calendarStart ?? toDateString(new Date())}
+                            initialDate={calendarStart ?? toDateString(new Date())}
                             firstDay={1}
                             calendarWidth={calendarWidth}
                             onDayPress={(day) => {

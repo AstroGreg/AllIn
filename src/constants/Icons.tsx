@@ -135,6 +135,7 @@ import loadingGradient from '../assets/icons/loadingGradient.svg';
 import quickDownload from '../assets/icons/quickDownload.svg';
 import quickAddMyself from '../assets/icons/quickAddMyself.svg';
 import quickChevron from '../assets/icons/quickChevron.svg';
+import trackFieldLogo from '../assets/icons/trackFieldLogo.svg';
 
 
 
@@ -274,6 +275,7 @@ const Icons = {
     QuickDownload: quickDownload,
     QuickAddMyself: quickAddMyself,
     QuickChevron: quickChevron,
+    TrackFieldLogo: trackFieldLogo,
 }
 
 export default Icons;

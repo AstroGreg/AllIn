@@ -22,8 +22,12 @@ export const createStyles = (colors: ThemeColors) => StyleSheet.create({
     scrollContent: {
         paddingHorizontal: 20,
         paddingTop: 24,
+        alignItems: 'center',
+        flexGrow: 1,
+        justifyContent: 'center',
     },
     tipCard: {
+        width: '100%',
         backgroundColor: colors.whiteColor,
         borderRadius: 10,
         borderWidth: 0.5,
@@ -95,6 +99,7 @@ export const createStyles = (colors: ThemeColors) => StyleSheet.create({
         color: colors.pureWhite,
     },
     createAccountButton: {
+        width: '100%',
         backgroundColor: colors.primaryColor,
         borderRadius: 10,
         paddingVertical: 16,
@@ -108,6 +113,7 @@ export const createStyles = (colors: ThemeColors) => StyleSheet.create({
         color: colors.pureWhite,
     },
     anonymousButton: {
+        width: '100%',
         backgroundColor: colors.btnBackgroundColor,
         borderRadius: 10,
         paddingVertical: 16,

@@ -1,13 +1,13 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, Image, Modal } from 'react-native';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { View, Text, TouchableOpacity, Image, Modal, Alert, ActionSheetIOS, Platform } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import FastImage from 'react-native-fast-image';
+import Video from 'react-native-video';
+import Slider from '@react-native-community/slider';
 import {
     ArrowLeft2,
     ArrowRight,
-    Calendar,
     More,
-    Forward,
     TickCircle,
     CloseCircle,
 } from 'iconsax-react-nativejs';
@@ -17,23 +17,124 @@ import Images from '../../constants/Images';
 import Icons from '../../constants/Icons';
 import SubscriptionModal from '../../components/subscriptionModal/SubscriptionModal';
 import { useTheme } from '../../context/ThemeContext';
+import { useAuth } from '../../context/AuthContext';
+import { getMediaById } from '../../services/apiGateway';
+import { getApiBaseUrl, getHlsBaseUrl } from '../../constants/RuntimeConfig';
 
 const VideoPlayingScreen = ({ navigation, route }: any) => {
     const insets = useSafeAreaInsets();
     const { colors } = useTheme();
     const Styles = createStyles(colors);
+    const { apiAccessToken } = useAuth();
     const showBuyModalOnLoad = route?.params?.showBuyModal || false;
     const videoPrice = route?.params?.video?.price || '€0,20';
-    const video = route?.params?.video || {
+    const fallbackVideo = route?.params?.video || {
         title: 'PK 800m 2023 indoor',
-        subtitle: 'Senioren, Heat 1',
         thumbnail: Images.photo1,
+        uri: '',
     };
+    const mediaId = '86db92e8-1b8e-44a5-95c4-fb4764f6783e';
+    const [videoTitle, setVideoTitle] = useState(fallbackVideo.title);
+    const [videoUrl, setVideoUrl] = useState<string | null>(fallbackVideo.uri || null);
+    const [posterUrl, setPosterUrl] = useState<string | null>(
+        fallbackVideo.thumbnail ? Image.resolveAssetSource(fallbackVideo.thumbnail).uri : null
+    );
 
     const [showBuyModal, setShowBuyModal] = useState(false);
     const [showSuccessModal, setShowSuccessModal] = useState(false);
     const [showFailedModal, setShowFailedModal] = useState(false);
     const [showSubscriptionModal, setShowSubscriptionModal] = useState(false);
+    const [isPlaying, setIsPlaying] = useState(true);
+    const [duration, setDuration] = useState(0);
+    const [currentTime, setCurrentTime] = useState(0);
+    const [isSeeking, setIsSeeking] = useState(false);
+    const [pendingSeek, setPendingSeek] = useState(0);
+    const videoRef = useRef<Video>(null);
+    const [sliderWidth, setSliderWidth] = useState(0);
+
+    const formatTime = useCallback((value: number) => {
+        const safe = Number.isFinite(value) ? Math.max(0, value) : 0;
+        const minutes = Math.floor(safe / 60);
+        const seconds = Math.floor(safe % 60);
+        const padded = seconds < 10 ? `0${seconds}` : `${seconds}`;
+        return `${minutes}:${padded}`;
+    }, []);
+
+    const isSignedUrl = useCallback((value?: string | null) => {
+        if (!value) return false;
+        const lower = String(value).toLowerCase();
+        return (
+            lower.includes('x-amz-signature') ||
+            lower.includes('x-amz-credential') ||
+            lower.includes('x-amz-security-token') ||
+            lower.includes('signature=') ||
+            lower.includes('token=') ||
+            lower.includes('expires=')
+        );
+    }, []);
+
+    const withAccessToken = useCallback((value?: string | null) => {
+        if (!value) return undefined;
+        if (!apiAccessToken) return value;
+        if (isSignedUrl(value)) return value;
+        if (value.includes('access_token=')) return value;
+        const sep = value.includes('?') ? '&' : '?';
+        return `${value}${sep}access_token=${encodeURIComponent(apiAccessToken)}`;
+    }, [apiAccessToken, isSignedUrl]);
+
+    const toAbsoluteUrl = useCallback((value?: string | null) => {
+        if (!value) return null;
+        const raw = String(value);
+        if (raw.startsWith('http://') || raw.startsWith('https://')) return raw;
+        const base = getApiBaseUrl();
+        if (!base) return raw;
+        return `${base.replace(/\/$/, '')}/${raw.replace(/^\//, '')}`;
+    }, []);
+
+    const toHlsUrl = useCallback((value?: string | null) => {
+        if (!value) return null;
+        const raw = String(value);
+        if (raw.startsWith('http://') || raw.startsWith('https://')) return raw;
+        const base = getHlsBaseUrl();
+        if (!base) return raw;
+        return `${base.replace(/\/$/, '')}/${raw.replace(/^\//, '')}`;
+    }, []);
+
+    useEffect(() => {
+        let mounted = true;
+        if (!apiAccessToken) {
+            return () => {};
+        }
+        getMediaById(apiAccessToken, mediaId)
+            .then((media) => {
+                if (!mounted) return;
+                const title = media.title || media.description || fallbackVideo.title;
+                setVideoTitle(title);
+                const hls = media.hls_manifest_path ? toHlsUrl(media.hls_manifest_path) : null;
+                const candidates = [
+                    media.preview_url,
+                    media.original_url,
+                    media.full_url,
+                    media.raw_url,
+                ]
+                    .filter(Boolean)
+                    .map((value) => toAbsoluteUrl(String(value)) || '')
+                    .filter(Boolean);
+                const mp4 = candidates.find((value) => /\.(mp4|mov|m4v)(\\?|$)/i.test(value));
+                const resolvedVideo = hls || mp4 || candidates[0] || fallbackVideo.uri || null;
+                const thumbCandidate = media.thumbnail_url || media.preview_url || media.full_url || media.raw_url || null;
+                const resolvedPoster = thumbCandidate ? toAbsoluteUrl(String(thumbCandidate)) : posterUrl;
+                setVideoUrl(withAccessToken(resolvedVideo || '') || resolvedVideo || null);
+                setPosterUrl(withAccessToken(resolvedPoster || '') || resolvedPoster || null);
+            })
+            .catch((err: any) => {
+                if (!mounted) return;
+                // ignore fetch errors for now; keep fallback values
+            });
+        return () => {
+            mounted = false;
+        };
+    }, [apiAccessToken, fallbackVideo.title, fallbackVideo.uri, mediaId, toAbsoluteUrl, toHlsUrl, withAccessToken]);
 
     useEffect(() => {
         if (showBuyModalOnLoad) {
@@ -61,86 +162,171 @@ const VideoPlayingScreen = ({ navigation, route }: any) => {
         setShowSubscriptionModal(true);
     };
 
+    const handleRequestIssue = () => {
+        Alert.alert('Request sent', 'We received your issue report.');
+    };
+
+    const handleGoToProfile = () => {
+        navigation.navigate('BottomTabBar', { screen: 'Profile' });
+    };
+
+    const handleGoToEvent = () => {
+        navigation.navigate('CompetitionDetailsScreen', {
+            name: videoTitle,
+            description: `Competition held in ${videoTitle}`,
+            competitionType: 'track',
+        });
+    };
+
+    const handleMarkInappropriate = () => {
+        Alert.alert('Thanks', 'We will review this content.');
+    };
+
+    const handleRequestRemoval = () => {
+        Alert.alert('Request sent', 'We will review the removal request.');
+    };
+
+    const openMoreMenu = useCallback(() => {
+        const actions = [
+            {label: 'Report an issue with this video/photo', onPress: handleRequestIssue},
+            {label: 'Go to author profile', onPress: handleGoToProfile},
+            {label: 'Go to event', onPress: handleGoToEvent},
+            {label: 'Mark as inappropriate content', onPress: handleMarkInappropriate},
+            {label: 'Request this video removed', onPress: handleRequestRemoval},
+        ];
+
+        if (Platform.OS === 'ios') {
+            ActionSheetIOS.showActionSheetWithOptions(
+                {
+                    options: [...actions.map((item) => item.label), 'Cancel'],
+                    cancelButtonIndex: actions.length,
+                },
+                (buttonIndex) => {
+                    if (buttonIndex < actions.length) {
+                        actions[buttonIndex].onPress();
+                    }
+                },
+            );
+            return;
+        }
+
+        Alert.alert('More options', 'Choose an action', [
+            {text: actions[0].label, onPress: actions[0].onPress},
+            {text: actions[1].label, onPress: actions[1].onPress},
+            {text: actions[2].label, onPress: actions[2].onPress},
+            {text: actions[3].label, onPress: actions[3].onPress},
+            {text: actions[4].label, onPress: actions[4].onPress},
+            {text: 'Cancel', style: 'cancel'},
+        ]);
+    }, [handleGoToEvent, handleGoToProfile, handleMarkInappropriate, handleRequestIssue, handleRequestRemoval]);
+
     return (
         <View style={Styles.mainContainer}>
             <SizeBox height={insets.top} />
 
             {/* Header */}
             <View style={Styles.header}>
-                <View style={Styles.headerLeft}>
-                    <TouchableOpacity onPress={() => navigation.goBack()}>
-                        <ArrowLeft2 size={24} color={colors.mainTextColor} variant="Linear" />
-                    </TouchableOpacity>
-                    <View style={Styles.calendarIconContainer}>
-                        <Calendar size={18} color="#FFFFFF" variant="Linear" />
-                    </View>
-                    <View style={Styles.headerTitleContainer}>
-                        <Text style={Styles.headerTitle}>{video.title}</Text>
-                        <Text style={Styles.headerSubtitle}>{video.subtitle}</Text>
-                    </View>
-                </View>
-                <TouchableOpacity>
+                <TouchableOpacity onPress={() => navigation.goBack()} style={Styles.headerBack}>
+                    <ArrowLeft2 size={24} color={colors.primaryColor} variant="Linear" />
+                </TouchableOpacity>
+                <Text style={Styles.headerTitleCentered} numberOfLines={1}>
+                    {videoTitle}
+                </Text>
+                <TouchableOpacity onPress={openMoreMenu} style={Styles.headerMore}>
                     <More size={24} color={colors.mainTextColor} variant="Linear" style={{ transform: [{ rotate: '90deg' }] }} />
                 </TouchableOpacity>
             </View>
 
-            {/* Question Card */}
-            <View style={Styles.questionCard}>
-                <Text style={Styles.questionText}>Is this video of you or another person</Text>
-                <View style={Styles.buttonsRow}>
-                    <TouchableOpacity style={Styles.noButton}>
-                        <Text style={Styles.buttonText}>No</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity style={Styles.yesButton}>
-                        <Text style={Styles.buttonText}>Yes</Text>
-                    </TouchableOpacity>
-                </View>
-            </View>
-
             {/* Video Container */}
-            <View style={Styles.videoContainer}>
-                <FastImage
-                    source={video.thumbnail}
-                    style={Styles.videoImage}
-                    resizeMode="cover"
-                />
+            <TouchableOpacity
+                style={Styles.videoContainer}
+                activeOpacity={0.9}
+                onPress={() => setIsPlaying((prev) => !prev)}
+            >
+                {videoUrl ? (
+                    <Video
+                        ref={videoRef}
+                        source={{ uri: videoUrl, type: String(videoUrl).includes('.m3u8') ? 'm3u8' : undefined }}
+                        style={Styles.videoImage}
+                        resizeMode="cover"
+                        controls={false}
+                        paused={!isPlaying}
+                        poster={posterUrl || Image.resolveAssetSource(Images.photo1).uri}
+                        posterResizeMode="cover"
+                        ignoreSilentSwitch="ignore"
+                        repeat={false}
+                        onLoad={(meta) => {
+                            setDuration(meta.duration || 0);
+                        }}
+                        onProgress={(progress) => {
+                            if (!isSeeking) {
+                                setCurrentTime(progress.currentTime);
+                            }
+                        }}
+                    />
+                ) : (
+                    <FastImage
+                        source={posterUrl ? { uri: posterUrl } : Images.photo1}
+                        style={Styles.videoImage}
+                        resizeMode="cover"
+                    />
+                )}
 
-                {/* Side Actions */}
-                <View style={Styles.sideActions}>
-                    <TouchableOpacity style={Styles.actionButton}>
-                        <Icons.DownloadBlue width={25} height={25} />
-                    </TouchableOpacity>
-                    <TouchableOpacity style={Styles.actionButton}>
-                        <Image source={Icons.ShareBlue} style={{ width: 25, height: 25 }} />
-                    </TouchableOpacity>
-                </View>
+                {!isPlaying && (
+                    <View style={Styles.playButtonOverlay}>
+                        <Icons.PlayCricle width={46} height={46} />
+                    </View>
+                )}
 
-                {/* Video Controls */}
-                <View style={Styles.controlsContainer}>
-                    {/* Progress Bar */}
-                    <View style={Styles.progressBarContainer}>
-                        <View style={Styles.progressBarBackground}>
-                            <View style={Styles.progressBarFill} />
+                {duration > 0 && (
+                    <View
+                        style={Styles.videoSliderOverlay}
+                        onLayout={(event) => {
+                            setSliderWidth(event.nativeEvent.layout.width);
+                        }}
+                    >
+                        <View
+                            style={[
+                                Styles.videoSliderTimeBubble,
+                                sliderWidth > 0
+                                    ? {
+                                          left:
+                                              Math.min(
+                                                  sliderWidth - 32,
+                                                  Math.max(
+                                                      0,
+                                                      (sliderWidth * (isSeeking ? pendingSeek : currentTime)) / duration - 16,
+                                                  ),
+                                              ),
+                                      }
+                                    : undefined,
+                            ]}
+                        >
+                            <Text style={Styles.videoSliderTime}>{formatTime(isSeeking ? pendingSeek : currentTime)}</Text>
                         </View>
-                        <View style={Styles.progressThumb} />
+                        <Slider
+                            minimumValue={0}
+                            maximumValue={duration}
+                            value={isSeeking ? pendingSeek : currentTime}
+                            minimumTrackTintColor={colors.primaryColor}
+                            maximumTrackTintColor="rgba(255,255,255,0.45)"
+                            thumbTintColor={colors.primaryColor}
+                            onValueChange={(value) => {
+                                setIsSeeking(true);
+                                setPendingSeek(value);
+                            }}
+                            onSlidingComplete={(value) => {
+                                videoRef.current?.seek(value);
+                                setCurrentTime(value);
+                                setIsSeeking(false);
+                            }}
+                        />
                     </View>
+                )}
+            </TouchableOpacity>
 
-                    {/* Control Buttons */}
-                    <View style={Styles.controlButtons}>
-                        <TouchableOpacity style={Styles.skipButton}>
-                            <Forward size={28} color={colors.primaryColor} variant="Bold" style={{ transform: [{ rotate: '180deg' }] }} />
-                        </TouchableOpacity>
-                        <TouchableOpacity style={Styles.playButton}>
-                            <Icons.PlayCricle width={46} height={46} />
-                        </TouchableOpacity>
-                        <TouchableOpacity style={Styles.skipButton}>
-                            <Forward size={28} color={colors.primaryColor} variant="Bold" />
-                        </TouchableOpacity>
-                    </View>
-                </View>
-            </View>
+            <SizeBox height={insets.bottom > 0 ? insets.bottom : 0} />
 
-            <SizeBox height={insets.bottom > 0 ? insets.bottom : 20} />
 
             {/* Buy Modal */}
             <Modal
@@ -152,12 +338,12 @@ const VideoPlayingScreen = ({ navigation, route }: any) => {
                 <View style={Styles.modalOverlay}>
                     <View style={Styles.modalContainer}>
                         <FastImage
-                            source={video.thumbnail}
+                            source={posterUrl ? { uri: posterUrl } : Images.photo1}
                             style={Styles.modalImage}
                             resizeMode="cover"
                         />
                         <View style={Styles.modalInfoRow}>
-                            <Text style={Styles.modalTitle}>{video.title}</Text>
+                            <Text style={Styles.modalTitle}>{videoTitle}</Text>
                             <Text style={Styles.modalPrice}>{videoPrice}</Text>
                         </View>
                         <View style={Styles.modalDivider} />

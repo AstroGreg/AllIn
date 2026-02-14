@@ -83,7 +83,7 @@ const ViewUserCollectionsPhotosScreen = ({ navigation }: any) => {
                     <Text style={Styles.sectionTitle}>Collections</Text>
                     <View style={Styles.photosCountBadge}>
                         <Text style={Styles.photosCountText}>
-                            {activeTab === 'photos' ? '430 Photos Available' : '430 Videos Available'}
+                            {activeTab === 'photos' ? `${photos.length} photos` : `${videos.length} videos`}
                         </Text>
                     </View>
                 </View>

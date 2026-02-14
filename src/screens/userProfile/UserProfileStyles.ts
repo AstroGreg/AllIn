@@ -44,6 +44,28 @@ export const createStyles = (colors: ThemeColors) => StyleSheet.create({
         borderColor: colors.lightGrayColor,
         padding: 16,
     },
+    profileTopRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        gap: 12,
+    },
+    profileHeaderRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 12,
+        flex: 1,
+        justifyContent: 'flex-start',
+    },
+    profileCategoryOnly: {
+        alignItems: 'center',
+        gap: 6,
+        minWidth: 80,
+    },
+    profileCategoryText: {
+        ...Fonts.medium14,
+        color: colors.primaryColor,
+    },
     editProfileButton: {
         position: 'absolute',
         top: 16,
@@ -63,22 +85,41 @@ export const createStyles = (colors: ThemeColors) => StyleSheet.create({
         color: colors.subTextColor,
     },
     profileImageContainer: {
-        width: 100,
-        height: 100,
-        borderRadius: 50,
-        alignSelf: 'center',
+        width: 84,
+        height: 84,
+        borderRadius: 42,
+        overflow: 'visible',
+        position: 'relative',
+    },
+    profileImageInner: {
+        width: 84,
+        height: 84,
+        borderRadius: 42,
         overflow: 'hidden',
     },
     profileImage: {
         width: '100%',
         height: '100%',
     },
+    profileImageEditBadge: {
+        position: 'absolute',
+        right: -2,
+        bottom: -2,
+        width: 26,
+        height: 26,
+        borderRadius: 13,
+        backgroundColor: colors.primaryColor,
+        alignItems: 'center',
+        justifyContent: 'center',
+        borderWidth: 2,
+        borderColor: colors.whiteColor,
+        zIndex: 10,
+        elevation: 6,
+    },
     nameContainer: {
         flexDirection: 'row',
         alignItems: 'center',
-        justifyContent: 'center',
         gap: 4,
-        marginTop: 8,
     },
     userName: {
         ...Fonts.medium14,
@@ -87,8 +128,30 @@ export const createStyles = (colors: ThemeColors) => StyleSheet.create({
     userHandle: {
         ...Fonts.regular12,
         color: colors.subTextColor,
-        textAlign: 'center',
         marginTop: 6,
+    },
+    categoryRow: {
+        marginTop: 10,
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 8,
+    },
+    categoryLabel: {
+        ...Fonts.regular12,
+        color: colors.subTextColor,
+        letterSpacing: 0.3,
+    },
+    categoryPill: {
+        paddingHorizontal: 10,
+        paddingVertical: 4,
+        borderRadius: 999,
+        backgroundColor: colors.secondaryBlueColor,
+        borderWidth: 1,
+        borderColor: colors.borderColor,
+    },
+    categoryValue: {
+        ...Fonts.medium12,
+        color: colors.primaryColor,
     },
 
     // Stats
@@ -98,6 +161,12 @@ export const createStyles = (colors: ThemeColors) => StyleSheet.create({
         justifyContent: 'center',
         marginTop: 17,
         gap: 24,
+    },
+    statsContainerRight: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'flex-start',
+        gap: 16,
     },
     statItem: {
         alignItems: 'center',
@@ -227,6 +296,187 @@ export const createStyles = (colors: ThemeColors) => StyleSheet.create({
         height: 1,
         backgroundColor: colors.lightGrayColor,
         marginTop: 14,
+    },
+
+    // Profile tabs (Instagram-style)
+    profileTabs: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        gap: 8,
+        marginTop: 20,
+        paddingVertical: 8,
+        borderBottomWidth: 1,
+        borderBottomColor: colors.lightGrayColor,
+    },
+    profileTab: {
+        flex: 1,
+        alignItems: 'center',
+        paddingVertical: 8,
+        borderBottomWidth: 2,
+        borderBottomColor: 'transparent',
+        gap: 4,
+    },
+    profileTabActive: {
+        borderBottomColor: colors.primaryColor,
+    },
+    profileTabText: {
+        ...Fonts.regular10,
+        color: colors.subTextColor,
+    },
+    profileTabTextActive: {
+        color: colors.primaryColor,
+    },
+
+    // Activity list (Blogs & Events)
+    activitySection: {
+        marginTop: 20,
+    },
+    activityEventCard: {
+        backgroundColor: colors.whiteColor,
+        borderRadius: 12,
+        borderWidth: 0.5,
+        borderColor: colors.lightGrayColor,
+        padding: 16,
+        marginBottom: 16,
+    },
+    activityEventRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
+    activityEventThumb: {
+        width: 86,
+        height: 86,
+        borderRadius: 10,
+    },
+    activityEventThumbPlaceholder: {
+        width: 86,
+        height: 86,
+        borderRadius: 10,
+        backgroundColor: colors.btnBackgroundColor,
+    },
+    activityEventInfo: {
+        flex: 1,
+        marginLeft: 12,
+    },
+    activityEventSubtitle: {
+        ...Fonts.regular12,
+        color: colors.grayColor,
+        marginTop: 4,
+        marginBottom: 6,
+    },
+    activityEventMetaRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        flexWrap: 'wrap',
+        gap: 6,
+    },
+    activityEventMetaText: {
+        ...Fonts.regular12,
+        color: colors.grayColor,
+    },
+    activityEventDot: {
+        width: 4,
+        height: 4,
+        borderRadius: 2,
+        backgroundColor: colors.grayColor,
+    },
+    activityStatusBadge: {
+        paddingHorizontal: 10,
+        paddingVertical: 4,
+        borderRadius: 999,
+    },
+    activityStatusActive: {
+        backgroundColor: '#EAF7EF',
+    },
+    activityStatusDone: {
+        backgroundColor: '#EAF1FF',
+    },
+    activityStatusText: {
+        ...Fonts.regular12,
+        color: colors.mainTextColor,
+    },
+    activityCard: {
+        backgroundColor: colors.whiteColor,
+        borderRadius: 12,
+        borderWidth: 0.5,
+        borderColor: colors.lightGrayColor,
+        padding: 16,
+        marginBottom: 16,
+    },
+    activityHeader: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        gap: 8,
+    },
+    activityTitle: {
+        ...Fonts.medium14,
+        color: colors.mainTextColor,
+        flex: 1,
+    },
+    activityBadge: {
+        paddingHorizontal: 10,
+        paddingVertical: 4,
+        borderRadius: 999,
+    },
+    activityBadgeBlog: {
+        backgroundColor: '#EAF1FF',
+    },
+    activityBadgeEvent: {
+        backgroundColor: '#EAF7EF',
+    },
+    activityBadgeText: {
+        ...Fonts.regular12,
+        color: colors.mainTextColor,
+    },
+    activityMeta: {
+        ...Fonts.regular12,
+        color: colors.grayColor,
+        marginTop: 8,
+    },
+    activityDescription: {
+        ...Fonts.regular12,
+        color: colors.subTextColor,
+        marginTop: 6,
+    },
+    activityActionsRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 10,
+        marginTop: 12,
+    },
+    activityAction: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 6,
+        backgroundColor: colors.primaryColor,
+        borderRadius: 10,
+        paddingHorizontal: 14,
+        paddingVertical: 8,
+    },
+    activityActionText: {
+        ...Fonts.regular12,
+        color: colors.pureWhite,
+    },
+    activityDelete: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 6,
+        borderRadius: 10,
+        borderWidth: 1,
+        borderColor: '#ED5454',
+        paddingHorizontal: 14,
+        paddingVertical: 8,
+    },
+    activityDeleteText: {
+        ...Fonts.regular12,
+        color: '#ED5454',
+    },
+    activityHint: {
+        ...Fonts.regular12,
+        color: colors.grayColor,
+        marginTop: 10,
     },
 
     // Create Post Button
@@ -640,6 +890,227 @@ export const createStyles = (colors: ThemeColors) => StyleSheet.create({
     downloadsDetailsButtonText: {
         ...Fonts.regular14,
         color: colors.subTextColor,
+    },
+    earningsRow: {
+        flexDirection: 'row',
+        gap: 12,
+        marginTop: 16,
+    },
+    earningsCard: {
+        flex: 1,
+        backgroundColor: colors.whiteColor,
+        borderRadius: 12,
+        borderWidth: 0.5,
+        borderColor: colors.lightGrayColor,
+        padding: 14,
+    },
+    earningsLabel: {
+        ...Fonts.regular12,
+        color: colors.subTextColor,
+    },
+    earningsValue: {
+        ...Fonts.medium16,
+        color: colors.mainTextColor,
+        marginTop: 6,
+    },
+    downloadAnalyticsSection: {
+        marginTop: 16,
+    },
+    downloadAnalyticsTitle: {
+        ...Fonts.medium14,
+        color: colors.mainTextColor,
+        marginBottom: 8,
+    },
+    downloadAnalyticsCard: {
+        backgroundColor: colors.whiteColor,
+        borderRadius: 12,
+        borderWidth: 0.5,
+        borderColor: colors.lightGrayColor,
+        padding: 12,
+        marginBottom: 10,
+    },
+    downloadAnalyticsName: {
+        ...Fonts.medium14,
+        color: colors.mainTextColor,
+    },
+    downloadAnalyticsRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        marginTop: 6,
+    },
+    downloadAnalyticsMeta: {
+        ...Fonts.regular12,
+        color: colors.grayColor,
+    },
+    competitionSearch: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 8,
+        paddingHorizontal: 12,
+        paddingVertical: 10,
+        borderRadius: 10,
+        borderWidth: 1,
+        borderColor: colors.lightGrayColor,
+        backgroundColor: colors.btnBackgroundColor,
+        marginBottom: 10,
+    },
+    competitionSearchInput: {
+        flex: 1,
+        ...Fonts.regular14,
+        color: colors.mainTextColor,
+    },
+    competitionCard: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 12,
+        padding: 12,
+        borderRadius: 12,
+        borderWidth: 0.5,
+        borderColor: colors.lightGrayColor,
+        backgroundColor: colors.whiteColor,
+        marginBottom: 10,
+    },
+    competitionThumb: {
+        width: 56,
+        height: 56,
+        borderRadius: 10,
+    },
+    competitionThumbPlaceholder: {
+        width: 56,
+        height: 56,
+        borderRadius: 10,
+        backgroundColor: colors.btnBackgroundColor,
+    },
+    competitionInfo: {
+        flex: 1,
+        gap: 4,
+    },
+    competitionTitle: {
+        ...Fonts.medium14,
+        color: colors.mainTextColor,
+    },
+    competitionMeta: {
+        ...Fonts.regular12,
+        color: colors.subTextColor,
+    },
+    competitionMetaSecondary: {
+        ...Fonts.regular12,
+        color: colors.grayColor,
+    },
+    categoryModalBackdrop: {
+        flex: 1,
+        backgroundColor: 'rgba(0,0,0,0.35)',
+        justifyContent: 'center',
+        paddingHorizontal: 32,
+    },
+    categoryModalCard: {
+        backgroundColor: colors.whiteColor,
+        borderRadius: 16,
+        paddingVertical: 16,
+        paddingHorizontal: 18,
+    },
+    categoryModalTitle: {
+        ...Fonts.medium16,
+        color: colors.mainTextColor,
+        textAlign: 'center',
+    },
+    categoryOption: {
+        paddingVertical: 12,
+        alignItems: 'center',
+    },
+    categoryOptionText: {
+        ...Fonts.medium14,
+        color: colors.primaryColor,
+    },
+    categoryOptionDivider: {
+        height: 1,
+        backgroundColor: colors.lightGrayColor,
+    },
+
+    // Timeline modal
+    timelineModalOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0,0,0,0.4)',
+        alignItems: 'center',
+        justifyContent: 'center',
+        paddingHorizontal: 20,
+    },
+    timelineModalCard: {
+        width: '100%',
+        backgroundColor: colors.whiteColor,
+        borderRadius: 16,
+        padding: 16,
+        borderWidth: 0.5,
+        borderColor: colors.lightGrayColor,
+    },
+    timelineModalTitle: {
+        ...Fonts.medium16,
+        color: colors.mainTextColor,
+        marginBottom: 12,
+    },
+    timelineField: {
+        marginBottom: 12,
+    },
+    timelineLabel: {
+        ...Fonts.regular12,
+        color: colors.grayColor,
+        marginBottom: 6,
+    },
+    timelineInput: {
+        borderWidth: 1,
+        borderColor: colors.lightGrayColor,
+        borderRadius: 10,
+        paddingHorizontal: 12,
+        paddingVertical: 10,
+        ...Fonts.regular14,
+        color: colors.mainTextColor,
+        backgroundColor: colors.btnBackgroundColor,
+    },
+    timelineTextarea: {
+        minHeight: 90,
+        textAlignVertical: 'top',
+    },
+    timelineButtonsRow: {
+        flexDirection: 'row',
+        gap: 12,
+        marginTop: 4,
+    },
+    timelineCancelButton: {
+        flex: 1,
+        borderWidth: 1,
+        borderColor: colors.lightGrayColor,
+        borderRadius: 10,
+        alignItems: 'center',
+        justifyContent: 'center',
+        paddingVertical: 12,
+    },
+    timelineCancelText: {
+        ...Fonts.medium14,
+        color: colors.subTextColor,
+    },
+    timelineSaveButton: {
+        flex: 1,
+        backgroundColor: colors.primaryColor,
+        borderRadius: 10,
+        alignItems: 'center',
+        justifyContent: 'center',
+        paddingVertical: 12,
+    },
+    timelineSaveText: {
+        ...Fonts.medium14,
+        color: colors.pureWhite,
+    },
+    timelineDeleteButton: {
+        marginTop: 12,
+        alignItems: 'center',
+        paddingVertical: 10,
+        borderRadius: 10,
+        backgroundColor: '#FFECEC',
+    },
+    timelineDeleteText: {
+        ...Fonts.medium14,
+        color: '#ED5454',
     },
 });
 

@@ -1,78 +1,142 @@
-import React, { useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { View, Text, ScrollView, TouchableOpacity } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import FastImage from 'react-native-fast-image';
-import {
-    ArrowLeft2,
-    ArrowRight,
-    VideoCircle,
-} from 'iconsax-react-nativejs';
+import { ArrowLeft2 } from 'iconsax-react-nativejs';
 import Styles from './PhotosScreenStyles';
 import SizeBox from '../../constants/SizeBox';
 import Colors from '../../constants/Colors';
-import Images from '../../constants/Images';
-import Icons from '../../constants/Icons';
-import SubscriptionModal from '../../components/subscriptionModal/SubscriptionModal';
+import { useAuth } from '../../context/AuthContext';
+import { getMediaById } from '../../services/apiGateway';
+import { getApiBaseUrl } from '../../constants/RuntimeConfig';
 
 const PhotosScreen = ({ navigation, route }: any) => {
     const insets = useSafeAreaInsets();
-    const [showSubscriptionModal, setShowSubscriptionModal] = useState(false);
+    const { apiAccessToken } = useAuth();
     const eventTitle = route?.params?.eventTitle || 'BK Studentent 23';
-    const walletBalance = route?.params?.walletBalance || '€20,09';
+    const photoIds = useMemo(
+        () => [
+            '87873d40-addf-4289-aa82-7cd300acdd94',
+            '4ac31817-e954-4d22-934d-27f82ddf5163',
+            '4fed0d64-9fd4-42c4-bf24-875aad683c6d',
+        ],
+        [],
+    );
+    const [photoMap, setPhotoMap] = useState<Record<string, string>>({});
 
-    const photos = [
-        { id: 1, price: '€0,10', resolution: '3840×2160', thumbnail: Images.photo1 },
-        { id: 2, price: '€0,15', resolution: '3840×2160', thumbnail: Images.photo7 },
-        { id: 3, price: '€0,20', resolution: '3840×2160', thumbnail: Images.photo3 },
-        { id: 4, price: '€0,15', resolution: '3840×2160', thumbnail: Images.photo4 },
-        { id: 5, price: '€0,15', resolution: '3840×2160', thumbnail: Images.photo5 },
-        { id: 6, price: '€0,20', resolution: '3840×2160', thumbnail: Images.photo6 },
-    ];
+    const isSignedUrl = useCallback((value?: string | null) => {
+        if (!value) return false;
+        const lower = String(value).toLowerCase();
+        return (
+            lower.includes('x-amz-signature') ||
+            lower.includes('x-amz-credential') ||
+            lower.includes('x-amz-security-token') ||
+            lower.includes('signature=') ||
+            lower.includes('token=') ||
+            lower.includes('expires=')
+        );
+    }, []);
+
+    const withAccessToken = useCallback((value?: string | null) => {
+        if (!value) return undefined;
+        if (!apiAccessToken) return value;
+        if (isSignedUrl(value)) return value;
+        if (value.includes('access_token=')) return value;
+        const sep = value.includes('?') ? '&' : '?';
+        return `${value}${sep}access_token=${encodeURIComponent(apiAccessToken)}`;
+    }, [apiAccessToken, isSignedUrl]);
+
+    const toAbsoluteUrl = useCallback((value?: string | null) => {
+        if (!value) return null;
+        const raw = String(value);
+        if (raw.startsWith('http://') || raw.startsWith('https://')) return raw;
+        const base = getApiBaseUrl();
+        if (!base) return raw;
+        return `${base.replace(/\/$/, '')}/${raw.replace(/^\//, '')}`;
+    }, []);
+
+    useEffect(() => {
+        let mounted = true;
+        if (!apiAccessToken) return () => {};
+        Promise.all(
+            photoIds.map(async (id) => {
+                const media = await getMediaById(apiAccessToken, id);
+                const thumbCandidate =
+                    media.thumbnail_url || media.preview_url || media.full_url || media.raw_url || null;
+                const resolvedThumb = thumbCandidate ? toAbsoluteUrl(String(thumbCandidate)) : null;
+                return [id, withAccessToken(resolvedThumb) || resolvedThumb] as const;
+            }),
+        )
+            .then((entries) => {
+                if (!mounted) return;
+                const map: Record<string, string> = {};
+                entries.forEach(([id, url]) => {
+                    if (url) map[id] = url;
+                });
+                setPhotoMap(map);
+            })
+            .catch(() => {});
+        return () => {
+            mounted = false;
+        };
+    }, [apiAccessToken, photoIds, toAbsoluteUrl, withAccessToken]);
+
+    const photos = useMemo(
+        () => ([
+            {
+                id: photoIds[0],
+                title: `${eventTitle} Photo 1`,
+                date: '27/05/2025',
+                thumbnail: photoMap[photoIds[0]] ?? '',
+            },
+            {
+                id: photoIds[1],
+                title: `${eventTitle} Photo 2`,
+                date: '27/05/2025',
+                thumbnail: photoMap[photoIds[1]] ?? '',
+            },
+            {
+                id: photoIds[2],
+                title: `${eventTitle} Photo 3`,
+                date: '27/05/2025',
+                thumbnail: photoMap[photoIds[2]] ?? '',
+            },
+        ]),
+        [eventTitle, photoIds, photoMap],
+    );
 
     const renderPhotoCard = (photo: any) => (
-        <View key={photo.id} style={Styles.photoCard}>
-            <TouchableOpacity
-                onPress={() => navigation.navigate('PhotoBuyScreen', {
-                    eventTitle,
-                    photo: {
-                        title: 'PK 2025 indoor Passionate',
-                        views: '122K+',
-                        thumbnail: photo.thumbnail,
-                    },
-                })}
-            >
+        <TouchableOpacity
+            key={photo.id}
+            style={Styles.mediaCard}
+            activeOpacity={0.85}
+            onPress={() => navigation.navigate('PhotoDetailScreen', {
+                eventTitle,
+                media: {
+                    id: photo.id,
+                    type: 'image',
+                    title: photo.title,
+                    thumbnailUrl: photo.thumbnail,
+                    previewUrl: photo.thumbnail,
+                    originalUrl: photo.thumbnail,
+                    fullUrl: photo.thumbnail,
+                },
+            })}
+        >
+            {photo.thumbnail ? (
                 <FastImage
-                    source={photo.thumbnail}
-                    style={Styles.photoThumbnail}
+                    source={{ uri: photo.thumbnail }}
+                    style={Styles.mediaThumbnail}
                     resizeMode="cover"
                 />
-            </TouchableOpacity>
-            <View style={Styles.photoInfo}>
-                <View style={Styles.photoLeftInfo}>
-                    <Text style={Styles.photoPrice}>{photo.price}</Text>
-                    <TouchableOpacity
-                        style={Styles.viewButton}
-                        onPress={() => navigation.navigate('PhotoDetailScreen', {
-                            eventTitle,
-                            photo: {
-                                title: 'PK 2025 indoor Passionate',
-                                views: '122K+',
-                                thumbnail: photo.thumbnail,
-                            },
-                        })}
-                    >
-                        <Text style={Styles.viewButtonText}>View</Text>
-                        <ArrowRight size={12} color={Colors.whiteColor} variant="Linear" />
-                    </TouchableOpacity>
-                </View>
-                <View style={Styles.photoRightInfo}>
-                    <Text style={Styles.photoResolution}>{photo.resolution}</Text>
-                    <TouchableOpacity>
-                        <Icons.DownloadBlue height={16} width={16} />
-                    </TouchableOpacity>
-                </View>
+            ) : (
+                <View style={Styles.mediaThumbnailPlaceholder} />
+            )}
+            <View style={Styles.mediaInfo}>
+                <Text style={Styles.mediaTitle} numberOfLines={2}>{photo.title}</Text>
+                <Text style={Styles.mediaMeta}>{photo.date}</Text>
             </View>
-        </View>
+        </TouchableOpacity>
     );
 
     return (
@@ -85,60 +149,14 @@ const PhotosScreen = ({ navigation, route }: any) => {
                     <ArrowLeft2 size={24} color={Colors.mainTextColor} variant="Linear" />
                 </TouchableOpacity>
                 <Text style={Styles.headerTitle}>{eventTitle}</Text>
-                <TouchableOpacity
-                    style={Styles.videoButton}
-                    onPress={() => navigation.navigate('VideosScreen', { eventTitle })}
-                >
-                    <VideoCircle size={24} color={Colors.primaryColor} variant="Bold" />
-                </TouchableOpacity>
+                <View style={Styles.headerSpacer} />
             </View>
 
             <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={Styles.scrollContent}>
-                {/* Wallet Balance Row */}
-                <View style={Styles.walletRow}>
-                    <View style={Styles.walletInfo}>
-                        <Text style={Styles.walletLabel}>Wallet Balance:</Text>
-                        <Text style={Styles.walletBalance}>{walletBalance}</Text>
-                    </View>
-                    <TouchableOpacity style={Styles.rechargeButton} onPress={() => setShowSubscriptionModal(true)}>
-                        <Text style={Styles.rechargeButtonText}>Recharge</Text>
-                    </TouchableOpacity>
-                </View>
-
-                <SizeBox height={16} />
-
-                {/* Photos Header */}
-                <View style={Styles.photosHeader}>
-                    <Text style={Styles.photosLabel}>Photos</Text>
-                    <TouchableOpacity style={Styles.downloadAllButton}>
-                        <Text style={Styles.downloadAllText}>Download All</Text>
-                    </TouchableOpacity>
-                </View>
-
-                <SizeBox height={16} />
-
-                {/* Info Card */}
-                <View style={Styles.infoCard}>
-                    <Icons.LightbulbColorful height={30} width={30} />
-                    <Text style={Styles.infoText}>
-                        These photos were found through facial recognition or by matching your chest number.
-                    </Text>
-                </View>
-
-                <SizeBox height={24} />
-
-                {/* Photos Grid */}
-                <View style={Styles.photosGrid}>
-                    {photos.map(renderPhotoCard)}
-                </View>
+                {photos.map(renderPhotoCard)}
 
                 <SizeBox height={insets.bottom > 0 ? insets.bottom + 20 : 40} />
             </ScrollView>
-
-            <SubscriptionModal
-                isVisible={showSubscriptionModal}
-                onClose={() => setShowSubscriptionModal(false)}
-            />
         </View>
     );
 };

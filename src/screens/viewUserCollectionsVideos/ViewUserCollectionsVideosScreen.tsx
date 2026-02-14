@@ -83,7 +83,7 @@ const ViewUserCollectionsVideosScreen = ({ navigation }: any) => {
                     <Text style={Styles.sectionTitle}>Collections</Text>
                     <View style={Styles.videosCountBadge}>
                         <Text style={Styles.videosCountText}>
-                            {activeTab === 'photos' ? '430 Photos Available' : '430 Videos Available'}
+                            {activeTab === 'photos' ? `${photos.length} photos` : `${videos.length} videos`}
                         </Text>
                     </View>
                 </View>
@@ -113,12 +113,23 @@ const ViewUserCollectionsVideosScreen = ({ navigation }: any) => {
                     <View style={Styles.photosCard}>
                         <View style={Styles.photosGrid}>
                             {photos.map((photo, index) => (
-                                <FastImage
+                                <TouchableOpacity
                                     key={index}
-                                    source={photo}
-                                    style={Styles.photoImage}
-                                    resizeMode="cover"
-                                />
+                                    activeOpacity={0.85}
+                                    onPress={() => navigation.navigate('PhotoDetailScreen', {
+                                        eventTitle: 'Collections',
+                                        media: {
+                                            id: '87873d40-addf-4289-aa82-7cd300acdd94',
+                                            type: 'photo',
+                                        },
+                                    })}
+                                >
+                                    <FastImage
+                                        source={photo}
+                                        style={Styles.photoImage}
+                                        resizeMode="cover"
+                                    />
+                                </TouchableOpacity>
                             ))}
                         </View>
                     </View>

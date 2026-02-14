@@ -2,7 +2,8 @@ import { View, Text, TouchableOpacity, ScrollView, Dimensions } from 'react-nati
 import React, { useState } from 'react'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import FastImage from 'react-native-fast-image'
-import { ArrowLeft2, Image, Add, Minus } from 'iconsax-react-nativejs'
+import { ArrowLeft2, ArrowRight, Add, Minus } from 'iconsax-react-nativejs'
+import { launchImageLibrary } from 'react-native-image-picker'
 import Colors from '../../constants/Colors'
 import Images from '../../constants/Images'
 import Icons from '../../constants/Icons'
@@ -19,7 +20,7 @@ const EditVideoCollectionsScreen = ({ navigation }: any) => {
     const [selectionMode, setSelectionMode] = useState<SelectionMode>('none');
     const [selectedVideos, setSelectedVideos] = useState<number[]>([]);
 
-    const videos = [
+    const [videos, setVideos] = useState<Array<{ id: number; thumbnail: any }>>([
         { id: 1, thumbnail: Images.photo1 },
         { id: 2, thumbnail: Images.photo3 },
         { id: 3, thumbnail: Images.photo4 },
@@ -36,7 +37,7 @@ const EditVideoCollectionsScreen = ({ navigation }: any) => {
         { id: 14, thumbnail: Images.photo7 },
         { id: 15, thumbnail: Images.photo8 },
         { id: 16, thumbnail: Images.photo9 },
-    ];
+    ]);
 
     const handleSelectTop4 = () => {
         setSelectionMode('top4');
@@ -72,9 +73,30 @@ const EditVideoCollectionsScreen = ({ navigation }: any) => {
     };
 
     const handleConfirmDelete = () => {
-        // Handle deletion logic here
+        setVideos((prev) => prev.filter((video) => !selectedVideos.includes(video.id)));
         setSelectionMode('none');
         setSelectedVideos([]);
+    };
+
+    const handleConfirmTop4 = () => {
+        setSelectionMode('none');
+        setSelectedVideos([]);
+    };
+
+    const handleAddVideos = async () => {
+        const result = await launchImageLibrary({
+            mediaType: 'video',
+            selectionLimit: 0,
+        });
+        if (result?.assets?.length) {
+            setVideos((prev) => [
+                ...prev,
+                ...result.assets.map((asset, index) => ({
+                    id: Date.now() + index,
+                    thumbnail: { uri: asset.uri },
+                })),
+            ]);
+        }
     };
 
     const getSelectionNumber = (videoId: number): number | null => {
@@ -106,8 +128,12 @@ const EditVideoCollectionsScreen = ({ navigation }: any) => {
                     <ArrowLeft2 size={24} color={Colors.mainTextColor} variant="Linear" />
                 </TouchableOpacity>
                 <Text style={Styles.headerTitle}>Edit Video Collections</Text>
-                <TouchableOpacity style={Styles.headerButton}>
-                    <Image size={24} color={Colors.mainTextColor} variant="Linear" />
+                <TouchableOpacity
+                    style={Styles.headerSwitchButton}
+                    onPress={() => navigation.navigate('EditPhotoCollectionsScreen')}
+                >
+                    <Text style={Styles.headerSwitchText}>Photos</Text>
+                    <ArrowRight size={18} color={Colors.primaryColor} variant="Linear" />
                 </TouchableOpacity>
             </View>
 
@@ -130,18 +156,27 @@ const EditVideoCollectionsScreen = ({ navigation }: any) => {
                     <>
                         <SizeBox height={16} />
 
-                        {/* Add Videos Button */}
-                        <TouchableOpacity style={Styles.addButton}>
-                            <Text style={Styles.addButtonText}>Add Videos</Text>
-                            <Add size={18} color={Colors.whiteColor} variant="Linear" />
-                        </TouchableOpacity>
+                        <View style={Styles.actionRow}>
+                            <TouchableOpacity style={Styles.addButton} onPress={handleAddVideos}>
+                                <Text style={Styles.addButtonText}>Add Videos</Text>
+                                <Add size={18} color={Colors.whiteColor} variant="Linear" />
+                            </TouchableOpacity>
+                            <TouchableOpacity style={Styles.deleteButton} onPress={handleDeleteVideos}>
+                                <Text style={Styles.deleteButtonText}>Delete Videos</Text>
+                                <Minus size={18} color="#FF0000" variant="Linear" />
+                            </TouchableOpacity>
+                        </View>
+                    </>
+                )}
 
+                {selectionMode === 'top4' && selectedVideos.length > 0 && (
+                    <>
                         <SizeBox height={16} />
-
-                        {/* Delete Videos Button */}
-                        <TouchableOpacity style={Styles.deleteButton} onPress={handleDeleteVideos}>
-                            <Text style={Styles.deleteButtonText}>Delete Videos</Text>
-                            <Minus size={18} color="#FF0000" variant="Linear" />
+                        <TouchableOpacity style={Styles.confirmTopButton} onPress={handleConfirmTop4}>
+                            <Text style={Styles.confirmTopButtonText}>
+                                Confirm Top {selectedVideos.length}
+                            </Text>
+                            <Add size={18} color={Colors.whiteColor} variant="Linear" />
                         </TouchableOpacity>
                     </>
                 )}

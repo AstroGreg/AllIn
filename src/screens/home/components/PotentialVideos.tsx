@@ -6,7 +6,6 @@ import Styles from '../HomeStyles'
 import CustomButton from '../../../components/customButton/CustomButton'
 import Icons from '../../../constants/Icons'
 import Images from '../../../constants/Images'
-import BorderButton from '../../../components/borderButton/BorderButton'
 import RequestContainers from './RequestContainers'
 import SimilarEvents from '../../Events/components/SimilarEvents'
 import { useNavigation } from '@react-navigation/native';
@@ -90,7 +89,7 @@ const PotentialVideos = ({ data, onPressAddEvent, onPressParticipant, onPressDow
             <Text style={Styles.headings}>Downloads</Text>
             <SizeBox height={12} />
 
-            <View style={Styles.downloadContainer}>
+            <TouchableOpacity style={Styles.downloadContainer} onPress={onPressDownloads}>
                 <Icons.Downloads height={22} width={22} />
                 <View style={Styles.rowCenter}>
                     <Text style={Styles.downloadText}>
@@ -100,10 +99,7 @@ const PotentialVideos = ({ data, onPressAddEvent, onPressParticipant, onPressDow
                         346,456
                     </Text>
                 </View>
-                <View style={Styles.btnRight}>
-                    <BorderButton title='Details' onPress={onPressDownloads} />
-                </View>
-            </View>
+            </TouchableOpacity>
 
             <SizeBox height={20} />
             <View style={Styles.rowCenter}>

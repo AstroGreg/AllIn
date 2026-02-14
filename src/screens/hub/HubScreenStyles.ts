@@ -43,6 +43,51 @@ export const createStyles = (colors: ThemeColors) =>
       paddingTop: 20,
       paddingBottom: 100,
     },
+    filterRow: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: 8,
+      marginBottom: 16,
+    },
+    searchRow: {
+      marginBottom: 16,
+    },
+    searchField: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 8,
+      borderWidth: 1,
+      borderColor: colors.lightGrayColor,
+      backgroundColor: colors.btnBackgroundColor,
+      borderRadius: 12,
+      paddingHorizontal: 12,
+      height: 44,
+    },
+    searchInput: {
+      flex: 1,
+      ...Fonts.regular14,
+      color: colors.mainTextColor,
+      paddingVertical: 0,
+    },
+    filterChip: {
+      paddingHorizontal: 12,
+      paddingVertical: 6,
+      borderRadius: 6,
+      backgroundColor: colors.btnBackgroundColor,
+    },
+    filterChipActive: {
+      backgroundColor: colors.primaryColor,
+    },
+    filterChipText: {
+      ...Fonts.regular12,
+      color: colors.grayColor,
+    },
+    filterChipTextActive: {
+      color: colors.pureWhite,
+    },
+    sectionBlock: {
+      marginBottom: 12,
+    },
     sectionHeader: {
       flexDirection: 'row',
       justifyContent: 'space-between',
@@ -53,6 +98,11 @@ export const createStyles = (colors: ThemeColors) =>
       ...Fonts.medium16,
       fontSize: 18,
       color: colors.mainTextColor,
+    },
+    sectionSubtitle: {
+      ...Fonts.regular14,
+      color: colors.grayColor,
+      marginTop: 4,
     },
     viewAllText: {
       ...Fonts.regular14,
@@ -67,6 +117,35 @@ export const createStyles = (colors: ThemeColors) =>
       borderRadius: 10,
       padding: 16,
       marginBottom: 16,
+    },
+    hubCard: {
+      backgroundColor: colors.cardBackground,
+      borderWidth: 0.5,
+      borderColor: colors.lightGrayColor,
+      borderRadius: 10,
+      padding: 16,
+      marginBottom: 16,
+    },
+    hubCardRow: {
+      flexDirection: 'row',
+    },
+    cardHeaderRow: {
+      flexDirection: 'row',
+      alignItems: 'flex-start',
+      justifyContent: 'space-between',
+      gap: 8,
+      flexWrap: 'wrap',
+    },
+    typeBadge: {
+      backgroundColor: colors.btnBackgroundColor,
+      paddingHorizontal: 10,
+      paddingVertical: 4,
+      borderRadius: 6,
+      alignSelf: 'flex-start',
+    },
+    typeBadgeText: {
+      ...Fonts.regular12,
+      color: colors.subTextColor,
     },
     myEventCard: {
       backgroundColor: colors.cardBackground,
@@ -84,6 +163,14 @@ export const createStyles = (colors: ThemeColors) =>
       width: 86,
       height: 86,
       borderRadius: 10,
+    },
+    squareThumbnailPlaceholder: {
+      width: 86,
+      height: 86,
+      borderRadius: 10,
+      backgroundColor: colors.cardBackground,
+      borderWidth: 0.5,
+      borderColor: colors.lightGrayColor,
     },
     cardInfo: {
       flex: 1,
@@ -106,6 +193,15 @@ export const createStyles = (colors: ThemeColors) =>
     cardTitle: {
       ...Fonts.medium14,
       color: colors.mainTextColor,
+      flex: 1,
+      minWidth: 0,
+      flexShrink: 1,
+    },
+    cardSubtitle: {
+      ...Fonts.regular12,
+      color: colors.grayColor,
+      marginTop: 4,
+      marginBottom: 6,
     },
     eventTitleRow: {
       flexDirection: 'row',
@@ -133,9 +229,43 @@ export const createStyles = (colors: ThemeColors) =>
       alignItems: 'center',
       gap: 4,
     },
+    detailDot: {
+      width: 4,
+      height: 4,
+      borderRadius: 2,
+      backgroundColor: colors.grayColor,
+      marginHorizontal: 6,
+    },
     detailText: {
       ...Fonts.regular12,
       color: colors.grayColor,
+    },
+    matchBadge: {
+      alignSelf: 'flex-start',
+      backgroundColor: colors.btnBackgroundColor,
+      borderRadius: 12,
+      paddingHorizontal: 10,
+      paddingVertical: 4,
+      marginTop: 8,
+    },
+    matchBadgeText: {
+      ...Fonts.regular12,
+      color: colors.mainTextColor,
+    },
+    statusBadge: {
+      paddingHorizontal: 10,
+      paddingVertical: 4,
+      borderRadius: 12,
+    },
+    statusActive: {
+      backgroundColor: '#E8F1FF',
+    },
+    statusDone: {
+      backgroundColor: '#EAF7EF',
+    },
+    statusText: {
+      ...Fonts.regular12,
+      color: colors.mainTextColor,
     },
     divider: {
       height: 0.5,
@@ -166,7 +296,7 @@ export const createStyles = (colors: ThemeColors) =>
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'center',
-      marginBottom: 24,
+      marginBottom: 16,
     },
     primaryButtonText: {
       ...Fonts.medium16,
@@ -199,6 +329,7 @@ export const createStyles = (colors: ThemeColors) =>
       fontSize: 14,
       fontWeight: '700',
       color: colors.mainTextColor,
+      marginLeft: 6,
     },
     detailsButton: {
       flexDirection: 'row',
@@ -326,5 +457,110 @@ export const createStyles = (colors: ThemeColors) =>
       ...Fonts.regular14,
       color: colors.pureWhite,
       marginRight: 6,
+    },
+    feedbackButton: {
+      marginTop: 12,
+      flexDirection: 'row',
+      alignItems: 'center',
+      alignSelf: 'flex-start',
+      gap: 6,
+    },
+    feedbackButtonText: {
+      ...Fonts.medium14,
+      color: colors.primaryColor,
+    },
+    loadMoreButton: {
+      height: 44,
+      borderRadius: 10,
+      borderWidth: 0.5,
+      borderColor: colors.lightGrayColor,
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginBottom: 24,
+    },
+    loadMoreText: {
+      ...Fonts.medium14,
+      color: colors.mainTextColor,
+    },
+    infoBackdrop: {
+      flex: 1,
+      backgroundColor: 'rgba(0,0,0,0.4)',
+      alignItems: 'center',
+      justifyContent: 'center',
+      paddingHorizontal: 20,
+    },
+    infoCard: {
+      width: '100%',
+      backgroundColor: colors.whiteColor,
+      borderRadius: 16,
+      padding: 16,
+    },
+    infoTitle: {
+      ...Fonts.medium18,
+      color: colors.mainTextColor,
+    },
+    infoText: {
+      ...Fonts.regular14,
+      color: colors.grayColor,
+      marginTop: 8,
+    },
+    infoCheckRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      marginTop: 14,
+      gap: 8,
+    },
+    infoCheckBox: {
+      width: 18,
+      height: 18,
+      borderRadius: 5,
+      borderWidth: 1,
+      borderColor: colors.lightGrayColor,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    infoCheckBoxActive: {
+      backgroundColor: colors.primaryColor,
+      borderColor: colors.primaryColor,
+    },
+    infoCheckMark: {
+      color: colors.pureWhite,
+      fontSize: 12,
+      fontWeight: '700',
+    },
+    infoCheckText: {
+      ...Fonts.regular12,
+      color: colors.grayColor,
+    },
+    infoButtonsRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 12,
+      marginTop: 16,
+    },
+    infoCancelButton: {
+      flex: 1,
+      height: 46,
+      borderRadius: 10,
+      borderWidth: 0.5,
+      borderColor: colors.lightGrayColor,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    infoCancelText: {
+      ...Fonts.medium14,
+      color: colors.grayColor,
+    },
+    infoConfirmButton: {
+      flex: 1,
+      height: 46,
+      borderRadius: 10,
+      backgroundColor: colors.primaryColor,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    infoConfirmText: {
+      ...Fonts.medium14,
+      color: colors.pureWhite,
     },
   });

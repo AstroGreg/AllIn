@@ -32,6 +32,19 @@ export const createStyles = (colors: ThemeColors) =>
       ...Fonts.medium18,
       color: colors.mainTextColor,
     },
+    headerCountBadge: {
+      minWidth: 44,
+      height: 32,
+      borderRadius: 16,
+      backgroundColor: colors.btnBackgroundColor,
+      alignItems: 'center',
+      justifyContent: 'center',
+      paddingHorizontal: 10,
+    },
+    headerCountText: {
+      ...Fonts.regular12,
+      color: colors.grayColor,
+    },
 
     listContent: {
       paddingTop: 24,
@@ -42,6 +55,23 @@ export const createStyles = (colors: ThemeColors) =>
       color: colors.mainTextColor,
       paddingHorizontal: 20,
       marginBottom: 16,
+    },
+    listHeader: {
+      paddingHorizontal: 20,
+      marginBottom: 16,
+    },
+    searchBar: {
+      marginTop: 12,
+      borderWidth: 1,
+      borderColor: colors.lightGrayColor,
+      borderRadius: 12,
+      paddingHorizontal: 12,
+      paddingVertical: 10,
+      backgroundColor: colors.btnBackgroundColor,
+    },
+    searchInput: {
+      ...Fonts.regular14,
+      color: colors.mainTextColor,
     },
     gridRow: {
       paddingHorizontal: 20,
@@ -101,5 +131,109 @@ export const createStyles = (colors: ThemeColors) =>
       paddingHorizontal: 20,
       marginTop: 16,
     },
+    profitCard: {
+      marginHorizontal: 20,
+      marginBottom: 12,
+      padding: 14,
+      borderRadius: 12,
+      borderWidth: 0.5,
+      borderColor: colors.lightGrayColor,
+      backgroundColor: colors.cardBackground,
+    },
+    profitTitle: {
+      ...Fonts.medium14,
+      color: colors.mainTextColor,
+      marginBottom: 8,
+    },
+    profitRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      gap: 10,
+    },
+    profitMeta: {
+      ...Fonts.regular12,
+      color: colors.grayColor,
+      flex: 1,
+    },
+    profitAmount: {
+      ...Fonts.medium14,
+      color: colors.primaryColor,
+    },
+    competitionRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      gap: 12,
+      marginHorizontal: 20,
+      marginBottom: 12,
+      padding: 14,
+      borderRadius: 12,
+      borderWidth: 0.5,
+      borderColor: colors.lightGrayColor,
+      backgroundColor: colors.cardBackground,
+    },
+    competitionRowInfo: {
+      flex: 1,
+      gap: 4,
+    },
+    competitionRowTitle: {
+      ...Fonts.medium14,
+      color: colors.mainTextColor,
+    },
+    competitionRowMeta: {
+      ...Fonts.regular12,
+      color: colors.subTextColor,
+    },
+    competitionRowMetaSecondary: {
+      ...Fonts.regular12,
+      color: colors.grayColor,
+    },
+    competitionBadge: {
+      paddingHorizontal: 10,
+      paddingVertical: 6,
+      borderRadius: 12,
+      backgroundColor: colors.btnBackgroundColor,
+      borderWidth: 1,
+      borderColor: colors.lightGrayColor,
+    },
+    competitionBadgeText: {
+      ...Fonts.medium12,
+      color: colors.primaryColor,
+    },
+    mediaRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 12,
+      marginHorizontal: 20,
+      marginBottom: 12,
+      padding: 12,
+      borderRadius: 12,
+      borderWidth: 0.5,
+      borderColor: colors.lightGrayColor,
+      backgroundColor: colors.cardBackground,
+    },
+    mediaThumb: {
+      width: 64,
+      height: 64,
+      borderRadius: 10,
+    },
+    mediaThumbPlaceholder: {
+      width: 64,
+      height: 64,
+      borderRadius: 10,
+      backgroundColor: colors.btnBackgroundColor,
+    },
+    mediaInfo: {
+      flex: 1,
+      gap: 4,
+    },
+    mediaTitle: {
+      ...Fonts.medium14,
+      color: colors.mainTextColor,
+    },
+    mediaMeta: {
+      ...Fonts.regular12,
+      color: colors.grayColor,
+    },
   });
-

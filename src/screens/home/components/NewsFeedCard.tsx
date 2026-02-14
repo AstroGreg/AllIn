@@ -33,6 +33,7 @@ interface NewsFeedCardProps {
     onVideoProgress?: (currentTime: number) => void;
     onShare?: () => void;
     onDownload?: () => void;
+    onPressMore?: () => void;
     isActive?: boolean;
     resumeAt?: number;
     useSharedPlayer?: boolean;
@@ -69,6 +70,7 @@ const NewsFeedCard = ({
     onVideoProgress,
     onShare,
     onDownload,
+    onPressMore,
     isActive = true,
     resumeAt,
     useSharedPlayer = false,
@@ -402,9 +404,18 @@ const NewsFeedCard = ({
                             )}
                         </View>
                     </TouchableOpacity>
-                    {headerTag ? (
-                        <View style={Styles.feedTag}>
-                            <Text style={Styles.feedTagText}>{headerTag}</Text>
+                    {headerTag || onPressMore ? (
+                        <View style={Styles.feedHeaderActions}>
+                            {headerTag ? (
+                                <View style={Styles.feedTag}>
+                                    <Text style={Styles.feedTagText}>{headerTag}</Text>
+                                </View>
+                            ) : null}
+                            {onPressMore ? (
+                                <TouchableOpacity style={Styles.feedMoreButton} onPress={onPressMore}>
+                                    <Text style={Styles.feedMoreDots}>⋯</Text>
+                                </TouchableOpacity>
+                            ) : null}
                         </View>
                     ) : null}
                 </View>
@@ -467,8 +478,8 @@ const NewsFeedCard = ({
                 </TouchableOpacity>
                 {showActions && (
                     <View style={Styles.feedActionsRow}>
-                        <TouchableOpacity style={Styles.feedActionButton} activeOpacity={0.85} onPress={onDownload}>
-                            <Icons.DownloadBlue width={20} height={20} />
+                        <TouchableOpacity style={Styles.feedActionTextButton} activeOpacity={0.85} onPress={onDownload}>
+                            <Text style={Styles.feedActionText}>Download</Text>
                         </TouchableOpacity>
                         <TouchableOpacity style={Styles.feedActionButton} activeOpacity={0.85} onPress={onShare}>
                             <Image source={Icons.ShareBlue} style={Styles.feedActionIcon} />

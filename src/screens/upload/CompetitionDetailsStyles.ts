@@ -24,6 +24,16 @@ export const createStyles = (colors: ThemeColors) => StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'center',
     },
+    headerSpacer: {
+        width: 44,
+        height: 44,
+    },
+    headerGhost: {
+        width: 44,
+        height: 44,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
     headerTitle: {
         ...Fonts.medium18,
         color: colors.mainTextColor,
@@ -32,19 +42,34 @@ export const createStyles = (colors: ThemeColors) => StyleSheet.create({
         paddingHorizontal: 20,
         paddingTop: 24,
     },
-    tipCard: {
-        backgroundColor: colors.cardBackground,
+    uploadNotice: {
+        backgroundColor: colors.secondaryBlueColor,
         borderRadius: 10,
+        borderWidth: 1,
+        borderColor: colors.primaryColor,
+        paddingHorizontal: 14,
+        paddingVertical: 10,
+        marginBottom: 16,
+    },
+    uploadNoticeText: {
+        ...Fonts.medium12,
+        color: colors.primaryColor,
+    },
+    infoCard: {
+        backgroundColor: colors.cardBackground,
+        borderRadius: 12,
         borderWidth: 0.5,
         borderColor: colors.lightGrayColor,
         padding: 16,
-        alignItems: 'center',
     },
-    tipText: {
-        ...Fonts.regular14,
+    infoTitle: {
+        ...Fonts.medium16,
+        color: colors.mainTextColor,
+        marginBottom: 6,
+    },
+    infoSub: {
+        ...Fonts.regular12,
         color: colors.grayColor,
-        textAlign: 'center',
-        lineHeight: 22,
     },
     toggleContainer: {
         flexDirection: 'row',
@@ -69,24 +94,11 @@ export const createStyles = (colors: ThemeColors) => StyleSheet.create({
     toggleTabTextActive: {
         color: colors.pureWhite,
     },
-    sectionHeader: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-    },
     sectionTitle: {
         ...Fonts.medium18,
         color: colors.mainTextColor,
     },
-    sectionFilterButton: {
-        width: 32,
-        height: 32,
-        borderRadius: 8,
-        backgroundColor: colors.primaryColor,
-        alignItems: 'center',
-        justifyContent: 'center',
-    },
-    categoryCard: {
+    eventCard: {
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
@@ -98,59 +110,122 @@ export const createStyles = (colors: ThemeColors) => StyleSheet.create({
         paddingVertical: 14,
         marginBottom: 10,
     },
-    categoryName: {
+    eventCardActive: {
+        borderColor: colors.primaryColor,
+        backgroundColor: colors.secondaryBlueColor,
+    },
+    eventText: {
+        flex: 1,
+        marginRight: 12,
+    },
+    eventName: {
         ...Fonts.medium14,
         color: colors.mainTextColor,
     },
-    uploadIconButton: {
-        borderRadius: 8,
-        backgroundColor: colors.primaryColor,
-        alignItems: 'center',
-        justifyContent: 'center',
-        paddingVertical: 8,
-        paddingHorizontal: 29,
+    eventMeta: {
+        ...Fonts.regular12,
+        color: colors.grayColor,
+        marginTop: 4,
     },
-    addCategoryButton: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'center',
-        backgroundColor: colors.primaryColor,
-        borderRadius: 10,
-        paddingVertical: 14,
-        gap: 8,
-    },
-    addCategoryButtonText: {
-        ...Fonts.medium14,
-        color: colors.pureWhite,
-    },
-    unlabelledButton: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'center',
-        backgroundColor: colors.cardBackground,
-        borderRadius: 10,
-        borderWidth: 1,
-        borderColor: colors.primaryColor,
-        paddingVertical: 14,
-        gap: 8,
-    },
-    unlabelledButtonText: {
-        ...Fonts.medium14,
+    eventMetaActive: {
         color: colors.primaryColor,
     },
-    divider: {
-        height: 1,
-        backgroundColor: colors.lightGrayColor,
-    },
     finishButton: {
+        backgroundColor: colors.primaryColor,
+        borderRadius: 12,
+        paddingVertical: 16,
         alignItems: 'center',
         justifyContent: 'center',
-        backgroundColor: '#E34949',
-        borderRadius: 10,
-        paddingVertical: 16,
+    },
+    finishButtonDisabled: {
+        opacity: 0.4,
     },
     finishButtonText: {
         ...Fonts.medium16,
+        color: colors.pureWhite,
+    },
+    modalBackdrop: {
+        flex: 1,
+        backgroundColor: 'rgba(0,0,0,0.4)',
+        justifyContent: 'center',
+        padding: 20,
+    },
+    modalCard: {
+        backgroundColor: colors.cardBackground,
+        borderRadius: 16,
+        padding: 18,
+    },
+    modalTitle: {
+        ...Fonts.medium16,
+        color: colors.mainTextColor,
+    },
+    modalSubtitle: {
+        ...Fonts.regular12,
+        color: colors.grayColor,
+        marginTop: 4,
+        marginBottom: 12,
+    },
+    modalSection: {
+        marginBottom: 12,
+    },
+    modalLabel: {
+        ...Fonts.medium12,
+        color: colors.mainTextColor,
+        marginBottom: 8,
+    },
+    choiceRow: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        gap: 8,
+    },
+    choiceChip: {
+        paddingHorizontal: 12,
+        paddingVertical: 8,
+        borderRadius: 999,
+        borderWidth: 1,
+        borderColor: colors.lightGrayColor,
+        backgroundColor: colors.btnBackgroundColor,
+    },
+    choiceChipActive: {
+        backgroundColor: colors.primaryColor,
+        borderColor: colors.primaryColor,
+    },
+    choiceChipText: {
+        ...Fonts.regular12,
+        color: colors.grayColor,
+    },
+    choiceChipTextActive: {
+        color: colors.pureWhite,
+    },
+    modalActions: {
+        flexDirection: 'row',
+        gap: 12,
+        marginTop: 8,
+    },
+    modalGhost: {
+        flex: 1,
+        borderWidth: 1,
+        borderColor: colors.lightGrayColor,
+        borderRadius: 10,
+        alignItems: 'center',
+        paddingVertical: 12,
+    },
+    modalGhostText: {
+        ...Fonts.medium14,
+        color: colors.grayColor,
+    },
+    modalPrimary: {
+        flex: 1,
+        backgroundColor: colors.primaryColor,
+        borderRadius: 10,
+        alignItems: 'center',
+        paddingVertical: 12,
+    },
+    modalPrimaryDisabled: {
+        opacity: 0.4,
+    },
+    modalPrimaryText: {
+        ...Fonts.medium14,
         color: colors.pureWhite,
     },
 });

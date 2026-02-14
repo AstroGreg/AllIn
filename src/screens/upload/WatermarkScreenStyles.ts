@@ -24,6 +24,16 @@ export const createStyles = (colors: ThemeColors) => StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'center',
     },
+    headerSpacer: {
+        width: 44,
+        height: 44,
+    },
+    headerGhost: {
+        width: 44,
+        height: 44,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
     headerTitle: {
         ...Fonts.medium18,
         color: colors.mainTextColor,
@@ -52,134 +62,71 @@ export const createStyles = (colors: ThemeColors) => StyleSheet.create({
         ...Fonts.regular12,
         color: colors.grayColor,
     },
-    uploadArea: {
-        backgroundColor: colors.secondaryColor,
+    textInput: {
         borderWidth: 1,
-        borderColor: colors.borderColor,
-        borderStyle: 'dashed',
-        borderRadius: 10,
-        paddingHorizontal: 30,
-        paddingVertical: 24,
-        alignItems: 'center',
-        justifyContent: 'center',
-        height: 192,
-    },
-    maxSizeText: {
+        borderColor: colors.lightGrayColor,
+        borderRadius: 12,
+        paddingHorizontal: 12,
+        paddingVertical: 12,
         ...Fonts.regular14,
-        color: colors.grayColor,
-        position: 'absolute',
-        top: 12,
-        right: 16,
+        color: colors.mainTextColor,
+        backgroundColor: colors.btnBackgroundColor,
     },
-    chooseFileContainer: {
+    noWatermarkRow: {
         flexDirection: 'row',
         alignItems: 'center',
-        gap: 16,
-        borderWidth: 0.5,
-        borderColor: colors.lightGrayColor,
-        borderRadius: 10,
-        paddingHorizontal: 16,
-        paddingVertical: 8,
+        gap: 10,
     },
-    chooseFileButton: {
-        backgroundColor: colors.grayColor,
+    noWatermarkCheck: {
+        width: 22,
+        height: 22,
         borderRadius: 6,
-        paddingHorizontal: 16,
-        paddingVertical: 10,
+        borderWidth: 1,
+        borderColor: colors.lightGrayColor,
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: colors.whiteColor,
     },
-    chooseFileButtonText: {
-        ...Fonts.regular12,
+    noWatermarkCheckActive: {
+        backgroundColor: colors.primaryColor,
+        borderColor: colors.primaryColor,
+    },
+    noWatermarkCheckMark: {
+        ...Fonts.medium12,
         color: colors.pureWhite,
     },
-    noFileText: {
-        ...Fonts.regular12,
+    noWatermarkText: {
+        ...Fonts.regular14,
         color: colors.mainTextColor,
     },
-    radioOptionsContainer: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        backgroundColor: colors.cardBackground,
+    previewCard: {
+        borderRadius: 12,
         borderWidth: 0.5,
         borderColor: colors.lightGrayColor,
-        borderRadius: 10,
         padding: 16,
+        backgroundColor: colors.cardBackground,
     },
-    radioOption: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 8,
+    previewLabel: {
+        ...Fonts.medium14,
+        color: colors.mainTextColor,
+        marginBottom: 10,
     },
-    radioLabel: {
-        ...Fonts.regular12,
-        color: colors.grayColor,
-    },
-    radioOuter: {
-        width: 16,
-        height: 16,
-        borderRadius: 8,
-        borderWidth: 1,
-        borderColor: colors.primaryColor,
+    previewBox: {
+        height: 120,
+        borderRadius: 10,
+        backgroundColor: colors.secondaryColor,
         alignItems: 'center',
         justifyContent: 'center',
-    },
-    radioOuterSelected: {
         borderWidth: 1,
-        borderColor: colors.primaryColor,
-    },
-    radioInner: {
-        width: 10,
-        height: 10,
-        borderRadius: 5,
-        backgroundColor: colors.primaryColor,
-    },
-    savedWatermarksHeader: {
-        gap: 6,
-    },
-    savedWatermarksTitle: {
-        ...Fonts.medium16,
-        color: colors.mainTextColor,
-    },
-    savedWatermarksSubtitle: {
-        ...Fonts.regular14,
-        color: colors.grayColor,
-    },
-    watermarksRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-    },
-    watermarkCard: {
-        width: 122,
-        backgroundColor: colors.cardBackground,
-        borderWidth: 0.5,
-        borderColor: colors.lightGrayColor,
-        borderRadius: 10,
-        paddingHorizontal: 12,
-        paddingVertical: 8,
-        alignItems: 'center',
-        gap: 8,
-    },
-    watermarkCardSelected: {
-        borderColor: colors.primaryColor,
-    },
-    watermarkThumbnail: {
-        width: '100%',
-        height: 85,
-        borderRadius: 10,
+        borderColor: colors.borderColor,
         overflow: 'hidden',
     },
-    watermarkImage: {
-        width: '100%',
-        height: '100%',
+    previewImage: {
+        ...StyleSheet.absoluteFillObject,
     },
-    watermarkName: {
-        ...Fonts.regular14,
-        color: colors.grayColor,
-        textAlign: 'center',
-    },
-    watermarkNameSelected: {
-        color: colors.mainTextColor,
+    previewText: {
+        ...Fonts.medium16,
+        color: colors.primaryColor,
     },
     previewButton: {
         flexDirection: 'row',

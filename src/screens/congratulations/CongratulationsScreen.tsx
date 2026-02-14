@@ -8,7 +8,7 @@ import SizeBox from '../../constants/SizeBox';
 import Colors from '../../constants/Colors';
 import Icons from '../../constants/Icons';
 
-const CongratulationsScreen = ({ navigation }: any) => {
+const CongratulationsScreen = ({ navigation, route }: any) => {
     const insets = useSafeAreaInsets();
     const confettiRef = useRef<any>(null);
     const confettiRef2 = useRef<any>(null);
@@ -26,10 +26,12 @@ const CongratulationsScreen = ({ navigation }: any) => {
     }, []);
 
     const handleBackHome = () => {
-        // Reset to Home screen
         navigation.reset({
             index: 0,
-            routes: [{ name: 'Home' }],
+            routes: [{
+                name: 'BottomTabBar',
+                state: { index: 2, routes: [{ name: 'Upload' }] },
+            }],
         });
     };
 
@@ -73,14 +75,14 @@ const CongratulationsScreen = ({ navigation }: any) => {
                 <View style={Styles.textContainer}>
                     <Text style={Styles.title}>Congratulations</Text>
                     <SizeBox height={8} />
-                    <Text style={Styles.subtitle}>You've successfully joined the event!</Text>
+                    <Text style={Styles.subtitle}>Your upload is complete.</Text>
                 </View>
 
                 <SizeBox height={90} />
 
                 {/* Back Home Button */}
                 <TouchableOpacity style={Styles.backHomeButton} onPress={handleBackHome}>
-                    <Text style={Styles.backHomeButtonText}>Back Home</Text>
+                    <Text style={Styles.backHomeButtonText}>OK</Text>
                     <ArrowRight size={18} color={Colors.whiteColor} variant="Linear" />
                 </TouchableOpacity>
             </View>

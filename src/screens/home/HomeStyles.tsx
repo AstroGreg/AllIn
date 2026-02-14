@@ -6,9 +6,9 @@ import { ThemeColors, lightColors } from "../../constants/Theme";
 export const createStyles = (colors: ThemeColors) => StyleSheet.create({
     //Header
     header: {
-        paddingVertical: 15,
+        paddingVertical: 14,
         backgroundColor: colors.backgroundColor,
-        paddingHorizontal: 10,
+        paddingHorizontal: 20,
         borderBottomWidth: 0.5,
         borderBottomColor: colors.lightGrayColor,
         flexDirection: 'row',
@@ -42,13 +42,19 @@ export const createStyles = (colors: ThemeColors) => StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
     },
-    headerIconBtn: {
-        height: 44,
-        width: 44,
-        borderRadius: 22,
+    headerTextButton: {
+        paddingHorizontal: 14,
+        paddingVertical: 8,
+        borderRadius: 14,
         backgroundColor: colors.btnBackgroundColor,
         alignItems: 'center',
-        justifyContent: 'center'
+        justifyContent: 'center',
+        borderWidth: 0.5,
+        borderColor: colors.lightGrayColor,
+    },
+    headerTextButtonLabel: {
+        ...Fonts.medium14,
+        color: colors.primaryColor,
     },
 
     //Home screen
@@ -179,7 +185,7 @@ export const createStyles = (colors: ThemeColors) => StyleSheet.create({
     // Quick Actions Section
     sectionQuickActions: {
         marginBottom: 24,
-        paddingHorizontal: 10,
+        paddingHorizontal: 20,
     },
     sectionOverview: {
         marginBottom: 24,
@@ -223,48 +229,29 @@ export const createStyles = (colors: ThemeColors) => StyleSheet.create({
         color: colors.grayColor,
     },
     quickActionsGrid: {
-        gap: 16,
+        gap: 12,
     },
     quickActionsRow: {
         flexDirection: 'row',
-        gap: 10,
+        gap: 12,
     },
     quickActionCard: {
         flex: 1,
-        backgroundColor: colors.cardBackground,
-        borderWidth: 0.5,
-        borderColor: colors.lightGrayColor,
-        borderRadius: 10,
-        padding: 12,
-    },
-    quickActionContent: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 6,
-    },
-    quickActionIconContainer: {
-        width: 30,
-        height: 30,
-        borderRadius: 6,
-        backgroundColor: colors.secondaryBlueColor,
+        backgroundColor: colors.primaryColor,
+        borderWidth: 0,
+        borderRadius: 12,
+        paddingVertical: 14,
+        paddingHorizontal: 16,
         alignItems: 'center',
         justifyContent: 'center',
     },
-    quickActionTextContainer: {
+    quickActionCardFull: {
         flex: 1,
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-    },
-    quickActionChevronCircle: {
-        width: 16,
-        height: 16,
-        alignItems: 'center',
-        justifyContent: 'center',
     },
     quickActionText: {
         ...Fonts.medium14,
-        color: colors.mainTextColor,
+        color: colors.pureWhite,
+        textAlign: 'center',
     },
     gradientButton: {
         flex: 1,
@@ -622,6 +609,18 @@ export const createStyles = (colors: ThemeColors) => StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'center',
     },
+    feedActionTextButton: {
+        paddingHorizontal: 14,
+        height: 34,
+        borderRadius: 17,
+        backgroundColor: colors.btnBackgroundColor,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    feedActionText: {
+        ...Fonts.medium14,
+        color: colors.primaryColor,
+    },
     likePulse: {
         position: 'absolute',
         top: '50%',
@@ -774,6 +773,28 @@ export const createStyles = (colors: ThemeColors) => StyleSheet.create({
     feedTagText: {
         ...Fonts.regular12,
         color: colors.subTextColor,
+    },
+    feedHeaderActions: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 8,
+    },
+    feedMoreButton: {
+        width: 28,
+        height: 28,
+        borderRadius: 14,
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: 'transparent',
+        borderWidth: 0,
+    },
+    feedMoreDots: {
+        ...Fonts.regular16,
+        color: colors.subTextColor,
+        lineHeight: 16,
+        textAlign: 'center',
+        includeFontPadding: false,
+        marginTop: -2,
     },
     viewBlogButton: {
         backgroundColor: colors.primaryColor,

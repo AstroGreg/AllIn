@@ -1,4 +1,4 @@
-import {ActivityIndicator, ScrollView, Text, TouchableOpacity, View, Share, Alert, useWindowDimensions} from 'react-native'
+import {ActivityIndicator, ScrollView, Text, TouchableOpacity, View, Share, Alert, useWindowDimensions, ActionSheetIOS, Platform} from 'react-native'
 import React, {useCallback, useMemo, useRef, useState, useEffect} from 'react'
 import { createStyles } from './HomeStyles'
 import Header from './components/Header'
@@ -486,6 +486,84 @@ const HomeScreen = ({ navigation }: any) => {
         }
     }, [apiAccessToken, buildDownloadPath, pickDownloadUrl]);
 
+    const openFeedMenu = useCallback(
+        (media: HomeOverviewMedia | MediaViewAllItem | null, opts: { isVideo?: boolean; title?: string } = {}) => {
+            const safeMedia = media ?? null;
+            const eventName = safeMedia?.event_id ? eventNameById(safeMedia.event_id) : undefined;
+            const label = opts.title || eventName || 'Event';
+            const actions = [
+                { label: 'Download', onPress: () => handleDownloadMedia(safeMedia) },
+                { label: 'Share', onPress: () => handleShareMedia(safeMedia) },
+                { label: 'Share to Instagram Story', onPress: () => handleShareMedia(safeMedia) },
+                {
+                    label: 'Report an issue with this video/photo',
+                    onPress: () => Alert.alert('Request sent', 'We received your issue report.'),
+                },
+                {
+                    label: 'Go to author profile',
+                    onPress: () => navigation.navigate('BottomTabBar', { screen: 'Profile' }),
+                },
+                {
+                    label: 'Go to event',
+                    onPress: () =>
+                        navigation.navigate('CompetitionDetailsScreen', {
+                            name: label,
+                            description: `Competition held in ${label}`,
+                            competitionType: 'track',
+                        }),
+                },
+                {
+                    label: 'Mark as inappropriate content',
+                    onPress: () => Alert.alert('Thanks', 'We will review this content.'),
+                },
+                {
+                    label: 'Request this video removed',
+                    onPress: () => Alert.alert('Request sent', 'We will review the removal request.'),
+                },
+            ];
+
+            if (opts.isVideo) {
+                actions.unshift({
+                    label: 'View in player',
+                    onPress: () =>
+                        navigation.navigate('VideoPlayingScreen', {
+                            mediaId: safeMedia?.media_id,
+                            video: {
+                                title: label,
+                                thumbnail: getMediaThumb(safeMedia) ?? Images.photo1,
+                                uri: pickPlayableVideoUrl(safeMedia) ?? '',
+                            },
+                        }),
+                });
+            }
+
+            if (Platform.OS === 'ios') {
+                ActionSheetIOS.showActionSheetWithOptions(
+                    {
+                        options: [...actions.map((item) => item.label), 'Cancel'],
+                        cancelButtonIndex: actions.length,
+                    },
+                    (buttonIndex) => {
+                        if (buttonIndex < actions.length) {
+                            actions[buttonIndex].onPress();
+                        }
+                    },
+                );
+                return;
+            }
+
+            Alert.alert(
+                'More options',
+                'Choose an action',
+                [
+                    ...actions.map((item) => ({ text: item.label, onPress: item.onPress })),
+                    { text: 'Cancel', style: 'cancel' },
+                ],
+            );
+        },
+        [eventNameById, getMediaThumb, handleDownloadMedia, handleShareMedia, navigation, pickPlayableVideoUrl],
+    );
+
     const pickPlayableVideoUrl = useCallback((media?: HomeOverviewMedia | MediaViewAllItem | null) => {
         if (!media) return null;
         const candidates = [
@@ -817,54 +895,24 @@ const HomeScreen = ({ navigation }: any) => {
                                 style={Styles.quickActionCard}
                                 onPress={() => navigation.navigate('DownloadsDetailsScreen')}
                             >
-                                <View style={Styles.quickActionContent}>
-                                    <View style={Styles.quickActionIconContainer}>
-                                        <Icons.QuickDownload width={30} height={30} />
-                                    </View>
-                                    <View style={Styles.quickActionTextContainer}>
-                                        <Text style={Styles.quickActionText} numberOfLines={1}>My downloads</Text>
-                                        <View style={Styles.quickActionChevronCircle}>
-                                            <Icons.QuickChevron width={16} height={16} />
-                                        </View>
-                                    </View>
-                                </View>
+                                <Text style={Styles.quickActionText} numberOfLines={1}>My downloads</Text>
                             </TouchableOpacity>
                             <TouchableOpacity
                                 style={Styles.quickActionCard}
                                 activeOpacity={0.8}
                                 onPress={() => navigation.navigate('Search', { screen: 'AISearchScreen', params: { origin: 'home' } })}
                             >
-                                <View style={Styles.quickActionContent}>
-                                    <View style={Styles.quickActionIconContainer}>
-                                        <Icons.AiBlueBordered width={22} height={22} />
-                                    </View>
-                                    <View style={Styles.quickActionTextContainer}>
-                                        <Text style={Styles.quickActionText} numberOfLines={1}>AI Search</Text>
-                                        <View style={Styles.quickActionChevronCircle}>
-                                            <Icons.QuickChevron width={16} height={16} />
-                                        </View>
-                                    </View>
-                                </View>
+                                <Text style={Styles.quickActionText} numberOfLines={1}>AI Search</Text>
                             </TouchableOpacity>
                         </View>
 
                         {/* Add myself to events */}
                         <View style={Styles.quickActionsRow}>
                             <TouchableOpacity
-                                style={Styles.quickActionCard}
+                                style={[Styles.quickActionCard, Styles.quickActionCardFull]}
                                 onPress={() => navigation.navigate('AvailableEventsScreen')}
                             >
-                                <View style={Styles.quickActionContent}>
-                                    <View style={Styles.quickActionIconContainer}>
-                                        <Icons.QuickAddMyself width={30} height={30} />
-                                    </View>
-                                    <View style={Styles.quickActionTextContainer}>
-                                        <Text style={Styles.quickActionText} numberOfLines={1}>Subscribe to a competition</Text>
-                                        <View style={Styles.quickActionChevronCircle}>
-                                            <Icons.AddCircle width={16} height={16} />
-                                        </View>
-                                    </View>
-                                </View>
+                                <Text style={Styles.quickActionText} numberOfLines={1}>Subscribe to a competition</Text>
                             </TouchableOpacity>
                         </View>
                     </View>
@@ -929,6 +977,12 @@ const HomeScreen = ({ navigation }: any) => {
                                     showActions
                                     onShare={() => handleShareMedia(overviewVideo ?? topVideos[0])}
                                     onDownload={() => handleDownloadMedia(overviewVideo ?? topVideos[0])}
+                                    onPressMore={() =>
+                                        openFeedMenu(overviewVideo ?? topVideos[0], {
+                                            isVideo: true,
+                                            title: overviewVideo?.title ?? topVideos[0]?.title ?? 'Video',
+                                        })
+                                    }
                                     toggleVideoOnPress
                                     onVideoProgress={(time) => {
                                         videoResumeRef.current = time;
@@ -981,6 +1035,12 @@ const HomeScreen = ({ navigation }: any) => {
                                     headerSeparated
                                     likesLabel={formatLikesLabel(overviewBlog?.media ?? blogPrimaryMedia)}
                                     onShare={() => handleShareMedia(overviewBlog?.media ?? blogPrimaryMedia)}
+                                    onPressMore={() =>
+                                        openFeedMenu(overviewBlog?.media ?? blogPrimaryMedia, {
+                                            isVideo: (overviewBlog?.media ?? blogPrimaryMedia)?.type === 'video',
+                                            title: overviewBlog?.post?.title ?? 'Blog',
+                                        })
+                                    }
                                     description={overviewBlog?.post?.summary ?? overviewBlog?.post?.description ?? ''}
                                     onPress={() => {
                                         navigation.navigate('ViewUserBlogDetailsScreen', {
@@ -1042,6 +1102,12 @@ const HomeScreen = ({ navigation }: any) => {
                                     showActions
                                     onShare={() => handleShareMedia(overviewPhoto ?? topPhotos[0])}
                                     onDownload={() => handleDownloadMedia(overviewPhoto ?? topPhotos[0])}
+                                    onPressMore={() =>
+                                        openFeedMenu(overviewPhoto ?? topPhotos[0], {
+                                            isVideo: false,
+                                            title: overviewPhoto?.title ?? topPhotos[0]?.title ?? 'Photo',
+                                        })
+                                    }
                                     onPress={() => buildMediaCardPress(overviewPhoto ?? topPhotos[0])}
                                 />
                             </View>
@@ -1055,10 +1121,7 @@ const HomeScreen = ({ navigation }: any) => {
             Styles.gradientButtonSmall,
             Styles.gradientButtonTextSmall,
             Styles.quickActionCard,
-            Styles.quickActionContent,
-            Styles.quickActionIconContainer,
             Styles.quickActionText,
-            Styles.quickActionTextContainer,
             Styles.quickActionsGrid,
             Styles.quickActionsRow,
             Styles.scrollContent,
@@ -1091,6 +1154,7 @@ const HomeScreen = ({ navigation }: any) => {
             getMediaShareUrl,
             handleShareMedia,
             handleDownloadMedia,
+            openFeedMenu,
             prewarmVideo,
             buildMediaCardPress,
             updateVisibility,

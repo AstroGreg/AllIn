@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet } from 'react-native';
+import React, { useState, useEffect, useCallback } from 'react';
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Image } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Video from 'react-native-video';
 import FastImage from 'react-native-fast-image';
@@ -15,19 +15,101 @@ import Colors from '../../constants/Colors';
 import Icons from '../../constants/Icons';
 import Images from '../../constants/Images';
 import ShimmerEffect from '../../components/shimmerEffect/ShimmerEffect';
+import { useAuth } from '../../context/AuthContext';
+import { getMediaById } from '../../services/apiGateway';
+import { getApiBaseUrl, getHlsBaseUrl } from '../../constants/RuntimeConfig';
 
 const VideoEditRequestsScreen = ({ navigation }: any) => {
     const insets = useSafeAreaInsets();
+    const { apiAccessToken } = useAuth();
     const [isPlaying, setIsPlaying] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
 
-    const videoData = {
+    const mediaId = '86db92e8-1b8e-44a5-95c4-fb4764f6783e';
+    const [videoData, setVideoData] = useState({
         title: 'BK Studentent 23',
         location: 'Berlin, Germany',
         duration: '2 Minutes',
         date: '27.5.2025',
-        videoUri: 'https://awssportreels.s3.eu-central-1.amazonaws.com/PK-800m.mp4',
-    };
+        videoUri: '',
+        thumbnail: Images.photo7,
+    });
+    const videoPoster =
+        typeof videoData.thumbnail === 'number'
+            ? Image.resolveAssetSource(videoData.thumbnail).uri
+            : videoData.thumbnail?.uri;
+
+    const isSignedUrl = useCallback((value?: string | null) => {
+        if (!value) return false;
+        const lower = String(value).toLowerCase();
+        return (
+            lower.includes('x-amz-signature') ||
+            lower.includes('x-amz-credential') ||
+            lower.includes('x-amz-security-token') ||
+            lower.includes('signature=') ||
+            lower.includes('token=') ||
+            lower.includes('expires=')
+        );
+    }, []);
+
+    const withAccessToken = useCallback((value?: string | null) => {
+        if (!value) return undefined;
+        if (!apiAccessToken) return value;
+        if (isSignedUrl(value)) return value;
+        if (value.includes('access_token=')) return value;
+        const sep = value.includes('?') ? '&' : '?';
+        return `${value}${sep}access_token=${encodeURIComponent(apiAccessToken)}`;
+    }, [apiAccessToken, isSignedUrl]);
+
+    const toAbsoluteUrl = useCallback((value?: string | null) => {
+        if (!value) return null;
+        const raw = String(value);
+        if (raw.startsWith('http://') || raw.startsWith('https://')) return raw;
+        const base = getApiBaseUrl();
+        if (!base) return raw;
+        return `${base.replace(/\/$/, '')}/${raw.replace(/^\//, '')}`;
+    }, []);
+
+    const toHlsUrl = useCallback((value?: string | null) => {
+        if (!value) return null;
+        const raw = String(value);
+        if (raw.startsWith('http://') || raw.startsWith('https://')) return raw;
+        const base = getHlsBaseUrl();
+        if (!base) return raw;
+        return `${base.replace(/\/$/, '')}/${raw.replace(/^\//, '')}`;
+    }, []);
+
+    useEffect(() => {
+        let mounted = true;
+        if (!apiAccessToken) return () => {};
+        getMediaById(apiAccessToken, mediaId)
+            .then((media) => {
+                if (!mounted) return;
+                const hls = media.hls_manifest_path ? toHlsUrl(media.hls_manifest_path) : null;
+                const candidates = [
+                    media.preview_url,
+                    media.original_url,
+                    media.full_url,
+                    media.raw_url,
+                ]
+                    .filter(Boolean)
+                    .map((value) => toAbsoluteUrl(String(value)) || '')
+                    .filter(Boolean);
+                const mp4 = candidates.find((value) => /\.(mp4|mov|m4v)(\?|$)/i.test(value));
+                const resolvedVideo = hls || mp4 || candidates[0] || '';
+                const thumbCandidate = media.thumbnail_url || media.preview_url || media.full_url || media.raw_url || null;
+                const resolvedPoster = thumbCandidate ? toAbsoluteUrl(String(thumbCandidate)) : null;
+                setVideoData((prev) => ({
+                    ...prev,
+                    videoUri: withAccessToken(resolvedVideo) || resolvedVideo,
+                    thumbnail: resolvedPoster ? { uri: withAccessToken(resolvedPoster) || resolvedPoster } : prev.thumbnail,
+                }));
+            })
+            .catch(() => {});
+        return () => {
+            mounted = false;
+        };
+    }, [apiAccessToken, mediaId, toAbsoluteUrl, toHlsUrl, withAccessToken]);
 
     const handleVideoPress = () => {
         setIsPlaying(!isPlaying);
@@ -43,12 +125,7 @@ const VideoEditRequestsScreen = ({ navigation }: any) => {
                     <ArrowLeft2 size={20} color={Colors.mainTextColor} variant="Linear" />
                 </TouchableOpacity>
                 <Text style={Styles.headerTitle}>Video Details</Text>
-                <TouchableOpacity
-                    style={Styles.notificationButton}
-                    onPress={() => navigation.navigate('NotificationsScreen')}
-                >
-                    <Icons.NotificationBoldBlue height={24} width={24} />
-                </TouchableOpacity>
+                <View style={{ width: 44, height: 44 }} />
             </View>
 
             <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={Styles.scrollContent}>
@@ -70,12 +147,15 @@ const VideoEditRequestsScreen = ({ navigation }: any) => {
                                 </View>
                             )}
                             <Video
-                                source={{ uri: videoData.videoUri }}
+                                source={{ uri: videoData.videoUri, type: 'm3u8' }}
                                 style={Styles.videoPlayer}
                                 controls={true}
                                 resizeMode="cover"
                                 repeat={false}
                                 paused={false}
+                                poster={videoPoster}
+                                posterResizeMode="cover"
+                                ignoreSilentSwitch="ignore"
                                 onLoad={() => setIsLoading(false)}
                                 onError={() => setIsLoading(false)}
                             />
@@ -83,7 +163,7 @@ const VideoEditRequestsScreen = ({ navigation }: any) => {
                     ) : (
                         <>
                             <FastImage
-                                source={Images.photo7}
+                                source={videoData.thumbnail}
                                 style={Styles.videoPlayer}
                                 resizeMode="cover"
                             />

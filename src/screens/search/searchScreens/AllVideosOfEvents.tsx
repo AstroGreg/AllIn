@@ -1,16 +1,64 @@
 import { View, Text, FlatList, TouchableOpacity, Image } from 'react-native'
-import React, { useMemo } from 'react'
+import React, { useMemo, useEffect, useState, useCallback } from 'react'
 import Styles from '../SearchStyles'
 import SizeBox from '../../../constants/SizeBox'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import CustomHeader from '../../../components/customHeader/CustomHeader'
 import Icons from '../../../constants/Icons'
+import { useAuth } from '../../../context/AuthContext'
+import { getMediaById } from '../../../services/apiGateway'
+import { getApiBaseUrl, getHlsBaseUrl } from '../../../constants/RuntimeConfig'
+import Images from '../../../constants/Images'
 
 const AllVideosOfEvents = ({ navigation, route }: any) => {
     const insets = useSafeAreaInsets();
     const eventName = route?.params?.eventName || 'Event';
     const division = route?.params?.division;
     const gender = route?.params?.gender;
+    const { apiAccessToken } = useAuth();
+    const mediaId = '86db92e8-1b8e-44a5-95c4-fb4764f6783e';
+    const [sharedThumbUrl, setSharedThumbUrl] = useState<string | null>(null);
+    const [sharedVideoUrl, setSharedVideoUrl] = useState<string | null>(null);
+
+    const isSignedUrl = useCallback((value?: string | null) => {
+        if (!value) return false;
+        const lower = String(value).toLowerCase();
+        return (
+            lower.includes('x-amz-signature') ||
+            lower.includes('x-amz-credential') ||
+            lower.includes('x-amz-security-token') ||
+            lower.includes('signature=') ||
+            lower.includes('token=') ||
+            lower.includes('expires=')
+        );
+    }, []);
+
+    const withAccessToken = useCallback((value?: string | null) => {
+        if (!value) return undefined;
+        if (!apiAccessToken) return value;
+        if (isSignedUrl(value)) return value;
+        if (value.includes('access_token=')) return value;
+        const sep = value.includes('?') ? '&' : '?';
+        return `${value}${sep}access_token=${encodeURIComponent(apiAccessToken)}`;
+    }, [apiAccessToken, isSignedUrl]);
+
+    const toAbsoluteUrl = useCallback((value?: string | null) => {
+        if (!value) return null;
+        const raw = String(value);
+        if (raw.startsWith('http://') || raw.startsWith('https://')) return raw;
+        const base = getApiBaseUrl();
+        if (!base) return raw;
+        return `${base.replace(/\/$/, '')}/${raw.replace(/^\//, '')}`;
+    }, []);
+
+    const toHlsUrl = useCallback((value?: string | null) => {
+        if (!value) return null;
+        const raw = String(value);
+        if (raw.startsWith('http://') || raw.startsWith('https://')) return raw;
+        const base = getHlsBaseUrl();
+        if (!base) return raw;
+        return `${base.replace(/\/$/, '')}/${raw.replace(/^\//, '')}`;
+    }, []);
 
     const formatDuration = (value?: string) => {
         const totalSeconds = Number.parseInt(String(value ?? '0'), 10);
@@ -37,13 +85,42 @@ const AllVideosOfEvents = ({ navigation, route }: any) => {
         });
     };
 
+    useEffect(() => {
+        let mounted = true;
+        if (!apiAccessToken) return () => {};
+        getMediaById(apiAccessToken, mediaId)
+            .then((media) => {
+                if (!mounted) return;
+                const hls = media.hls_manifest_path ? toHlsUrl(media.hls_manifest_path) : null;
+                const candidates = [
+                    media.preview_url,
+                    media.original_url,
+                    media.full_url,
+                    media.raw_url,
+                ]
+                    .filter(Boolean)
+                    .map((value) => toAbsoluteUrl(String(value)) || '')
+                    .filter(Boolean);
+                const mp4 = candidates.find((value) => /\.(mp4|mov|m4v)(\?|$)/i.test(value));
+                const resolvedVideo = hls || mp4 || candidates[0] || null;
+                const thumbCandidate = media.thumbnail_url || media.preview_url || media.full_url || media.raw_url || null;
+                const resolvedThumb = thumbCandidate ? toAbsoluteUrl(String(thumbCandidate)) : null;
+                setSharedVideoUrl(withAccessToken(resolvedVideo) || resolvedVideo);
+                setSharedThumbUrl(withAccessToken(resolvedThumb) || resolvedThumb);
+            })
+            .catch(() => {});
+        return () => {
+            mounted = false;
+        };
+    }, [apiAccessToken, mediaId, toAbsoluteUrl, toHlsUrl, withAccessToken]);
+
     const data = useMemo(() => ([
         {
             id: 1,
             name: 'Passionate',
             event: eventName,
-            videoUri: 'https://awssportreels.s3.eu-central-1.amazonaws.com/BK-2024.mp4',
-            thumbnailUrl: 'https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=800&q=80',
+            videoUri: sharedVideoUrl,
+            thumbnailUrl: sharedThumbUrl,
             uploadedAt: '2026-02-05',
             timer: '2300',
         },
@@ -51,8 +128,8 @@ const AllVideosOfEvents = ({ navigation, route }: any) => {
             id: 2,
             name: 'Passionate',
             event: eventName,
-            videoUri: 'https://awssportreels.s3.eu-central-1.amazonaws.com/BK+studenten+2023.MP4',
-            thumbnailUrl: 'https://images.unsplash.com/photo-1504384308090-c894fdcc538d?auto=format&fit=crop&w=800&q=80',
+            videoUri: sharedVideoUrl,
+            thumbnailUrl: sharedThumbUrl,
             uploadedAt: '2026-02-02',
             timer: '2300',
         },
@@ -60,12 +137,12 @@ const AllVideosOfEvents = ({ navigation, route }: any) => {
             id: 3,
             name: 'Passionate',
             event: eventName,
-            videoUri: 'https://awssportreels.s3.eu-central-1.amazonaws.com/PK-800m.mp4',
-            thumbnailUrl: 'https://images.unsplash.com/photo-1483721310020-03333e577078?auto=format&fit=crop&w=800&q=80',
+            videoUri: sharedVideoUrl,
+            thumbnailUrl: sharedThumbUrl,
             uploadedAt: '2026-01-29',
             timer: '2300',
         },
-    ]), [eventName]);
+    ]), [eventName, sharedThumbUrl, sharedVideoUrl]);
 
     return (
         <View style={Styles.mainContainer}>
@@ -88,20 +165,17 @@ const AllVideosOfEvents = ({ navigation, route }: any) => {
                             borderWidth: 1,
                             borderColor: '#E8ECF2',
                         }}
-                        onPress={() => navigation.navigate('PhotoDetailScreen', {
-                            eventTitle: eventName,
-                            media: {
-                                type: 'video',
+                        onPress={() => navigation.navigate('VideoPlayingScreen', {
+                            mediaId,
+                            video: {
                                 title: eventName,
-                                thumbnailUrl: item.thumbnailUrl,
-                                previewUrl: item.videoUri,
-                                originalUrl: item.videoUri,
-                                fullUrl: item.videoUri,
+                                thumbnail: item.thumbnailUrl ? { uri: item.thumbnailUrl } : Images.photo7,
+                                uri: item.videoUri ?? '',
                             },
                         })}
                     >
                         <Image
-                            source={{ uri: item.thumbnailUrl }}
+                            source={item.thumbnailUrl ? { uri: item.thumbnailUrl } : Images.photo7}
                             style={{ width: '100%', height: 180 }}
                             resizeMode="cover"
                         />

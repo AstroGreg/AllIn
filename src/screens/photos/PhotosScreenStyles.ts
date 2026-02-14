@@ -1,10 +1,6 @@
-import { StyleSheet, Dimensions } from 'react-native';
+import { StyleSheet } from 'react-native';
 import Colors from '../../constants/Colors';
 import Fonts from '../../constants/Fonts';
-
-const { width } = Dimensions.get('window');
-// 20px padding on each side (40px) + 24px gap between cards = 64px
-const cardWidth = (width - 64) / 2;
 
 const Styles = StyleSheet.create({
     mainContainer: {
@@ -32,13 +28,9 @@ const Styles = StyleSheet.create({
         ...Fonts.medium14,
         color: Colors.mainTextColor,
     },
-    videoButton: {
+    headerSpacer: {
         width: 44,
         height: 44,
-        borderRadius: 22,
-        backgroundColor: '#F5F5F5',
-        alignItems: 'center',
-        justifyContent: 'center',
     },
     scrollContent: {
         paddingHorizontal: 20,
@@ -118,62 +110,40 @@ const Styles = StyleSheet.create({
         color: '#9B9F9F',
         lineHeight: 22,
     },
-    photosGrid: {
-        flexDirection: 'row',
-        flexWrap: 'wrap',
-        justifyContent: 'space-between',
-        rowGap: 24,
-    },
-    photoCard: {
-        width: cardWidth,
+    mediaCard: {
+        width: '100%',
         backgroundColor: Colors.whiteColor,
         borderRadius: 10,
         borderWidth: 0.5,
         borderColor: '#DEDEDE',
-        padding: 16,
-    },
-    photoThumbnail: {
-        width: '100%',
-        height: 104,
-        borderRadius: 4,
-    },
-    photoInfo: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        marginTop: 10,
-    },
-    photoLeftInfo: {
-        justifyContent: 'space-between',
-        height: 50,
-    },
-    photoPrice: {
-        ...Fonts.semibold12,
-        color: Colors.mainTextColor,
-    },
-    viewButton: {
+        padding: 12,
+        marginBottom: 16,
         flexDirection: 'row',
         alignItems: 'center',
-        justifyContent: 'center',
-        backgroundColor: Colors.primaryColor,
-        borderRadius: 4,
-        paddingHorizontal: 9,
-        paddingVertical: 5.5,
-        gap: 3,
     },
-    viewButtonText: {
-        fontSize: 8,
-        fontFamily: 'Inter-Regular',
-        color: Colors.whiteColor,
-        lineHeight: 12,
+    mediaThumbnail: {
+        width: 86,
+        height: 86,
+        borderRadius: 10,
     },
-    photoRightInfo: {
-        alignItems: 'flex-end',
-        justifyContent: 'space-between',
-        height: 50,
+    mediaThumbnailPlaceholder: {
+        width: 86,
+        height: 86,
+        borderRadius: 10,
+        backgroundColor: '#F2F4F7',
     },
-    photoResolution: {
-        ...Fonts.regular12,
+    mediaInfo: {
+        flex: 1,
+        marginLeft: 12,
+    },
+    mediaTitle: {
+        ...Fonts.medium14,
         color: Colors.mainTextColor,
+    },
+    mediaMeta: {
+        ...Fonts.regular12,
+        color: Colors.grayColor,
+        marginTop: 6,
     },
 });
 

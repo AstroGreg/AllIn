@@ -8,7 +8,6 @@ import {
 import Styles from './EventSummaryScreenStyles';
 import SizeBox from '../../constants/SizeBox';
 import Colors from '../../constants/Colors';
-import Icons from '../../constants/Icons';
 
 const EventSummaryScreen = ({ navigation, route }: any) => {
     const insets = useSafeAreaInsets();
@@ -24,6 +23,7 @@ const EventSummaryScreen = ({ navigation, route }: any) => {
         name: 'James Ray',
         chestNumber: '32',
         events: ['100m', '200m'],
+        categories: ['Senior'],
     };
 
     const handleCancel = () => {
@@ -51,12 +51,7 @@ const EventSummaryScreen = ({ navigation, route }: any) => {
                     <ArrowLeft2 size={24} color={Colors.mainTextColor} variant="Linear" />
                 </TouchableOpacity>
                 <Text style={Styles.headerTitle}>Summary</Text>
-                <TouchableOpacity
-                    style={Styles.notificationButton}
-                    onPress={() => navigation.navigate('NotificationsScreen')}
-                >
-                    <Icons.NotificationBoldBlue height={24} width={24} />
-                </TouchableOpacity>
+                <View style={{ width: 44, height: 44 }} />
             </View>
 
             <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={Styles.scrollContent}>
@@ -108,6 +103,21 @@ const EventSummaryScreen = ({ navigation, route }: any) => {
                             ))}
                         </View>
                     </View>
+                    {Array.isArray(personalData.categories) && personalData.categories.length > 0 && (
+                        <>
+                            <View style={Styles.divider} />
+                            <View style={Styles.detailRow}>
+                                <Text style={Styles.detailLabel}>Notifications</Text>
+                                <View style={Styles.eventChipsContainer}>
+                                    {personalData.categories.map((category: string, index: number) => (
+                                        <View key={`${category}-${index}`} style={Styles.eventChip}>
+                                            <Text style={Styles.eventChipText}>{category}</Text>
+                                        </View>
+                                    ))}
+                                </View>
+                            </View>
+                        </>
+                    )}
                 </View>
 
                 <SizeBox height={48} />

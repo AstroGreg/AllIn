@@ -28,6 +28,19 @@ const Styles = StyleSheet.create({
         ...Fonts.medium18,
         color: Colors.mainTextColor,
     },
+    headerSwitchButton: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 6,
+        paddingHorizontal: 12,
+        paddingVertical: 8,
+        borderRadius: 16,
+        backgroundColor: '#EFF4FF',
+    },
+    headerSwitchText: {
+        ...Fonts.regular14,
+        color: Colors.primaryColor,
+    },
     scrollContent: {
         paddingHorizontal: 20,
         paddingTop: 24,
@@ -69,6 +82,7 @@ const Styles = StyleSheet.create({
         color: '#FF0000',
     },
     addButton: {
+        flex: 1,
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',
@@ -82,6 +96,7 @@ const Styles = StyleSheet.create({
         color: Colors.whiteColor,
     },
     deleteButton: {
+        flex: 1,
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',
@@ -91,6 +106,10 @@ const Styles = StyleSheet.create({
         height: 54,
         borderRadius: 10,
         gap: 8,
+    },
+    actionRow: {
+        flexDirection: 'row',
+        gap: 12,
     },
     deleteButtonText: {
         ...Fonts.medium16,
@@ -155,6 +174,19 @@ const Styles = StyleSheet.create({
         gap: 8,
     },
     confirmDeleteButtonText: {
+        ...Fonts.medium16,
+        color: Colors.whiteColor,
+    },
+    confirmTopButton: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: Colors.primaryColor,
+        height: 54,
+        borderRadius: 10,
+        gap: 8,
+    },
+    confirmTopButtonText: {
         ...Fonts.medium16,
         color: Colors.whiteColor,
     },

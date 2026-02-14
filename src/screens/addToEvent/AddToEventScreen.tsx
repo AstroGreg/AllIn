@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, TextInput } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
     ArrowLeft2,
-    ArrowRight,
     AddSquare,
+    CloseCircle,
+    TickSquare,
     User,
 } from 'iconsax-react-nativejs';
 import Styles from './AddToEventScreenStyles';
@@ -15,12 +16,32 @@ import Icons from '../../constants/Icons';
 const AddToEventScreen = ({ navigation, route }: any) => {
     const insets = useSafeAreaInsets();
     const [chestNumber, setChestNumber] = useState('');
-    const [selectedEvents, setSelectedEvents] = useState(['100m', '200m']);
+    const [selectedEvents, setSelectedEvents] = useState<string[]>(['100m', '200m']);
+    const [showEventPicker, setShowEventPicker] = useState(false);
+    const [eventSearch, setEventSearch] = useState('');
+    const [useDefaultChest, setUseDefaultChest] = useState(true);
+
+    const suggestedEvents = useMemo(
+        () => ['60m', '100m', '200m', '400m', '800m', '1500m', '5K', '10K', 'Long jump', 'Shot put'],
+        []
+    );
 
     const eventData = route?.params?.event || {
         title: 'BK Studentent 23',
         date: '2 Nov, 2025',
         location: 'Berlin, Germany',
+    };
+    const defaultChestNumber = route?.params?.defaultChestNumber || '32';
+
+    const addEvent = (value: string) => {
+        const cleaned = value.trim();
+        if (!cleaned) return;
+        if (selectedEvents.includes(cleaned)) return;
+        setSelectedEvents((prev) => [...prev, cleaned]);
+    };
+
+    const removeEvent = (value: string) => {
+        setSelectedEvents((prev) => prev.filter((event) => event !== value));
     };
 
     const handleConfirm = () => {
@@ -28,9 +49,9 @@ const AddToEventScreen = ({ navigation, route }: any) => {
             event: eventData,
             personal: {
                 name: 'James Ray',
-                chestNumber: chestNumber || '32',
+                chestNumber: useDefaultChest ? defaultChestNumber : (chestNumber || defaultChestNumber),
                 events: selectedEvents,
-            }
+            },
         });
     };
 
@@ -43,7 +64,7 @@ const AddToEventScreen = ({ navigation, route }: any) => {
                 <TouchableOpacity style={Styles.backButton} onPress={() => navigation.goBack()}>
                     <ArrowLeft2 size={24} color={Colors.mainTextColor} variant="Linear" />
                 </TouchableOpacity>
-                <Text style={Styles.headerTitle}>Add to Event</Text>
+                <Text style={Styles.headerTitle}>Subscribe</Text>
                 <TouchableOpacity
                     style={Styles.notificationButton}
                     onPress={() => navigation.navigate('NotificationsScreen')}
@@ -78,8 +99,7 @@ const AddToEventScreen = ({ navigation, route }: any) => {
 
                 {/* Events Selection */}
                 <Text style={Styles.descriptionText}>
-                    Select all the event you participated in.{'\n'}
-                    You will be notify when someone upload a video..
+                    Select the event types you participated in.
                 </Text>
                 <SizeBox height={12} />
 
@@ -89,15 +109,48 @@ const AddToEventScreen = ({ navigation, route }: any) => {
                 <View style={Styles.eventsInputContainer}>
                     <View style={Styles.eventChipsContainer}>
                         {selectedEvents.map((event, index) => (
-                            <View key={index} style={Styles.eventChip}>
+                            <TouchableOpacity
+                                key={`${event}-${index}`}
+                                style={Styles.eventChip}
+                                onPress={() => removeEvent(event)}
+                                activeOpacity={0.8}
+                            >
                                 <Text style={Styles.eventChipText}>{event}</Text>
-                            </View>
+                                <CloseCircle size={14} color={Colors.grayColor} variant="Linear" />
+                            </TouchableOpacity>
                         ))}
                     </View>
-                    <TouchableOpacity>
+                    <TouchableOpacity
+                        style={Styles.addEventIconButton}
+                        onPress={() => setShowEventPicker((prev) => !prev)}
+                        activeOpacity={0.8}
+                    >
                         <AddSquare size={20} color={Colors.primaryColor} variant="Linear" />
                     </TouchableOpacity>
                 </View>
+
+                {showEventPicker && (
+                    <View style={Styles.eventPicker}>
+                        <Text style={Styles.eventPickerTitle}>Select disciplines</Text>
+                        <View style={Styles.eventPickerGrid}>
+                            {suggestedEvents.map((item) => {
+                                const isSelected = selectedEvents.includes(item);
+                                return (
+                                    <TouchableOpacity
+                                        key={item}
+                                        style={[Styles.suggestionChip, isSelected && Styles.suggestionChipActive]}
+                                        onPress={() => addEvent(item)}
+                                        activeOpacity={0.8}
+                                    >
+                                        <Text style={[Styles.suggestionText, isSelected && Styles.suggestionTextActive]}>
+                                            {item}
+                                        </Text>
+                                    </TouchableOpacity>
+                                );
+                            })}
+                        </View>
+                    </View>
+                )}
 
                 <SizeBox height={16} />
 
@@ -113,8 +166,19 @@ const AddToEventScreen = ({ navigation, route }: any) => {
                         placeholderTextColor="#777777"
                         value={chestNumber}
                         onChangeText={setChestNumber}
+                        editable={!useDefaultChest}
                     />
                 </View>
+                <TouchableOpacity
+                    style={Styles.defaultChestRow}
+                    onPress={() => setUseDefaultChest((prev) => !prev)}
+                    activeOpacity={0.8}
+                >
+                    <View style={[Styles.defaultChestBox, useDefaultChest && Styles.defaultChestBoxActive]}>
+                        {useDefaultChest && <TickSquare size={14} color={Colors.whiteColor} variant="Bold" />}
+                    </View>
+                    <Text style={Styles.defaultChestText}>Use default number ({defaultChestNumber})</Text>
+                </TouchableOpacity>
 
                 <SizeBox height={40} />
             </ScrollView>
@@ -122,8 +186,7 @@ const AddToEventScreen = ({ navigation, route }: any) => {
             {/* Confirm Button */}
             <View style={Styles.bottomContainer}>
                 <TouchableOpacity style={Styles.confirmButton} onPress={handleConfirm}>
-                    <Text style={Styles.confirmButtonText}>Confirm</Text>
-                    <ArrowRight size={18} color={Colors.whiteColor} variant="Linear" />
+                    <Text style={Styles.confirmButtonText}>Continue</Text>
                 </TouchableOpacity>
                 <SizeBox height={insets.bottom > 0 ? insets.bottom : 20} />
             </View>

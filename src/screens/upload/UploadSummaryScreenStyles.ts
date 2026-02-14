@@ -24,6 +24,16 @@ export const createStyles = (colors: ThemeColors) => StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'center',
     },
+    headerSpacer: {
+        width: 44,
+        height: 44,
+    },
+    headerGhost: {
+        width: 44,
+        height: 44,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
     headerTitle: {
         ...Fonts.medium18,
         color: colors.mainTextColor,
@@ -31,6 +41,14 @@ export const createStyles = (colors: ThemeColors) => StyleSheet.create({
     scrollContent: {
         paddingHorizontal: 20,
         paddingTop: 24,
+    },
+    emptyState: {
+        paddingVertical: 24,
+        alignItems: 'center',
+    },
+    emptyStateText: {
+        ...Fonts.regular14,
+        color: colors.grayColor,
     },
     categorySection: {
         marginBottom: 24,
@@ -58,6 +76,11 @@ export const createStyles = (colors: ThemeColors) => StyleSheet.create({
     thumbnail: {
         width: '100%',
         height: '100%',
+    },
+    thumbnailPlaceholder: {
+        width: '100%',
+        height: '100%',
+        backgroundColor: colors.btnBackgroundColor,
     },
     playButton: {
         position: 'absolute',

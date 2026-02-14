@@ -4,8 +4,8 @@ import { createStyles } from '../HomeStyles'
 import FastImage from 'react-native-fast-image'
 import Images from '../../../constants/Images'
 import SizeBox from '../../../constants/SizeBox'
-import Icons from '../../../constants/Icons'
 import { useTheme } from '../../../context/ThemeContext'
+import Icons from '../../../constants/Icons'
 
 interface HeaderProps {
     userName: string;
