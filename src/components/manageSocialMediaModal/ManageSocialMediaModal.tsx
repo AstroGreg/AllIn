@@ -3,6 +3,7 @@ import React, { useState } from 'react'
 import { CloseCircle, Note, ArrowDown, ArrowRight } from 'iconsax-react-nativejs'
 import { createStyles } from './ManageSocialMediaModalStyles'
 import { useTheme } from '../../context/ThemeContext'
+import { useTranslation } from 'react-i18next'
 
 interface ManageSocialMediaModalProps {
     visible: boolean;
@@ -11,6 +12,7 @@ interface ManageSocialMediaModalProps {
 }
 
 const ManageSocialMediaModal = ({ visible, onClose, onSave }: ManageSocialMediaModalProps) => {
+    const { t } = useTranslation();
     const { colors } = useTheme();
     const Styles = createStyles(colors);
     const [selectedSocialMedia, setSelectedSocialMedia] = useState('');
@@ -42,7 +44,7 @@ const ManageSocialMediaModal = ({ visible, onClose, onSave }: ManageSocialMediaM
 
                             {/* Social Media Input */}
                             <View style={Styles.inputContainer}>
-                                <Text style={Styles.inputLabel}>Social Media</Text>
+                                <Text style={Styles.inputLabel}>{t('Social Media')}</Text>
                                 <TouchableOpacity style={Styles.selectInput}>
                                     <View style={Styles.selectInputContent}>
                                         <Note size={16} color={colors.grayColor} variant="Linear" />
@@ -57,11 +59,11 @@ const ManageSocialMediaModal = ({ visible, onClose, onSave }: ManageSocialMediaM
                             {/* Buttons */}
                             <View style={Styles.buttonsContainer}>
                                 <TouchableOpacity style={Styles.addMoreButton} onPress={handleAddMore}>
-                                    <Text style={Styles.addMoreButtonText}>Add More</Text>
+                                    <Text style={Styles.addMoreButtonText}>{t('Add More')}</Text>
                                     <ArrowRight size={18} color={colors.subTextColor} variant="Linear" />
                                 </TouchableOpacity>
                                 <TouchableOpacity style={Styles.saveButton} onPress={handleSave}>
-                                    <Text style={Styles.saveButtonText}>Save</Text>
+                                    <Text style={Styles.saveButtonText}>{t('Save')}</Text>
                                     <ArrowRight size={18} color="#FFFFFF" variant="Linear" />
                                 </TouchableOpacity>
                             </View>

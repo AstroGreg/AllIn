@@ -11,10 +11,12 @@ import {
     ArrowRight,
 } from 'iconsax-react-nativejs';
 import { createStyles } from './AuthenticationStyles';
+import { useTranslation } from 'react-i18next'
 
 type AuthMethod = '2fa' | 'authenticator' | null;
 
 const Authentication = ({ navigation }: any) => {
+    const { t } = useTranslation();
     const insets = useSafeAreaInsets();
     const { colors } = useTheme();
     const styles = createStyles(colors);
@@ -29,7 +31,7 @@ const Authentication = ({ navigation }: any) => {
                 <TouchableOpacity style={styles.headerButton} onPress={() => navigation.goBack()}>
                     <ArrowLeft2 size={24} color={colors.primaryColor} variant="Linear" />
                 </TouchableOpacity>
-                <Text style={styles.headerTitle}>Authentication</Text>
+                <Text style={styles.headerTitle}>{t('Authentication')}</Text>
                 <TouchableOpacity style={styles.headerButton}>
                     <Notification size={24} color={colors.primaryColor} variant="Linear" />
                 </TouchableOpacity>
@@ -40,7 +42,7 @@ const Authentication = ({ navigation }: any) => {
 
                 {/* Title Section */}
                 <View style={styles.titleSection}>
-                    <Text style={styles.title}>Protect your account</Text>
+                    <Text style={styles.title}>{t('Protect your account')}</Text>
                     <SizeBox height={6} />
                     <Text style={styles.description}>
                         Add an extra layer of security to prevent unauthorized access to your donations and payment methods.
@@ -60,7 +62,7 @@ const Authentication = ({ navigation }: any) => {
                             <Message size={24} color={colors.primaryColor} variant="Bold" />
                         </View>
                         <View style={styles.optionContent}>
-                            <Text style={styles.optionTitle}>2- Factor Authentication</Text>
+                            <Text style={styles.optionTitle}>{t('2- Factor Authentication')}</Text>
                             <Text style={styles.optionDescription}>
                                 Receive a unique code via text message to verify it's you.
                             </Text>
@@ -87,7 +89,7 @@ const Authentication = ({ navigation }: any) => {
                             <SecuritySafe size={24} color={colors.primaryColor} variant="Bold" />
                         </View>
                         <View style={styles.optionContent}>
-                            <Text style={styles.optionTitle}>Authenticator App</Text>
+                            <Text style={styles.optionTitle}>{t('Authenticator App')}</Text>
                             <Text style={styles.optionDescription}>
                                 Use Google Authenticator or Authy to generate secure codes.
                             </Text>
@@ -111,7 +113,7 @@ const Authentication = ({ navigation }: any) => {
                     style={styles.primaryButton}
                     onPress={() => navigation.navigate('AuthenticatorSetup')}
                 >
-                    <Text style={styles.primaryButtonText}>Set Up Now</Text>
+                    <Text style={styles.primaryButtonText}>{t('Set Up Now')}</Text>
                     <ArrowRight size={24} color={colors.pureWhite} variant="Linear" />
                 </TouchableOpacity>
 
@@ -121,7 +123,7 @@ const Authentication = ({ navigation }: any) => {
                     style={styles.secondaryButton}
                     onPress={() => navigation.goBack()}
                 >
-                    <Text style={styles.secondaryButtonText}>Skip For now</Text>
+                    <Text style={styles.secondaryButtonText}>{t('Skip For now')}</Text>
                     <ArrowRight size={24} color={colors.grayColor} variant="Linear" />
                 </TouchableOpacity>
             </View>

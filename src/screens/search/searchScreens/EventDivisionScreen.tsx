@@ -5,6 +5,7 @@ import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import {useTheme} from '../../../context/ThemeContext';
 import {ArrowLeft2} from 'iconsax-react-nativejs';
 import {createStyles} from './EventDivisionScreenStyles';
+import { useTranslation } from 'react-i18next'
 
 const AGE_GROUPS = [
   'Pupil',
@@ -20,6 +21,7 @@ const AGE_GROUPS = [
 const GENDERS = ['Men', 'Women', 'Mixed'];
 
 const EventDivisionScreen = ({navigation, route}: any) => {
+    const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   const {colors} = useTheme();
   const styles = createStyles(colors);
@@ -66,11 +68,11 @@ const EventDivisionScreen = ({navigation, route}: any) => {
 
       <View style={styles.container}>
         <SizeBox height={18} />
-        <Text style={styles.title}>Choose category</Text>
+        <Text style={styles.title}>{t('Choose category')}</Text>
         <Text style={styles.subtitle}>{subtitle}</Text>
 
         <SizeBox height={20} />
-        <Text style={styles.sectionTitle}>Category</Text>
+        <Text style={styles.sectionTitle}>{t('Category')}</Text>
         <View style={styles.chipRow}>
           {AGE_GROUPS.map((item) => {
             const active = item === selectedAge;
@@ -87,7 +89,7 @@ const EventDivisionScreen = ({navigation, route}: any) => {
         </View>
 
         <SizeBox height={20} />
-        <Text style={styles.sectionTitle}>Gender</Text>
+        <Text style={styles.sectionTitle}>{t('Gender')}</Text>
         <View style={styles.chipRow}>
           {GENDERS.map((item) => {
             const active = item === selectedGender;
@@ -105,10 +107,10 @@ const EventDivisionScreen = ({navigation, route}: any) => {
 
         <View style={styles.buttonRow}>
           <TouchableOpacity style={styles.primaryButton} onPress={handleOpenVideos}>
-            <Text style={styles.primaryButtonText}>See videos</Text>
+            <Text style={styles.primaryButtonText}>{t('See videos')}</Text>
           </TouchableOpacity>
           <TouchableOpacity style={styles.secondaryButton} onPress={handleOpenPhotos}>
-            <Text style={styles.secondaryButtonText}>See photos</Text>
+            <Text style={styles.secondaryButtonText}>{t('See photos')}</Text>
           </TouchableOpacity>
         </View>
 

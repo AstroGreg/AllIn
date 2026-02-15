@@ -49,7 +49,7 @@ const LinksModal = ({ isVisible, onClose }: LinksModalProps) => {
                     <TouchableOpacity style={Styles.socialLinks}>
                         <FastImage source={Icons.Facebook} style={Styles.icons} />
                         <SizeBox width={12} />
-                        <Text style={Styles.eventText}>Connect with Facebook</Text>
+                        <Text style={Styles.eventText}>{t('Connect with Facebook')}</Text>
                         <View style={[Styles.nextArrow, { right: 0 }]}>
                             <Icons.ArrowNext height={24} width={24} />
                         </View>

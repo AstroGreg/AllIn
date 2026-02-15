@@ -8,8 +8,10 @@ import SizeBox from '../../constants/SizeBox';
 import Images from '../../constants/Images';
 import Icons from '../../constants/Icons';
 import { useTheme } from '../../context/ThemeContext';
+import { useTranslation } from 'react-i18next'
 
 const ViewUserCollectionsPhotosScreen = ({ navigation }: any) => {
+    const { t } = useTranslation();
     const insets = useSafeAreaInsets();
     const { colors } = useTheme();
     const Styles = createStyles(colors);
@@ -73,14 +75,14 @@ const ViewUserCollectionsPhotosScreen = ({ navigation }: any) => {
                 <TouchableOpacity style={Styles.headerButton} onPress={() => navigation.goBack()}>
                     <ArrowLeft2 size={24} color={colors.mainTextColor} variant="Linear" />
                 </TouchableOpacity>
-                <Text style={Styles.headerTitle}>Collections</Text>
+                <Text style={Styles.headerTitle}>{t('Collections')}</Text>
                 <View style={[Styles.headerButton, { opacity: 0 }]} />
             </View>
 
             <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={Styles.scrollContent}>
                 {/* Section Header */}
                 <View style={Styles.sectionHeader}>
-                    <Text style={Styles.sectionTitle}>Collections</Text>
+                    <Text style={Styles.sectionTitle}>{t('Collections')}</Text>
                     <View style={Styles.photosCountBadge}>
                         <Text style={Styles.photosCountText}>
                             {activeTab === 'photos' ? `${photos.length} photos` : `${videos.length} videos`}
@@ -96,13 +98,13 @@ const ViewUserCollectionsPhotosScreen = ({ navigation }: any) => {
                         style={[Styles.toggleButton, activeTab === 'photos' && Styles.toggleButtonActive]}
                         onPress={() => setActiveTab('photos')}
                     >
-                        <Text style={activeTab === 'photos' ? Styles.toggleTextActive : Styles.toggleText}>Photos</Text>
+                        <Text style={activeTab === 'photos' ? Styles.toggleTextActive : Styles.toggleText}>{t('Photos')}</Text>
                     </TouchableOpacity>
                     <TouchableOpacity
                         style={[Styles.toggleButton, activeTab === 'videos' && Styles.toggleButtonActive]}
                         onPress={() => setActiveTab('videos')}
                     >
-                        <Text style={activeTab === 'videos' ? Styles.toggleTextActive : Styles.toggleText}>Videos</Text>
+                        <Text style={activeTab === 'videos' ? Styles.toggleTextActive : Styles.toggleText}>{t('Videos')}</Text>
                     </TouchableOpacity>
                 </View>
 

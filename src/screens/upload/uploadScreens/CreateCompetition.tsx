@@ -9,9 +9,11 @@ import Icons from '../../../constants/Icons'
 import { launchImageLibrary } from 'react-native-image-picker';
 import CustomButton from '../../../components/customButton/CustomButton'
 import { useTheme } from '../../../context/ThemeContext'
+import { useTranslation } from 'react-i18next'
 
 
 const CreateCompetition = ({ navigation }: any) => {
+    const { t } = useTranslation();
     const insets = useSafeAreaInsets();
     const { colors } = useTheme();
     const Styles = createStyles(colors);
@@ -42,36 +44,36 @@ const CreateCompetition = ({ navigation }: any) => {
             <ScrollView style={{ marginHorizontal: 20 }} showsVerticalScrollIndicator={false} >
                 <SizeBox height={24} />
                 <CustomTextInput
-                    label='Competition Name'
-                    placeholder='Competition Name type...'
+                    label={t('Competition Name')}
+                    placeholder={t('Competition Name type...')}
                     icon={<Icons.CompetitionName height={16} width={16} />}
                 />
                 <SizeBox height={24} />
                 <CustomTextInput
-                    label='Competition Location'
-                    placeholder='Select location'
+                    label={t('Competition Location')}
+                    placeholder={t('Select location')}
                     icon={<Icons.LocationSetting height={16} width={16} />}
                     isDown={true}
                 />
                 <SizeBox height={24} />
                 <CustomTextInput
-                    label='Competition Date'
-                    placeholder='dd/mm/year'
+                    label={t('Competition Date')}
+                    placeholder={t('dd/mm/year')}
                     icon={<Icons.DOB height={16} width={16} />}
                 />
                 <SizeBox height={24} />
                 <CustomTextInput
-                    label='Competition Type'
-                    placeholder='Competition type custom'
+                    label={t('Competition Type')}
+                    placeholder={t('Competition type custom')}
                     icon={<Icons.LocationSetting height={16} width={16} />}
                     isDown={true}
                 />
                 <SizeBox height={24} />
                 <View style={Styles.box}>
-                    <Text style={Styles.titleText}>Upload Event Thumbnail</Text>
+                    <Text style={Styles.titleText}>{t('Upload Event Thumbnail')}</Text>
                     <SizeBox height={12} />
                     <TouchableOpacity style={Styles.uploadContainer} onPress={() => handleImagePicker()}>
-                        <Text style={Styles.uploadText}>Browse Files Images</Text>
+                        <Text style={Styles.uploadText}>{t('Browse Files Images')}</Text>
                         <SizeBox width={4} />
                         <Icons.CameraBlue height={18} width={18} />
                     </TouchableOpacity>
@@ -79,7 +81,7 @@ const CreateCompetition = ({ navigation }: any) => {
 
                 <SizeBox height={24} />
 
-                <CustomButton onPress={() => navigation.goBack()} title='Submit' />
+                <CustomButton onPress={() => navigation.goBack()} title={t('Submit')} />
             </ScrollView>
         </View>
     )

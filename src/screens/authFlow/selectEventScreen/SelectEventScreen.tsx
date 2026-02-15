@@ -8,6 +8,7 @@ import Images from '../../../constants/Images';
 import Icons from '../../../constants/Icons';
 import { useTheme } from '../../../context/ThemeContext';
 import { useAuth } from '../../../context/AuthContext';
+import { useTranslation } from 'react-i18next'
 
 interface EventOption {
     id: string;
@@ -25,6 +26,7 @@ const events: EventOption[] = [
 ];
 
 const SelectEventScreen = ({ navigation, route }: any) => {
+    const { t } = useTranslation();
     const { colors } = useTheme();
     const Styles = createStyles(colors);
     const insets = useSafeAreaInsets();
@@ -49,7 +51,7 @@ const SelectEventScreen = ({ navigation, route }: any) => {
 
     const handleNext = async () => {
         if (selectedEvents.length === 0) {
-            Alert.alert('Error', 'Please select at least one event');
+            Alert.alert(t('Error'), t('Please select at least one event'));
             return;
         }
 
@@ -70,7 +72,7 @@ const SelectEventScreen = ({ navigation, route }: any) => {
                 });
             }
         } catch (err: any) {
-            Alert.alert('Error', 'Failed to save events. Please try again.');
+            Alert.alert(t('Error'), t('Failed to save events. Please try again.'));
         } finally {
             setIsLoading(false);
         }
@@ -97,7 +99,7 @@ const SelectEventScreen = ({ navigation, route }: any) => {
                         Which kinds of events are you interested in?
                     </Text>
                     <SizeBox height={8} />
-                    <Text style={Styles.subHeadingText}>Choose Your Interest</Text>
+                    <Text style={Styles.subHeadingText}>{t('Choose Your Interest')}</Text>
 
                     <SizeBox height={24} />
 
@@ -153,7 +155,7 @@ const SelectEventScreen = ({ navigation, route }: any) => {
                         activeOpacity={0.7}
                         onPress={handleBack}
                     >
-                        <Text style={Styles.backButtonText}>Back</Text>
+                        <Text style={Styles.backButtonText}>{t('Back')}</Text>
                     </TouchableOpacity>
 
                     <TouchableOpacity
@@ -166,7 +168,7 @@ const SelectEventScreen = ({ navigation, route }: any) => {
                             <ActivityIndicator size="small" color="#fff" />
                         ) : (
                             <>
-                                <Text style={Styles.nextButtonText}>Next</Text>
+                                <Text style={Styles.nextButtonText}>{t('Next')}</Text>
                                 <Icons.RightBtnIcon height={18} width={18} />
                             </>
                         )}

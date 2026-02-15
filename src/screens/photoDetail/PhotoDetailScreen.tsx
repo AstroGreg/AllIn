@@ -8,17 +8,19 @@ import SizeBox from '../../constants/SizeBox';
 import {useTheme} from '../../context/ThemeContext';
 import {useAuth} from '../../context/AuthContext';
 import {useEvents} from '../../context/EventsContext';
-import {ApiError, getMediaById, postAiFeedbackLabel, recordDownload, type MediaViewAllItem} from '../../services/apiGateway';
+import {ApiError, getMediaById, postAiFeedbackLabel, recordDownload, recordMediaView, type MediaViewAllItem} from '../../services/apiGateway';
 import Video from 'react-native-video';
 import ShimmerEffect from '../../components/shimmerEffect/ShimmerEffect';
 import {getApiBaseUrl, getHlsBaseUrl} from '../../constants/RuntimeConfig';
 import Slider from '@react-native-community/slider';
 import {CameraRoll, iosRequestAddOnlyGalleryPermission} from '@react-native-camera-roll/camera-roll';
 import Icons from '../../constants/Icons';
+import { useTranslation } from 'react-i18next'
 
 type FeedbackChoice = 'yes' | 'no' | null;
 
 const PhotoDetailScreen = ({navigation, route}: any) => {
+    const { t } = useTranslation();
     const insets = useSafeAreaInsets();
     const {colors} = useTheme();
     const Styles = createStyles(colors);
@@ -59,6 +61,13 @@ const PhotoDetailScreen = ({navigation, route}: any) => {
         return photoFallbackIds[index];
     }, [eventTitle, isPhotoView, mediaId, photoFallbackIds, startAt]);
     const resolvedMediaId = effectiveMediaId ?? mediaId;
+
+    useEffect(() => {
+        if (!apiAccessToken) return;
+        const id = String(resolvedMediaId || '').trim();
+        if (!id) return;
+        recordMediaView(apiAccessToken, id).catch(() => {});
+    }, [apiAccessToken, resolvedMediaId]);
 
     const apiBaseUrl = useMemo(() => getApiBaseUrl(), []);
     const hlsBaseUrl = useMemo(() => getHlsBaseUrl(), []);
@@ -355,7 +364,7 @@ const PhotoDetailScreen = ({navigation, route}: any) => {
         try {
             await Linking.openURL(mailto);
         } catch {
-            Alert.alert('Unable to open email', 'Please email support@bcs.com with the issue details.');
+            Alert.alert(t('Unable to open email'), t('Please email support@bcs.com with the issue details.'));
         }
     }, [eventId, eventNameById, eventTitle, resolvedMediaId]);
 
@@ -459,18 +468,18 @@ const PhotoDetailScreen = ({navigation, route}: any) => {
     const handleDownload = useCallback(async () => {
         if (downloadInFlightRef.current) return;
         if (!apiAccessToken) {
-            Alert.alert('Missing API token', 'Log in or set a Dev API token to download.');
+            Alert.alert(t('Missing API token'), t('Log in or set a Dev API token to download.'));
             return;
         }
 
         if (!resolvedMediaId) {
-            Alert.alert('Missing media', 'This item has no media_id to download.');
+            Alert.alert(t('Missing media'), t('This item has no media_id to download.'));
             return;
         }
 
         const downloadUrl = await resolveDownloadUrl();
         if (!downloadUrl) {
-            Alert.alert('No download URL', 'The API did not provide a downloadable URL for this media.');
+            Alert.alert(t('No download URL'), t('The API did not provide a downloadable URL for this media.'));
             return;
         }
 
@@ -479,7 +488,7 @@ const PhotoDetailScreen = ({navigation, route}: any) => {
         setDownloadVisible(true);
         const fileUrl = await ensureLocalFile(downloadUrl, extensionFromUrl(downloadUrl), setDownloadProgress);
         if (!fileUrl) {
-            Alert.alert('Download failed', 'Unable to download the media file.');
+            Alert.alert(t('Download failed'), t('Unable to download the media file.'));
             setDownloadVisible(false);
             setDownloadProgress(null);
             downloadInFlightRef.current = false;
@@ -516,12 +525,12 @@ const PhotoDetailScreen = ({navigation, route}: any) => {
     const handleShareNative = useCallback(async () => {
         const shareUrl = await resolveShareUrl();
         if (!shareUrl) {
-            Alert.alert('No media available', 'There is no media to share.');
+            Alert.alert(t('No media available'), t('There is no media to share.'));
             return;
         }
         const localShareUrl = await ensureLocalFile(shareUrl, extensionFromUrl(shareUrl));
         if (!localShareUrl) {
-            Alert.alert('Share failed', 'Unable to download the media file.');
+            Alert.alert(t('Share failed'), t('Unable to download the media file.'));
             return;
         }
         try {
@@ -544,7 +553,7 @@ const PhotoDetailScreen = ({navigation, route}: any) => {
                     ? await ensureLocalFile(shareUrl, extensionFromUrl(shareUrl))
                     : null;
                 if (!localAsset) {
-                    Alert.alert('Share failed', 'Unable to download the media file.');
+                    Alert.alert(t('Share failed'), t('Unable to download the media file.'));
                     return;
                 }
                 await ShareLib.shareSingle({
@@ -565,7 +574,7 @@ const PhotoDetailScreen = ({navigation, route}: any) => {
         }
 
         if (!shareUrl) {
-            Alert.alert('No media available', 'There is no media to share.');
+            Alert.alert(t('No media available'), t('There is no media to share.'));
             return;
         }
         await handleShareNative();
@@ -594,11 +603,11 @@ const PhotoDetailScreen = ({navigation, route}: any) => {
             },
             {
                 label: 'Mark as inappropriate content',
-                onPress: () => Alert.alert('Thanks', 'We will review this content.'),
+                onPress: () => Alert.alert(t('Thanks'), t('We will review this content.')),
             },
             {
                 label: 'Request this video removed',
-                onPress: () => Alert.alert('Request sent', 'We will review the removal request.'),
+                onPress: () => Alert.alert(t('Request sent'), t('We will review the removal request.')),
             },
         ];
 
@@ -654,7 +663,7 @@ const PhotoDetailScreen = ({navigation, route}: any) => {
             const feedbackId = resolvedMediaId;
             if (!feedbackId) return;
             if (!apiAccessToken) {
-                Alert.alert('Missing API token', 'Log in or set a Dev API token to label results.');
+                Alert.alert(t('Missing API token'), t('Log in or set a Dev API token to label results.'));
                 return;
             }
 
@@ -696,7 +705,7 @@ const PhotoDetailScreen = ({navigation, route}: any) => {
                 {/* Question Card */}
                 {!isVideo && !!resolvedMediaId && !!matchType && (
                     <View style={Styles.questionCard}>
-                        <Text style={Styles.questionText}>Is this photo/video actually you?</Text>
+                        <Text style={Styles.questionText}>{t('Is this photo/video actually you?')}</Text>
                         <View style={Styles.buttonsRow}>
                             <TouchableOpacity
                                 style={[
@@ -707,7 +716,7 @@ const PhotoDetailScreen = ({navigation, route}: any) => {
                                 disabled={isSavingFeedback}
                                 onPress={() => submitFeedback('no')}
                             >
-                                <Text style={Styles.buttonText}>{feedback === 'no' ? 'Not me' : 'No'}</Text>
+                                <Text style={Styles.buttonText}>{feedback === 'no' ? t('Not me') : t('No')}</Text>
                             </TouchableOpacity>
                             <TouchableOpacity
                                 style={[
@@ -718,13 +727,13 @@ const PhotoDetailScreen = ({navigation, route}: any) => {
                                 disabled={isSavingFeedback}
                                 onPress={() => submitFeedback('yes')}
                             >
-                                <Text style={Styles.buttonText}>{feedback === 'yes' ? 'This is me' : 'Yes'}</Text>
+                                <Text style={Styles.buttonText}>{feedback === 'yes' ? t('This is me') : t('Yes')}</Text>
                             </TouchableOpacity>
                         </View>
                         {isSavingFeedback && (
                             <>
                                 <SizeBox height={10} />
-                                <Text style={[Styles.questionText, {marginBottom: 0}]}>Saving…</Text>
+                                <Text style={[Styles.questionText, {marginBottom: 0}]}>{t('Saving…')}</Text>
                             </>
                         )}
                     </View>
@@ -851,7 +860,7 @@ const PhotoDetailScreen = ({navigation, route}: any) => {
                         />
                     ) : (
                         <View style={Styles.videoPlaceholder}>
-                            <Text style={Styles.videoPlaceholderText}>No preview available</Text>
+                            <Text style={Styles.videoPlaceholderText}>{t('No preview available')}</Text>
                         </View>
                     )}
 
@@ -876,7 +885,7 @@ const PhotoDetailScreen = ({navigation, route}: any) => {
             {downloadVisible && (
                 <View style={Styles.downloadOverlay} pointerEvents="auto">
                     <View style={Styles.downloadCard}>
-                        <Text style={Styles.downloadTitle}>Preparing download</Text>
+                        <Text style={Styles.downloadTitle}>{t('Preparing download')}</Text>
                         {downloadProgress == null ? (
                             <ActivityIndicator color={colors.primaryColor} />
                         ) : (

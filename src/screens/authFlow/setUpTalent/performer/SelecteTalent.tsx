@@ -8,8 +8,10 @@ import Icons from '../../../../constants/Icons'
 import SelcetionContainer from '../components/SelcetionContainer'
 import CustomButton from '../../../../components/customButton/CustomButton'
 import { useTheme } from '../../../../context/ThemeContext'
+import { useTranslation } from 'react-i18next'
 
 const SelecteTalent = ({ navigation }: any) => {
+    const { t } = useTranslation();
     const { colors } = useTheme();
     const Styles = createStyles(colors);
     const insets = useSafeAreaInsets();
@@ -55,17 +57,17 @@ const SelecteTalent = ({ navigation }: any) => {
             <ScrollView showsVerticalScrollIndicator={false}>
                 <SizeBox height={76} />
                 <View style={Styles.contentContainer}>
-                    <Text style={Styles.headingText}>Select your talent</Text>
+                    <Text style={Styles.headingText}>{t('Select your talent')}</Text>
                     <SizeBox height={16} />
                     <CustomSearch
                         value={search}
                         onChangeText={(text) => setSearch(text)}
-                        placeholder='Search'
+                        placeholder={t('Search')}
                     />
                     <SizeBox height={24} />
                     <View style={Styles.row}>
                         <Icons.TickCircle height={16} width={16} />
-                        <Text style={Styles.searchResultsText}>Results:</Text>
+                        <Text style={Styles.searchResultsText}>{t('Results:')}</Text>
                     </View>
                     <SizeBox height={24} />
                     <View style={Styles.separator} />
@@ -83,7 +85,7 @@ const SelecteTalent = ({ navigation }: any) => {
                         }
                     </View>
                     <SizeBox height={55} />
-                    <CustomButton title='Next' onPress={() => navigation.navigate('ChestDetails')} />
+                    <CustomButton title={t('Next')} onPress={() => navigation.navigate('ChestDetails')} />
                 </View>
 
             </ScrollView>

@@ -9,8 +9,10 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import TabBar from '../components/TabBar'
 import SelcetionContainer from '../components/SelcetionContainer'
 import { useTheme } from '../../../../context/ThemeContext'
+import { useTranslation } from 'react-i18next'
 
 const SelectEvents = ({ navigation }: any) => {
+    const { t } = useTranslation();
     const { colors } = useTheme();
     const Styles = createStyles(colors);
     const insets = useSafeAreaInsets();
@@ -86,11 +88,11 @@ const SelectEvents = ({ navigation }: any) => {
                 <SizeBox height={30} />
                 <View style={Styles.contentContainer}>
 
-                    <Text style={Styles.headingText}>Set Up Your Talent Profile</Text>
+                    <Text style={Styles.headingText}>{t('Set Up Your Talent Profile')}</Text>
                     <SizeBox height={8} />
-                    <Text style={Styles.subHeadingText}>Create your profile to showcase your skills and stand out.</Text>
+                    <Text style={Styles.subHeadingText}>{t('Create your profile to showcase your skills and stand out.')}</Text>
                     <SizeBox height={24} />
-                    <Text style={Styles.containerTitle}>Select your events</Text>
+                    <Text style={Styles.containerTitle}>{t('Select your events')}</Text>
                     <SizeBox height={16} />
                     <TabBar
                         selectedTab={seletedTab}
@@ -117,7 +119,7 @@ const SelectEvents = ({ navigation }: any) => {
                     }
 
                     <SizeBox height={86} />
-                    <CustomButton title='Continue' onPress={() => navigation.navigate('ViewSelectedTalent')} />
+                    <CustomButton title={t('Continue')} onPress={() => navigation.navigate('ViewSelectedTalent')} />
                     <SizeBox height={86} />
                 </View>
             </ScrollView>

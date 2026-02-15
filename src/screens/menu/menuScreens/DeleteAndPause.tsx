@@ -8,8 +8,10 @@ import Icons from '../../../constants/Icons';
 import { useTheme } from '../../../context/ThemeContext';
 import ConfirmationModel from '../../../components/confirmationModel/ConfirmationModel';
 import { ArrowLeft2, Notification, Pause } from 'iconsax-react-nativejs';
+import { useTranslation } from 'react-i18next'
 
 const DeleteAndPause = ({ navigation }: any) => {
+    const { t } = useTranslation();
     const insets = useSafeAreaInsets();
     const { colors } = useTheme();
     const Styles = createStyles(colors);
@@ -26,7 +28,7 @@ const DeleteAndPause = ({ navigation }: any) => {
                 <TouchableOpacity style={Styles.headerButton} onPress={() => navigation.goBack()}>
                     <ArrowLeft2 size={24} color={colors.primaryColor} variant="Linear" />
                 </TouchableOpacity>
-                <Text style={Styles.headerTitle}>Menu</Text>
+                <Text style={Styles.headerTitle}>{t('Menu')}</Text>
                 <TouchableOpacity style={Styles.headerButton}>
                     <Notification size={24} color={colors.primaryColor} variant="Linear" />
                 </TouchableOpacity>
@@ -34,12 +36,12 @@ const DeleteAndPause = ({ navigation }: any) => {
 
             <View style={Styles.container}>
                 <SizeBox height={24} />
-                <Text style={Styles.sectionTitle}>Delete/Pause</Text>
+                <Text style={Styles.sectionTitle}>{t('Delete/Pause')}</Text>
                 <SizeBox height={16} />
 
                 <MenuContainers
                     icon={<Icons.DeleteAccount height={20} width={20} />}
-                    title='Delete your account'
+                    title={t('Delete your account')}
                     onPress={() => setIsDeleteSuggestionVisible(true)}
                     isNext={true}
                 />
@@ -55,7 +57,7 @@ const DeleteAndPause = ({ navigation }: any) => {
                     </View>
                     <SizeBox width={20} />
                     <View style={Styles.pauseContent}>
-                        <Text style={Styles.titlesText}>Pause your account</Text>
+                        <Text style={Styles.titlesText}>{t('Pause your account')}</Text>
                         <Text style={Styles.pauseDescription}>
                             Pausing your account" means temporarily stopping access while keeping all your data safe
                         </Text>
@@ -73,7 +75,7 @@ const DeleteAndPause = ({ navigation }: any) => {
                     setIsDeleteSuggestionVisible(false);
                     setIsDeleteConfirmVisible(true);
                 }}
-                text="Did you know you can also pause your account? This way, others won't be able to find you, but you'll still be with us for a bit"
+                text={t("Did you know you can also pause your account? This way, others won't be able to find you, but you'll still be with us for a bit")}
                 icon={<Pause size={28} color={colors.pureWhite} variant="Bold" />}
                 onPressYes={() => {
                     setIsDeleteSuggestionVisible(false);
@@ -89,7 +91,7 @@ const DeleteAndPause = ({ navigation }: any) => {
             <ConfirmationModel
                 isVisible={isDeleteConfirmVisible}
                 onClose={() => setIsDeleteConfirmVisible(false)}
-                text='Are You Sure You Want to Delete Your Account?'
+                text={t('Are You Sure You Want to Delete Your Account?')}
                 icon={<Icons.DeleteRedBold height={32} width={32} />}
                 onPressYes={() => { }}
                 iconBgColor="rgba(237, 84, 84, 0.4)"
@@ -99,7 +101,7 @@ const DeleteAndPause = ({ navigation }: any) => {
             <ConfirmationModel
                 isVisible={isPauseVisible}
                 onClose={() => setIsPauseVisible(false)}
-                text='Are You Sure You Want to Pause Your Account?'
+                text={t('Are You Sure You Want to Pause Your Account?')}
                 icon={<Pause size={28} color={colors.pureWhite} variant="Bold" />}
                 onPressYes={() => { }}
             />

@@ -422,13 +422,13 @@ const CompetitionDetailsScreen = ({ navigation, route }: any) => {
                         {mapError && (
                             <>
                                 <SizeBox height={8} />
-                                <Text style={styles.helperText}>Map data unavailable. Showing placeholder map.</Text>
+                                <Text style={styles.helperText}>{t('Map data unavailable. Showing placeholder map.')}</Text>
                             </>
                         )}
 
                         <SizeBox height={16} />
 
-                        <Text style={styles.sectionTitle}>Checkpoints</Text>
+                        <Text style={styles.sectionTitle}>{t('Checkpoints')}</Text>
                         <SizeBox height={10} />
                         <ScrollView horizontal showsHorizontalScrollIndicator={false}>
                             {selectedCourse?.checkpoints.map((checkpoint) => (
@@ -442,7 +442,7 @@ const CompetitionDetailsScreen = ({ navigation, route }: any) => {
                             ))}
                         </ScrollView>
                         <SizeBox height={8} />
-                        <Text style={styles.helperText}>Tap a checkpoint to search photos, videos, or AI.</Text>
+                        <Text style={styles.helperText}>{t('Tap a checkpoint to search photos, videos, or AI.')}</Text>
 
                         <SizeBox height={insets.bottom > 0 ? insets.bottom + 80 : 100} />
                     </>
@@ -519,7 +519,7 @@ const CompetitionDetailsScreen = ({ navigation, route }: any) => {
                         {/* Event Categories */}
                         {filteredEvents.length > 0 ? filteredEvents.map(renderEventCard) : (
                             <View style={styles.emptyState}>
-                                <Text style={styles.emptyStateText}>No events match this filter yet.</Text>
+                                <Text style={styles.emptyStateText}>{t('No events match this filter yet.')}</Text>
                             </View>
                         )}
 
@@ -530,14 +530,14 @@ const CompetitionDetailsScreen = ({ navigation, route }: any) => {
                             style={styles.showAllButton}
                             onPress={() => navigation.navigate('AllVideosOfEvents', { eventName: competitionName })}
                         >
-                            <Text style={styles.showAllButtonText}>Show All Videos</Text>
+                            <Text style={styles.showAllButtonText}>{t('Show All Videos')}</Text>
                             <ArrowRight size={18} color={colors.pureWhite} variant="Linear" />
                         </TouchableOpacity>
 
                         <SizeBox height={24} />
 
                         {/* Photos Section */}
-                        <Text style={styles.sectionTitle}>Photos</Text>
+                        <Text style={styles.sectionTitle}>{t('Photos')}</Text>
 
                         <SizeBox height={16} />
 
@@ -546,7 +546,7 @@ const CompetitionDetailsScreen = ({ navigation, route }: any) => {
                             style={styles.showAllPhotosButton}
                             onPress={() => navigation.navigate('AllPhotosOfEvents', { eventName: competitionName })}
                         >
-                            <Text style={styles.showAllPhotosButtonText}>Show All Photos</Text>
+                            <Text style={styles.showAllPhotosButtonText}>{t('Show All Photos')}</Text>
                             <ArrowRight size={18} color={colors.primaryColor} variant="Linear" />
                         </TouchableOpacity>
 
@@ -576,7 +576,7 @@ const CompetitionDetailsScreen = ({ navigation, route }: any) => {
                                 navigation.navigate('AllPhotosOfEvents', { checkpoint: selectedCheckpoint });
                             }}
                         >
-                            <Text style={styles.modalPrimaryButtonText}>Search Photos</Text>
+                            <Text style={styles.modalPrimaryButtonText}>{t('Search Photos')}</Text>
                             <ArrowRight size={18} color={colors.pureWhite} variant="Linear" />
                         </TouchableOpacity>
                         <SizeBox height={12} />
@@ -587,7 +587,7 @@ const CompetitionDetailsScreen = ({ navigation, route }: any) => {
                                 navigation.navigate('VideosForEvent', { eventName: selectedCheckpoint?.label });
                             }}
                         >
-                            <Text style={styles.modalSecondaryButtonText}>Search Videos</Text>
+                            <Text style={styles.modalSecondaryButtonText}>{t('Search Videos')}</Text>
                             <ArrowRight size={18} color={colors.primaryColor} variant="Linear" />
                         </TouchableOpacity>
                         <SizeBox height={12} />
@@ -601,7 +601,7 @@ const CompetitionDetailsScreen = ({ navigation, route }: any) => {
                                 setAiCompareModalVisible(true);
                             }}
                         >
-                            <Text style={styles.modalTertiaryButtonText}>AI Search</Text>
+                            <Text style={styles.modalTertiaryButtonText}>{t('AI Search')}</Text>
                             <ArrowRight size={18} color={colors.primaryColor} variant="Linear" />
                         </TouchableOpacity>
                     </TouchableOpacity>
@@ -620,17 +620,17 @@ const CompetitionDetailsScreen = ({ navigation, route }: any) => {
                     onPress={() => setAiCompareModalVisible(false)}
                 >
                     <TouchableOpacity style={styles.checkpointModal} activeOpacity={1}>
-                        <Text style={styles.modalTitle}>AI quick compare</Text>
+                        <Text style={styles.modalTitle}>{t('AI quick compare')}</Text>
                         <SizeBox height={12} />
                         <Text style={styles.helperText}>
                             We will compare your saved face and chest number to find results in this competition.
                         </Text>
                         <SizeBox height={16} />
-                        <Text style={styles.modalLabel}>Chest number</Text>
+                        <Text style={styles.modalLabel}>{t('Chest number')}</Text>
                         <View style={styles.modalInputRow}>
                             <TextInput
                                 style={styles.modalInput}
-                                placeholder="e.g. 1234"
+                                placeholder={t('e.g. 1234')}
                                 placeholderTextColor="#9B9F9F"
                                 keyboardType="number-pad"
                                 value={quickChestNumber}
@@ -647,7 +647,7 @@ const CompetitionDetailsScreen = ({ navigation, route }: any) => {
                             <>
                                 <SizeBox height={10} />
                                 <TouchableOpacity style={styles.modalSecondaryButton} onPress={handleGrantConsent}>
-                                    <Text style={styles.modalSecondaryButtonText}>Grant face consent</Text>
+                                    <Text style={styles.modalSecondaryButtonText}>{t('Grant face consent')}</Text>
                                 </TouchableOpacity>
                             </>
                         )}
@@ -655,7 +655,7 @@ const CompetitionDetailsScreen = ({ navigation, route }: any) => {
                             <>
                                 <SizeBox height={10} />
                                 <TouchableOpacity style={styles.modalSecondaryButton} onPress={handleEnroll}>
-                                    <Text style={styles.modalSecondaryButtonText}>Enroll your face</Text>
+                                    <Text style={styles.modalSecondaryButtonText}>{t('Enroll your face')}</Text>
                                 </TouchableOpacity>
                             </>
                         )}
@@ -669,7 +669,7 @@ const CompetitionDetailsScreen = ({ navigation, route }: any) => {
                                 <ActivityIndicator color={colors.pureWhite} />
                             ) : (
                                 <>
-                                    <Text style={styles.modalPrimaryButtonText}>Compare now</Text>
+                                    <Text style={styles.modalPrimaryButtonText}>{t('Compare now')}</Text>
                                     <ArrowRight size={18} color={colors.pureWhite} variant="Linear" />
                                 </>
                             )}
@@ -679,7 +679,7 @@ const CompetitionDetailsScreen = ({ navigation, route }: any) => {
                             style={styles.modalSecondaryButton}
                             onPress={() => setAiCompareModalVisible(false)}
                         >
-                            <Text style={styles.modalSecondaryButtonText}>Cancel</Text>
+                            <Text style={styles.modalSecondaryButtonText}>{t('Cancel')}</Text>
                         </TouchableOpacity>
                     </TouchableOpacity>
                 </TouchableOpacity>

@@ -10,8 +10,10 @@ import {
     Timer1,
 } from 'iconsax-react-nativejs';
 import { createStyles } from './VerificationCodeStyles';
+import { useTranslation } from 'react-i18next'
 
 const VerificationCode = ({ navigation }: any) => {
+    const { t } = useTranslation();
     const insets = useSafeAreaInsets();
     const { colors } = useTheme();
     const styles = createStyles(colors);
@@ -44,7 +46,7 @@ const VerificationCode = ({ navigation }: any) => {
                 <TouchableOpacity style={styles.headerButton} onPress={() => navigation.goBack()}>
                     <ArrowLeft2 size={24} color={colors.primaryColor} variant="Linear" />
                 </TouchableOpacity>
-                <Text style={styles.headerTitle}>Enter verification code</Text>
+                <Text style={styles.headerTitle}>{t('Enter verification code')}</Text>
                 <TouchableOpacity style={styles.headerButton}>
                     <Notification size={24} color={colors.primaryColor} variant="Linear" />
                 </TouchableOpacity>
@@ -55,7 +57,7 @@ const VerificationCode = ({ navigation }: any) => {
 
                 {/* Title Section */}
                 <View style={styles.titleSection}>
-                    <Text style={styles.title}>Enter verification code</Text>
+                    <Text style={styles.title}>{t('Enter verification code')}</Text>
                     <SizeBox height={6} />
                     <Text style={styles.description}>
                         Open your authenticator app and enter the 6-digit code.
@@ -87,27 +89,27 @@ const VerificationCode = ({ navigation }: any) => {
                 {/* Timer */}
                 <View style={styles.timerContainer}>
                     <Timer1 size={16} color={colors.grayColor} variant="Linear" />
-                    <Text style={styles.timerText}>Code refreshes every 30 seconds</Text>
+                    <Text style={styles.timerText}>{t('Code refreshes every 30 seconds')}</Text>
                 </View>
             </ScrollView>
 
             {/* Bottom Section */}
             <View style={[styles.bottomContainer, { paddingBottom: insets.bottom > 0 ? insets.bottom : 20 }]}>
                 <TouchableOpacity style={styles.primaryButton}>
-                    <Text style={styles.primaryButtonText}>Verify & Activate</Text>
+                    <Text style={styles.primaryButtonText}>{t('Verify & Activate')}</Text>
                     <ArrowRight size={24} color={colors.pureWhite} variant="Linear" />
                 </TouchableOpacity>
 
                 <SizeBox height={18} />
 
                 <TouchableOpacity onPress={() => navigation.goBack()}>
-                    <Text style={styles.linkTextBlue}>Re-scan QR code</Text>
+                    <Text style={styles.linkTextBlue}>{t('Re-scan QR code')}</Text>
                 </TouchableOpacity>
 
                 <SizeBox height={8} />
 
                 <TouchableOpacity onPress={() => navigation.navigate('Authentication')}>
-                    <Text style={styles.linkTextGray}>Use different method</Text>
+                    <Text style={styles.linkTextGray}>{t('Use different method')}</Text>
                 </TouchableOpacity>
             </View>
         </View>

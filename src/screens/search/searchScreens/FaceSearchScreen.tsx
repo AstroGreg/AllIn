@@ -16,6 +16,7 @@ import {
 } from '../../../services/apiGateway';
 import {useEvents} from '../../../context/EventsContext';
 import {AI_GROUPS, AI_PEOPLE} from '../../../constants/AiFilterOptions';
+import { useTranslation } from 'react-i18next'
 
 type AiFilterState = {
   competition?: string;
@@ -27,6 +28,7 @@ type AiFilterState = {
 };
 
 const FaceSearchScreen = ({navigation, route}: any) => {
+    const { t } = useTranslation();
     const insets = useSafeAreaInsets();
     const { colors } = useTheme();
     const styles = createStyles(colors);
@@ -189,7 +191,7 @@ const FaceSearchScreen = ({navigation, route}: any) => {
 
     const runSearch = useCallback(async () => {
         if (!apiAccessToken) {
-            Alert.alert('Missing API token', 'Log in or set a Dev API token to use Face Search.');
+            Alert.alert(t('Missing API token'), t('Log in or set a Dev API token to use Face Search.'));
             return;
         }
 
@@ -308,7 +310,7 @@ const FaceSearchScreen = ({navigation, route}: any) => {
         if (!apiAccessToken) return;
         const eventId = eventIdInput.trim();
         if (!eventId) {
-            Alert.alert('Missing event id', 'Paste an event UUID first.');
+            Alert.alert(t('Missing event id'), t('Paste an event UUID first.'));
             return;
         }
         setErrorText(null);
@@ -331,7 +333,7 @@ const FaceSearchScreen = ({navigation, route}: any) => {
                 <TouchableOpacity style={styles.headerButton} onPress={handleBack}>
                     <ArrowLeft2 size={24} color={colors.primaryColor} variant="Linear" />
                 </TouchableOpacity>
-                <Text style={styles.headerTitle}>Faces</Text>
+                <Text style={styles.headerTitle}>{t('Faces')}</Text>
                 <View style={{width: 44, height: 44}} />
             </View>
 
@@ -340,12 +342,12 @@ const FaceSearchScreen = ({navigation, route}: any) => {
 
                 {/* Top row */}
                 <View style={styles.searchLabelRow}>
-                    <Text style={styles.searchLabel}>Face Search</Text>
+                    <Text style={styles.searchLabel}>{t('Face Search')}</Text>
                     <TouchableOpacity
                         style={styles.addFaceButton}
                         onPress={handleEnroll}
                     >
-                        <Text style={styles.addFaceButtonText}>Enroll Face</Text>
+                        <Text style={styles.addFaceButtonText}>{t('Enroll Face')}</Text>
                         <Add size={16} color="#FFFFFF" variant="Linear" />
                     </TouchableOpacity>
                 </View>
@@ -353,7 +355,7 @@ const FaceSearchScreen = ({navigation, route}: any) => {
                 <SizeBox height={8} />
 
                 <View style={styles.filtersSection}>
-                    <Text style={styles.appliedLabel}>Filters</Text>
+                    <Text style={styles.appliedLabel}>{t('Filters')}</Text>
                     {filterChips.length > 0 ? (
                         <View style={styles.appliedChipsRow}>
                             {filterChips.map((chip, index) => (
@@ -369,21 +371,21 @@ const FaceSearchScreen = ({navigation, route}: any) => {
                             ))}
                         </View>
                     ) : (
-                        <Text style={styles.filtersHelper}>No filters applied</Text>
+                        <Text style={styles.filtersHelper}>{t('No filters applied')}</Text>
                     )}
 
                     <View style={styles.filterButtonsRow}>
                         <TouchableOpacity style={styles.filterButton} onPress={() => openFilterModal('competition')}>
-                            <Text style={styles.filterButtonText}>Competition</Text>
+                            <Text style={styles.filterButtonText}>{t('Competition')}</Text>
                         </TouchableOpacity>
                         <TouchableOpacity style={styles.filterButton} onPress={() => openFilterModal('person')}>
-                            <Text style={styles.filterButtonText}>Person</Text>
+                            <Text style={styles.filterButtonText}>{t('Person')}</Text>
                         </TouchableOpacity>
                         <TouchableOpacity style={styles.filterButton} onPress={() => openFilterModal('group')}>
-                            <Text style={styles.filterButtonText}>Group</Text>
+                            <Text style={styles.filterButtonText}>{t('Group')}</Text>
                         </TouchableOpacity>
                         <TouchableOpacity style={styles.filterButton} onPress={() => openFilterModal('location')}>
-                            <Text style={styles.filterButtonText}>Location</Text>
+                            <Text style={styles.filterButtonText}>{t('Location')}</Text>
                         </TouchableOpacity>
                     </View>
                 </View>
@@ -396,7 +398,7 @@ const FaceSearchScreen = ({navigation, route}: any) => {
                 >
                     <TouchableOpacity style={styles.filterModalOverlay} activeOpacity={1} onPress={() => setShowFilterModal(false)}>
                         <TouchableOpacity style={styles.filterModalCard} activeOpacity={1}>
-                            <Text style={styles.filterModalTitle}>Select {modalFilterKey ?? 'filter'}</Text>
+                            <Text style={styles.filterModalTitle}>{t('Select')} {t(modalFilterKey ?? 'filter')}</Text>
                             <ScrollView style={styles.filterModalList} contentContainerStyle={styles.filterModalListContent}>
                                 {(modalFilterKey ? filterOptions[modalFilterKey] : []).map((option) => (
                                     <TouchableOpacity
@@ -411,7 +413,7 @@ const FaceSearchScreen = ({navigation, route}: any) => {
                                     </TouchableOpacity>
                                 ))}
                                 {(modalFilterKey ? filterOptions[modalFilterKey] : []).length === 0 && (
-                                    <Text style={styles.filterModalEmpty}>No options available.</Text>
+                                    <Text style={styles.filterModalEmpty}>{t('No options available.')}</Text>
                                 )}
                             </ScrollView>
                         </TouchableOpacity>
@@ -422,20 +424,20 @@ const FaceSearchScreen = ({navigation, route}: any) => {
 
                 {/* Status */}
                 <View style={styles.faceGroupCard}>
-                    <Text style={styles.faceGroupName}>Find photos of you</Text>
+                    <Text style={styles.faceGroupName}>{t('Find photos of you')}</Text>
                     <SizeBox height={8} />
                     <Text style={[styles.searchInput, {color: colors.grayColor}]}>
-                        This uses the backend endpoint {'/ai/search/face'} and searches across competitions you are subscribed to.
+                        {t('This uses the backend endpoint')} {'/ai/faces/search'} {t('and searches across competitions you are subscribed to.')}
                     </Text>
                     <SizeBox height={12} />
                     <Text style={[styles.searchInput, {color: colors.mainTextColor}]}>
-                        Subscribed competitions: {isLoadingMe ? 'Loading…' : String(authMe?.event_ids?.length ?? 0)}
+                        {t('Subscribed competitions')}: {isLoadingMe ? t('Loading…') : String(authMe?.event_ids?.length ?? 0)}
                     </Text>
                     {missingAngles && missingAngles.length > 0 && (
                         <>
                             <SizeBox height={12} />
                             <Text style={[styles.searchInput, {color: colors.mainTextColor}]}>
-                                Missing enrollment angles: {missingAngles.join(', ')}
+                                {t('Missing enrollment angles')}: {missingAngles.join(', ')}
                             </Text>
                         </>
                     )}
@@ -453,7 +455,7 @@ const FaceSearchScreen = ({navigation, route}: any) => {
                     <SizeBox width={6} />
                     <TextInput
                         style={styles.searchInput}
-                        placeholder="Filter competitions"
+                        placeholder={t('Filter competitions')}
                         placeholderTextColor={colors.grayColor}
                         value={searchText}
                         onChangeText={setSearchText}
@@ -465,7 +467,7 @@ const FaceSearchScreen = ({navigation, route}: any) => {
                 {/* Subscribed competition list */}
                 {filteredEventIds.length > 0 ? (
                     <View style={styles.faceGroupCard}>
-                        <Text style={styles.searchLabel}>Competitions to search</Text>
+                        <Text style={styles.searchLabel}>{t('Competitions to search')}</Text>
                         <SizeBox height={8} />
                         {filteredEventIds.slice(0, 10).map((id) => (
                             <Text key={id} style={[styles.searchInput, {color: colors.mainTextColor}]}>
@@ -474,22 +476,22 @@ const FaceSearchScreen = ({navigation, route}: any) => {
                         ))}
                         {filteredEventIds.length > 10 && (
                             <Text style={[styles.searchInput, {color: colors.grayColor}]}>
-                                …and {filteredEventIds.length - 10} more
+                                {t('…and')} {filteredEventIds.length - 10} {t('more')}
                             </Text>
                         )}
                     </View>
                 ) : (
                     <View style={styles.faceGroupCard}>
-                        <Text style={styles.searchLabel}>No competitions found</Text>
+                        <Text style={styles.searchLabel}>{t('No competitions found')}</Text>
                         <SizeBox height={8} />
                         <Text style={[styles.searchInput, {color: colors.grayColor}]}>
-                            Your profile has no competition subscriptions yet. If you know an event UUID, paste it below to subscribe (advanced).
+                            {t('Your profile has no competition subscriptions yet. If you know an event UUID, paste it below to subscribe (advanced).')}
                         </Text>
                         <SizeBox height={12} />
                         <View style={styles.searchInputContainer}>
                             <TextInput
                                 style={styles.searchInput}
-                                placeholder="Event UUID"
+                                placeholder={t('Event UUID')}
                                 placeholderTextColor={colors.grayColor}
                                 value={eventIdInput}
                                 onChangeText={setEventIdInput}
@@ -503,7 +505,7 @@ const FaceSearchScreen = ({navigation, route}: any) => {
                             onPress={handleSubscribe}
                             disabled={!eventIdInput.trim()}
                         >
-                            <Text style={styles.selectButtonText}>Subscribe</Text>
+                            <Text style={styles.selectButtonText}>{t('Subscribe')}</Text>
                         </TouchableOpacity>
                     </View>
                 )}

@@ -5,6 +5,7 @@ import SizeBox from '../../../constants/SizeBox'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useTheme } from '../../../context/ThemeContext'
 import { ArrowLeft2, Lock, User, Card, Calendar, ArrowRight2, Scan } from 'iconsax-react-nativejs'
+import { useTranslation } from 'react-i18next'
 
 interface SettingsItem {
     icon: React.ReactNode;
@@ -13,6 +14,7 @@ interface SettingsItem {
 }
 
 const ProfileSettings = ({ navigation }: any) => {
+    const { t } = useTranslation();
     const insets = useSafeAreaInsets();
     const { colors } = useTheme();
     const Styles = createStyles(colors);
@@ -54,7 +56,7 @@ const ProfileSettings = ({ navigation }: any) => {
                 <TouchableOpacity style={Styles.headerButton} onPress={() => navigation.goBack()}>
                     <ArrowLeft2 size={24} color={colors.primaryColor} variant="Linear" />
                 </TouchableOpacity>
-                <Text style={Styles.headerTitle}>Account Settings</Text>
+                <Text style={Styles.headerTitle}>{t('Account Settings')}</Text>
                 <View style={Styles.headerSpacer} />
             </View>
 

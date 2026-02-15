@@ -16,6 +16,7 @@ import { useTheme } from '../../../context/ThemeContext';
 import Fonts from '../../../constants/Fonts';
 import {useAuth} from '../../../context/AuthContext';
 import {ApiError, enrollFace, FaceAngleClass, verifyFaceAngle, startFaceLivenessChallenge, submitFaceLivenessStep} from '../../../services/apiGateway';
+import { useTranslation } from 'react-i18next'
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const CAMERA_WIDTH = SCREEN_WIDTH - 54;
@@ -45,7 +46,7 @@ const SAVE_FACE_CAPTURE_ANGLES: CaptureAngle[] = [
     { id: 'right', title: 'Right Side', instruction: 'Turn your head to the right and hold still', yawMin: -45, yawMax: -15, pitchMin: -15, pitchMax: 15 },
 ];
 
-// 5 angles for backend enrollment (/ai/enrol/face)
+// 5 angles for backend enrollment (/ai/faces/enroll)
 const ENROLL_FACE_CAPTURE_ANGLES: CaptureAngle[] = [
     { id: 'frontal', title: 'Front', instruction: 'Look straight at the camera and hold still', yawMin: -10, yawMax: 10, pitchMin: -10, pitchMax: 10 },
     { id: 'left_profile', title: 'Left Profile', instruction: 'Turn your head to the left and hold still', yawMin: 15, yawMax: 45, pitchMin: -15, pitchMax: 15 },
@@ -55,6 +56,7 @@ const ENROLL_FACE_CAPTURE_ANGLES: CaptureAngle[] = [
 ];
 
 const SearchFaceCaptureScreen = ({ navigation, route }: any) => {
+    const { t } = useTranslation();
     const { colors } = useTheme();
     const insets = useSafeAreaInsets();
     const {apiAccessToken} = useAuth();
@@ -143,18 +145,18 @@ const SearchFaceCaptureScreen = ({ navigation, route }: any) => {
             const result = await Camera.requestCameraPermission();
             if (result === 'denied') {
                 Alert.alert(
-                    'Permission Denied',
-                    'Camera permission is required to capture your face.',
+                    t('Permission Denied'),
+                    t('Camera permission is required to capture your face.'),
                     [
-                        { text: 'Cancel', style: 'cancel' },
-                        { text: 'Open Settings', onPress: () => Linking.openSettings() }
+                        { text: t('Cancel'), style: 'cancel' },
+                        { text: t('Open Settings'), onPress: () => Linking.openSettings() }
                     ]
                 );
             }
         } catch (error) {
             console.log('Permission request error:', error);
         }
-    }, []);
+    }, [t]);
 
     useEffect(() => {
         if (!hasPermission) {
@@ -177,9 +179,9 @@ const SearchFaceCaptureScreen = ({ navigation, route }: any) => {
             countdownActiveRef.current = false;
         } catch (e: any) {
             const msg = e instanceof ApiError ? e.message : String(e?.message ?? e);
-            Alert.alert('Liveness unavailable', msg);
+            Alert.alert(t('Liveness unavailable'), msg);
         }
-    }, [apiAccessToken, useLiveness]);
+    }, [apiAccessToken, useLiveness, t]);
 
     useEffect(() => {
         startLiveness();
@@ -228,7 +230,7 @@ const SearchFaceCaptureScreen = ({ navigation, route }: any) => {
             let canProceed = true;
             if (mode === 'enrolFace') {
                 if (!apiAccessToken) {
-                    Alert.alert('Missing API token', 'Log in or set a Dev API token to enroll your face.');
+                    Alert.alert(t('Missing API token'), t('Log in or set a Dev API token to enroll your face.'));
                     return;
                 }
 
@@ -285,7 +287,7 @@ const SearchFaceCaptureScreen = ({ navigation, route }: any) => {
                         ...prev,
                         [capturedAngle.id]: {status: 'rejected', reason: msg},
                     }));
-                    Alert.alert('Angle check failed', msg);
+                    Alert.alert(t('Angle check failed'), msg);
                 }
             }
 
@@ -334,7 +336,7 @@ const SearchFaceCaptureScreen = ({ navigation, route }: any) => {
                 setIsCapturing(false);
             }
         }
-    }, [apiAccessToken, captureAngles, livenessChallengeId, mode, useLiveness]);
+    }, [apiAccessToken, captureAngles, livenessChallengeId, mode, useLiveness, t]);
 
     const clearCountdown = useCallback(() => {
         if (countdownRef.current) {
@@ -349,12 +351,12 @@ const SearchFaceCaptureScreen = ({ navigation, route }: any) => {
         const status = mode === 'enrolFace' ? (angleVerification[angleId]?.status ?? 'empty') : 'empty';
         if (useLiveness && status === 'accepted') {
             Alert.alert(
-                'Restart required',
-                'For liveness enrollment, retaking an accepted step requires restarting the whole flow. Restart now?',
+                t('Restart required'),
+                t('For liveness enrollment, retaking an accepted step requires restarting the whole flow. Restart now?'),
                 [
-                    { text: 'Cancel', style: 'cancel' },
+                    { text: t('Cancel'), style: 'cancel' },
                     {
-                        text: 'Restart',
+                        text: t('Restart'),
                         style: 'destructive',
                         onPress: () => {
                             clearCountdown();
@@ -392,7 +394,7 @@ const SearchFaceCaptureScreen = ({ navigation, route }: any) => {
                 [angleId]: {status: 'empty'},
             }));
         }
-    }, [angleVerification, clearCountdown, mode, startLiveness, useLiveness]);
+    }, [angleVerification, clearCountdown, mode, startLiveness, useLiveness, t]);
 
     const startCountdown = useCallback(() => {
         if (countdownActiveRef.current || isCapturingRef.current || hasCurrentImageRef.current || isTransitioningRef.current) {
@@ -470,14 +472,14 @@ const SearchFaceCaptureScreen = ({ navigation, route }: any) => {
     const handleSaveFace = useCallback(async () => {
         if (mode === 'enrolFace') {
             if (!apiAccessToken) {
-                Alert.alert('Missing API token', 'Log in or set a Dev API token to enroll your face.');
+                Alert.alert(t('Missing API token'), t('Log in or set a Dev API token to enroll your face.'));
                 return;
             }
 
             const required = ['frontal', 'left_profile', 'right_profile', 'upward', 'downward'] as const;
             const missing = required.filter(k => (capturedImages[k]?.length ?? 0) < templatesPerAngle || angleVerification[k]?.status !== 'accepted');
             if (missing.length > 0) {
-                Alert.alert('Missing angles', `Please capture: ${missing.join(', ')}`);
+                Alert.alert(t('Missing angles'), `${t('Please capture')}: ${missing.join(', ')}`);
                 const firstMissingIndex = captureAngles.findIndex(a => missing.includes(a.id as any));
                 if (firstMissingIndex >= 0) {
                     setCurrentAngleIndex(firstMissingIndex);
@@ -506,11 +508,11 @@ const SearchFaceCaptureScreen = ({ navigation, route }: any) => {
                 }
             } catch (e: any) {
                 if (e instanceof ApiError && e.status === 403 && String(e.message).toLowerCase().includes('consent')) {
-                    Alert.alert('Consent required', 'Enable face recognition consent first, then try again.');
+                    Alert.alert(t('Consent required'), t('Enable face recognition consent first, then try again.'));
                     return;
                 }
                 const msg = e instanceof ApiError ? e.message : String(e?.message ?? e);
-                Alert.alert('Enrollment failed', msg);
+                Alert.alert(t('Enrollment failed'), msg);
             } finally {
                 setIsSubmitting(false);
             }
@@ -523,7 +525,7 @@ const SearchFaceCaptureScreen = ({ navigation, route }: any) => {
             leftSideImage: capturedImages['left'],
             rightSideImage: capturedImages['right'],
         });
-    }, [apiAccessToken, afterEnroll, angleVerification, captureAngles, capturedImages, enrollReplace, mode, navigation, templatesPerAngle]);
+    }, [apiAccessToken, afterEnroll, angleVerification, captureAngles, capturedImages, enrollReplace, mode, navigation, t, templatesPerAngle]);
 
     const handleCancel = useCallback(() => {
         navigation.goBack();
@@ -533,61 +535,63 @@ const SearchFaceCaptureScreen = ({ navigation, route }: any) => {
         if (mode === 'enrolFace') {
             const verify = angleVerification[currentAngle?.id];
             if (verify?.status === 'verifying') {
-                return 'Checking this angle…';
+                return t('Checking this angle…');
             }
             if (verify?.status === 'partial') {
                 const have = capturedImages[currentAngle?.id]?.length ?? 0;
                 const need = Math.max(0, templatesPerAngle - have);
-                return need <= 0 ? 'Great! Moving on…' : `Nice — take ${need} more photo(s) for this angle.`;
+                return need <= 0
+                    ? t('Great! Moving on…')
+                    : `${t('Nice — take')} ${need} ${t('more photo(s) for this angle.')}`;
             }
 
             if (verify?.status === 'rejected') {
                 if (verify.reason === 'no_face_detected_or_too_small') {
-                    return 'No face detected. Move closer and retake.';
+                    return t('No face detected. Move closer and retake.');
                 }
                 if (verify.reason === 'angle_mismatch') {
-                    return 'Angle mismatch. Tap Retake and try again.';
+                    return t('Angle mismatch. Tap Retake and try again.');
                 }
-                return 'This angle was not accepted. Tap Retake and try again.';
+                return t('This angle was not accepted. Tap Retake and try again.');
             }
         }
 
         if (isTransitioning) {
-            return 'Great! Moving to the next angle...';
+            return t('Great! Moving to the next angle...');
         }
         if (countdown !== null) {
-            return 'Hold still...';
+            return t('Hold still...');
         }
         if (angleMatched) {
-            return 'Perfect! Hold still...';
+            return t('Perfect! Hold still...');
         }
         if (faceDetected) {
-            return currentAngle.instruction;
+            return t(currentAngle.instruction);
         }
-        return 'Position your face within the frame';
+        return t('Position your face within the frame');
     };
 
     // Permission screen
     if (!hasPermission) {
         return (
             <View style={[styles.mainContainer, { backgroundColor: colors.backgroundColor, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 20 }]}>
-                <Text style={[styles.titleText, { color: colors.mainTextColor }]}>Camera permission required</Text>
+                <Text style={[styles.titleText, { color: colors.mainTextColor }]}>{t('Camera permission required')}</Text>
                 <SizeBox height={8} />
                 <Text style={[styles.descriptionText, { color: colors.grayColor, textAlign: 'center' }]}>
-                    Please grant camera access to capture your face.
+                    {t('Please grant camera access to capture your face.')}
                 </Text>
                 <SizeBox height={24} />
                 <View style={{ width: '100%', gap: 12 }}>
                     <TouchableOpacity style={[styles.primaryButton, { backgroundColor: colors.primaryColor }]} onPress={handleRequestPermission}>
-                        <Text style={[styles.primaryButtonText, { color: colors.pureWhite }]}>Grant Permission</Text>
+                        <Text style={[styles.primaryButtonText, { color: colors.pureWhite }]}>{t('Grant Permission')}</Text>
                     </TouchableOpacity>
                     <TouchableOpacity style={[styles.secondaryButton, { backgroundColor: colors.backgroundColor, borderColor: colors.lightGrayColor }]} onPress={() => Linking.openSettings()}>
-                        <Text style={[styles.secondaryButtonText, { color: colors.grayColor }]}>Open Settings</Text>
+                        <Text style={[styles.secondaryButtonText, { color: colors.grayColor }]}>{t('Open Settings')}</Text>
                     </TouchableOpacity>
                 </View>
                 <SizeBox height={16} />
                 <TouchableOpacity onPress={() => navigation.goBack()}>
-                    <Text style={[styles.secondaryButtonText, { color: colors.grayColor, textDecorationLine: 'underline' }]}>Go Back</Text>
+                    <Text style={[styles.secondaryButtonText, { color: colors.grayColor, textDecorationLine: 'underline' }]}>{t('Go Back')}</Text>
                 </TouchableOpacity>
             </View>
         );
@@ -596,7 +600,7 @@ const SearchFaceCaptureScreen = ({ navigation, route }: any) => {
     if (!device) {
         return (
             <View style={[styles.mainContainer, { backgroundColor: colors.backgroundColor, justifyContent: 'center', alignItems: 'center' }]}>
-                <Text style={[styles.titleText, { color: colors.mainTextColor }]}>No front camera found</Text>
+                <Text style={[styles.titleText, { color: colors.mainTextColor }]}>{t('No front camera found')}</Text>
             </View>
         );
     }
@@ -614,7 +618,7 @@ const SearchFaceCaptureScreen = ({ navigation, route }: any) => {
                     <ArrowLeft size={24} color={colors.mainTextColor} />
                 </TouchableOpacity>
                 <Text style={[styles.headerTitle, { color: colors.mainTextColor }]}>
-                    {mode === 'enrolFace' ? 'Enroll Face' : 'Add Face'}
+                    {mode === 'enrolFace' ? t('Enroll Face') : t('Add Face')}
                 </Text>
                 <View style={{ width: 40 }} />
             </View>
@@ -657,7 +661,7 @@ const SearchFaceCaptureScreen = ({ navigation, route }: any) => {
                                     >
                                         <View style={[styles.angleStatusDot, {backgroundColor: dotColor}]} />
                                         <Text style={[styles.angleChipText, {color: colors.mainTextColor}]}>
-                                            {a.title}
+                                            {t(a.title)}
                                         </Text>
                                     </TouchableOpacity>
                                 );
@@ -738,7 +742,7 @@ const SearchFaceCaptureScreen = ({ navigation, route }: any) => {
                 {/* Title and Instructions */}
                 <View style={styles.textSection}>
                     <Text style={[styles.titleText, { color: colors.mainTextColor }]}>
-                        {currentAngle?.title || 'Capture Complete'}
+                        {currentAngle?.title ? t(currentAngle.title) : t('Capture Complete')}
                     </Text>
                     <SizeBox height={8} />
                     <Text style={[styles.descriptionText, { color: colors.grayColor }]}>
@@ -762,10 +766,10 @@ const SearchFaceCaptureScreen = ({ navigation, route }: any) => {
                     >
                         <Text style={[styles.primaryButtonText, { color: colors.pureWhite }]}>
                             {isSubmitting
-                                ? 'Saving…'
+                                ? t('Saving…')
                                 : allCaptured
-                                    ? 'Continue'
-                                    : `${currentAngleIndex + 1} of ${captureAngles.length}`}
+                                    ? t('Continue')
+                                    : `${currentAngleIndex + 1} ${t('of')} ${captureAngles.length}`}
                         </Text>
                         <ArrowRight size={24} color={colors.pureWhite} />
                     </TouchableOpacity>
@@ -783,7 +787,7 @@ const SearchFaceCaptureScreen = ({ navigation, route }: any) => {
                         disabled={!!currentImage && currentVerify?.status === 'verifying'}
                     >
                         <Text style={[styles.secondaryButtonText, { color: colors.grayColor }]}>
-                            {currentImage ? 'Retake' : 'Cancel'}
+                            {currentImage ? t('Retake') : t('Cancel')}
                         </Text>
                     </TouchableOpacity>
                 </View>

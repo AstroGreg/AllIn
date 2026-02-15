@@ -5,8 +5,10 @@ import { createStyles } from './UploadAnonymouslyStyles'
 import SizeBox from '../../constants/SizeBox'
 import Icons from '../../constants/Icons'
 import { useTheme } from '../../context/ThemeContext'
+import { useTranslation } from 'react-i18next'
 
 const UploadAnonymouslyScreen = ({ navigation }: any) => {
+    const { t } = useTranslation();
     const insets = useSafeAreaInsets();
     const { colors } = useTheme();
     const Styles = createStyles(colors);
@@ -21,7 +23,7 @@ const UploadAnonymouslyScreen = ({ navigation }: any) => {
 
             {/* Header */}
             <View style={Styles.header}>
-                <Text style={Styles.headerTitle}>Upload</Text>
+                <Text style={Styles.headerTitle}>{t('Upload')}</Text>
             </View>
 
             {/* Content */}
@@ -39,7 +41,7 @@ const UploadAnonymouslyScreen = ({ navigation }: any) => {
             {/* Nice Button */}
             <View style={Styles.bottomContainer}>
                 <TouchableOpacity style={Styles.niceButton} onPress={handleNice}>
-                    <Text style={Styles.niceButtonText}>Nice</Text>
+                    <Text style={Styles.niceButtonText}>{t('Nice')}</Text>
                 </TouchableOpacity>
                 <SizeBox height={insets.bottom > 0 ? insets.bottom + 20 : 40} />
             </View>

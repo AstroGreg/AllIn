@@ -5,6 +5,7 @@ import SizeBox from '../../../constants/SizeBox';
 import CustomButton from '../../../components/customButton/CustomButton';
 import Images from '../../../constants/Images';
 import { useTheme } from '../../../context/ThemeContext';
+import { useTranslation } from 'react-i18next'
 
 interface LanguageOption {
     id: string;
@@ -22,6 +23,7 @@ const languages: LanguageOption[] = [
 ];
 
 const SelectLanguageScreen = ({ navigation }: any) => {
+    const { t } = useTranslation();
     const { colors } = useTheme();
     const Styles = createStyles(colors);
     const [selectedLanguage, setSelectedLanguage] = useState('en');
@@ -43,7 +45,7 @@ const SelectLanguageScreen = ({ navigation }: any) => {
                 contentContainerStyle={Styles.contentContainer}
             >
                 <View style={Styles.headerContainer}>
-                    <Text style={Styles.headingText}>Select Your Language</Text>
+                    <Text style={Styles.headingText}>{t('Select Your Language')}</Text>
                     <SizeBox height={10} />
                     <Text style={Styles.subHeadingText}>
                         Please choose your preferred language{'\n'}to continue.
@@ -84,7 +86,7 @@ const SelectLanguageScreen = ({ navigation }: any) => {
 
                 <SizeBox height={30} />
 
-                <CustomButton title="Continue" onPress={handleContinue} />
+                <CustomButton title={t('Continue')} onPress={handleContinue} />
             </ScrollView>
         </View>
     );

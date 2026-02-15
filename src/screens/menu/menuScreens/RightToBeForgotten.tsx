@@ -15,6 +15,7 @@ import {
     Trash,
 } from 'iconsax-react-nativejs';
 import { createStyles } from './RightToBeForgottenStyles';
+import { useTranslation } from 'react-i18next'
 
 interface DataItem {
     id: number;
@@ -43,6 +44,7 @@ const athleticProfileItems: DataItem[] = [
 ];
 
 const RightToBeForgotten = ({ navigation }: any) => {
+    const { t } = useTranslation();
     const insets = useSafeAreaInsets();
     const { colors } = useTheme();
     const styles = createStyles(colors);
@@ -188,7 +190,7 @@ const RightToBeForgotten = ({ navigation }: any) => {
                 <TouchableOpacity style={styles.headerButton} onPress={() => navigation.goBack()}>
                     <ArrowLeft2 size={24} color={colors.primaryColor} variant="Linear" />
                 </TouchableOpacity>
-                <Text style={styles.headerTitle}>Right to be forgotten</Text>
+                <Text style={styles.headerTitle}>{t('Right to be forgotten')}</Text>
                 <TouchableOpacity style={styles.headerButton}>
                     <Notification size={24} color={colors.primaryColor} variant="Linear" />
                 </TouchableOpacity>
@@ -203,7 +205,7 @@ const RightToBeForgotten = ({ navigation }: any) => {
                         <View style={styles.infoIconContainer}>
                             <Gallery size={24} color={colors.primaryColor} variant="Linear" />
                         </View>
-                        <Text style={styles.infoTitle}>Your Athletic Data Rights</Text>
+                        <Text style={styles.infoTitle}>{t('Your Athletic Data Rights')}</Text>
                     </View>
                     <Text style={styles.infoDescription}>
                         Under GDPR and data protection laws, you have the right to access, reviews, and permanently delete your personal athletic data. Select any data you wish to delete below.
@@ -215,23 +217,23 @@ const RightToBeForgotten = ({ navigation }: any) => {
                 {/* Stats Grid */}
                 <View style={styles.statsRow}>
                     <View style={styles.statCard}>
-                        <Text style={styles.statLabel}>Total Data Size</Text>
-                        <Text style={styles.statValue}>75.5 MB</Text>
+                        <Text style={styles.statLabel}>{t('Total Data Size')}</Text>
+                        <Text style={styles.statValue}>{t('75.5 MB')}</Text>
                     </View>
                     <View style={styles.statCard}>
-                        <Text style={styles.statLabel}>Data Categories</Text>
+                        <Text style={styles.statLabel}>{t('Data Categories')}</Text>
                         <Text style={styles.statValue}>7</Text>
                     </View>
                 </View>
                 <SizeBox height={16} />
                 <View style={styles.statsRow}>
                     <View style={styles.statCard}>
-                        <Text style={styles.statLabel}>Total Records</Text>
+                        <Text style={styles.statLabel}>{t('Total Records')}</Text>
                         <Text style={styles.statValue}>37</Text>
                     </View>
                     <View style={styles.statCard}>
-                        <Text style={styles.statLabel}>Data Last Updated</Text>
-                        <Text style={styles.statValue}>Jan 21, 2025</Text>
+                        <Text style={styles.statLabel}>{t('Data Last Updated')}</Text>
+                        <Text style={styles.statValue}>{t('Jan 21, 2025')}</Text>
                     </View>
                 </View>
 
@@ -249,14 +251,14 @@ const RightToBeForgotten = ({ navigation }: any) => {
                 {/* Bottom Buttons */}
                 <TouchableOpacity style={styles.downloadButton}>
                     <DocumentDownload size={24} color={colors.pureWhite} variant="Linear" />
-                    <Text style={styles.downloadButtonText}>Download My Athletic Data</Text>
+                    <Text style={styles.downloadButtonText}>{t('Download My Athletic Data')}</Text>
                 </TouchableOpacity>
 
                 <SizeBox height={16} />
 
                 <TouchableOpacity style={styles.exportButton}>
                     <Coin size={24} color={colors.grayColor} variant="Linear" />
-                    <Text style={styles.exportButtonText}>Export as CSV</Text>
+                    <Text style={styles.exportButtonText}>{t('Export as CSV')}</Text>
                 </TouchableOpacity>
 
                 <SizeBox height={insets.bottom > 0 ? insets.bottom + 20 : 40} />

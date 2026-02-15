@@ -8,8 +8,10 @@ import CustomHeader from '../../../components/customHeader/CustomHeader';
 import CustomButton from '../../../components/customButton/CustomButton';
 import CustomSearch from '../../../components/customSearch/CustomSearch';
 import { useTheme } from '../../../context/ThemeContext';
+import { useTranslation } from 'react-i18next'
 
 const UploadedImagesScreen = ({ route, navigation }: any) => {
+    const { t } = useTranslation();
     const insets = useSafeAreaInsets();
     const { colors } = useTheme();
     const Styles = createStyles(colors);
@@ -28,15 +30,15 @@ const UploadedImagesScreen = ({ route, navigation }: any) => {
 
     const ListHeaderComponent = ({ item }: any) => (
         <View>
-            <Text style={[Styles.titleText, { marginLeft: 15 }]}>Event Search</Text>
+            <Text style={[Styles.titleText, { marginLeft: 15 }]}>{t('Event Search')}</Text>
             <SizeBox height={8} />
             <View style={[Styles.row]}>
                 <View style={{ flex: 2 }}>
-                    <CustomSearch value={search} placeholder='Competition Search....' onChangeText={(text: any) => setSearch(text)} />
+                    <CustomSearch value={search} placeholder={t('Competition Search....')} onChangeText={(text: any) => setSearch(text)} />
                 </View>
                 <SizeBox width={5} />
                 <View style={{ flex: 1, marginRight: 20 }}>
-                    <CustomButton title='Add New' onPress={() => navigation.navigate('CreateCompetition')} isAdd={true} />
+                    <CustomButton title={t('Add New')} onPress={() => navigation.navigate('CreateCompetition')} isAdd={true} />
                 </View>
             </View>
             <SizeBox height={24} />
@@ -59,7 +61,7 @@ const UploadedImagesScreen = ({ route, navigation }: any) => {
             />
 
             <View style={Styles.bottomBtn}>
-                <CustomButton title='Upload' onPress={() => { navigation.goBack() }} isSmall={true} />
+                <CustomButton title={t('Upload')} onPress={() => { navigation.goBack() }} isSmall={true} />
             </View>
         </View>
     );

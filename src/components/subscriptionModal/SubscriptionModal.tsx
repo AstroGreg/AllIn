@@ -4,6 +4,7 @@ import { createStyles } from './SubscriptionModalStyles'
 import SizeBox from '../../constants/SizeBox'
 import { CloseCircle, TickCircle } from 'iconsax-react-nativejs'
 import { useTheme } from '../../context/ThemeContext'
+import { useTranslation } from 'react-i18next'
 
 interface SubscriptionModalProps {
     isVisible: boolean;
@@ -25,6 +26,7 @@ interface Plan {
 }
 
 const SubscriptionModal = ({ isVisible, onClose }: SubscriptionModalProps) => {
+    const { t } = useTranslation();
     const { colors } = useTheme();
     const Styles = createStyles(colors);
     const [selectedTab, setSelectedTab] = useState<'monthly' | 'yearly'>('monthly');
@@ -105,7 +107,7 @@ const SubscriptionModal = ({ isVisible, onClose }: SubscriptionModalProps) => {
         <View key={index} style={[Styles.planCard, plan.isPopular && Styles.popularPlanCard]}>
             {plan.isPopular && (
                 <View style={Styles.popularBadge}>
-                    <Text style={Styles.popularBadgeText}>Popular</Text>
+                    <Text style={Styles.popularBadgeText}>{t('Popular')}</Text>
                 </View>
             )}
             <Text style={Styles.planName}>{plan.name}</Text>
@@ -143,7 +145,7 @@ const SubscriptionModal = ({ isVisible, onClose }: SubscriptionModalProps) => {
                 <View style={Styles.modalContainer}>
                     {/* Header */}
                     <View style={Styles.header}>
-                        <Text style={Styles.headerTitle}>Choose Your Plan</Text>
+                        <Text style={Styles.headerTitle}>{t('Choose Your Plan')}</Text>
                         <TouchableOpacity onPress={onClose} style={Styles.closeButton}>
                             <CloseCircle size={24} color={colors.mainTextColor} variant="Linear" />
                         </TouchableOpacity>
@@ -158,7 +160,7 @@ const SubscriptionModal = ({ isVisible, onClose }: SubscriptionModalProps) => {
                             onPress={() => setSelectedTab('monthly')}
                         >
                             <Text style={[Styles.tabText, selectedTab === 'monthly' && Styles.activeTabText]}>
-                                Monthly
+                                {t('Monthly')}
                             </Text>
                         </TouchableOpacity>
                         <TouchableOpacity
@@ -166,7 +168,7 @@ const SubscriptionModal = ({ isVisible, onClose }: SubscriptionModalProps) => {
                             onPress={() => setSelectedTab('yearly')}
                         >
                             <Text style={[Styles.tabText, selectedTab === 'yearly' && Styles.activeTabText]}>
-                                Yearly
+                                {t('Yearly')}
                             </Text>
                         </TouchableOpacity>
                     </View>

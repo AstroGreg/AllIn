@@ -9,13 +9,15 @@ import { useAuth } from '../../context/AuthContext';
 import { getMediaById } from '../../services/apiGateway';
 import { getApiBaseUrl } from '../../constants/RuntimeConfig';
 import { useTheme } from '../../context/ThemeContext';
+import { useTranslation } from 'react-i18next'
 
 const PhotosScreen = ({ navigation, route }: any) => {
     const insets = useSafeAreaInsets();
     const { apiAccessToken } = useAuth();
     const { colors } = useTheme();
+    const { t } = useTranslation();
     const Styles = createStyles(colors);
-    const eventTitle = route?.params?.eventTitle || 'BK Studentent 23';
+    const eventTitle = route?.params?.eventTitle || t('BK Studentent 23');
     const photoIds = useMemo(
         () => [
             '87873d40-addf-4289-aa82-7cd300acdd94',
@@ -87,24 +89,24 @@ const PhotosScreen = ({ navigation, route }: any) => {
         () => ([
             {
                 id: photoIds[0],
-                title: `${eventTitle} Photo 1`,
+                title: `${eventTitle} ${t('Photo')} 1`,
                 date: '27/05/2025',
                 thumbnail: photoMap[photoIds[0]] ?? '',
             },
             {
                 id: photoIds[1],
-                title: `${eventTitle} Photo 2`,
+                title: `${eventTitle} ${t('Photo')} 2`,
                 date: '27/05/2025',
                 thumbnail: photoMap[photoIds[1]] ?? '',
             },
             {
                 id: photoIds[2],
-                title: `${eventTitle} Photo 3`,
+                title: `${eventTitle} ${t('Photo')} 3`,
                 date: '27/05/2025',
                 thumbnail: photoMap[photoIds[2]] ?? '',
             },
         ]),
-        [eventTitle, photoIds, photoMap],
+        [eventTitle, photoIds, photoMap, t],
     );
 
     const renderPhotoCard = (photo: any) => (

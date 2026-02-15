@@ -20,8 +20,10 @@ import { useTheme } from '../../context/ThemeContext';
 import { useAuth } from '../../context/AuthContext';
 import { getMediaById } from '../../services/apiGateway';
 import { getApiBaseUrl, getHlsBaseUrl } from '../../constants/RuntimeConfig';
+import { useTranslation } from 'react-i18next'
 
 const VideoPlayingScreen = ({ navigation, route }: any) => {
+    const { t } = useTranslation();
     const insets = useSafeAreaInsets();
     const { colors } = useTheme();
     const Styles = createStyles(colors);
@@ -163,7 +165,7 @@ const VideoPlayingScreen = ({ navigation, route }: any) => {
     };
 
     const handleRequestIssue = () => {
-        Alert.alert('Request sent', 'We received your issue report.');
+        Alert.alert(t('Request sent'), t('We received your issue report.'));
     };
 
     const handleGoToProfile = () => {
@@ -179,11 +181,11 @@ const VideoPlayingScreen = ({ navigation, route }: any) => {
     };
 
     const handleMarkInappropriate = () => {
-        Alert.alert('Thanks', 'We will review this content.');
+        Alert.alert(t('Thanks'), t('We will review this content.'));
     };
 
     const handleRequestRemoval = () => {
-        Alert.alert('Request sent', 'We will review the removal request.');
+        Alert.alert(t('Request sent'), t('We will review the removal request.'));
     };
 
     const openMoreMenu = useCallback(() => {
@@ -210,7 +212,7 @@ const VideoPlayingScreen = ({ navigation, route }: any) => {
             return;
         }
 
-        Alert.alert('More options', 'Choose an action', [
+        Alert.alert(t('More options'), t('Choose an action'), [
             {text: actions[0].label, onPress: actions[0].onPress},
             {text: actions[1].label, onPress: actions[1].onPress},
             {text: actions[2].label, onPress: actions[2].onPress},
@@ -352,13 +354,13 @@ const VideoPlayingScreen = ({ navigation, route }: any) => {
                                 style={Styles.cancelButton}
                                 onPress={handleCancel}
                             >
-                                <Text style={Styles.modalButtonText}>Cancel</Text>
+                                <Text style={Styles.modalButtonText}>{t('Cancel')}</Text>
                             </TouchableOpacity>
                             <TouchableOpacity
                                 style={Styles.payButton}
                                 onPress={handlePay}
                             >
-                                <Text style={Styles.modalButtonText}>Pay</Text>
+                                <Text style={Styles.modalButtonText}>{t('Pay')}</Text>
                             </TouchableOpacity>
                         </View>
                     </View>
@@ -377,7 +379,7 @@ const VideoPlayingScreen = ({ navigation, route }: any) => {
                         <View style={Styles.successIconContainer}>
                             <TickCircle size={50} color="#00BD48" variant="Bold" />
                         </View>
-                        <Text style={Styles.successTitle}>Accepted</Text>
+                        <Text style={Styles.successTitle}>{t('Accepted')}</Text>
                         <Text style={Styles.successSubtitle}>
                             Photo added to your account. Resale is prohibited.
                         </Text>
@@ -385,7 +387,7 @@ const VideoPlayingScreen = ({ navigation, route }: any) => {
                             style={Styles.downloadButton}
                             onPress={handleDownload}
                         >
-                            <Text style={Styles.downloadButtonText}>Download</Text>
+                            <Text style={Styles.downloadButtonText}>{t('Download')}</Text>
                             <ArrowRight size={18} color="#FFFFFF" variant="Linear" />
                         </TouchableOpacity>
                     </View>
@@ -404,7 +406,7 @@ const VideoPlayingScreen = ({ navigation, route }: any) => {
                         <View style={Styles.failedIconContainer}>
                             <CloseCircle size={50} color="#ED5454" variant="Bold" />
                         </View>
-                        <Text style={Styles.failedTitle}>Failed</Text>
+                        <Text style={Styles.failedTitle}>{t('Failed')}</Text>
                         <Text style={Styles.failedSubtitle}>
                             Insufficient balance. Please recharge.
                         </Text>
@@ -413,13 +415,13 @@ const VideoPlayingScreen = ({ navigation, route }: any) => {
                                 style={Styles.failedCancelButton}
                                 onPress={() => setShowFailedModal(false)}
                             >
-                                <Text style={Styles.failedButtonText}>Cancel</Text>
+                                <Text style={Styles.failedButtonText}>{t('Cancel')}</Text>
                             </TouchableOpacity>
                             <TouchableOpacity
                                 style={Styles.rechargeButton}
                                 onPress={handleRecharge}
                             >
-                                <Text style={Styles.failedButtonText}>Recharge</Text>
+                                <Text style={Styles.failedButtonText}>{t('Recharge')}</Text>
                             </TouchableOpacity>
                         </View>
                     </View>

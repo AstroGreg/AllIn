@@ -13,12 +13,6 @@ import { useTranslation } from 'react-i18next'
  
 
 const FILTERS = ['Competition', 'Person', 'Group', 'Location'] as const
-const COMPETITION_TYPE_FILTERS: Array<{ key: CompetitionTypeFilter; label: string }> = [
-    { key: 'all', label: 'All' },
-    { key: 'track', label: 'Track&Field' },
-    { key: 'marathon', label: 'Road&Trail' },
-];
-
 type FilterKey = typeof FILTERS[number]
 
 type CompetitionType = 'track' | 'marathon'
@@ -74,6 +68,14 @@ const SearchScreen = ({ navigation }: any) => {
     const [calendarStart, setCalendarStart] = useState<string | null>(null);
     const [calendarEnd, setCalendarEnd] = useState<string | null>(null);
  
+    const competitionTypeFilters = useMemo(
+        () => ([
+            { key: 'all' as const, label: 'all' },
+            { key: 'track' as const, label: 'trackAndField' },
+            { key: 'marathon' as const, label: 'roadAndTrail' },
+        ]),
+        [],
+    );
 
     const activeValue = filterValues[activeFilter] ?? '';
 
@@ -262,8 +264,8 @@ const SearchScreen = ({ navigation }: any) => {
     };
 
     const getCompetitionTypeLabel = (type: CompetitionType) => {
-        if (type === 'marathon') return 'Road&Trail';
-        return 'Track&Field';
+        if (type === 'marathon') return t('roadAndTrail');
+        return t('trackAndField');
     };
 
     const renderEventCard = (event: EventResult) => (
@@ -272,7 +274,7 @@ const SearchScreen = ({ navigation }: any) => {
             style={Styles.eventCard}
             onPress={() => navigation.navigate('CompetitionDetailsScreen', {
                 name: event.name,
-                description: `Competition held in ${event.location}`,
+                description: `${t('Competition held in')} ${event.location}`,
                 competitionType: event.competitionType,
             })}
         >
@@ -284,7 +286,7 @@ const SearchScreen = ({ navigation }: any) => {
                 <View style={Styles.eventNameRow}>
                     <Text style={Styles.eventName}>{event.name}</Text>
                     <View style={Styles.eventTypeBadge}>
-                        <Text style={Styles.eventTypeBadgeText}>{getCompetitionTypeLabel(event.competitionType)}</Text>
+                                <Text style={Styles.eventTypeBadgeText}>{getCompetitionTypeLabel(event.competitionType)}</Text>
                     </View>
                 </View>
                 <SizeBox height={4} />
@@ -321,7 +323,7 @@ const SearchScreen = ({ navigation }: any) => {
                         <View style={Styles.userNameRow}>
                             <Text style={Styles.userName}>{person.name}</Text>
                             <View style={Styles.userTypeBadge}>
-                                <Text style={Styles.userTypeText}>{person.role}</Text>
+                                <Text style={Styles.userTypeText}>{t(person.role)}</Text>
                             </View>
                         </View>
                         <View style={Styles.userDetails}>
@@ -349,7 +351,7 @@ const SearchScreen = ({ navigation }: any) => {
                             style={Styles.followBtn}
                             onPress={() => navigation.navigate('ViewUserProfileScreen', { user: person })}
                         >
-                            <Text style={Styles.followBtnText}>Follow</Text>
+                            <Text style={Styles.followBtnText}>{t('Follow')}</Text>
                         </TouchableOpacity>
                     </>
                 )}
@@ -392,7 +394,7 @@ const SearchScreen = ({ navigation }: any) => {
                         <View style={Styles.userNameRow}>
                             <Text style={Styles.userName}>{group.name}</Text>
                             <View style={Styles.userTypeBadge}>
-                                <Text style={Styles.userTypeText}>Group</Text>
+                                <Text style={Styles.userTypeText}>{t('Group')}</Text>
                             </View>
                         </View>
                         <View style={Styles.userDetails}>
@@ -564,9 +566,9 @@ const SearchScreen = ({ navigation }: any) => {
                 <SizeBox height={16} />
 
                 <View style={Styles.typeFilterRow}>
-                    <Text style={Styles.typeFilterLabel}>{t('Competition Type')}</Text>
+                    <Text style={Styles.typeFilterLabel}>{t('competitionType')}</Text>
                     <View style={Styles.typeFilterChips}>
-                        {COMPETITION_TYPE_FILTERS.map((option) => (
+                        {competitionTypeFilters.map((option) => (
                             <TouchableOpacity
                                 key={option.key}
                                 style={[
@@ -616,7 +618,7 @@ const SearchScreen = ({ navigation }: any) => {
                         <TouchableOpacity style={Styles.timeRangeChip} onPress={openDateTimePicker}>
                             <Clock size={14} color="#9B9F9F" variant="Linear" />
                             <SizeBox width={4} />
-                            <Text style={Styles.timeRangeText}>{t('Select date range')}</Text>
+                            <Text style={Styles.timeRangeText}>{t('selectDateRange')}</Text>
                             <SizeBox width={4} />
                             <ArrowDown2 size={14} color="#9B9F9F" variant="Linear" />
                         </TouchableOpacity>
@@ -644,7 +646,7 @@ const SearchScreen = ({ navigation }: any) => {
                     <>
                         {filteredEvents.length > 0 && (
                             <>
-                                <Text style={Styles.sectionTitle}>Competitions</Text>
+                                <Text style={Styles.sectionTitle}>{t('Competitions')}</Text>
                                 <SizeBox height={10} />
                                 {filteredEvents.map(renderEventCard)}
                                 <SizeBox height={20} />
@@ -653,7 +655,7 @@ const SearchScreen = ({ navigation }: any) => {
 
                         {filteredPeople.length > 0 && (
                             <>
-                                <Text style={Styles.sectionTitle}>People</Text>
+                                <Text style={Styles.sectionTitle}>{t('People')}</Text>
                                 <SizeBox height={10} />
                                 {filteredPeople.map(renderPersonCard)}
                                 <SizeBox height={20} />
@@ -662,7 +664,7 @@ const SearchScreen = ({ navigation }: any) => {
 
                         {filteredGroups.length > 0 && (
                             <>
-                                <Text style={Styles.sectionTitle}>Groups</Text>
+                                <Text style={Styles.sectionTitle}>{t('Groups')}</Text>
                                 <SizeBox height={10} />
                                 {filteredGroups.map(renderGroupCard)}
                             </>
@@ -685,37 +687,37 @@ const SearchScreen = ({ navigation }: any) => {
                         onPress={() => setShowIosPicker(false)}
                     />
                     <View style={Styles.dateModalContainer}>
-                        <Text style={Styles.dateModalTitle}>Select date range</Text>
+                        <Text style={Styles.dateModalTitle}>{t('selectDateRange')}</Text>
                         <SizeBox height={10} />
                         <View style={Styles.quickRangeRow}>
                             <TouchableOpacity
                                 style={Styles.quickRangeChip}
                                 onPress={() => setQuickRange('week')}
                             >
-                                <Text style={Styles.quickRangeChipText}>This week</Text>
+                                <Text style={Styles.quickRangeChipText}>{t('thisWeek')}</Text>
                             </TouchableOpacity>
                             <TouchableOpacity
                                 style={Styles.quickRangeChip}
                                 onPress={() => setQuickRange('month')}
                             >
-                                <Text style={Styles.quickRangeChipText}>This month</Text>
+                                <Text style={Styles.quickRangeChipText}>{t('thisMonth')}</Text>
                             </TouchableOpacity>
                             <TouchableOpacity
                                 style={Styles.quickRangeChip}
                                 onPress={() => setQuickRange('year')}
                             >
-                                <Text style={Styles.quickRangeChipText}>This year</Text>
+                                <Text style={Styles.quickRangeChipText}>{t('thisYear')}</Text>
                             </TouchableOpacity>
                         </View>
                         <SizeBox height={8} />
                         <View style={Styles.rangeHeaderRow}>
                             <View style={Styles.rangePill}>
-                                <Text style={Styles.rangePillLabel}>Start</Text>
-                                <Text style={Styles.rangePillValue}>{calendarStart ?? 'Select'}</Text>
+                                <Text style={Styles.rangePillLabel}>{t('start')}</Text>
+                                <Text style={Styles.rangePillValue}>{calendarStart ?? t('selectDate')}</Text>
                             </View>
                             <View style={Styles.rangePill}>
-                                <Text style={Styles.rangePillLabel}>End</Text>
-                                <Text style={Styles.rangePillValue}>{calendarEnd ?? 'Select'}</Text>
+                                <Text style={Styles.rangePillLabel}>{t('end')}</Text>
+                                <Text style={Styles.rangePillValue}>{calendarEnd ?? t('selectDate')}</Text>
                             </View>
                         </View>
                         <SizeBox height={12} />
@@ -787,14 +789,14 @@ const SearchScreen = ({ navigation }: any) => {
                                 style={Styles.modalCancelButton}
                                 onPress={() => setShowIosPicker(false)}
                             >
-                                <Text style={Styles.modalCancelText}>Cancel</Text>
+                                <Text style={Styles.modalCancelText}>{t('Cancel')}</Text>
                             </TouchableOpacity>
                             <TouchableOpacity
                                 style={[Styles.modalSubmitButton, !calendarStart && Styles.modalSubmitButtonDisabled]}
                                 onPress={applyIosDateTime}
                                 disabled={!calendarStart}
                             >
-                                <Text style={Styles.modalSubmitText}>Apply</Text>
+                                <Text style={Styles.modalSubmitText}>{t('Apply')}</Text>
                             </TouchableOpacity>
                         </View>
                     </View>

@@ -9,8 +9,10 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import SelcetionContainer from '../components/SelcetionContainer'
 import Icons from '../../../../constants/Icons'
 import { useTheme } from '../../../../context/ThemeContext'
+import { useTranslation } from 'react-i18next'
 
 const ViewSelectedTalent = ({ navigation }: any) => {
+    const { t } = useTranslation();
     const { colors } = useTheme();
     const Styles = createStyles(colors);
     const insets = useSafeAreaInsets();
@@ -35,22 +37,22 @@ const ViewSelectedTalent = ({ navigation }: any) => {
                 <SizeBox height={30} />
                 <View style={Styles.contentContainer}>
 
-                    <Text style={Styles.headingText}>Set Up Your Talent Profile</Text>
+                    <Text style={Styles.headingText}>{t('Set Up Your Talent Profile')}</Text>
                     <SizeBox height={8} />
-                    <Text style={Styles.subHeadingText}>Create your profile to showcase your skills and stand out.</Text>
+                    <Text style={Styles.subHeadingText}>{t('Create your profile to showcase your skills and stand out.')}</Text>
                     <SizeBox height={24} />
-                    <Text style={Styles.containerTitle}>Talent Information</Text>
+                    <Text style={Styles.containerTitle}>{t('Talent Information')}</Text>
                     <SizeBox height={16} />
 
                     <View style={Styles.talentContainer}>
                         <SizeBox height={16} />
                         <SelcetionContainer
                             icon={<Icons.Talent1 height={20} width={20} />}
-                            title='Athletics'
+                            title={t('Athletics')}
                             disabled={true}
                             isRightAction={false}
                         />
-                        <Text style={Styles.containerTitle}>Event</Text>
+                        <Text style={Styles.containerTitle}>{t('Event')}</Text>
 
                         <SizeBox height={10} />
 
@@ -67,13 +69,13 @@ const ViewSelectedTalent = ({ navigation }: any) => {
                         ))}
 
                         <SizeBox height={16} />
-                        <CustomButton title='Add Event' onPress={() => navigation.goBack()} isAdd={true} isSmall={true} />
+                        <CustomButton title={t('Add Event')} onPress={() => navigation.goBack()} isAdd={true} isSmall={true} />
 
                         <SizeBox height={16} />
                     </View>
 
                     <SizeBox height={40} />
-                    <CustomButton title='Next' onPress={() => navigation.navigate('AddTalentScreen')} />
+                    <CustomButton title={t('Next')} onPress={() => navigation.navigate('AddTalentScreen')} />
                     <SizeBox height={86} />
                 </View>
             </ScrollView>

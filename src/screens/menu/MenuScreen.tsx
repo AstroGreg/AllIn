@@ -102,7 +102,7 @@ const MenuScreen = ({ navigation }: any) => {
                     <SizeBox height={12} />
                     <MenuContainers
                       icon={<SecurityUser size={20} color={colors.primaryColor} variant="Linear" />}
-                      title='Dev API Token'
+                      title={t('Dev API Token')}
                       onPress={() => navigation.navigate('DevApiTokenScreen')}
                     />
                   </>
@@ -142,11 +142,11 @@ const MenuScreen = ({ navigation }: any) => {
                     <SizeBox height={12} />
                     <MenuContainers
                       icon={<SecurityUser size={20} color={colors.primaryColor} variant="Linear" />}
-                      title='Log out'
+                      title={t('Log out')}
                       onPress={() => {
-                        Alert.alert('Log out', 'Do you want to log out?', [
-                          { text: 'Cancel', style: 'cancel' },
-                          { text: 'Log out', style: 'destructive', onPress: () => logout() },
+                        Alert.alert(t('Log out'), t('Do you want to log out?'), [
+                          { text: t('Cancel'), style: 'cancel' },
+                          { text: t('Log out'), style: 'destructive', onPress: () => logout() },
                         ]);
                       }}
                     />
@@ -175,12 +175,12 @@ const MenuScreen = ({ navigation }: any) => {
                         </View>
                     </View>
                     <SizeBox height={12} />
-                    <Text style={Styles.privacySubtitle}>When Ghost Mode is active:</Text>
+                    <Text style={Styles.privacySubtitle}>{t('When Ghost Mode is active:')}</Text>
                     <SizeBox height={4} />
-                    <Text style={Styles.privacyDescription}>• Your profile won't appear in search results.</Text>
-                    <Text style={Styles.privacyDescription}>• You won't show up in "People you may know".</Text>
-                    <Text style={Styles.privacyDescription}>• Existing friends can still see your profile.</Text>
-                    <Text style={Styles.privacyDescription}>• You can still browse and interact normally.</Text>
+                    <Text style={Styles.privacyDescription}>{t('• Your profile won\'t appear in search results.')}</Text>
+                    <Text style={Styles.privacyDescription}>{t('• You won\'t show up in \"People you may know\".')}</Text>
+                    <Text style={Styles.privacyDescription}>{t('• Existing friends can still see your profile.')}</Text>
+                    <Text style={Styles.privacyDescription}>{t('• You can still browse and interact normally.')}</Text>
                 </View>
 
                 <SizeBox height={insets.bottom > 0 ? insets.bottom + 20 : 40} />

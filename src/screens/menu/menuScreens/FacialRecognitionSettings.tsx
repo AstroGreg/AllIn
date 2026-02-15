@@ -5,8 +5,10 @@ import { ArrowLeft2, Scan } from 'iconsax-react-nativejs';
 import { createStyles } from '../MenuStyles';
 import SizeBox from '../../../constants/SizeBox';
 import { useTheme } from '../../../context/ThemeContext';
+import { useTranslation } from 'react-i18next'
 
 const FacialRecognitionSettings = ({ navigation }: any) => {
+    const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   const { colors } = useTheme();
   const Styles = createStyles(colors);
@@ -28,7 +30,7 @@ const FacialRecognitionSettings = ({ navigation }: any) => {
         <TouchableOpacity style={Styles.headerButton} onPress={() => navigation.goBack()}>
           <ArrowLeft2 size={24} color={colors.primaryColor} variant="Linear" />
         </TouchableOpacity>
-        <Text style={Styles.headerTitle}>Facial Recognition</Text>
+        <Text style={Styles.headerTitle}>{t('Facial Recognition')}</Text>
         <View style={Styles.headerSpacer} />
       </View>
 
@@ -41,7 +43,7 @@ const FacialRecognitionSettings = ({ navigation }: any) => {
               <Scan size={20} color={colors.primaryColor} variant="Linear" />
             </View>
             <SizeBox width={12} />
-            <Text style={Styles.accountSettingsTitle}>Facial Recognition Templates</Text>
+            <Text style={Styles.accountSettingsTitle}>{t('Facial Recognition Templates')}</Text>
           </View>
 
           <SizeBox height={12} />
@@ -61,7 +63,7 @@ const FacialRecognitionSettings = ({ navigation }: any) => {
               alignItems: 'center',
             }}
           >
-            <Text style={{ color: colors.pureWhite, fontWeight: '600' }}>Enroll Face (3 per angle)</Text>
+            <Text style={{ color: colors.pureWhite, fontWeight: '600' }}>{t('Enroll Face (3 per angle)')}</Text>
           </TouchableOpacity>
 
         </View>

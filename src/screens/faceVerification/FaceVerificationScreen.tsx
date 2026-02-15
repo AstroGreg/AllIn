@@ -15,6 +15,7 @@ import { createStyles } from './FaceVerificationScreenStyles';
 import SizeBox from '../../constants/SizeBox';
 import { useTheme } from '../../context/ThemeContext';
 import { useAuth } from '../../context/AuthContext';
+import { useTranslation } from 'react-i18next'
 
 interface CaptureAngle {
     id: string;
@@ -36,6 +37,7 @@ const CAPTURE_ANGLES: CaptureAngle[] = [
 ];
 
 const FaceVerificationScreen = ({ navigation }: any) => {
+    const { t } = useTranslation();
     const { colors } = useTheme();
     const Styles = createStyles(colors);
     const insets = useSafeAreaInsets();
@@ -89,18 +91,18 @@ const FaceVerificationScreen = ({ navigation }: any) => {
             const result = await Camera.requestCameraPermission();
             if (result === 'denied') {
                 Alert.alert(
-                    'Permission Denied',
-                    'Camera permission was denied. Please enable it in Settings.',
+                    t('Permission Denied'),
+                    t('Camera permission was denied. Please enable it in Settings.'),
                     [
-                        { text: 'Cancel', style: 'cancel' },
-                        { text: 'Open Settings', onPress: () => Linking.openSettings() }
+                        { text: t('Cancel'), style: 'cancel' },
+                        { text: t('Open Settings'), onPress: () => Linking.openSettings() }
                     ]
                 );
             }
         } catch (error) {
             console.log('Permission request error:', error);
         }
-    }, []);
+    }, [t]);
 
     useEffect(() => {
         if (!hasPermission) {
@@ -284,7 +286,7 @@ const FaceVerificationScreen = ({ navigation }: any) => {
                 routes: [{ name: 'BottomTabBar' }],
             });
         } catch (err: any) {
-            Alert.alert('Error', 'Failed to save verification. Please try again.');
+            Alert.alert(t('Error'), t('Failed to save verification. Please try again.'));
         } finally {
             setIsSaving(false);
         }
@@ -297,41 +299,41 @@ const FaceVerificationScreen = ({ navigation }: any) => {
     // Get instruction text based on current state
     const getInstructionText = () => {
         if (isTransitioning) {
-            return 'Great! Moving to the next angle...';
+            return t('Great! Moving to the next angle...');
         }
         if (countdown !== null) {
-            return 'Perfect!';
+            return t('Perfect!');
         }
         if (angleMatched) {
-            return 'Perfect!';
+            return t('Perfect!');
         }
         if (faceDetected) {
-            return currentAngle.instruction;
+            return t(currentAngle.instruction);
         }
-        return 'Position your face within the frame to begin verification.';
+        return t('Position your face within the frame to begin verification.');
     };
 
     // Permission screen
     if (!hasPermission) {
         return (
             <View style={[Styles.mainContainer, { justifyContent: 'center', alignItems: 'center', paddingHorizontal: 20 }]}>
-                <Text style={Styles.titleText}>Camera permission required</Text>
+                <Text style={Styles.titleText}>{t('Camera permission required')}</Text>
                 <SizeBox height={8} />
                 <Text style={[Styles.descriptionText, { textAlign: 'center' }]}>
-                    Please grant camera access to capture your face for verification.
+                    {t('Please grant camera access to capture your face for verification.')}
                 </Text>
                 <SizeBox height={24} />
                 <View style={{ width: '100%', gap: 12 }}>
                     <TouchableOpacity style={Styles.primaryButton} onPress={handleRequestPermission}>
-                        <Text style={Styles.primaryButtonText}>Grant Permission</Text>
+                        <Text style={Styles.primaryButtonText}>{t('Grant Permission')}</Text>
                     </TouchableOpacity>
                     <TouchableOpacity style={Styles.secondaryButton} onPress={openSettings}>
-                        <Text style={Styles.secondaryButtonText}>Open Settings</Text>
+                        <Text style={Styles.secondaryButtonText}>{t('Open Settings')}</Text>
                     </TouchableOpacity>
                 </View>
                 <SizeBox height={16} />
                 <TouchableOpacity onPress={() => navigation.goBack()}>
-                    <Text style={[Styles.secondaryButtonText, { textDecorationLine: 'underline' }]}>Skip for now</Text>
+                    <Text style={[Styles.secondaryButtonText, { textDecorationLine: 'underline' }]}>{t('Skip for now')}</Text>
                 </TouchableOpacity>
             </View>
         );
@@ -341,7 +343,7 @@ const FaceVerificationScreen = ({ navigation }: any) => {
     if (!device) {
         return (
             <View style={[Styles.mainContainer, { justifyContent: 'center', alignItems: 'center' }]}>
-                <Text style={Styles.titleText}>No front camera found</Text>
+                <Text style={Styles.titleText}>{t('No front camera found')}</Text>
             </View>
         );
     }
@@ -431,7 +433,7 @@ const FaceVerificationScreen = ({ navigation }: any) => {
 
                 {/* Title and Instructions */}
                 <View style={Styles.textSection}>
-                    <Text style={Styles.titleText}>Verifying your face</Text>
+                    <Text style={Styles.titleText}>{t('Verifying your face')}</Text>
                     <SizeBox height={14} />
                     <Text style={Styles.descriptionText}>
                         {getInstructionText()}
@@ -456,7 +458,7 @@ const FaceVerificationScreen = ({ navigation }: any) => {
                         ) : (
                             <>
                                 <Text style={Styles.primaryButtonText}>
-                                    {allCaptured ? 'Save Preferences' : `${currentAngleIndex + 1} of ${CAPTURE_ANGLES.length}`}
+                                    {allCaptured ? t('Save Preferences') : `${currentAngleIndex + 1} ${t('of')} ${CAPTURE_ANGLES.length}`}
                                 </Text>
                                 <ArrowRight size={24} color={colors.pureWhite} />
                             </>
@@ -468,7 +470,7 @@ const FaceVerificationScreen = ({ navigation }: any) => {
                         activeOpacity={0.7}
                         onPress={handleCancel}
                     >
-                        <Text style={Styles.secondaryButtonText}>Cancel</Text>
+                        <Text style={Styles.secondaryButtonText}>{t('Cancel')}</Text>
                         <ArrowRight size={24} color={colors.grayColor} />
                     </TouchableOpacity>
                 </View>

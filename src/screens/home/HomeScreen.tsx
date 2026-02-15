@@ -15,6 +15,8 @@ import {
     getAllVideos,
     getHomeOverview,
     recordDownload,
+    togglePostLike,
+    toggleMediaLike,
     type HomeOverviewMedia,
     type HomeOverviewResponse,
     type MediaViewAllItem,
@@ -70,7 +72,7 @@ const HomeScreen = ({ navigation }: any) => {
         const name = user?.name?.trim();
         if (name) return name;
 
-        return 'Guest';
+        return t('Guest');
     })();
 
     const profilePic = user?.picture;
@@ -121,7 +123,7 @@ const HomeScreen = ({ navigation }: any) => {
     const performLoadOverview = useCallback(async (force = false) => {
         if (!apiAccessToken) {
             setOverview(null);
-            setOverviewError('Log in (or set a Dev API token) to load overview.');
+            setOverviewError(t('Log in (or set a Dev API token) to load overview.'));
             return;
         }
         const now = Date.now();
@@ -157,12 +159,12 @@ const HomeScreen = ({ navigation }: any) => {
         } finally {
             setIsLoadingOverview(false);
         }
-    }, [apiAccessToken, overview]);
+    }, [apiAccessToken, overview, t]);
 
     const loadOverview = useCallback((force = false) => {
         if (!apiAccessToken) {
             setOverview(null);
-            setOverviewError('Log in (or set a Dev API token) to load overview.');
+            setOverviewError(t('Log in (or set a Dev API token) to load overview.'));
             return Promise.resolve();
         }
 
@@ -200,7 +202,7 @@ const HomeScreen = ({ navigation }: any) => {
             loadInFlightRef.current = null;
         });
         return task;
-    }, [apiAccessToken, performLoadOverview]);
+    }, [apiAccessToken, performLoadOverview, t]);
 
     useFocusEffect(
         useCallback(() => {
@@ -296,17 +298,17 @@ const HomeScreen = ({ navigation }: any) => {
         const date = new Date(value);
         if (Number.isNaN(date.getTime())) return '';
         const diffSeconds = Math.floor((Date.now() - date.getTime()) / 1000);
-        if (diffSeconds < 60) return 'Posted just now';
+        if (diffSeconds < 60) return t('Posted just now');
         const minutes = Math.floor(diffSeconds / 60);
-        if (minutes < 60) return `Posted ${minutes}m ago`;
+        if (minutes < 60) return `${t('Posted')} ${minutes}${t('m ago')}`;
         const hours = Math.floor(minutes / 60);
-        if (hours < 24) return `Posted ${hours}h ago`;
+        if (hours < 24) return `${t('Posted')} ${hours}${t('h ago')}`;
         return date.toLocaleDateString('en-GB', {
             day: '2-digit',
             month: 'short',
             year: 'numeric',
         });
-    }, []);
+    }, [t]);
 
     const pickDescription = useCallback((title?: string | null, description?: string | null, fallback?: string) => {
         const trimmedTitle = (title ?? '').trim();
@@ -322,19 +324,60 @@ const HomeScreen = ({ navigation }: any) => {
 
     const formatLikesLabel = useCallback((media?: HomeOverviewMedia | MediaViewAllItem | null) => {
         if (!media) return '';
-        const raw = (media as any).likes ?? (media as any).like_count ?? (media as any).likeCount ?? null;
-        if (typeof raw === 'number' && Number.isFinite(raw)) return `${raw.toLocaleString()} likes`;
-        if (typeof raw === 'string' && raw.trim()) return raw.includes('like') ? raw : `${raw} likes`;
-        const idSeed = String((media as any).media_id ?? (media as any).id ?? '');
-        let hash = 0;
-        for (let i = 0; i < idSeed.length; i += 1) {
-            hash = (hash * 31 + idSeed.charCodeAt(i)) % 10000;
+        const raw = Number((media as any).likes_count ?? (media as any).likesCount ?? 0);
+        const count = Number.isFinite(raw) && raw > 0 ? raw : 0;
+        return `${count.toLocaleString()} ${t('likes')}`;
+    }, [t]);
+
+    const handleToggleLike = useCallback(async (mediaId?: string | null) => {
+        const id = String(mediaId || '').trim();
+        if (!id || !apiAccessToken) return;
+        try {
+            const r = await toggleMediaLike(apiAccessToken, id);
+            // Update cached overview/media lists in-place (best effort).
+            setOverview((prev) => {
+                if (!prev) return prev;
+                const next: any = JSON.parse(JSON.stringify(prev));
+                const slots = ['video', 'photo'];
+                for (const k of slots) {
+                    const m = next?.overview?.[k];
+                    if (m && String(m.media_id) === id) {
+                        m.likes_count = r.likes_count;
+                        m.liked_by_me = r.liked;
+                    }
+                }
+                if (next?.overview?.blog?.media && String(next.overview.blog.media.media_id) === id) {
+                    next.overview.blog.media.likes_count = r.likes_count;
+                    next.overview.blog.media.liked_by_me = r.liked;
+                }
+                return next;
+            });
+            setAllVideos((prev) => prev.map((x: any) => (String(x.media_id) === id ? { ...x, likes_count: r.likes_count, liked_by_me: r.liked } : x)));
+            setAllPhotos((prev) => prev.map((x: any) => (String(x.media_id) === id ? { ...x, likes_count: r.likes_count, liked_by_me: r.liked } : x)));
+        } catch {
+            // ignore
         }
-        const value = 1200 + (hash % 8500);
-        const likes = Math.max(25, Math.round(value * 0.6));
-        if (likes >= 1000) return `${(likes / 1000).toFixed(1)}k likes`;
-        return `${likes} likes`;
-    }, []);
+    }, [apiAccessToken]);
+
+    const handleTogglePostLike = useCallback(async (postId?: string | null) => {
+        const id = String(postId || '').trim();
+        if (!id || !apiAccessToken) return;
+        try {
+            const r = await togglePostLike(apiAccessToken, id);
+            setOverview((prev) => {
+                if (!prev) return prev;
+                const next: any = JSON.parse(JSON.stringify(prev));
+                if (next?.overview?.blog?.post && String(next.overview.blog.post.id) === id) {
+                    next.overview.blog.post.likes_count = r.likes_count;
+                    next.overview.blog.post.liked_by_me = r.liked;
+                }
+                return next;
+            });
+        } catch {
+            // ignore
+        }
+    }, [apiAccessToken]);
+
 
     const formatDuration = useCallback((value: number) => {
         const safeValue = Number.isFinite(value) ? Math.max(0, value) : 0;
@@ -414,7 +457,7 @@ const HomeScreen = ({ navigation }: any) => {
     const handleShareMedia = useCallback(async (media?: HomeOverviewMedia | MediaViewAllItem | null) => {
         const url = getMediaShareUrl(media);
         if (!url) {
-            Alert.alert('Share unavailable', 'No media link available yet.');
+            Alert.alert(t('Share unavailable'), t('No media link available yet.'));
             return;
         }
         try {
@@ -422,11 +465,11 @@ const HomeScreen = ({ navigation }: any) => {
         } catch {
             // ignore share cancellation
         }
-    }, [getMediaShareUrl]);
+    }, [getMediaShareUrl, t]);
 
     const handleDownloadMedia = useCallback(async (media?: HomeOverviewMedia | MediaViewAllItem | null) => {
         if (!media?.media_id) {
-            Alert.alert('Download unavailable', 'No media available yet.');
+            Alert.alert(t('Download unavailable'), t('No media available yet.'));
             return;
         }
         if (downloadInFlightRef.current) {
@@ -434,11 +477,11 @@ const HomeScreen = ({ navigation }: any) => {
         }
         const sourceUrl = pickDownloadUrl(media);
         if (!sourceUrl) {
-            Alert.alert('Download unavailable', 'This media is not ready to download.');
+            Alert.alert(t('Download unavailable'), t('This media is not ready to download.'));
             return;
         }
         if (sourceUrl.toLowerCase().includes('.m3u8')) {
-            Alert.alert('Download unavailable', 'This video is streaming-only right now. Try again later.');
+            Alert.alert(t('Download unavailable'), t('This video is streaming-only right now. Try again later.'));
             return;
         }
         downloadInFlightRef.current = true;
@@ -479,54 +522,54 @@ const HomeScreen = ({ navigation }: any) => {
                 showAppsToView: true,
             });
         } catch (e: any) {
-            const msg = e instanceof ApiError ? e.message : 'Download failed';
-            Alert.alert('Download failed', msg);
+            const msg = e instanceof ApiError ? e.message : t('Download failed');
+            Alert.alert(t('Download failed'), msg);
         } finally {
             setDownloadVisible(false);
             setDownloadProgress(null);
             downloadInFlightRef.current = false;
         }
-    }, [apiAccessToken, buildDownloadPath, pickDownloadUrl]);
+    }, [apiAccessToken, buildDownloadPath, pickDownloadUrl, t]);
 
     const openFeedMenu = useCallback(
         (media: HomeOverviewMedia | MediaViewAllItem | null, opts: { isVideo?: boolean; title?: string } = {}) => {
             const safeMedia = media ?? null;
             const eventName = safeMedia?.event_id ? eventNameById(safeMedia.event_id) : undefined;
-            const label = opts.title || eventName || 'Event';
+            const label = opts.title || eventName || t('Event');
             const actions = [
-                { label: 'Download', onPress: () => handleDownloadMedia(safeMedia) },
-                { label: 'Share', onPress: () => handleShareMedia(safeMedia) },
-                { label: 'Share to Instagram Story', onPress: () => handleShareMedia(safeMedia) },
+                { label: t('Download'), onPress: () => handleDownloadMedia(safeMedia) },
+                { label: t('Share'), onPress: () => handleShareMedia(safeMedia) },
+                { label: t('Share to Instagram Story'), onPress: () => handleShareMedia(safeMedia) },
                 {
-                    label: 'Report an issue with this video/photo',
-                    onPress: () => Alert.alert('Request sent', 'We received your issue report.'),
+                    label: t('Report an issue with this video/photo'),
+                    onPress: () => Alert.alert(t('Request sent'), t('We received your issue report.')),
                 },
                 {
-                    label: 'Go to author profile',
+                    label: t('Go to author profile'),
                     onPress: () => navigation.navigate('BottomTabBar', { screen: 'Profile' }),
                 },
                 {
-                    label: 'Go to event',
+                    label: t('Go to event'),
                     onPress: () =>
                         navigation.navigate('CompetitionDetailsScreen', {
                             name: label,
-                            description: `Competition held in ${label}`,
+                            description: `${t('Competition held in')} ${label}`,
                             competitionType: 'track',
                         }),
                 },
                 {
-                    label: 'Mark as inappropriate content',
-                    onPress: () => Alert.alert('Thanks', 'We will review this content.'),
+                    label: t('Mark as inappropriate content'),
+                    onPress: () => Alert.alert(t('Thanks'), t('We will review this content.')),
                 },
                 {
-                    label: 'Request this video removed',
-                    onPress: () => Alert.alert('Request sent', 'We will review the removal request.'),
+                    label: t('Request this video removed'),
+                    onPress: () => Alert.alert(t('Request sent'), t('We will review the removal request.')),
                 },
             ];
 
             if (opts.isVideo) {
                 actions.unshift({
-                    label: 'View in player',
+                    label: t('View in player'),
                     onPress: () =>
                         navigation.navigate('VideoPlayingScreen', {
                             mediaId: safeMedia?.media_id,
@@ -542,7 +585,7 @@ const HomeScreen = ({ navigation }: any) => {
             if (Platform.OS === 'ios') {
                 ActionSheetIOS.showActionSheetWithOptions(
                     {
-                        options: [...actions.map((item) => item.label), 'Cancel'],
+                        options: [...actions.map((item) => item.label), t('Cancel')],
                         cancelButtonIndex: actions.length,
                     },
                     (buttonIndex) => {
@@ -555,15 +598,15 @@ const HomeScreen = ({ navigation }: any) => {
             }
 
             Alert.alert(
-                'More options',
-                'Choose an action',
+                t('More options'),
+                t('Choose an action'),
                 [
                     ...actions.map((item) => ({ text: item.label, onPress: item.onPress })),
-                    { text: 'Cancel', style: 'cancel' },
+                    { text: t('Cancel'), style: 'cancel' },
                 ],
             );
         },
-        [eventNameById, getMediaThumb, handleDownloadMedia, handleShareMedia, navigation, pickPlayableVideoUrl],
+        [eventNameById, getMediaThumb, handleDownloadMedia, handleShareMedia, navigation, pickPlayableVideoUrl, t],
     );
 
     const pickPlayableVideoUrl = useCallback((media?: HomeOverviewMedia | MediaViewAllItem | null) => {
@@ -976,13 +1019,15 @@ const HomeScreen = ({ navigation }: any) => {
                                     hideUserDate
                                     headerTag={formatPostTime(overviewVideo?.created_at ?? topVideos[0]?.created_at)}
                                     likesLabel={formatLikesLabel(overviewVideo ?? topVideos[0])}
+                                    liked={Boolean((overviewVideo ?? topVideos[0])?.liked_by_me)}
+                                    onToggleLike={() => handleToggleLike((overviewVideo ?? topVideos[0])?.media_id)}
                                     showActions
                                     onShare={() => handleShareMedia(overviewVideo ?? topVideos[0])}
                                     onDownload={() => handleDownloadMedia(overviewVideo ?? topVideos[0])}
                                     onPressMore={() =>
                                         openFeedMenu(overviewVideo ?? topVideos[0], {
                                             isVideo: true,
-                                            title: overviewVideo?.title ?? topVideos[0]?.title ?? 'Video',
+                                            title: overviewVideo?.title ?? topVideos[0]?.title ?? t('Video'),
                                         })
                                     }
                                     toggleVideoOnPress
@@ -1012,10 +1057,10 @@ const HomeScreen = ({ navigation }: any) => {
                                 }}
                             >
                                 <NewsFeedCard
-                                    title={overviewBlog?.post?.title ?? 'Latest blog'}
+                                    title={overviewBlog?.post?.title ?? t('Latest blog')}
                                     images={['__text__']}
                                     textSlide={{
-                                        title: overviewBlog?.post?.title ?? 'Latest blog',
+                                        title: overviewBlog?.post?.title ?? t('Latest blog'),
                                         description: [
                                             overviewBlog?.post?.summary ?? overviewBlog?.post?.description ?? '',
                                             blogMediaCountsLabel,
@@ -1035,19 +1080,22 @@ const HomeScreen = ({ navigation }: any) => {
                                     }}
                                     hideUserDate
                                     headerSeparated
-                                    likesLabel={formatLikesLabel(overviewBlog?.media ?? blogPrimaryMedia)}
+                                    showActions
+                                    likesLabel={`${Number(overviewBlog?.post?.likes_count ?? 0).toLocaleString()} ${t('likes')}`}
+                                    liked={Boolean(overviewBlog?.post?.liked_by_me)}
+                                    onToggleLike={() => handleTogglePostLike(overviewBlog?.post?.id)}
                                     onShare={() => handleShareMedia(overviewBlog?.media ?? blogPrimaryMedia)}
                                     onPressMore={() =>
                                         openFeedMenu(overviewBlog?.media ?? blogPrimaryMedia, {
                                             isVideo: (overviewBlog?.media ?? blogPrimaryMedia)?.type === 'video',
-                                            title: overviewBlog?.post?.title ?? 'Blog',
+                                            title: overviewBlog?.post?.title ?? t('Blog'),
                                         })
                                     }
                                     description={overviewBlog?.post?.summary ?? overviewBlog?.post?.description ?? ''}
                                     onPress={() => {
                                         navigation.navigate('ViewUserBlogDetailsScreen', {
                                             post: {
-                                                title: overviewBlog?.post?.title ?? 'Latest blog',
+                                                title: overviewBlog?.post?.title ?? t('Latest blog'),
                                                 date: overviewBlog?.post?.created_at
                                                     ? new Date(overviewBlog.post.created_at).toLocaleDateString()
                                                     : '',
@@ -1101,6 +1149,8 @@ const HomeScreen = ({ navigation }: any) => {
                                     hideBelowText={false}
                                     headerSeparated
                                     likesLabel={formatLikesLabel(overviewPhoto ?? topPhotos[0])}
+                                    liked={Boolean((overviewPhoto ?? topPhotos[0])?.liked_by_me)}
+                                    onToggleLike={() => handleToggleLike((overviewPhoto ?? topPhotos[0])?.media_id)}
                                     showActions
                                     onShare={() => handleShareMedia(overviewPhoto ?? topPhotos[0])}
                                     onDownload={() => handleDownloadMedia(overviewPhoto ?? topPhotos[0])}
@@ -1329,7 +1379,7 @@ const HomeScreen = ({ navigation }: any) => {
                                     <Icons.BackArrow height={22} width={22} />
                                 </TouchableOpacity>
                                 <Text style={Styles.videoOverlayTitle}>
-                                    {overlayMedia?.title ?? overviewVideo?.title ?? 'Video'}
+                                    {overlayMedia?.title ?? overviewVideo?.title ?? t('Video')}
                                 </Text>
                                 <View style={Styles.videoOverlayActions}>
                                     <TouchableOpacity
@@ -1399,7 +1449,7 @@ const HomeScreen = ({ navigation }: any) => {
             {downloadVisible && (
                 <View style={Styles.downloadOverlay} pointerEvents="auto">
                     <View style={Styles.downloadCard}>
-                        <Text style={Styles.downloadTitle}>Preparing download</Text>
+                        <Text style={Styles.downloadTitle}>{t('Preparing download')}</Text>
                         {downloadProgress == null ? (
                             <ActivityIndicator color={colors.primaryColor} />
                         ) : (

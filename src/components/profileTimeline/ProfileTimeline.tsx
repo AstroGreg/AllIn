@@ -13,6 +13,7 @@ import LinearGradient from 'react-native-linear-gradient';
 import { Edit2, Add } from 'iconsax-react-nativejs';
 import { useTheme } from '../../context/ThemeContext';
 import Fonts from '../../constants/Fonts';
+import { useTranslation } from 'react-i18next'
 
 export type TimelineEntry = {
     id: string;
@@ -36,7 +37,7 @@ type ProfileTimelineProps = {
 };
 
 const ProfileTimeline = ({
-    title = 'Timeline',
+    title,
     items,
     editable = false,
     onAdd,
@@ -44,7 +45,9 @@ const ProfileTimeline = ({
     onPressItem,
 }: ProfileTimelineProps) => {
     const { colors } = useTheme();
+    const { t } = useTranslation();
     const { width } = useWindowDimensions();
+    const heading = title || t('Timeline');
     const isDark = colors.backgroundColor !== '#FFFFFF';
     const scrollX = useRef(new Animated.Value(0)).current;
     const cardWidth = Math.min(width * 0.78, 340);
@@ -229,17 +232,17 @@ const ProfileTimeline = ({
         return (
             <View style={styles.section}>
                 <View style={styles.headerRow}>
-                    <Text style={styles.sectionTitle}>{title}</Text>
+                    <Text style={styles.sectionTitle}>{heading}</Text>
                     {editable && onAdd && (
                         <TouchableOpacity style={styles.addButton} onPress={onAdd}>
                             <Add size={14} color="#FFFFFF" variant="Linear" />
-                            <Text style={styles.addButtonText}>Add milestone</Text>
+                            <Text style={styles.addButtonText}>{t('Add milestone')}</Text>
                         </TouchableOpacity>
                     )}
                 </View>
                 <View style={styles.emptyState}>
                     <Text style={styles.emptyText}>
-                        No milestones yet. Add your first highlight to build your timeline.
+                        {t('No milestones yet. Add your first highlight to build your timeline.')}
                     </Text>
                 </View>
             </View>
@@ -249,11 +252,11 @@ const ProfileTimeline = ({
     return (
         <View style={styles.section}>
             <View style={styles.headerRow}>
-                <Text style={styles.sectionTitle}>{title}</Text>
+                <Text style={styles.sectionTitle}>{heading}</Text>
                 {editable && onAdd && (
                     <TouchableOpacity style={styles.addButton} onPress={onAdd}>
                         <Add size={14} color="#FFFFFF" variant="Linear" />
-                        <Text style={styles.addButtonText}>Add milestone</Text>
+                        <Text style={styles.addButtonText}>{t('Add milestone')}</Text>
                     </TouchableOpacity>
                 )}
             </View>
@@ -334,12 +337,12 @@ const ProfileTimeline = ({
                                                             <View style={styles.linkRow}>
                                                                 {Array.isArray(item.linkedBlogs) && item.linkedBlogs.length ? (
                                                                     <View style={styles.linkChip}>
-                                                                        <Text style={styles.linkChipText}>{item.linkedBlogs.length} blogs</Text>
+                                                                    <Text style={styles.linkChipText}>{item.linkedBlogs.length} {t('blogs')}</Text>
                                                                     </View>
                                                                 ) : null}
                                                                 {Array.isArray(item.linkedCompetitions) && item.linkedCompetitions.length ? (
                                                                     <View style={styles.linkChip}>
-                                                                        <Text style={styles.linkChipText}>{item.linkedCompetitions.length} competitions</Text>
+                                                                    <Text style={styles.linkChipText}>{item.linkedCompetitions.length} {t('competitions')}</Text>
                                                                     </View>
                                                                 ) : null}
                                                             </View>
@@ -365,12 +368,12 @@ const ProfileTimeline = ({
                                                     <View style={styles.linkRow}>
                                                         {Array.isArray(item.linkedBlogs) && item.linkedBlogs.length ? (
                                                             <View style={styles.linkChip}>
-                                                                <Text style={styles.linkChipText}>{item.linkedBlogs.length} blogs</Text>
+                                                                <Text style={styles.linkChipText}>{item.linkedBlogs.length} {t('blogs')}</Text>
                                                             </View>
                                                         ) : null}
                                                         {Array.isArray(item.linkedCompetitions) && item.linkedCompetitions.length ? (
                                                             <View style={styles.linkChip}>
-                                                                <Text style={styles.linkChipText}>{item.linkedCompetitions.length} competitions</Text>
+                                                                <Text style={styles.linkChipText}>{item.linkedCompetitions.length} {t('competitions')}</Text>
                                                             </View>
                                                         ) : null}
                                                     </View>

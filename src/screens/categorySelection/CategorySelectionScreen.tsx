@@ -7,6 +7,7 @@ import SizeBox from '../../constants/SizeBox';
 import CustomButton from '../../components/customButton/CustomButton';
 import { useTheme } from '../../context/ThemeContext';
 import { useAuth } from '../../context/AuthContext';
+import { useTranslation } from 'react-i18next'
 
 interface CategoryOption {
     id: string;
@@ -18,6 +19,7 @@ interface CategoryOption {
 }
 
 const CategorySelectionScreen = ({ navigation }: any) => {
+    const { t } = useTranslation();
     const { colors } = useTheme();
     const Styles = createStyles(colors);
     const insets = useSafeAreaInsets();
@@ -58,7 +60,7 @@ const CategorySelectionScreen = ({ navigation }: any) => {
             await updateUserProfile({ category: selectedCategory });
             navigation.navigate('SelectEventScreen', { selectedCategory });
         } catch (err: any) {
-            Alert.alert('Error', 'Failed to save category. Please try again.');
+            Alert.alert(t('Error'), t('Failed to save category. Please try again.'));
         } finally {
             setIsLoading(false);
         }
@@ -78,7 +80,7 @@ const CategorySelectionScreen = ({ navigation }: any) => {
                 <SizeBox height={60} />
 
                 <View style={Styles.headerContainer}>
-                    <Text style={Styles.headingText}>What are you here for?</Text>
+                    <Text style={Styles.headingText}>{t('What are you here for?')}</Text>
                     <Text style={Styles.subHeadingText}>
                         Please choose your Category{'\n'}to continue.
                     </Text>
@@ -136,12 +138,12 @@ const CategorySelectionScreen = ({ navigation }: any) => {
                     activeOpacity={0.7}
                     onPress={handleGuestLogin}
                 >
-                    <Text style={Styles.guestButtonText}>Login as a guest</Text>
+                    <Text style={Styles.guestButtonText}>{t('Login as a guest')}</Text>
                 </TouchableOpacity>
 {isLoading ? (
                     <ActivityIndicator size="large" color={colors.primaryColor} />
                 ) : (
-                    <CustomButton title="Continue" onPress={handleContinue} />
+                    <CustomButton title={t('Continue')} onPress={handleContinue} />
                 )}
             </View>
         </View>

@@ -5,8 +5,10 @@ import SizeBox from '../../../constants/SizeBox'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useTheme } from '../../../context/ThemeContext'
 import { ArrowLeft2, Unlock } from 'iconsax-react-nativejs'
+import { useTranslation } from 'react-i18next'
 
 const ChangePassword = ({ navigation }: any) => {
+    const { t } = useTranslation();
     const insets = useSafeAreaInsets();
     const { colors } = useTheme();
     const Styles = createStyles(colors);
@@ -23,23 +25,23 @@ const ChangePassword = ({ navigation }: any) => {
                 <TouchableOpacity style={Styles.headerButton} onPress={() => navigation.goBack()}>
                     <ArrowLeft2 size={24} color={colors.primaryColor} variant="Linear" />
                 </TouchableOpacity>
-                <Text style={Styles.headerTitle}>Change Password</Text>
+                <Text style={Styles.headerTitle}>{t('Change Password')}</Text>
                 <View style={Styles.headerSpacer} />
             </View>
 
             <ScrollView style={Styles.container} showsVerticalScrollIndicator={false}>
                 <SizeBox height={24} />
 
-                <Text style={Styles.changePasswordTitle}>Change Password</Text>
+                <Text style={Styles.changePasswordTitle}>{t('Change Password')}</Text>
                 <SizeBox height={16} />
 
                 <View style={Styles.currentValueCard}>
                     <View>
-                        <Text style={Styles.currentValueLabel}>Current password</Text>
-                        <Text style={Styles.currentValueText}>••••••••</Text>
+                        <Text style={Styles.currentValueLabel}>{t('Current password')}</Text>
+                        <Text style={Styles.currentValueText}>{t('••••••••')}</Text>
                     </View>
                     <TouchableOpacity style={Styles.editActionButton} onPress={() => setIsEditing(true)}>
-                        <Text style={Styles.editActionText}>Edit</Text>
+                        <Text style={Styles.editActionText}>{t('Edit')}</Text>
                     </TouchableOpacity>
                 </View>
 
@@ -47,14 +49,14 @@ const ChangePassword = ({ navigation }: any) => {
                     <>
                         <SizeBox height={24} />
                         <View style={Styles.addCardInputGroup}>
-                            <Text style={Styles.addCardLabel}>Current password</Text>
+                            <Text style={Styles.addCardLabel}>{t('Current password')}</Text>
                             <SizeBox height={8} />
                             <View style={Styles.addCardInputContainer}>
                                 <Unlock size={16} color={colors.primaryColor} variant="Linear" />
                                 <SizeBox width={10} />
                                 <TextInput
                                     style={Styles.addCardInput}
-                                    placeholder="Enter current password"
+                                    placeholder={t('Enter current password')}
                                     placeholderTextColor={colors.grayColor}
                                     value={currentPassword}
                                     onChangeText={setCurrentPassword}
@@ -66,14 +68,14 @@ const ChangePassword = ({ navigation }: any) => {
                         <SizeBox height={20} />
 
                         <View style={Styles.addCardInputGroup}>
-                            <Text style={Styles.addCardLabel}>New password</Text>
+                            <Text style={Styles.addCardLabel}>{t('New password')}</Text>
                             <SizeBox height={8} />
                             <View style={Styles.addCardInputContainer}>
                                 <Unlock size={16} color={colors.primaryColor} variant="Linear" />
                                 <SizeBox width={10} />
                                 <TextInput
                                     style={Styles.addCardInput}
-                                    placeholder="Enter new password"
+                                    placeholder={t('Enter new password')}
                                     placeholderTextColor={colors.grayColor}
                                     value={newPassword}
                                     onChangeText={setNewPassword}
@@ -84,7 +86,7 @@ const ChangePassword = ({ navigation }: any) => {
 
                         <View style={Styles.editActionsRow}>
                             <TouchableOpacity style={Styles.cancelButton} onPress={() => setIsEditing(false)}>
-                                <Text style={Styles.cancelButtonText}>Cancel</Text>
+                                <Text style={Styles.cancelButtonText}>{t('Cancel')}</Text>
                             </TouchableOpacity>
                             <TouchableOpacity
                                 style={Styles.saveButton}
@@ -94,7 +96,7 @@ const ChangePassword = ({ navigation }: any) => {
                                     navigation.goBack();
                                 }}
                             >
-                                <Text style={Styles.saveButtonText}>Save</Text>
+                                <Text style={Styles.saveButtonText}>{t('Save')}</Text>
                             </TouchableOpacity>
                         </View>
                     </>

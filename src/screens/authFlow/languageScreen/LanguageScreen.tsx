@@ -5,17 +5,19 @@ import CustomButton from '../../../components/customButton/CustomButton'
 import { createStyles } from './LanguageScreenStyles'
 import LanguageContainer from '../components/LanguageContainer'
 import { useTheme } from '../../../context/ThemeContext'
+import { useTranslation } from 'react-i18next'
 
 const LanguageScreen = ({ navigation }: any) => {
+    const { t } = useTranslation();
     const { colors } = useTheme();
     const Styles = createStyles(colors);
     const [selectedLng, setSelectedLng] = useState('en');
     return (
         <View style={Styles.mainContainer}>
             <View style={Styles.contentContainer}>
-                <Text style={Styles.headingText}>Select Your Language</Text>
+                <Text style={Styles.headingText}>{t('Select Your Language')}</Text>
                 <SizeBox height={8} />
-                <Text style={Styles.subHeadingText}>Please choose your preferred language to continue.</Text>
+                <Text style={Styles.subHeadingText}>{t('Please choose your preferred language to continue.')}</Text>
                 <SizeBox height={40} />
 
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>

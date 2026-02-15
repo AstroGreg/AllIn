@@ -10,8 +10,10 @@ import CustomTextInput from '../../../components/customTextInput/CustomTextInput
 import { useTheme } from '../../../context/ThemeContext';
 import { useAuth } from '../../../context/AuthContext';
 import { Buildings } from 'iconsax-react-nativejs';
+import { useTranslation } from 'react-i18next'
 
 const CompleteAthleteDetailsScreen = ({ navigation }: any) => {
+    const { t } = useTranslation();
     const { colors } = useTheme();
     const Styles = createStyles(colors);
     const insets = useSafeAreaInsets();
@@ -39,7 +41,7 @@ const CompleteAthleteDetailsScreen = ({ navigation }: any) => {
             });
             navigation.navigate('DocumentUploadScreen');
         } catch (err: any) {
-            Alert.alert('Error', 'Failed to save details. Please try again.');
+            Alert.alert(t('Error'), t('Failed to save details. Please try again.'));
         } finally {
             setIsLoading(false);
         }
@@ -74,16 +76,16 @@ const CompleteAthleteDetailsScreen = ({ navigation }: any) => {
 
                     <View style={Styles.formContainer}>
                         <CustomTextInput
-                            label="Chest Number"
-                            placeholder="Enter Chest Number"
+                            label={t('Chest Number')}
+                            placeholder={t('Enter Chest Number')}
                             icon={<Icons.User height={16} width={16} />}
                             value={chestNumber}
                             onChangeText={setChestNumber}
                         />
 
                         <CustomTextInput
-                            label="Website"
-                            placeholder="Enter website link"
+                            label={t('Website')}
+                            placeholder={t('Enter website link')}
                             icon={<Icons.WebsiteBlue height={16} width={16} />}
                             value={website}
                             onChangeText={setWebsite}
@@ -91,8 +93,8 @@ const CompleteAthleteDetailsScreen = ({ navigation }: any) => {
                         />
 
                         <CustomTextInput
-                            label="Running Club"
-                            placeholder="Choose Running Club"
+                            label={t('Running Club')}
+                            placeholder={t('Choose Running Club')}
                             icon={<Buildings size={16} color={colors.primaryColor} />}
                             value={runningClub}
                             onChangeText={setRunningClub}
@@ -107,7 +109,7 @@ const CompleteAthleteDetailsScreen = ({ navigation }: any) => {
                         activeOpacity={0.7}
                         onPress={handleSkip}
                     >
-                        <Text style={Styles.skipButtonText}>Skip</Text>
+                        <Text style={Styles.skipButtonText}>{t('Skip')}</Text>
                         <Icons.RightBtnIconGrey height={18} width={18} />
                     </TouchableOpacity>
 
@@ -121,7 +123,7 @@ const CompleteAthleteDetailsScreen = ({ navigation }: any) => {
                             <ActivityIndicator size="small" color="#fff" />
                         ) : (
                             <>
-                                <Text style={Styles.finishButtonText}>Finish</Text>
+                                <Text style={Styles.finishButtonText}>{t('Finish')}</Text>
                                 <Icons.RightBtnIcon height={18} width={18} />
                             </>
                         )}

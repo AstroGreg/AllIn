@@ -4,6 +4,7 @@ import { createStyles } from '../AddTalentStyles'
 import Icons from '../../../../constants/Icons';
 import SizeBox from '../../../../constants/SizeBox';
 import { useTheme } from '../../../../context/ThemeContext';
+import { useTranslation } from 'react-i18next'
 
 interface props {
     title: string;
@@ -30,6 +31,7 @@ const PhotographyDetails = ({
 }: props) => {
     const { colors } = useTheme();
     const Styles = createStyles(colors);
+    const { t } = useTranslation();
     return (
         <TouchableOpacity
             disabled={disabled}
@@ -38,11 +40,11 @@ const PhotographyDetails = ({
             style={[Styles.photographyDetailsContainer, isSelected && { borderColor: colors.primaryColor }]}
         >
             <View style={[Styles.row, { justifyContent: 'space-between', }]}>
-                <Text style={Styles.tabText}>Name</Text>
+                <Text style={Styles.tabText}>{t('Name')}</Text>
                 <Text style={Styles.titleText} numberOfLines={1}>{title}</Text>
             </View>
             <View style={[Styles.row, { justifyContent: 'space-between', }]}>
-                <Text style={Styles.tabText}>wesite</Text>
+                <Text style={Styles.tabText}>{t('wesite')}</Text>
                 <Text style={Styles.titleText} numberOfLines={1}>{wesite}</Text>
             </View>
 

@@ -350,12 +350,12 @@ const GroupProfileScreen = ({ navigation }: any) => {
                     {/* Stats Row */}
                     <View style={styles.statsRow}>
                         <View style={styles.statItem}>
-                            <Text style={styles.statValue}>1.2K</Text>
+                            <Text style={styles.statValue}>{t('1.2K')}</Text>
                             <Text style={styles.statLabel}>{t('Posts')}</Text>
                         </View>
                         <View style={styles.statDivider} />
                         <View style={styles.statItem}>
-                            <Text style={styles.statValue}>45.8K</Text>
+                            <Text style={styles.statValue}>{t('45.8K')}</Text>
                             <Text style={styles.statLabel}>{t('Followers')}</Text>
                         </View>
                     </View>

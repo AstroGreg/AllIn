@@ -10,8 +10,10 @@ import Icons from '../../../constants/Icons';
 import Images from '../../../constants/Images';
 import { useTheme } from '../../../context/ThemeContext';
 import { useAuth } from '../../../context/AuthContext';
+import { useTranslation } from 'react-i18next'
 
 const CreateProfileScreen = ({ navigation }: any) => {
+    const { t } = useTranslation();
     const { colors } = useTheme();
     const Styles = createStyles(colors);
     const insets = useSafeAreaInsets();
@@ -26,7 +28,7 @@ const CreateProfileScreen = ({ navigation }: any) => {
 
     const handleContinue = async () => {
         if (!username || !firstName || !lastName) {
-            Alert.alert('Error', 'Please fill in all required fields');
+            Alert.alert(t('Error'), t('Please fill in all required fields'));
             return;
         }
 
@@ -41,7 +43,7 @@ const CreateProfileScreen = ({ navigation }: any) => {
             });
             navigation.navigate('CategorySelectionScreen');
         } catch (err: any) {
-            Alert.alert('Error', 'Failed to save profile. Please try again.');
+            Alert.alert(t('Error'), t('Failed to save profile. Please try again.'));
         } finally {
             setIsLoading(false);
         }
@@ -64,7 +66,7 @@ const CreateProfileScreen = ({ navigation }: any) => {
                 <SizeBox height={30} />
 
                 <View style={Styles.contentContainer}>
-                    <Text style={Styles.headingText}>Create Your Profile</Text>
+                    <Text style={Styles.headingText}>{t('Create Your Profile')}</Text>
                     <SizeBox height={8} />
                     <Text style={Styles.subHeadingText}>
                         It only takes a minute to get started—join us now!
@@ -73,8 +75,8 @@ const CreateProfileScreen = ({ navigation }: any) => {
                     <SizeBox height={24} />
 
                     <CustomTextInput
-                        label="Username"
-                        placeholder="Enter Username"
+                        label={t('Username')}
+                        placeholder={t('Enter Username')}
                         icon={<Icons.User height={16} width={16} />}
                         value={username}
                         onChangeText={setUsername}
@@ -84,8 +86,8 @@ const CreateProfileScreen = ({ navigation }: any) => {
                     <SizeBox height={24} />
 
                     <CustomTextInput
-                        label="First Name"
-                        placeholder="Enter First Name"
+                        label={t('First Name')}
+                        placeholder={t('Enter First Name')}
                         icon={<Icons.User height={16} width={16} />}
                         value={firstName}
                         onChangeText={setFirstName}
@@ -94,8 +96,8 @@ const CreateProfileScreen = ({ navigation }: any) => {
                     <SizeBox height={24} />
 
                     <CustomTextInput
-                        label="Last Name"
-                        placeholder="Enter Last Name"
+                        label={t('Last Name')}
+                        placeholder={t('Enter Last Name')}
                         icon={<Icons.User height={16} width={16} />}
                         value={lastName}
                         onChangeText={setLastName}
@@ -104,8 +106,8 @@ const CreateProfileScreen = ({ navigation }: any) => {
                     <SizeBox height={24} />
 
                     <CustomTextInput
-                        label="Your Birth Date"
-                        placeholder="dd/mm/year"
+                        label={t('Your Birth Date')}
+                        placeholder={t('dd/mm/year')}
                         icon={<Icons.DOB height={16} width={16} />}
                         value={birthDate}
                         onChangeText={setBirthDate}
@@ -114,8 +116,8 @@ const CreateProfileScreen = ({ navigation }: any) => {
                     <SizeBox height={24} />
 
                     <CustomTextInput
-                        label="Location"
-                        placeholder="Enter Your Location"
+                        label={t('Location')}
+                        placeholder={t('Enter Your Location')}
                         icon={<Icons.LocationSetting height={16} width={16} />}
                         value={location}
                         onChangeText={setLocation}
@@ -126,7 +128,7 @@ const CreateProfileScreen = ({ navigation }: any) => {
                     {isLoading ? (
                         <ActivityIndicator size="large" color={colors.primaryColor} />
                     ) : (
-                        <CustomButton title="Continue" onPress={handleContinue} />
+                        <CustomButton title={t('Continue')} onPress={handleContinue} />
                     )}
                 </View>
 

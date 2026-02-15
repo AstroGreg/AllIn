@@ -7,11 +7,26 @@ import SizeBox from '../../constants/SizeBox'
 import { useTheme } from '../../context/ThemeContext'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import FastImage from 'react-native-fast-image'
+import { useTranslation } from 'react-i18next';
+import Video from 'react-native-video';
+
+function normalizeLocalUri(uri?: string | null) {
+    if (!uri) return uri;
+    if (!String(uri).startsWith('file://')) return uri;
+    let path = String(uri).slice('file://'.length);
+    const q = path.indexOf('?');
+    if (q !== -1) path = path.slice(0, q);
+    try {
+        path = decodeURI(path);
+    } catch {}
+    return `file://${path}`;
+}
 
 const WatermarkScreen = ({ navigation, route }: any) => {
     const insets = useSafeAreaInsets();
     const { colors } = useTheme();
     const Styles = createStyles(colors);
+    const { t } = useTranslation();
     const competition = route?.params?.competition;
     const account = route?.params?.account;
     const anonymous = route?.params?.anonymous;
@@ -38,7 +53,7 @@ const WatermarkScreen = ({ navigation, route }: any) => {
                 }
                 const allAssets = Object.values(parsed).flatMap((list: any) => (Array.isArray(list) ? list : []));
                 const first = allAssets.find((asset: any) => asset?.uri) || null;
-                if (mounted) setPreviewUri(first?.uri ?? null);
+                if (mounted) setPreviewUri(normalizeLocalUri(first?.uri ?? null) as any);
             } catch {
                 if (mounted) setPreviewUri(null);
             }
@@ -50,12 +65,15 @@ const WatermarkScreen = ({ navigation, route }: any) => {
     }, [competitionId]);
 
     const handleSave = () => {
-        navigation.navigate('CongratulationsScreen', {
+        const sessionId = `u_${Date.now()}_${Math.random().toString(16).slice(2)}`;
+        navigation.navigate('UploadProgressScreen', {
             competition,
             account,
             anonymous,
             competitionType,
             watermarkText: useNoWatermark ? '' : watermarkText,
+            sessionId,
+            autoStart: true,
         });
     };
 
@@ -68,7 +86,7 @@ const WatermarkScreen = ({ navigation, route }: any) => {
                 <TouchableOpacity style={Styles.headerButton} onPress={() => navigation.goBack()}>
                     <ArrowLeft2 size={24} color={colors.primaryColor} variant="Linear" />
                 </TouchableOpacity>
-                <Text style={Styles.headerTitle}>Watermark</Text>
+                <Text style={Styles.headerTitle}>{t('Watermark')}</Text>
                 {anonymous ? (
                     <View style={Styles.headerGhost}>
                         <Ghost size={22} color={colors.primaryColor} variant="Linear" />
@@ -80,15 +98,15 @@ const WatermarkScreen = ({ navigation, route }: any) => {
 
             <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={Styles.scrollContent}>
                 <View style={Styles.sectionHeader}>
-                    <Text style={Styles.sectionTitle}>Text watermark</Text>
-                    <Text style={Styles.sectionSubtitle}>This will appear on every uploaded photo/video.</Text>
+                    <Text style={Styles.sectionTitle}>{t('Text watermark')}</Text>
+                    <Text style={Styles.sectionSubtitle}>{t('This will appear on every uploaded photo/video.')}</Text>
                 </View>
 
                 <SizeBox height={12} />
 
                 <TextInput
                     style={Styles.textInput}
-                    placeholder="Type your watermark"
+                    placeholder={t('Type your watermark')}
                     placeholderTextColor="#9B9F9F"
                     value={watermarkText}
                     onChangeText={setWatermarkText}
@@ -102,22 +120,37 @@ const WatermarkScreen = ({ navigation, route }: any) => {
                     onPress={() => setUseNoWatermark((prev) => !prev)}
                 >
                     <View style={[Styles.noWatermarkCheck, useNoWatermark && Styles.noWatermarkCheckActive]}>
-                        {useNoWatermark && <Text style={Styles.noWatermarkCheckMark}>✓</Text>}
+                        {useNoWatermark && <Text style={Styles.noWatermarkCheckMark}>{t('✓')}</Text>}
                     </View>
-                    <Text style={Styles.noWatermarkText}>Do not use a watermark</Text>
+                    <Text style={Styles.noWatermarkText}>{t('Do not use a watermark')}</Text>
                 </TouchableOpacity>
 
                 <SizeBox height={20} />
 
                 <View style={Styles.previewCard}>
-                    <Text style={Styles.previewLabel}>Preview</Text>
+                    <Text style={Styles.previewLabel}>{t('Preview')}</Text>
                     <View style={Styles.previewBox}>
                         {previewUri ? (
-                            <FastImage source={{ uri: previewUri }} style={Styles.previewImage} resizeMode="cover" />
+                            String(previewUri).toLowerCase().includes('.mp4') || String(previewUri).toLowerCase().includes('video')
+                                ? (
+                                    <Video
+                                        source={{ uri: normalizeLocalUri(previewUri) as any }}
+                                        style={Styles.previewImage}
+                                        resizeMode="cover"
+                                        paused
+                                        muted
+                                        repeat={false}
+                                        controls={false}
+                                        onError={() => {}}
+                                    />
+                                )
+                                : (
+                                    <FastImage source={{ uri: normalizeLocalUri(previewUri) as any }} style={Styles.previewImage} resizeMode="cover" />
+                                )
                         ) : null}
                         {!useNoWatermark && (
                             <Text style={Styles.previewText}>
-                                {watermarkText ? watermarkText : 'Your watermark'}
+                                {watermarkText ? watermarkText : t('Your watermark')}
                             </Text>
                         )}
                     </View>
@@ -126,7 +159,7 @@ const WatermarkScreen = ({ navigation, route }: any) => {
                 <SizeBox height={30} />
 
                 <TouchableOpacity style={Styles.previewButton} onPress={handleSave}>
-                    <Text style={Styles.previewButtonText}>Set watermark</Text>
+                    <Text style={Styles.previewButtonText}>{t('Start upload')}</Text>
                     <ArrowRight size={18} color={colors.pureWhite} variant="Linear" />
                 </TouchableOpacity>
 

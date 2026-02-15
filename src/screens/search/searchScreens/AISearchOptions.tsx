@@ -6,6 +6,7 @@ import { useTheme } from '../../../context/ThemeContext';
 import { ArrowLeft2, ArrowRight, SearchNormal1, TickSquare, Category } from 'iconsax-react-nativejs';
 import { createStyles } from './AISearchOptionsStyles';
 import { useRoute } from '@react-navigation/native';
+import { useTranslation } from 'react-i18next'
 
 interface FilterOption {
     id: string;
@@ -14,6 +15,7 @@ interface FilterOption {
 }
 
 const AISearchOptions = ({ navigation }: any) => {
+    const { t } = useTranslation();
     const insets = useSafeAreaInsets();
     const { colors } = useTheme();
     const styles = createStyles(colors);
@@ -136,7 +138,7 @@ const AISearchOptions = ({ navigation }: any) => {
                 <TouchableOpacity style={styles.headerButton} onPress={() => navigation.goBack()}>
                     <ArrowLeft2 size={24} color={colors.primaryColor} variant="Linear" />
                 </TouchableOpacity>
-                <Text style={styles.headerTitle}>AI</Text>
+                <Text style={styles.headerTitle}>{t('AI')}</Text>
                 <View style={{width: 44, height: 44}} />
             </View>
 
@@ -144,11 +146,11 @@ const AISearchOptions = ({ navigation }: any) => {
             <View style={styles.topSection}>
                 {/* Title Section */}
                 <View style={styles.titleSection}>
-                    <Text style={styles.mainTitle}>How Should AI</Text>
-                    <Text style={styles.mainTitle}>Find You?</Text>
+                    <Text style={styles.mainTitle}>{t('How Should AI')}</Text>
+                    <Text style={styles.mainTitle}>{t('Find You?')}</Text>
                     <SizeBox height={12} />
-                    <Text style={styles.subtitle}>Choose what you remember.</Text>
-                    <Text style={styles.subtitle}>AI handles the rest.</Text>
+                    <Text style={styles.subtitle}>{t('Choose what you remember.')}</Text>
+                    <Text style={styles.subtitle}>{t('AI handles the rest.')}</Text>
                 </View>
             </View>
 
@@ -158,7 +160,7 @@ const AISearchOptions = ({ navigation }: any) => {
                 contentContainerStyle={styles.optionsContent}
                 showsVerticalScrollIndicator={false}
             >
-                <Text style={styles.searchByLabel}>Search by</Text>
+                <Text style={styles.searchByLabel}>{t('Search by')}</Text>
                 <View style={styles.optionsRow}>
                     {searchOptions.map(renderSearchOption)}
                 </View>
@@ -179,7 +181,7 @@ const AISearchOptions = ({ navigation }: any) => {
                 >
                     <TouchableOpacity activeOpacity={1} style={styles.modalContainer}>
                         {/* Modal Title */}
-                        <Text style={styles.modalTitle}>Describe Context</Text>
+                        <Text style={styles.modalTitle}>{t('Describe Context')}</Text>
 
                         <SizeBox height={20} />
 
@@ -190,7 +192,7 @@ const AISearchOptions = ({ navigation }: any) => {
                             <TextInput
                                 ref={contextInputRef}
                                 style={styles.contextInput}
-                                placeholder="For example podium"
+                                placeholder={t('For example podium')}
                                 placeholderTextColor={colors.grayColor}
                                 value={contextSearchText}
                                 onChangeText={setContextSearchText}
@@ -204,7 +206,7 @@ const AISearchOptions = ({ navigation }: any) => {
                         {/* Next Button */}
                         <TouchableOpacity onPress={handleContextNext}>
                             <View style={styles.nextButton}>
-                                <Text style={styles.nextButtonText}>Next</Text>
+                                <Text style={styles.nextButtonText}>{t('Next')}</Text>
                                 <ArrowRight size={20} color="#FFFFFF" variant="Linear" />
                             </View>
                         </TouchableOpacity>
@@ -226,7 +228,7 @@ const AISearchOptions = ({ navigation }: any) => {
                 >
                     <TouchableOpacity activeOpacity={1} style={styles.filtersModalContainer}>
                         {/* Modal Title */}
-                        <Text style={styles.modalTitle}>Specify filters</Text>
+                        <Text style={styles.modalTitle}>{t('Specify filters')}</Text>
 
                         <SizeBox height={20} />
 
@@ -238,7 +240,7 @@ const AISearchOptions = ({ navigation }: any) => {
                         {/* Start Button */}
                         <TouchableOpacity onPress={handleStartSearch}>
                             <View style={styles.nextButton}>
-                                <Text style={styles.nextButtonText}>Start</Text>
+                                <Text style={styles.nextButtonText}>{t('Start')}</Text>
                                 <ArrowRight size={20} color="#FFFFFF" variant="Linear" />
                             </View>
                         </TouchableOpacity>

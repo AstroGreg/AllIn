@@ -6,6 +6,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import Icons from '../../constants/Icons'
 import { useTheme } from '../../context/ThemeContext'
 import { useTranslation } from 'react-i18next'
+import { Clock } from 'iconsax-react-nativejs';
 
 const UploadScreen = ({ navigation }: any) => {
     const insets = useSafeAreaInsets();
@@ -26,8 +27,16 @@ const UploadScreen = ({ navigation }: any) => {
             <SizeBox height={insets.top} />
 
             {/* Header */}
-            <View style={Styles.header}>
+            <View style={[Styles.header, { flexDirection: 'row', justifyContent: 'space-between' }]}>
+                <View style={{ width: 36 }} />
                 <Text style={Styles.headerTitle}>{t('Upload')}</Text>
+                <TouchableOpacity
+                    onPress={() => navigation.navigate('UploadActivityScreen')}
+                    style={{ width: 36, alignItems: 'flex-end' }}
+                    activeOpacity={0.8}
+                >
+                    <Clock size={22} color={colors.primaryColor} variant="Linear" />
+                </TouchableOpacity>
             </View>
 
             <ScrollView

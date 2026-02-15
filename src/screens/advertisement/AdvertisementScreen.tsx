@@ -5,8 +5,10 @@ import { ArrowRight } from 'iconsax-react-nativejs';
 import { createStyles } from './AdvertisementScreenStyles';
 import Images from '../../constants/Images';
 import { useTheme } from '../../context/ThemeContext';
+import { useTranslation } from 'react-i18next'
 
 const AdvertisementScreen = ({ navigation }: any) => {
+    const { t } = useTranslation();
     const { colors } = useTheme();
     const Styles = createStyles(colors);
     const insets = useSafeAreaInsets();
@@ -36,7 +38,7 @@ const AdvertisementScreen = ({ navigation }: any) => {
                         activeOpacity={0.7}
                         onPress={handleSkip}
                     >
-                        <Text style={Styles.skipButtonText}>Skip</Text>
+                        <Text style={Styles.skipButtonText}>{t('Skip')}</Text>
                         <ArrowRight size={20} color={colors.grayColor} />
                     </TouchableOpacity>
                 </View>

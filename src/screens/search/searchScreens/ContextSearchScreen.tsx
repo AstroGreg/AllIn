@@ -9,6 +9,7 @@ import { AI_GROUPS, AI_PEOPLE } from '../../../constants/AiFilterOptions';
 import SizeBox from '../../../constants/SizeBox';
 import { createStyles } from './ContextSearchScreenStyles';
 import { useRoute } from '@react-navigation/native';
+import { useTranslation } from 'react-i18next'
 
 const FILTERS = ['Competition', 'Person', 'Group', 'Location'];
 
@@ -19,6 +20,7 @@ interface FilterChip {
 }
 
 const ContextSearchScreen = ({ navigation }: any) => {
+    const { t } = useTranslation();
     const insets = useSafeAreaInsets();
     const { colors } = useTheme();
     const Styles = createStyles(colors);
@@ -147,12 +149,12 @@ const ContextSearchScreen = ({ navigation }: any) => {
                 <TouchableOpacity onPress={handleBack} style={Styles.backButton}>
                     <ArrowLeft size={24} color={colors.mainTextColor} />
                 </TouchableOpacity>
-                <Text style={Styles.headerTitle}>Context Search</Text>
+                <Text style={Styles.headerTitle}>{t('Context Search')}</Text>
                 <View style={{ width: 40 }} />
             </View>
 
             <ScrollView style={Styles.content} showsVerticalScrollIndicator={false}>
-                <Text style={Styles.title}>Describe Context</Text>
+                <Text style={Styles.title}>{t('Describe Context')}</Text>
                 <Text style={Styles.subtitle}>
                     Enter keywords or describe what you're looking for
                 </Text>
@@ -165,7 +167,7 @@ const ContextSearchScreen = ({ navigation }: any) => {
                     <TextInput
                         ref={contextInputRef}
                         style={Styles.input}
-                        placeholder="For example podium, finish line, medal..."
+                        placeholder={t('For example podium, finish line, medal...')}
                         placeholderTextColor={colors.grayColor}
                         value={contextSearchText}
                         onChangeText={setContextSearchText}
@@ -177,7 +179,7 @@ const ContextSearchScreen = ({ navigation }: any) => {
                 <SizeBox height={24} />
 
                 {/* Filter Tabs */}
-                <Text style={Styles.filterSectionTitle}>Add Filters (Optional)</Text>
+                <Text style={Styles.filterSectionTitle}>{t('Add Filters (Optional)')}</Text>
                 <SizeBox height={12} />
 
                 <ScrollView
@@ -236,7 +238,7 @@ const ContextSearchScreen = ({ navigation }: any) => {
                         end={{ x: 1, y: 0 }}
                         style={Styles.button}
                     >
-                        <Text style={Styles.buttonText}>Start Search</Text>
+                        <Text style={Styles.buttonText}>{t('Start Search')}</Text>
                         <ArrowRight size={20} color="#FFFFFF" variant="Linear" />
                     </LinearGradient>
                 </TouchableOpacity>
@@ -282,7 +284,7 @@ const ContextSearchScreen = ({ navigation }: any) => {
                                     : modalFilterType === 'Person' ? filterOptions.people
                                     : modalFilterType === 'Group' ? filterOptions.groups
                                     : []).length === 0 && (
-                                    <Text style={Styles.modalEmpty}>No options available.</Text>
+                                    <Text style={Styles.modalEmpty}>{t('No options available.')}</Text>
                                 )}
                             </ScrollView>
                         </TouchableOpacity>

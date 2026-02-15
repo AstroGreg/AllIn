@@ -7,8 +7,10 @@ import Images from '../../../constants/Images'
 import FastImage from 'react-native-fast-image'
 import CustomButton from '../../../components/customButton/CustomButton'
 import { useTheme } from '../../../context/ThemeContext'
+import { useTranslation } from 'react-i18next'
 
 const AddTalentScreen = ({ navigation }: any) => {
+    const { t } = useTranslation();
     const { colors } = useTheme();
     const Styles = createStyles(colors);
     const insets = useSafeAreaInsets();
@@ -23,34 +25,34 @@ const AddTalentScreen = ({ navigation }: any) => {
                 </View>
                 <SizeBox height={30} />
                 <View style={Styles.contentContainer}>
-                    <Text style={Styles.headingText}>Set Up Your Talent Profile</Text>
+                    <Text style={Styles.headingText}>{t('Set Up Your Talent Profile')}</Text>
                     <SizeBox height={8} />
-                    <Text style={Styles.subHeadingText}>Create your profile to showcase your skills and stand out.</Text>
+                    <Text style={Styles.subHeadingText}>{t('Create your profile to showcase your skills and stand out.')}</Text>
                     <SizeBox height={24} />
-                    <Text style={Styles.containerTitle}>Choose Your Talent</Text>
+                    <Text style={Styles.containerTitle}>{t('Choose Your Talent')}</Text>
                     <SizeBox height={16} />
                     <View style={Styles.talentContainer}>
                         <SizeBox height={16} />
-                        <Text style={Styles.containerTitle}>Talents</Text>
+                        <Text style={Styles.containerTitle}>{t('Talents')}</Text>
                         <SizeBox height={10} />
                         <View style={Styles.talentList}>
-                            <Text style={Styles.talentTypeTitle}>Performer</Text>
+                            <Text style={Styles.talentTypeTitle}>{t('Performer')}</Text>
                             <SizeBox height={16} />
-                            <CustomButton title='Add Talent' onPress={() => navigation.navigate('SelecteTalent')} isAdd={true} isSmall={true} />
+                            <CustomButton title={t('Add Talent')} onPress={() => navigation.navigate('SelecteTalent')} isAdd={true} isSmall={true} />
                         </View>
                         <SizeBox height={24} />
                         <View style={Styles.separator} />
                         <SizeBox height={10} />
                         <View style={Styles.talentList}>
-                            <Text style={Styles.talentTypeTitle}>Creater</Text>
+                            <Text style={Styles.talentTypeTitle}>{t('Creater')}</Text>
                             <SizeBox height={16} />
-                            <CustomButton title='Add Talent' onPress={() => navigation.navigate('TalenetForPhotograph')} isAdd={true} isSmall={true} />
+                            <CustomButton title={t('Add Talent')} onPress={() => navigation.navigate('TalenetForPhotograph')} isAdd={true} isSmall={true} />
                         </View>
                         <SizeBox height={24} />
                         <View style={Styles.separator} />
                     </View>
                     <SizeBox height={83} />
-                    <CustomButton title='Next' onPress={() => navigation.navigate('BottomTabBar')} />
+                    <CustomButton title={t('Next')} onPress={() => navigation.navigate('BottomTabBar')} />
                 </View>
             </ScrollView>
         </View>

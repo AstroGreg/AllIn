@@ -17,8 +17,10 @@ import { useAuth } from '../../context/AuthContext';
 import { useEvents } from '../../context/EventsContext';
 import { getMediaById, getMediaViewAll } from '../../services/apiGateway';
 import { getApiBaseUrl } from '../../constants/RuntimeConfig';
+import { useTranslation } from 'react-i18next'
 
 const HubScreen = ({ navigation }: any) => {
+    const { t } = useTranslation();
     const insets = useSafeAreaInsets();
     const { colors } = useTheme();
     const Styles = createStyles(colors);
@@ -347,7 +349,7 @@ const HubScreen = ({ navigation }: any) => {
                             <View style={Styles.cardHeaderRow}>
                                 <Text style={Styles.cardTitle} numberOfLines={2}>{card.title}</Text>
                                 <View style={Styles.typeBadge}>
-                                    <Text style={Styles.typeBadgeText}>Appearance</Text>
+                                    <Text style={Styles.typeBadgeText}>{t('Appearance')}</Text>
                                 </View>
                             </View>
                             <Text style={Styles.cardSubtitle}>{card.found}</Text>
@@ -387,7 +389,7 @@ const HubScreen = ({ navigation }: any) => {
                                 </Text>
                             </View>
                         </View>
-                            <Text style={Styles.cardSubtitle}>Subscribed competition</Text>
+                            <Text style={Styles.cardSubtitle}>{t('Subscribed competition')}</Text>
                             <View style={Styles.detailValue}>
                                 <VideoSquare size={14} color={colors.grayColor} variant="Linear" />
                                 <Text style={Styles.detailText}>{card.media}</Text>
@@ -416,12 +418,12 @@ const HubScreen = ({ navigation }: any) => {
                         <View style={Styles.cardHeaderRow}>
                             <Text style={Styles.cardTitle} numberOfLines={2}>{card.title}</Text>
                             <View style={Styles.typeBadge}>
-                                <Text style={Styles.typeBadgeText}>Upload</Text>
+                                <Text style={Styles.typeBadgeText}>{t('Upload')}</Text>
                             </View>
                         </View>
                         <Text style={Styles.cardSubtitle}>{card.type} · {card.comments} comments</Text>
                         <TouchableOpacity style={Styles.feedbackButton}>
-                            <Text style={Styles.feedbackButtonText}>Manage upload</Text>
+                            <Text style={Styles.feedbackButtonText}>{t('Manage upload')}</Text>
                             <Icons.RightBtnIcon height={16} width={16} />
                         </TouchableOpacity>
                     </View>
@@ -439,15 +441,15 @@ const HubScreen = ({ navigation }: any) => {
                 <TouchableOpacity style={Styles.backButton} onPress={() => navigation.goBack()}>
                     <ArrowLeft2 size={20} color={colors.mainTextColor} variant="Linear" />
                 </TouchableOpacity>
-                <Text style={Styles.headerTitle}>Hub</Text>
+                <Text style={Styles.headerTitle}>{t('Hub')}</Text>
                 <View style={{ width: 44, height: 44 }} />
             </View>
 
             <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={Styles.scrollContent}>
                 {/* Competitions list */}
                 <View style={Styles.sectionBlock}>
-                    <Text style={Styles.sectionTitle}>Competitions</Text>
-                    <Text style={Styles.sectionSubtitle}>Appearances, subscriptions, and your uploads.</Text>
+                    <Text style={Styles.sectionTitle}>{t('Competitions')}</Text>
+                    <Text style={Styles.sectionSubtitle}>{t('Appearances, subscriptions, and your uploads.')}</Text>
                 </View>
 
                 <View style={Styles.filterRow}>
@@ -481,7 +483,7 @@ const HubScreen = ({ navigation }: any) => {
                     <View style={Styles.searchField}>
                         <Icons.Search width={16} height={16} />
                         <TextInput
-                            placeholder="Search competitions, appearances, uploads"
+                            placeholder={t('Search competitions, appearances, uploads')}
                             placeholderTextColor={colors.grayColor}
                             value={query}
                             onChangeText={setQuery}
@@ -497,7 +499,7 @@ const HubScreen = ({ navigation }: any) => {
                     style={Styles.primaryButton}
                     onPress={() => navigation.navigate('AvailableEventsScreen')}
                 >
-                    <Text style={Styles.primaryButtonText}>Subscribe to a competition</Text>
+                    <Text style={Styles.primaryButtonText}>{t('Subscribe to a competition')}</Text>
                     <Icons.RightBtnIcon height={18} width={18} />
                 </TouchableOpacity>
 
@@ -505,20 +507,20 @@ const HubScreen = ({ navigation }: any) => {
 
                 {canLoadMore && (
                     <TouchableOpacity style={Styles.loadMoreButton} onPress={() => setPage((prev) => prev + 1)}>
-                        <Text style={Styles.loadMoreText}>Load more</Text>
+                        <Text style={Styles.loadMoreText}>{t('Load more')}</Text>
                     </TouchableOpacity>
                 )}
 
                 {/* Downloads */}
                 <View style={Styles.sectionBlock}>
-                    <Text style={Styles.sectionTitle}>Downloads</Text>
-                    <Text style={Styles.sectionSubtitle}>Your saved photos and videos.</Text>
+                    <Text style={Styles.sectionTitle}>{t('Downloads')}</Text>
+                    <Text style={Styles.sectionSubtitle}>{t('Your saved photos and videos.')}</Text>
                 </View>
                 <TouchableOpacity style={Styles.downloadsCard} onPress={() => navigation.navigate('DownloadsDetailsScreen')}>
                     <View style={Styles.downloadsInfo}>
                         <Icons.Downloads height={24} width={24} />
-                        <Text style={Styles.downloadsText}>Total downloads</Text>
-                        <Text style={Styles.downloadsNumber}>346,456</Text>
+                        <Text style={Styles.downloadsText}>{t('Total downloads')}</Text>
+                        <Text style={Styles.downloadsNumber}>{t('346,456')}</Text>
                     </View>
                 </TouchableOpacity>
 
@@ -528,7 +530,7 @@ const HubScreen = ({ navigation }: any) => {
             <Modal visible={infoModalVisible} transparent animationType="fade" onRequestClose={() => setInfoModalVisible(false)}>
                 <View style={Styles.infoBackdrop}>
                     <View style={Styles.infoCard}>
-                        <Text style={Styles.infoTitle}>About this card</Text>
+                        <Text style={Styles.infoTitle}>{t('About this card')}</Text>
                         <Text style={Styles.infoText}>
                             {infoCard?.cardType === 'appearance' && 'This card shows where we found you in photos or videos and how you matched.'}
                             {infoCard?.cardType === 'subscription' && 'This card is a competition you subscribed to. Tap to open it.'}
@@ -536,16 +538,16 @@ const HubScreen = ({ navigation }: any) => {
                         </Text>
                         <TouchableOpacity style={Styles.infoCheckRow} onPress={() => setNeverShowAgain((prev) => !prev)}>
                             <View style={[Styles.infoCheckBox, neverShowAgain && Styles.infoCheckBoxActive]}>
-                                {neverShowAgain && <Text style={Styles.infoCheckMark}>✓</Text>}
+                                {neverShowAgain && <Text style={Styles.infoCheckMark}>{t('✓')}</Text>}
                             </View>
-                            <Text style={Styles.infoCheckText}>Never show again</Text>
+                            <Text style={Styles.infoCheckText}>{t('Never show again')}</Text>
                         </TouchableOpacity>
                         <View style={Styles.infoButtonsRow}>
                             <TouchableOpacity style={Styles.infoCancelButton} onPress={() => setInfoModalVisible(false)}>
-                                <Text style={Styles.infoCancelText}>Close</Text>
+                                <Text style={Styles.infoCancelText}>{t('Close')}</Text>
                             </TouchableOpacity>
                             <TouchableOpacity style={Styles.infoConfirmButton} onPress={handleInfoContinue}>
-                                <Text style={Styles.infoConfirmText}>Continue</Text>
+                                <Text style={Styles.infoConfirmText}>{t('Continue')}</Text>
                             </TouchableOpacity>
                         </View>
                     </View>

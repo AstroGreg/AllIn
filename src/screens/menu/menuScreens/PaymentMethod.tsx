@@ -7,6 +7,7 @@ import Icons from '../../../constants/Icons'
 import FastImage from 'react-native-fast-image'
 import { useTheme } from '../../../context/ThemeContext'
 import { ArrowLeft2, Notification, Bank, MoneyRecive } from 'iconsax-react-nativejs'
+import { useTranslation } from 'react-i18next'
 
 interface BankCard {
     id: number;
@@ -16,6 +17,7 @@ interface BankCard {
 }
 
 const PaymentMethod = ({ navigation, route }: any) => {
+    const { t } = useTranslation();
     const insets = useSafeAreaInsets();
     const { colors } = useTheme();
     const Styles = createStyles(colors);
@@ -51,7 +53,7 @@ const PaymentMethod = ({ navigation, route }: any) => {
                 <TouchableOpacity style={Styles.headerButton} onPress={() => navigation.goBack()}>
                     <ArrowLeft2 size={24} color={colors.primaryColor} variant="Linear" />
                 </TouchableOpacity>
-                <Text style={Styles.headerTitle}>Payment method</Text>
+                <Text style={Styles.headerTitle}>{t('Payment method')}</Text>
                 <TouchableOpacity style={Styles.headerButton} onPress={() => navigation.navigate('NotificationsScreen')}>
                     <Notification size={24} color={colors.primaryColor} variant="Linear" />
                 </TouchableOpacity>
@@ -62,9 +64,9 @@ const PaymentMethod = ({ navigation, route }: any) => {
 
                 {/* Payment Methods Header */}
                 <View style={Styles.paymentHeader}>
-                    <Text style={Styles.sectionTitle}>Payment Methods</Text>
+                    <Text style={Styles.sectionTitle}>{t('Payment Methods')}</Text>
                     <TouchableOpacity activeOpacity={0.7} style={Styles.addCardBtn} onPress={() => navigation.navigate('AddNewCard')}>
-                        <Text style={Styles.addCardText}>Add new card</Text>
+                        <Text style={Styles.addCardText}>{t('Add new card')}</Text>
                         <Icons.AddGrey height={18} width={18} />
                     </TouchableOpacity>
                 </View>
@@ -74,9 +76,9 @@ const PaymentMethod = ({ navigation, route }: any) => {
                 {/* Wallet Balance Card */}
                 <View style={Styles.walletCard}>
                     <View>
-                        <Text style={Styles.walletLabel}>Current Wallet Balance</Text>
+                        <Text style={Styles.walletLabel}>{t('Current Wallet Balance')}</Text>
                         <SizeBox height={8} />
-                        <Text style={Styles.walletBalance}>€72.50</Text>
+                        <Text style={Styles.walletBalance}>{t('€72.50')}</Text>
                     </View>
                     <MoneyRecive size={30} color={colors.primaryColor} variant="Bold" />
                 </View>
@@ -114,14 +116,14 @@ const PaymentMethod = ({ navigation, route }: any) => {
                             <TextInput
                                 ref={customInputRef}
                                 style={Styles.customAmountInput}
-                                placeholder="€"
+                                placeholder={t('€')}
                                 placeholderTextColor={colors.grayColor}
                                 keyboardType="numeric"
                                 value={customAmount}
                                 onChangeText={setCustomAmount}
                             />
                         ) : (
-                            <Text style={Styles.amountText}>Custom</Text>
+                            <Text style={Styles.amountText}>{t('Custom')}</Text>
                         )}
                     </TouchableOpacity>
                 </View>
@@ -132,10 +134,10 @@ const PaymentMethod = ({ navigation, route }: any) => {
                 <View style={Styles.paymentCard}>
                     <View style={Styles.paymentCardLeft}>
                         <FastImage source={Icons.PaycoinqBancontact} style={Styles.payconiqIcon} resizeMode="contain" />
-                        <Text style={Styles.paymentCardText}>Pay with Payconiq Card</Text>
+                        <Text style={Styles.paymentCardText}>{t('Pay with Payconiq Card')}</Text>
                     </View>
                     <TouchableOpacity style={Styles.payNowBtnOutline} onPress={handlePayNow}>
-                        <Text style={Styles.payNowTextGrey}>Pay Now</Text>
+                        <Text style={Styles.payNowTextGrey}>{t('Pay Now')}</Text>
                     </TouchableOpacity>
                 </View>
 

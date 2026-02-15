@@ -10,8 +10,10 @@ import SelcetionContainer from '../components/SelcetionContainer'
 import Icons from '../../../../constants/Icons'
 import PhotographyDetails from '../components/PhotographyDetails'
 import { useTheme } from '../../../../context/ThemeContext'
+import { useTranslation } from 'react-i18next'
 
 const ViewPhotographProfile = ({ navigation }: any) => {
+    const { t } = useTranslation();
     const { colors } = useTheme();
     const Styles = createStyles(colors);
     const insets = useSafeAreaInsets();
@@ -35,23 +37,23 @@ const ViewPhotographProfile = ({ navigation }: any) => {
                 <SizeBox height={30} />
                 <View style={Styles.contentContainer}>
 
-                    <Text style={Styles.headingText}>Set Up Your Talent Profile</Text>
+                    <Text style={Styles.headingText}>{t('Set Up Your Talent Profile')}</Text>
                     <SizeBox height={8} />
-                    <Text style={Styles.subHeadingText}>Create your profile to showcase your skills and stand out.</Text>
+                    <Text style={Styles.subHeadingText}>{t('Create your profile to showcase your skills and stand out.')}</Text>
                     <SizeBox height={24} />
-                    <Text style={Styles.containerTitle}>Photography</Text>
+                    <Text style={Styles.containerTitle}>{t('Photography')}</Text>
                     <SizeBox height={16} />
 
                     <View style={Styles.talentContainer}>
                         <SizeBox height={16} />
                         <PhotographyDetails
-                            title='Signature Photography'
+                            title={t('Signature Photography')}
                             wesite={'www.signaturephotography.com'}
                             disabled={true}
                             isRightAction={false}
                         />
 
-                        <Text style={Styles.containerTitle}>Events</Text>
+                        <Text style={Styles.containerTitle}>{t('Events')}</Text>
                         <SizeBox height={10} />
                         {events.map((event) => (
                             <SelcetionContainer
@@ -66,13 +68,13 @@ const ViewPhotographProfile = ({ navigation }: any) => {
                         ))}
 
                         <SizeBox height={16} />
-                        <CustomButton title='Add Event' onPress={() => navigation.navigate('TalenetForPhotograph')} isAdd={true} isSmall={true} />
+                        <CustomButton title={t('Add Event')} onPress={() => navigation.navigate('TalenetForPhotograph')} isAdd={true} isSmall={true} />
 
                         <SizeBox height={16} />
                     </View>
 
                     <SizeBox height={20} />
-                    <CustomButton title='Next' onPress={() => navigation.navigate('AddTalentScreen')} />
+                    <CustomButton title={t('Next')} onPress={() => navigation.navigate('AddTalentScreen')} />
                     <SizeBox height={86} />
                 </View>
             </ScrollView>

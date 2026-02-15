@@ -5,6 +5,7 @@ import SizeBox from '../../../constants/SizeBox'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useTheme } from '../../../context/ThemeContext'
 import { ArrowLeft2, Notification, TickCircle } from 'iconsax-react-nativejs'
+import { useTranslation } from 'react-i18next'
 
 interface PlanFeature {
     text: string;
@@ -21,6 +22,7 @@ interface Plan {
 }
 
 const Subscription = ({ navigation, route }: any) => {
+    const { t } = useTranslation();
     const insets = useSafeAreaInsets();
     const { colors } = useTheme();
     const Styles = createStyles(colors);
@@ -114,7 +116,7 @@ const Subscription = ({ navigation, route }: any) => {
         <View key={index} style={[Styles.planCard, plan.isPopular && Styles.popularPlanCard]}>
             {plan.isPopular && (
                 <View style={Styles.popularBadge}>
-                    <Text style={Styles.popularBadgeText}>Popular</Text>
+                    <Text style={Styles.popularBadgeText}>{t('Popular')}</Text>
                 </View>
             )}
             <Text style={Styles.planName}>{plan.name}</Text>
@@ -150,7 +152,7 @@ const Subscription = ({ navigation, route }: any) => {
                 <TouchableOpacity style={Styles.headerButton} onPress={() => navigation.goBack()}>
                     <ArrowLeft2 size={24} color={colors.primaryColor} variant="Linear" />
                 </TouchableOpacity>
-                <Text style={Styles.headerTitle}>Subscription</Text>
+                <Text style={Styles.headerTitle}>{t('Subscription')}</Text>
                 <TouchableOpacity style={Styles.headerButton}>
                     <Notification size={24} color={colors.primaryColor} variant="Linear" />
                 </TouchableOpacity>
@@ -159,7 +161,7 @@ const Subscription = ({ navigation, route }: any) => {
             <ScrollView style={Styles.container} showsVerticalScrollIndicator={false}>
                 <SizeBox height={24} />
 
-                <Text style={Styles.subscriptionTitle}>Choose Your Plan</Text>
+                <Text style={Styles.subscriptionTitle}>{t('Choose Your Plan')}</Text>
                 <SizeBox height={20} />
 
                 {/* Tab Toggle */}
@@ -169,7 +171,7 @@ const Subscription = ({ navigation, route }: any) => {
                         onPress={() => setSelectedTab('monthly')}
                     >
                         <Text style={[Styles.subscriptionTabText, selectedTab === 'monthly' && Styles.subscriptionActiveTabText]}>
-                            Monthly
+                            {t('Monthly')}
                         </Text>
                     </TouchableOpacity>
                     <TouchableOpacity
@@ -177,7 +179,7 @@ const Subscription = ({ navigation, route }: any) => {
                         onPress={() => setSelectedTab('yearly')}
                     >
                         <Text style={[Styles.subscriptionTabText, selectedTab === 'yearly' && Styles.subscriptionActiveTabText]}>
-                            Yearly
+                            {t('Yearly')}
                         </Text>
                     </TouchableOpacity>
                 </View>

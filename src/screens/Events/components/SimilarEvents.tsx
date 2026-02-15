@@ -38,7 +38,7 @@ const SimilarEvents = ({
             </View>
             <SizeBox width={14} />
             <View style={{ width: '70%' }}>
-                <Text style={Styles.CompetitionName} numberOfLines={1}>Champions in Motion</Text>
+                <Text style={Styles.CompetitionName} numberOfLines={1}>{t('Champions in Motion')}</Text>
                 <SizeBox height={6} />
                 <View style={Styles.row}>
                     <SubscribedUsers users={subscribedUsers} />
@@ -56,7 +56,7 @@ const SimilarEvents = ({
                     <View style={[Styles.row, { width: '55%' }]}>
                         <Icons.Location height={14} width={14} />
                         <SizeBox width={2} />
-                        <Text style={Styles.actionText} numberOfLines={1}>Berlin, Germany</Text>
+                        <Text style={Styles.actionText} numberOfLines={1}>{t('Berlin, Germany')}</Text>
                     </View>
                 </View>
             </View>

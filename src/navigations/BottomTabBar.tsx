@@ -3,6 +3,7 @@ import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import Icons from "../constants/Icons";
 import { useTheme } from "../context/ThemeContext";
+import { useTranslation } from "react-i18next";
 import HomeScreen from "../screens/home/HomeScreen";
 import HubScreen from "../screens/hub/HubScreen";
 import MyAllEventsScreen from "../screens/myAllEvents/MyAllEventsScreen";
@@ -73,6 +74,8 @@ import SelectCompetitionScreen from "../screens/upload/SelectCompetitionScreen";
 import CompetitionDetailsScreen from "../screens/upload/CompetitionDetailsScreen";
 import WatermarkScreen from "../screens/upload/WatermarkScreen";
 import UploadSummaryScreen from "../screens/upload/UploadSummaryScreen";
+import UploadProgressScreen from "../screens/upload/UploadProgressScreen";
+import UploadActivityScreen from "../screens/upload/UploadActivityScreen";
 import SelectCategory from "../screens/upload/uploadScreens/SelectCategory";
 import CreateCompetition from "../screens/upload/uploadScreens/CreateCompetition";
 import UploadedImagesScreen from "../screens/upload/uploadScreens/UploadedImagesScreen";
@@ -150,6 +153,8 @@ const UploadStackNavigator = () => {
             <UploadStack.Screen name="CompetitionDetailsScreen" component={CompetitionDetailsScreen} />
             <UploadStack.Screen name="WatermarkScreen" component={WatermarkScreen} />
             <UploadStack.Screen name="UploadSummaryScreen" component={UploadSummaryScreen} />
+            <UploadStack.Screen name="UploadProgressScreen" component={UploadProgressScreen} />
+            <UploadStack.Screen name="UploadActivityScreen" component={UploadActivityScreen} />
             <UploadStack.Screen name="SelectCategory" component={SelectCategory} />
             <UploadStack.Screen name="CreateCompetition" component={CreateCompetition} />
             <UploadStack.Screen name="UploadedImagesScreen" component={UploadedImagesScreen} />
@@ -260,6 +265,7 @@ const SearchStackNavigator = () => {
 
 const BottomTabBar = () => {
     const { colors } = useTheme();
+    const { t } = useTranslation();
     const baseTabBarStyle = {
         backgroundColor: colors.backgroundColor,
         elevation: 5,
@@ -317,6 +323,7 @@ const BottomTabBar = () => {
                 component={HomeStackNavigator}
                 options={({ route }) => ({
                     tabBarStyle: getTabBarStyle(route),
+                    tabBarLabel: t("Home"),
                 })}
                 listeners={({ navigation }) => ({
                     tabPress: (e) => {
@@ -332,6 +339,7 @@ const BottomTabBar = () => {
                 component={SearchStackNavigator}
                 options={({ route }) => ({
                     tabBarStyle: getTabBarStyle(route),
+                    tabBarLabel: t("Search"),
                 })}
                 listeners={({ navigation }) => ({
                     tabPress: (e) => {
@@ -350,6 +358,7 @@ const BottomTabBar = () => {
                 component={UploadStackNavigator}
                 options={({ route }) => ({
                     tabBarStyle: getTabBarStyle(route),
+                    tabBarLabel: t("Upload"),
                 })}
                 listeners={({ navigation }) => ({
                     tabPress: (e) => {
@@ -365,6 +374,7 @@ const BottomTabBar = () => {
                 component={ProfileStackNavigator}
                 options={({ route }) => ({
                     tabBarStyle: getTabBarStyle(route),
+                    tabBarLabel: t("Profile"),
                 })}
                 listeners={({ navigation }) => ({
                     tabPress: (e) => {
@@ -380,7 +390,7 @@ const BottomTabBar = () => {
                 component={MenuStackNavigator}
                 options={({ route }) => ({
                     tabBarStyle: getTabBarStyle(route),
-                    tabBarLabel: 'Settings',
+                    tabBarLabel: t("Settings"),
                 })}
                 listeners={({ navigation }) => ({
                     tabPress: (e) => {

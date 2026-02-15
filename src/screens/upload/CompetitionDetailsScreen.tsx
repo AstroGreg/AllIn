@@ -1,12 +1,13 @@
-import { View, Text, TouchableOpacity, ScrollView, Modal, Pressable } from 'react-native'
+import { View, Text, TouchableOpacity, ScrollView, Modal, Pressable, Alert } from 'react-native'
 import React, { useCallback, useMemo, useState } from 'react'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { ArrowLeft2, ArrowRight, Ghost } from 'iconsax-react-nativejs'
+import { ArrowLeft2, ArrowRight, Ghost, Trash } from 'iconsax-react-nativejs'
 import { createStyles } from './CompetitionDetailsStyles'
 import SizeBox from '../../constants/SizeBox'
 import { useTheme } from '../../context/ThemeContext'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import { useFocusEffect } from '@react-navigation/native'
+import { useTranslation } from 'react-i18next'
 
 interface EventCategory {
     id: number;
@@ -14,6 +15,7 @@ interface EventCategory {
 }
 
 const CompetitionDetailsScreen = ({ navigation, route }: any) => {
+    const { t } = useTranslation();
     const insets = useSafeAreaInsets();
     const { colors } = useTheme();
     const Styles = createStyles(colors);
@@ -29,7 +31,6 @@ const CompetitionDetailsScreen = ({ navigation, route }: any) => {
     const [selectedDivision, setSelectedDivision] = useState<string | null>(null);
     const [uploadCounts, setUploadCounts] = useState<Record<string, { photos: number; videos: number }>>({});
     const [canFinish, setCanFinish] = useState(false);
-    const [recentUpload, setRecentUpload] = useState<{ addedPhotos: number; addedVideos: number; eventName?: string; updatedAt?: number } | null>(null);
 
     const trackEvents: EventCategory[] = [
         { id: 1, name: '200 Meters' },
@@ -85,43 +86,31 @@ const CompetitionDetailsScreen = ({ navigation, route }: any) => {
 
     const loadCounts = useCallback(async () => {
         try {
-            const stored = await AsyncStorage.getItem(`@upload_counts_${competitionId}`);
-            if (!stored) {
-                setUploadCounts({});
-                setCanFinish(false);
-                return;
-            }
-            const parsed = JSON.parse(stored);
+            // Use the current upload draft (assets selected) instead of persisting "uploaded counts" forever.
+            const assetsRaw = await AsyncStorage.getItem(`@upload_assets_${competitionId}`);
+            const parsed = assetsRaw ? JSON.parse(assetsRaw) : {};
+            const counts: Record<string, { photos: number; videos: number }> = {};
             if (parsed && typeof parsed === 'object') {
-                setUploadCounts(parsed);
-                const hasUploads = Object.values(parsed).some((entry: any) => {
-                    const photos = Number(entry?.photos || 0);
-                    const videos = Number(entry?.videos || 0);
-                    return photos + videos > 0;
-                });
-                setCanFinish(hasUploads);
-            } else {
-                setUploadCounts({});
-                setCanFinish(false);
+                for (const [name, list] of Object.entries(parsed)) {
+                    const arr = Array.isArray(list) ? list : [];
+                    let photos = 0;
+                    let videos = 0;
+                    for (const asset of arr as any[]) {
+                        const t = String((asset as any)?.type || '').toLowerCase();
+                        if (t.includes('video')) videos += 1;
+                        else photos += 1;
+                    }
+                    if (photos + videos > 0) {
+                        counts[String(name)] = { photos, videos };
+                    }
+                }
             }
+            setUploadCounts(counts);
+            const hasDraft = Object.values(counts).some((c) => Number(c.photos || 0) + Number(c.videos || 0) > 0);
+            setCanFinish(hasDraft);
         } catch {
             setUploadCounts({});
             setCanFinish(false);
-        }
-        try {
-            const sessionRaw = await AsyncStorage.getItem(`@upload_session_${competitionId}`);
-            if (!sessionRaw) {
-                setRecentUpload(null);
-                return;
-            }
-            const parsed = JSON.parse(sessionRaw);
-            if (parsed && typeof parsed === 'object') {
-                setRecentUpload(parsed);
-            } else {
-                setRecentUpload(null);
-            }
-        } catch {
-            setRecentUpload(null);
         }
     }, [competitionId]);
 
@@ -170,7 +159,7 @@ const CompetitionDetailsScreen = ({ navigation, route }: any) => {
         const parts: string[] = [];
         if (videos > 0) parts.push(`${videos} video${videos === 1 ? '' : 's'}`);
         if (photos > 0) parts.push(`${photos} photo${photos === 1 ? '' : 's'}`);
-        const countLabel = total > 0 ? `Uploaded: ${parts.join(' • ')}` : 'No uploads yet';
+        const countLabel = total > 0 ? `Selected: ${parts.join(' • ')}` : 'No files selected';
         const hasUploads = total > 0;
         return (
         <TouchableOpacity
@@ -197,35 +186,46 @@ const CompetitionDetailsScreen = ({ navigation, route }: any) => {
                 <TouchableOpacity style={Styles.headerButton} onPress={() => navigation.goBack()}>
                     <ArrowLeft2 size={24} color={colors.primaryColor} variant="Linear" />
                 </TouchableOpacity>
-                <Text style={Styles.headerTitle}>{competition?.name || 'BK Studenten 2023'}</Text>
-                {anonymous ? (
-                    <View style={Styles.headerGhost}>
+                <Text style={Styles.headerTitle}>{competition?.name || t('BK Studenten 2023')}</Text>
+                <TouchableOpacity
+                    style={Styles.headerButton}
+                    onPress={() => {
+                        Alert.alert(
+                            'Reset upload draft?',
+                            'This will clear selected files for this competition on this device.',
+                            [
+                                { text: 'Cancel', style: 'cancel' },
+                                {
+                                    text: 'Reset',
+                                    style: 'destructive',
+                                    onPress: async () => {
+                                        try {
+                                            await AsyncStorage.multiRemove([
+                                                `@upload_assets_${competitionId}`,
+                                                `@upload_counts_${competitionId}`,
+                                                `@upload_session_${competitionId}`,
+                                                `@upload_activity_${competitionId}`,
+                                            ]);
+                                        } catch {}
+                                        loadCounts();
+                                    },
+                                },
+                            ]
+                        );
+                    }}
+                    activeOpacity={0.8}
+                >
+                    {anonymous ? (
                         <Ghost size={22} color={colors.primaryColor} variant="Linear" />
-                    </View>
-                ) : (
-                    <View style={Styles.headerSpacer} />
-                )}
+                    ) : (
+                        <Trash size={20} color={colors.primaryColor} variant="Linear" />
+                    )}
+                </TouchableOpacity>
             </View>
 
             <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={Styles.scrollContent}>
-                {recentUpload && (recentUpload.addedPhotos || recentUpload.addedVideos) ? (
-                    <View style={Styles.uploadNotice}>
-                        <Text style={Styles.uploadNoticeText}>
-                            Upload saved •{' '}
-                            {recentUpload.addedVideos
-                                ? `${recentUpload.addedVideos} video${recentUpload.addedVideos === 1 ? '' : 's'}`
-                                : ''}
-                            {recentUpload.addedVideos && recentUpload.addedPhotos ? ' and ' : ''}
-                            {recentUpload.addedPhotos
-                                ? `${recentUpload.addedPhotos} photo${recentUpload.addedPhotos === 1 ? '' : 's'}`
-                                : ''}
-                            {recentUpload.eventName ? ` in ${recentUpload.eventName}` : ''}
-                        </Text>
-                    </View>
-                ) : null}
-
                 <View style={Styles.infoCard}>
-                    <Text style={Styles.infoTitle}>{competition?.name || 'Competition'}</Text>
+                    <Text style={Styles.infoTitle}>{competition?.name || t('Competition')}</Text>
                     <Text style={Styles.infoSub}>
                         {competition?.location || 'Location'} • {formatDate(competition?.date)}
                     </Text>
@@ -270,7 +270,7 @@ const CompetitionDetailsScreen = ({ navigation, route }: any) => {
                     onPress={handleFinish}
                     disabled={!canFinish}
                 >
-                    <Text style={Styles.finishButtonText}>Finish</Text>
+                    <Text style={Styles.finishButtonText}>{t('Finish')}</Text>
                 </TouchableOpacity>
 
                 <SizeBox height={insets.bottom > 0 ? insets.bottom + 20 : 40} />
@@ -279,10 +279,10 @@ const CompetitionDetailsScreen = ({ navigation, route }: any) => {
             <Modal visible={categoryModalVisible} transparent animationType="fade" onRequestClose={() => setCategoryModalVisible(false)}>
                 <Pressable style={Styles.modalBackdrop} onPress={() => setCategoryModalVisible(false)}>
                     <Pressable style={Styles.modalCard} onPress={() => {}}>
-                        <Text style={Styles.modalTitle}>Select category</Text>
-                        <Text style={Styles.modalSubtitle}>{selectedEvent?.name ?? 'Event'}</Text>
+                        <Text style={Styles.modalTitle}>{t('Select category')}</Text>
+                        <Text style={Styles.modalSubtitle}>{selectedEvent?.name ?? t('Event')}</Text>
                         <View style={Styles.modalSection}>
-                            <Text style={Styles.modalLabel}>Gender</Text>
+                            <Text style={Styles.modalLabel}>{t('Gender')}</Text>
                             <View style={Styles.choiceRow}>
                                 {['Men', 'Women'].map((gender) => {
                                     const active = selectedGender === gender;
@@ -301,7 +301,7 @@ const CompetitionDetailsScreen = ({ navigation, route }: any) => {
                             </View>
                         </View>
                         <View style={Styles.modalSection}>
-                            <Text style={Styles.modalLabel}>Division</Text>
+                            <Text style={Styles.modalLabel}>{t('Division')}</Text>
                             <View style={Styles.choiceRow}>
                                 {divisions.map((division) => {
                                     const active = selectedDivision === division;
@@ -321,14 +321,14 @@ const CompetitionDetailsScreen = ({ navigation, route }: any) => {
                         </View>
                         <View style={Styles.modalActions}>
                             <TouchableOpacity style={Styles.modalGhost} onPress={() => setCategoryModalVisible(false)}>
-                                <Text style={Styles.modalGhostText}>Cancel</Text>
+                                <Text style={Styles.modalGhostText}>{t('Cancel')}</Text>
                             </TouchableOpacity>
                             <TouchableOpacity
                                 style={[Styles.modalPrimary, (!selectedGender || !selectedDivision) && Styles.modalPrimaryDisabled]}
                                 disabled={!selectedGender || !selectedDivision}
                                 onPress={handleContinue}
                             >
-                                <Text style={Styles.modalPrimaryText}>Continue</Text>
+                                <Text style={Styles.modalPrimaryText}>{t('Continue')}</Text>
                             </TouchableOpacity>
                         </View>
                     </Pressable>

@@ -6,8 +6,10 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../context/ThemeContext';
 import Icons from '../../constants/Icons';
 import { ArrowLeft2, ArrowRight } from 'iconsax-react-nativejs';
+import { useTranslation } from 'react-i18next'
 
 const AISearchScreen = ({ navigation }: any) => {
+    const { t } = useTranslation();
     const insets = useSafeAreaInsets();
     const { colors } = useTheme();
     const Styles = createStyles(colors);
@@ -51,7 +53,7 @@ const AISearchScreen = ({ navigation }: any) => {
                 <TouchableOpacity style={Styles.headerButton} onPress={() => navigation.goBack()}>
                     <ArrowLeft2 size={24} color={colors.primaryColor} variant="Linear" />
                 </TouchableOpacity>
-                <Text style={Styles.headerTitle}>AI Search</Text>
+                <Text style={Styles.headerTitle}>{t('AI Search')}</Text>
                 <View style={{width: 44, height: 44}} />
             </View>
 
@@ -59,11 +61,11 @@ const AISearchScreen = ({ navigation }: any) => {
             <View style={Styles.topSection}>
                 {/* Title Section */}
                 <View style={Styles.titleSection}>
-                    <Text style={Styles.mainTitle}>How Should AI</Text>
-                    <Text style={Styles.mainTitle}>Find You?</Text>
+                    <Text style={Styles.mainTitle}>{t('How Should AI')}</Text>
+                    <Text style={Styles.mainTitle}>{t('Find You?')}</Text>
                     <SizeBox height={12} />
-                    <Text style={Styles.subtitle}>Choose what you remember.</Text>
-                    <Text style={Styles.subtitle}>AI handles the rest.</Text>
+                    <Text style={Styles.subtitle}>{t('Choose what you remember.')}</Text>
+                    <Text style={Styles.subtitle}>{t('AI handles the rest.')}</Text>
                 </View>
             </View>
 
@@ -73,7 +75,7 @@ const AISearchScreen = ({ navigation }: any) => {
                 contentContainerStyle={Styles.optionsContent}
                 showsVerticalScrollIndicator={false}
             >
-                <Text style={Styles.searchByLabel}>Search by</Text>
+                <Text style={Styles.searchByLabel}>{t('Search by')}</Text>
                 <View style={Styles.optionsRow}>
                     {searchOptions.map(renderSearchOption)}
                 </View>
@@ -96,12 +98,12 @@ const AISearchScreen = ({ navigation }: any) => {
                         {/* Modal Header with Icon and Price */}
                         <View style={Styles.modalHeader}>
                             <Icons.AiColorful width={80} height={80} />
-                            <Text style={Styles.modalPrice}>$19/month</Text>
+                            <Text style={Styles.modalPrice}>{t('$19/month')}</Text>
                         </View>
 
                         {/* Modal Title */}
-                        <Text style={Styles.modalTitle}>Find Your Photos</Text>
-                        <Text style={Styles.modalTitle}>& Videos Instantly</Text>
+                        <Text style={Styles.modalTitle}>{t('Find Your Photos')}</Text>
+                        <Text style={Styles.modalTitle}>{t('& Videos Instantly')}</Text>
 
                         {/* Modal Description */}
                         <Text style={Styles.modalDescription}>
@@ -114,7 +116,7 @@ const AISearchScreen = ({ navigation }: any) => {
                             navigation.navigate('PaymentMethod');
                         }}>
                             <View style={Styles.subscribeButton}>
-                                <Text style={Styles.subscribeButtonText}>Subscribe Now</Text>
+                                <Text style={Styles.subscribeButtonText}>{t('Subscribe Now')}</Text>
                                 <ArrowRight size={24} color="#FFFFFF" variant="Linear" />
                             </View>
                         </TouchableOpacity>

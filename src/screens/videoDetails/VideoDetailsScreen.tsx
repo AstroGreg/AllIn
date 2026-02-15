@@ -455,7 +455,7 @@ const VideoDetailsScreen = ({ navigation, route }: any) => {
                                 <Text style={Styles.modalLabel}>{t('Reason')}</Text>
                                 <TextInput
                                     style={Styles.modalInput}
-                                    placeholder="Explain why"
+                                    placeholder={t('Explain why')}
                                     placeholderTextColor="#9B9F9F"
                                     value={wontFixReason}
                                     onChangeText={setWontFixReason}

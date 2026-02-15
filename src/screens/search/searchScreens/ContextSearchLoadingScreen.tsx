@@ -11,8 +11,10 @@ import { createStyles } from './ContextSearchLoadingScreenStyles';
 import {useAuth} from '../../../context/AuthContext';
 import {ApiError, searchObject} from '../../../services/apiGateway';
 import {useEvents} from '../../../context/EventsContext';
+import { useTranslation } from 'react-i18next'
 
 const ContextSearchLoadingScreen = ({ navigation, route }: any) => {
+    const { t } = useTranslation();
     const insets = useSafeAreaInsets();
     const { colors } = useTheme();
     const styles = createStyles(colors);
@@ -93,13 +95,13 @@ const ContextSearchLoadingScreen = ({ navigation, route }: any) => {
 
         const run = async () => {
             if (!apiAccessToken) {
-                setErrorText('Missing API token. Log in or set a Dev API token to use Context Search.');
+                setErrorText(t('Missing API token. Log in or set a Dev API token to use Context Search.'));
                 return;
             }
 
             const q = queryText;
             if (!q) {
-                setErrorText('Missing query. Please go back and enter a search phrase.');
+                setErrorText(t('Missing query. Please go back and enter a search phrase.'));
                 return;
             }
 
@@ -116,7 +118,7 @@ const ContextSearchLoadingScreen = ({ navigation, route }: any) => {
             } catch (e: any) {
                 if (cancelled) return;
                 if (e instanceof ApiError && e.status === 402) {
-                    setErrorText('Insufficient AI tokens to run this search.');
+                    setErrorText(t('Insufficient AI tokens to run this search.'));
                     return;
                 }
                 const msg = e instanceof ApiError ? e.message : String(e?.message ?? e);
@@ -128,7 +130,7 @@ const ContextSearchLoadingScreen = ({ navigation, route }: any) => {
         return () => {
             cancelled = true;
         };
-    }, [apiAccessToken, eventIdFromFilters, navigation, queryText]);
+    }, [apiAccessToken, eventIdFromFilters, navigation, queryText, t]);
 
     const spin = rotateAnim.interpolate({
         inputRange: [0, 1],
@@ -159,12 +161,12 @@ const ContextSearchLoadingScreen = ({ navigation, route }: any) => {
 
                 {/* Status Box */}
                 <View style={styles.statusBox}>
-                    <Text style={styles.scannedText}>{errorText ? 'Error' : 'Searching'}</Text>
+                    <Text style={styles.scannedText}>{errorText ? t('Error') : t('Searching')}</Text>
                     <MaskedView
                         style={styles.maskedView}
                         maskElement={
                             <Text style={styles.matchedText}>
-                                {errorText ? errorText : `Matched ${matchedCount ?? '…'}`}
+                                {errorText ? errorText : `${t('Matched')} ${matchedCount ?? '…'}`}
                             </Text>
                         }>
                         <LinearGradient
@@ -173,7 +175,7 @@ const ContextSearchLoadingScreen = ({ navigation, route }: any) => {
                             end={{ x: 1, y: 0 }}
                             style={styles.gradientText}>
                             <Text style={[styles.matchedText, { opacity: 0 }]}>
-                                {errorText ? errorText : `Matched ${matchedCount ?? '…'}`}
+                                {errorText ? errorText : `${t('Matched')} ${matchedCount ?? '…'}`}
                             </Text>
                         </LinearGradient>
                     </MaskedView>

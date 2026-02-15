@@ -6,8 +6,10 @@ import SizeBox from '../../../constants/SizeBox';
 import {useTheme} from '../../../context/ThemeContext';
 import {useAuth} from '../../../context/AuthContext';
 import KeyboardAvoidingContainer from '../../../components/KeyboardAvoidingContainer';
+import { useTranslation } from 'react-i18next'
 
 const DevApiTokenScreen = ({navigation}: any) => {
+    const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   const {colors} = useTheme();
   const {devApiToken, setDevApiToken, clearDevApiToken} = useAuth();
@@ -41,7 +43,7 @@ const DevApiTokenScreen = ({navigation}: any) => {
           <ArrowLeft2 size={24} color={colors.primaryColor} variant="Linear" />
         </TouchableOpacity>
         <Text style={{color: colors.mainTextColor, fontSize: 18, fontWeight: '600'}}>
-          Dev API Token
+          {t('Dev API Token')}
         </Text>
         <View style={{width: 44}} />
       </View>
@@ -49,7 +51,7 @@ const DevApiTokenScreen = ({navigation}: any) => {
       <KeyboardAvoidingContainer>
         <View style={{padding: 20, flex: 1}}>
         <Text style={{color: colors.mainTextColor, fontWeight: '600', marginBottom: 8}}>
-          Paste Bearer token
+          {t('Paste Bearer token')}
         </Text>
         <TextInput
           style={{
@@ -81,15 +83,15 @@ const DevApiTokenScreen = ({navigation}: any) => {
             justifyContent: 'center',
           }}
           onPress={async () => {
-            const t = tokenInput.trim();
-            if (!t) {
-              Alert.alert('Missing token', 'Paste a token first.');
+            const tokenValue = tokenInput.trim();
+            if (!tokenValue) {
+              Alert.alert(t('Missing token'), t('Paste a token first.'));
               return;
             }
-            await setDevApiToken(t);
-            Alert.alert('Saved', 'Dev API token saved. Face Search will use it immediately.');
+            await setDevApiToken(tokenValue);
+            Alert.alert(t('Saved'), t('Dev API token saved. Face Search will use it immediately.'));
           }}>
-          <Text style={{color: '#fff', fontWeight: '600'}}>Save Token</Text>
+          <Text style={{color: '#fff', fontWeight: '600'}}>{t('Save Token')}</Text>
         </TouchableOpacity>
 
         <SizeBox height={12} />
@@ -105,10 +107,10 @@ const DevApiTokenScreen = ({navigation}: any) => {
             borderColor: colors.lightGrayColor,
           }}
           onPress={() => {
-            Alert.alert('Clear token', 'Remove the dev token override?', [
-              {text: 'Cancel', style: 'cancel'},
+            Alert.alert(t('Clear token'), t('Remove the dev token override?'), [
+              {text: t('Cancel'), style: 'cancel'},
               {
-                text: 'Clear',
+                text: t('Clear'),
                 style: 'destructive',
                 onPress: async () => {
                   await clearDevApiToken();
@@ -117,7 +119,7 @@ const DevApiTokenScreen = ({navigation}: any) => {
               },
             ]);
           }}>
-          <Text style={{color: colors.mainTextColor, fontWeight: '600'}}>Clear Token</Text>
+          <Text style={{color: colors.mainTextColor, fontWeight: '600'}}>{t('Clear Token')}</Text>
         </TouchableOpacity>
 
         <SizeBox height={16} />

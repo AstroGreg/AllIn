@@ -11,6 +11,7 @@ import {createStyles} from './BibSearchScreenStyles';
 import {useEvents} from '../../../context/EventsContext';
 import {useRoute} from '@react-navigation/native';
 import {AI_GROUPS, AI_PEOPLE} from '../../../constants/AiFilterOptions';
+import { useTranslation } from 'react-i18next'
 
 type AiFilterState = {
   competition?: string;
@@ -22,6 +23,7 @@ type AiFilterState = {
 };
 
 const BibSearchScreen = ({navigation}: any) => {
+    const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   const {colors} = useTheme();
   const styles = createStyles(colors);
@@ -175,14 +177,14 @@ const BibSearchScreen = ({navigation}: any) => {
 
   const runSearch = useCallback(async () => {
     if (!apiAccessToken) {
-      Alert.alert('Missing API token', 'Log in or set a Dev API token to use Chest Number Search.');
+      Alert.alert(t('Missing API token'), t('Log in or set a Dev API token to use Chest Number Search.'));
       return;
     }
 
     const safeBib = bib.trim();
     const safeEventId = selectedEventId.trim();
     if (!safeBib || !safeEventId) {
-      Alert.alert('Missing info', 'Please enter a chest number and select a competition.');
+      Alert.alert(t('Missing info'), t('Please enter a chest number and select a competition.'));
       return;
     }
 
@@ -235,21 +237,21 @@ const BibSearchScreen = ({navigation}: any) => {
         <TouchableOpacity style={styles.headerButton} onPress={handleBack}>
           <ArrowLeft2 size={24} color={colors.primaryColor} variant="Linear" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Chest number</Text>
+        <Text style={styles.headerTitle}>{t('Chest number')}</Text>
         <View style={{width: 44, height: 44}} />
       </View>
 
       <KeyboardAvoidingContainer>
         <View style={styles.container}>
           <SizeBox height={18} />
-          <Text style={styles.title}>Find your photos by chest number</Text>
+          <Text style={styles.title}>{t('Find your photos by chest number')}</Text>
           <SizeBox height={6} />
           <Text style={styles.subtitle}>
             Enter the chest number from your bib. Choose the competition you participated in.
           </Text>
 
           <View style={styles.filtersSection}>
-            <Text style={styles.filtersTitle}>Filters</Text>
+            <Text style={styles.filtersTitle}>{t('Filters')}</Text>
             {filterChips.length > 0 ? (
               <View style={styles.appliedChipsRow}>
                 {filterChips.map((chip, index) => (
@@ -265,21 +267,21 @@ const BibSearchScreen = ({navigation}: any) => {
                 ))}
               </View>
             ) : (
-              <Text style={styles.filtersHelper}>No filters applied</Text>
+              <Text style={styles.filtersHelper}>{t('No filters applied')}</Text>
             )}
 
             <View style={styles.filterButtonsRow}>
               <TouchableOpacity style={styles.filterButton} onPress={() => openFilterModal('competition')}>
-                <Text style={styles.filterButtonText}>Competition</Text>
+                <Text style={styles.filterButtonText}>{t('Competition')}</Text>
               </TouchableOpacity>
               <TouchableOpacity style={styles.filterButton} onPress={() => openFilterModal('person')}>
-                <Text style={styles.filterButtonText}>Person</Text>
+                <Text style={styles.filterButtonText}>{t('Person')}</Text>
               </TouchableOpacity>
               <TouchableOpacity style={styles.filterButton} onPress={() => openFilterModal('group')}>
-                <Text style={styles.filterButtonText}>Group</Text>
+                <Text style={styles.filterButtonText}>{t('Group')}</Text>
               </TouchableOpacity>
               <TouchableOpacity style={styles.filterButton} onPress={() => openFilterModal('location')}>
-                <Text style={styles.filterButtonText}>Location</Text>
+                <Text style={styles.filterButtonText}>{t('Location')}</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -295,7 +297,7 @@ const BibSearchScreen = ({navigation}: any) => {
           >
             <TouchableOpacity style={styles.filterModalOverlay} activeOpacity={1} onPress={() => setShowFilterModal(false)}>
               <TouchableOpacity style={styles.filterModalCard} activeOpacity={1}>
-                <Text style={styles.filterModalTitle}>Select {modalFilterKey ?? 'filter'}</Text>
+                <Text style={styles.filterModalTitle}>{t('Select')} {t(modalFilterKey ?? 'filter')}</Text>
                 <ScrollView style={styles.filterModalList} contentContainerStyle={styles.filterModalListContent}>
                   {(modalFilterKey ? filterOptions[modalFilterKey] : []).map((option) => (
                     <TouchableOpacity
@@ -310,7 +312,7 @@ const BibSearchScreen = ({navigation}: any) => {
                     </TouchableOpacity>
                   ))}
                   {(modalFilterKey ? filterOptions[modalFilterKey] : []).length === 0 && (
-                    <Text style={styles.filterModalEmpty}>No options available.</Text>
+                    <Text style={styles.filterModalEmpty}>{t('No options available.')}</Text>
                   )}
                 </ScrollView>
               </TouchableOpacity>
@@ -320,13 +322,13 @@ const BibSearchScreen = ({navigation}: any) => {
 
           <SizeBox height={22} />
 
-          <Text style={styles.inputLabel}>Chest number</Text>
+          <Text style={styles.inputLabel}>{t('Chest number')}</Text>
           <View style={styles.inputContainer}>
             <SearchNormal1 size={20} color={colors.grayColor} variant="Linear" />
             <SizeBox width={10} />
             <TextInput
               style={styles.input}
-              placeholder="e.g. 1234"
+              placeholder={t('e.g. 1234')}
               placeholderTextColor={colors.grayColor}
               value={bib}
               onChangeText={setBib}
@@ -337,17 +339,17 @@ const BibSearchScreen = ({navigation}: any) => {
 
           <SizeBox height={18} />
 
-          <Text style={styles.inputLabel}>Competition</Text>
+          <Text style={styles.inputLabel}>{t('Competition')}</Text>
           <View style={styles.card}>
             {isLoadingEvents ? (
-              <Text style={styles.subtitle}>Loading your competitions…</Text>
+              <Text style={styles.subtitle}>{t('Loading your competitions…')}</Text>
             ) : filteredEvents.length > 0 ? (
               <>
-                <Text style={styles.subtitle}>Tap to select a competition</Text>
+                <Text style={styles.subtitle}>{t('Tap to select a competition')}</Text>
                 <View style={styles.chipRow}>
                   {filteredEvents.slice(0, 12).map((event, idx) => {
                     const isActive = String(event.event_id) === String(selectedEventId);
-                    const displayName = event.event_name || event.event_title || `Competition ${idx + 1}`;
+                    const displayName = event.event_name || event.event_title || `${t('Competition')} ${idx + 1}`;
                     return (
                       <TouchableOpacity
                         key={String(event.event_id)}
@@ -365,8 +367,8 @@ const BibSearchScreen = ({navigation}: any) => {
             ) : (
               <Text style={styles.subtitle}>
                 {events.length === 0
-                  ? 'No subscribed competitions yet. Subscribe to a competition first.'
-                  : 'No competitions match the selected filters.'}
+                  ? t('No subscribed competitions yet. Subscribe to a competition first.')
+                  : t('No competitions match the selected filters.')}
               </Text>
             )}
           </View>
@@ -374,7 +376,7 @@ const BibSearchScreen = ({navigation}: any) => {
           {!!selectedEvent && (
             <>
               <SizeBox height={12} />
-              <Text style={styles.subtitle}>Selected competition: {selectedEvent.event_name || selectedEvent.event_title || 'Competition'}</Text>
+              <Text style={styles.subtitle}>{t('Selected competition')}: {selectedEvent.event_name || selectedEvent.event_title || t('Competition')}</Text>
             </>
           )}
 
@@ -387,7 +389,7 @@ const BibSearchScreen = ({navigation}: any) => {
             style={[styles.primaryButton, !canSearch && styles.primaryButtonDisabled]}
             onPress={runSearch}
             disabled={!canSearch}>
-            <Text style={styles.primaryButtonText}>{isSearching ? 'Searching…' : 'Search'}</Text>
+            <Text style={styles.primaryButtonText}>{isSearching ? t('Searching…') : t('Search')}</Text>
             <ArrowRight size={22} color={colors.pureWhite} variant="Linear" />
           </TouchableOpacity>
 

@@ -5,6 +5,7 @@ import Icons from '../constants/Icons';
 import { useTheme } from '../context/ThemeContext';
 import { ThemeColors } from '../constants/Theme';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useTranslation } from 'react-i18next'
 
 export type AiSearchType = 'bib' | 'context' | 'face' | 'combined';
 
@@ -194,6 +195,7 @@ const createStyles = (colors: ThemeColors, isDark: boolean) =>
   });
 
 const AiSearchModal = ({ visible, onClose, onSelect, title = 'AI Search' }: AiSearchModalProps) => {
+    const { t } = useTranslation();
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
   const styles = createStyles(colors, colors.backgroundColor !== '#FFFFFF');
@@ -257,14 +259,14 @@ const AiSearchModal = ({ visible, onClose, onSelect, title = 'AI Search' }: AiSe
                   <Icons.BackArrow width={20} height={20} />
                 </TouchableOpacity>
                 <View style={styles.headerPill}>
-                  <Text style={styles.headerPillText}>AI SEARCH</Text>
+                  <Text style={styles.headerPillText}>{t('AI SEARCH')}</Text>
                 </View>
               </View>
               <Text style={styles.title}>{title}</Text>
-              <Text style={styles.subtitle}>Pick a mode for AI search</Text>
+              <Text style={styles.subtitle}>{t('Pick a mode for AI search')}</Text>
             </View>
 
-          <Text style={styles.searchLabel}>Search by</Text>
+          <Text style={styles.searchLabel}>{t('Search by')}</Text>
           <View style={styles.optionsList}>
             {options.map((option) => (
               <TouchableOpacity

@@ -8,8 +8,10 @@ import CustomButton from '../../../../components/customButton/CustomButton'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import CustomTextInput from '../../../../components/customTextInput/CustomTextInput'
 import { useTheme } from '../../../../context/ThemeContext'
+import { useTranslation } from 'react-i18next'
 
 const PhotographyName = ({ navigation }: any) => {
+    const { t } = useTranslation();
     const { colors } = useTheme();
     const Styles = createStyles(colors);
     const insets = useSafeAreaInsets();
@@ -25,27 +27,27 @@ const PhotographyName = ({ navigation }: any) => {
                 <SizeBox height={30} />
                 <View style={Styles.contentContainer}>
 
-                    <Text style={Styles.headingText}>Set Up Your Talent Profile</Text>
+                    <Text style={Styles.headingText}>{t('Set Up Your Talent Profile')}</Text>
                     <SizeBox height={8} />
-                    <Text style={Styles.subHeadingText}>Create your profile to showcase your skills and stand out.</Text>
+                    <Text style={Styles.subHeadingText}>{t('Create your profile to showcase your skills and stand out.')}</Text>
 
                     <SizeBox height={24} />
                     <CustomTextInput
-                        label='Photography Name'
-                        placeholder='Enter photography name'
+                        label={t('Photography Name')}
+                        placeholder={t('Enter photography name')}
                         subLabel='Leave empty to keep account name'
                         isIcon={false}
                     />
 
                     <SizeBox height={24} />
                     <CustomTextInput
-                        label='Website'
-                        placeholder='Enter website link'
+                        label={t('Website')}
+                        placeholder={t('Enter website link')}
                         isIcon={false}
                     />
 
                     <SizeBox height={86} />
-                    <CustomButton title='Continue' onPress={() => navigation.navigate('ViewPhotographProfile')} />
+                    <CustomButton title={t('Continue')} onPress={() => navigation.navigate('ViewPhotographProfile')} />
                 </View>
             </ScrollView>
         </View>

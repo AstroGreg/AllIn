@@ -8,8 +8,12 @@ import SizeBox from '../../constants/SizeBox';
 import { useTheme } from '../../context/ThemeContext';
 import { createStyles } from './ProfileTimelineEditStyles';
 import type { TimelineEntry } from '../../components/profileTimeline/ProfileTimeline';
+import { useAuth } from '../../context/AuthContext';
+import { getProfileTimeline, setMyProfileTimeline, type ProfileTimelineEntry } from '../../services/apiGateway';
+import { useTranslation } from 'react-i18next'
 
 const ProfileTimelineEditScreen = ({ navigation, route }: any) => {
+    const { t } = useTranslation();
     const insets = useSafeAreaInsets();
     const { colors } = useTheme();
     const Styles = createStyles(colors);
@@ -30,6 +34,7 @@ const ProfileTimelineEditScreen = ({ navigation, route }: any) => {
     const [linkedBlogs, setLinkedBlogs] = useState<string[]>([]);
     const [linkedCompetitions, setLinkedCompetitions] = useState<string[]>([]);
     const [availableBlogs, setAvailableBlogs] = useState<Array<{ id: string; title: string }>>([]);
+    const { apiAccessToken } = useAuth();
 
     useEffect(() => {
         if (item) {
@@ -71,9 +76,30 @@ const ProfileTimelineEditScreen = ({ navigation, route }: any) => {
         const title = form.title.trim();
         const description = form.description.trim();
         if (!year || !title || !description) return;
+
+        // Prefer server timeline (source of truth). Fallback to local storage if no token.
+        if (apiAccessToken) {
+            const resp = await getProfileTimeline(apiAccessToken, 'me');
+            const current: ProfileTimelineEntry[] = Array.isArray((resp as any)?.items) ? (resp as any).items : [];
+            const nextId = item?.id ? String(item.id) : undefined;
+            const next: ProfileTimelineEntry = {
+                id: nextId || `tl-${Date.now()}`,
+                year: Number(year),
+                title,
+                description,
+                highlight: form.highlight.trim() || null,
+                // We keep the rest minimal for now; advanced local-only fields will be added server-side later.
+            } as any;
+            const updated = mode === 'edit' && item
+                ? current.map((e) => (String(e.id) === String(item.id) ? { ...e, ...next } : e))
+                : [...current, next];
+            await setMyProfileTimeline(apiAccessToken, updated);
+            navigation.goBack();
+            return;
+        }
+
         const stored = await AsyncStorage.getItem(storageKey);
         const list: TimelineEntry[] = stored ? JSON.parse(stored) : [];
-
         if (mode === 'edit' && item) {
             const updated = list.map((entry) =>
                 entry.id === item.id
@@ -92,7 +118,7 @@ const ProfileTimelineEditScreen = ({ navigation, route }: any) => {
             );
             await AsyncStorage.setItem(storageKey, JSON.stringify(updated));
         } else {
-            const next: TimelineEntry = {
+            const nextLocal: TimelineEntry = {
                 id: `tl-${Date.now()}`,
                 year,
                 title,
@@ -103,20 +129,28 @@ const ProfileTimelineEditScreen = ({ navigation, route }: any) => {
                 linkedBlogs,
                 linkedCompetitions,
             };
-            const updated = [...list, next].sort((a, b) => Number(a.year) - Number(b.year));
+            const updated = [...list, nextLocal].sort((a, b) => Number(a.year) - Number(b.year));
             await AsyncStorage.setItem(storageKey, JSON.stringify(updated));
         }
         navigation.goBack();
-    }, [form.description, form.highlight, form.title, form.year, item, linkedBlogs, linkedCompetitions, mode, navigation, photos, storageKey]);
+    }, [apiAccessToken, backgroundImage, form.description, form.highlight, form.title, form.year, item, linkedBlogs, linkedCompetitions, mode, navigation, photos, storageKey]);
 
     const deleteItem = useCallback(async () => {
         if (!item) return;
+        if (apiAccessToken) {
+            const resp = await getProfileTimeline(apiAccessToken, 'me');
+            const current: ProfileTimelineEntry[] = Array.isArray((resp as any)?.items) ? (resp as any).items : [];
+            const updated = current.filter((e) => String(e.id) !== String(item.id));
+            await setMyProfileTimeline(apiAccessToken, updated);
+            navigation.goBack();
+            return;
+        }
         const stored = await AsyncStorage.getItem(storageKey);
         const list: TimelineEntry[] = stored ? JSON.parse(stored) : [];
         const updated = list.filter((entry) => entry.id !== item.id);
         await AsyncStorage.setItem(storageKey, JSON.stringify(updated));
         navigation.goBack();
-    }, [item, navigation, storageKey]);
+    }, [apiAccessToken, item, navigation, storageKey]);
 
     const addPhotos = useCallback(async () => {
         const res = await launchImageLibrary({
@@ -176,7 +210,7 @@ const ProfileTimelineEditScreen = ({ navigation, route }: any) => {
 
             <ScrollView contentContainerStyle={Styles.scrollContent} showsVerticalScrollIndicator={false}>
                 <View style={Styles.fieldBlock}>
-                    <Text style={Styles.fieldLabel}>Year</Text>
+                    <Text style={Styles.fieldLabel}>{t('Year')}</Text>
                     <TextInput
                         style={Styles.fieldInput}
                         placeholder="2026"
@@ -186,20 +220,20 @@ const ProfileTimelineEditScreen = ({ navigation, route }: any) => {
                     />
                 </View>
                 <View style={Styles.fieldBlock}>
-                    <Text style={Styles.fieldLabel}>Title</Text>
+                    <Text style={Styles.fieldLabel}>{t('Title')}</Text>
                     <TextInput
                         style={Styles.fieldInput}
-                        placeholder="Qualified for nationals"
+                        placeholder={t('Qualified for nationals')}
                         placeholderTextColor="#9B9F9F"
                         value={form.title}
                         onChangeText={(text) => setForm((prev) => ({ ...prev, title: text }))}
                     />
                 </View>
                 <View style={Styles.fieldBlock}>
-                    <Text style={Styles.fieldLabel}>Description</Text>
+                    <Text style={Styles.fieldLabel}>{t('Description')}</Text>
                     <TextInput
                         style={[Styles.fieldInput, Styles.fieldTextarea]}
-                        placeholder="Share the highlight and what it meant."
+                        placeholder={t('Share the highlight and what it meant.')}
                         placeholderTextColor="#9B9F9F"
                         value={form.description}
                         onChangeText={(text) => setForm((prev) => ({ ...prev, description: text }))}
@@ -207,10 +241,10 @@ const ProfileTimelineEditScreen = ({ navigation, route }: any) => {
                     />
                 </View>
                 <View style={Styles.fieldBlock}>
-                    <Text style={Styles.fieldLabel}>Highlight (optional)</Text>
+                    <Text style={Styles.fieldLabel}>{t('Highlight (optional)')}</Text>
                     <TextInput
                         style={Styles.fieldInput}
-                        placeholder="PB 1:54.30"
+                        placeholder={t('PB 1:54.30')}
                         placeholderTextColor="#9B9F9F"
                         value={form.highlight}
                         onChangeText={(text) => setForm((prev) => ({ ...prev, highlight: text }))}
@@ -219,18 +253,18 @@ const ProfileTimelineEditScreen = ({ navigation, route }: any) => {
 
                 <View style={Styles.fieldBlock}>
                     <View style={Styles.inlineHeader}>
-                        <Text style={Styles.fieldLabel}>Timeline background</Text>
+                        <Text style={Styles.fieldLabel}>{t('Timeline background')}</Text>
                         <TouchableOpacity style={Styles.inlineAction} onPress={pickBackground}>
-                            <Text style={Styles.inlineActionText}>Select image</Text>
+                            <Text style={Styles.inlineActionText}>{t('Select image')}</Text>
                         </TouchableOpacity>
                     </View>
                     {!backgroundImage ? (
-                        <Text style={Styles.helperText}>Pick one image to show as the timeline card background.</Text>
+                        <Text style={Styles.helperText}>{t('Pick one image to show as the timeline card background.')}</Text>
                     ) : (
                         <View style={Styles.backgroundPreviewRow}>
                             <Image source={{ uri: backgroundImage }} style={Styles.backgroundPreview} />
                             <TouchableOpacity style={Styles.inlineAction} onPress={clearBackground}>
-                                <Text style={Styles.inlineActionText}>Remove</Text>
+                                <Text style={Styles.inlineActionText}>{t('Remove')}</Text>
                             </TouchableOpacity>
                         </View>
                     )}
@@ -238,13 +272,13 @@ const ProfileTimelineEditScreen = ({ navigation, route }: any) => {
 
                 <View style={Styles.fieldBlock}>
                     <View style={Styles.inlineHeader}>
-                        <Text style={Styles.fieldLabel}>Milestone photos</Text>
+                        <Text style={Styles.fieldLabel}>{t('Milestone photos')}</Text>
                         <TouchableOpacity style={Styles.inlineAction} onPress={addPhotos}>
-                            <Text style={Styles.inlineActionText}>Add photos</Text>
+                            <Text style={Styles.inlineActionText}>{t('Add photos')}</Text>
                         </TouchableOpacity>
                     </View>
                     {photos.length === 0 ? (
-                        <Text style={Styles.helperText}>Add up to 6 photos to show this milestone.</Text>
+                        <Text style={Styles.helperText}>{t('Add up to 6 photos to show this milestone.')}</Text>
                     ) : (
                         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={Styles.photoRow}>
                             {photos.map((uri) => (
@@ -257,9 +291,9 @@ const ProfileTimelineEditScreen = ({ navigation, route }: any) => {
                 </View>
 
                 <View style={Styles.fieldBlock}>
-                    <Text style={Styles.fieldLabel}>Link blogs</Text>
+                    <Text style={Styles.fieldLabel}>{t('Link blogs')}</Text>
                     {blogChoices.length === 0 ? (
-                        <Text style={Styles.helperText}>Create a blog to link it here.</Text>
+                        <Text style={Styles.helperText}>{t('Create a blog to link it here.')}</Text>
                     ) : (
                         <View style={Styles.choiceRow}>
                             {blogChoices.map((title) => {
@@ -279,9 +313,9 @@ const ProfileTimelineEditScreen = ({ navigation, route }: any) => {
                 </View>
 
                 <View style={Styles.fieldBlock}>
-                    <Text style={Styles.fieldLabel}>Link competitions</Text>
+                    <Text style={Styles.fieldLabel}>{t('Link competitions')}</Text>
                     {competitionChoices.length === 0 ? (
-                        <Text style={Styles.helperText}>Subscribe to a competition to link it here.</Text>
+                        <Text style={Styles.helperText}>{t('Subscribe to a competition to link it here.')}</Text>
                     ) : (
                         <View style={Styles.choiceRow}>
                             {competitionChoices.map((title) => {
@@ -302,17 +336,17 @@ const ProfileTimelineEditScreen = ({ navigation, route }: any) => {
 
                 <View style={Styles.actionRow}>
                     <TouchableOpacity style={Styles.cancelButton} onPress={() => navigation.goBack()}>
-                        <Text style={Styles.cancelText}>Cancel</Text>
+                        <Text style={Styles.cancelText}>{t('Cancel')}</Text>
                     </TouchableOpacity>
                     <TouchableOpacity style={Styles.saveButton} onPress={saveItem}>
-                        <Text style={Styles.saveText}>Save</Text>
+                        <Text style={Styles.saveText}>{t('Save')}</Text>
                     </TouchableOpacity>
                 </View>
 
                 {mode === 'edit' && item ? (
                     <TouchableOpacity style={Styles.deleteButton} onPress={deleteItem}>
                         <Trash size={16} color="#ED5454" variant="Linear" />
-                        <Text style={Styles.deleteText}>Delete milestone</Text>
+                        <Text style={Styles.deleteText}>{t('Delete milestone')}</Text>
                     </TouchableOpacity>
                 ) : null}
 

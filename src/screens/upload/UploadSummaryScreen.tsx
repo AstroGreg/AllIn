@@ -8,6 +8,20 @@ import SizeBox from '../../constants/SizeBox'
 import { useTheme } from '../../context/ThemeContext'
 import Icons from '../../constants/Icons'
 import AsyncStorage from '@react-native-async-storage/async-storage'
+import Video from 'react-native-video'
+import { useTranslation } from 'react-i18next';
+
+function normalizeLocalUri(uri?: string) {
+    if (!uri) return uri;
+    if (!uri.startsWith('file://')) return uri;
+    let path = uri.slice('file://'.length);
+    const q = path.indexOf('?');
+    if (q !== -1) path = path.slice(0, q);
+    try {
+        path = decodeURI(path);
+    } catch {}
+    return `file://${path}`;
+}
 
 interface UploadItem {
     id: number;
@@ -27,6 +41,7 @@ const UploadSummaryScreen = ({ navigation, route }: any) => {
     const insets = useSafeAreaInsets();
     const { colors } = useTheme();
     const Styles = createStyles(colors);
+    const { t } = useTranslation();
     const competition = route?.params?.competition;
     const account = route?.params?.account;
     const anonymous = route?.params?.anonymous;
@@ -63,8 +78,8 @@ const UploadSummaryScreen = ({ navigation, route }: any) => {
                     const list = Array.isArray(items) ? items : [];
                     const mapped: UploadItem[] = list.map((asset: any, index: number) => ({
                         id: index + 1,
-                        uri: asset?.uri,
-                        thumbnail: asset?.uri ? { uri: asset.uri } : undefined,
+                        uri: normalizeLocalUri(asset?.uri),
+                        thumbnail: asset?.uri ? { uri: normalizeLocalUri(asset.uri) } : undefined,
                         price: '€0,10',
                         resolution: formatResolution(asset),
                         type: asset?.type,
@@ -99,7 +114,18 @@ const UploadSummaryScreen = ({ navigation, route }: any) => {
         return (
         <View key={item.id} style={Styles.uploadItem}>
             <View style={Styles.thumbnailContainer}>
-                {item.thumbnail ? (
+                {isVideo && item.uri ? (
+                    <Video
+                        source={{ uri: item.uri }}
+                        style={Styles.thumbnail}
+                        resizeMode="cover"
+                        paused
+                        muted
+                        repeat={false}
+                        controls={false}
+                        onError={() => {}}
+                    />
+                ) : item.thumbnail ? (
                     <FastImage source={item.thumbnail} style={Styles.thumbnail} resizeMode="cover" />
                 ) : (
                     <View style={Styles.thumbnailPlaceholder} />
@@ -137,7 +163,7 @@ const UploadSummaryScreen = ({ navigation, route }: any) => {
                 <TouchableOpacity style={Styles.headerButton} onPress={() => navigation.goBack()}>
                     <ArrowLeft2 size={24} color={colors.primaryColor} variant="Linear" />
                 </TouchableOpacity>
-                <Text style={Styles.headerTitle}>Upload Summary</Text>
+                <Text style={Styles.headerTitle}>{t('Upload Summary')}</Text>
                 {anonymous ? (
                     <View style={Styles.headerGhost}>
                         <Ghost size={22} color={colors.primaryColor} variant="Linear" />
@@ -150,7 +176,7 @@ const UploadSummaryScreen = ({ navigation, route }: any) => {
             <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={Styles.scrollContent}>
                 {categories.length === 0 && (
                     <View style={Styles.emptyState}>
-                        <Text style={Styles.emptyStateText}>No uploads yet.</Text>
+                        <Text style={Styles.emptyStateText}>{t('No uploads yet.')}</Text>
                     </View>
                 )}
                 {categories.map(renderCategory)}
@@ -159,7 +185,7 @@ const UploadSummaryScreen = ({ navigation, route }: any) => {
 
                 {/* Confirm Button */}
                 <TouchableOpacity style={Styles.confirmButton} onPress={handleConfirm}>
-                    <Text style={Styles.confirmButtonText}>Set watermark</Text>
+                    <Text style={Styles.confirmButtonText}>{t('Set watermark')}</Text>
                     <ArrowRight size={18} color={colors.pureWhite} variant="Linear" />
                 </TouchableOpacity>
 

@@ -5,13 +5,15 @@ import { ArrowLeft2 } from 'iconsax-react-nativejs';
 import SizeBox from '../../constants/SizeBox';
 import { useTheme } from '../../context/ThemeContext';
 import { createStyles } from './ProfileTimelineDetailStyles';
+import { useTranslation } from 'react-i18next'
 
 const ProfileTimelineDetailScreen = ({ navigation, route }: any) => {
+    const { t } = useTranslation();
     const insets = useSafeAreaInsets();
     const { colors } = useTheme();
     const Styles = createStyles(colors);
     const item = route?.params?.item;
-    const ownerName = route?.params?.ownerName || 'Profile';
+    const ownerName = route?.params?.ownerName || t('Profile');
 
     return (
         <View style={Styles.mainContainer}>
@@ -20,7 +22,7 @@ const ProfileTimelineDetailScreen = ({ navigation, route }: any) => {
                 <TouchableOpacity style={Styles.headerButton} onPress={() => navigation.goBack()}>
                     <ArrowLeft2 size={24} color={colors.primaryColor} variant="Linear" />
                 </TouchableOpacity>
-                <Text style={Styles.headerTitle}>Timeline</Text>
+                <Text style={Styles.headerTitle}>{t('Timeline')}</Text>
                 <View style={{ width: 44, height: 44 }} />
             </View>
 
@@ -28,7 +30,7 @@ const ProfileTimelineDetailScreen = ({ navigation, route }: any) => {
                 <Text style={Styles.ownerText}>{ownerName}</Text>
                 <View style={Styles.heroCard}>
                     <Text style={Styles.yearBadge}>{item?.year ?? '—'}</Text>
-                    <Text style={Styles.titleText}>{item?.title ?? 'Timeline highlight'}</Text>
+                    <Text style={Styles.titleText}>{item?.title ?? t('Timeline highlight')}</Text>
                     <Text style={Styles.descriptionText}>{item?.description ?? ''}</Text>
                     {item?.highlight ? (
                         <View style={Styles.highlightChip}>
@@ -46,7 +48,7 @@ const ProfileTimelineDetailScreen = ({ navigation, route }: any) => {
                         <View style={Styles.linkSection}>
                             {Array.isArray(item?.linkedBlogs) && item.linkedBlogs.length ? (
                                 <View style={Styles.linkGroup}>
-                                    <Text style={Styles.linkTitle}>Blogs</Text>
+                                    <Text style={Styles.linkTitle}>{t('Blogs')}</Text>
                                     <View style={Styles.linkRow}>
                                         {item.linkedBlogs.map((label: string) => (
                                             <View key={label} style={Styles.linkChip}>
@@ -58,7 +60,7 @@ const ProfileTimelineDetailScreen = ({ navigation, route }: any) => {
                             ) : null}
                             {Array.isArray(item?.linkedCompetitions) && item.linkedCompetitions.length ? (
                                 <View style={Styles.linkGroup}>
-                                    <Text style={Styles.linkTitle}>Competitions</Text>
+                                    <Text style={Styles.linkTitle}>{t('Competitions')}</Text>
                                     <View style={Styles.linkRow}>
                                         {item.linkedCompetitions.map((label: string) => (
                                             <View key={label} style={Styles.linkChip}>

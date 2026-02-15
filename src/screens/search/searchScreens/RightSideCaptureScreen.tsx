@@ -8,9 +8,11 @@ import FastImage from 'react-native-fast-image'
 import { ArrowLeft2, Camera } from 'iconsax-react-nativejs'
 import { launchCamera } from 'react-native-image-picker'
 import { createStyles } from './RightSideCaptureScreenStyles'
+import { useTranslation } from 'react-i18next'
 
 // Custom camera frame with corner brackets
 const CameraFrame = ({ width, height, children, primaryColor, secondaryColor }: { width: number; height: number; children: React.ReactNode; primaryColor: string; secondaryColor: string }) => {
+    const { t } = useTranslation();
     const strokeWidth = 10;
     const cornerLength = 80;
     const borderRadius = 10;
@@ -161,7 +163,7 @@ const RightSideCaptureScreen = ({ navigation, route }: any) => {
                 <TouchableOpacity style={styles.headerButton} onPress={() => navigation.goBack()}>
                     <ArrowLeft2 size={24} color={colors.primaryColor} variant="Linear" />
                 </TouchableOpacity>
-                <Text style={styles.headerTitle}>Right Side Capture</Text>
+                <Text style={styles.headerTitle}>{t('Right Side Capture')}</Text>
                 <View style={{width: 44, height: 44}} />
             </View>
 
@@ -192,7 +194,7 @@ const RightSideCaptureScreen = ({ navigation, route }: any) => {
                             />
                         ) : (
                             <View style={styles.cameraPlaceholder}>
-                                <Text style={styles.tapToCapture}>Tap to capture</Text>
+                                <Text style={styles.tapToCapture}>{t('Tap to capture')}</Text>
                             </View>
                         )}
                     </CameraFrame>
@@ -206,7 +208,7 @@ const RightSideCaptureScreen = ({ navigation, route }: any) => {
                         style={styles.outlineButton}
                         onPress={handleBack}
                     >
-                        <Text style={styles.outlineButtonText}>Back</Text>
+                        <Text style={styles.outlineButtonText}>{t('Back')}</Text>
                     </TouchableOpacity>
 
                     <TouchableOpacity

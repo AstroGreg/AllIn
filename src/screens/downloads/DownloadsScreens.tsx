@@ -9,8 +9,10 @@ import Images from '../../constants/Images'
 import Icons from '../../constants/Icons'
 import Fonts from '../../constants/Fonts'
 import { useTheme } from '../../context/ThemeContext'
+import { useTranslation } from 'react-i18next'
 
 const DownloadsScreens = ({ navigation }: any) => {
+    const { t } = useTranslation();
     const insets = useSafeAreaInsets();
     const { colors } = useTheme();
     const Styles = createStyles(colors);
@@ -35,13 +37,13 @@ const DownloadsScreens = ({ navigation }: any) => {
                     <View style={Styles.rowCenter}>
                         <Icons.Timer height={12} width={12} />
                         <SizeBox width={2} />
-                        <Text style={Styles.requestSubText}>12:50 PM</Text>
+                        <Text style={Styles.requestSubText}>{t('12:50 PM')}</Text>
                     </View>
                 </View>
                 <SizeBox height={10} />
                 <View style={[Styles.rowCenter, { justifyContent: "space-between" }]}>
-                    <Text style={Styles.eventTitle} numberOfLines={1}>Saint Barthélemy</Text>
-                    <Text style={Styles.eventTitle} numberOfLines={1}>$4</Text>
+                    <Text style={Styles.eventTitle} numberOfLines={1}>{t('Saint Barthélemy')}</Text>
+                    <Text style={Styles.eventTitle} numberOfLines={1}>{t('$4')}</Text>
                 </View>
 
             </View>
@@ -51,10 +53,10 @@ const DownloadsScreens = ({ navigation }: any) => {
     return (
         <View style={Styles.mainContainers}>
             <SizeBox height={insets.top} />
-            <CustomHeader title='Totals Downloads' onBackPress={() => navigation.goBack()} onPressSetting={() => navigation.navigate('ProfileSettings')} />
+            <CustomHeader title={t('Totals Downloads')} onBackPress={() => navigation.goBack()} onPressSetting={() => navigation.navigate('ProfileSettings')} />
             <SizeBox height={24} />
             <View style={[Styles.rowCenter, { justifyContent: 'space-between' }]}>
-                <Text style={Styles.headings}>Esther Howard</Text>
+                <Text style={Styles.headings}>{t('Esther Howard')}</Text>
                 <Text style={[Styles.headings, {
                     ...Fonts.regular12,
                     color: colors.grayColor,

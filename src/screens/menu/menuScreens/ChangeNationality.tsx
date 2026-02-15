@@ -6,8 +6,10 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useTheme } from '../../../context/ThemeContext'
 import { ArrowLeft2, Card, ArrowDown2 } from 'iconsax-react-nativejs'
 import { useAuth } from '../../../context/AuthContext'
+import { useTranslation } from 'react-i18next'
 
 const ChangeNationality = ({ navigation }: any) => {
+    const { t } = useTranslation();
     const insets = useSafeAreaInsets();
     const { colors } = useTheme();
     const Styles = createStyles(colors);
@@ -44,19 +46,19 @@ const ChangeNationality = ({ navigation }: any) => {
                 <TouchableOpacity style={Styles.headerButton} onPress={() => navigation.goBack()}>
                     <ArrowLeft2 size={24} color={colors.primaryColor} variant="Linear" />
                 </TouchableOpacity>
-                <Text style={Styles.headerTitle}>Change Nationality</Text>
+                <Text style={Styles.headerTitle}>{t('Change Nationality')}</Text>
                 <View style={Styles.headerSpacer} />
             </View>
 
             <ScrollView style={Styles.container} showsVerticalScrollIndicator={false}>
                 <SizeBox height={24} />
 
-                <Text style={Styles.changePasswordTitle}>Change Nationality</Text>
+                <Text style={Styles.changePasswordTitle}>{t('Change Nationality')}</Text>
                 <SizeBox height={16} />
 
                 <View style={Styles.currentValueCard}>
                     <View>
-                        <Text style={Styles.currentValueLabel}>Current nationality</Text>
+                        <Text style={Styles.currentValueLabel}>{t('Current nationality')}</Text>
                         <Text style={Styles.currentValueText}>{currentNationality}</Text>
                     </View>
                     <TouchableOpacity
@@ -66,7 +68,7 @@ const ChangeNationality = ({ navigation }: any) => {
                             setIsEditing(true);
                         }}
                     >
-                        <Text style={Styles.editActionText}>Edit</Text>
+                        <Text style={Styles.editActionText}>{t('Edit')}</Text>
                     </TouchableOpacity>
                 </View>
 
@@ -74,7 +76,7 @@ const ChangeNationality = ({ navigation }: any) => {
                     <>
                         <SizeBox height={24} />
                         <View style={Styles.addCardInputGroup}>
-                            <Text style={Styles.addCardLabel}>Nationality</Text>
+                            <Text style={Styles.addCardLabel}>{t('Nationality')}</Text>
                             <SizeBox height={8} />
                             <TouchableOpacity
                                 style={Styles.addCardInputContainer}
@@ -91,7 +93,7 @@ const ChangeNationality = ({ navigation }: any) => {
 
                         <View style={Styles.editActionsRow}>
                             <TouchableOpacity style={Styles.cancelButton} onPress={() => setIsEditing(false)}>
-                                <Text style={Styles.cancelButtonText}>Cancel</Text>
+                                <Text style={Styles.cancelButtonText}>{t('Cancel')}</Text>
                             </TouchableOpacity>
                             <TouchableOpacity
                                 style={Styles.saveButton}
@@ -101,7 +103,7 @@ const ChangeNationality = ({ navigation }: any) => {
                                     setIsEditing(false);
                                 }}
                             >
-                                <Text style={Styles.saveButtonText}>Save</Text>
+                                <Text style={Styles.saveButtonText}>{t('Save')}</Text>
                             </TouchableOpacity>
                         </View>
                     </>
@@ -113,7 +115,7 @@ const ChangeNationality = ({ navigation }: any) => {
             <Modal visible={showModal} transparent animationType="fade" onRequestClose={() => setShowModal(false)}>
                 <Pressable style={Styles.selectionModalOverlay} onPress={() => setShowModal(false)}>
                     <Pressable style={Styles.selectionModalCard} onPress={() => {}}>
-                        <Text style={Styles.selectionModalTitle}>Select nationality</Text>
+                        <Text style={Styles.selectionModalTitle}>{t('Select nationality')}</Text>
                         <ScrollView showsVerticalScrollIndicator={false}>
                             {nationalityOptions.map((option) => (
                                 <TouchableOpacity

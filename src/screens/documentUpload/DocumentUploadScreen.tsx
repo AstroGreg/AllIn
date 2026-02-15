@@ -9,8 +9,10 @@ import Images from '../../constants/Images';
 import CustomButton from '../../components/customButton/CustomButton';
 import { useTheme } from '../../context/ThemeContext';
 import { useAuth } from '../../context/AuthContext';
+import { useTranslation } from 'react-i18next'
 
 const DocumentUploadScreen = ({ navigation }: any) => {
+    const { t } = useTranslation();
     const { colors } = useTheme();
     const Styles = createStyles(colors);
     const insets = useSafeAreaInsets();
@@ -26,7 +28,7 @@ const DocumentUploadScreen = ({ navigation }: any) => {
             });
             navigation.navigate('FaceVerificationScreen');
         } catch (err: any) {
-            Alert.alert('Error', 'Failed to save. Please try again.');
+            Alert.alert(t('Error'), t('Failed to save. Please try again.'));
         } finally {
             setIsLoading(false);
         }
@@ -70,14 +72,14 @@ const DocumentUploadScreen = ({ navigation }: any) => {
                 <View style={Styles.formContainer}>
                     {/* Upload Section */}
                     <View style={{ gap: 16 }}>
-                        <Text style={Styles.sectionTitle}>Upload Government ID</Text>
+                        <Text style={Styles.sectionTitle}>{t('Upload Government ID')}</Text>
 
                         <View style={Styles.uploadContainer}>
-                            <Text style={Styles.maxSizeText}>Maximum Size: 2MB</Text>
+                            <Text style={Styles.maxSizeText}>{t('Maximum Size: 2MB')}</Text>
 
                             <View style={Styles.uploadIconContainer}>
                                 <Export size={30} color={colors.grayColor} />
-                                <Text style={Styles.dragDropText}>Drag & Drop</Text>
+                                <Text style={Styles.dragDropText}>{t('Drag & Drop')}</Text>
                             </View>
 
                             <View style={Styles.fileChooseContainer}>
@@ -87,21 +89,21 @@ const DocumentUploadScreen = ({ navigation }: any) => {
                                         onPress={handleChooseFile}
                                         activeOpacity={0.7}
                                     >
-                                        <Text style={Styles.chooseFileText}>Choose File</Text>
+                                        <Text style={Styles.chooseFileText}>{t('Choose File')}</Text>
                                     </TouchableOpacity>
-                                    <Text style={Styles.noFileText}>No File Chosen</Text>
+                                    <Text style={Styles.noFileText}>{t('No File Chosen')}</Text>
                                 </View>
-                                <Text style={Styles.supportedText}>Supported JPEG, PDF</Text>
+                                <Text style={Styles.supportedText}>{t('Supported JPEG, PDF')}</Text>
                             </View>
                         </View>
                     </View>
 
                     {/* Coach Email Section */}
                     <View style={{ gap: 8 }}>
-                        <Text style={Styles.inputLabel}>Coach Email</Text>
+                        <Text style={Styles.inputLabel}>{t('Coach Email')}</Text>
                         <View style={Styles.inputContainer}>
                             <Sms size={24} color={colors.grayColor} />
-                            <Text style={Styles.inputText}>Enter Coach Email</Text>
+                            <Text style={Styles.inputText}>{t('Enter Coach Email')}</Text>
                         </View>
                     </View>
                 </View>
@@ -113,7 +115,7 @@ const DocumentUploadScreen = ({ navigation }: any) => {
                 {isLoading ? (
                     <ActivityIndicator size="large" color={colors.primaryColor} />
                 ) : (
-                    <CustomButton title="Continue" onPress={handleContinue} />
+                    <CustomButton title={t('Continue')} onPress={handleContinue} />
                 )}
             </View>
         </View>

@@ -5,6 +5,7 @@ import CustomTextInput from '../../../components/customTextInput/CustomTextInput
 import Icons from '../../../constants/Icons';
 import SizeBox from '../../../constants/SizeBox';
 import { useTheme } from '../../../context/ThemeContext';
+import { useTranslation } from 'react-i18next'
 
 interface AddSocialLinkProps {
     isVisible?: boolean;
@@ -19,6 +20,7 @@ const AddSocialLink = ({
 }: AddSocialLinkProps) => {
     const { colors } = useTheme();
     const Styles = createStyles(colors);
+    const { t } = useTranslation();
 
     return (
         <Modal
@@ -31,30 +33,30 @@ const AddSocialLink = ({
             <View style={Styles.modalContainer}>
                 <View style={Styles.modalContaint}>
                     <CustomTextInput
-                        label='Platform'
-                        placeholder='Add social platform'
+                        label={t('Platform')}
+                        placeholder={t('Add social platform')}
                         icon={<Icons.WebsiteBlue height={16} width={16} />}
                     />
                     <SizeBox height={16} />
                     <CustomTextInput
-                        label='Profile Name'
-                        placeholder='Add Profile Name'
+                        label={t('Profile Name')}
+                        placeholder={t('Add Profile Name')}
                         icon={<Icons.User height={16} width={16} />}
                     />
                     <SizeBox height={16} />
                     <CustomTextInput
-                        label='Add Profile Link'
-                        placeholder='Add Profile Link'
+                        label={t('Add Profile Link')}
+                        placeholder={t('Add Profile Link')}
                         icon={<Icons.LinkBlue height={16} width={16} />}
                     />
                     <SizeBox height={24} />
                     <View style={[Styles.row, { justifyContent: 'flex-end' }]}>
                         <TouchableOpacity activeOpacity={0.7} style={Styles.noBtn} onPress={onClose}>
-                            <Text style={Styles.noText}>Cancel</Text>
+                            <Text style={Styles.noText}>{t('Cancel')}</Text>
                         </TouchableOpacity>
                         <SizeBox width={20} />
                         <TouchableOpacity activeOpacity={0.7} style={Styles.yesBtn} onPress={onYesPress}>
-                            <Text style={Styles.yesText}>Save</Text>
+                            <Text style={Styles.yesText}>{t('Save')}</Text>
                         </TouchableOpacity>
                     </View>
                 </View>

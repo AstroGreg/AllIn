@@ -7,6 +7,7 @@ import { createStyles } from '../HomeStyles';
 import Icons from '../../../constants/Icons';
 import { useTheme } from '../../../context/ThemeContext';
 import { Heart } from 'iconsax-react-nativejs';
+import { useTranslation } from 'react-i18next'
 
 const { width: screenWidth } = Dimensions.get('window');
 
@@ -28,6 +29,8 @@ interface NewsFeedCardProps {
     hideBelowText?: boolean;
     headerTag?: string;
     likesLabel?: string;
+    liked?: boolean;
+    onToggleLike?: () => void;
     showActions?: boolean;
     onPressVideo?: (currentTime: number) => void;
     onVideoProgress?: (currentTime: number) => void;
@@ -65,6 +68,8 @@ const NewsFeedCard = ({
     hideBelowText = false,
     headerTag,
     likesLabel,
+    liked = false,
+    onToggleLike,
     showActions = false,
     onPressVideo,
     onVideoProgress,
@@ -85,6 +90,7 @@ const NewsFeedCard = ({
     hideAvatar = false
 }: NewsFeedCardProps) => {
     const { colors } = useTheme();
+    const { t } = useTranslation();
     const Styles = createStyles(colors);
     const [currentIndex, setCurrentIndex] = useState(0);
     const flatListRef = useRef<FlatList>(null);
@@ -237,6 +243,7 @@ const NewsFeedCard = ({
             }
             lastTapRef.current = 0;
             triggerLikePulse();
+            onToggleLike?.();
             return;
         }
         lastTapRef.current = now;
@@ -472,18 +479,22 @@ const NewsFeedCard = ({
      
 
             <View style={[Styles.feedPadding, Styles.feedMetaRow]}>
-                <TouchableOpacity style={Styles.feedLikeButton} activeOpacity={0.85}>
-                    <Heart size={25} color={colors.primaryColor} variant="Linear" />
-                    <Text style={Styles.feedLikeText}>{likesLabel ?? 'Like'}</Text>
+                <TouchableOpacity style={Styles.feedLikeButton} activeOpacity={0.85} onPress={onToggleLike}>
+                    <Heart size={25} color={colors.primaryColor} variant={liked ? "Bold" : "Linear"} />
+                    <Text style={Styles.feedLikeText}>{likesLabel ?? t('Like')}</Text>
                 </TouchableOpacity>
-                {showActions && (
+                {showActions && (onShare || onDownload) && (
                     <View style={Styles.feedActionsRow}>
-                        <TouchableOpacity style={Styles.feedActionTextButton} activeOpacity={0.85} onPress={onDownload}>
-                            <Text style={Styles.feedActionText}>Download</Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity style={Styles.feedActionButton} activeOpacity={0.85} onPress={onShare}>
-                            <Image source={Icons.ShareBlue} style={Styles.feedActionIcon} />
-                        </TouchableOpacity>
+                        {onDownload ? (
+                            <TouchableOpacity style={Styles.feedActionTextButton} activeOpacity={0.85} onPress={onDownload}>
+                                <Text style={Styles.feedActionText}>{t('Download')}</Text>
+                            </TouchableOpacity>
+                        ) : null}
+                        {onShare ? (
+                            <TouchableOpacity style={Styles.feedActionButton} activeOpacity={0.85} onPress={onShare}>
+                                <Image source={Icons.ShareBlue} style={Styles.feedActionIcon} />
+                            </TouchableOpacity>
+                        ) : null}
                     </View>
                 )}
             </View>

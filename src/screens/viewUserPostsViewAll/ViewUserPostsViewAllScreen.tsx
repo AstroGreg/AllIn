@@ -8,8 +8,10 @@ import SizeBox from '../../constants/SizeBox';
 import Images from '../../constants/Images';
 import Icons from '../../constants/Icons';
 import { useTheme } from '../../context/ThemeContext';
+import { useTranslation } from 'react-i18next'
 
 const ViewUserPostsViewAllScreen = ({ navigation }: any) => {
+    const { t } = useTranslation();
     const insets = useSafeAreaInsets();
     const { colors } = useTheme();
     const Styles = createStyles(colors);
@@ -107,7 +109,7 @@ const ViewUserPostsViewAllScreen = ({ navigation }: any) => {
             </View>
             <Text style={Styles.postDescription}>{post.description}</Text>
             <TouchableOpacity style={Styles.shareButton}>
-                <Text style={Styles.shareButtonText}>Share</Text>
+                <Text style={Styles.shareButtonText}>{t('Share')}</Text>
                 <Image source={Icons.ShareBlue} style={{ width: 18, height: 18, tintColor: '#FFFFFF' }} />
             </TouchableOpacity>
         </View>
@@ -122,14 +124,14 @@ const ViewUserPostsViewAllScreen = ({ navigation }: any) => {
                 <TouchableOpacity style={Styles.headerButton} onPress={() => navigation.goBack()}>
                     <ArrowLeft2 size={24} color={colors.mainTextColor} variant="Linear" />
                 </TouchableOpacity>
-                <Text style={Styles.headerTitle}>Posts</Text>
+                <Text style={Styles.headerTitle}>{t('Posts')}</Text>
                 <View style={[Styles.headerButton, { opacity: 0 }]} />
             </View>
 
             <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={Styles.scrollContent}>
                 {/* Section Header */}
                 <View style={Styles.sectionHeader}>
-                    <Text style={Styles.sectionTitle}>Posts</Text>
+                    <Text style={Styles.sectionTitle}>{t('Posts')}</Text>
                 </View>
 
                 <SizeBox height={24} />

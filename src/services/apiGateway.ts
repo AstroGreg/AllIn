@@ -147,7 +147,8 @@ export async function grantFaceRecognitionConsent(accessToken: string): Promise<
 }
 
 export interface FaceSearchResult {
-  media_id: string;
+    match_time_seconds?: number | null;
+media_id: string;
   event_id?: string;
   captured_at?: string;
   thumbnail_url?: string;
@@ -174,7 +175,7 @@ export async function searchFaceByEnrollment(
     top: params.top,
     save: params.save ? 'true' : undefined,
   });
-  return apiRequest<FaceSearchResponse>(`/ai/search/face${qs}`, {method: 'GET', accessToken});
+  return apiRequest<FaceSearchResponse>(`/ai/faces/search${qs}`, {method: 'GET', accessToken});
 }
 
 export interface ObjectSearchResult {
@@ -242,6 +243,9 @@ export async function searchMediaByBib(
 
 export interface HomeOverviewMedia {
   media_id: string;
+  likes_count?: number;
+  views_count?: number;
+  liked_by_me?: boolean;
   event_id?: string | null;
   post_id?: string | null;
   type?: string;
@@ -261,6 +265,9 @@ export interface HomeOverviewBlog {
   post: {
     id: string;
     title: string;
+    likes_count?: number;
+    views_count?: number;
+    liked_by_me?: boolean;
     summary?: string | null;
     description?: string | null;
     created_at?: string | null;
@@ -318,7 +325,7 @@ export async function enrollFace(
     }
   }
 
-  return apiRequest('/ai/enrol/face', {
+  return apiRequest('/ai/faces/enroll', {
     method: 'POST',
     accessToken,
     body: form,
@@ -347,7 +354,7 @@ export async function verifyFaceAngle(
     type: 'image/jpeg',
   } as any);
 
-  return apiRequest('/ai/face/verify', {
+  return apiRequest('/ai/faces/verify-angle', {
     method: 'POST',
     accessToken,
     body: form,
@@ -369,7 +376,7 @@ export async function startFaceLivenessChallenge(
   const qs = toQueryString({
     count: params?.count ?? undefined,
   });
-  return apiRequest<FaceLivenessStartResponse>(`/ai/face/liveness/start${qs}`, {
+  return apiRequest<FaceLivenessStartResponse>(`/ai/faces/liveness/start${qs}`, {
     method: 'POST',
     accessToken,
     body: {},
@@ -401,7 +408,7 @@ export async function submitFaceLivenessStep(
     type: 'image/jpeg',
   } as any);
 
-  return apiRequest<FaceLivenessStepResponse>('/ai/face/liveness/step', {
+  return apiRequest<FaceLivenessStepResponse>('/ai/faces/liveness/step', {
     method: 'POST',
     accessToken,
     body: form,
@@ -458,6 +465,9 @@ export interface MediaViewAllItem {
   uploader_profile_id?: string;
   event_id?: string | null;
   created_at?: string;
+  likes_count?: number;
+  views_count?: number;
+  liked_by_me?: boolean;
 
   thumbnail_url?: string | null;
   preview_url?: string | null;
@@ -576,6 +586,47 @@ export interface DownloadItem {
   media: MediaViewAllItem;
 }
 
+export interface MediaProfitItem extends MediaViewAllItem {
+  downloads_count: number;
+  views_count: number;
+  likes_count: number;
+  price_cents: number;
+  price_currency: string;
+  profit_cents: number;
+}
+
+export interface DownloadsProfitResponse {
+  ok: boolean;
+  profile_id: string;
+  count: number;
+  items: MediaProfitItem[];
+}
+
+export interface UploadedCompetition {
+  event_id: string;
+  event_name?: string | null;
+  event_location?: string | null;
+  event_date?: string | null;
+  event_type?: string | null;
+  uploads_count: number;
+  cover_thumbnail_url?: string | null;
+}
+
+export interface UploadedCompetitionsResponse {
+  ok: boolean;
+  profile_id: string;
+  count: number;
+  competitions: UploadedCompetition[];
+}
+
+export interface CompetitionMediaResponse {
+  ok: boolean;
+  profile_id: string;
+  event_id: string;
+  count: number;
+  items: MediaViewAllItem[];
+}
+
 export async function recordDownload(
   accessToken: string,
   params: {media_id: string; event_id?: string | null},
@@ -593,4 +644,250 @@ export async function recordDownload(
 export async function getDownloads(accessToken: string, params?: {limit?: number}): Promise<DownloadItem[]> {
   const qs = toQueryString({limit: params?.limit});
   return apiRequest<DownloadItem[]>(`/downloads${qs}`, {method: 'GET', accessToken});
+}
+
+export async function getDownloadsProfit(accessToken: string, params?: {limit?: number}): Promise<DownloadsProfitResponse> {
+  const qs = toQueryString({limit: params?.limit});
+  return apiRequest<DownloadsProfitResponse>(`/downloads/profit${qs}`, {method: 'GET', accessToken});
+}
+
+export async function getUploadedCompetitions(
+  accessToken: string,
+  params?: {limit?: number; offset?: number},
+): Promise<UploadedCompetitionsResponse> {
+  const qs = toQueryString({limit: params?.limit, offset: params?.offset});
+  return apiRequest<UploadedCompetitionsResponse>(`/downloads/competitions${qs}`, {method: 'GET', accessToken});
+}
+
+export async function getCompetitionMedia(
+  accessToken: string,
+  eventId: string,
+  params?: {limit?: number},
+): Promise<CompetitionMediaResponse> {
+  const safeId = String(eventId || '').trim();
+  if (!safeId) {
+    throw new ApiError({status: 400, message: 'Missing event_id'});
+  }
+  const qs = toQueryString({limit: params?.limit});
+  return apiRequest<CompetitionMediaResponse>(
+    `/downloads/competitions/${encodeURIComponent(safeId)}/media${qs}`,
+    {method: 'GET', accessToken},
+  );
+}
+
+export interface DownloadsSummaryResponse {
+  ok: boolean;
+  profile_id: string;
+  total_downloads: number;
+  total_views: number;
+  total_profit_cents?: number;
+}
+
+export async function getDownloadsSummary(accessToken: string): Promise<DownloadsSummaryResponse> {
+  return apiRequest<DownloadsSummaryResponse>('/downloads/summary', {method: 'GET', accessToken});
+}
+
+// -----------------------------
+// Profile Content (Timeline + Collections)
+// -----------------------------
+
+export interface ProfileTimelineEntry {
+  id: string;
+  sort_order?: number;
+  year: number;
+  title: string;
+  description?: string | null;
+  highlight?: string | null;
+  cover_media_id?: string | null;
+  cover_thumbnail_url?: string | null;
+  created_at?: string | null;
+  updated_at?: string | null;
+}
+
+export async function getProfileTimeline(accessToken: string, profileId: string): Promise<{ok: boolean; profile_id: string; items: ProfileTimelineEntry[]}> {
+  const safe = String(profileId || '').trim() || 'me';
+  return apiRequest(`/profiles/${encodeURIComponent(safe)}/timeline`, {method: 'GET', accessToken});
+}
+
+export async function setMyProfileTimeline(accessToken: string, items: ProfileTimelineEntry[]): Promise<{ok: boolean; profile_id: string; count: number}> {
+  return apiRequest('/profiles/me/timeline', {method: 'PUT', accessToken, body: {items}});
+}
+
+export interface ProfileCollection {
+  id: string;
+  name: string;
+  description?: string | null;
+  cover_media_id?: string | null;
+  cover_thumbnail_url?: string | null;
+  item_count?: number;
+  created_at?: string | null;
+  updated_at?: string | null;
+}
+
+export async function getProfileCollections(accessToken: string, profileId: string, params?: {limit?: number}): Promise<{ok: boolean; profile_id: string; collections: ProfileCollection[]}> {
+  const safe = String(profileId || '').trim() || 'me';
+  const qs = toQueryString({limit: params?.limit});
+  return apiRequest(`/profiles/${encodeURIComponent(safe)}/collections${qs}`, {method: 'GET', accessToken});
+}
+
+
+// -----------------------------
+// Upload + Processing Status
+// -----------------------------
+
+export interface MediaUploadSingleResult {
+  ok: boolean;
+  index?: number;
+  originalname?: string;
+  media_id?: string;
+  asset_id?: string;
+  storage_key?: string;
+  duplicate?: boolean;
+  error?: string;
+  [k: string]: any;
+}
+
+export interface MediaUploadBatchResponse {
+  ok: boolean;
+  count: number;
+  uploaded: number;
+  duplicates: number;
+  succeeded: number;
+  failed: number;
+  results: MediaUploadSingleResult[];
+  errors?: any[];
+}
+
+export async function uploadMediaBatch(
+  accessToken: string,
+  params: {
+    files: Array<{uri: string; type?: string | null; name?: string | null}>;
+    event_id?: string | null;
+    post_id?: string | null;
+    is_anonymous?: boolean;
+  },
+): Promise<MediaUploadBatchResponse> {
+  const form = new FormData();
+  for (let i = 0; i < params.files.length; i += 1) {
+    const f = params.files[i];
+    form.append('files', {
+      uri: f.uri,
+      name: f.name || `upload-${i + 1}`,
+      type: f.type || 'application/octet-stream',
+    } as any);
+  }
+  if (params.event_id) form.append('event_id', String(params.event_id));
+  if (params.post_id) form.append('post_id', String(params.post_id));
+  if (params.is_anonymous != null) form.append('is_anonymous', params.is_anonymous ? 'true' : 'false');
+
+  return apiRequest<MediaUploadBatchResponse>('/media/upload', {
+    method: 'POST',
+    accessToken,
+    body: form,
+  });
+}
+
+export async function uploadMediaBatchWatermark(
+  accessToken: string,
+  params: {
+    files: Array<{uri: string; type?: string | null; name?: string | null}>;
+    watermark_text: string;
+    event_id?: string | null;
+    post_id?: string | null;
+    is_anonymous?: boolean;
+  },
+): Promise<MediaUploadBatchResponse> {
+  const form = new FormData();
+  form.append('watermark_text', String(params.watermark_text || 'AllIN'));
+  for (let i = 0; i < params.files.length; i += 1) {
+    const f = params.files[i];
+    form.append('files', {
+      uri: f.uri,
+      name: f.name || `upload-${i + 1}`,
+      type: f.type || 'application/octet-stream',
+    } as any);
+  }
+  if (params.event_id) form.append('event_id', String(params.event_id));
+  if (params.post_id) form.append('post_id', String(params.post_id));
+  if (params.is_anonymous != null) form.append('is_anonymous', params.is_anonymous ? 'true' : 'false');
+
+  return apiRequest<MediaUploadBatchResponse>('/media/upload_watermark', {
+    method: 'POST',
+    accessToken,
+    body: form,
+  });
+}
+
+export interface MediaProcessingStatus {
+  media_id: string;
+  type: 'image' | 'video';
+  created_at?: string | null;
+  stage: string;
+  progress: number;
+  steps: {
+    transforms_done: boolean;
+    embeddings_done: boolean;
+    bib_done: boolean;
+    indexed_done: boolean;
+  };
+  assets?: {
+    thumbnail_url?: string | null;
+    preview_url?: string | null;
+    original_url?: string | null;
+    hls_manifest_path?: string | null;
+  };
+  last_error?: string | null;
+}
+
+export async function getMediaStatus(
+  accessToken: string,
+  media_ids: string[],
+): Promise<{ok: boolean; results: MediaProcessingStatus[]}> {
+  return apiRequest('/media/status', {
+    method: 'POST',
+    accessToken,
+    body: {media_ids},
+  });
+}
+
+// -----------------------------
+// Likes + Views
+// -----------------------------
+
+export async function toggleMediaLike(accessToken: string, media_id: string): Promise<{ok: boolean; media_id: string; liked: boolean; likes_count: number}> {
+  return apiRequest(`/media/${encodeURIComponent(media_id)}/like`, {method: 'POST', accessToken, body: {}});
+}
+
+export async function recordMediaView(accessToken: string, media_id: string): Promise<{ok: boolean; media_id: string; views_count: number}> {
+  return apiRequest(`/media/${encodeURIComponent(media_id)}/view`, {method: 'POST', accessToken, body: {}});
+}
+
+export async function togglePostLike(accessToken: string, post_id: string): Promise<{ok: boolean; post_id: string; liked: boolean; likes_count: number}> {
+  return apiRequest(`/posts/${encodeURIComponent(post_id)}/like`, {method: 'POST', accessToken, body: {}});
+}
+
+export async function recordPostView(accessToken: string, post_id: string): Promise<{ok: boolean; post_id: string; views_count: number}> {
+  return apiRequest(`/posts/${encodeURIComponent(post_id)}/view`, {method: 'POST', accessToken, body: {}});
+}
+
+export interface PostSummary {
+  id: string;
+  title: string;
+  summary?: string | null;
+  description?: string | null;
+  created_at?: string | null;
+  reading_time_minutes?: number | null;
+  likes_count: number;
+  views_count: number;
+  liked_by_me: boolean;
+  author?: {profile_id: string; display_name: string; avatar_url?: string | null};
+}
+
+export async function getPosts(accessToken: string, params?: {author_profile_id?: string | null; limit?: number}): Promise<{ok: boolean; posts: PostSummary[]}> {
+  const qs = toQueryString({author_profile_id: params?.author_profile_id ?? undefined, limit: params?.limit});
+  return apiRequest(`/posts${qs}`, {method: 'GET', accessToken});
+}
+
+export async function getPostById(accessToken: string, post_id: string): Promise<{ok: boolean; post: PostSummary; author?: {profile_id: string; display_name: string; avatar_url?: string | null}}> {
+  return apiRequest(`/posts/${encodeURIComponent(post_id)}`, {method: 'GET', accessToken});
 }

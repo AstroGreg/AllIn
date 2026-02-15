@@ -6,8 +6,10 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useTheme } from '../../../context/ThemeContext'
 import { ArrowLeft2, User } from 'iconsax-react-nativejs'
 import { useAuth } from '../../../context/AuthContext'
+import { useTranslation } from 'react-i18next'
 
 const ChangeUsername = ({ navigation }: any) => {
+    const { t } = useTranslation();
     const insets = useSafeAreaInsets();
     const { colors } = useTheme();
     const Styles = createStyles(colors);
@@ -25,19 +27,19 @@ const ChangeUsername = ({ navigation }: any) => {
                 <TouchableOpacity style={Styles.headerButton} onPress={() => navigation.goBack()}>
                     <ArrowLeft2 size={24} color={colors.primaryColor} variant="Linear" />
                 </TouchableOpacity>
-                <Text style={Styles.headerTitle}>Change Username</Text>
+                <Text style={Styles.headerTitle}>{t('Change Username')}</Text>
                 <View style={Styles.headerSpacer} />
             </View>
 
             <ScrollView style={Styles.container} showsVerticalScrollIndicator={false}>
                 <SizeBox height={24} />
 
-                <Text style={Styles.changePasswordTitle}>Change Username</Text>
+                <Text style={Styles.changePasswordTitle}>{t('Change Username')}</Text>
                 <SizeBox height={16} />
 
                 <View style={Styles.currentValueCard}>
                     <View>
-                        <Text style={Styles.currentValueLabel}>Current username</Text>
+                        <Text style={Styles.currentValueLabel}>{t('Current username')}</Text>
                         <Text style={Styles.currentValueText}>{currentUsername}</Text>
                     </View>
                     <TouchableOpacity
@@ -47,7 +49,7 @@ const ChangeUsername = ({ navigation }: any) => {
                             setIsEditing(true);
                         }}
                     >
-                        <Text style={Styles.editActionText}>Edit</Text>
+                        <Text style={Styles.editActionText}>{t('Edit')}</Text>
                     </TouchableOpacity>
                 </View>
 
@@ -55,14 +57,14 @@ const ChangeUsername = ({ navigation }: any) => {
                     <>
                         <SizeBox height={24} />
                         <View style={Styles.addCardInputGroup}>
-                            <Text style={Styles.addCardLabel}>Username</Text>
+                            <Text style={Styles.addCardLabel}>{t('Username')}</Text>
                             <SizeBox height={8} />
                             <View style={Styles.addCardInputContainer}>
                                 <User size={16} color={colors.primaryColor} variant="Linear" />
                                 <SizeBox width={10} />
                                 <TextInput
                                     style={Styles.addCardInput}
-                                    placeholder="Enter username"
+                                    placeholder={t('Enter username')}
                                     placeholderTextColor={colors.grayColor}
                                     value={newUsername}
                                     onChangeText={setNewUsername}
@@ -72,7 +74,7 @@ const ChangeUsername = ({ navigation }: any) => {
 
                         <View style={Styles.editActionsRow}>
                             <TouchableOpacity style={Styles.cancelButton} onPress={() => setIsEditing(false)}>
-                                <Text style={Styles.cancelButtonText}>Cancel</Text>
+                                <Text style={Styles.cancelButtonText}>{t('Cancel')}</Text>
                             </TouchableOpacity>
                             <TouchableOpacity
                                 style={Styles.saveButton}
@@ -82,7 +84,7 @@ const ChangeUsername = ({ navigation }: any) => {
                                     setIsEditing(false);
                                 }}
                             >
-                                <Text style={Styles.saveButtonText}>Save</Text>
+                                <Text style={Styles.saveButtonText}>{t('Save')}</Text>
                             </TouchableOpacity>
                         </View>
                     </>

@@ -10,8 +10,10 @@ import { createStyles } from './SignupScreenStyles'
 import FastImage from 'react-native-fast-image'
 import { useTheme } from '../../../context/ThemeContext'
 import { useAuth } from '../../../context/AuthContext'
+import { useTranslation } from 'react-i18next'
 
 const SignupScreen = ({ navigation }: any) => {
+    const { t } = useTranslation();
     const { colors } = useTheme();
     const Styles = createStyles(colors);
     const insets = useSafeAreaInsets();
@@ -61,10 +63,10 @@ const SignupScreen = ({ navigation }: any) => {
                 <SizeBox height={30} />
                 <View style={Styles.contentContainer}>
 
-                    <Text style={Styles.headingText}>Sign Up & Get Started</Text>
+                    <Text style={Styles.headingText}>{t('Sign Up & Get Started')}</Text>
 
                     <SizeBox height={8} />
-                    <Text style={Styles.subHeadingText}>It only takes a minute to get started—join us now!</Text>
+                    <Text style={Styles.subHeadingText}>{t('It only takes a minute to get started—join us now!')}</Text>
 
                     <SizeBox height={40} />
                     {isLoading ? (
@@ -78,14 +80,14 @@ const SignupScreen = ({ navigation }: any) => {
 
                     <SizeBox height={16} />
                     <SocialBtn
-                        title='Continue with Google'
+                        title={t('Continue with Google')}
                         onPress={handleGoogleSignup}
                         isGoogle={true}
                         disabled={isLoading}
                     />
                     <SizeBox height={20} />
                     <SocialBtn
-                        title='Continue with Apple'
+                        title={t('Continue with Apple')}
                         onPress={handleAppleSignup}
                         isGoogle={false}
                         disabled={isLoading}
@@ -93,10 +95,10 @@ const SignupScreen = ({ navigation }: any) => {
 
                     <SizeBox height={20} />
                     <View style={Styles.signUpContainer}>
-                        <Text style={Styles.rememberMeText}>Already have an Account?</Text>
+                        <Text style={Styles.rememberMeText}>{t('Already have an Account?')}</Text>
                         <SizeBox width={3} />
                         <TouchableOpacity onPress={() => navigation.goBack()}>
-                            <Text style={[Styles.rememberMeText, { color: colors.primaryColor }]}>Sign In</Text>
+                            <Text style={[Styles.rememberMeText, { color: colors.primaryColor }]}>{t('Sign In')}</Text>
                         </TouchableOpacity>
                     </View>
                 </View>

@@ -111,7 +111,7 @@ const DateOfBirth = ({ navigation }: any) => {
                 <View style={Styles.currentValueCard}>
                     <View>
                         <Text style={Styles.currentValueLabel}>{t('currentDateOfBirth')}</Text>
-                        <Text style={Styles.currentValueText}>{currentDob === 'Not set' ? currentDob : formatDate(currentDob)}</Text>
+                        <Text style={Styles.currentValueText}>{currentDob === 'Not set' ? t('Not set') : formatDate(currentDob)}</Text>
                     </View>
                     <TouchableOpacity style={Styles.editActionButton} onPress={() => setIsEditing(true)}>
                         <Text style={Styles.editActionText}>{t('edit')}</Text>

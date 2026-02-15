@@ -27,6 +27,7 @@ import {
 } from '../../../services/apiGateway';
 import {createStyles} from './CombinedSearchScreenStyles';
 import {useFocusEffect, useRoute} from '@react-navigation/native';
+import { useTranslation } from 'react-i18next'
 
 interface EventOption {
   id: string;
@@ -36,6 +37,7 @@ interface EventOption {
 }
 
 const CombinedSearchScreen = ({navigation}: any) => {
+    const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   const {colors} = useTheme();
   const styles = createStyles(colors);
@@ -193,7 +195,7 @@ const CombinedSearchScreen = ({navigation}: any) => {
 
   const runCombinedSearch = useCallback(async () => {
     if (!apiAccessToken) {
-      Alert.alert('Missing API token', 'Log in or set a Dev API token to use AI Search.');
+      Alert.alert(t('Missing API token'), t('Log in or set a Dev API token to use AI Search.'));
       return;
     }
 
@@ -399,14 +401,14 @@ const CombinedSearchScreen = ({navigation}: any) => {
         <TouchableOpacity style={styles.headerButton} onPress={handleBack}>
           <ArrowLeft2 size={24} color={colors.primaryColor} variant="Linear" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>AI Search</Text>
+        <Text style={styles.headerTitle}>{t('AI Search')}</Text>
         <View style={{width: 44, height: 44}} />
       </View>
 
       <KeyboardAvoidingContainer>
         <View style={styles.container}>
           <SizeBox height={18} />
-          <Text style={styles.title}>Search by chest, face, and context</Text>
+          <Text style={styles.title}>{t('Search by chest, face, and context')}</Text>
           <SizeBox height={6} />
           <Text style={styles.subtitle}>
             Select competitions first, then add any details you remember.
@@ -414,7 +416,7 @@ const CombinedSearchScreen = ({navigation}: any) => {
 
           <View style={styles.competitionSection}>
             <View style={styles.sectionHeaderRow}>
-              <Text style={styles.sectionTitle}>Competitions</Text>
+              <Text style={styles.sectionTitle}>{t('Competitions')}</Text>
               <TouchableOpacity
                 style={styles.sectionAction}
                 onPress={() => setShowCompetitionModal(true)}
@@ -424,7 +426,7 @@ const CombinedSearchScreen = ({navigation}: any) => {
                 </Text>
               </TouchableOpacity>
             </View>
-            <Text style={styles.helperText}>Choose one or more competitions to search.</Text>
+            <Text style={styles.helperText}>{t('Choose one or more competitions to search.')}</Text>
 
             {selectedEvents.length > 0 ? (
               <View style={styles.competitionChipsRow}>
@@ -447,7 +449,7 @@ const CombinedSearchScreen = ({navigation}: any) => {
                 style={styles.emptyCompetitionCard}
                 onPress={() => setShowCompetitionModal(true)}
               >
-                <Text style={styles.emptyCompetitionText}>Select competitions</Text>
+                <Text style={styles.emptyCompetitionText}>{t('Select competitions')}</Text>
               </TouchableOpacity>
             )}
           </View>
@@ -461,7 +463,7 @@ const CombinedSearchScreen = ({navigation}: any) => {
             <View style={styles.modalOverlay}>
               <View style={styles.modalCard}>
                 <View style={styles.modalHeader}>
-                  <Text style={styles.modalTitle}>Select competitions</Text>
+                  <Text style={styles.modalTitle}>{t('Select competitions')}</Text>
                   <TouchableOpacity
                     style={styles.modalCloseButton}
                     onPress={() => setShowCompetitionModal(false)}
@@ -474,7 +476,7 @@ const CombinedSearchScreen = ({navigation}: any) => {
                   <SearchNormal1 size={18} color={colors.subTextColor} variant="Linear" />
                   <TextInput
                     style={styles.modalSearchInput}
-                    placeholder="Search competitions"
+                    placeholder={t('Search competitions')}
                     placeholderTextColor={colors.subTextColor}
                     value={competitionQuery}
                     onChangeText={setCompetitionQuery}
@@ -511,7 +513,7 @@ const CombinedSearchScreen = ({navigation}: any) => {
                       );
                     })
                   ) : (
-                    <Text style={styles.modalEmptyText}>No competitions found.</Text>
+                    <Text style={styles.modalEmptyText}>{t('No competitions found.')}</Text>
                   )}
                 </ScrollView>
 
@@ -536,7 +538,7 @@ const CombinedSearchScreen = ({navigation}: any) => {
             <View style={styles.modalOverlay}>
               <View style={styles.modalCard}>
                 <View style={styles.modalHeader}>
-                  <Text style={styles.modalTitle}>AI quick compare</Text>
+                  <Text style={styles.modalTitle}>{t('AI quick compare')}</Text>
                   <TouchableOpacity
                     style={styles.modalCloseButton}
                     onPress={() => setShowAutoCompareModal(false)}
@@ -549,27 +551,27 @@ const CombinedSearchScreen = ({navigation}: any) => {
                 </Text>
                 <SizeBox height={16} />
                 <TouchableOpacity style={styles.modalDoneButton} onPress={applyAutoCompare}>
-                  <Text style={styles.modalDoneButtonText}>Compare now</Text>
+                  <Text style={styles.modalDoneButtonText}>{t('Compare now')}</Text>
                 </TouchableOpacity>
                 <SizeBox height={10} />
                 <TouchableOpacity
                   style={styles.modalSecondaryButton}
                   onPress={() => setShowAutoCompareModal(false)}
                 >
-                  <Text style={styles.modalSecondaryButtonText}>Not now</Text>
+                  <Text style={styles.modalSecondaryButtonText}>{t('Not now')}</Text>
                 </TouchableOpacity>
               </View>
             </View>
           </Modal>
 
           <SizeBox height={22} />
-          <Text style={styles.sectionTitle}>Chest number</Text>
+          <Text style={styles.sectionTitle}>{t('Chest number')}</Text>
           <View style={styles.inputContainer}>
             <SearchNormal1 size={20} color={colors.grayColor} variant="Linear" />
             <SizeBox width={10} />
             <TextInput
               style={styles.input}
-              placeholder="e.g. 1234"
+              placeholder={t('e.g. 1234')}
               placeholderTextColor={colors.grayColor}
               value={bib}
               onChangeText={setBib}
@@ -579,13 +581,13 @@ const CombinedSearchScreen = ({navigation}: any) => {
           </View>
 
           <SizeBox height={20} />
-          <Text style={styles.sectionTitle}>Context</Text>
+          <Text style={styles.sectionTitle}>{t('Context')}</Text>
           <View style={styles.inputContainer}>
             <SearchNormal1 size={20} color={colors.grayColor} variant="Linear" />
             <SizeBox width={10} />
             <TextInput
               style={styles.input}
-              placeholder="e.g. finish line, podium, medal"
+              placeholder={t('e.g. finish line, podium, medal')}
               placeholderTextColor={colors.grayColor}
               value={contextText}
               onChangeText={setContextText}
@@ -596,21 +598,21 @@ const CombinedSearchScreen = ({navigation}: any) => {
           <SizeBox height={20} />
           <View style={styles.toggleRow}>
             <View style={styles.toggleInfo}>
-              <Text style={styles.sectionTitle}>Face search</Text>
-              <Text style={styles.helperText}>Use your enrolled face to match photos.</Text>
+              <Text style={styles.sectionTitle}>{t('Face search')}</Text>
+              <Text style={styles.helperText}>{t('Use your enrolled face to match photos.')}</Text>
             </View>
             <CustomSwitch isEnabled={includeFace} toggleSwitch={() => setIncludeFace((prev) => !prev)} />
           </View>
 
           {needsConsent && (
             <TouchableOpacity style={styles.secondaryButton} onPress={handleGrantConsent}>
-              <Text style={styles.secondaryButtonText}>Grant face consent</Text>
+              <Text style={styles.secondaryButtonText}>{t('Grant face consent')}</Text>
             </TouchableOpacity>
           )}
 
           {missingAngles && (
             <TouchableOpacity style={styles.secondaryButton} onPress={handleEnroll}>
-              <Text style={styles.secondaryButtonText}>Enroll your face</Text>
+              <Text style={styles.secondaryButtonText}>{t('Enroll your face')}</Text>
             </TouchableOpacity>
           )}
 
@@ -622,7 +624,7 @@ const CombinedSearchScreen = ({navigation}: any) => {
             onPress={runCombinedSearch}
             disabled={!hasCompetition || isSearching}
           >
-            <Text style={styles.primaryButtonText}>{isSearching ? 'Searching…' : 'Run AI search'}</Text>
+                        <Text style={styles.primaryButtonText}>{isSearching ? t('Searching…') : t('Run AI search')}</Text>
           </TouchableOpacity>
 
           <SizeBox height={insets.bottom > 0 ? insets.bottom + 20 : 40} />

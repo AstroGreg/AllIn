@@ -1,5 +1,5 @@
 import { View, Text, FlatList, ScrollView, TouchableOpacity } from 'react-native'
-import React from 'react'
+import React, { useEffect, useState } from 'react'
 import CompetitionContainer from './CompetitionContainer'
 import SizeBox from '../../../constants/SizeBox'
 import { createStyles } from '../HomeStyles'
@@ -11,6 +11,8 @@ import SimilarEvents from '../../Events/components/SimilarEvents'
 import { useNavigation } from '@react-navigation/native';
 import { useTheme } from '../../../context/ThemeContext'
 import { useTranslation } from 'react-i18next'
+import { useAuth } from '../../../context/AuthContext'
+import { getDownloadsSummary } from '../../../services/apiGateway'
 
 interface PotentialVideosProps {
     data: any;
@@ -25,6 +27,28 @@ const PotentialVideos = ({ data, onPressAddEvent, onPressParticipant, onPressDow
     const { colors } = useTheme();
     const { t } = useTranslation();
     const styles = createStyles(colors);
+    const { apiAccessToken } = useAuth();
+    const [totalDownloads, setTotalDownloads] = useState<number | null>(null);
+
+    useEffect(() => {
+        let mounted = true;
+        const run = async () => {
+            if (!apiAccessToken) {
+                if (mounted) setTotalDownloads(null);
+                return;
+            }
+            try {
+                const summary = await getDownloadsSummary(apiAccessToken);
+                if (mounted) setTotalDownloads(Number((summary as any)?.total_downloads ?? 0));
+            } catch {
+                if (mounted) setTotalDownloads(0);
+            }
+        };
+        run();
+        return () => {
+            mounted = false;
+        };
+    }, [apiAccessToken]);
 
     return (
         <View style={{}}>
@@ -101,7 +125,7 @@ const PotentialVideos = ({ data, onPressAddEvent, onPressParticipant, onPressDow
                         {t('Total Downloads')}:
                     </Text>
                     <Text style={styles.downloadCount}>
-                        346,456
+                        {totalDownloads == null ? '—' : String(totalDownloads)}
                     </Text>
                 </View>
             </TouchableOpacity>

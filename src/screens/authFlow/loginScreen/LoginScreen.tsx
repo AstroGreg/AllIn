@@ -11,8 +11,10 @@ import FastImage from 'react-native-fast-image'
 import { useTheme } from '../../../context/ThemeContext'
 import { useAuth } from '../../../context/AuthContext'
 import AsyncStorage from '@react-native-async-storage/async-storage'
+import { useTranslation } from 'react-i18next'
 
 const LoginScreen = ({ navigation }: any) => {
+    const { t } = useTranslation();
     const { colors } = useTheme();
     const Styles = createStyles(colors);
     const insets = useSafeAreaInsets();
@@ -23,7 +25,7 @@ const LoginScreen = ({ navigation }: any) => {
         await AsyncStorage.removeItem('@auth_credentials');
         await AsyncStorage.removeItem('@user_profile');
         console.log('[LoginScreen] Cleared all auth data');
-        Alert.alert('Debug', 'Auth data cleared. Please restart the app.');
+        Alert.alert(t('Debug'), t('Auth data cleared. Please restart the app.'));
     };
 
     console.log('[LoginScreen] Rendered, isAuthenticated:', isAuthenticated, 'isLoading:', isLoading);
@@ -84,10 +86,10 @@ const LoginScreen = ({ navigation }: any) => {
                 <SizeBox height={30} />
                 <View style={Styles.contentContainer}>
 
-                    <Text style={Styles.headingText}>Sign In to Your Account</Text>
+                    <Text style={Styles.headingText}>{t('Sign In to Your Account')}</Text>
 
                     <SizeBox height={8} />
-                    <Text style={Styles.subHeadingText}>Access your account and stay connected.</Text>
+                    <Text style={Styles.subHeadingText}>{t('Access your account and stay connected.')}</Text>
 
                     <SizeBox height={40} />
                     {isLoading ? (
@@ -101,14 +103,14 @@ const LoginScreen = ({ navigation }: any) => {
 
                     <SizeBox height={16} />
                     <SocialBtn
-                        title='Continue with Google'
+                        title={t('Continue with Google')}
                         onPress={handleGoogleLogin}
                         isGoogle={true}
                         disabled={isLoading}
                     />
                     <SizeBox height={20} />
                     <SocialBtn
-                        title='Continue with Apple'
+                        title={t('Continue with Apple')}
                         onPress={handleAppleLogin}
                         isGoogle={false}
                         disabled={isLoading}
@@ -116,17 +118,17 @@ const LoginScreen = ({ navigation }: any) => {
 
                     <SizeBox height={20} />
                     <View style={Styles.signUpContainer}>
-                        <Text style={Styles.rememberMeText}>Don't have an account?</Text>
+                        <Text style={Styles.rememberMeText}>{t("Don't have an account?")}</Text>
                         <SizeBox width={3} />
                         <TouchableOpacity onPress={() => navigation.navigate('SignupScreen')}>
-                            <Text style={[Styles.rememberMeText, { color: colors.primaryColor }]}>Sign Up</Text>
+                            <Text style={[Styles.rememberMeText, { color: colors.primaryColor }]}>{t('Sign Up')}</Text>
                         </TouchableOpacity>
                     </View>
 
                     {/* Debug button - remove in production */}
                     <SizeBox height={30} />
                     <TouchableOpacity onPress={handleClearAuth} style={{ padding: 10, alignItems: 'center' }}>
-                        <Text style={{ color: colors.grayColor, fontSize: 12 }}>[Debug] Clear Auth Data</Text>
+                        <Text style={{ color: colors.grayColor, fontSize: 12 }}>{t('[Debug] Clear Auth Data')}</Text>
                     </TouchableOpacity>
 
                 </View>

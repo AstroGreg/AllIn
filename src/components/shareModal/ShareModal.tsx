@@ -3,6 +3,7 @@ import { View, Text, TouchableOpacity, Modal, Alert } from 'react-native';
 import { createStyles } from './ShareModalStyles';
 import { CloseCircle, Copy, TickCircle } from 'iconsax-react-nativejs';
 import { useTheme } from '../../context/ThemeContext';
+import { useTranslation } from 'react-i18next'
 
 interface ShareModalProps {
     visible: boolean;
@@ -11,6 +12,7 @@ interface ShareModalProps {
 }
 
 const ShareModal = ({ visible, onClose, shareUrl = 'https://allin.app/profile/user123' }: ShareModalProps) => {
+    const { t } = useTranslation();
     const { colors } = useTheme();
     const Styles = createStyles(colors);
     const [copiedLink, setCopiedLink] = useState<string | null>(null);
@@ -18,28 +20,28 @@ const ShareModal = ({ visible, onClose, shareUrl = 'https://allin.app/profile/us
     const handleCopyLink = () => {
         setCopiedLink('main');
         setTimeout(() => setCopiedLink(null), 2000);
-        Alert.alert('Copied!', 'Link copied to clipboard');
+        Alert.alert(t('Copied!'), t('Link copied to clipboard'));
     };
 
     const handleCopyTwitter = () => {
         const twitterUrl = `https://twitter.com/intent/tweet?url=${encodeURIComponent(shareUrl)}`;
         setCopiedLink('twitter');
         setTimeout(() => setCopiedLink(null), 2000);
-        Alert.alert('Copied!', 'Twitter share link copied');
+        Alert.alert(t('Copied!'), t('Twitter share link copied'));
     };
 
     const handleCopyFacebook = () => {
         const facebookUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}`;
         setCopiedLink('facebook');
         setTimeout(() => setCopiedLink(null), 2000);
-        Alert.alert('Copied!', 'Facebook share link copied');
+        Alert.alert(t('Copied!'), t('Facebook share link copied'));
     };
 
     const handleCopyLinkedIn = () => {
         const linkedInUrl = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(shareUrl)}`;
         setCopiedLink('linkedin');
         setTimeout(() => setCopiedLink(null), 2000);
-        Alert.alert('Copied!', 'LinkedIn share link copied');
+        Alert.alert(t('Copied!'), t('LinkedIn share link copied'));
     };
 
     return (
@@ -57,7 +59,7 @@ const ShareModal = ({ visible, onClose, shareUrl = 'https://allin.app/profile/us
                 <TouchableOpacity activeOpacity={1} style={Styles.modalContainer}>
                     {/* Header */}
                     <View style={Styles.modalHeader}>
-                        <Text style={Styles.modalTitle}>Share</Text>
+                        <Text style={Styles.modalTitle}>{t('Share')}</Text>
                         <TouchableOpacity onPress={onClose} style={Styles.closeButton}>
                             <CloseCircle size={24} color={colors.grayColor} variant="Linear" />
                         </TouchableOpacity>
@@ -71,14 +73,14 @@ const ShareModal = ({ visible, onClose, shareUrl = 'https://allin.app/profile/us
                             ) : (
                                 <Copy size={24} color={colors.mainTextColor} variant="Linear" />
                             )}
-                            <Text style={Styles.copyLinkTitle}>{copiedLink === 'main' ? 'Copied!' : 'Copy Link'}</Text>
+                    <Text style={Styles.copyLinkTitle}>{copiedLink === 'main' ? t('Copied!') : t('Copy Link')}</Text>
                         </View>
-                        <Text style={Styles.copyLinkSubtitle}>Copy the share link</Text>
+                        <Text style={Styles.copyLinkSubtitle}>{t('Copy the share link')}</Text>
                     </TouchableOpacity>
 
                     {/* Share on Social */}
                     <View style={Styles.socialSection}>
-                        <Text style={Styles.socialTitle}>Share on Social</Text>
+                        <Text style={Styles.socialTitle}>{t('Share on Social')}</Text>
                         <View style={Styles.socialButtons}>
                             <TouchableOpacity style={Styles.socialButton} onPress={handleCopyTwitter}>
                                 {copiedLink === 'twitter' ? (
@@ -86,7 +88,7 @@ const ShareModal = ({ visible, onClose, shareUrl = 'https://allin.app/profile/us
                                 ) : (
                                     <Copy size={24} color={colors.mainTextColor} variant="Linear" />
                                 )}
-                                <Text style={Styles.socialButtonText}>Twitter</Text>
+                                <Text style={Styles.socialButtonText}>{t('Twitter')}</Text>
                             </TouchableOpacity>
                             <TouchableOpacity style={Styles.socialButton} onPress={handleCopyFacebook}>
                                 {copiedLink === 'facebook' ? (
@@ -94,7 +96,7 @@ const ShareModal = ({ visible, onClose, shareUrl = 'https://allin.app/profile/us
                                 ) : (
                                     <Copy size={24} color={colors.mainTextColor} variant="Linear" />
                                 )}
-                                <Text style={Styles.socialButtonText}>Facebook</Text>
+                                <Text style={Styles.socialButtonText}>{t('Facebook')}</Text>
                             </TouchableOpacity>
                             <TouchableOpacity style={Styles.socialButton} onPress={handleCopyLinkedIn}>
                                 {copiedLink === 'linkedin' ? (
@@ -102,7 +104,7 @@ const ShareModal = ({ visible, onClose, shareUrl = 'https://allin.app/profile/us
                                 ) : (
                                     <Copy size={24} color={colors.mainTextColor} variant="Linear" />
                                 )}
-                                <Text style={Styles.socialButtonText}>LinkedIn</Text>
+                                <Text style={Styles.socialButtonText}>{t('LinkedIn')}</Text>
                             </TouchableOpacity>
                         </View>
                     </View>

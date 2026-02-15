@@ -8,8 +8,10 @@ import CustomSearch from '../../../components/customSearch/CustomSearch';
 import CustomButton from '../../../components/customButton/CustomButton';
 import CustomDropdown from '../../../components/customDropdown/CustomDropdown';
 import { useTheme } from '../../../context/ThemeContext';
+import { useTranslation } from 'react-i18next'
 
 const SelectCategory = ({ route, navigation }: any) => {
+    const { t } = useTranslation();
     const insets = useSafeAreaInsets();
     const { colors } = useTheme();
     const Styles = createStyles(colors);
@@ -21,21 +23,21 @@ const SelectCategory = ({ route, navigation }: any) => {
     return (
         <View style={Styles.mainContainer}>
             <SizeBox height={insets.top} />
-            <CustomHeader title='Upload Details' isBack={false} onPressSetting={() => navigation.navigate('ProfileSettings')} />
+            <CustomHeader title={t('Upload Details')} isBack={false} onPressSetting={() => navigation.navigate('ProfileSettings')} />
             <ScrollView showsVerticalScrollIndicator={false}>
 
 
                 <SizeBox height={24} />
                 <View>
-                    <Text style={[Styles.titleText, { marginLeft: 15 }]}>Event Search</Text>
+                    <Text style={[Styles.titleText, { marginLeft: 15 }]}>{t('Event Search')}</Text>
                     <SizeBox height={8} />
                     <View style={[Styles.row]}>
                         <View style={{ flex: 2 }}>
-                            <CustomSearch value={search} placeholder='Event Search....' onChangeText={(text: any) => setSearch(text)} />
+                            <CustomSearch value={search} placeholder={t('Event Search....')} onChangeText={(text: any) => setSearch(text)} />
                         </View>
                         <SizeBox width={5} />
                         <View style={{ flex: 1, marginRight: 20 }}>
-                            <CustomButton title='Add New' onPress={() => navigation.navigate('CreateCompetition')} isAdd={true} />
+                            <CustomButton title={t('Add New')} onPress={() => navigation.navigate('CreateCompetition')} isAdd={true} />
                         </View>
                     </View>
                     <SizeBox height={24} />
@@ -43,7 +45,7 @@ const SelectCategory = ({ route, navigation }: any) => {
 
 
                 <CustomDropdown
-                    title="Talent Selection"
+                    title={t('Talent Selection')}
                     options={[
                         { label: 'Athletics', value: 'athletics' },
                         { label: 'Swimming', value: 'swimming' },
@@ -54,7 +56,7 @@ const SelectCategory = ({ route, navigation }: any) => {
                 />
                 <SizeBox height={24} />
                 <CustomDropdown
-                    title="Event Type"
+                    title={t('Event Type')}
                     options={[
                         { label: '400m', value: '400m' },
                         { label: '200m', value: '200m' },
@@ -66,7 +68,7 @@ const SelectCategory = ({ route, navigation }: any) => {
                 />
                 <SizeBox height={24} />
                 <CustomDropdown
-                    title="Gender Selection"
+                    title={t('Gender Selection')}
                     options={[
                         { label: 'Men', value: 'men' },
                         { label: 'Women', value: 'women' },
@@ -77,7 +79,7 @@ const SelectCategory = ({ route, navigation }: any) => {
                 />
                 <SizeBox height={24} />
                 <CustomDropdown
-                    title="Category Selection"
+                    title={t('Category Selection')}
                     options={[
                         { label: 'Seniors', value: 'seniors' },
                         { label: 'Masters', value: 'masters' },
@@ -90,7 +92,7 @@ const SelectCategory = ({ route, navigation }: any) => {
 
             </ScrollView>
             <View style={Styles.bottomBtn}>
-                <CustomButton title='Upload' onPress={() => { navigation.goBack() }} isSmall={true} />
+                <CustomButton title={t('Upload')} onPress={() => { navigation.goBack() }} isSmall={true} />
             </View>
         </View>
     )

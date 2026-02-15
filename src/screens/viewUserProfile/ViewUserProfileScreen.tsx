@@ -21,10 +21,12 @@ import ShareModal from '../../components/shareModal/ShareModal'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import ProfileTimeline, { TimelineEntry } from '../../components/profileTimeline/ProfileTimeline'
 import { useAuth } from '../../context/AuthContext'
-import { getMediaById } from '../../services/apiGateway'
+import { getMediaById, getPosts, getProfileCollections, getProfileTimeline, type PostSummary, type ProfileCollection, type ProfileTimelineEntry } from '../../services/apiGateway'
 import { getApiBaseUrl } from '../../constants/RuntimeConfig'
+import { useTranslation } from 'react-i18next'
 
 const ViewUserProfileScreen = ({ navigation, route }: any) => {
+    const { t } = useTranslation();
     const insets = useSafeAreaInsets();
     const { colors } = useTheme();
     const Styles = createStyles(colors);
@@ -33,6 +35,8 @@ const ViewUserProfileScreen = ({ navigation, route }: any) => {
     const [timelineItems, setTimelineItems] = useState<TimelineEntry[]>([]);
     const [profileTab, setProfileTab] = useState<'timeline' | 'activity' | 'collections'>('timeline');
     const { apiAccessToken } = useAuth();
+    const [serverCollections, setServerCollections] = useState<ProfileCollection[]>([]);
+    const [posts, setPosts] = useState<PostSummary[]>([]);
     const photoIds = useMemo(
         () => [
             '87873d40-addf-4289-aa82-7cd300acdd94',
@@ -54,8 +58,6 @@ const ViewUserProfileScreen = ({ navigation, route }: any) => {
             'public'
         );
     }, [route?.params?.profileKey, route?.params?.user]);
-
-    const timelineStorageKey = useMemo(() => `@profile_timeline_${profileKey}`, [profileKey]);
 
     const defaultTimeline = useMemo<TimelineEntry[]>(
         () => ([
@@ -85,29 +87,49 @@ const ViewUserProfileScreen = ({ navigation, route }: any) => {
     );
 
     useEffect(() => {
-        const loadTimeline = async () => {
-            const stored = await AsyncStorage.getItem(timelineStorageKey);
-            if (stored) {
-                try {
-                    const parsed = JSON.parse(stored);
-                    if (Array.isArray(parsed)) {
-                        const normalized = parsed.map((entry) => ({
-                            ...entry,
-                            photos: Array.isArray(entry.photos) ? entry.photos : [],
-                            linkedBlogs: Array.isArray(entry.linkedBlogs) ? entry.linkedBlogs : [],
-                            linkedCompetitions: Array.isArray(entry.linkedCompetitions) ? entry.linkedCompetitions : [],
-                        }));
-                        setTimelineItems(normalized);
-                        return;
-                    }
-                } catch {
-                    // ignore
-                }
+        let mounted = true;
+        const load = async () => {
+            if (!apiAccessToken) {
+                if (mounted) setTimelineItems([]);
+                if (mounted) setServerCollections([]);
+                return;
             }
-            setTimelineItems(defaultTimeline);
+            try {
+                const tl = await getProfileTimeline(apiAccessToken, profileKey);
+                const items = Array.isArray((tl as any)?.items) ? (tl as any).items : [];
+                const mapped: TimelineEntry[] = items.map((it: ProfileTimelineEntry) => ({
+                    id: String(it.id),
+                    year: String((it as any)?.year ?? ''),
+                    title: String((it as any)?.title ?? ''),
+                    description: (it as any)?.description ?? '',
+                    highlight: (it as any)?.highlight ?? '',
+                    photos: [],
+                    linkedBlogs: [],
+                    linkedCompetitions: [],
+                    coverImage: (it as any)?.cover_thumbnail_url ?? null,
+                }));
+                if (mounted) setTimelineItems(mapped);
+            } catch {
+                if (mounted) setTimelineItems([]);
+            }
+            try {
+                const c = await getProfileCollections(apiAccessToken, profileKey, { limit: 50 });
+                if (mounted) setServerCollections(Array.isArray((c as any)?.collections) ? (c as any).collections : []);
+            } catch {
+                if (mounted) setServerCollections([]);
+            }
+            try {
+                const p = await getPosts(apiAccessToken, { author_profile_id: profileKey, limit: 50 });
+                if (mounted) setPosts(Array.isArray((p as any)?.posts) ? (p as any).posts : []);
+            } catch {
+                if (mounted) setPosts([]);
+            }
         };
-        loadTimeline();
-    }, [defaultTimeline, timelineStorageKey]);
+        load();
+        return () => {
+            mounted = false;
+        };
+    }, [apiAccessToken, profileKey]);
 
     useEffect(() => {
         let mounted = true;
@@ -172,34 +194,7 @@ const ViewUserProfileScreen = ({ navigation, route }: any) => {
         });
     };
 
-    const collections = [
-        { id: 1, imgUrl: Images.photo1 },
-        { id: 2, imgUrl: Images.photo3 },
-        { id: 3, imgUrl: Images.photo4 },
-        { id: 4, imgUrl: Images.photo5 },
-    ]
-
-    const collectionVideos = [
-        { id: 1, thumbnail: Images.photo1, title: '17:45 / MIN-M (Series)', author: 'Smith', duration: '5:06 mins' },
-        { id: 2, thumbnail: Images.photo3, title: '17:45 / MIN-M (Series)', author: 'Smith', duration: '5:06 mins' },
-    ]
-
-    const posts = [
-        {
-            id: 1,
-            title: 'IFAM Outdoor Oordegem',
-            date: '09/08/2025',
-            description: "Elias took part in the 800m and achieved a time close to his best 1'50\"99. For Lode it was a disappointing first half of his match DNF in the 5000m",
-            image: Images.photo1,
-        },
-        {
-            id: 2,
-            title: 'BK 10000m AC Duffel',
-            date: '09/06/2025',
-            description: "This race meant everything to me. Running the European Championships on home soil, with my family and friends lining",
-            image: Images.photo3,
-        },
-    ]
+    const visibleCollections = useMemo(() => (serverCollections || []).slice(0, 8), [serverCollections]);
 
     const events = [
         {
@@ -223,32 +218,17 @@ const ViewUserProfileScreen = ({ navigation, route }: any) => {
     ];
 
     const handlePostPress = (post: any) => {
-        if (post.id === 1) {
-            navigation.navigate('ViewUserBlogDetailsScreen', {
-                post: {
-                    title: post.title,
-                    date: post.date,
-                    image: post.image,
-                    readCount: '1k',
-                    writer: 'James Ray',
-                    writerImage: Images.profile1,
-                    description: `The IFAM Outdoor Oordegem is an internationally renowned athletics meeting held annually in Oordegem, Belgium. Recognized by World Athletics, it attracts a diverse mix of elite and emerging athletes from across Europe and beyond who compete in a full range of track and field events, including sprints, middle- and long-distance races, hurdles, jumps, and throws. Known for its exceptionally fast track and well-organized schedule, the event has become a prime venue for athletes seeking personal bests or qualification standards for major championships. Hosted at the Sport Vlaanderen stadium in Oordegem, typically in late spring or summer, the IFAM Outdoor combines high-level competition with a welcoming atmosphere for both athletes and spectators. Its growing reputation as one of Europe's largest and most competitive outdoor meetings highlights its importance in the international athletics calendar.`,
-                },
-            });
-        } else if (post.id === 2) {
-            navigation.navigate('ViewUserBlogDetailsScreen', {
-                post: {
-                    title: 'IFAM Outdoor Oordegem',
-                    date: '09/08/2025',
-                    image: post.image,
-                    gallery: [Images.photo1, Images.photo3, Images.photo4, Images.photo5, Images.photo6],
-                    readCount: '1k',
-                    writer: 'James Ray',
-                    writerImage: Images.profile1,
-                    description: `The IFAM Outdoor Oordegem is an internationally renowned athletics meeting held annually in Oordegem, Belgium. Recognized by World Athletics, it attracts a diverse mix of elite and emerging athletes from across Europe and beyond who compete in a full range of track and field events, including sprints, middle- and long-distance races, hurdles, jumps, and throws. Known for its exceptionally fast track and well-organized schedule, the event has become a prime venue for athletes seeking personal bests or qualification standards for major championships. Hosted at the Sport Vlaanderen stadium in Oordegem, typically in late spring or summer, the IFAM Outdoor combines high-level competition with a welcoming atmosphere for both athletes and spectators. Its growing reputation as one of Europe's largest and most competitive outdoor meetings highlights its importance in the international athletics calendar.`,
-                },
-            });
-        }
+        navigation.navigate('ViewUserBlogDetailsScreen', {
+            post: {
+                title: post.title,
+                date: post.created_at ? String(post.created_at).slice(0, 10) : '',
+                image: Images.photo1,
+                readCount: String(post.views_count ?? ''),
+                writer: post.author?.display_name ?? 'Author',
+                writerImage: Images.profile1,
+                description: post.summary || post.description || '',
+            },
+        });
     };
 
     // Posts are rendered in the combined activity list
@@ -287,7 +267,7 @@ const ViewUserProfileScreen = ({ navigation, route }: any) => {
                                     <Text style={Styles.activityStatusText}>{item.status}</Text>
                                 </View>
                             </View>
-                            <Text style={Styles.activityEventSubtitle}>Subscribed competition</Text>
+                            <Text style={Styles.activityEventSubtitle}>{t('Subscribed competition')}</Text>
                             <View style={Styles.activityEventMetaRow}>
                                 <VideoSquare size={14} color={colors.grayColor} variant="Linear" />
                                 <Text style={Styles.activityEventMetaText}>{item.media}</Text>
@@ -312,12 +292,14 @@ const ViewUserProfileScreen = ({ navigation, route }: any) => {
                 <View style={Styles.activityHeader}>
                     <Text style={Styles.activityTitle}>{item.title}</Text>
                     <View style={[Styles.activityBadge, Styles.activityBadgeBlog]}>
-                        <Text style={Styles.activityBadgeText}>Blog</Text>
+                        <Text style={Styles.activityBadgeText}>{t('Blog')}</Text>
                     </View>
                 </View>
-                <Text style={Styles.activityMeta}>{item.date}</Text>
+                <Text style={Styles.activityMeta}>
+                    {item.created_at ? String(item.created_at).slice(0, 10) : ''}
+                </Text>
                 <Text style={Styles.activityDescription} numberOfLines={2}>
-                    {item.description}
+                    {item.summary || item.description || ''}
                 </Text>
             </TouchableOpacity>
         );
@@ -332,7 +314,7 @@ const ViewUserProfileScreen = ({ navigation, route }: any) => {
                 <TouchableOpacity style={Styles.headerButton} onPress={() => navigation.goBack()}>
                     <ArrowLeft2 size={24} color={colors.primaryColor} variant="Linear" />
                 </TouchableOpacity>
-                <Text style={Styles.headerTitle}>Profile</Text>
+                <Text style={Styles.headerTitle}>{t('Profile')}</Text>
                 <TouchableOpacity style={Styles.headerButton}>
                     <User size={24} color={colors.primaryColor} variant="Linear" />
                 </TouchableOpacity>
@@ -343,10 +325,10 @@ const ViewUserProfileScreen = ({ navigation, route }: any) => {
 
                 {/* Search Card */}
                 <View style={Styles.searchCard}>
-                    <Text style={Styles.searchLabel}>Looking for another athlete?</Text>
+                    <Text style={Styles.searchLabel}>{t('Looking for another athlete?')}</Text>
                     <View style={Styles.searchInput}>
                         <SearchNormal1 size={16} color="#9B9F9F" variant="Linear" />
-                        <Text style={Styles.searchPlaceholder}>Search</Text>
+                        <Text style={Styles.searchPlaceholder}>{t('Search')}</Text>
                     </View>
                 </View>
 
@@ -357,7 +339,7 @@ const ViewUserProfileScreen = ({ navigation, route }: any) => {
                     <View style={Styles.profileHeader}>
                         {/* Share Button */}
                         <TouchableOpacity style={Styles.shareButton} onPress={() => setShowShareModal(true)}>
-                            <Text style={Styles.shareButtonText}>Share</Text>
+                            <Text style={Styles.shareButtonText}>{t('Share')}</Text>
                             <Image source={Icons.ShareGray} style={{ width: 18, height: 18 }} />
                         </TouchableOpacity>
                     </View>
@@ -366,7 +348,7 @@ const ViewUserProfileScreen = ({ navigation, route }: any) => {
                         <View style={Styles.profileLeft}>
                             {/* Name */}
                             <View style={Styles.nameContainer}>
-                                <Text style={Styles.userName}>James Ray</Text>
+                                <Text style={Styles.userName}>{t('James Ray')}</Text>
                                 <Icons.BlueTick width={16} height={16} />
                             </View>
 
@@ -374,9 +356,9 @@ const ViewUserProfileScreen = ({ navigation, route }: any) => {
                             <Text style={Styles.userHandle}>jamesray2@</Text>
 
                             <View style={Styles.categoryRow}>
-                                <Text style={Styles.categoryLabel}>Category</Text>
+                                <Text style={Styles.categoryLabel}>{t('Category')}</Text>
                                 <View style={Styles.categoryPill}>
-                                    <Text style={Styles.categoryValue}>Track&Field</Text>
+                                    <Text style={Styles.categoryValue}>{t('Track&Field')}</Text>
                                 </View>
                             </View>
                         </View>
@@ -388,13 +370,13 @@ const ViewUserProfileScreen = ({ navigation, route }: any) => {
                             {/* Stats Row */}
                             <View style={Styles.statsRowRight}>
                                 <View style={Styles.statItem}>
-                                    <Text style={Styles.statValue}>1.2K</Text>
-                                    <Text style={Styles.statLabel}>Posts</Text>
+                                    <Text style={Styles.statValue}>{t('1.2K')}</Text>
+                                    <Text style={Styles.statLabel}>{t('Posts')}</Text>
                                 </View>
                                 <View style={Styles.statDivider} />
                                 <View style={Styles.statItem}>
-                                    <Text style={Styles.statValue}>45.8K</Text>
-                                    <Text style={Styles.statLabel}>Followers</Text>
+                                    <Text style={Styles.statValue}>{t('45.8K')}</Text>
+                                    <Text style={Styles.statLabel}>{t('Followers')}</Text>
                                 </View>
                             </View>
                         </View>
@@ -402,13 +384,13 @@ const ViewUserProfileScreen = ({ navigation, route }: any) => {
 
                     {/* Unfollow Button */}
                     <TouchableOpacity style={Styles.unfollowButton}>
-                        <Text style={Styles.unfollowButtonText}>Unfollow</Text>
+                        <Text style={Styles.unfollowButtonText}>{t('Unfollow')}</Text>
                     </TouchableOpacity>
 
                     {/* Bio Section */}
                     <View style={Styles.bioSection}>
                         <View style={Styles.bioHeader}>
-                            <Text style={Styles.bioTitle}>Bio</Text>
+                            <Text style={Styles.bioTitle}>{t('Bio')}</Text>
                         </View>
                         <Text style={Styles.bioText}>
                             Passionate photographer capturing life's most authentic moments through the lens.
@@ -426,27 +408,27 @@ const ViewUserProfileScreen = ({ navigation, route }: any) => {
                         onPress={() => setProfileTab('timeline')}
                     >
                         <Clock size={18} color={profileTab === 'timeline' ? colors.primaryColor : colors.grayColor} variant="Linear" />
-                        <Text style={[Styles.profileTabText, profileTab === 'timeline' && Styles.profileTabTextActive]}>Timeline</Text>
+                        <Text style={[Styles.profileTabText, profileTab === 'timeline' && Styles.profileTabTextActive]}>{t('Timeline')}</Text>
                     </TouchableOpacity>
                     <TouchableOpacity
                         style={[Styles.profileTab, profileTab === 'activity' && Styles.profileTabActive]}
                         onPress={() => setProfileTab('activity')}
                     >
                         <DocumentText size={18} color={profileTab === 'activity' ? colors.primaryColor : colors.grayColor} variant="Linear" />
-                        <Text style={[Styles.profileTabText, profileTab === 'activity' && Styles.profileTabTextActive]}>News</Text>
+                        <Text style={[Styles.profileTabText, profileTab === 'activity' && Styles.profileTabTextActive]}>{t('News')}</Text>
                     </TouchableOpacity>
                     <TouchableOpacity
                         style={[Styles.profileTab, profileTab === 'collections' && Styles.profileTabActive]}
                         onPress={() => setProfileTab('collections')}
                     >
                         <Gallery size={18} color={profileTab === 'collections' ? colors.primaryColor : colors.grayColor} variant="Linear" />
-                        <Text style={[Styles.profileTabText, profileTab === 'collections' && Styles.profileTabTextActive]}>Collections</Text>
+                        <Text style={[Styles.profileTabText, profileTab === 'collections' && Styles.profileTabTextActive]}>{t('Collections')}</Text>
                     </TouchableOpacity>
                 </View>
 
                 {profileTab === 'timeline' && (
                     <ProfileTimeline
-                        title="Timeline"
+                        title={t('Timeline')}
                         items={timelineItems}
                         onPressItem={openTimelineDetail}
                     />
@@ -455,7 +437,7 @@ const ViewUserProfileScreen = ({ navigation, route }: any) => {
                 {profileTab === 'activity' && (
                     <View style={Styles.activitySection}>
                         <View style={Styles.sectionHeader}>
-                            <Text style={Styles.sectionTitle}>News</Text>
+                            <Text style={Styles.sectionTitle}>{t('News')}</Text>
                         </View>
                         <View style={Styles.postsContainer}>
                             {activityItems.map(renderActivityCard)}
@@ -466,7 +448,7 @@ const ViewUserProfileScreen = ({ navigation, route }: any) => {
                 {profileTab === 'collections' && (
                     <View style={Styles.collectionsSection}>
                         <View style={Styles.sectionHeader}>
-                            <Text style={Styles.sectionTitle}>Collections</Text>
+                            <Text style={Styles.sectionTitle}>{t('Collections')}</Text>
                             <TouchableOpacity onPress={() => {
                                 if (activeTab === 'photos') {
                                     navigation.navigate('ViewUserCollectionsPhotosScreen');
@@ -474,7 +456,7 @@ const ViewUserProfileScreen = ({ navigation, route }: any) => {
                                     navigation.navigate('ViewUserCollectionsVideosScreen');
                                 }
                             }}>
-                                <Text style={Styles.viewAllText}>View All</Text>
+                                <Text style={Styles.viewAllText}>{t('View All')}</Text>
                             </TouchableOpacity>
                         </View>
 
@@ -483,69 +465,74 @@ const ViewUserProfileScreen = ({ navigation, route }: any) => {
                                 style={[Styles.toggleButton, activeTab === 'photos' && Styles.toggleButtonActive]}
                                 onPress={() => setActiveTab('photos')}
                             >
-                                <Text style={activeTab === 'photos' ? Styles.toggleTextActive : Styles.toggleText}>Photos</Text>
+                                <Text style={activeTab === 'photos' ? Styles.toggleTextActive : Styles.toggleText}>{t('Photos')}</Text>
                             </TouchableOpacity>
                             <TouchableOpacity
                                 style={[Styles.toggleButton, activeTab === 'videos' && Styles.toggleButtonActive]}
                                 onPress={() => setActiveTab('videos')}
                             >
-                                <Text style={activeTab === 'videos' ? Styles.toggleTextActive : Styles.toggleText}>Videos</Text>
+                                <Text style={activeTab === 'videos' ? Styles.toggleTextActive : Styles.toggleText}>{t('Videos')}</Text>
                             </TouchableOpacity>
                         </View>
 
                         {activeTab === 'photos' ? (
                             <View style={Styles.collectionsGrid}>
-                                {collections.map((item) => (
+                                {visibleCollections.map((c, idx) => (
                                     <TouchableOpacity
-                                        key={item.id}
-                                        onPress={() => navigation.navigate('PhotoDetailScreen', {
-                                            eventTitle: 'BK Studenten 2023',
-                                            photo: {
-                                                title: 'PK 2025 indoor Passionate',
-                                                views: '122K+',
-                                                thumbnail: item.imgUrl,
+                                        key={String(c.id || idx)}
+                                        onPress={() => {
+                                            if (c.cover_media_id) {
+                                                navigation.navigate('PhotoDetailScreen', {
+                                                    eventTitle: c.name || 'Collection',
+                                                    media: {
+                                                        id: c.cover_media_id,
+                                                        type: 'photo',
+                                                    },
+                                                });
                                             }
-                                        })}
+                                        }}
                                     >
-                                        <FastImage
-                                            source={item.imgUrl}
-                                            style={Styles.collectionImage}
-                                            resizeMode="cover"
-                                        />
+                                        {c.cover_thumbnail_url ? (
+                                            <FastImage
+                                                source={{ uri: String(c.cover_thumbnail_url) }}
+                                                style={Styles.collectionImage}
+                                                resizeMode="cover"
+                                            />
+                                        ) : (
+                                            <View style={[Styles.collectionImage, { backgroundColor: '#1a1a1a' }]} />
+                                        )}
                                     </TouchableOpacity>
                                 ))}
                             </View>
                         ) : (
                             <View style={Styles.videosGrid}>
-                                {collectionVideos.map((video) => (
+                                {visibleCollections.map((c, idx) => (
                                     <TouchableOpacity
-                                        key={video.id}
+                                        key={String(c.id || idx)}
                                         style={Styles.videoCard}
-                                        onPress={() => navigation.navigate('VideoPlayingScreen', {
-                                            video: {
-                                                title: 'BK Studenten 2023',
-                                                subtitle: video.title,
-                                                thumbnail: video.thumbnail,
+                                        onPress={() => {
+                                            if (c.cover_media_id) {
+                                                navigation.navigate('PhotoDetailScreen', {
+                                                    eventTitle: c.name || 'Collection',
+                                                    media: {
+                                                        id: c.cover_media_id,
+                                                        type: 'video',
+                                                    },
+                                                });
                                             }
-                                        })}
+                                        }}
                                     >
                                         <View style={Styles.videoThumbnailContainer}>
-                                            <FastImage source={video.thumbnail} style={Styles.videoThumbnail} resizeMode="cover" />
+                                            {c.cover_thumbnail_url ? (
+                                                <FastImage source={{ uri: String(c.cover_thumbnail_url) }} style={Styles.videoThumbnail} resizeMode="cover" />
+                                            ) : (
+                                                <View style={[Styles.videoThumbnail, { backgroundColor: '#1a1a1a' }]} />
+                                            )}
                                             <View style={Styles.videoPlayIconContainer}>
                                                 <Icons.PlayCricle width={26} height={26} />
                                             </View>
                                         </View>
-                                        <Text style={Styles.videoCardTitle}>{video.title}</Text>
-                                        <View style={Styles.videoCardMeta}>
-                                            <View style={Styles.videoMetaItem}>
-                                                <User size={12} color="#9B9F9F" variant="Linear" />
-                                                <Text style={Styles.videoMetaText}>{video.author}</Text>
-                                            </View>
-                                            <View style={Styles.videoMetaItem}>
-                                                <Clock size={12} color="#9B9F9F" variant="Linear" />
-                                                <Text style={Styles.videoMetaText}>{video.duration}</Text>
-                                            </View>
-                                        </View>
+                                        <Text style={Styles.videoCardTitle}>{c.name}</Text>
                                     </TouchableOpacity>
                                 ))}
                             </View>

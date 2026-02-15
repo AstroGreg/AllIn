@@ -205,12 +205,12 @@ const SentRequestStateScreen = ({ navigation }: any) => {
                 {/* Bottom Actions */}
                 <View style={Styles.bottomActions}>
                     <TouchableOpacity>
-                        <Text style={Styles.deleteText}>Delete</Text>
+                        <Text style={Styles.deleteText}>{t('Delete')}</Text>
                     </TouchableOpacity>
 
                     <View style={Styles.rightActions}>
                         <TouchableOpacity style={Styles.cancelButton} onPress={() => navigation.goBack()}>
-                            <Text style={Styles.cancelButtonText}>Cancel</Text>
+                            <Text style={Styles.cancelButtonText}>{t('Cancel')}</Text>
                             <ArrowRight size={18} color="#9B9F9F" variant="Linear" />
                         </TouchableOpacity>
 
@@ -218,7 +218,7 @@ const SentRequestStateScreen = ({ navigation }: any) => {
                             style={Styles.submitButton}
                             onPress={() => navigation.navigate('ReceivedRequestStateScreen')}
                         >
-                            <Text style={Styles.submitButtonText}>Submit</Text>
+                            <Text style={Styles.submitButtonText}>{t('Submit')}</Text>
                             <ArrowRight size={18} color={colors.pureWhite} variant="Linear" />
                         </TouchableOpacity>
                     </View>

@@ -11,8 +11,10 @@ import {
     Copy,
 } from 'iconsax-react-nativejs';
 import { createStyles } from './AuthenticatorSetupStyles';
+import { useTranslation } from 'react-i18next'
 
 const AuthenticatorSetup = ({ navigation }: any) => {
+    const { t } = useTranslation();
     const insets = useSafeAreaInsets();
     const { colors } = useTheme();
     const styles = createStyles(colors);
@@ -31,7 +33,7 @@ const AuthenticatorSetup = ({ navigation }: any) => {
                 <TouchableOpacity style={styles.headerButton} onPress={() => navigation.goBack()}>
                     <ArrowLeft2 size={24} color={colors.primaryColor} variant="Linear" />
                 </TouchableOpacity>
-                <Text style={styles.headerTitle}>Authenticator Setup</Text>
+                <Text style={styles.headerTitle}>{t('Authenticator Setup')}</Text>
                 <TouchableOpacity style={styles.headerButton}>
                     <Notification size={24} color={colors.primaryColor} variant="Linear" />
                 </TouchableOpacity>
@@ -42,7 +44,7 @@ const AuthenticatorSetup = ({ navigation }: any) => {
 
                 {/* Title Section */}
                 <View style={styles.titleSection}>
-                    <Text style={styles.title}>Set up authenticator app</Text>
+                    <Text style={styles.title}>{t('Set up authenticator app')}</Text>
                     <SizeBox height={6} />
                     <Text style={styles.description}>
                         Scan this QR code using Google Authenticator or Authy.
@@ -61,7 +63,7 @@ const AuthenticatorSetup = ({ navigation }: any) => {
                 <SizeBox height={24} />
 
                 {/* Manual Code Entry */}
-                <Text style={styles.orText}>Or enter code manually</Text>
+                <Text style={styles.orText}>{t('Or enter code manually')}</Text>
 
                 <SizeBox height={16} />
 
@@ -80,20 +82,20 @@ const AuthenticatorSetup = ({ navigation }: any) => {
                     style={styles.primaryButton}
                     onPress={() => navigation.navigate('VerificationCode')}
                 >
-                    <Text style={styles.primaryButtonText}>I've Scaned the code</Text>
+                    <Text style={styles.primaryButtonText}>{t("I've Scaned the code")}</Text>
                     <ArrowRight size={24} color={colors.pureWhite} variant="Linear" />
                 </TouchableOpacity>
 
                 <SizeBox height={18} />
 
                 <TouchableOpacity>
-                    <Text style={styles.linkText}>Can't scan? Enter code manually</Text>
+                    <Text style={styles.linkText}>{t("Can't scan? Enter code manually")}</Text>
                 </TouchableOpacity>
 
                 <SizeBox height={8} />
 
                 <TouchableOpacity onPress={() => navigation.goBack()}>
-                    <Text style={styles.linkText}>Use different method</Text>
+                    <Text style={styles.linkText}>{t('Use different method')}</Text>
                 </TouchableOpacity>
             </View>
         </View>

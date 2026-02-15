@@ -5,8 +5,10 @@ import SizeBox from '../../../constants/SizeBox'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useTheme } from '../../../context/ThemeContext'
 import { ArrowLeft2, Notification } from 'iconsax-react-nativejs'
+import { useTranslation } from 'react-i18next'
 
 const TermsOfService = ({ navigation }: any) => {
+    const { t } = useTranslation();
     const insets = useSafeAreaInsets();
     const { colors } = useTheme();
     const Styles = createStyles(colors);
@@ -27,7 +29,7 @@ const TermsOfService = ({ navigation }: any) => {
                 <TouchableOpacity style={Styles.headerButton} onPress={() => navigation.goBack()}>
                     <ArrowLeft2 size={24} color={colors.primaryColor} variant="Linear" />
                 </TouchableOpacity>
-                <Text style={Styles.headerTitle}>Terms of Service</Text>
+                <Text style={Styles.headerTitle}>{t('Terms of Service')}</Text>
                 <TouchableOpacity style={Styles.headerButton}>
                     <Notification size={24} color={colors.primaryColor} variant="Linear" />
                 </TouchableOpacity>
@@ -38,7 +40,7 @@ const TermsOfService = ({ navigation }: any) => {
 
                 {/* Terms of Service Section */}
                 <View style={Styles.termsSection}>
-                    <Text style={Styles.termsSectionTitle}>Terms of Service</Text>
+                    <Text style={Styles.termsSectionTitle}>{t('Terms of Service')}</Text>
                     <SizeBox height={12} />
                     <Text style={Styles.termsText}>
                         Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry's standard dummy text ever since the 1500s, when an unknown printer took a galley of type and scrambled it to make a type specimen book. It has survived not only five centuries, but also the leap into electronic typesetting,
@@ -59,7 +61,7 @@ const TermsOfService = ({ navigation }: any) => {
 
                 {/* Changes Section */}
                 <View style={Styles.termsSection}>
-                    <Text style={Styles.termsSectionTitle}>Changes to This Terms and Conditions</Text>
+                    <Text style={Styles.termsSectionTitle}>{t('Changes to This Terms and Conditions')}</Text>
                     <SizeBox height={12} />
                     <Text style={Styles.termsText}>
                         Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry's standard dummy text ever since the 1500s, when an unknown printer took a galley of type and scrambled it to make a type specimen book. It has survived not only five centuries, but also the leap into electronic typesetting,
@@ -70,7 +72,7 @@ const TermsOfService = ({ navigation }: any) => {
 
                 {/* Contact Us Section */}
                 <View style={Styles.termsSection}>
-                    <Text style={Styles.termsSectionTitle}>Contact Us</Text>
+                    <Text style={Styles.termsSectionTitle}>{t('Contact Us')}</Text>
                     <SizeBox height={12} />
                     <Text style={Styles.termsText}>
                         Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry's standard dummy text ever since the 1500s, when an unknown printer took a galley of type and scrambled it to make a type specimen book. It has survived not only five centuries, but also the leap into electronic typesetting,

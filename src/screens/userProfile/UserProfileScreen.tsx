@@ -12,13 +12,15 @@ import { launchImageLibrary } from 'react-native-image-picker'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import ProfileTimeline, { TimelineEntry } from '../../components/profileTimeline/ProfileTimeline'
 import { useAuth } from '../../context/AuthContext'
-import { getMediaById } from '../../services/apiGateway'
+import { getDownloadsSummary, getMediaById, getPosts, getProfileCollections, getProfileTimeline, getUploadedCompetitions, type PostSummary, type ProfileCollection, type ProfileTimelineEntry, type UploadedCompetition } from '../../services/apiGateway'
 import { getApiBaseUrl } from '../../constants/RuntimeConfig'
 import { useFocusEffect } from '@react-navigation/native'
+import { useTranslation } from 'react-i18next'
 
 const UserProfileScreen = ({ navigation }: any) => {
     const insets = useSafeAreaInsets();
     const { colors } = useTheme();
+    const { t } = useTranslation();
     const Styles = createStyles(colors);
     const { user, userProfile, apiAccessToken } = useAuth();
     const [activeTab, setActiveTab] = useState('photos');
@@ -28,6 +30,11 @@ const UserProfileScreen = ({ navigation }: any) => {
     const [profileCategory, setProfileCategory] = useState<'Track&Field' | 'Road&Trail'>('Track&Field');
     const [showCategoryModal, setShowCategoryModal] = useState(false);
     const [profileImage, setProfileImage] = useState<any>(Images.profile1);
+    const [downloadsSummary, setDownloadsSummary] = useState<{ total_downloads: number; total_views: number; total_profit_cents?: number } | null>(
+        null,
+    );
+    const [serverCollections, setServerCollections] = useState<ProfileCollection[]>([]);
+    const [uploadedCompetitions, setUploadedCompetitions] = useState<UploadedCompetition[]>([]);
     const photoIds = useMemo(
         () => [
             '87873d40-addf-4289-aa82-7cd300acdd94',
@@ -40,6 +47,7 @@ const UserProfileScreen = ({ navigation }: any) => {
 
     const { width } = Dimensions.get('window');
     const imageWidth = Math.floor((width - 40 - 24 - 30) / 4);
+    const profileCategoryLabel = profileCategory === 'Road&Trail' ? t('roadAndTrail') : t('trackAndField');
 
     const timelineStorageKey = useMemo(() => {
         const key = user?.sub || userProfile?.username || user?.email || 'self';
@@ -100,47 +108,102 @@ const UserProfileScreen = ({ navigation }: any) => {
     ]), []);
 
     const loadProfileData = useCallback(async () => {
-        const storedTimeline = await AsyncStorage.getItem(timelineStorageKey);
-        if (storedTimeline) {
+        // Timeline: server is the source of truth (no more device-local dummy timeline)
+        if (apiAccessToken) {
             try {
-                const parsed = JSON.parse(storedTimeline);
-                if (Array.isArray(parsed)) {
-                    const normalized = parsed.map((entry) => ({
-                        ...entry,
-                        photos: Array.isArray(entry.photos) ? entry.photos : [],
-                        linkedBlogs: Array.isArray(entry.linkedBlogs) ? entry.linkedBlogs : [],
-                        linkedCompetitions: Array.isArray(entry.linkedCompetitions) ? entry.linkedCompetitions : [],
-                    }));
-                    setTimelineItems(normalized);
-                }
+                const resp = await getProfileTimeline(apiAccessToken, 'me');
+                const items = Array.isArray((resp as any)?.items) ? (resp as any).items : [];
+                const mapped: TimelineEntry[] = items.map((it: ProfileTimelineEntry) => ({
+                    id: String(it.id),
+                    year: String((it as any)?.year ?? ''),
+                    title: String((it as any)?.title ?? ''),
+                    description: (it as any)?.description ?? '',
+                    highlight: (it as any)?.highlight ?? '',
+                    photos: [],
+                    linkedBlogs: [],
+                    linkedCompetitions: [],
+                    coverImage: (it as any)?.cover_thumbnail_url ?? null,
+                }));
+                setTimelineItems(mapped);
             } catch {
-                setTimelineItems(defaultTimeline);
+                setTimelineItems([]);
             }
         } else {
-            await AsyncStorage.setItem(timelineStorageKey, JSON.stringify(defaultTimeline));
-            setTimelineItems(defaultTimeline);
+            setTimelineItems([]);
         }
 
-        const storedBlogs = await AsyncStorage.getItem(blogStorageKey);
-        if (storedBlogs) {
+        // News/blogs: server-driven (no more local dummy list)
+        if (apiAccessToken && userProfile?.id) {
             try {
-                const parsed = JSON.parse(storedBlogs);
-                if (Array.isArray(parsed)) {
-                    setBlogEntries(parsed);
-                    return;
-                }
+                const resp = await getPosts(apiAccessToken, { author_profile_id: String(userProfile.id), limit: 50 });
+                const posts = Array.isArray((resp as any)?.posts) ? (resp as any).posts : [];
+                const mapped = posts.map((p: PostSummary) => ({
+                    id: String(p.id),
+                    title: String(p.title || ''),
+                    date: p.created_at ? String(p.created_at).slice(0, 10) : '',
+                    description: p.summary || p.description || '',
+                    media: [],
+                }));
+                setBlogEntries(mapped);
             } catch {
-                // ignore
+                setBlogEntries([]);
             }
+        } else {
+            setBlogEntries([]);
         }
-        await AsyncStorage.setItem(blogStorageKey, JSON.stringify(defaultBlogs));
-        setBlogEntries(defaultBlogs);
 
         const storedCategory = await AsyncStorage.getItem(categoryStorageKey);
         if (storedCategory === 'Road&Trail' || storedCategory === 'Track&Field') {
             setProfileCategory(storedCategory);
         }
-    }, [blogStorageKey, defaultBlogs, defaultTimeline, timelineStorageKey]);
+
+        // Collections: server-driven
+        if (apiAccessToken) {
+            try {
+                const resp = await getProfileCollections(apiAccessToken, 'me', { limit: 50 });
+                setServerCollections(Array.isArray((resp as any)?.collections) ? (resp as any).collections : []);
+            } catch {
+                setServerCollections([]);
+            }
+        } else {
+            setServerCollections([]);
+        }
+
+        // Downloads summary (server-side)
+        if (apiAccessToken) {
+            try {
+                const summary = await getDownloadsSummary(apiAccessToken);
+                setDownloadsSummary({
+                    total_downloads: Number((summary as any)?.total_downloads ?? 0),
+                    total_views: Number((summary as any)?.total_views ?? 0),
+                    total_profit_cents: Number((summary as any)?.total_profit_cents ?? 0),
+                });
+            } catch {
+                setDownloadsSummary({ total_downloads: 0, total_views: 0, total_profit_cents: 0 });
+            }
+        } else {
+            setDownloadsSummary(null);
+        }
+
+        // Competitions with uploads (server-side)
+        if (apiAccessToken) {
+            try {
+                const resp = await getUploadedCompetitions(apiAccessToken, {limit: 200});
+                setUploadedCompetitions(Array.isArray((resp as any)?.competitions) ? (resp as any).competitions : []);
+            } catch {
+                setUploadedCompetitions([]);
+            }
+        } else {
+            setUploadedCompetitions([]);
+        }
+    }, [
+        apiAccessToken,
+        blogStorageKey,
+        categoryStorageKey,
+        defaultBlogs,
+        timelineStorageKey,
+        userProfile?.id,
+    ]);
 
     useFocusEffect(
         useCallback(() => {
@@ -281,17 +344,9 @@ const UserProfileScreen = ({ navigation }: any) => {
 
     const showDownloadsTab = true;
 
-    const collections = [
-        { id: 1, imgUrl: Images.photo1 },
-        { id: 2, imgUrl: Images.photo3 },
-        { id: 3, imgUrl: Images.photo4 },
-        { id: 4, imgUrl: Images.photo5 },
-    ];
-
-    const collectionVideos = [
-        { id: 1, thumbnail: Images.photo1, title: '17:45 / MIN-M (Series)', author: 'Smith', duration: '5:06 mins' },
-        { id: 2, thumbnail: Images.photo3, title: '17:45 / MIN-M (Series)', author: 'Smith', duration: '5:06 mins' },
-    ];
+    const visibleCollections = useMemo(() => {
+        return (serverCollections || []).slice(0, 8);
+    }, [serverCollections]);
 
 
     const events = [
@@ -316,69 +371,23 @@ const UserProfileScreen = ({ navigation }: any) => {
     ];
 
     const competitionOptions = useMemo(
-        () => events.map((entry) => entry.title).filter(Boolean),
-        [events],
+        () => uploadedCompetitions.map((entry) => entry.event_name).filter(Boolean) as string[],
+        [uploadedCompetitions],
     );
 
-    const uploadedCompetitions = useMemo(
-        () => [
-            {
-                id: 'uc1',
-                title: 'PK 400m Limburg 2025',
-                location: 'Limburg, Belgium',
-                date: '04/02/2026',
-                competitionType: 'track',
-                uploads: 14,
-                image: photoMap[photoIds[0]] ? { uri: photoMap[photoIds[0]] } : null,
-            },
-            {
-                id: 'uc2',
-                title: 'Sunrise 10K Community Run',
-                location: 'Brussels, Belgium',
-                date: '27/05/2025',
-                competitionType: 'road',
-                uploads: 9,
-                image: photoMap[photoIds[1]] ? { uri: photoMap[photoIds[1]] } : null,
-            },
-            {
-                id: 'uc3',
-                title: 'BK Studentent 23',
-                location: 'Ghent, Belgium',
-                date: '16/03/2025',
-                competitionType: 'track',
-                uploads: 6,
-                image: photoMap[photoIds[2]] ? { uri: photoMap[photoIds[2]] } : null,
-            },
-            {
-                id: 'uc4',
-                title: 'IFAM 2024',
-                location: 'Brussels, Belgium',
-                date: '27/05/2025',
-                competitionType: 'track',
-                uploads: 11,
-                image: photoMap[photoIds[0]] ? { uri: photoMap[photoIds[0]] } : null,
-            },
-            {
-                id: 'uc5',
-                title: 'Brussels City Run 2026',
-                location: 'Brussels, Belgium',
-                date: '12/06/2026',
-                competitionType: 'road',
-                uploads: 8,
-                image: photoMap[photoIds[1]] ? { uri: photoMap[photoIds[1]] } : null,
-            },
-            {
-                id: 'uc6',
-                title: 'Indoor Classic 2026',
-                location: 'Antwerp, Belgium',
-                date: '11/01/2026',
-                competitionType: 'track',
-                uploads: 5,
-                image: photoMap[photoIds[2]] ? { uri: photoMap[photoIds[2]] } : null,
-            },
-        ],
-        [photoIds, photoMap],
-    );
+    const formatEventDate = useCallback((value?: string | null) => {
+        if (!value) return '';
+        const raw = String(value);
+        const dt = new Date(raw);
+        if (Number.isNaN(dt.getTime())) return raw.slice(0, 10);
+        return dt.toLocaleDateString();
+    }, []);
+
+    const formatMoney = useCallback((cents?: number | null) => {
+        if (cents == null || !Number.isFinite(Number(cents))) return '—';
+        return `€${(Number(cents) / 100).toFixed(2)}`;
+    }, []);
+
     const previewCompetitions = useMemo(
         () => uploadedCompetitions.slice(0, 5),
         [uploadedCompetitions],
@@ -426,7 +435,7 @@ const UserProfileScreen = ({ navigation }: any) => {
                                     <Text style={Styles.activityStatusText}>{item.status}</Text>
                                 </View>
                             </View>
-                            <Text style={Styles.activityEventSubtitle}>Subscribed competition</Text>
+                            <Text style={Styles.activityEventSubtitle}>{t('Subscribed competition')}</Text>
                             <View style={Styles.activityEventMetaRow}>
                                 <VideoSquare size={14} color={colors.grayColor} variant="Linear" />
                                 <Text style={Styles.activityEventMetaText}>{item.media}</Text>
@@ -467,23 +476,13 @@ const UserProfileScreen = ({ navigation }: any) => {
                 <View style={Styles.activityHeader}>
                     <Text style={Styles.activityTitle}>{item.title}</Text>
                     <View style={[Styles.activityBadge, Styles.activityBadgeBlog]}>
-                        <Text style={Styles.activityBadgeText}>Blog</Text>
+                        <Text style={Styles.activityBadgeText}>{t('Blog')}</Text>
                     </View>
                 </View>
                 <Text style={Styles.activityMeta}>{item.date}</Text>
                 <Text style={Styles.activityDescription} numberOfLines={2}>
                     {item.description}
                 </Text>
-                <View style={Styles.activityActionsRow}>
-                    <TouchableOpacity style={Styles.activityAction} onPress={() => openBlogEditor(item)}>
-                        <Text style={Styles.activityActionText}>Edit</Text>
-                        <Edit2 size={16} color="#FFFFFF" variant="Linear" />
-                    </TouchableOpacity>
-                    <TouchableOpacity style={Styles.activityDelete} onPress={() => deleteBlog(item.id)}>
-                        <Text style={Styles.activityDeleteText}>Delete</Text>
-                        <Trash size={16} color="#ED5454" variant="Linear" />
-                    </TouchableOpacity>
-                </View>
             </TouchableOpacity>
         );
     };
@@ -498,7 +497,7 @@ const UserProfileScreen = ({ navigation }: any) => {
                 <TouchableOpacity style={Styles.headerButton} onPress={() => navigation.goBack()}>
                     <ArrowLeft2 size={24} color={colors.primaryColor} variant="Linear" />
                 </TouchableOpacity>
-                <Text style={Styles.headerTitle}>Profile</Text>
+                <Text style={Styles.headerTitle}>{t('Profile')}</Text>
                 <TouchableOpacity style={Styles.headerButton} onPress={openCategorySwitch}>
                     <User size={24} color={colors.primaryColor} variant="Linear" />
                 </TouchableOpacity>
@@ -526,32 +525,32 @@ const UserProfileScreen = ({ navigation }: any) => {
                             </TouchableOpacity>
                             <View style={Styles.statsContainerRight}>
                                 <View style={Styles.statItem}>
-                                    <Text style={Styles.statValue}>1.2K</Text>
-                                    <Text style={Styles.statLabel}>Posts</Text>
+                                    <Text style={Styles.statValue}>{t('1.2K')}</Text>
+                                    <Text style={Styles.statLabel}>{t('Posts')}</Text>
                                 </View>
                                 <View style={Styles.statDivider} />
                                 <View style={Styles.statItem}>
-                                    <Text style={Styles.statValue}>45.8K</Text>
-                                    <Text style={Styles.statLabel}>Followers</Text>
+                                    <Text style={Styles.statValue}>{t('45.8K')}</Text>
+                                    <Text style={Styles.statLabel}>{t('Followers')}</Text>
                                 </View>
                             </View>
                         </View>
                         <View style={Styles.profileCategoryOnly}>
                             <Icons.TrackFieldLogo width={28} height={24} />
-                            <Text style={Styles.profileCategoryText}>{profileCategory}</Text>
+                            <Text style={Styles.profileCategoryText}>{profileCategoryLabel}</Text>
                         </View>
                     </View>
 
                     {/* Bio Section */}
                     <View style={Styles.bioSection}>
                         <View style={Styles.bioHeader}>
-                            <Text style={Styles.bioTitle}>Bio</Text>
+                            <Text style={Styles.bioTitle}>{t('Bio')}</Text>
                             <TouchableOpacity onPress={() => navigation.navigate('EditBioScreens')}>
                                 <Edit2 size={16} color={colors.mainTextColor} variant="Linear" />
                             </TouchableOpacity>
                         </View>
                         <Text style={Styles.bioText}>
-                            Passionate photographer capturing life's most authentic moments through the lens.
+                            {t("Passionate photographer capturing life's most authentic moments through the lens.")}
                         </Text>
                         <View style={Styles.bioDivider} />
                     </View>
@@ -568,21 +567,21 @@ const UserProfileScreen = ({ navigation }: any) => {
                         onPress={() => setProfileTab('timeline')}
                     >
                         <Clock size={18} color={profileTab === 'timeline' ? colors.primaryColor : colors.grayColor} variant="Linear" />
-                        <Text style={[Styles.profileTabText, profileTab === 'timeline' && Styles.profileTabTextActive]}>Timeline</Text>
+                        <Text style={[Styles.profileTabText, profileTab === 'timeline' && Styles.profileTabTextActive]}>{t('Timeline')}</Text>
                     </TouchableOpacity>
                     <TouchableOpacity
                         style={[Styles.profileTab, profileTab === 'activity' && Styles.profileTabActive]}
                         onPress={() => setProfileTab('activity')}
                     >
                         <DocumentText size={18} color={profileTab === 'activity' ? colors.primaryColor : colors.grayColor} variant="Linear" />
-                        <Text style={[Styles.profileTabText, profileTab === 'activity' && Styles.profileTabTextActive]}>News</Text>
+                        <Text style={[Styles.profileTabText, profileTab === 'activity' && Styles.profileTabTextActive]}>{t('News')}</Text>
                     </TouchableOpacity>
                     <TouchableOpacity
                         style={[Styles.profileTab, profileTab === 'collections' && Styles.profileTabActive]}
                         onPress={() => setProfileTab('collections')}
                     >
                         <Gallery size={18} color={profileTab === 'collections' ? colors.primaryColor : colors.grayColor} variant="Linear" />
-                        <Text style={[Styles.profileTabText, profileTab === 'collections' && Styles.profileTabTextActive]}>Collections</Text>
+                        <Text style={[Styles.profileTabText, profileTab === 'collections' && Styles.profileTabTextActive]}>{t('Collections')}</Text>
                     </TouchableOpacity>
                     {showDownloadsTab && (
                         <TouchableOpacity
@@ -590,14 +589,14 @@ const UserProfileScreen = ({ navigation }: any) => {
                             onPress={() => setProfileTab('downloads')}
                         >
                             <DocumentDownload size={18} color={profileTab === 'downloads' ? colors.primaryColor : colors.grayColor} variant="Linear" />
-                            <Text style={[Styles.profileTabText, profileTab === 'downloads' && Styles.profileTabTextActive]}>Downloads</Text>
+                            <Text style={[Styles.profileTabText, profileTab === 'downloads' && Styles.profileTabTextActive]}>{t('Downloads')}</Text>
                         </TouchableOpacity>
                     )}
                 </View>
 
                 {profileTab === 'timeline' && (
                     <ProfileTimeline
-                        title="Timeline"
+                        title={t('Timeline')}
                         items={timelineItems}
                         editable
                         onAdd={openAddTimeline}
@@ -612,9 +611,9 @@ const UserProfileScreen = ({ navigation }: any) => {
                 {profileTab === 'activity' && (
                     <View style={Styles.activitySection}>
                         <View style={Styles.sectionHeader}>
-                            <Text style={Styles.sectionTitle}>News</Text>
+                            <Text style={Styles.sectionTitle}>{t('News')}</Text>
                             <TouchableOpacity onPress={() => openBlogEditor()}>
-                                <Text style={Styles.viewAllText}>Add blog</Text>
+                                <Text style={Styles.viewAllText}>{t('Add blog')}</Text>
                             </TouchableOpacity>
                         </View>
                         <SizeBox height={16} />
@@ -626,7 +625,7 @@ const UserProfileScreen = ({ navigation }: any) => {
                     <>
                         <View style={Styles.collectionsSection}>
                             <View style={Styles.sectionHeader}>
-                                <Text style={Styles.sectionTitle}>Collections</Text>
+                                <Text style={Styles.sectionTitle}>{t('Collections')}</Text>
                                 <TouchableOpacity onPress={() => {
                                     if (activeTab === 'photos') {
                                         navigation.navigate('ViewUserCollectionsPhotosScreen');
@@ -634,7 +633,7 @@ const UserProfileScreen = ({ navigation }: any) => {
                                         navigation.navigate('ViewUserCollectionsVideosScreen');
                                     }
                                 }}>
-                                    <Text style={Styles.viewAllText}>View All</Text>
+                                    <Text style={Styles.viewAllText}>{t('View all')}</Text>
                                 </TouchableOpacity>
                             </View>
                             <SizeBox height={16} />
@@ -644,13 +643,13 @@ const UserProfileScreen = ({ navigation }: any) => {
                                     style={[Styles.toggleButton, activeTab === 'photos' && Styles.toggleButtonActive]}
                                     onPress={() => setActiveTab('photos')}
                                 >
-                                    <Text style={activeTab === 'photos' ? Styles.toggleTextActive : Styles.toggleText}>Photos</Text>
+                                    <Text style={activeTab === 'photos' ? Styles.toggleTextActive : Styles.toggleText}>{t('Photos')}</Text>
                                 </TouchableOpacity>
                                 <TouchableOpacity
                                     style={[Styles.toggleButton, activeTab === 'videos' && Styles.toggleButtonActive]}
                                     onPress={() => setActiveTab('videos')}
                                 >
-                                    <Text style={activeTab === 'videos' ? Styles.toggleTextActive : Styles.toggleText}>Videos</Text>
+                                    <Text style={activeTab === 'videos' ? Styles.toggleTextActive : Styles.toggleText}>{t('Videos')}</Text>
                                 </TouchableOpacity>
                             </View>
 
@@ -659,65 +658,73 @@ const UserProfileScreen = ({ navigation }: any) => {
                             {activeTab === 'photos' ? (
                                 <View style={Styles.collectionsCard}>
                                     <View style={Styles.collectionsGrid}>
-                                {collections.map((item, index) => (
-                                    <TouchableOpacity
-                                        key={index}
-                                        activeOpacity={0.85}
-                                        onPress={() =>
-                                            navigation.navigate('PhotoDetailScreen', {
-                                                eventTitle: 'Collections',
-                                                media: {
-                                                    id: photoIds[index % photoIds.length],
-                                                    type: 'photo',
-                                                },
-                                            })
-                                        }
-                                    >
-                                        <FastImage
-                                            source={item.imgUrl}
-                                            style={[Styles.collectionImage, { width: imageWidth }]}
-                                            resizeMode="cover"
-                                        />
-                                    </TouchableOpacity>
-                                ))}
+                                        {visibleCollections.map((c, index) => (
+                                            <TouchableOpacity
+                                                key={String(c.id || index)}
+                                                activeOpacity={0.85}
+                                                onPress={() => {
+                                                    if (c.cover_media_id) {
+                                                        navigation.navigate('PhotoDetailScreen', {
+                                                            eventTitle: c.name || t('Collection'),
+                                                            media: {
+                                                                id: c.cover_media_id,
+                                                                type: 'photo',
+                                                            },
+                                                        });
+                                                    }
+                                                }}
+                                            >
+                                                {c.cover_thumbnail_url ? (
+                                                    <FastImage
+                                                        source={{ uri: String(c.cover_thumbnail_url) }}
+                                                        style={[Styles.collectionImage, { width: imageWidth }]}
+                                                        resizeMode="cover"
+                                                    />
+                                                ) : (
+                                                    <View style={[Styles.collectionImage, { width: imageWidth, backgroundColor: '#1a1a1a' }]} />
+                                                )}
+                                            </TouchableOpacity>
+                                        ))}
                                     </View>
+                                    {visibleCollections.length === 0 && (
+                                        <Text style={Styles.emptyText}>{t('No collections yet.')}</Text>
+                                    )}
                                 </View>
                             ) : (
-                                <View style={Styles.videosGrid}>
-                                    {collectionVideos.map((video, index) => (
-                                        <TouchableOpacity
-                                            key={video.id}
-                                            style={Styles.videoCard}
-                                            activeOpacity={0.85}
-                                            onPress={() =>
-                                                navigation.navigate('VideoPlayingScreen', {
-                                                    video: {
-                                                        title: video.title,
-                                                        subtitle: video.title,
-                                                        thumbnail: video.thumbnail,
-                                                    },
-                                                })
-                                            }
-                                        >
-                                            <View style={Styles.videoThumbnailContainer}>
-                                                <FastImage source={video.thumbnail} style={Styles.videoThumbnail} resizeMode="cover" />
-                                                <View style={Styles.videoPlayIconContainer}>
-                                                    <Icons.PlayCricle width={26} height={26} />
-                                                </View>
-                                            </View>
-                                            <Text style={Styles.videoCardTitle}>{video.title}</Text>
-                                            <View style={Styles.videoCardMeta}>
-                                                <View style={Styles.videoMetaItem}>
-                                                    <User size={12} color="#9B9F9F" variant="Linear" />
-                                                    <Text style={Styles.videoMetaText}>{video.author}</Text>
-                                                </View>
-                                                <View style={Styles.videoMetaItem}>
-                                                    <Clock size={12} color="#9B9F9F" variant="Linear" />
-                                                    <Text style={Styles.videoMetaText}>{video.duration}</Text>
-                                                </View>
-                                            </View>
-                                        </TouchableOpacity>
-                                    ))}
+                                <View style={Styles.collectionsCard}>
+                                    <View style={Styles.collectionsGrid}>
+                                        {visibleCollections.map((c, index) => (
+                                            <TouchableOpacity
+                                                key={String(c.id || index)}
+                                                activeOpacity={0.85}
+                                                onPress={() => {
+                                                    // We don't know if the cover is a video; open media detail as a safe default.
+                                                    if (c.cover_media_id) {
+                                                        navigation.navigate('PhotoDetailScreen', {
+                                                            eventTitle: c.name || t('Collection'),
+                                                            media: {
+                                                                id: c.cover_media_id,
+                                                                type: 'video',
+                                                            },
+                                                        });
+                                                    }
+                                                }}
+                                            >
+                                                {c.cover_thumbnail_url ? (
+                                                    <FastImage
+                                                        source={{ uri: String(c.cover_thumbnail_url) }}
+                                                        style={[Styles.collectionImage, { width: imageWidth }]}
+                                                        resizeMode="cover"
+                                                    />
+                                                ) : (
+                                                    <View style={[Styles.collectionImage, { width: imageWidth, backgroundColor: '#1a1a1a' }]} />
+                                                )}
+                                            </TouchableOpacity>
+                                        ))}
+                                    </View>
+                                    {visibleCollections.length === 0 && (
+                                        <Text style={Styles.emptyText}>{t('No collections yet.')}</Text>
+                                    )}
                                 </View>
                             )}
                         </View>
@@ -729,7 +736,7 @@ const UserProfileScreen = ({ navigation }: any) => {
                                 navigation.navigate('EditVideoCollectionsScreen');
                             }
                         }}>
-                            <Text style={Styles.mainEditButtonText}>Edit</Text>
+                            <Text style={Styles.mainEditButtonText}>{t('Edit')}</Text>
                             <Edit2 size={18} color="#FFFFFF" variant="Linear" />
                         </TouchableOpacity>
                     </>
@@ -737,7 +744,7 @@ const UserProfileScreen = ({ navigation }: any) => {
 
                 {profileTab === 'downloads' && showDownloadsTab && (
                     <View style={Styles.downloadsSection}>
-                        <Text style={Styles.sectionTitle}>Downloads</Text>
+                        <Text style={Styles.sectionTitle}>{t('Downloads')}</Text>
                         <TouchableOpacity
                             style={Styles.downloadsCard}
                             activeOpacity={0.8}
@@ -748,37 +755,43 @@ const UserProfileScreen = ({ navigation }: any) => {
                                     <Icons.DownloadColorful width={24} height={24} />
                                 </View>
                                 <Text>
-                                    <Text style={Styles.downloadsText}>Total downloads: </Text>
-                                    <Text style={Styles.downloadsTextBold}>1,204</Text>
+                                    <Text style={Styles.downloadsText}>{t('Total downloads')}: </Text>
+                                    <Text style={Styles.downloadsTextBold}>
+                                        {downloadsSummary ? String(downloadsSummary.total_downloads) : '—'}
+                                    </Text>
                                 </Text>
                             </View>
                             <View style={Styles.downloadsDetailsButton}>
-                                <Text style={Styles.downloadsDetailsButtonText}>Details</Text>
+                                <Text style={Styles.downloadsDetailsButtonText}>{t('Details')}</Text>
                                 <ArrowRight size={18} color="#9B9F9F" variant="Linear" />
                             </View>
                         </TouchableOpacity>
                         <View style={Styles.earningsRow}>
                             <View style={Styles.earningsCard}>
-                                <Text style={Styles.earningsLabel}>Views</Text>
-                                <Text style={Styles.earningsValue}>18.4K</Text>
+                                <Text style={Styles.earningsLabel}>{t('Views')}</Text>
+                                <Text style={Styles.earningsValue}>
+                                    {downloadsSummary ? String(downloadsSummary.total_views) : '—'}
+                                </Text>
                             </View>
                             <View style={Styles.earningsCard}>
-                                <Text style={Styles.earningsLabel}>Profit</Text>
-                                <Text style={Styles.earningsValue}>€482</Text>
+                                <Text style={Styles.earningsLabel}>{t('Profit')}</Text>
+                                <Text style={Styles.earningsValue}>
+                                    {downloadsSummary ? formatMoney(downloadsSummary.total_profit_cents ?? 0) : '—'}
+                                </Text>
                             </View>
                         </View>
                         <View style={Styles.downloadAnalyticsSection}>
                             <View style={Styles.sectionHeader}>
-                                <Text style={Styles.downloadAnalyticsTitle}>Competitions</Text>
+                                <Text style={Styles.downloadAnalyticsTitle}>{t('Competitions')}</Text>
                                 <TouchableOpacity
                                     onPress={() => navigation.navigate('DownloadsDetailsScreen', { mode: 'competitions' })}
                                 >
-                                    <Text style={Styles.viewAllText}>View more</Text>
+                                    <Text style={Styles.viewAllText}>{t('View more')}</Text>
                                 </TouchableOpacity>
                             </View>
                             {previewCompetitions.map((item) => (
                                 <TouchableOpacity
-                                    key={item.id}
+                                    key={item.event_id}
                                     style={Styles.competitionCard}
                                     activeOpacity={0.85}
                                     onPress={() =>
@@ -788,22 +801,22 @@ const UserProfileScreen = ({ navigation }: any) => {
                                         })
                                     }
                                 >
-                                    {item.image ? (
-                                        <FastImage source={item.image} style={Styles.competitionThumb} resizeMode="cover" />
+                                    {item.cover_thumbnail_url ? (
+                                        <FastImage source={{ uri: String(item.cover_thumbnail_url) }} style={Styles.competitionThumb} resizeMode="cover" />
                                     ) : (
                                         <View style={Styles.competitionThumbPlaceholder} />
                                     )}
                                     <View style={Styles.competitionInfo}>
-                                        <Text style={Styles.competitionTitle}>{item.title}</Text>
+                                        <Text style={Styles.competitionTitle}>{item.event_name || t('competition')}</Text>
                                         <Text style={Styles.competitionMeta}>
-                                            {item.uploads} uploads • {item.date}
+                                            {Number(item.uploads_count ?? 0)} {t('uploads')} • {formatEventDate(item.event_date)}
                                         </Text>
-                                        <Text style={Styles.competitionMetaSecondary}>{item.location}</Text>
+                                        <Text style={Styles.competitionMetaSecondary}>{item.event_location ?? ''}</Text>
                                     </View>
                                 </TouchableOpacity>
                             ))}
                             {previewCompetitions.length === 0 && (
-                                <Text style={Styles.emptyText}>No competitions found.</Text>
+                                <Text style={Styles.emptyText}>{t('No competitions found.')}</Text>
                             )}
                         </View>
                     </View>
@@ -829,7 +842,7 @@ const UserProfileScreen = ({ navigation }: any) => {
                             style={Styles.categoryModalCard}
                             onPress={() => {}}
                         >
-                            <Text style={Styles.categoryModalTitle}>Switch category</Text>
+                            <Text style={Styles.categoryModalTitle}>{t('Switch category')}</Text>
                             <SizeBox height={12} />
                             <TouchableOpacity
                                 style={Styles.categoryOption}
@@ -838,7 +851,7 @@ const UserProfileScreen = ({ navigation }: any) => {
                                     setShowCategoryModal(false);
                                 }}
                             >
-                                <Text style={Styles.categoryOptionText}>Track&Field</Text>
+                                <Text style={Styles.categoryOptionText}>{t('trackAndField')}</Text>
                             </TouchableOpacity>
                             <View style={Styles.categoryOptionDivider} />
                             <TouchableOpacity
@@ -848,7 +861,7 @@ const UserProfileScreen = ({ navigation }: any) => {
                                     setShowCategoryModal(false);
                                 }}
                             >
-                                <Text style={Styles.categoryOptionText}>Road&Trail</Text>
+                                <Text style={Styles.categoryOptionText}>{t('roadAndTrail')}</Text>
                             </TouchableOpacity>
                         </TouchableOpacity>
                     </TouchableOpacity>

@@ -5,10 +5,12 @@ import SizeBox from '../../../constants/SizeBox'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useTheme } from '../../../context/ThemeContext'
 import { ArrowLeft2, Notification, Cards, User, Card, Calendar, Note, ArrowRight2, ArrowDown2 } from 'iconsax-react-nativejs'
+import { useTranslation } from 'react-i18next'
 
 const cardTypes = ['Bancontact', 'Maestro', 'Master'];
 
 const AddNewCard = ({ navigation }: any) => {
+    const { t } = useTranslation();
     const insets = useSafeAreaInsets();
     const { colors } = useTheme();
     const Styles = createStyles(colors);
@@ -29,7 +31,7 @@ const AddNewCard = ({ navigation }: any) => {
                 <TouchableOpacity style={Styles.headerButton} onPress={() => navigation.goBack()}>
                     <ArrowLeft2 size={24} color={colors.primaryColor} variant="Linear" />
                 </TouchableOpacity>
-                <Text style={Styles.headerTitle}>Add Card</Text>
+                <Text style={Styles.headerTitle}>{t('Add Card')}</Text>
                 <TouchableOpacity style={Styles.headerButton}>
                     <Notification size={24} color={colors.primaryColor} variant="Linear" />
                 </TouchableOpacity>
@@ -38,12 +40,12 @@ const AddNewCard = ({ navigation }: any) => {
             <ScrollView style={Styles.container} showsVerticalScrollIndicator={false}>
                 <SizeBox height={24} />
 
-                <Text style={Styles.sectionTitle}>Add New Card</Text>
+                <Text style={Styles.sectionTitle}>{t('Add New Card')}</Text>
                 <SizeBox height={16} />
 
                 {/* Card Type */}
                 <View style={Styles.addCardInputGroup}>
-                    <Text style={Styles.addCardLabel}>Card Type</Text>
+                    <Text style={Styles.addCardLabel}>{t('Card Type')}</Text>
                     <SizeBox height={8} />
                     <TouchableOpacity style={Styles.addCardInputContainer} onPress={() => setShowCardTypeModal(true)}>
                         <Cards size={16} color={colors.primaryColor} variant="Linear" />
@@ -59,14 +61,14 @@ const AddNewCard = ({ navigation }: any) => {
 
                 {/* Name on Card */}
                 <View style={Styles.addCardInputGroup}>
-                    <Text style={Styles.addCardLabel}>Name on Card</Text>
+                    <Text style={Styles.addCardLabel}>{t('Name on Card')}</Text>
                     <SizeBox height={8} />
                     <View style={Styles.addCardInputContainer}>
                         <User size={16} color={colors.primaryColor} variant="Linear" />
                         <SizeBox width={10} />
                         <TextInput
                             style={Styles.addCardInput}
-                            placeholder="Enter Card Holder Name"
+                            placeholder={t('Enter Card Holder Name')}
                             placeholderTextColor={colors.grayColor}
                             value={name}
                             onChangeText={setName}
@@ -78,14 +80,14 @@ const AddNewCard = ({ navigation }: any) => {
 
                 {/* Card Number */}
                 <View style={Styles.addCardInputGroup}>
-                    <Text style={Styles.addCardLabel}>Card Number</Text>
+                    <Text style={Styles.addCardLabel}>{t('Card Number')}</Text>
                     <SizeBox height={8} />
                     <View style={Styles.addCardInputContainer}>
                         <Card size={16} color={colors.primaryColor} variant="Linear" />
                         <SizeBox width={10} />
                         <TextInput
                             style={Styles.addCardInput}
-                            placeholder="Enter Card Number"
+                            placeholder={t('Enter Card Number')}
                             placeholderTextColor={colors.grayColor}
                             value={cardNumber}
                             onChangeText={setCardNumber}
@@ -99,14 +101,14 @@ const AddNewCard = ({ navigation }: any) => {
 
                 {/* Expiry Date */}
                 <View style={Styles.addCardInputGroup}>
-                    <Text style={Styles.addCardLabel}>Expiry Date</Text>
+                    <Text style={Styles.addCardLabel}>{t('Expiry Date')}</Text>
                     <SizeBox height={8} />
                     <View style={Styles.addCardInputContainer}>
                         <Calendar size={16} color={colors.primaryColor} variant="Linear" />
                         <SizeBox width={10} />
                         <TextInput
                             style={Styles.addCardInput}
-                            placeholder="Enter Expiry Date"
+                            placeholder={t('Enter Expiry Date')}
                             placeholderTextColor={colors.grayColor}
                             value={expDate}
                             onChangeText={setExpDate}
@@ -119,14 +121,14 @@ const AddNewCard = ({ navigation }: any) => {
 
                 {/* CVV */}
                 <View style={Styles.addCardInputGroup}>
-                    <Text style={Styles.addCardLabel}>CVV</Text>
+                    <Text style={Styles.addCardLabel}>{t('CVV')}</Text>
                     <SizeBox height={8} />
                     <View style={Styles.addCardInputContainer}>
                         <Note size={16} color={colors.primaryColor} variant="Linear" />
                         <SizeBox width={10} />
                         <TextInput
                             style={Styles.addCardInput}
-                            placeholder="Enter CVV"
+                            placeholder={t('Enter CVV')}
                             placeholderTextColor={colors.grayColor}
                             value={cvv}
                             onChangeText={setCvv}
@@ -141,7 +143,7 @@ const AddNewCard = ({ navigation }: any) => {
 
                 {/* Continue Button */}
                 <TouchableOpacity style={Styles.continueBtn} onPress={() => navigation.goBack()}>
-                    <Text style={Styles.continueBtnText}>Continue</Text>
+                    <Text style={Styles.continueBtnText}>{t('Continue')}</Text>
                     <ArrowRight2 size={18} color={colors.pureWhite} variant="Linear" />
                 </TouchableOpacity>
 
@@ -149,7 +151,7 @@ const AddNewCard = ({ navigation }: any) => {
 
                 {/* Cancel Button */}
                 <TouchableOpacity style={Styles.cancelBtn} onPress={() => navigation.goBack()}>
-                    <Text style={Styles.cancelBtnText}>Cancel</Text>
+                    <Text style={Styles.cancelBtnText}>{t('Cancel')}</Text>
                     <ArrowRight2 size={18} color={colors.subTextColor} variant="Linear" />
                 </TouchableOpacity>
 
@@ -169,7 +171,7 @@ const AddNewCard = ({ navigation }: any) => {
                     onPress={() => setShowCardTypeModal(false)}
                 >
                     <View style={Styles.cardTypeModalContent}>
-                        <Text style={Styles.cardTypeModalTitle}>Select Card Type</Text>
+                        <Text style={Styles.cardTypeModalTitle}>{t('Select Card Type')}</Text>
                         <SizeBox height={16} />
                         {cardTypes.map((type) => (
                             <TouchableOpacity

@@ -10,8 +10,10 @@ import FastImage from 'react-native-fast-image';
 import CustomButton from '../../../components/customButton/CustomButton';
 import AddSocialLink from '../components/AddSocialLink';
 import { useTheme } from '../../../context/ThemeContext';
+import { useTranslation } from 'react-i18next'
 
 const EditProfile = ({ navigation }: any) => {
+    const { t } = useTranslation();
     const insets = useSafeAreaInsets();
     const { colors } = useTheme();
     const Styles = createStyles(colors);
@@ -21,44 +23,44 @@ const EditProfile = ({ navigation }: any) => {
     return (
         <View style={Styles.mainContainer}>
             <SizeBox height={insets.top} />
-            <CustomHeader title='Edit Profile' onBackPress={() => navigation.goBack()} isSetting={false} />
+            <CustomHeader title={t('Edit Profile')} onBackPress={() => navigation.goBack()} isSetting={false} />
 
             <ScrollView style={Styles.container} showsVerticalScrollIndicator={false}>
                 <SizeBox height={24} />
-                <Text style={Styles.containerTitle}>Profile Settings</Text>
+                <Text style={Styles.containerTitle}>{t('Profile Settings')}</Text>
                 <SizeBox height={20} />
                 <CustomTextInput
-                    label='Change username'
+                    label={t('Change username')}
                     icon={<Icons.User height={16} width={16} />}
-                    placeholder='Change username'
+                    placeholder={t('Change username')}
                 />
                 <SizeBox height={20} />
                 <CustomTextInput
-                    label='Change email'
+                    label={t('Change email')}
                     icon={<Icons.Email height={16} width={16} />}
-                    placeholder='Change email'
+                    placeholder={t('Change email')}
                 />
                 <SizeBox height={20} />
                 <CustomTextInput
-                    label='Password'
+                    label={t('Password')}
                     icon={<Icons.Password height={16} width={16} />}
-                    placeholder='Password'
+                    placeholder={t('Password')}
                     isPass={true}
                 />
                 <SizeBox height={20} />
                 <CustomTextInput
-                    label='Website'
+                    label={t('Website')}
                     icon={<Icons.WebsiteBlue height={16} width={16} />}
-                    placeholder='www.demo365.com'
+                    placeholder={t('www.demo365.com')}
                 />
 
                 <SizeBox height={24} />
                 <View style={Styles.row}>
-                    <Text style={Styles.containerTitle}>Social links</Text>
+                    <Text style={Styles.containerTitle}>{t('Social links')}</Text>
                     <TouchableOpacity activeOpacity={0.3} style={[Styles.nextArrow, { right: 0, }, Styles.row]} onPress={() => setModalVisible(true)}>
                         <Icons.AddCircle height={16} width={16} />
                         <SizeBox width={4} />
-                        <Text style={Styles.btnText}>Add More</Text>
+                        <Text style={Styles.btnText}>{t('Add More')}</Text>
                     </TouchableOpacity>
                 </View>
                 <SizeBox height={16} />
@@ -67,7 +69,7 @@ const EditProfile = ({ navigation }: any) => {
                     <TouchableOpacity style={Styles.socialLinks}>
                         <FastImage source={Icons.Strava} style={Styles.icons} />
                         <SizeBox width={12} />
-                        <Text style={Styles.titlesText}>Strava</Text>
+                        <Text style={Styles.titlesText}>{t('Strava')}</Text>
                         <View style={[Styles.nextArrow, { right: 0 }]}>
                             <Icons.ArrowNext height={20} width={20} />
                         </View>
@@ -78,7 +80,7 @@ const EditProfile = ({ navigation }: any) => {
                     <TouchableOpacity style={Styles.socialLinks}>
                         <FastImage source={Icons.Facebook} style={Styles.icons} />
                         <SizeBox width={12} />
-                        <Text style={Styles.titlesText}>Facebook</Text>
+                        <Text style={Styles.titlesText}>{t('Facebook')}</Text>
                         <View style={[Styles.nextArrow, { right: 0 }]}>
                             <Icons.ArrowNext height={20} width={20} />
                         </View>
@@ -89,7 +91,7 @@ const EditProfile = ({ navigation }: any) => {
                     <TouchableOpacity style={Styles.socialLinks}>
                         <FastImage source={Icons.Instagram} style={Styles.icons} />
                         <SizeBox width={12} />
-                        <Text style={Styles.titlesText}>Instagram</Text>
+                        <Text style={Styles.titlesText}>{t('Instagram')}</Text>
                         <View style={[Styles.nextArrow, { right: 0 }]}>
                             <Icons.ArrowNext height={20} width={20} />
                         </View>
@@ -97,7 +99,7 @@ const EditProfile = ({ navigation }: any) => {
                     <SizeBox height={16} />
                 </View>
                 <SizeBox height={30} />
-                <CustomButton title='Save' onPress={() => navigation.goBack()} isSmall={true} />
+                <CustomButton title={t('Save')} onPress={() => navigation.goBack()} isSmall={true} />
                 <SizeBox height={30} />
 
                 <AddSocialLink isVisible={modalVisible} onClose={() => setModalVisible(false)} onYesPress={() => setModalVisible(false)} />

@@ -560,7 +560,7 @@ const AvailableEventsScreen = ({ navigation }: any) => {
                             activeOpacity={0.8}
                         >
                             <View style={[Styles.defaultChestBox, useDefaultChest && Styles.defaultChestBoxActive]}>
-                                {useDefaultChest && <Text style={Styles.defaultChestCheck}>✓</Text>}
+                                {useDefaultChest && <Text style={Styles.defaultChestCheck}>{t('✓')}</Text>}
                             </View>
                             <Text style={Styles.defaultChestText}>
                                 {t('useDefaultNumber')} ({defaultChestNumber})

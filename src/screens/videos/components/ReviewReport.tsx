@@ -50,7 +50,7 @@ const ReviewReport = ({ isVisible, onClose, onPressEdit, onPressNext }: ReviewRe
                     <SizeBox height={16} />
                     <Text style={Styles.subTitleText}>{t('Description:')}</Text>
                     <SizeBox height={4} />
-                    <Text numberOfLines={3} style={Styles.selectionText}>Abcdefghkj</Text>
+                    <Text numberOfLines={3} style={Styles.selectionText}>{t('Abcdefghkj')}</Text>
 
                     <SizeBox height={16} />
                     <View style={[Styles.row, { justifyContent: 'space-between' }]}>

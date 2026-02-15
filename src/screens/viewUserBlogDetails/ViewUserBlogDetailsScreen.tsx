@@ -1,8 +1,8 @@
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, Image } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import FastImage from 'react-native-fast-image';
-import { ArrowLeft2 } from 'iconsax-react-nativejs';
+import { ArrowLeft2, Heart } from 'iconsax-react-nativejs';
 import { createStyles } from './ViewUserBlogDetailsScreenStyles';
 import SizeBox from '../../constants/SizeBox';
 import Images from '../../constants/Images';
@@ -11,6 +11,9 @@ import { useTheme } from '../../context/ThemeContext';
 import { useEvents } from '../../context/EventsContext';
 import { useTranslation } from 'react-i18next';
 import { translateText } from '../../i18n';
+import { useAuth } from '../../context/AuthContext';
+import NativeShare from 'react-native-share';
+import { recordPostView, togglePostLike } from '../../services/apiGateway';
 
 const ViewUserBlogDetailsScreen = ({ navigation, route }: any) => {
     const insets = useSafeAreaInsets();
@@ -18,6 +21,7 @@ const ViewUserBlogDetailsScreen = ({ navigation, route }: any) => {
     const { t, i18n } = useTranslation();
     const Styles = createStyles(colors);
     const { eventNameById } = useEvents();
+    const { apiAccessToken } = useAuth();
     const post = route?.params?.post || {
         title: 'IFAM Outdoor Oordegem',
         date: '09/08/2025',
@@ -27,6 +31,16 @@ const ViewUserBlogDetailsScreen = ({ navigation, route }: any) => {
         writerImage: Images.profile1,
         description: `The IFAM Outdoor Oordegem is an internationally renowned athletics meeting held annually in Oordegem, Belgium. Recognized by World Athletics, it attracts a diverse mix of elite and emerging athletes from across Europe and beyond who compete in a full range of track and field events, including sprints, middle- and long-distance races, hurdles, jumps, and throws. Known for its exceptionally fast track and well-organized schedule, the event has become a prime venue for athletes seeking personal bests or qualification standards for major championships. Hosted at the Sport Vlaanderen stadium in Oordegem, typically in late spring or summer, the IFAM Outdoor combines high-level competition with a welcoming atmosphere for both athletes and spectators. Its growing reputation as one of Europe's largest and most competitive outdoor meetings highlights its importance in the international athletics calendar.`,
     };
+
+    const postId = post?.id ? String(post.id) : null;
+    const [liked, setLiked] = useState<boolean>(Boolean(post?.liked_by_me ?? false));
+    const [likesCount, setLikesCount] = useState<number>(Number(post?.likes_count ?? 0) || 0);
+
+    useEffect(() => {
+        if (!apiAccessToken || !postId) return;
+        recordPostView(apiAccessToken, postId).catch(() => {});
+    }, [apiAccessToken, postId]);
+
 
     const galleryItems = useMemo(() => {
         if (Array.isArray(post.galleryItems) && post.galleryItems.length > 0) {
@@ -113,7 +127,7 @@ const ViewUserBlogDetailsScreen = ({ navigation, route }: any) => {
                     activeOpacity={0.8}
                 >
                     <Text style={Styles.translateToggleText}>
-                        {showTranslation ? t('showOriginal') : t('showTranslation')}
+                        {showTranslation ? t('showOriginal') : t('translate')}
                     </Text>
                 </TouchableOpacity>
                 <Text style={Styles.description}>
@@ -123,9 +137,37 @@ const ViewUserBlogDetailsScreen = ({ navigation, route }: any) => {
                 <SizeBox height={8} />
 
                 {/* Share Button */}
-                <TouchableOpacity style={Styles.shareButton}>
+                <TouchableOpacity
+                    style={Styles.shareButton}
+                    onPress={async () => {
+                        try {
+                            await NativeShare.open({ message: post?.title ? String(post.title) : 'AllIn', subject: post?.title ? String(post.title) : undefined });
+                        } catch {
+                            // ignore
+                        }
+                    }}
+                >
                     <Text style={Styles.shareButtonText}>{t('share')}</Text>
                     <Image source={Icons.ShareBlue} style={{ width: 18, height: 18, tintColor: '#FFFFFF' }} />
+                </TouchableOpacity>
+
+                <SizeBox height={10} />
+
+                <TouchableOpacity
+                    style={Styles.shareButton}
+                    onPress={async () => {
+                        if (!apiAccessToken || !postId) return;
+                        try {
+                            const r = await togglePostLike(apiAccessToken, postId);
+                            setLiked(r.liked);
+                            setLikesCount(r.likes_count);
+                        } catch {
+                            // ignore
+                        }
+                    }}
+                >
+                    <Text style={Styles.shareButtonText}>{liked ? `${likesCount} ${t('likes')}` : `${likesCount} ${t('likes')}`}</Text>
+                    <Heart size={18} color={'#FFFFFF'} variant={liked ? 'Bold' : 'Linear'} />
                 </TouchableOpacity>
 
                 <SizeBox height={8} />

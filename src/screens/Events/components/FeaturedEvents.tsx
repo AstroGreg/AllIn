@@ -36,7 +36,7 @@ const FeaturedEvents = ({
                 />
             </View>
             <SizeBox height={10} />
-            <Text style={Styles.CompetitionName} numberOfLines={1}>Champions in Motion</Text>
+            <Text style={Styles.CompetitionName} numberOfLines={1}>{t('Champions in Motion')}</Text>
             <SizeBox height={6} />
             <View style={Styles.row}>
                 <View style={Styles.row}>
@@ -48,7 +48,7 @@ const FeaturedEvents = ({
                 <View style={[Styles.row, { width: '55%', }]}>
                     <Icons.Location height={12} width={12} />
                     <SizeBox width={2} />
-                    <Text style={Styles.actionText} numberOfLines={1}>Berlin, Germany</Text>
+                    <Text style={Styles.actionText} numberOfLines={1}>{t('Berlin, Germany')}</Text>
                 </View>
             </View>
             <SizeBox height={11} />

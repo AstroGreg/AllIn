@@ -1,0 +1,73 @@
+import {StyleSheet} from 'react-native';
+import Fonts from '../../constants/Fonts';
+import type {ThemeColors} from '../../constants/Theme';
+
+export const createStyles = (colors: ThemeColors) =>
+  StyleSheet.create({
+    mainContainer: {flex: 1, backgroundColor: colors.backgroundColor},
+    header: {
+      paddingHorizontal: 20,
+      paddingVertical: 14,
+      borderBottomWidth: 0.5,
+      borderBottomColor: colors.lightGrayColor,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+    },
+    headerTitle: {...Fonts.medium18, color: colors.mainTextColor},
+    headerBtn: {padding: 8},
+    content: {paddingHorizontal: 20, paddingTop: 18},
+    card: {
+      backgroundColor: colors.whiteColor,
+      borderRadius: 14,
+      borderWidth: 0.5,
+      borderColor: colors.lightGrayColor,
+      padding: 16,
+    },
+    title: {...Fonts.medium16, color: colors.mainTextColor},
+    subtitle: {...Fonts.regular13, color: colors.subTextColor, marginTop: 6},
+    progressBarTrack: {
+      height: 10,
+      borderRadius: 999,
+      backgroundColor: colors.btnBackgroundColor,
+      overflow: 'hidden',
+      marginTop: 14,
+    },
+    progressBarFill: {height: 10, borderRadius: 999, backgroundColor: colors.primaryColor},
+    progressMetaRow: {flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 10},
+    progressMeta: {...Fonts.regular12, color: colors.subTextColor},
+    list: {marginTop: 16},
+    row: {flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 10},
+    rowLeft: {flex: 1, paddingRight: 12},
+    rowTitle: {...Fonts.medium14, color: colors.mainTextColor},
+    rowMeta: {...Fonts.regular12, color: colors.subTextColor, marginTop: 2},
+    pill: {
+      paddingHorizontal: 10,
+      paddingVertical: 6,
+      borderRadius: 999,
+      backgroundColor: colors.btnBackgroundColor,
+    },
+    pillText: {...Fonts.medium12, color: colors.primaryColor},
+    ctaRow: {flexDirection: 'row', gap: 10, marginTop: 16},
+    ctaPrimary: {
+      flex: 1,
+      backgroundColor: colors.primaryColor,
+      borderRadius: 12,
+      paddingVertical: 14,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    ctaPrimaryText: {...Fonts.medium16, color: colors.pureWhite},
+    ctaSecondary: {
+      flex: 1,
+      backgroundColor: colors.btnBackgroundColor,
+      borderRadius: 12,
+      paddingVertical: 14,
+      alignItems: 'center',
+      justifyContent: 'center',
+      borderWidth: 0.5,
+      borderColor: colors.lightGrayColor,
+    },
+    ctaSecondaryText: {...Fonts.medium16, color: colors.primaryColor},
+    errorText: {...Fonts.regular13, color: '#D92D20', marginTop: 10},
+  });

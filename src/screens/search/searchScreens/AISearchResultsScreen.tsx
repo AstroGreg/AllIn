@@ -10,8 +10,10 @@ import Icons from '../../../constants/Icons';
 import {createStyles} from './AISearchResultsScreenStyles';
 import {useAuth} from '../../../context/AuthContext';
 import {ApiError, getMediaById, recordDownload} from '../../../services/apiGateway';
+import { useTranslation } from 'react-i18next'
 
 interface ResultItem {
+  matchTimeSeconds?: number;
   id: string;
   imageUrl: string;
   eventId?: string;
@@ -30,6 +32,7 @@ interface ResultGroup {
 }
 
 const AISearchResultsScreen = ({navigation, route}: any) => {
+    const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   const {colors} = useTheme();
   const styles = createStyles(colors);
@@ -49,6 +52,7 @@ const AISearchResultsScreen = ({navigation, route}: any) => {
       eventName: r.event_name ? String(r.event_name) : undefined,
       matchType: r.match_type ? String(r.match_type) : r.bib_number ? 'bib' : defaultMatchType,
       bibNumber: r.bib_number ? String(r.bib_number) : undefined,
+      matchTimeSeconds: typeof r.match_time_seconds === 'number' ? r.match_time_seconds : undefined,
     }));
   }, [defaultMatchType, results]);
 
@@ -78,7 +82,7 @@ const AISearchResultsScreen = ({navigation, route}: any) => {
   const downloadOne = useCallback(
     async (item: ResultItem) => {
       if (!apiAccessToken) {
-        Alert.alert('Missing API token', 'Log in or set a Dev API token to download.');
+        Alert.alert(t('Missing API token'), t('Log in or set a Dev API token to download.'));
         return;
       }
 
@@ -96,7 +100,7 @@ const AISearchResultsScreen = ({navigation, route}: any) => {
         }
 
         if (!url) {
-          Alert.alert('No download URL', 'The API did not provide a downloadable URL for this media.');
+          Alert.alert(t('No download URL'), t('The API did not provide a downloadable URL for this media.'));
           return;
         }
 
@@ -118,10 +122,11 @@ const AISearchResultsScreen = ({navigation, route}: any) => {
   const openMedia = (item: ResultItem) => {
     const url = item.previewUrl ?? item.originalUrl ?? item.imageUrl;
     if (!url) {
-      Alert.alert('Missing URL', 'No preview/original URL was provided for this result.');
+      Alert.alert(t('Missing URL'), t('No preview/original URL was provided for this result.'));
       return;
     }
     navigation.navigate('PhotoDetailScreen', {
+      startAt: item.matchTimeSeconds ?? 0,
       eventTitle: item.eventName || eventNameById(item.eventId),
       media: {
         id: item.id,
@@ -146,7 +151,7 @@ const AISearchResultsScreen = ({navigation, route}: any) => {
           onPress={() => navigation.goBack()}>
           <ArrowLeft2 size={24} color={colors.primaryColor} variant="Linear" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>AI results</Text>
+        <Text style={styles.headerTitle}>{t('AI results')}</Text>
         <View style={{width: 44, height: 44}} />
       </View>
 
@@ -154,7 +159,7 @@ const AISearchResultsScreen = ({navigation, route}: any) => {
         <SizeBox height={16} />
 
         <View style={styles.resultsHeader}>
-          <Text style={styles.resultsTitle}>Results</Text>
+          <Text style={styles.resultsTitle}>{t('Results')}</Text>
           <View style={styles.resultsBadge}>
             <Text style={styles.resultsBadgeText}>{matchedCount} found</Text>
           </View>
@@ -163,7 +168,7 @@ const AISearchResultsScreen = ({navigation, route}: any) => {
         <SizeBox height={20} />
 
         {groupedResults.length === 0 ? (
-          <Text style={styles.emptyText}>No results found.</Text>
+          <Text style={styles.emptyText}>{t('No results found.')}</Text>
         ) : (
           groupedResults.map((group) => (
             <View key={group.id} style={styles.groupSection}>
@@ -191,7 +196,7 @@ const AISearchResultsScreen = ({navigation, route}: any) => {
                         <Text style={styles.matchChipText}>{matchLabel(item.matchType)}</Text>
                       </View>
                       {item.type === 'video' && (
-                        <Text style={styles.mediaType}>Video</Text>
+                        <Text style={styles.mediaType}>{t('Video')}</Text>
                       )}
                     </View>
                     <TouchableOpacity

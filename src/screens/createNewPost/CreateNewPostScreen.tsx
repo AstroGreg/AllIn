@@ -5,8 +5,10 @@ import { ArrowLeft2, Export, Subtitle, Edit2, ArrowRight } from 'iconsax-react-n
 import SizeBox from '../../constants/SizeBox'
 import { createStyles } from './CreateNewPostStyles'
 import { useTheme } from '../../context/ThemeContext'
+import { useTranslation } from 'react-i18next'
 
 const CreateNewPostScreen = ({ navigation }: any) => {
+    const { t } = useTranslation();
     const insets = useSafeAreaInsets();
     const { colors } = useTheme();
     const Styles = createStyles(colors);
@@ -29,27 +31,27 @@ const CreateNewPostScreen = ({ navigation }: any) => {
                 <TouchableOpacity style={Styles.headerButton} onPress={() => navigation.goBack()}>
                     <ArrowLeft2 size={24} color={colors.mainTextColor} variant="Linear" />
                 </TouchableOpacity>
-                <Text style={Styles.headerTitle}>Create New Post</Text>
+                <Text style={Styles.headerTitle}>{t('Create New Post')}</Text>
                 <View style={Styles.headerButtonPlaceholder} />
             </View>
 
             <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={Styles.scrollContent}>
                 {/* Section Title */}
-                <Text style={Styles.sectionTitle}>Create New Post</Text>
+                <Text style={Styles.sectionTitle}>{t('Create New Post')}</Text>
 
                 <SizeBox height={16} />
 
                 {/* Upload Photo */}
                 <View style={Styles.inputContainer}>
-                    <Text style={Styles.inputLabel}>Upload Photo</Text>
+                    <Text style={Styles.inputLabel}>{t('Upload Photo')}</Text>
                     <SizeBox height={8} />
                     <TouchableOpacity style={Styles.uploadContainer}>
                         <Export size={24} color={colors.primaryColor} variant="Linear" />
                         <SizeBox height={4} />
-                        <Text style={Styles.uploadText}>Drag and Drop here</Text>
-                        <Text style={Styles.uploadOrText}>or</Text>
+                        <Text style={Styles.uploadText}>{t('Drag and Drop here')}</Text>
+                        <Text style={Styles.uploadOrText}>{t('or')}</Text>
                         <TouchableOpacity style={Styles.browseButton}>
-                            <Text style={Styles.browseButtonText}>Browse Files</Text>
+                            <Text style={Styles.browseButtonText}>{t('Browse Files')}</Text>
                         </TouchableOpacity>
                     </TouchableOpacity>
                 </View>
@@ -58,13 +60,13 @@ const CreateNewPostScreen = ({ navigation }: any) => {
 
                 {/* Title Input */}
                 <View style={Styles.inputContainer}>
-                    <Text style={Styles.inputLabel}>Title</Text>
+                    <Text style={Styles.inputLabel}>{t('Title')}</Text>
                     <SizeBox height={8} />
                     <View style={Styles.textInputContainer}>
                         <Subtitle size={16} color={colors.grayColor} variant="Linear" />
                         <TextInput
                             style={Styles.textInput}
-                            placeholder="Enter title"
+                            placeholder={t('Enter title')}
                             placeholderTextColor={colors.grayColor}
                             value={title}
                             onChangeText={setTitle}
@@ -76,13 +78,13 @@ const CreateNewPostScreen = ({ navigation }: any) => {
 
                 {/* Summary Input */}
                 <View style={Styles.inputContainer}>
-                    <Text style={Styles.inputLabel}>Summary</Text>
+                    <Text style={Styles.inputLabel}>{t('Summary')}</Text>
                     <SizeBox height={8} />
                     <View style={Styles.textAreaContainer}>
                         <Edit2 size={16} color={colors.grayColor} variant="Linear" />
                         <TextInput
                             style={Styles.textArea}
-                            placeholder="Write Something......"
+                            placeholder={t('Write Something......')}
                             placeholderTextColor={colors.grayColor}
                             value={summary}
                             onChangeText={setSummary}
@@ -96,13 +98,13 @@ const CreateNewPostScreen = ({ navigation }: any) => {
 
                 {/* Description Input */}
                 <View style={Styles.inputContainer}>
-                    <Text style={Styles.inputLabel}>Description</Text>
+                    <Text style={Styles.inputLabel}>{t('Description')}</Text>
                     <SizeBox height={8} />
                     <View style={Styles.textAreaContainer}>
                         <Edit2 size={16} color={colors.grayColor} variant="Linear" />
                         <TextInput
                             style={Styles.textArea}
-                            placeholder="Write Something......"
+                            placeholder={t('Write Something......')}
                             placeholderTextColor={colors.grayColor}
                             value={description}
                             onChangeText={setDescription}
@@ -117,11 +119,11 @@ const CreateNewPostScreen = ({ navigation }: any) => {
                 {/* Bottom Buttons */}
                 <View style={Styles.buttonsContainer}>
                     <TouchableOpacity style={Styles.cancelButton} onPress={() => navigation.goBack()}>
-                        <Text style={Styles.cancelButtonText}>Cancel</Text>
+                        <Text style={Styles.cancelButtonText}>{t('Cancel')}</Text>
                         <ArrowRight size={18} color={colors.subTextColor} variant="Linear" />
                     </TouchableOpacity>
                     <TouchableOpacity style={Styles.createButton} onPress={handleCreatePost}>
-                        <Text style={Styles.createButtonText}>Create New Post</Text>
+                        <Text style={Styles.createButtonText}>{t('Create New Post')}</Text>
                         <ArrowRight size={18} color="#FFFFFF" variant="Linear" />
                     </TouchableOpacity>
                 </View>
