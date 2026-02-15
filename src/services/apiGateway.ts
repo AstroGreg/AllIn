@@ -719,6 +719,7 @@ export interface ProfileCollection {
   description?: string | null;
   cover_media_id?: string | null;
   cover_thumbnail_url?: string | null;
+  collection_type?: string | null;
   item_count?: number;
   created_at?: string | null;
   updated_at?: string | null;
@@ -728,6 +729,99 @@ export async function getProfileCollections(accessToken: string, profileId: stri
   const safe = String(profileId || '').trim() || 'me';
   const qs = toQueryString({limit: params?.limit});
   return apiRequest(`/profiles/${encodeURIComponent(safe)}/collections${qs}`, {method: 'GET', accessToken});
+}
+
+export interface ProfileCollectionItem extends MediaViewAllItem {
+  added_at?: string | null;
+  featured_rank?: number | null;
+}
+
+export interface ProfileCollectionByTypeResponse {
+  ok: boolean;
+  profile_id: string;
+  collection: ProfileCollection;
+  items: ProfileCollectionItem[];
+}
+
+export async function getProfileCollectionByType(
+  accessToken: string,
+  type: 'image' | 'video',
+): Promise<ProfileCollectionByTypeResponse> {
+  const qs = toQueryString({type});
+  return apiRequest<ProfileCollectionByTypeResponse>(`/profiles/me/collections/by-type${qs}`, {method: 'GET', accessToken});
+}
+
+export async function addProfileCollectionItems(
+  accessToken: string,
+  params: {type: 'image' | 'video'; media_ids: string[]},
+): Promise<{ok: boolean; added: number; skipped: number}> {
+  return apiRequest(`/profiles/me/collections/by-type/items`, {
+    method: 'POST',
+    accessToken,
+    body: {
+      type: params.type,
+      media_ids: params.media_ids,
+    },
+  });
+}
+
+export async function removeProfileCollectionItems(
+  accessToken: string,
+  params: {type: 'image' | 'video'; media_ids: string[]},
+): Promise<{ok: boolean; removed: number}> {
+  return apiRequest(`/profiles/me/collections/by-type/items`, {
+    method: 'DELETE',
+    accessToken,
+    body: {
+      type: params.type,
+      media_ids: params.media_ids,
+    },
+  });
+}
+
+export async function setProfileCollectionFeatured(
+  accessToken: string,
+  params: {type: 'image' | 'video'; media_ids: string[]},
+): Promise<{ok: boolean; featured_count: number}> {
+  return apiRequest(`/profiles/me/collections/by-type/featured`, {
+    method: 'PUT',
+    accessToken,
+    body: {
+      type: params.type,
+      media_ids: params.media_ids,
+    },
+  });
+}
+
+export interface ProfileSummaryResponse {
+  ok: boolean;
+  profile_id: string;
+  profile: {
+    display_name?: string | null;
+    bio?: string | null;
+    avatar_url?: string | null;
+  };
+  posts_count: number;
+  followers_count: number;
+}
+
+export async function getProfileSummary(accessToken: string): Promise<ProfileSummaryResponse> {
+  return apiRequest<ProfileSummaryResponse>('/profiles/me/summary', {method: 'GET', accessToken});
+}
+
+export async function updateProfileSummary(
+  accessToken: string,
+  params: {display_name?: string | null; bio?: string | null; avatar_url?: string | null},
+): Promise<ProfileSummaryResponse> {
+  return apiRequest<ProfileSummaryResponse>('/profiles/me', {
+    method: 'PUT',
+    accessToken,
+    body: {
+      display_name: params.display_name ?? undefined,
+      bio: params.bio ?? undefined,
+      avatar_url: params.avatar_url ?? undefined,
+    },
+  });
 }
 
 

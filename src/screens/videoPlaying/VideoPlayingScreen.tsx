@@ -35,12 +35,25 @@ const VideoPlayingScreen = ({ navigation, route }: any) => {
         thumbnail: Images.photo1,
         uri: '',
     };
-    const mediaId = '86db92e8-1b8e-44a5-95c4-fb4764f6783e';
+    const routeMediaId =
+        route?.params?.video?.media_id ||
+        route?.params?.video?.id ||
+        route?.params?.media_id ||
+        route?.params?.media?.id ||
+        null;
     const [videoTitle, setVideoTitle] = useState(fallbackVideo.title);
     const [videoUrl, setVideoUrl] = useState<string | null>(fallbackVideo.uri || null);
-    const [posterUrl, setPosterUrl] = useState<string | null>(
-        fallbackVideo.thumbnail ? Image.resolveAssetSource(fallbackVideo.thumbnail).uri : null
-    );
+    const fallbackPoster = useCallback(() => {
+        if (!fallbackVideo.thumbnail) return null;
+        if (typeof fallbackVideo.thumbnail === 'number') {
+            return Image.resolveAssetSource(fallbackVideo.thumbnail).uri;
+        }
+        if (typeof fallbackVideo.thumbnail === 'string') {
+            return fallbackVideo.thumbnail;
+        }
+        return fallbackVideo.thumbnail?.uri ?? null;
+    }, [fallbackVideo.thumbnail]);
+    const [posterUrl, setPosterUrl] = useState<string | null>(() => fallbackPoster());
 
     const [showBuyModal, setShowBuyModal] = useState(false);
     const [showSuccessModal, setShowSuccessModal] = useState(false);
@@ -53,6 +66,12 @@ const VideoPlayingScreen = ({ navigation, route }: any) => {
     const [pendingSeek, setPendingSeek] = useState(0);
     const videoRef = useRef<Video>(null);
     const [sliderWidth, setSliderWidth] = useState(0);
+
+    useEffect(() => {
+        setVideoTitle(fallbackVideo.title);
+        setVideoUrl(fallbackVideo.uri || null);
+        setPosterUrl(fallbackPoster());
+    }, [fallbackPoster, fallbackVideo.title, fallbackVideo.uri]);
 
     const formatTime = useCallback((value: number) => {
         const safe = Number.isFinite(value) ? Math.max(0, value) : 0;
@@ -104,10 +123,10 @@ const VideoPlayingScreen = ({ navigation, route }: any) => {
 
     useEffect(() => {
         let mounted = true;
-        if (!apiAccessToken) {
+        if (!apiAccessToken || !routeMediaId) {
             return () => {};
         }
-        getMediaById(apiAccessToken, mediaId)
+        getMediaById(apiAccessToken, String(routeMediaId))
             .then((media) => {
                 if (!mounted) return;
                 const title = media.title || media.description || fallbackVideo.title;
@@ -125,7 +144,7 @@ const VideoPlayingScreen = ({ navigation, route }: any) => {
                 const mp4 = candidates.find((value) => /\.(mp4|mov|m4v)(\\?|$)/i.test(value));
                 const resolvedVideo = hls || mp4 || candidates[0] || fallbackVideo.uri || null;
                 const thumbCandidate = media.thumbnail_url || media.preview_url || media.full_url || media.raw_url || null;
-                const resolvedPoster = thumbCandidate ? toAbsoluteUrl(String(thumbCandidate)) : posterUrl;
+                const resolvedPoster = thumbCandidate ? toAbsoluteUrl(String(thumbCandidate)) : fallbackPoster();
                 setVideoUrl(withAccessToken(resolvedVideo || '') || resolvedVideo || null);
                 setPosterUrl(withAccessToken(resolvedPoster || '') || resolvedPoster || null);
             })
@@ -136,7 +155,7 @@ const VideoPlayingScreen = ({ navigation, route }: any) => {
         return () => {
             mounted = false;
         };
-    }, [apiAccessToken, fallbackVideo.title, fallbackVideo.uri, mediaId, toAbsoluteUrl, toHlsUrl, withAccessToken]);
+    }, [apiAccessToken, fallbackPoster, fallbackVideo.title, fallbackVideo.uri, routeMediaId, toAbsoluteUrl, toHlsUrl, withAccessToken]);
 
     useEffect(() => {
         if (showBuyModalOnLoad) {

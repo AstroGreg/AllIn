@@ -1,5 +1,5 @@
 import { View, Text, TouchableOpacity, ScrollView, Dimensions, Platform, ActionSheetIOS, Modal } from 'react-native'
-import React, { useCallback, useEffect, useMemo, useState } from 'react'
+import React, { useCallback, useMemo, useState } from 'react'
 import SizeBox from '../../constants/SizeBox'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import FastImage from 'react-native-fast-image'
@@ -7,12 +7,12 @@ import Images from '../../constants/Images'
 import Icons from '../../constants/Icons'
 import { useTheme } from '../../context/ThemeContext'
 import { createStyles } from './UserProfileStyles'
-import { ArrowLeft2, User, Edit2, Trash, Clock, ArrowRight, DocumentText, Gallery, DocumentDownload, Location, VideoSquare } from 'iconsax-react-nativejs'
+import { ArrowLeft2, User, Edit2, Clock, ArrowRight, DocumentText, Gallery, DocumentDownload, Location, VideoSquare } from 'iconsax-react-nativejs'
 import { launchImageLibrary } from 'react-native-image-picker'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import ProfileTimeline, { TimelineEntry } from '../../components/profileTimeline/ProfileTimeline'
 import { useAuth } from '../../context/AuthContext'
-import { getDownloadsSummary, getMediaById, getPosts, getProfileCollections, getProfileTimeline, getUploadedCompetitions, type PostSummary, type ProfileCollection, type ProfileTimelineEntry, type UploadedCompetition } from '../../services/apiGateway'
+import { getDownloadsSummary, getPosts, getProfileCollectionByType, getProfileSummary, getProfileTimeline, getUploadedCompetitions, type PostSummary, type ProfileCollectionItem, type ProfileSummaryResponse, type ProfileTimelineEntry, type UploadedCompetition } from '../../services/apiGateway'
 import { getApiBaseUrl } from '../../constants/RuntimeConfig'
 import { useFocusEffect } from '@react-navigation/native'
 import { useTranslation } from 'react-i18next'
@@ -33,21 +33,59 @@ const UserProfileScreen = ({ navigation }: any) => {
     const [downloadsSummary, setDownloadsSummary] = useState<{ total_downloads: number; total_views: number; total_profit_cents?: number } | null>(
         null,
     );
-    const [serverCollections, setServerCollections] = useState<ProfileCollection[]>([]);
+    const [profileSummary, setProfileSummary] = useState<ProfileSummaryResponse | null>(null);
+    const [photoCollectionItems, setPhotoCollectionItems] = useState<ProfileCollectionItem[]>([]);
+    const [videoCollectionItems, setVideoCollectionItems] = useState<ProfileCollectionItem[]>([]);
     const [uploadedCompetitions, setUploadedCompetitions] = useState<UploadedCompetition[]>([]);
-    const photoIds = useMemo(
-        () => [
-            '87873d40-addf-4289-aa82-7cd300acdd94',
-            '4ac31817-e954-4d22-934d-27f82ddf5163',
-            '4fed0d64-9fd4-42c4-bf24-875aad683c6d',
-        ],
-        [],
-    );
-    const [photoMap, setPhotoMap] = useState<Record<string, string>>({});
 
     const { width } = Dimensions.get('window');
     const imageWidth = Math.floor((width - 40 - 24 - 30) / 4);
     const profileCategoryLabel = profileCategory === 'Road&Trail' ? t('roadAndTrail') : t('trackAndField');
+
+    const isSignedUrl = useCallback((value?: string | null) => {
+        if (!value) return false;
+        const lower = String(value).toLowerCase();
+        return (
+            lower.includes('x-amz-signature') ||
+            lower.includes('x-amz-credential') ||
+            lower.includes('x-amz-security-token') ||
+            lower.includes('signature=') ||
+            lower.includes('token=') ||
+            lower.includes('expires=')
+        );
+    }, []);
+
+    const toAbsoluteUrl = useCallback((value?: string | null) => {
+        if (!value) return null;
+        const raw = String(value);
+        if (raw.startsWith('http://') || raw.startsWith('https://')) return raw;
+        const base = getApiBaseUrl();
+        if (!base) return raw;
+        return `${base.replace(/\/$/, '')}/${raw.replace(/^\//, '')}`;
+    }, []);
+
+    const withAccessToken = useCallback((value?: string | null) => {
+        if (!value) return undefined;
+        if (!apiAccessToken) return value;
+        if (isSignedUrl(value)) return value;
+        if (value.includes('access_token=')) return value;
+        const sep = value.includes('?') ? '&' : '?';
+        return `${value}${sep}access_token=${encodeURIComponent(apiAccessToken)}`;
+    }, [apiAccessToken, isSignedUrl]);
+
+    const resolveThumbUrl = useCallback((media: ProfileCollectionItem) => {
+        const thumbCandidate =
+            media.thumbnail_url || media.preview_url || media.full_url || media.raw_url || media.original_url || null;
+        const resolved = thumbCandidate ? toAbsoluteUrl(String(thumbCandidate)) : null;
+        return withAccessToken(resolved) || resolved;
+    }, [toAbsoluteUrl, withAccessToken]);
+
+    const resolveMediaUrl = useCallback((media: ProfileCollectionItem) => {
+        const candidate =
+            media.preview_url || media.full_url || media.original_url || media.raw_url || null;
+        const resolved = candidate ? toAbsoluteUrl(String(candidate)) : null;
+        return withAccessToken(resolved) || resolved;
+    }, [toAbsoluteUrl, withAccessToken]);
 
     const timelineStorageKey = useMemo(() => {
         const key = user?.sub || userProfile?.username || user?.email || 'self';
@@ -90,23 +128,6 @@ const UserProfileScreen = ({ navigation }: any) => {
         return `@profile_blogs_${key}`;
     }, [user?.email, user?.sub, userProfile?.username]);
 
-    const defaultBlogs = useMemo(() => ([
-        {
-            id: 'blog-1',
-            title: 'IFAM Outdoor Oordegem',
-            date: '09/08/2025',
-            description: "Elias took part in the 800m and achieved a time close to his best 1'50\"99.",
-            media: [],
-        },
-        {
-            id: 'blog-2',
-            title: 'BK 10000m AC Duffel',
-            date: '09/06/2025',
-            description: 'This race meant everything to me. Running the European Championships on home soil.',
-            media: [],
-        },
-    ]), []);
-
     const loadProfileData = useCallback(async () => {
         // Timeline: server is the source of truth (no more device-local dummy timeline)
         if (apiAccessToken) {
@@ -132,10 +153,37 @@ const UserProfileScreen = ({ navigation }: any) => {
             setTimelineItems([]);
         }
 
-        // News/blogs: server-driven (no more local dummy list)
-        if (apiAccessToken && userProfile?.id) {
+        const storedCategory = await AsyncStorage.getItem(categoryStorageKey);
+        if (storedCategory === 'Road&Trail' || storedCategory === 'Track&Field') {
+            setProfileCategory(storedCategory);
+        }
+
+        // Profile summary (bio + counts)
+        let summaryProfileId: string | null = null;
+        if (apiAccessToken) {
             try {
-                const resp = await getPosts(apiAccessToken, { author_profile_id: String(userProfile.id), limit: 50 });
+                const summary = await getProfileSummary(apiAccessToken);
+                setProfileSummary(summary);
+                summaryProfileId = summary?.profile_id ? String(summary.profile_id) : null;
+                if (summary?.profile?.avatar_url) {
+                    const resolved = toAbsoluteUrl(String(summary.profile.avatar_url));
+                    const withToken = withAccessToken(resolved) || resolved;
+                    if (withToken) {
+                        setProfileImage({ uri: withToken });
+                    }
+                }
+            } catch {
+                setProfileSummary(null);
+            }
+        } else {
+            setProfileSummary(null);
+        }
+
+        // News/blogs: server-driven (no more local dummy list)
+        const postsProfileId = summaryProfileId || (userProfile as any)?.id || null;
+        if (apiAccessToken && postsProfileId) {
+            try {
+                const resp = await getPosts(apiAccessToken, { author_profile_id: String(postsProfileId), limit: 50 });
                 const posts = Array.isArray((resp as any)?.posts) ? (resp as any).posts : [];
                 const mapped = posts.map((p: PostSummary) => ({
                     id: String(p.id),
@@ -152,21 +200,23 @@ const UserProfileScreen = ({ navigation }: any) => {
             setBlogEntries([]);
         }
 
-        const storedCategory = await AsyncStorage.getItem(categoryStorageKey);
-        if (storedCategory === 'Road&Trail' || storedCategory === 'Track&Field') {
-            setProfileCategory(storedCategory);
-        }
-
-        // Collections: server-driven
+        // Collections by type
         if (apiAccessToken) {
             try {
-                const resp = await getProfileCollections(apiAccessToken, 'me', { limit: 50 });
-                setServerCollections(Array.isArray((resp as any)?.collections) ? (resp as any).collections : []);
+                const resp = await getProfileCollectionByType(apiAccessToken, 'image');
+                setPhotoCollectionItems(Array.isArray((resp as any)?.items) ? (resp as any).items : []);
             } catch {
-                setServerCollections([]);
+                setPhotoCollectionItems([]);
+            }
+            try {
+                const resp = await getProfileCollectionByType(apiAccessToken, 'video');
+                setVideoCollectionItems(Array.isArray((resp as any)?.items) ? (resp as any).items : []);
+            } catch {
+                setVideoCollectionItems([]);
             }
         } else {
-            setServerCollections([]);
+            setPhotoCollectionItems([]);
+            setVideoCollectionItems([]);
         }
 
         // Downloads summary (server-side)
@@ -200,8 +250,9 @@ const UserProfileScreen = ({ navigation }: any) => {
         apiAccessToken,
         blogStorageKey,
         categoryStorageKey,
-        defaultBlogs,
         timelineStorageKey,
+        toAbsoluteUrl,
+        withAccessToken,
         userProfile?.id,
     ]);
 
@@ -210,62 +261,6 @@ const UserProfileScreen = ({ navigation }: any) => {
             loadProfileData();
         }, [loadProfileData]),
     );
-
-    useEffect(() => {
-        let mounted = true;
-        if (!apiAccessToken) return () => {};
-        const isSignedUrl = (value?: string | null) => {
-            if (!value) return false;
-            const lower = String(value).toLowerCase();
-            return (
-                lower.includes('x-amz-signature') ||
-                lower.includes('x-amz-credential') ||
-                lower.includes('x-amz-security-token') ||
-                lower.includes('signature=') ||
-                lower.includes('token=') ||
-                lower.includes('expires=')
-            );
-        };
-        const withAccessToken = (value?: string | null) => {
-            if (!value) return undefined;
-            if (!apiAccessToken) return value;
-            if (isSignedUrl(value)) return value;
-            if (value.includes('access_token=')) return value;
-            const sep = value.includes('?') ? '&' : '?';
-            return `${value}${sep}access_token=${encodeURIComponent(apiAccessToken)}`;
-        };
-        const toAbsoluteUrl = (value?: string | null) => {
-            if (!value) return null;
-            const raw = String(value);
-            if (raw.startsWith('http://') || raw.startsWith('https://')) return raw;
-            const base = getApiBaseUrl();
-            if (!base) return raw;
-            return `${base.replace(/\/$/, '')}/${raw.replace(/^\//, '')}`;
-        };
-
-        Promise.all(
-            photoIds.map(async (id) => {
-                const media = await getMediaById(apiAccessToken, id);
-                const thumbCandidate =
-                    media.thumbnail_url || media.preview_url || media.full_url || media.raw_url || null;
-                const resolved = thumbCandidate ? toAbsoluteUrl(String(thumbCandidate)) : null;
-                return [id, withAccessToken(resolved) || resolved] as const;
-            }),
-        )
-            .then((entries) => {
-                if (!mounted) return;
-                const map: Record<string, string> = {};
-                entries.forEach(([id, url]) => {
-                    if (url) map[id] = url;
-                });
-                setPhotoMap(map);
-            })
-            .catch(() => {});
-
-        return () => {
-            mounted = false;
-        };
-    }, [apiAccessToken, photoIds]);
 
     const openAddTimeline = () => {
         navigation.navigate('ProfileTimelineEditScreen', {
@@ -336,39 +331,33 @@ const UserProfileScreen = ({ navigation }: any) => {
         }
     };
 
-    const deleteBlog = useCallback(async (entryId: string) => {
-        const updated = blogEntries.filter((item) => item.id !== entryId);
-        setBlogEntries(updated);
-        await AsyncStorage.setItem(blogStorageKey, JSON.stringify(updated));
-    }, [blogEntries, blogStorageKey]);
-
     const showDownloadsTab = true;
 
-    const visibleCollections = useMemo(() => {
-        return (serverCollections || []).slice(0, 8);
-    }, [serverCollections]);
+    const sortCollectionItems = useCallback((items: ProfileCollectionItem[]) => {
+        const featured = items
+            .filter((it) => it.featured_rank != null)
+            .sort((a, b) => Number(a.featured_rank ?? 0) - Number(b.featured_rank ?? 0));
+        const rest = items
+            .filter((it) => it.featured_rank == null)
+            .sort((a, b) => {
+                const aTime = new Date((a.added_at ?? a.created_at) || 0).getTime();
+                const bTime = new Date((b.added_at ?? b.created_at) || 0).getTime();
+                return bTime - aTime;
+            });
+        return [...featured, ...rest];
+    }, []);
 
+    const collectionItemsForTab = useMemo(() => {
+        const items = activeTab === 'photos' ? photoCollectionItems : videoCollectionItems;
+        const target = activeTab === 'photos' ? 'image' : 'video';
+        return items.filter((item) => String(item.type).toLowerCase() === target);
+    }, [activeTab, photoCollectionItems, videoCollectionItems]);
 
-    const events = [
-        {
-            id: 1,
-            image: photoMap[photoIds[0]] ? { uri: photoMap[photoIds[0]] } : null,
-            title: 'City Run Marathon',
-            status: 'Subscribed',
-            media: '254 videos',
-            location: 'Dhaka',
-            date: '27/05/2025',
-        },
-        {
-            id: 2,
-            image: photoMap[photoIds[1]] ? { uri: photoMap[photoIds[1]] } : null,
-            title: 'City Run Marathon',
-            status: 'Completed',
-            media: '48 videos',
-            location: 'Dhaka',
-            date: '27/05/2025',
-        },
-    ];
+    const visibleCollectionItems = useMemo(
+        () => sortCollectionItems(collectionItemsForTab).slice(0, 4),
+        [collectionItemsForTab, sortCollectionItems],
+    );
+
 
     const competitionOptions = useMemo(
         () => uploadedCompetitions.map((entry) => entry.event_name).filter(Boolean) as string[],
@@ -388,6 +377,14 @@ const UserProfileScreen = ({ navigation }: any) => {
         return `€${(Number(cents) / 100).toFixed(2)}`;
     }, []);
 
+    const formatCount = useCallback((value?: number | null) => {
+        const num = Number(value ?? 0);
+        if (!Number.isFinite(num)) return '0';
+        if (num >= 1_000_000) return `${(num / 1_000_000).toFixed(1)}M`;
+        if (num >= 1_000) return `${(num / 1_000).toFixed(1)}K`;
+        return String(Math.max(0, Math.floor(num)));
+    }, []);
+
     const previewCompetitions = useMemo(
         () => uploadedCompetitions.slice(0, 5),
         [uploadedCompetitions],
@@ -395,16 +392,11 @@ const UserProfileScreen = ({ navigation }: any) => {
 
 
     const activityItems = useMemo(() => {
-        const blogItems = blogEntries.map((entry) => ({
+        return blogEntries.map((entry) => ({
             ...entry,
             type: 'blog',
         }));
-        const eventItems = events.map((entry) => ({
-            ...entry,
-            type: 'event',
-        }));
-        return [...blogItems, ...eventItems];
-    }, [blogEntries, events]);
+    }, [blogEntries]);
 
 
     const renderActivityCard = (item: any) => {
@@ -525,12 +517,12 @@ const UserProfileScreen = ({ navigation }: any) => {
                             </TouchableOpacity>
                             <View style={Styles.statsContainerRight}>
                                 <View style={Styles.statItem}>
-                                    <Text style={Styles.statValue}>{t('1.2K')}</Text>
+                                    <Text style={Styles.statValue}>{formatCount(profileSummary?.posts_count ?? blogEntries.length)}</Text>
                                     <Text style={Styles.statLabel}>{t('Posts')}</Text>
                                 </View>
                                 <View style={Styles.statDivider} />
                                 <View style={Styles.statItem}>
-                                    <Text style={Styles.statValue}>{t('45.8K')}</Text>
+                                    <Text style={Styles.statValue}>{formatCount(profileSummary?.followers_count ?? 0)}</Text>
                                     <Text style={Styles.statLabel}>{t('Followers')}</Text>
                                 </View>
                             </View>
@@ -550,7 +542,9 @@ const UserProfileScreen = ({ navigation }: any) => {
                             </TouchableOpacity>
                         </View>
                         <Text style={Styles.bioText}>
-                            {t("Passionate photographer capturing life's most authentic moments through the lens.")}
+                            {profileSummary?.profile?.bio
+                                ? String(profileSummary.profile.bio)
+                                : t('Write your bio...')}
                         </Text>
                         <View style={Styles.bioDivider} />
                     </View>
@@ -628,9 +622,9 @@ const UserProfileScreen = ({ navigation }: any) => {
                                 <Text style={Styles.sectionTitle}>{t('Collections')}</Text>
                                 <TouchableOpacity onPress={() => {
                                     if (activeTab === 'photos') {
-                                        navigation.navigate('ViewUserCollectionsPhotosScreen');
+                                        navigation.navigate('ViewUserCollectionsPhotosScreen', { initialTab: 'photos' });
                                     } else if (activeTab === 'videos') {
-                                        navigation.navigate('ViewUserCollectionsVideosScreen');
+                                        navigation.navigate('ViewUserCollectionsVideosScreen', { initialTab: 'videos' });
                                     }
                                 }}>
                                     <Text style={Styles.viewAllText}>{t('View all')}</Text>
@@ -658,25 +652,25 @@ const UserProfileScreen = ({ navigation }: any) => {
                             {activeTab === 'photos' ? (
                                 <View style={Styles.collectionsCard}>
                                     <View style={Styles.collectionsGrid}>
-                                        {visibleCollections.map((c, index) => (
+                                        {visibleCollectionItems.map((item) => {
+                                            const thumb = resolveThumbUrl(item);
+                                            return (
                                             <TouchableOpacity
-                                                key={String(c.id || index)}
+                                                key={String(item.media_id)}
                                                 activeOpacity={0.85}
                                                 onPress={() => {
-                                                    if (c.cover_media_id) {
-                                                        navigation.navigate('PhotoDetailScreen', {
-                                                            eventTitle: c.name || t('Collection'),
-                                                            media: {
-                                                                id: c.cover_media_id,
-                                                                type: 'photo',
-                                                            },
-                                                        });
-                                                    }
+                                                    navigation.navigate('PhotoDetailScreen', {
+                                                        eventTitle: t('Collections'),
+                                                        media: {
+                                                            id: item.media_id,
+                                                            type: item.type,
+                                                        },
+                                                    });
                                                 }}
                                             >
-                                                {c.cover_thumbnail_url ? (
+                                                {thumb ? (
                                                     <FastImage
-                                                        source={{ uri: String(c.cover_thumbnail_url) }}
+                                                        source={{ uri: String(thumb) }}
                                                         style={[Styles.collectionImage, { width: imageWidth }]}
                                                         resizeMode="cover"
                                                     />
@@ -684,35 +678,37 @@ const UserProfileScreen = ({ navigation }: any) => {
                                                     <View style={[Styles.collectionImage, { width: imageWidth, backgroundColor: '#1a1a1a' }]} />
                                                 )}
                                             </TouchableOpacity>
-                                        ))}
+                                        );
+                                        })}
                                     </View>
-                                    {visibleCollections.length === 0 && (
+                                    {visibleCollectionItems.length === 0 && (
                                         <Text style={Styles.emptyText}>{t('No collections yet.')}</Text>
                                     )}
                                 </View>
                             ) : (
                                 <View style={Styles.collectionsCard}>
                                     <View style={Styles.collectionsGrid}>
-                                        {visibleCollections.map((c, index) => (
+                                        {visibleCollectionItems.map((item) => {
+                                            const thumb = resolveThumbUrl(item);
+                                            return (
                                             <TouchableOpacity
-                                                key={String(c.id || index)}
+                                                key={String(item.media_id)}
                                                 activeOpacity={0.85}
                                                 onPress={() => {
-                                                    // We don't know if the cover is a video; open media detail as a safe default.
-                                                    if (c.cover_media_id) {
-                                                        navigation.navigate('PhotoDetailScreen', {
-                                                            eventTitle: c.name || t('Collection'),
-                                                            media: {
-                                                                id: c.cover_media_id,
-                                                                type: 'video',
-                                                            },
-                                                        });
-                                                    }
+                                                    const mediaUrl = resolveMediaUrl(item);
+                                                    navigation.navigate('VideoPlayingScreen', {
+                                                        video: {
+                                                            media_id: item.media_id,
+                                                            title: t('Video'),
+                                                            thumbnail: thumb ? { uri: String(thumb) } : undefined,
+                                                            uri: mediaUrl ?? '',
+                                                        },
+                                                    });
                                                 }}
                                             >
-                                                {c.cover_thumbnail_url ? (
+                                                {thumb ? (
                                                     <FastImage
-                                                        source={{ uri: String(c.cover_thumbnail_url) }}
+                                                        source={{ uri: String(thumb) }}
                                                         style={[Styles.collectionImage, { width: imageWidth }]}
                                                         resizeMode="cover"
                                                     />
@@ -720,9 +716,10 @@ const UserProfileScreen = ({ navigation }: any) => {
                                                     <View style={[Styles.collectionImage, { width: imageWidth, backgroundColor: '#1a1a1a' }]} />
                                                 )}
                                             </TouchableOpacity>
-                                        ))}
+                                        );
+                                        })}
                                     </View>
-                                    {visibleCollections.length === 0 && (
+                                    {visibleCollectionItems.length === 0 && (
                                         <Text style={Styles.emptyText}>{t('No collections yet.')}</Text>
                                     )}
                                 </View>

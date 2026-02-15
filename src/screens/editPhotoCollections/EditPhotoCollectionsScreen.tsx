@@ -1,16 +1,18 @@
 import { View, Text, TouchableOpacity, ScrollView, Dimensions } from 'react-native'
-import React, { useState } from 'react'
+import React, { useCallback, useMemo, useState } from 'react'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import FastImage from 'react-native-fast-image'
 import { ArrowLeft2, ArrowRight, Add, Minus } from 'iconsax-react-nativejs'
-import { launchImageLibrary } from 'react-native-image-picker'
-import Images from '../../constants/Images'
 import SizeBox from '../../constants/SizeBox'
 import { createStyles } from './EditPhotoCollectionsStyles'
 import { useTheme } from '../../context/ThemeContext'
+import { useAuth } from '../../context/AuthContext'
+import { useFocusEffect } from '@react-navigation/native'
+import { addProfileCollectionItems, getMediaViewAll, getProfileCollectionByType, removeProfileCollectionItems, setProfileCollectionFeatured, type MediaViewAllItem, type ProfileCollectionItem } from '../../services/apiGateway'
+import { getApiBaseUrl } from '../../constants/RuntimeConfig'
 import { useTranslation } from 'react-i18next'
 
-type SelectionMode = 'none' | 'top4' | 'delete';
+type SelectionMode = 'none' | 'top4' | 'delete' | 'add';
 
 const EditPhotoCollectionsScreen = ({ navigation }: any) => {
     const insets = useSafeAreaInsets();
@@ -19,90 +21,156 @@ const EditPhotoCollectionsScreen = ({ navigation }: any) => {
     const { colors } = useTheme();
     const { t } = useTranslation();
     const styles = createStyles(colors);
+    const { apiAccessToken } = useAuth();
 
     const [selectionMode, setSelectionMode] = useState<SelectionMode>('none');
-    const [selectedPhotos, setSelectedPhotos] = useState<number[]>([]);
+    const [selectedPhotoIds, setSelectedPhotoIds] = useState<string[]>([]);
+    const [allPhotos, setAllPhotos] = useState<MediaViewAllItem[]>([]);
+    const [collectionPhotos, setCollectionPhotos] = useState<ProfileCollectionItem[]>([]);
 
-    const [photos, setPhotos] = useState<Array<{ id: number; image: any }>>([
-        { id: 1, image: Images.photo1 },
-        { id: 2, image: Images.photo3 },
-        { id: 3, image: Images.photo4 },
-        { id: 4, image: Images.photo5 },
-        { id: 5, image: Images.photo6 },
-        { id: 6, image: Images.photo7 },
-        { id: 7, image: Images.photo8 },
-        { id: 8, image: Images.photo9 },
-        { id: 9, image: Images.photo1 },
-        { id: 10, image: Images.photo3 },
-        { id: 11, image: Images.photo4 },
-        { id: 12, image: Images.photo5 },
-        { id: 13, image: Images.photo6 },
-        { id: 14, image: Images.photo7 },
-        { id: 15, image: Images.photo8 },
-        { id: 16, image: Images.photo9 },
-    ]);
+    const isSignedUrl = useCallback((value?: string | null) => {
+        if (!value) return false;
+        const lower = String(value).toLowerCase();
+        return (
+            lower.includes('x-amz-signature') ||
+            lower.includes('x-amz-credential') ||
+            lower.includes('x-amz-security-token') ||
+            lower.includes('signature=') ||
+            lower.includes('token=') ||
+            lower.includes('expires=')
+        );
+    }, []);
+
+    const toAbsoluteUrl = useCallback((value?: string | null) => {
+        if (!value) return null;
+        const raw = String(value);
+        if (raw.startsWith('http://') || raw.startsWith('https://')) return raw;
+        const base = getApiBaseUrl();
+        if (!base) return raw;
+        return `${base.replace(/\/$/, '')}/${raw.replace(/^\//, '')}`;
+    }, []);
+
+    const withAccessToken = useCallback((value?: string | null) => {
+        if (!value) return undefined;
+        if (!apiAccessToken) return value;
+        if (isSignedUrl(value)) return value;
+        if (value.includes('access_token=')) return value;
+        const sep = value.includes('?') ? '&' : '?';
+        return `${value}${sep}access_token=${encodeURIComponent(apiAccessToken)}`;
+    }, [apiAccessToken, isSignedUrl]);
+
+    const resolveThumbUrl = useCallback((media: MediaViewAllItem) => {
+        const thumbCandidate =
+            media.thumbnail_url || media.preview_url || media.full_url || media.raw_url || media.original_url || null;
+        const resolved = thumbCandidate ? toAbsoluteUrl(String(thumbCandidate)) : null;
+        return withAccessToken(resolved) || resolved;
+    }, [toAbsoluteUrl, withAccessToken]);
+
+    const loadData = useCallback(async () => {
+        if (!apiAccessToken) {
+            setAllPhotos([]);
+            setCollectionPhotos([]);
+            return;
+        }
+        try {
+            const [all, collection] = await Promise.all([
+                getMediaViewAll(apiAccessToken),
+                getProfileCollectionByType(apiAccessToken, 'image'),
+            ]);
+            setAllPhotos((Array.isArray(all) ? all : []).filter((m) => String(m.type).toLowerCase() === 'image'));
+            setCollectionPhotos(Array.isArray(collection?.items) ? collection.items : []);
+        } catch {
+            setAllPhotos([]);
+            setCollectionPhotos([]);
+        }
+    }, [apiAccessToken]);
+
+    useFocusEffect(
+        useCallback(() => {
+            loadData();
+        }, [loadData]),
+    );
+
+    const collectionIdSet = useMemo(
+        () => new Set(collectionPhotos.map((item) => String(item.media_id))),
+        [collectionPhotos],
+    );
+
+    const featuredIds = useMemo(() => {
+        return collectionPhotos
+            .filter((item) => item.featured_rank != null)
+            .sort((a, b) => Number(a.featured_rank ?? 0) - Number(b.featured_rank ?? 0))
+            .map((item) => String(item.media_id));
+    }, [collectionPhotos]);
+
+    const visiblePhotos = useMemo(() => {
+        if (selectionMode === 'add') {
+            return allPhotos.filter((item) => !collectionIdSet.has(String(item.media_id)));
+        }
+        return collectionPhotos;
+    }, [allPhotos, collectionIdSet, collectionPhotos, selectionMode]);
 
     const handleSelectTop4 = () => {
         setSelectionMode('top4');
-        setSelectedPhotos([]);
+        setSelectedPhotoIds(featuredIds);
+    };
+
+    const handleAddPhotos = () => {
+        setSelectionMode('add');
+        setSelectedPhotoIds([]);
     };
 
     const handleDeletePhotos = () => {
         setSelectionMode('delete');
-        setSelectedPhotos([]);
+        setSelectedPhotoIds([]);
     };
 
     const handleCancel = () => {
         setSelectionMode('none');
-        setSelectedPhotos([]);
+        setSelectedPhotoIds([]);
     };
 
-    const handlePhotoPress = (photoId: number) => {
+    const togglePhotoSelection = (photoId: string) => {
         if (selectionMode === 'none') return;
 
-        setSelectedPhotos(prev => {
+        setSelectedPhotoIds((prev) => {
             const index = prev.indexOf(photoId);
             if (index !== -1) {
-                // Photo is already selected, remove it
-                return prev.filter(id => id !== photoId);
-            } else if (selectionMode === 'top4' && prev.length >= 4) {
-                // Top 4 mode: limit to 4 selections
-                return prev;
-            } else {
-                // Add photo to selection
-                return [...prev, photoId];
+                return prev.filter((id) => id !== photoId);
             }
+            if (selectionMode === 'top4' && prev.length >= 4) {
+                return prev;
+            }
+            return [...prev, photoId];
         });
     };
 
-    const handleConfirmDelete = () => {
-        setPhotos((prev) => prev.filter((photo) => !selectedPhotos.includes(photo.id)));
+    const handleConfirmDelete = async () => {
+        if (!apiAccessToken || selectedPhotoIds.length === 0) return;
+        await removeProfileCollectionItems(apiAccessToken, { type: 'image', media_ids: selectedPhotoIds });
+        await loadData();
         setSelectionMode('none');
-        setSelectedPhotos([]);
+        setSelectedPhotoIds([]);
     };
 
-    const handleConfirmTop4 = () => {
+    const handleConfirmTop4 = async () => {
+        if (!apiAccessToken) return;
+        await setProfileCollectionFeatured(apiAccessToken, { type: 'image', media_ids: selectedPhotoIds });
+        await loadData();
         setSelectionMode('none');
-        setSelectedPhotos([]);
+        setSelectedPhotoIds([]);
     };
 
-    const handleAddPhotos = async () => {
-        const result = await launchImageLibrary({
-            mediaType: 'photo',
-            selectionLimit: 0,
-        });
-        if (result?.assets?.length) {
-            setPhotos((prev) => [
-                ...prev,
-                ...result.assets.map((asset, index) => ({
-                    id: Date.now() + index,
-                    image: { uri: asset.uri },
-                })),
-            ]);
-        }
+    const handleConfirmAdd = async () => {
+        if (!apiAccessToken || selectedPhotoIds.length === 0) return;
+        await addProfileCollectionItems(apiAccessToken, { type: 'image', media_ids: selectedPhotoIds });
+        await loadData();
+        setSelectionMode('none');
+        setSelectedPhotoIds([]);
     };
-    const getSelectionNumber = (photoId: number): number | null => {
-        const index = selectedPhotos.indexOf(photoId);
+
+    const getSelectionNumber = (photoId: string): number | null => {
+        const index = selectedPhotoIds.indexOf(photoId);
         return index !== -1 ? index + 1 : null;
     };
 
@@ -112,6 +180,8 @@ const EditPhotoCollectionsScreen = ({ navigation }: any) => {
                 return t('Select Top 4 Picks');
             case 'delete':
                 return t('Select Photos to Delete');
+            case 'add':
+                return t('Select Photos to Add');
             default:
                 return t('My Photo Collections');
         }
@@ -119,6 +189,7 @@ const EditPhotoCollectionsScreen = ({ navigation }: any) => {
 
     const isInSelectionMode = selectionMode !== 'none';
     const isDeleteMode = selectionMode === 'delete';
+    const isAddMode = selectionMode === 'add';
 
     return (
         <View style={styles.mainContainer}>
@@ -171,24 +242,36 @@ const EditPhotoCollectionsScreen = ({ navigation }: any) => {
                     </>
                 )}
 
-                {selectionMode === 'top4' && selectedPhotos.length > 0 && (
+                {selectionMode === 'top4' && selectedPhotoIds.length > 0 && (
                     <>
                         <SizeBox height={16} />
                         <TouchableOpacity style={styles.confirmTopButton} onPress={handleConfirmTop4}>
                             <Text style={styles.confirmTopButtonText}>
-                                {t('Confirm Top')} {selectedPhotos.length}
+                                {t('Confirm Top')} {selectedPhotoIds.length}
                             </Text>
                             <Add size={18} color={colors.pureWhite} variant="Linear" />
                         </TouchableOpacity>
                     </>
                 )}
 
-                {isDeleteMode && selectedPhotos.length > 0 && (
+                {isAddMode && selectedPhotoIds.length > 0 && (
+                    <>
+                        <SizeBox height={16} />
+                        <TouchableOpacity style={styles.confirmTopButton} onPress={handleConfirmAdd}>
+                            <Text style={styles.confirmTopButtonText}>
+                                {t('Add Photos')} {selectedPhotoIds.length}
+                            </Text>
+                            <Add size={18} color={colors.pureWhite} variant="Linear" />
+                        </TouchableOpacity>
+                    </>
+                )}
+
+                {isDeleteMode && selectedPhotoIds.length > 0 && (
                     <>
                         <SizeBox height={16} />
                         <TouchableOpacity style={styles.confirmDeleteButton} onPress={handleConfirmDelete}>
                             <Text style={styles.confirmDeleteButtonText}>
-                                {t('Delete')} {selectedPhotos.length} {t('Photo')}{selectedPhotos.length > 1 ? 's' : ''}
+                                {t('Delete')} {selectedPhotoIds.length} {t('Photo')}{selectedPhotoIds.length > 1 ? 's' : ''}
                             </Text>
                             <Minus size={18} color={colors.pureWhite} variant="Linear" />
                         </TouchableOpacity>
@@ -200,14 +283,16 @@ const EditPhotoCollectionsScreen = ({ navigation }: any) => {
                 {/* Photos Grid */}
                 <View style={styles.photosContainer}>
                     <View style={styles.photosGrid}>
-                        {photos.map((photo) => {
-                            const selectionNumber = getSelectionNumber(photo.id);
+                        {visiblePhotos.map((photo) => {
+                            const mediaId = String(photo.media_id);
+                            const selectionNumber = getSelectionNumber(mediaId);
                             const isSelected = selectionNumber !== null;
+                            const thumb = resolveThumbUrl(photo);
 
                             return (
                                 <TouchableOpacity
-                                    key={photo.id}
-                                    onPress={() => handlePhotoPress(photo.id)}
+                                    key={mediaId}
+                                    onPress={() => togglePhotoSelection(mediaId)}
                                     activeOpacity={isInSelectionMode ? 0.7 : 1}
                                 >
                                     <View style={[
@@ -217,11 +302,15 @@ const EditPhotoCollectionsScreen = ({ navigation }: any) => {
                                             ? styles.photoImageContainerSelectedDelete
                                             : styles.photoImageContainerSelected)
                                     ]}>
-                                        <FastImage
-                                            source={photo.image}
-                                            style={[styles.photoImage, { width: imageWidth - 2 }]}
-                                            resizeMode="cover"
-                                        />
+                                        {thumb ? (
+                                            <FastImage
+                                                source={{ uri: String(thumb) }}
+                                                style={[styles.photoImage, { width: imageWidth - 2 }]}
+                                                resizeMode="cover"
+                                            />
+                                        ) : (
+                                            <View style={[styles.photoImage, { width: imageWidth - 2, backgroundColor: colors.btnBackgroundColor }]} />
+                                        )}
                                         {isSelected && (
                                             <View style={[
                                                 styles.selectionBadge,

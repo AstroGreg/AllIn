@@ -1,70 +1,139 @@
-import React, { useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import { View, Text, ScrollView, TouchableOpacity } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import FastImage from 'react-native-fast-image';
 import { ArrowLeft2, User, Clock } from 'iconsax-react-nativejs';
 import { createStyles } from './ViewUserCollectionsVideosScreenStyles';
 import SizeBox from '../../constants/SizeBox';
-import Images from '../../constants/Images';
 import Icons from '../../constants/Icons';
 import { useTheme } from '../../context/ThemeContext';
+import { useAuth } from '../../context/AuthContext';
+import { useFocusEffect } from '@react-navigation/native';
+import { getProfileCollectionByType, type ProfileCollectionItem } from '../../services/apiGateway';
+import { getApiBaseUrl } from '../../constants/RuntimeConfig';
 import { useTranslation } from 'react-i18next'
 
-const ViewUserCollectionsVideosScreen = ({ navigation }: any) => {
+const ViewUserCollectionsVideosScreen = ({ navigation, route }: any) => {
     const { t } = useTranslation();
     const insets = useSafeAreaInsets();
     const { colors } = useTheme();
     const Styles = createStyles(colors);
-    const [activeTab, setActiveTab] = useState('videos');
+    const { apiAccessToken } = useAuth();
+    const initialTab = route?.params?.initialTab === 'photos' ? 'photos' : 'videos';
+    const [activeTab, setActiveTab] = useState<'photos' | 'videos'>(initialTab);
+    const [photoItems, setPhotoItems] = useState<ProfileCollectionItem[]>([]);
+    const [videoItems, setVideoItems] = useState<ProfileCollectionItem[]>([]);
 
-    const photos = [
-        Images.photo1, Images.photo3, Images.photo4, Images.photo5,
-        Images.photo1, Images.photo3, Images.photo4, Images.photo5,
-        Images.photo1, Images.photo3, Images.photo4, Images.photo5,
-        Images.photo1, Images.photo3, Images.photo4, Images.photo5,
-        Images.photo1, Images.photo3, Images.photo4, Images.photo5,
-    ];
+    const isSignedUrl = useCallback((value?: string | null) => {
+        if (!value) return false;
+        const lower = String(value).toLowerCase();
+        return (
+            lower.includes('x-amz-signature') ||
+            lower.includes('x-amz-credential') ||
+            lower.includes('x-amz-security-token') ||
+            lower.includes('signature=') ||
+            lower.includes('token=') ||
+            lower.includes('expires=')
+        );
+    }, []);
 
-    const videos = [
-        { id: 1, thumbnail: Images.photo1, title: '17:45 / MIN-M (Series)', author: 'Smith', duration: '5:06 mins' },
-        { id: 2, thumbnail: Images.photo3, title: '17:45 / MIN-M (Series)', author: 'Smith', duration: '5:06 mins' },
-        { id: 3, thumbnail: Images.photo1, title: '17:45 / MIN-M (Series)', author: 'Smith', duration: '5:06 mins' },
-        { id: 4, thumbnail: Images.photo3, title: '17:45 / MIN-M (Series)', author: 'Smith', duration: '5:06 mins' },
-        { id: 5, thumbnail: Images.photo1, title: '17:45 / MIN-M (Series)', author: 'Smith', duration: '5:06 mins' },
-        { id: 6, thumbnail: Images.photo3, title: '17:45 / MIN-M (Series)', author: 'Smith', duration: '5:06 mins' },
-    ];
+    const toAbsoluteUrl = useCallback((value?: string | null) => {
+        if (!value) return null;
+        const raw = String(value);
+        if (raw.startsWith('http://') || raw.startsWith('https://')) return raw;
+        const base = getApiBaseUrl();
+        if (!base) return raw;
+        return `${base.replace(/\/$/, '')}/${raw.replace(/^\//, '')}`;
+    }, []);
 
-    const renderVideoCard = (video: any) => (
+    const withAccessToken = useCallback((value?: string | null) => {
+        if (!value) return undefined;
+        if (!apiAccessToken) return value;
+        if (isSignedUrl(value)) return value;
+        if (value.includes('access_token=')) return value;
+        const sep = value.includes('?') ? '&' : '?';
+        return `${value}${sep}access_token=${encodeURIComponent(apiAccessToken)}`;
+    }, [apiAccessToken, isSignedUrl]);
+
+    const resolveThumbUrl = useCallback((media: ProfileCollectionItem) => {
+        const thumbCandidate =
+            media.thumbnail_url || media.preview_url || media.full_url || media.raw_url || media.original_url || null;
+        const resolved = thumbCandidate ? toAbsoluteUrl(String(thumbCandidate)) : null;
+        return withAccessToken(resolved) || resolved;
+    }, [toAbsoluteUrl, withAccessToken]);
+
+    const resolveMediaUrl = useCallback((media: ProfileCollectionItem) => {
+        const candidate =
+            media.preview_url || media.full_url || media.original_url || media.raw_url || null;
+        const resolved = candidate ? toAbsoluteUrl(String(candidate)) : null;
+        return withAccessToken(resolved) || resolved;
+    }, [toAbsoluteUrl, withAccessToken]);
+
+    const loadCollections = useCallback(async () => {
+        if (!apiAccessToken) {
+            setPhotoItems([]);
+            setVideoItems([]);
+            return;
+        }
+        try {
+            const [photos, videos] = await Promise.all([
+                getProfileCollectionByType(apiAccessToken, 'image'),
+                getProfileCollectionByType(apiAccessToken, 'video'),
+            ]);
+            setPhotoItems(Array.isArray(photos?.items) ? photos.items : []);
+            setVideoItems(Array.isArray(videos?.items) ? videos.items : []);
+        } catch {
+            setPhotoItems([]);
+            setVideoItems([]);
+        }
+    }, [apiAccessToken]);
+
+    useFocusEffect(
+        useCallback(() => {
+            loadCollections();
+        }, [loadCollections]),
+    );
+
+    const renderVideoCard = (video: ProfileCollectionItem) => {
+        const thumb = resolveThumbUrl(video);
+        const mediaUrl = resolveMediaUrl(video);
+        return (
         <TouchableOpacity
-            key={video.id}
+            key={video.media_id}
             style={Styles.videoCard}
             onPress={() => navigation.navigate('VideoPlayingScreen', {
                 video: {
-                    title: 'BK Studenten 2023',
-                    subtitle: video.title,
-                    thumbnail: video.thumbnail,
+                    media_id: video.media_id,
+                    title: t('Video'),
+                    thumbnail: thumb ? { uri: String(thumb) } : undefined,
+                    uri: mediaUrl ?? '',
                 }
             })}
         >
             <View style={Styles.thumbnailContainer}>
-                <FastImage source={video.thumbnail} style={Styles.thumbnail} resizeMode="cover" />
+                {thumb ? (
+                    <FastImage source={{ uri: String(thumb) }} style={Styles.thumbnail} resizeMode="cover" />
+                ) : (
+                    <View style={[Styles.thumbnail, { backgroundColor: colors.btnBackgroundColor }]} />
+                )}
                 <View style={Styles.playIconContainer}>
                     <Icons.PlayCricle width={26} height={26} />
                 </View>
             </View>
-            <Text style={Styles.videoTitle}>{video.title}</Text>
+            <Text style={Styles.videoTitle}>{t('Video')}</Text>
             <View style={Styles.videoMeta}>
                 <View style={Styles.metaItem}>
                     <User size={14} color={colors.subTextColor} variant="Linear" />
-                    <Text style={Styles.metaText}>{video.author}</Text>
+                    <Text style={Styles.metaText}>{t('uploaded')}</Text>
                 </View>
                 <View style={Styles.metaItem}>
                     <Clock size={14} color={colors.subTextColor} variant="Linear" />
-                    <Text style={Styles.metaText}>{video.duration}</Text>
+                    <Text style={Styles.metaText}>{video.created_at ? String(video.created_at).slice(0, 10) : ''}</Text>
                 </View>
             </View>
         </TouchableOpacity>
-    );
+        );
+    };
 
     return (
         <View style={Styles.mainContainer}>
@@ -85,7 +154,9 @@ const ViewUserCollectionsVideosScreen = ({ navigation }: any) => {
                     <Text style={Styles.sectionTitle}>{t('Collections')}</Text>
                     <View style={Styles.videosCountBadge}>
                         <Text style={Styles.videosCountText}>
-                            {activeTab === 'photos' ? `${photos.length} photos` : `${videos.length} videos`}
+                            {activeTab === 'photos'
+                                ? `${photoItems.length} ${t('Photos')}`
+                                : `${videoItems.length} ${t('Videos')}`}
                         </Text>
                     </View>
                 </View>
@@ -114,30 +185,37 @@ const ViewUserCollectionsVideosScreen = ({ navigation }: any) => {
                 {activeTab === 'photos' ? (
                     <View style={Styles.photosCard}>
                         <View style={Styles.photosGrid}>
-                            {photos.map((photo, index) => (
+                            {photoItems.map((photo) => {
+                                const thumb = resolveThumbUrl(photo);
+                                return (
                                 <TouchableOpacity
-                                    key={index}
+                                    key={String(photo.media_id)}
                                     activeOpacity={0.85}
                                     onPress={() => navigation.navigate('PhotoDetailScreen', {
-                                        eventTitle: 'Collections',
+                                        eventTitle: t('Collections'),
                                         media: {
-                                            id: '87873d40-addf-4289-aa82-7cd300acdd94',
-                                            type: 'photo',
+                                            id: photo.media_id,
+                                            type: photo.type,
                                         },
                                     })}
                                 >
-                                    <FastImage
-                                        source={photo}
-                                        style={Styles.photoImage}
-                                        resizeMode="cover"
-                                    />
+                                    {thumb ? (
+                                        <FastImage
+                                            source={{ uri: String(thumb) }}
+                                            style={Styles.photoImage}
+                                            resizeMode="cover"
+                                        />
+                                    ) : (
+                                        <View style={[Styles.photoImage, { backgroundColor: colors.btnBackgroundColor }]} />
+                                    )}
                                 </TouchableOpacity>
-                            ))}
+                                );
+                            })}
                         </View>
                     </View>
                 ) : (
                     <View style={Styles.videosGrid}>
-                        {videos.map(renderVideoCard)}
+                        {videoItems.map(renderVideoCard)}
                     </View>
                 )}
 
