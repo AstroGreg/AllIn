@@ -5,6 +5,8 @@ import RootStackNavigation from './src/navigations/RootStackNavigation'
 import { ThemeProvider, useTheme } from './src/context/ThemeContext'
 import { AuthProvider } from './src/context/AuthContext'
 import { EventsProvider } from './src/context/EventsContext'
+import { NetworkLoggerProvider } from './src/context/NetworkLoggerContext'
+import NetworkLoggerOverlay from './src/components/networkLogger/NetworkLoggerOverlay'
 import './src/i18n'
 
 const AppNavigation = () => {
@@ -35,13 +37,16 @@ const App = () => {
   LogBox.ignoreAllLogs();
 
   return (
-    <AuthProvider>
-      <EventsProvider>
-        <ThemeProvider>
-          <AppNavigation />
-        </ThemeProvider>
-      </EventsProvider>
-    </AuthProvider>
+    <NetworkLoggerProvider>
+      <AuthProvider>
+        <EventsProvider>
+          <ThemeProvider>
+            <AppNavigation />
+            {__DEV__ && <NetworkLoggerOverlay />}
+          </ThemeProvider>
+        </EventsProvider>
+      </AuthProvider>
+    </NetworkLoggerProvider>
   )
 }
 

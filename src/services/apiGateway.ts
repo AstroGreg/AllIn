@@ -1,4 +1,5 @@
 import { getApiBaseUrl as resolveApiBaseUrl } from '../constants/RuntimeConfig';
+import { logNetworkRequest } from './networkLogger';
 
 export type HttpMethod = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
 
@@ -61,27 +62,61 @@ export async function apiRequest<T>(
   },
 ): Promise<T> {
   const url = `${resolveApiBaseUrl()}${path.startsWith('/') ? path : `/${path}`}`;
+  const startTime = Date.now();
 
-  const res = await fetch(url, {
-    method,
-    headers: {
-      ...(body instanceof FormData ? {} : {'Content-Type': 'application/json'}),
-      Authorization: `Bearer ${accessToken}`,
-      ...(headers ?? {}),
-    },
-    body: body == null ? undefined : body instanceof FormData ? body : JSON.stringify(body),
-  });
+  try {
+    const res = await fetch(url, {
+      method,
+      headers: {
+        ...(body instanceof FormData ? {} : {'Content-Type': 'application/json'}),
+        Authorization: `Bearer ${accessToken}`,
+        ...(headers ?? {}),
+      },
+      body: body == null ? undefined : body instanceof FormData ? body : JSON.stringify(body),
+    });
 
-  const data = await parseJsonSafely(res);
+    const data = await parseJsonSafely(res);
+    const duration = Date.now() - startTime;
 
-  if (!res.ok) {
-    const message =
-      (data && (data.error || data.message || data.details)) ||
-      `Request failed (${res.status})`;
-    throw new ApiError({status: res.status, message: String(message), body: data});
+    if (__DEV__) {
+      logNetworkRequest({
+        method,
+        url,
+        path,
+        status: res.status,
+        duration,
+        requestBody: body instanceof FormData ? '[FormData]' : body,
+        responseBody: data,
+      });
+    }
+
+    if (!res.ok) {
+      const message =
+        (data && (data.error || data.message || data.details)) ||
+        `Request failed (${res.status})`;
+      throw new ApiError({status: res.status, message: String(message), body: data});
+    }
+
+    return data as T;
+  } catch (err) {
+    const duration = Date.now() - startTime;
+
+    if (__DEV__ && err instanceof ApiError) {
+      // Already logged above before the throw
+    } else if (__DEV__) {
+      logNetworkRequest({
+        method,
+        url,
+        path,
+        status: null,
+        duration,
+        error: err instanceof Error ? err.message : String(err),
+        requestBody: body instanceof FormData ? '[FormData]' : body,
+      });
+    }
+
+    throw err;
   }
-
-  return data as T;
 }
 
 // -----------------------------
