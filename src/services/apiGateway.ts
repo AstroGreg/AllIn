@@ -691,15 +691,39 @@ export async function getDownloadsSummary(accessToken: string): Promise<Download
 // Profile Content (Timeline + Collections)
 // -----------------------------
 
+export interface ProfileTimelineMedia extends MediaViewAllItem {
+  sort_order?: number;
+}
+
+export interface ProfileTimelineLinkedPost {
+  id: string;
+  title: string;
+  created_at?: string | null;
+}
+
+export interface ProfileTimelineLinkedEvent {
+  event_id: string;
+  event_name?: string | null;
+  event_location?: string | null;
+  event_date?: string | null;
+}
+
 export interface ProfileTimelineEntry {
   id: string;
   sort_order?: number;
   year: number;
+  event_date?: string | null;
   title: string;
   description?: string | null;
   highlight?: string | null;
   cover_media_id?: string | null;
   cover_thumbnail_url?: string | null;
+  media?: ProfileTimelineMedia[];
+  media_ids?: string[];
+  linked_post_ids?: string[];
+  linked_event_ids?: string[];
+  linked_posts?: ProfileTimelineLinkedPost[];
+  linked_events?: ProfileTimelineLinkedEvent[];
   created_at?: string | null;
   updated_at?: string | null;
 }
@@ -975,6 +999,15 @@ export interface PostSummary {
   views_count: number;
   liked_by_me: boolean;
   author?: {profile_id: string; display_name: string; avatar_url?: string | null};
+  cover_media?: {
+    media_id: string;
+    type: 'image' | 'video';
+    thumbnail_url?: string | null;
+    preview_url?: string | null;
+    original_url?: string | null;
+    full_url?: string | null;
+    raw_url?: string | null;
+  } | null;
 }
 
 export async function getPosts(accessToken: string, params?: {author_profile_id?: string | null; limit?: number}): Promise<{ok: boolean; posts: PostSummary[]}> {
@@ -982,6 +1015,44 @@ export async function getPosts(accessToken: string, params?: {author_profile_id?
   return apiRequest(`/posts${qs}`, {method: 'GET', accessToken});
 }
 
-export async function getPostById(accessToken: string, post_id: string): Promise<{ok: boolean; post: PostSummary; author?: {profile_id: string; display_name: string; avatar_url?: string | null}}> {
+export async function getPostById(accessToken: string, post_id: string): Promise<{ok: boolean; post: PostSummary; author?: {profile_id: string; display_name: string; avatar_url?: string | null}; media?: MediaViewAllItem[]}> {
   return apiRequest(`/posts/${encodeURIComponent(post_id)}`, {method: 'GET', accessToken});
+}
+
+export async function createPost(
+  accessToken: string,
+  params: {title: string; description: string; summary?: string | null},
+): Promise<{ok: boolean; post: PostSummary}> {
+  return apiRequest(`/posts`, {
+    method: 'POST',
+    accessToken,
+    body: {
+      title: params.title,
+      description: params.description,
+      summary: params.summary ?? undefined,
+    },
+  });
+}
+
+export async function updatePost(
+  accessToken: string,
+  post_id: string,
+  params: {title?: string | null; description?: string | null; summary?: string | null},
+): Promise<{ok: boolean; post: PostSummary}> {
+  return apiRequest(`/posts/${encodeURIComponent(post_id)}`, {
+    method: 'PUT',
+    accessToken,
+    body: {
+      title: params.title ?? undefined,
+      description: params.description ?? undefined,
+      summary: params.summary ?? undefined,
+    },
+  });
+}
+
+export async function deletePost(
+  accessToken: string,
+  post_id: string,
+): Promise<{ok: boolean; post_id: string}> {
+  return apiRequest(`/posts/${encodeURIComponent(post_id)}`, {method: 'DELETE', accessToken});
 }

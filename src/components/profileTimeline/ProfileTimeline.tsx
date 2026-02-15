@@ -18,13 +18,18 @@ import { useTranslation } from 'react-i18next'
 export type TimelineEntry = {
     id: string;
     year: string;
+    date?: string | null;
     title: string;
     description: string;
-    highlight?: string;
+    highlight?: string | null;
     photos?: string[];
-    linkedBlogs?: string[];
-    linkedCompetitions?: string[];
+    mediaItems?: any[];
+    linkedBlogs?: Array<{ id: string; title: string }> | string[];
+    linkedCompetitions?: Array<{ id: string; title: string; event_date?: string | null; event_location?: string | null }> | string[];
+    linkedBlogIds?: string[];
+    linkedCompetitionIds?: string[];
     backgroundImage?: string;
+    cover_media_id?: string | null;
 };
 
 type ProfileTimelineProps = {

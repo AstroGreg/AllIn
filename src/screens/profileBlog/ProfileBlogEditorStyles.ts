@@ -51,6 +51,18 @@ export const createStyles = (colors: ThemeColors) =>
             color: colors.mainTextColor,
             backgroundColor: colors.btnBackgroundColor,
         },
+        readonlyField: {
+            borderWidth: 1,
+            borderColor: colors.lightGrayColor,
+            borderRadius: 12,
+            paddingHorizontal: 12,
+            paddingVertical: 12,
+            backgroundColor: colors.btnBackgroundColor,
+        },
+        readonlyText: {
+            ...Fonts.regular14,
+            color: colors.mainTextColor,
+        },
         fieldTextarea: {
             minHeight: 120,
             textAlignVertical: 'top',
@@ -153,4 +165,3 @@ export const createStyles = (colors: ThemeColors) =>
             color: '#ED5454',
         },
     });
-

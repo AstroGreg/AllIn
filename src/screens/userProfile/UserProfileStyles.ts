@@ -434,6 +434,13 @@ export const createStyles = (colors: ThemeColors) => StyleSheet.create({
         color: colors.grayColor,
         marginTop: 8,
     },
+    activityImage: {
+        width: '100%',
+        height: 150,
+        borderRadius: 12,
+        marginTop: 10,
+        backgroundColor: colors.btnBackgroundColor,
+    },
     activityDescription: {
         ...Fonts.regular12,
         color: colors.subTextColor,

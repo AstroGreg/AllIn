@@ -14,6 +14,15 @@ const ProfileTimelineDetailScreen = ({ navigation, route }: any) => {
     const Styles = createStyles(colors);
     const item = route?.params?.item;
     const ownerName = route?.params?.ownerName || t('Profile');
+    const displayPhotos = Array.isArray(item?.photos) && item.photos.length > 0
+        ? item.photos
+        : Array.isArray(item?.mediaItems)
+            ? item.mediaItems
+                .map((media: any) => media?.thumbnail_url || media?.preview_url || media?.full_url || media?.raw_url)
+                .filter(Boolean)
+            : [];
+    const linkedBlogs = Array.isArray(item?.linkedBlogs) ? item.linkedBlogs : [];
+    const linkedCompetitions = Array.isArray(item?.linkedCompetitions) ? item.linkedCompetitions : [];
 
     return (
         <View style={Styles.mainContainer}>
@@ -31,42 +40,51 @@ const ProfileTimelineDetailScreen = ({ navigation, route }: any) => {
                 <View style={Styles.heroCard}>
                     <Text style={Styles.yearBadge}>{item?.year ?? '—'}</Text>
                     <Text style={Styles.titleText}>{item?.title ?? t('Timeline highlight')}</Text>
+                    {item?.date ? (
+                        <Text style={Styles.metaText}>{new Date(String(item.date)).toLocaleString()}</Text>
+                    ) : null}
                     <Text style={Styles.descriptionText}>{item?.description ?? ''}</Text>
                     {item?.highlight ? (
                         <View style={Styles.highlightChip}>
                             <Text style={Styles.highlightText}>{item.highlight}</Text>
                         </View>
                     ) : null}
-                    {Array.isArray(item?.photos) && item.photos.length > 0 && (
+                    {displayPhotos.length > 0 && (
                         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={Styles.photoRow}>
-                            {item.photos.map((uri: string, idx: number) => (
+                            {displayPhotos.map((uri: string, idx: number) => (
                                 <Image key={`${item?.id}-photo-${idx}`} source={{ uri }} style={Styles.photoThumb} />
                             ))}
                         </ScrollView>
                     )}
-                    {(Array.isArray(item?.linkedBlogs) && item.linkedBlogs.length) || (Array.isArray(item?.linkedCompetitions) && item.linkedCompetitions.length) ? (
+                    {linkedBlogs.length || linkedCompetitions.length ? (
                         <View style={Styles.linkSection}>
-                            {Array.isArray(item?.linkedBlogs) && item.linkedBlogs.length ? (
+                            {linkedBlogs.length ? (
                                 <View style={Styles.linkGroup}>
                                     <Text style={Styles.linkTitle}>{t('Blogs')}</Text>
                                     <View style={Styles.linkRow}>
-                                        {item.linkedBlogs.map((label: string) => (
-                                            <View key={label} style={Styles.linkChip}>
-                                                <Text style={Styles.linkChipText}>{label}</Text>
+                                        {linkedBlogs.map((label: any) => {
+                                            const text = typeof label === 'string' ? label : String(label?.title ?? '');
+                                            return (
+                                            <View key={text} style={Styles.linkChip}>
+                                                <Text style={Styles.linkChipText}>{text}</Text>
                                             </View>
-                                        ))}
+                                            );
+                                        })}
                                     </View>
                                 </View>
                             ) : null}
-                            {Array.isArray(item?.linkedCompetitions) && item.linkedCompetitions.length ? (
+                            {linkedCompetitions.length ? (
                                 <View style={Styles.linkGroup}>
                                     <Text style={Styles.linkTitle}>{t('Competitions')}</Text>
                                     <View style={Styles.linkRow}>
-                                        {item.linkedCompetitions.map((label: string) => (
-                                            <View key={label} style={Styles.linkChip}>
-                                                <Text style={Styles.linkChipText}>{label}</Text>
+                                        {linkedCompetitions.map((label: any) => {
+                                            const text = typeof label === 'string' ? label : String(label?.title ?? '');
+                                            return (
+                                            <View key={text} style={Styles.linkChip}>
+                                                <Text style={Styles.linkChipText}>{text}</Text>
                                             </View>
-                                        ))}
+                                            );
+                                        })}
                                     </View>
                                 </View>
                             ) : null}

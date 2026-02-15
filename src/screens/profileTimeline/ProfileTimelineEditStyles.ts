@@ -57,6 +57,39 @@ export const createStyles = (colors: ThemeColors) =>
             ...Fonts.medium12,
             color: colors.primaryColor,
         },
+        dateRow: {
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: 10,
+        },
+        dateButton: {
+            flex: 1,
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: 8,
+            borderWidth: 1,
+            borderColor: colors.lightGrayColor,
+            borderRadius: 12,
+            paddingHorizontal: 12,
+            paddingVertical: 12,
+            backgroundColor: colors.btnBackgroundColor,
+        },
+        dateText: {
+            ...Fonts.regular14,
+            color: colors.mainTextColor,
+        },
+        useCurrentButton: {
+            paddingHorizontal: 12,
+            paddingVertical: 10,
+            borderRadius: 10,
+            backgroundColor: colors.btnBackgroundColor,
+            borderWidth: 1,
+            borderColor: colors.lightGrayColor,
+        },
+        useCurrentText: {
+            ...Fonts.medium12,
+            color: colors.primaryColor,
+        },
         fieldInput: {
             borderWidth: 1,
             borderColor: colors.lightGrayColor,
@@ -74,6 +107,17 @@ export const createStyles = (colors: ThemeColors) =>
         helperText: {
             ...Fonts.regular12,
             color: colors.grayColor,
+        },
+        searchInput: {
+            borderWidth: 1,
+            borderColor: colors.lightGrayColor,
+            borderRadius: 12,
+            paddingHorizontal: 12,
+            paddingVertical: 10,
+            ...Fonts.regular14,
+            color: colors.mainTextColor,
+            backgroundColor: colors.btnBackgroundColor,
+            marginBottom: 10,
         },
         backgroundPreviewRow: {
             marginTop: 8,

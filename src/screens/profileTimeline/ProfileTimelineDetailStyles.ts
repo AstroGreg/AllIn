@@ -59,6 +59,11 @@ export const createStyles = (colors: ThemeColors) =>
             color: colors.mainTextColor,
             marginTop: 14,
         },
+        metaText: {
+            ...Fonts.regular12,
+            color: colors.subTextColor,
+            marginTop: 6,
+        },
         descriptionText: {
             ...Fonts.regular14,
             color: colors.grayColor,

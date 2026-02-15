@@ -30,6 +30,19 @@ export const createStyles = (colors: ThemeColors) => StyleSheet.create({
         ...Fonts.medium18,
         color: colors.mainTextColor,
     },
+    headerActions: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 8,
+    },
+    headerIconButton: {
+        width: 36,
+        height: 36,
+        borderRadius: 18,
+        backgroundColor: colors.btnBackgroundColor,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
     scrollContent: {
         paddingHorizontal: 20,
         paddingTop: 24,
@@ -45,6 +58,12 @@ export const createStyles = (colors: ThemeColors) => StyleSheet.create({
         height: 230,
         borderRadius: 10,
         overflow: 'hidden',
+    },
+    heroImage: {
+        width: '100%',
+        height: 220,
+        borderRadius: 16,
+        backgroundColor: colors.btnBackgroundColor,
     },
     playOverlay: {
         position: 'absolute',

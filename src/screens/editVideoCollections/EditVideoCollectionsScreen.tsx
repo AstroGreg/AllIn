@@ -9,11 +9,12 @@ import { createStyles } from './EditVideoCollectionsStyles'
 import { useTheme } from '../../context/ThemeContext'
 import { useAuth } from '../../context/AuthContext'
 import { useFocusEffect } from '@react-navigation/native'
-import { addProfileCollectionItems, getMediaViewAll, getProfileCollectionByType, removeProfileCollectionItems, setProfileCollectionFeatured, type MediaViewAllItem, type ProfileCollectionItem } from '../../services/apiGateway'
+import { addProfileCollectionItems, getProfileCollectionByType, removeProfileCollectionItems, setProfileCollectionFeatured, uploadMediaBatch, type ProfileCollectionItem } from '../../services/apiGateway'
 import { getApiBaseUrl } from '../../constants/RuntimeConfig'
 import { useTranslation } from 'react-i18next'
+import { launchImageLibrary } from 'react-native-image-picker'
 
-type SelectionMode = 'none' | 'top4' | 'delete' | 'add';
+type SelectionMode = 'none' | 'top4' | 'delete';
 
 const EditVideoCollectionsScreen = ({ navigation }: any) => {
     const insets = useSafeAreaInsets();
@@ -26,8 +27,8 @@ const EditVideoCollectionsScreen = ({ navigation }: any) => {
 
     const [selectionMode, setSelectionMode] = useState<SelectionMode>('none');
     const [selectedVideoIds, setSelectedVideoIds] = useState<string[]>([]);
-    const [allVideos, setAllVideos] = useState<MediaViewAllItem[]>([]);
     const [collectionVideos, setCollectionVideos] = useState<ProfileCollectionItem[]>([]);
+    const [isUploading, setIsUploading] = useState(false);
 
     const isSignedUrl = useCallback((value?: string | null) => {
         if (!value) return false;
@@ -60,7 +61,7 @@ const EditVideoCollectionsScreen = ({ navigation }: any) => {
         return `${value}${sep}access_token=${encodeURIComponent(apiAccessToken)}`;
     }, [apiAccessToken, isSignedUrl]);
 
-    const resolveThumbUrl = useCallback((media: MediaViewAllItem) => {
+    const resolveThumbUrl = useCallback((media: ProfileCollectionItem) => {
         const thumbCandidate =
             media.thumbnail_url || media.preview_url || media.full_url || media.raw_url || media.original_url || null;
         const resolved = thumbCandidate ? toAbsoluteUrl(String(thumbCandidate)) : null;
@@ -69,19 +70,13 @@ const EditVideoCollectionsScreen = ({ navigation }: any) => {
 
     const loadData = useCallback(async () => {
         if (!apiAccessToken) {
-            setAllVideos([]);
             setCollectionVideos([]);
             return;
         }
         try {
-            const [all, collection] = await Promise.all([
-                getMediaViewAll(apiAccessToken),
-                getProfileCollectionByType(apiAccessToken, 'video'),
-            ]);
-            setAllVideos((Array.isArray(all) ? all : []).filter((m) => String(m.type).toLowerCase() === 'video'));
+            const collection = await getProfileCollectionByType(apiAccessToken, 'video');
             setCollectionVideos(Array.isArray(collection?.items) ? collection.items : []);
         } catch {
-            setAllVideos([]);
             setCollectionVideos([]);
         }
     }, [apiAccessToken]);
@@ -92,11 +87,6 @@ const EditVideoCollectionsScreen = ({ navigation }: any) => {
         }, [loadData]),
     );
 
-    const collectionIdSet = useMemo(
-        () => new Set(collectionVideos.map((item) => String(item.media_id))),
-        [collectionVideos],
-    );
-
     const featuredIds = useMemo(() => {
         return collectionVideos
             .filter((item) => item.featured_rank != null)
@@ -104,21 +94,39 @@ const EditVideoCollectionsScreen = ({ navigation }: any) => {
             .map((item) => String(item.media_id));
     }, [collectionVideos]);
 
-    const visibleVideos = useMemo(() => {
-        if (selectionMode === 'add') {
-            return allVideos.filter((item) => !collectionIdSet.has(String(item.media_id)));
-        }
-        return collectionVideos;
-    }, [allVideos, collectionIdSet, collectionVideos, selectionMode]);
-
     const handleSelectTop4 = () => {
         setSelectionMode('top4');
         setSelectedVideoIds(featuredIds);
     };
 
-    const handleAddVideos = () => {
-        setSelectionMode('add');
-        setSelectedVideoIds([]);
+    const handleAddVideos = async () => {
+        if (!apiAccessToken) return;
+        const res = await launchImageLibrary({
+            mediaType: 'video',
+            selectionLimit: 6,
+        });
+        if (res.didCancel || !res.assets) return;
+        const files = res.assets
+            .filter((asset) => asset?.uri)
+            .map((asset) => ({
+                uri: String(asset.uri),
+                type: asset.type ?? 'video/mp4',
+                name: asset.fileName ?? `video-${Date.now()}`,
+            }));
+        if (files.length === 0) return;
+        setIsUploading(true);
+        try {
+            const uploaded = await uploadMediaBatch(apiAccessToken, { files });
+            const mediaIds = Array.isArray(uploaded?.results)
+                ? uploaded.results.map((r: any) => r.media_id).filter(Boolean)
+                : [];
+            if (mediaIds.length > 0) {
+                await addProfileCollectionItems(apiAccessToken, { type: 'video', media_ids: mediaIds });
+            }
+            await loadData();
+        } finally {
+            setIsUploading(false);
+        }
     };
 
     const handleDeleteVideos = () => {
@@ -162,14 +170,6 @@ const EditVideoCollectionsScreen = ({ navigation }: any) => {
         setSelectedVideoIds([]);
     };
 
-    const handleConfirmAdd = async () => {
-        if (!apiAccessToken || selectedVideoIds.length === 0) return;
-        await addProfileCollectionItems(apiAccessToken, { type: 'video', media_ids: selectedVideoIds });
-        await loadData();
-        setSelectionMode('none');
-        setSelectedVideoIds([]);
-    };
-
     const getSelectionNumber = (videoId: string): number | null => {
         const index = selectedVideoIds.indexOf(videoId);
         return index !== -1 ? index + 1 : null;
@@ -190,7 +190,6 @@ const EditVideoCollectionsScreen = ({ navigation }: any) => {
 
     const isInSelectionMode = selectionMode !== 'none';
     const isDeleteMode = selectionMode === 'delete';
-    const isAddMode = selectionMode === 'add';
 
     return (
         <View style={styles.mainContainer}>
@@ -231,8 +230,8 @@ const EditVideoCollectionsScreen = ({ navigation }: any) => {
                         <SizeBox height={16} />
 
                         <View style={styles.actionRow}>
-                            <TouchableOpacity style={styles.addButton} onPress={handleAddVideos}>
-                                <Text style={styles.addButtonText}>{t('Add Videos')}</Text>
+                            <TouchableOpacity style={styles.addButton} onPress={handleAddVideos} disabled={isUploading}>
+                                <Text style={styles.addButtonText}>{isUploading ? t('Uploading...') : t('Add Videos')}</Text>
                                 <Add size={18} color={colors.pureWhite} variant="Linear" />
                             </TouchableOpacity>
                             <TouchableOpacity style={styles.deleteButton} onPress={handleDeleteVideos}>
@@ -249,18 +248,6 @@ const EditVideoCollectionsScreen = ({ navigation }: any) => {
                         <TouchableOpacity style={styles.confirmTopButton} onPress={handleConfirmTop4}>
                             <Text style={styles.confirmTopButtonText}>
                                 {t('Confirm Top')} {selectedVideoIds.length}
-                            </Text>
-                            <Add size={18} color={colors.pureWhite} variant="Linear" />
-                        </TouchableOpacity>
-                    </>
-                )}
-
-                {isAddMode && selectedVideoIds.length > 0 && (
-                    <>
-                        <SizeBox height={16} />
-                        <TouchableOpacity style={styles.confirmTopButton} onPress={handleConfirmAdd}>
-                            <Text style={styles.confirmTopButtonText}>
-                                {t('Add Videos')} {selectedVideoIds.length}
                             </Text>
                             <Add size={18} color={colors.pureWhite} variant="Linear" />
                         </TouchableOpacity>
@@ -284,7 +271,7 @@ const EditVideoCollectionsScreen = ({ navigation }: any) => {
                 {/* Videos Grid */}
                 <View style={styles.videosContainer}>
                     <View style={styles.videosGrid}>
-                        {visibleVideos.map((video) => {
+                        {collectionVideos.map((video) => {
                             const mediaId = String(video.media_id);
                             const selectionNumber = getSelectionNumber(mediaId);
                             const isSelected = selectionNumber !== null;

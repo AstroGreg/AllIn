@@ -87,6 +87,13 @@ const UserProfileScreen = ({ navigation }: any) => {
         return withAccessToken(resolved) || resolved;
     }, [toAbsoluteUrl, withAccessToken]);
 
+    const resolveTimelineMediaThumb = useCallback((media: any) => {
+        const thumbCandidate =
+            media?.thumbnail_url || media?.preview_url || media?.full_url || media?.raw_url || media?.original_url || null;
+        const resolved = thumbCandidate ? toAbsoluteUrl(String(thumbCandidate)) : null;
+        return withAccessToken(resolved) || resolved;
+    }, [toAbsoluteUrl, withAccessToken]);
+
     const timelineStorageKey = useMemo(() => {
         const key = user?.sub || userProfile?.username || user?.email || 'self';
         return `@profile_timeline_${key}`;
@@ -134,17 +141,39 @@ const UserProfileScreen = ({ navigation }: any) => {
             try {
                 const resp = await getProfileTimeline(apiAccessToken, 'me');
                 const items = Array.isArray((resp as any)?.items) ? (resp as any).items : [];
-                const mapped: TimelineEntry[] = items.map((it: ProfileTimelineEntry) => ({
-                    id: String(it.id),
-                    year: String((it as any)?.year ?? ''),
-                    title: String((it as any)?.title ?? ''),
-                    description: (it as any)?.description ?? '',
-                    highlight: (it as any)?.highlight ?? '',
-                    photos: [],
-                    linkedBlogs: [],
-                    linkedCompetitions: [],
-                    coverImage: (it as any)?.cover_thumbnail_url ?? null,
-                }));
+                const mapped: TimelineEntry[] = items.map((it: ProfileTimelineEntry) => {
+                    const mediaItems = Array.isArray((it as any)?.media) ? (it as any).media : [];
+                    const photos = mediaItems
+                        .map((media: any) => resolveTimelineMediaThumb(media))
+                        .filter(Boolean) as string[];
+                    const coverUrl = (it as any)?.cover_thumbnail_url ? toAbsoluteUrl(String((it as any).cover_thumbnail_url)) : null;
+                    const backgroundImage = coverUrl ? (withAccessToken(coverUrl) || coverUrl) : null;
+                    const linkedPosts = Array.isArray((it as any)?.linked_posts) ? (it as any).linked_posts : [];
+                    const linkedEvents = Array.isArray((it as any)?.linked_events) ? (it as any).linked_events : [];
+                    const eventDate = (it as any)?.event_date ?? null;
+                    const yearValue = eventDate ? new Date(String(eventDate)).getFullYear() : Number((it as any)?.year ?? '');
+                    return ({
+                        id: String(it.id),
+                        year: Number.isFinite(yearValue) ? String(yearValue) : String((it as any)?.year ?? ''),
+                        date: eventDate ? String(eventDate) : null,
+                        title: String((it as any)?.title ?? ''),
+                        description: (it as any)?.description ?? '',
+                        highlight: (it as any)?.highlight ?? '',
+                        photos,
+                        mediaItems,
+                        cover_media_id: (it as any)?.cover_media_id ?? null,
+                        backgroundImage: backgroundImage || undefined,
+                        linkedBlogs: linkedPosts.map((p: any) => ({ id: String(p.id), title: String(p.title ?? 'Blog') })),
+                        linkedCompetitions: linkedEvents.map((e: any) => ({
+                            id: String(e.event_id),
+                            title: String(e.event_name ?? t('competition')),
+                            event_date: e.event_date ?? null,
+                            event_location: e.event_location ?? null,
+                        })),
+                        linkedBlogIds: linkedPosts.map((p: any) => String(p.id)),
+                        linkedCompetitionIds: linkedEvents.map((e: any) => String(e.event_id)),
+                    } as any);
+                });
                 setTimelineItems(mapped);
             } catch {
                 setTimelineItems([]);
@@ -185,13 +214,21 @@ const UserProfileScreen = ({ navigation }: any) => {
             try {
                 const resp = await getPosts(apiAccessToken, { author_profile_id: String(postsProfileId), limit: 50 });
                 const posts = Array.isArray((resp as any)?.posts) ? (resp as any).posts : [];
-                const mapped = posts.map((p: PostSummary) => ({
-                    id: String(p.id),
-                    title: String(p.title || ''),
-                    date: p.created_at ? String(p.created_at).slice(0, 10) : '',
-                    description: p.summary || p.description || '',
-                    media: [],
-                }));
+                const mapped = posts.map((p: PostSummary) => {
+                    const cover = (p as any)?.cover_media || null;
+                    const coverCandidate = cover?.thumbnail_url || cover?.preview_url || cover?.full_url || cover?.raw_url || null;
+                    const resolved = coverCandidate ? toAbsoluteUrl(String(coverCandidate)) : null;
+                    const coverImage = resolved ? (withAccessToken(resolved) || resolved) : null;
+                    return ({
+                        id: String(p.id),
+                        title: String(p.title || ''),
+                        date: p.created_at ? String(p.created_at).slice(0, 10) : '',
+                        description: p.summary || p.description || '',
+                        coverImage,
+                        likes_count: Number((p as any)?.likes_count ?? 0),
+                        views_count: Number((p as any)?.views_count ?? 0),
+                    });
+                });
                 setBlogEntries(mapped);
             } catch {
                 setBlogEntries([]);
@@ -448,19 +485,12 @@ const UserProfileScreen = ({ navigation }: any) => {
                 activeOpacity={0.85}
                 onPress={() => {
                     navigation.navigate('ViewUserBlogDetailsScreen', {
-                        post: {
+                        postId: item.id,
+                        postPreview: {
                             title: item.title,
                             date: item.date,
-                            image: Images.photo1,
-                            readCount: '1k',
-                            writer: 'James Ray',
-                            writerImage: Images.profile1,
                             description: item.description,
-                            galleryItems: (item.media || []).map((media: any) => ({
-                                image: { uri: media.uri },
-                                type: media.type,
-                                videoUri: media.type === 'video' ? media.uri : undefined,
-                            })),
+                            coverImage: item.coverImage,
                         },
                     });
                 }}
@@ -472,6 +502,9 @@ const UserProfileScreen = ({ navigation }: any) => {
                     </View>
                 </View>
                 <Text style={Styles.activityMeta}>{item.date}</Text>
+                {item.coverImage ? (
+                    <FastImage source={{ uri: String(item.coverImage) }} style={Styles.activityImage} resizeMode="cover" />
+                ) : null}
                 <Text style={Styles.activityDescription} numberOfLines={2}>
                     {item.description}
                 </Text>
