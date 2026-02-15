@@ -1,6 +1,6 @@
 import React from 'react'
 import { DarkTheme, DefaultTheme, NavigationContainer, type Theme } from '@react-navigation/native'
-import { LogBox } from 'react-native'
+import { LogBox, View, StyleSheet } from 'react-native'
 import RootStackNavigation from './src/navigations/RootStackNavigation'
 import { ThemeProvider, useTheme } from './src/context/ThemeContext'
 import { AuthProvider } from './src/context/AuthContext'
@@ -41,13 +41,21 @@ const App = () => {
       <AuthProvider>
         <EventsProvider>
           <ThemeProvider>
-            <AppNavigation />
-            {__DEV__ && <NetworkLoggerOverlay />}
+            <View style={appStyles.container}>
+              <AppNavigation />
+              {__DEV__ && <NetworkLoggerOverlay />}
+            </View>
           </ThemeProvider>
         </EventsProvider>
       </AuthProvider>
     </NetworkLoggerProvider>
   )
 }
+
+const appStyles = StyleSheet.create({
+  container: {
+    flex: 1,
+  },
+});
 
 export default App
