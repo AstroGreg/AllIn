@@ -29,6 +29,7 @@ interface EventResult {
 interface PersonResult {
     id: number;
     name: string;
+    profile_id?: string;
     role: 'Athlete' | 'Photographer';
     activity: string;
     location: string;
@@ -310,7 +311,7 @@ const SearchScreen = ({ navigation }: any) => {
         <TouchableOpacity
             key={person.id}
             style={Styles.userCard}
-            onPress={() => navigation.navigate('ViewUserProfileScreen', { user: person })}
+            onPress={() => navigation.navigate('UserProfileScreen', { profileId: person.profile_id ?? String(person.id) })}
         >
             <View style={Styles.userCardContent}>
                 <View style={Styles.userHeader}>
@@ -349,7 +350,7 @@ const SearchScreen = ({ navigation }: any) => {
                         <SizeBox height={10} />
                         <TouchableOpacity
                             style={Styles.followBtn}
-                            onPress={() => navigation.navigate('ViewUserProfileScreen', { user: person })}
+                            onPress={() => navigation.navigate('UserProfileScreen', { profileId: person.profile_id ?? String(person.id) })}
                         >
                             <Text style={Styles.followBtnText}>{t('Follow')}</Text>
                         </TouchableOpacity>

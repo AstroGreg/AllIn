@@ -233,6 +233,7 @@ const SearchStackNavigator = () => {
         <SearchStack.Navigator screenOptions={{ headerShown: false }}>
             <SearchStack.Screen name="SearchScreen" component={SearchScreen} />
             {/* Profile screens accessible from search */}
+            <SearchStack.Screen name="UserProfileScreen" component={UserProfileScreen} />
             <SearchStack.Screen name="ViewUserProfileScreen" component={ViewUserProfileScreen} />
             <SearchStack.Screen name="AthleteProfileScreen" component={AthleteProfileScreen} />
             <SearchStack.Screen name="GroupProfileScreen" component={GroupProfileScreen} />

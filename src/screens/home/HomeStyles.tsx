@@ -255,6 +255,11 @@ export const createStyles = (colors: ThemeColors) => StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'center',
     },
+    aiSearchFocusCard: {
+        position: 'relative',
+        zIndex: 30,
+        elevation: 30,
+    },
     quickActionCardFull: {
         flex: 1,
     },
@@ -1045,6 +1050,55 @@ export const createStyles = (colors: ThemeColors) => StyleSheet.create({
     btnText: {
         ...Fonts.regular14,
         color: colors.subTextColor
+    },
+    aiSearchIntroOverlay: {
+        ...StyleSheet.absoluteFillObject,
+        zIndex: 20,
+    },
+    aiSearchIntroDimmer: {
+        ...StyleSheet.absoluteFillObject,
+        backgroundColor: 'rgba(0,0,0,0.35)',
+    },
+    aiSearchIntroPopup: {
+        position: 'absolute',
+        width: 200,
+        backgroundColor: '#FFFFFF',
+        borderRadius: 12,
+        paddingHorizontal: 14,
+        paddingVertical: 12,
+        gap: 10,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 8 },
+        shadowOpacity: 0.2,
+        shadowRadius: 16,
+        elevation: 12,
+    },
+    aiSearchIntroSpotlight: {
+        position: 'absolute',
+        borderRadius: 14,
+        backgroundColor: 'rgba(255,255,255,0.14)',
+        borderWidth: 1,
+        borderColor: 'rgba(255,255,255,0.35)',
+        shadowColor: '#FFFFFF',
+        shadowOffset: { width: 0, height: 0 },
+        shadowOpacity: 0.5,
+        shadowRadius: 12,
+        elevation: 8,
+    },
+    aiSearchIntroText: {
+        ...Fonts.medium14,
+        color: '#101828',
+    },
+    aiSearchIntroNextButton: {
+        alignSelf: 'flex-end',
+        backgroundColor: colors.primaryColor,
+        borderRadius: 8,
+        paddingHorizontal: 14,
+        paddingVertical: 8,
+    },
+    aiSearchIntroNextText: {
+        ...Fonts.medium14,
+        color: colors.pureWhite,
     }
 });
 

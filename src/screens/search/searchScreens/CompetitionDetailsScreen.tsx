@@ -36,7 +36,6 @@ const CompetitionDetailsScreen = ({ navigation, route }: any) => {
     const styles = createStyles(colors);
     const { t } = useTranslation();
     const [selectedTab, setSelectedTab] = useState<'track' | 'field'>('track');
-    const [showRelevantOnly, setShowRelevantOnly] = useState(false);
     const [selectedCourseId, setSelectedCourseId] = useState('');
     const [checkpointModalVisible, setCheckpointModalVisible] = useState(false);
     const [selectedCheckpoint, setSelectedCheckpoint] = useState<{ id: string; label: string } | null>(null);
@@ -67,9 +66,6 @@ const CompetitionDetailsScreen = ({ navigation, route }: any) => {
     const fieldEvents: EventCategory[] = [];
 
     const currentEvents = selectedTab === 'track' ? trackEvents : fieldEvents;
-    const filteredEvents = showRelevantOnly
-        ? currentEvents.filter((event) => event.badges?.includes('Found'))
-        : currentEvents;
 
     const visibleCourses = courseOptions.length > 0 ? courseOptions : FALLBACK_COURSES;
 
@@ -455,21 +451,6 @@ const CompetitionDetailsScreen = ({ navigation, route }: any) => {
 
                         <SizeBox height={20} />
 
-                        <View style={styles.toggleRow}>
-                            <View>
-                                <Text style={styles.toggleLabel}>{t('Relevant')}</Text>
-                                <Text style={styles.toggleHint}>{t('Show events where we found you')}</Text>
-                            </View>
-                            <Switch
-                                value={showRelevantOnly}
-                                onValueChange={setShowRelevantOnly}
-                                trackColor={{ false: colors.lightGrayColor, true: colors.primaryColor }}
-                                thumbColor={colors.pureWhite}
-                            />
-                        </View>
-
-                        <SizeBox height={16} />
-
                         {/* Videos Section */}
                         <View style={styles.sectionHeader}>
                             <Text style={styles.sectionTitle}>{t('Videos')}</Text>
@@ -491,9 +472,9 @@ const CompetitionDetailsScreen = ({ navigation, route }: any) => {
                         <SizeBox height={16} />
 
                         {/* Event Categories */}
-                        {filteredEvents.length > 0 ? filteredEvents.map(renderEventCard) : (
+                        {currentEvents.length > 0 ? currentEvents.map(renderEventCard) : (
                             <View style={styles.emptyState}>
-                                <Text style={styles.emptyStateText}>{t('No events match this filter yet.')}</Text>
+                                <Text style={styles.emptyStateText}>{t('No events available yet.')}</Text>
                             </View>
                         )}
 

@@ -52,7 +52,7 @@ const HomeScreen = ({ navigation }: any) => {
     const { colors } = useTheme();
     const { t } = useTranslation();
     const Styles = createStyles(colors);
-    const { height: windowHeight } = useWindowDimensions();
+    const { height: windowHeight, width: windowWidth } = useWindowDimensions();
     const { user, userProfile, apiAccessToken } = useAuth();
     const { eventNameById } = useEvents();
     const isFocused = useIsFocused();
@@ -110,6 +110,9 @@ const HomeScreen = ({ navigation }: any) => {
     const downloadInFlightRef = useRef(false);
     const [downloadVisible, setDownloadVisible] = useState(false);
     const [downloadProgress, setDownloadProgress] = useState<number | null>(null);
+    const [showAiSearchIntro, setShowAiSearchIntro] = useState(true);
+    const aiSearchButtonRef = useRef<View>(null);
+    const [aiSearchButtonRect, setAiSearchButtonRect] = useState<{ x: number; y: number; width: number; height: number } | null>(null);
     const loadDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const loadInFlightRef = useRef<Promise<void> | null>(null);
     const lastLoadRequestRef = useRef(0);
@@ -997,8 +1000,18 @@ const HomeScreen = ({ navigation }: any) => {
                                 <Text style={Styles.quickActionText} numberOfLines={1}>{t('myDownloads')}</Text>
                             </TouchableOpacity>
                             <TouchableOpacity
-                                style={Styles.quickActionCard}
+                                ref={aiSearchButtonRef}
+                                style={[Styles.quickActionCard, showAiSearchIntro && Styles.aiSearchFocusCard]}
                                 activeOpacity={0.8}
+                                onLayout={() => {
+                                    if (!showAiSearchIntro) return;
+                                    requestAnimationFrame(() => {
+                                        aiSearchButtonRef.current?.measureInWindow((x, y, width, height) => {
+                                            if (!width || !height) return;
+                                            setAiSearchButtonRect({ x, y, width, height });
+                                        });
+                                    });
+                                }}
                                 onPress={() => navigation.navigate('Search', { screen: 'AISearchScreen', params: { origin: 'home' } })}
                             >
                                 <Text style={Styles.quickActionText} numberOfLines={1}>{t('aiSearch')}</Text>
@@ -1247,6 +1260,7 @@ const HomeScreen = ({ navigation }: any) => {
             Styles.sectionContainer,
             Styles.sectionHeader,
             Styles.sectionTitle,
+            Styles.aiSearchFocusCard,
             colors.primaryColor,
             colors.grayColor,
             isLoadingOverview,
@@ -1289,6 +1303,8 @@ const HomeScreen = ({ navigation }: any) => {
             topVideos,
             topPhotos,
             navigation,
+            windowWidth,
+            showAiSearchIntro,
         ],
     );
 
@@ -1513,6 +1529,49 @@ const HomeScreen = ({ navigation }: any) => {
                             )}
                         </View>
                     )}
+                </View>
+            )}
+
+            {showAiSearchIntro && (
+                <View style={Styles.aiSearchIntroOverlay} pointerEvents="box-none">
+                    <View style={Styles.aiSearchIntroDimmer} />
+                    {aiSearchButtonRect ? (
+                        <View
+                            pointerEvents="none"
+                            style={[
+                                Styles.aiSearchIntroSpotlight,
+                                {
+                                    left: Math.max(aiSearchButtonRect.x - 8, 8),
+                                    top: Math.max(aiSearchButtonRect.y - 8, 8),
+                                    width: aiSearchButtonRect.width + 16,
+                                    height: aiSearchButtonRect.height + 16,
+                                },
+                            ]}
+                        />
+                    ) : null}
+                    <View
+                        style={[
+                            Styles.aiSearchIntroPopup,
+                            aiSearchButtonRect
+                                ? {
+                                    left: Math.min(
+                                        Math.max(aiSearchButtonRect.x, 8),
+                                        Math.max(windowWidth - 200 - 8, 8)
+                                    ),
+                                    top: aiSearchButtonRect.y + aiSearchButtonRect.height + 10,
+                                }
+                                : undefined,
+                        ]}
+                    >
+                        <Text style={Styles.aiSearchIntroText}>Find yourself</Text>
+                        <TouchableOpacity
+                            style={Styles.aiSearchIntroNextButton}
+                            activeOpacity={0.85}
+                            onPress={() => setShowAiSearchIntro(false)}
+                        >
+                            <Text style={Styles.aiSearchIntroNextText}>Next</Text>
+                        </TouchableOpacity>
+                    </View>
                 </View>
             )}
 
