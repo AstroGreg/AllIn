@@ -31,6 +31,7 @@ interface NewsFeedCardProps {
     likesLabel?: string;
     liked?: boolean;
     onToggleLike?: () => void;
+    likeDisabled?: boolean;
     showActions?: boolean;
     onPressVideo?: (currentTime: number) => void;
     onVideoProgress?: (currentTime: number) => void;
@@ -70,6 +71,7 @@ const NewsFeedCard = ({
     likesLabel,
     liked = false,
     onToggleLike,
+    likeDisabled = false,
     showActions = false,
     onPressVideo,
     onVideoProgress,
@@ -479,7 +481,12 @@ const NewsFeedCard = ({
      
 
             <View style={[Styles.feedPadding, Styles.feedMetaRow]}>
-                <TouchableOpacity style={Styles.feedLikeButton} activeOpacity={0.85} onPress={onToggleLike}>
+                <TouchableOpacity
+                    style={[Styles.feedLikeButton, likeDisabled && { opacity: 0.45 }]}
+                    activeOpacity={likeDisabled ? 1 : 0.85}
+                    onPress={onToggleLike}
+                    disabled={likeDisabled || !onToggleLike}
+                >
                     <Heart size={25} color={colors.primaryColor} variant={liked ? "Bold" : "Linear"} />
                     <Text style={Styles.feedLikeText}>{likesLabel ?? t('Like')}</Text>
                 </TouchableOpacity>

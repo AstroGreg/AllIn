@@ -387,10 +387,11 @@ const HomeScreen = ({ navigation }: any) => {
             });
             setAllVideos((prev) => prev.map((x: any) => (String(x.media_id) === id ? { ...x, likes_count: r.likes_count, liked_by_me: r.liked } : x)));
             setAllPhotos((prev) => prev.map((x: any) => (String(x.media_id) === id ? { ...x, likes_count: r.likes_count, liked_by_me: r.liked } : x)));
-        } catch {
-            // ignore
+        } catch (e: any) {
+            const msg = e instanceof ApiError ? e.message : String(e?.message ?? e);
+            Alert.alert(t('Like failed'), msg || t('Could not update like right now.'));
         }
-    }, [apiAccessToken]);
+    }, [apiAccessToken, t]);
 
     const handleTogglePostLike = useCallback(async (postId?: string | null) => {
         const id = String(postId || '').trim();
@@ -406,10 +407,11 @@ const HomeScreen = ({ navigation }: any) => {
                 }
                 return next;
             });
-        } catch {
-            // ignore
+        } catch (e: any) {
+            const msg = e instanceof ApiError ? e.message : String(e?.message ?? e);
+            Alert.alert(t('Like failed'), msg || t('Could not update like right now.'));
         }
-    }, [apiAccessToken]);
+    }, [apiAccessToken, t]);
 
 
     const formatDuration = useCallback((value: number) => {
@@ -1094,6 +1096,7 @@ const HomeScreen = ({ navigation }: any) => {
                                     likesLabel={formatLikesLabel(overviewVideo ?? topVideos[0])}
                                     liked={Boolean((overviewVideo ?? topVideos[0])?.liked_by_me)}
                                     onToggleLike={() => handleToggleLike((overviewVideo ?? topVideos[0])?.media_id)}
+                                    likeDisabled={!String((overviewVideo ?? topVideos[0])?.media_id ?? '').trim()}
                                     showActions
                                     onShare={() => handleShareMedia(overviewVideo ?? topVideos[0])}
                                     onDownload={() => handleDownloadMedia(overviewVideo ?? topVideos[0])}
@@ -1158,6 +1161,7 @@ const HomeScreen = ({ navigation }: any) => {
                                     likesLabel={`${Number(overviewBlog?.post?.likes_count ?? 0).toLocaleString()} ${t('likes')}`}
                                     liked={Boolean(overviewBlog?.post?.liked_by_me)}
                                     onToggleLike={() => handleTogglePostLike(overviewBlog?.post?.id)}
+                                    likeDisabled={!String(overviewBlog?.post?.id ?? '').trim()}
                                     onShare={() => handleShareMedia(overviewBlog?.media ?? blogPrimaryMedia)}
                                     onPressMore={() =>
                                         openFeedMenu(overviewBlog?.media ?? blogPrimaryMedia, {
@@ -1231,6 +1235,7 @@ const HomeScreen = ({ navigation }: any) => {
                                     likesLabel={formatLikesLabel(overviewPhoto ?? topPhotos[0])}
                                     liked={Boolean((overviewPhoto ?? topPhotos[0])?.liked_by_me)}
                                     onToggleLike={() => handleToggleLike((overviewPhoto ?? topPhotos[0])?.media_id)}
+                                    likeDisabled={!String((overviewPhoto ?? topPhotos[0])?.media_id ?? '').trim()}
                                     showActions
                                     onShare={() => handleShareMedia(overviewPhoto ?? topPhotos[0])}
                                     onDownload={() => handleDownloadMedia(overviewPhoto ?? topPhotos[0])}
