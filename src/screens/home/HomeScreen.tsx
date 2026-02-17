@@ -886,6 +886,23 @@ const HomeScreen = ({ navigation }: any) => {
         return parts.join(' • ');
     }, [blogMediaCounts]);
 
+    const extractProfileIdFromMedia = useCallback((item?: HomeOverviewMedia | MediaViewAllItem | null) => {
+        if (!item) return null;
+        const fromAny =
+            (item as any)?.uploader_profile_id ||
+            (item as any)?.profile_id ||
+            (item as any)?.author_profile_id ||
+            (item as any)?.owner_profile_id ||
+            null;
+        return fromAny ? String(fromAny) : null;
+    }, []);
+
+    const openProfileFromId = useCallback((profileId?: string | null) => {
+        const safeProfileId = String(profileId || '').trim();
+        if (!safeProfileId) return;
+        navigation.navigate('ViewUserProfileScreen', { profileId: safeProfileId });
+    }, [navigation]);
+
     const updateVisibility = useCallback(() => {
         const scrollY = scrollYRef.current;
         const viewportBottom = scrollY + windowHeight;
@@ -1046,6 +1063,12 @@ const HomeScreen = ({ navigation }: any) => {
                                         avatar: profilePic ? {uri: profilePic} : Images.profile1,
                                         date: formatUploadDate(overviewVideo?.created_at ?? topVideos[0]?.created_at),
                                     }}
+                                    onPressUser={() =>
+                                        openProfileFromId(
+                                            extractProfileIdFromMedia(overviewVideo ?? topVideos[0]) ||
+                                            overview?.profile_id
+                                        )
+                                    }
                                     hideUserDate
                                     headerTag={formatPostTime(overviewVideo?.created_at ?? topVideos[0]?.created_at)}
                                     likesLabel={formatLikesLabel(overviewVideo ?? topVideos[0])}
@@ -1108,6 +1131,7 @@ const HomeScreen = ({ navigation }: any) => {
                                             : Images.profile1,
                                         date: formatUploadDate(overviewBlog?.post?.created_at),
                                     }}
+                                    onPressUser={() => openProfileFromId(overviewBlog?.author?.profile_id)}
                                     hideUserDate
                                     headerSeparated
                                     showActions
@@ -1175,6 +1199,12 @@ const HomeScreen = ({ navigation }: any) => {
                                         name: userName,
                                         avatar: profilePic ? {uri: profilePic} : Images.profile1,
                                     }}
+                                    onPressUser={() =>
+                                        openProfileFromId(
+                                            extractProfileIdFromMedia(overviewPhoto ?? topPhotos[0]) ||
+                                            overview?.profile_id
+                                        )
+                                    }
                                     hideUserDate
                                     hideBelowText={false}
                                     headerSeparated
@@ -1217,6 +1247,7 @@ const HomeScreen = ({ navigation }: any) => {
             overviewVideo?.media_id,
             overviewPhoto?.media_id,
             overviewBlog?.post?.id,
+            overview?.profile_id,
             isVideoVisible,
             isBlogVisible,
             isFocused,
@@ -1231,6 +1262,7 @@ const HomeScreen = ({ navigation }: any) => {
             formatPostTime,
             pickDescription,
             formatLikesLabel,
+            extractProfileIdFromMedia,
             isSignedUrl,
             withAccessToken,
             getMediaShareUrl,
@@ -1239,6 +1271,7 @@ const HomeScreen = ({ navigation }: any) => {
             openFeedMenu,
             prewarmVideo,
             buildMediaCardPress,
+            openProfileFromId,
             updateVisibility,
             openOverlayPlayer,
             blogPrimaryImage,
