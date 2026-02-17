@@ -96,6 +96,16 @@ export const createStyles = (colors: ThemeColors) => StyleSheet.create({
         borderRadius: 42,
         overflow: 'hidden',
     },
+    profileImageLoading: {
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: 'rgba(255,255,255,0.6)',
+    },
     profileImage: {
         width: '100%',
         height: '100%',
@@ -400,10 +410,25 @@ export const createStyles = (colors: ThemeColors) => StyleSheet.create({
         borderRadius: 12,
         borderWidth: 0.5,
         borderColor: colors.lightGrayColor,
-        padding: 16,
+        padding: 12,
         marginBottom: 16,
     },
+    activityCardRow: {
+        flexDirection: 'row',
+        alignItems: 'stretch',
+        gap: 12,
+    },
+    activityTextColumn: {
+        flex: 1,
+        minHeight: 96,
+    },
     activityHeader: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        gap: 8,
+    },
+    activityHeaderRow: {
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
@@ -432,19 +457,28 @@ export const createStyles = (colors: ThemeColors) => StyleSheet.create({
     activityMeta: {
         ...Fonts.regular12,
         color: colors.grayColor,
-        marginTop: 8,
-    },
-    activityImage: {
-        width: '100%',
-        height: 150,
-        borderRadius: 12,
-        marginTop: 10,
-        backgroundColor: colors.btnBackgroundColor,
+        marginTop: 6,
     },
     activityDescription: {
         ...Fonts.regular12,
         color: colors.subTextColor,
         marginTop: 6,
+    },
+    activityThumbWrap: {
+        width: 110,
+        height: 96,
+        borderRadius: 12,
+        overflow: 'hidden',
+        backgroundColor: colors.btnBackgroundColor,
+    },
+    activityThumb: {
+        width: '100%',
+        height: '100%',
+    },
+    activityThumbPlaceholder: {
+        width: '100%',
+        height: '100%',
+        backgroundColor: colors.btnBackgroundColor,
     },
     activityActionsRow: {
         flexDirection: 'row',
@@ -483,6 +517,20 @@ export const createStyles = (colors: ThemeColors) => StyleSheet.create({
         ...Fonts.regular12,
         color: colors.grayColor,
         marginTop: 10,
+    },
+    emptyStateCard: {
+        backgroundColor: colors.btnBackgroundColor,
+        borderRadius: 12,
+        borderWidth: 0.5,
+        borderColor: colors.lightGrayColor,
+        padding: 16,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    emptyStateText: {
+        ...Fonts.regular12,
+        color: colors.grayColor,
+        textAlign: 'center',
     },
 
     // Create Post Button

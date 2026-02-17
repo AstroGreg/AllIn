@@ -6,8 +6,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import CustomHeader from '../../../components/customHeader/CustomHeader'
 import Icons from '../../../constants/Icons'
 import { useAuth } from '../../../context/AuthContext'
-import { getMediaById } from '../../../services/apiGateway'
-import { getApiBaseUrl, getHlsBaseUrl } from '../../../constants/RuntimeConfig'
+import { getHubAppearanceMedia, getMediaViewAll, type MediaViewAllItem } from '../../../services/apiGateway'
+import { getHlsBaseUrl } from '../../../constants/RuntimeConfig'
 import Images from '../../../constants/Images'
 import { useTheme } from '../../../context/ThemeContext'
 import { useTranslation } from 'react-i18next'
@@ -15,15 +15,15 @@ import { useTranslation } from 'react-i18next'
 const AllVideosOfEvents = ({ navigation, route }: any) => {
     const insets = useSafeAreaInsets();
     const eventName = route?.params?.eventName || 'Event';
+    const eventId = route?.params?.eventId;
+    const appearanceOnly = Boolean(route?.params?.appearanceOnly);
     const division = route?.params?.division;
     const gender = route?.params?.gender;
     const { apiAccessToken } = useAuth();
     const { colors } = useTheme();
     const { t } = useTranslation();
     const styles = createStyles(colors);
-    const mediaId = '86db92e8-1b8e-44a5-95c4-fb4764f6783e';
-    const [sharedThumbUrl, setSharedThumbUrl] = useState<string | null>(null);
-    const [sharedVideoUrl, setSharedVideoUrl] = useState<string | null>(null);
+    const [items, setItems] = useState<MediaViewAllItem[]>([]);
 
     const isSignedUrl = useCallback((value?: string | null) => {
         if (!value) return false;
@@ -46,15 +46,6 @@ const AllVideosOfEvents = ({ navigation, route }: any) => {
         const sep = value.includes('?') ? '&' : '?';
         return `${value}${sep}access_token=${encodeURIComponent(apiAccessToken)}`;
     }, [apiAccessToken, isSignedUrl]);
-
-    const toAbsoluteUrl = useCallback((value?: string | null) => {
-        if (!value) return null;
-        const raw = String(value);
-        if (raw.startsWith('http://') || raw.startsWith('https://')) return raw;
-        const base = getApiBaseUrl();
-        if (!base) return raw;
-        return `${base.replace(/\/$/, '')}/${raw.replace(/^\//, '')}`;
-    }, []);
 
     const toHlsUrl = useCallback((value?: string | null) => {
         if (!value) return null;
@@ -93,61 +84,56 @@ const AllVideosOfEvents = ({ navigation, route }: any) => {
     useEffect(() => {
         let mounted = true;
         if (!apiAccessToken) return () => {};
-        getMediaById(apiAccessToken, mediaId)
-            .then((media) => {
+        const load = async () => {
+            try {
+                let list: MediaViewAllItem[] = [];
+                if (appearanceOnly && eventId) {
+                    const res = await getHubAppearanceMedia(apiAccessToken, String(eventId));
+                    list = Array.isArray(res?.results) ? res.results : [];
+                } else {
+                    const res = await getMediaViewAll(apiAccessToken);
+                    list = Array.isArray(res) ? res : [];
+                }
                 if (!mounted) return;
-                const hls = media.hls_manifest_path ? toHlsUrl(media.hls_manifest_path) : null;
-                const candidates = [
-                    media.preview_url,
-                    media.original_url,
-                    media.full_url,
-                    media.raw_url,
-                ]
-                    .filter(Boolean)
-                    .map((value) => toAbsoluteUrl(String(value)) || '')
-                    .filter(Boolean);
-                const mp4 = candidates.find((value) => /\.(mp4|mov|m4v)(\?|$)/i.test(value));
-                const resolvedVideo = hls || mp4 || candidates[0] || null;
-                const thumbCandidate = media.thumbnail_url || media.preview_url || media.full_url || media.raw_url || null;
-                const resolvedThumb = thumbCandidate ? toAbsoluteUrl(String(thumbCandidate)) : null;
-                setSharedVideoUrl(withAccessToken(resolvedVideo) || resolvedVideo);
-                setSharedThumbUrl(withAccessToken(resolvedThumb) || resolvedThumb);
-            })
-            .catch(() => {});
+                const filtered = list.filter((item) => {
+                    if (eventId && String(item.event_id ?? '') !== String(eventId)) return false;
+                    return String(item.type).toLowerCase() === 'video';
+                });
+                setItems(filtered);
+            } catch {
+                if (!mounted) return;
+                setItems([]);
+            }
+        };
+        load();
         return () => {
             mounted = false;
         };
-    }, [apiAccessToken, mediaId, toAbsoluteUrl, toHlsUrl, withAccessToken]);
+    }, [apiAccessToken, appearanceOnly, eventId]);
 
-    const data = useMemo(() => ([
-        {
-            id: 1,
-            name: 'Passionate',
-            event: eventName,
-            videoUri: sharedVideoUrl,
-            thumbnailUrl: sharedThumbUrl,
-            uploadedAt: '2026-02-05',
-            timer: '2300',
-        },
-        {
-            id: 2,
-            name: 'Passionate',
-            event: eventName,
-            videoUri: sharedVideoUrl,
-            thumbnailUrl: sharedThumbUrl,
-            uploadedAt: '2026-02-02',
-            timer: '2300',
-        },
-        {
-            id: 3,
-            name: 'Passionate',
-            event: eventName,
-            videoUri: sharedVideoUrl,
-            thumbnailUrl: sharedThumbUrl,
-            uploadedAt: '2026-01-29',
-            timer: '2300',
-        },
-    ]), [eventName, sharedThumbUrl, sharedVideoUrl]);
+    const data = useMemo(() => {
+        return items.map((item) => {
+            const thumbCandidate = item.thumbnail_url || item.preview_url || item.full_url || item.raw_url || null;
+            const resolvedThumb = withAccessToken(thumbCandidate) || thumbCandidate || '';
+            const hls = item.hls_manifest_path ? toHlsUrl(item.hls_manifest_path) : null;
+            const candidates = [item.full_url, item.original_url, item.raw_url, item.preview_url]
+                .filter(Boolean)
+                .map((value) => String(value));
+            const mp4 = candidates.find((value) => /\.(mp4|mov|m4v)(\?|$)/i.test(value));
+            const resolvedVideo = hls || mp4 || candidates[0] || null;
+            return {
+                id: item.media_id,
+                event: eventName,
+                videoUri: withAccessToken(resolvedVideo) || resolvedVideo,
+                thumbnailUrl: resolvedThumb,
+                uploadedAt: item.created_at ?? '',
+                timer: String(
+                    (item.assets || []).find((asset) => Number(asset.duration_seconds) > 0)?.duration_seconds ?? ''
+                ),
+                media: item,
+            };
+        });
+    }, [eventName, items, toHlsUrl, withAccessToken]);
 
     return (
         <View style={styles.mainContainer}>
@@ -171,7 +157,7 @@ const AllVideosOfEvents = ({ navigation, route }: any) => {
                             borderColor: colors.borderColor,
                         }}
                         onPress={() => navigation.navigate('VideoPlayingScreen', {
-                            mediaId,
+                            mediaId: item.media.media_id,
                             video: {
                                 title: eventName,
                                 thumbnail: item.thumbnailUrl ? { uri: item.thumbnailUrl } : Images.photo7,

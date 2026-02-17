@@ -136,14 +136,34 @@ export const createStyles = (colors: ThemeColors) => StyleSheet.create({
         ...Fonts.medium16,
         color: colors.mainTextColor,
     },
-    shareButton: {
+    blogActionsRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 10,
+    },
+    blogActionButton: {
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',
-        backgroundColor: colors.primaryColor,
-        borderRadius: 10,
-        paddingVertical: 16,
-        gap: 8,
+        gap: 6,
+        borderWidth: 1,
+        borderColor: colors.lightGrayColor,
+        backgroundColor: colors.secondaryColor,
+        borderRadius: 12,
+        paddingHorizontal: 12,
+        height: 40,
+    },
+    blogActionLike: {
+        paddingHorizontal: 14,
+    },
+    blogActionIcon: {
+        width: 18,
+        height: 18,
+        tintColor: colors.primaryColor,
+    },
+    blogActionText: {
+        ...Fonts.medium12,
+        color: colors.mainTextColor,
     },
     galleryThumbWrap: {
         width: 132,

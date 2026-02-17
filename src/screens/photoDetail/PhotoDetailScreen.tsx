@@ -8,7 +8,7 @@ import SizeBox from '../../constants/SizeBox';
 import {useTheme} from '../../context/ThemeContext';
 import {useAuth} from '../../context/AuthContext';
 import {useEvents} from '../../context/EventsContext';
-import {ApiError, getMediaById, postAiFeedbackLabel, recordDownload, recordMediaView, type MediaViewAllItem} from '../../services/apiGateway';
+import {ApiError, getAiFeedbackLabel, getMediaById, postAiFeedbackLabel, recordDownload, recordMediaView, type MediaViewAllItem} from '../../services/apiGateway';
 import Video from 'react-native-video';
 import ShimmerEffect from '../../components/shimmerEffect/ShimmerEffect';
 import {getApiBaseUrl, getHlsBaseUrl} from '../../constants/RuntimeConfig';
@@ -50,7 +50,7 @@ const PhotoDetailScreen = ({navigation, route}: any) => {
     }, [legacyPhoto?.type, media?.type]);
     const effectiveMediaId = useMemo(() => {
         if (!isPhotoView) return mediaId;
-        if (mediaId && photoFallbackIds.includes(mediaId)) return mediaId;
+        if (mediaId) return mediaId;
         const seed = `${eventTitle}-${startAt}`;
         let hash = 0;
         for (let i = 0; i < seed.length; i += 1) {
@@ -657,6 +657,42 @@ const PhotoDetailScreen = ({navigation, route}: any) => {
 
     const [feedback, setFeedback] = useState<FeedbackChoice>(null);
     const [isSavingFeedback, setIsSavingFeedback] = useState(false);
+    const [feedbackLoaded, setFeedbackLoaded] = useState(false);
+
+    useEffect(() => {
+        let cancelled = false;
+        if (!apiAccessToken || !resolvedMediaId) {
+            setFeedbackLoaded(true);
+            return;
+        }
+
+        setFeedbackLoaded(false);
+        setFeedback(null);
+
+        const run = async () => {
+            try {
+                const existing = await getAiFeedbackLabel(apiAccessToken, {
+                    media_id: String(resolvedMediaId),
+                    event_id: eventId ?? undefined,
+                });
+                if (cancelled) return;
+                if (existing) {
+                    setFeedback(existing.label ? 'yes' : 'no');
+                }
+            } catch {
+                // Ignore lookup failures; keep UI available.
+            } finally {
+                if (!cancelled) {
+                    setFeedbackLoaded(true);
+                }
+            }
+        };
+
+        run();
+        return () => {
+            cancelled = true;
+        };
+    }, [apiAccessToken, eventId, resolvedMediaId]);
 
     const submitFeedback = useCallback(
         async (choice: Exclude<FeedbackChoice, null>) => {
@@ -703,7 +739,7 @@ const PhotoDetailScreen = ({navigation, route}: any) => {
 
             <View style={[Styles.content, isVideo && Styles.contentFull]}>
                 {/* Question Card */}
-                {!isVideo && !!resolvedMediaId && !!matchType && (
+                {!isVideo && !!resolvedMediaId && !!matchType && feedbackLoaded && feedback === null && (
                     <View style={Styles.questionCard}>
                         <Text style={Styles.questionText}>{t('Is this photo/video actually you?')}</Text>
                         <View style={Styles.buttonsRow}>
@@ -716,7 +752,7 @@ const PhotoDetailScreen = ({navigation, route}: any) => {
                                 disabled={isSavingFeedback}
                                 onPress={() => submitFeedback('no')}
                             >
-                                <Text style={Styles.buttonText}>{feedback === 'no' ? t('Not me') : t('No')}</Text>
+                                <Text style={Styles.noButtonText}>{feedback === 'no' ? t('Not me') : t('No')}</Text>
                             </TouchableOpacity>
                             <TouchableOpacity
                                 style={[

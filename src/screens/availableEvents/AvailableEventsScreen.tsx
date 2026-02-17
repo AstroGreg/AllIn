@@ -1,5 +1,5 @@
-import React, { useMemo, useState } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, TextInput, Modal, Pressable, useWindowDimensions } from 'react-native';
+import React, { useMemo, useState, useEffect, useCallback } from 'react';
+import { View, Text, ScrollView, TouchableOpacity, TextInput, Modal, Pressable, useWindowDimensions, ActivityIndicator, Alert } from 'react-native';
 import { CalendarList } from 'react-native-calendars';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
@@ -16,6 +16,9 @@ import { createStyles } from './AvailableEventsScreenStyles';
 import SizeBox from '../../constants/SizeBox';
 import Images from '../../constants/Images';
 import { useTheme } from '../../context/ThemeContext';
+import { useAuth } from '../../context/AuthContext';
+import { useEvents } from '../../context/EventsContext';
+import { ApiError, grantFaceRecognitionConsent, searchEvents, subscribeToEvent } from '../../services/apiGateway';
 import { useTranslation } from 'react-i18next';
 
 const EVENT_FILTERS = ['Competition', 'Location'] as const;
@@ -53,7 +56,14 @@ const AvailableEventsScreen = ({ navigation }: any) => {
     const [chestNumber, setChestNumber] = useState('');
     const [useDefaultChest, setUseDefaultChest] = useState(true);
     const [selectedCategories, setSelectedCategories] = useState<string[]>(['All']);
-    const defaultChestNumber = '32';
+    const [allowFaceRecognition, setAllowFaceRecognition] = useState(false);
+    const [availableEvents, setAvailableEvents] = useState<any[]>([]);
+    const [isLoadingEvents, setIsLoadingEvents] = useState(false);
+    const [eventsError, setEventsError] = useState<string | null>(null);
+    const [isSubscribing, setIsSubscribing] = useState(false);
+    const { apiAccessToken, userProfile } = useAuth();
+    const { refresh: refreshSubscribed } = useEvents();
+    const defaultChestNumber = String(userProfile?.chestNumber ?? '').trim();
 
     const activeValue = filterValues[activeFilter] ?? '';
     const searchPlaceholder = activeFilter === 'Competition' ? t('typeCompetition') : t('typeLocation');
@@ -89,6 +99,9 @@ const AvailableEventsScreen = ({ navigation }: any) => {
     };
 
     const parseEventDate = (value: string) => {
+        if (!value) return null;
+        const parsed = new Date(value);
+        if (!Number.isNaN(parsed.getTime())) return parsed;
         const [day, month, year] = value.split('/').map(Number);
         if (!day || !month || !year) return null;
         return new Date(year, month - 1, day, 12, 0, 0, 0);
@@ -164,6 +177,36 @@ const AvailableEventsScreen = ({ navigation }: any) => {
         return `${startText} → ${endText}`;
     };
 
+    const loadEvents = useCallback(async (query: string) => {
+        if (!apiAccessToken) return;
+        setIsLoadingEvents(true);
+        setEventsError(null);
+        try {
+            const res = await searchEvents(apiAccessToken, { q: query, limit: 200 });
+            const list = Array.isArray(res?.events) ? res.events : [];
+            setAvailableEvents(
+                list.map((event: any) => ({
+                    id: String(event.event_id),
+                    title: event.event_name || event.event_title || 'Competition',
+                    location: event.event_location || '—',
+                    date: event.event_date || '—',
+                    competitionType: (event.competition_type || 'track') as CompetitionType,
+                    thumbnail: event.thumbnail_url ? { uri: event.thumbnail_url } : Images.photo4,
+                })),
+            );
+        } catch (e: any) {
+            const msg = e instanceof ApiError ? e.message : String(e?.message ?? e);
+            setEventsError(msg);
+            setAvailableEvents([]);
+        } finally {
+            setIsLoadingEvents(false);
+        }
+    }, [apiAccessToken]);
+
+    useEffect(() => {
+        loadEvents('');
+    }, [loadEvents]);
+
     const modalWidth = Math.min(windowWidth * 0.9, 420);
     const calendarWidth = Math.max(0, modalWidth - 40);
 
@@ -172,6 +215,7 @@ const AvailableEventsScreen = ({ navigation }: any) => {
         setSelectedCategories(['All']);
         setChestNumber('');
         setUseDefaultChest(true);
+        setAllowFaceRecognition(false);
     };
 
     const openSubscribeModal = (event: any) => {
@@ -210,64 +254,39 @@ const AvailableEventsScreen = ({ navigation }: any) => {
         : chestNumber.trim().length > 0;
     const canContinue = selectedEvents.length > 0 && hasChestNumber;
 
-    const handleSubscribeContinue = () => {
-        if (!modalEvent) return;
-        setShowSubscribeModal(false);
-        navigation.navigate('EventSummaryScreen', {
-            event: {
-                title: modalEvent.title,
-                date: modalEvent.date,
-                location: modalEvent.location,
-            },
-            personal: {
-                name: 'James Ray',
-                chestNumber: useDefaultChest ? defaultChestNumber : (chestNumber || defaultChestNumber),
-                events: selectedEvents,
-                categories: selectedCategories,
-            },
-        });
-        resetSubscribeForm();
-        setModalEvent(null);
+    const handleSubscribeContinue = async () => {
+        if (!modalEvent || !apiAccessToken) return;
+        setIsSubscribing(true);
+        try {
+            await subscribeToEvent(apiAccessToken, modalEvent.id);
+            if (allowFaceRecognition) {
+                await grantFaceRecognitionConsent(apiAccessToken);
+            }
+            await refreshSubscribed();
+            setShowSubscribeModal(false);
+            navigation.navigate('EventSummaryScreen', {
+                event: {
+                    title: modalEvent.title,
+                    date: modalEvent.date,
+                    location: modalEvent.location,
+                },
+                personal: {
+                    name: userProfile?.firstName || 'Athlete',
+                    chestNumber: useDefaultChest ? defaultChestNumber : (chestNumber || defaultChestNumber),
+                    events: selectedEvents,
+                    categories: selectedCategories,
+                    allowFaceRecognition,
+                },
+            });
+            resetSubscribeForm();
+            setModalEvent(null);
+        } catch (e: any) {
+            const msg = e instanceof ApiError ? e.message : String(e?.message ?? e);
+            Alert.alert(t('Could not subscribe'), msg);
+        } finally {
+            setIsSubscribing(false);
+        }
     };
-
-    const availableEvents: Array<{ id: number; title: string; videos: string; location: string; date: string; competitionType: CompetitionType; thumbnail: any; }> = [
-        {
-            id: 1,
-            title: 'BK Studentent 23',
-            videos: '254 Videos',
-            location: 'Berlin, Germany',
-            date: '27/05/2025',
-            competitionType: 'track',
-            thumbnail: Images.photo4,
-        },
-        {
-            id: 2,
-            title: 'Brussels City Run 2026',
-            videos: '254 Videos',
-            location: 'Berlin, Germany',
-            date: '12/06/2026',
-            competitionType: 'marathon',
-            thumbnail: Images.photo5,
-        },
-        {
-            id: 3,
-            title: 'IFAM 2024',
-            videos: '254 Videos',
-            location: 'Berlin, Germany',
-            date: '27/05/2025',
-            competitionType: 'track',
-            thumbnail: Images.photo4,
-        },
-        {
-            id: 4,
-            title: 'Sunrise 10K Community Run',
-            videos: '254 Videos',
-            location: 'Berlin, Germany',
-            date: '04/02/2026',
-            competitionType: 'marathon',
-            thumbnail: Images.photo5,
-        },
-    ];
 
     const competitionQuery = filterValues.Competition.trim().toLowerCase();
     const locationQuery = filterValues.Location.trim().toLowerCase();
@@ -282,7 +301,7 @@ const AvailableEventsScreen = ({ navigation }: any) => {
             const locationOk = locationQuery ? event.location.toLowerCase().includes(locationQuery) : true;
             return competitionOk && locationOk && rangeOk && typeOk;
         });
-    }, [competitionQuery, competitionTypeFilter, locationQuery, timeRange.end, timeRange.start]);
+    }, [availableEvents, competitionQuery, competitionTypeFilter, locationQuery, timeRange.end, timeRange.start]);
 
     const handleSearchChange = (value: string) => {
         setFilterValues((prev) => ({
@@ -465,7 +484,19 @@ const AvailableEventsScreen = ({ navigation }: any) => {
                     </View>
                 </View>
 
-                {filteredEvents.map(renderEventCard)}
+                {eventsError ? (
+                    <Text style={Styles.errorText}>{eventsError}</Text>
+                ) : isLoadingEvents ? (
+                    <View style={{ paddingVertical: 20, alignItems: 'center' }}>
+                        <ActivityIndicator color={colors.primaryColor} />
+                    </View>
+                ) : filteredEvents.length > 0 ? (
+                    filteredEvents.map(renderEventCard)
+                ) : (
+                    <View style={{ paddingVertical: 20 }}>
+                        <Text style={Styles.emptyStateText}>{t('No events found.')}</Text>
+                    </View>
+                )}
 
                 <SizeBox height={20} />
             </ScrollView>
@@ -567,18 +598,33 @@ const AvailableEventsScreen = ({ navigation }: any) => {
                             </Text>
                         </TouchableOpacity>
 
+                        <TouchableOpacity
+                            style={Styles.defaultChestRow}
+                            onPress={() => setAllowFaceRecognition((prev) => !prev)}
+                            activeOpacity={0.8}
+                        >
+                            <View style={[Styles.defaultChestBox, allowFaceRecognition && Styles.defaultChestBoxActive]}>
+                                {allowFaceRecognition && <Text style={Styles.defaultChestCheck}>{t('✓')}</Text>}
+                            </View>
+                            <Text style={Styles.defaultChestText}>{t('Allow face recognition for this competition')}</Text>
+                        </TouchableOpacity>
+
                         <View style={Styles.modalButtonsRow}>
                             <TouchableOpacity style={Styles.modalCancelButton} onPress={closeSubscribeModal}>
                                 <Text style={Styles.modalCancelText}>{t('cancel')}</Text>
                             </TouchableOpacity>
                             <TouchableOpacity
-                                style={[Styles.modalConfirmButton, !canContinue && Styles.modalConfirmButtonDisabled]}
+                                style={[Styles.modalConfirmButton, (!canContinue || isSubscribing) && Styles.modalConfirmButtonDisabled]}
                                 onPress={handleSubscribeContinue}
-                                disabled={!canContinue}
+                                disabled={!canContinue || isSubscribing}
                             >
-                                <Text style={[Styles.modalConfirmText, !canContinue && Styles.modalConfirmTextDisabled]}>
-                                    {t('continue')}
-                                </Text>
+                                {isSubscribing ? (
+                                    <ActivityIndicator color={colors.pureWhite} />
+                                ) : (
+                                    <Text style={[Styles.modalConfirmText, !canContinue && Styles.modalConfirmTextDisabled]}>
+                                        {t('continue')}
+                                    </Text>
+                                )}
                             </TouchableOpacity>
                         </View>
                     </View>

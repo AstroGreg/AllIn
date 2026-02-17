@@ -1,565 +1,396 @@
-import { View, Text, TouchableOpacity, ScrollView, Modal, TextInput } from 'react-native';
-import React, { useState } from 'react';
+import { View, Text, TouchableOpacity, ScrollView, ActivityIndicator, StyleSheet } from 'react-native';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import SizeBox from '../../constants/SizeBox';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import FastImage from 'react-native-fast-image';
-import Images from '../../constants/Images';
 import { createStyles } from './GroupProfileStyles';
-import { ArrowLeft2, User, ArrowRight, Edit2, Trash, Add, Location, Note, Sms, Map, Calendar } from 'iconsax-react-nativejs';
-import Icons from '../../constants/Icons';
-import ShareModal from '../../components/shareModal/ShareModal';
+import { ArrowLeft2, Location, Profile2User, Trash, UserTick } from 'iconsax-react-nativejs';
 import { useTheme } from '../../context/ThemeContext';
 import { useTranslation } from 'react-i18next';
+import { useAuth } from '../../context/AuthContext';
+import {
+    followProfile,
+    getGroup,
+    getGroupMembers,
+    getMyGroups,
+    getProfileSummary,
+    removeGroupMember,
+    unfollowProfile,
+    type GroupMember,
+    type GroupSummary,
+} from '../../services/apiGateway';
+import { getApiBaseUrl } from '../../constants/RuntimeConfig';
 
-const GroupProfileScreen = ({ navigation }: any) => {
+const GroupProfileScreen = ({ navigation, route }: any) => {
     const insets = useSafeAreaInsets();
     const { colors } = useTheme();
     const { t } = useTranslation();
     const styles = createStyles(colors);
+
     const [activeTab, setActiveTab] = useState<'athletes' | 'coaches' | 'events'>('athletes');
-    const [emailModalVisible, setEmailModalVisible] = useState(false);
-    const [emailInput, setEmailInput] = useState('');
-    const [coachModalVisible, setCoachModalVisible] = useState(false);
-    const [selectedCoach, setSelectedCoach] = useState<any>(null);
-    const [showShareModal, setShowShareModal] = useState(false);
+    const [groupId, setGroupId] = useState<string | null>(route?.params?.groupId ?? null);
+    const [group, setGroup] = useState<GroupSummary | null>(null);
+    const [members, setMembers] = useState<GroupMember[]>([]);
+    const [viewerProfileId, setViewerProfileId] = useState<string | null>(null);
+    const [loading, setLoading] = useState(false);
 
-    const tabs: Array<'athletes' | 'coaches' | 'events'> = ['athletes', 'coaches', 'events'];
+    const { apiAccessToken } = useAuth();
 
-    const athletes = [
-        { id: 1, name: 'James Ray', type: 'Athlete', category: 'Marathon', location: 'Dhaka' },
-        { id: 2, name: 'James Ray', type: 'Athlete', category: 'Marathon', location: 'Dhaka' },
-        { id: 3, name: 'James Ray', type: 'Athlete', category: 'Marathon', location: 'Dhaka' },
-        { id: 4, name: 'James Ray', type: 'Athlete', category: 'Marathon', location: 'Dhaka' },
-    ];
+    useEffect(() => {
+        let mounted = true;
+        if (!apiAccessToken) return () => {};
+        getProfileSummary(apiAccessToken)
+            .then((resp) => {
+                if (mounted) setViewerProfileId(resp?.profile_id ? String(resp.profile_id) : null);
+            })
+            .catch(() => {});
+        return () => {
+            mounted = false;
+        };
+    }, [apiAccessToken]);
 
-    const coaches = [
-        {
-            id: 1,
-            name: 'James Ray',
-            type: 'Athlete',
-            category: 'Marathon',
-            location: 'Dhaka',
-            club: 'Olympic Training Center',
-            athletes: [
-                { name: 'Anna Peterson', event: '5000m', personalBest: '15:32.10' },
-                { name: 'Anna Peterson', event: '5000m', personalBest: '15:32.10' },
-                { name: 'Anna Peterson', event: '5000m', personalBest: '15:32.10' },
-            ]
-        },
-        {
-            id: 2,
-            name: 'James Ray',
-            type: 'Athlete',
-            category: 'Marathon',
-            location: 'Dhaka',
-            club: 'Olympic Training Center',
-            athletes: [
-                { name: 'Anna Peterson', event: '5000m', personalBest: '15:32.10' },
-                { name: 'Anna Peterson', event: '5000m', personalBest: '15:32.10' },
-            ]
-        },
-        {
-            id: 3,
-            name: 'James Ray',
-            type: 'Athlete',
-            category: 'Marathon',
-            location: 'Dhaka',
-            club: 'Olympic Training Center',
-            athletes: [
-                { name: 'Anna Peterson', event: '5000m', personalBest: '15:32.10' },
-            ]
-        },
-        {
-            id: 4,
-            name: 'James Ray',
-            type: 'Athlete',
-            category: 'Marathon',
-            location: 'Dhaka',
-            club: 'Olympic Training Center',
-            athletes: []
-        },
-    ];
+    useEffect(() => {
+        let mounted = true;
+        const loadGroup = async () => {
+            if (!apiAccessToken) return;
+            setLoading(true);
+            try {
+                let targetGroupId = groupId;
+                if (!targetGroupId) {
+                    const mine = await getMyGroups(apiAccessToken);
+                    targetGroupId = mine.groups?.[0]?.group_id ?? null;
+                    if (mounted) setGroupId(targetGroupId);
+                }
+                if (!targetGroupId) {
+                    if (mounted) {
+                        setGroup(null);
+                        setMembers([]);
+                    }
+                    return;
+                }
 
-    const events = [
-        { id: 1, title: 'City Run Marathon', distance: '800m heat 1', location: 'Dhaka', date: '27/05/2025', image: Images.photo1 },
-        { id: 2, title: 'City Run Marathon', distance: '800m heat 1', location: 'Dhaka', date: '27/05/2025', image: Images.photo1 },
-    ];
+                const groupResp = await getGroup(apiAccessToken, targetGroupId);
+                const membersResp = await getGroupMembers(apiAccessToken, targetGroupId);
+                if (!mounted) return;
+                setGroup(groupResp.group);
+                setMembers(membersResp.members || []);
+            } catch {
+                if (mounted) {
+                    setGroup(null);
+                    setMembers([]);
+                }
+            } finally {
+                if (mounted) setLoading(false);
+            }
+        };
+        loadGroup();
+        return () => {
+            mounted = false;
+        };
+    }, [apiAccessToken, groupId]);
 
-    const renderAthleteCard = (athlete: any) => (
-        <TouchableOpacity
-            key={athlete.id}
-            style={styles.athleteCard}
-            activeOpacity={0.8}
-            onPress={() => navigation.navigate('AthleteProfileScreen', { athlete })}
-        >
-            <View style={styles.athleteCardContent}>
-                {/* Top Row - Avatar and Info */}
-                <View style={styles.athleteTopRow}>
-                    <FastImage source={Images.profilePic} style={styles.athleteAvatar} resizeMode="cover" />
-                    <View style={styles.athleteInfo}>
-                        {/* Name and Type Badge */}
-                        <View style={styles.athleteNameRow}>
-                        <Text style={styles.athleteName}>{athlete.name}</Text>
-                        <View style={styles.athleteTypeBadge}>
-                            <Text style={styles.athleteTypeText}>{athlete.type}</Text>
-                        </View>
-                    </View>
-                        {/* Category and Location */}
-                        <View style={styles.athleteDetailsRow}>
-                            <View style={styles.athleteCategoryRow}>
-                                <Icons.Run width={16} height={16} />
-                                <Text style={styles.athleteCategory}>{athlete.category}</Text>
-                            </View>
-                            <View style={styles.athleteLocationRow}>
-                                <Location size={16} color={colors.subTextColor} variant="Linear" />
-                                <Text style={styles.athleteLocation}>{athlete.location}</Text>
-                            </View>
-                        </View>
-                    </View>
-                </View>
+    const isOwner = useMemo(() => {
+        if (!group || !viewerProfileId) return false;
+        return String(group.owner_profile_id || '') === String(viewerProfileId) || group.my_role === 'owner';
+    }, [group, viewerProfileId]);
 
-                {/* Bottom Row - Delete Button and Social Icons */}
-                <View style={styles.athleteBottomRow}>
-                    <TouchableOpacity style={styles.deleteButton} onPress={(e) => e.stopPropagation()}>
-                        <Text style={styles.deleteButtonText}>{t('Delete')}</Text>
-                    </TouchableOpacity>
-                    <View style={styles.socialIcons}>
-                        <TouchableOpacity onPress={(e) => e.stopPropagation()}>
-                            <FastImage source={Icons.Strava} style={styles.socialIcon} resizeMode="cover" />
-                        </TouchableOpacity>
-                        <TouchableOpacity onPress={(e) => e.stopPropagation()}>
-                            <FastImage source={Icons.Instagram} style={styles.socialIcon} resizeMode="cover" />
-                        </TouchableOpacity>
-                    </View>
-                </View>
-            </View>
-        </TouchableOpacity>
+    const athletes = useMemo(
+        () => members.filter((m) => String(m.role || '').toLowerCase() === 'athlete'),
+        [members],
+    );
+    const coaches = useMemo(
+        () =>
+            members.filter((m) => {
+                const role = String(m.role || '').toLowerCase();
+                return role === 'coach' || role === 'owner';
+            }),
+        [members],
     );
 
-    const renderCoachCard = (coach: any) => (
-        <TouchableOpacity
-            key={coach.id}
-            style={styles.athleteCard}
-            activeOpacity={0.8}
-            onPress={() => {
-                setSelectedCoach(coach);
-                setCoachModalVisible(true);
-            }}
-        >
-            <View style={styles.athleteCardContent}>
-                {/* Top Row - Avatar and Info */}
-                <View style={styles.athleteTopRow}>
-                    <FastImage source={Images.profilePic} style={styles.athleteAvatar} resizeMode="cover" />
-                    <View style={styles.athleteInfo}>
-                        {/* Name and Type Badge */}
-                        <View style={styles.athleteNameRow}>
-                            <Text style={styles.athleteName}>{coach.name}</Text>
-                            <View style={styles.athleteTypeBadge}>
-                                <Text style={styles.athleteTypeText}>{coach.type}</Text>
-                            </View>
-                        </View>
-                        {/* Category and Location */}
-                        <View style={styles.athleteDetailsRow}>
-                            <View style={styles.athleteCategoryRow}>
-                                <Icons.Run width={16} height={16} />
-                                <Text style={styles.athleteCategory}>{coach.category}</Text>
-                            </View>
-                            <View style={styles.athleteLocationRow}>
-                                <Location size={16} color={colors.subTextColor} variant="Linear" />
-                                <Text style={styles.athleteLocation}>{coach.location}</Text>
-                            </View>
-                        </View>
-                    </View>
-                </View>
+    const toAbsoluteUrl = useCallback((value?: string | null) => {
+        if (!value) return null;
+        const raw = String(value);
+        if (raw.startsWith('http://') || raw.startsWith('https://')) return raw;
+        const base = getApiBaseUrl();
+        if (!base) return raw;
+        return `${base.replace(/\/$/, '')}/${raw.replace(/^\//, '')}`;
+    }, []);
 
-                {/* Club Row */}
-                <View style={styles.coachClubRow}>
-                    <View style={styles.coachClubLabelRow}>
-                        <Note size={16} color={colors.subTextColor} variant="Linear" />
-                        <Text style={styles.coachClubLabel}>{t('Club')}:</Text>
-                    </View>
-                    <Text style={styles.coachClubValue}>{coach.club}</Text>
-                </View>
+    const groupName = group?.name || t('Group');
+    const groupDescription = group?.description || t('No description added yet.');
+    const groupOwnerName = group?.owner_name || t('Owner');
+    const ownerAvatarUrl = group?.owner_avatar_url ? toAbsoluteUrl(String(group.owner_avatar_url)) : null;
+    const memberCount = group?.member_count ?? members.length;
 
-                {/* Bottom Row - Email and Delete Buttons */}
-                <View style={styles.coachButtonsRow}>
-                    <TouchableOpacity style={styles.emailButton} onPress={(e) => { e.stopPropagation(); setEmailModalVisible(true); }}>
-                        <Text style={styles.emailButtonText}>{t('Email')}</Text>
-                        <Sms size={16} color={colors.subTextColor} variant="Linear" />
-                    </TouchableOpacity>
-                    <TouchableOpacity style={styles.coachDeleteButton} onPress={(e) => e.stopPropagation()}>
-                        <Text style={styles.coachDeleteButtonText}>{t('Delete')}</Text>
-                    </TouchableOpacity>
-                </View>
-            </View>
-        </TouchableOpacity>
+    const localStyles = useMemo(
+        () =>
+            StyleSheet.create({
+                memberRow: {
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    paddingVertical: 12,
+                    borderBottomWidth: 0.5,
+                    borderBottomColor: colors.lightGrayColor,
+                },
+                memberInfo: {
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    gap: 12,
+                    flex: 1,
+                },
+                avatar: {
+                    width: 48,
+                    height: 48,
+                    borderRadius: 24,
+                    backgroundColor: colors.btnBackgroundColor,
+                },
+                memberName: {
+                    fontSize: 14,
+                    color: colors.mainTextColor,
+                },
+                memberRole: {
+                    fontSize: 12,
+                    color: colors.subTextColor,
+                },
+                followButton: {
+                    paddingHorizontal: 12,
+                    paddingVertical: 8,
+                    borderRadius: 8,
+                    backgroundColor: colors.primaryColor,
+                },
+                followButtonAlt: {
+                    backgroundColor: colors.btnBackgroundColor,
+                    borderWidth: 1,
+                    borderColor: colors.primaryColor,
+                },
+                followText: {
+                    fontSize: 12,
+                    color: colors.whiteColor,
+                },
+                followTextAlt: {
+                    color: colors.primaryColor,
+                },
+                ownerBadge: {
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    gap: 4,
+                },
+                emptyState: {
+                    paddingVertical: 24,
+                    alignItems: 'center',
+                },
+                emptyText: {
+                    fontSize: 12,
+                    color: colors.subTextColor,
+                },
+                deleteButton: {
+                    marginLeft: 8,
+                },
+            }),
+        [colors],
     );
 
-    const renderEventCard = (event: any) => (
-        <TouchableOpacity
-            key={event.id}
-            style={styles.eventCard}
-            activeOpacity={0.8}
-            onPress={() => navigation.navigate('EventAthletesScreen', { event })}
-        >
-            <View style={styles.eventCardContent}>
-                {/* Top Row - Image and Info */}
-                <View style={styles.eventTopRow}>
-                    <FastImage source={event.image} style={styles.eventImage} resizeMode="cover" />
-                    <View style={styles.eventInfo}>
-                        {/* Title */}
-                        <Text style={styles.eventTitle}>{event.title}</Text>
-
-                        {/* Distance Row */}
-                        <View style={styles.eventDetailRow}>
-                            <Text style={styles.eventDetailLabel}>{t('Distance')}</Text>
-                            <View style={styles.eventDetailValueRow}>
-                                <Map size={16} color={colors.subTextColor} variant="Linear" />
-                                <Text style={styles.eventDetailValue}>{event.distance}</Text>
-                            </View>
-                        </View>
-
-                        {/* Location Row */}
-                        <View style={styles.eventDetailRow}>
-                            <Text style={styles.eventDetailLabel}>{t('Location')}</Text>
-                            <View style={styles.eventDetailValueRow}>
-                                <Location size={16} color={colors.subTextColor} variant="Linear" />
-                                <Text style={styles.eventDetailValue}>{event.location}</Text>
-                            </View>
-                        </View>
-
-                        {/* Date Row */}
-                        <View style={styles.eventDetailRow}>
-                            <Text style={styles.eventDetailLabel}>{t('Date')}</Text>
-                            <View style={styles.eventDetailValueRow}>
-                                <Calendar size={16} color={colors.subTextColor} variant="Linear" />
-                                <Text style={styles.eventDetailValue}>{event.date}</Text>
-                            </View>
-                        </View>
-                    </View>
-                </View>
-
-                <View style={styles.eventDivider} />
-
-                {/* Delete Button */}
-                <TouchableOpacity style={styles.eventDeleteButton} onPress={(e) => e.stopPropagation()}>
-                    <Text style={styles.eventDeleteButtonText}>{t('Delete')}</Text>
-                </TouchableOpacity>
-            </View>
-        </TouchableOpacity>
-    );
-
-    const renderTabContent = () => {
-        switch (activeTab) {
-            case 'athletes':
-                return (
-                    <View style={styles.clubAthletesSection}>
-                        <View style={styles.clubAthletesHeader}>
-                            <Text style={styles.clubAthletesTitle}>{t('Club Athletes')}</Text>
-                            <TouchableOpacity style={styles.addAthleteButton} onPress={() => navigation.navigate('AddAthleteScreen')}>
-                                <Text style={styles.addAthleteText}>{t('Add Athlete')}</Text>
-                                <Add size={24} color={colors.pureWhite} variant="Linear" />
-                            </TouchableOpacity>
-                        </View>
-                        <View style={styles.athletesList}>
-                            {athletes.map(renderAthleteCard)}
-                        </View>
-                        <TouchableOpacity style={styles.viewAllButton}>
-                            <Text style={styles.viewAllText}>{t('View All')}</Text>
-                            <ArrowRight size={24} color={colors.pureWhite} variant="Linear" />
-                        </TouchableOpacity>
-                    </View>
+    const handleToggleFollow = async (member: GroupMember) => {
+        if (!apiAccessToken || !member.profile_id || !viewerProfileId) return;
+        if (String(member.profile_id) === String(viewerProfileId)) return;
+        try {
+            if (member.is_following) {
+                await unfollowProfile(apiAccessToken, String(member.profile_id));
+                setMembers((prev) =>
+                    prev.map((m) => (m.profile_id === member.profile_id ? { ...m, is_following: false } : m)),
                 );
-            case 'coaches':
-                return (
-                    <View style={styles.clubAthletesSection}>
-                        <View style={styles.clubAthletesHeader}>
-                            <Text style={styles.clubAthletesTitle}>{t('Club Coaches')}</Text>
-                            <TouchableOpacity style={styles.addAthleteButton} onPress={() => navigation.navigate('AddCoachScreen')}>
-                                <Text style={styles.addAthleteText}>{t('Add Coach')}</Text>
-                                <Add size={24} color={colors.pureWhite} variant="Linear" />
-                            </TouchableOpacity>
-                        </View>
-                        <View style={styles.athletesList}>
-                            {coaches.map(renderCoachCard)}
-                        </View>
-                        <TouchableOpacity style={styles.viewAllButton}>
-                            <Text style={styles.viewAllText}>{t('View All')}</Text>
-                            <ArrowRight size={24} color={colors.pureWhite} variant="Linear" />
-                        </TouchableOpacity>
-                    </View>
+            } else {
+                await followProfile(apiAccessToken, String(member.profile_id));
+                setMembers((prev) =>
+                    prev.map((m) => (m.profile_id === member.profile_id ? { ...m, is_following: true } : m)),
                 );
-            case 'events':
-                return (
-                    <View style={styles.clubAthletesSection}>
-                        <View style={styles.clubAthletesHeader}>
-                            <Text style={styles.clubAthletesTitle}>{t('Events')}</Text>
-                            <TouchableOpacity style={styles.addAthleteButton}>
-                                <Text style={styles.addAthleteText}>{t('Add Event')}</Text>
-                                <Add size={24} color={colors.pureWhite} variant="Linear" />
-                            </TouchableOpacity>
-                        </View>
-                        <View style={styles.athletesList}>
-                            {events.map(renderEventCard)}
-                        </View>
-                        <TouchableOpacity style={styles.viewAllButton} onPress={() => navigation.navigate('GroupEventsViewAllScreen')}>
-                            <Text style={styles.viewAllText}>{t('View All')}</Text>
-                            <ArrowRight size={24} color={colors.pureWhite} variant="Linear" />
-                        </TouchableOpacity>
-                    </View>
-                );
-            default:
-                return null;
+            }
+        } catch {
+            // ignore for now
         }
+    };
+
+    const handleRemoveMember = async (member: GroupMember) => {
+        if (!apiAccessToken || !group?.group_id) return;
+        try {
+            await removeGroupMember(apiAccessToken, String(group.group_id), String(member.profile_id));
+            setMembers((prev) => prev.filter((m) => m.profile_id !== member.profile_id));
+        } catch {
+            // ignore for now
+        }
+    };
+
+    const renderMember = (member: GroupMember) => {
+        const isSelf = viewerProfileId && String(member.profile_id) === String(viewerProfileId);
+        const avatarUrl = member.avatar_url ? toAbsoluteUrl(String(member.avatar_url)) : null;
+        return (
+            <View key={member.profile_id} style={localStyles.memberRow}>
+                <View style={localStyles.memberInfo}>
+                    {avatarUrl ? (
+                        <FastImage source={{ uri: avatarUrl }} style={localStyles.avatar} />
+                    ) : (
+                        <View style={localStyles.avatar} />
+                    )}
+                    <View>
+                        <View style={localStyles.ownerBadge}>
+                            <Text style={localStyles.memberName}>{member.display_name || t('Member')}</Text>
+                            {String(member.role || '').toLowerCase() === 'owner' && (
+                                <UserTick size={14} color={colors.primaryColor} variant="Linear" />
+                            )}
+                        </View>
+                        <Text style={localStyles.memberRole}>{member.role || t('Member')}</Text>
+                    </View>
+                </View>
+                {!isSelf && (
+                    <TouchableOpacity
+                        style={[
+                            localStyles.followButton,
+                            member.is_following && localStyles.followButtonAlt,
+                        ]}
+                        onPress={() => handleToggleFollow(member)}
+                    >
+                        <Text style={[localStyles.followText, member.is_following && localStyles.followTextAlt]}>
+                            {member.is_following ? t('Following') : t('Follow')}
+                        </Text>
+                    </TouchableOpacity>
+                )}
+                {isOwner && String(member.role || '').toLowerCase() !== 'owner' && (
+                    <TouchableOpacity style={localStyles.deleteButton} onPress={() => handleRemoveMember(member)}>
+                        <Trash size={18} color={colors.errorColor || '#E14B4B'} variant="Linear" />
+                    </TouchableOpacity>
+                )}
+            </View>
+        );
     };
 
     return (
         <View style={styles.mainContainer}>
             <SizeBox height={insets.top} />
 
-            {/* Header */}
             <View style={styles.header}>
                 <TouchableOpacity style={styles.headerButton} onPress={() => navigation.goBack()}>
                     <ArrowLeft2 size={24} color={colors.primaryColor} variant="Linear" />
                 </TouchableOpacity>
-                <Text style={styles.headerTitle}>{t('Profile')}</Text>
-                <TouchableOpacity style={styles.headerButton}>
-                    <User size={24} color={colors.primaryColor} variant="Linear" />
-                </TouchableOpacity>
+                <Text style={styles.headerTitle}>{groupName}</Text>
+                <View style={{ width: 44, height: 44 }} />
             </View>
 
             <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
-                {/* Profile Card */}
-                <View style={styles.profileCard}>
-                    {/* Share Button */}
-                    <TouchableOpacity style={styles.shareButton} onPress={() => setShowShareModal(true)}>
-                        <Text style={styles.shareButtonText}>{t('Share')}</Text>
-                        <ArrowRight size={24} color={colors.subTextColor} variant="Linear" />
-                    </TouchableOpacity>
+                {!loading && !groupId && (
+                    <View style={localStyles.emptyState}>
+                        <Text style={localStyles.emptyText}>{t('No groups yet.')}</Text>
+                        <SizeBox height={12} />
+                        <TouchableOpacity onPress={() => navigation.navigate('CreateGroupProfileScreen')}>
+                            <Text style={[localStyles.emptyText, { color: colors.primaryColor }]}>{t('Create a group')}</Text>
+                        </TouchableOpacity>
+                    </View>
+                )}
 
-                    {/* Profile Info */}
+                {!loading && groupId && !group && (
+                    <View style={localStyles.emptyState}>
+                        <Text style={localStyles.emptyText}>{t('Group not found.')}</Text>
+                    </View>
+                )}
+
+                {group ? (
+                <View style={styles.profileCard}>
                     <View style={styles.profileInfoContainer}>
-                        <FastImage source={Images.profilePic} style={styles.profileAvatar} resizeMode="cover" />
+                        {ownerAvatarUrl ? (
+                            <FastImage source={{ uri: ownerAvatarUrl }} style={styles.profileAvatar} />
+                        ) : (
+                            <View style={styles.profileAvatar}>
+                                <Profile2User size={40} color={colors.primaryColor} variant="Linear" />
+                            </View>
+                        )}
                         <View style={styles.profileNameRow}>
-                            <Text style={styles.profileName}>{t('James Ray')}</Text>
-                            <Icons.BlueTick width={16} height={16} />
+                            <Text style={styles.profileName}>{groupName}</Text>
                         </View>
-                        <Text style={styles.profileUsername}>jamesray2@</Text>
+                        <Text style={styles.profileUsername}>{groupOwnerName}</Text>
                     </View>
 
-                    {/* Stats Row */}
                     <View style={styles.statsRow}>
                         <View style={styles.statItem}>
-                            <Text style={styles.statValue}>{t('1.2K')}</Text>
-                            <Text style={styles.statLabel}>{t('Posts')}</Text>
+                            <Text style={styles.statValue}>{memberCount}</Text>
+                            <Text style={styles.statLabel}>{t('Members')}</Text>
                         </View>
                         <View style={styles.statDivider} />
                         <View style={styles.statItem}>
-                            <Text style={styles.statValue}>{t('45.8K')}</Text>
-                            <Text style={styles.statLabel}>{t('Followers')}</Text>
+                            <Text style={styles.statValue}>{athletes.length}</Text>
+                            <Text style={styles.statLabel}>{t('Athletes')}</Text>
+                        </View>
+                        <View style={styles.statDivider} />
+                        <View style={styles.statItem}>
+                            <Text style={styles.statValue}>{coaches.length}</Text>
+                            <Text style={styles.statLabel}>{t('Coaches')}</Text>
                         </View>
                     </View>
 
-                    {/* Categories */}
-                    <View style={styles.categoriesRow}>
-                        <Text style={styles.categoryText}>{t('Track and Field')}</Text>
-                        <View style={styles.categoryDivider} />
-                        <Text style={styles.categoryText}>{t('Boxing')}</Text>
-                        <View style={styles.categoryDivider} />
-                        <Text style={styles.categoryText}>{t('Cross Country')}</Text>
-                    </View>
-
-                    {/* Additional Stats */}
-                    <View style={styles.additionalStatsRow}>
-                        <View style={styles.additionalStatItem}>
-                            <Text style={styles.additionalStatLabel}>{t('Coaches')}</Text>
-                            <Text style={styles.additionalStatValue}>3</Text>
-                        </View>
-                        <View style={styles.additionalStatItemCenter}>
-                            <Text style={styles.additionalStatLabel}>{t('Athletes')}</Text>
-                            <Text style={styles.additionalStatValue}>17</Text>
-                        </View>
-                        <View style={styles.additionalStatItemEnd}>
-                            <Text style={styles.additionalStatLabel}>{t('Upcoming Events')}</Text>
-                            <Text style={styles.additionalStatValue}>4</Text>
-                        </View>
-                    </View>
-
-                    {/* Bio Section */}
                     <View style={styles.bioSection}>
                         <View style={styles.bioHeader}>
-                            <Text style={styles.bioTitle}>{t('Bio')}</Text>
-                            <TouchableOpacity>
-                                <Edit2 size={24} color={colors.subTextColor} variant="Linear" />
-                            </TouchableOpacity>
+                            <Text style={styles.bioTitle}>{t('About')}</Text>
                         </View>
-                        <Text style={styles.bioText}>
-                            {t('Premier athletics club in Belgium, dedicated to developing world-class athletes through professional coaching, state-of-the-art facilities, and comprehensive training programs. Established in 2010.')}
-                        </Text>
+                        <Text style={styles.bioText}>{groupDescription}</Text>
                         <View style={styles.bioDivider} />
                     </View>
-
-                    {/* Website Link */}
-                    <View style={styles.websiteContainer}>
-                        <Icons.Website width={16} height={16} />
-                        <Text style={styles.websiteText}>georgia.young@example.com</Text>
-                        <View style={styles.websiteActions}>
-                            <TouchableOpacity>
-                                <Trash size={24} color={colors.subTextColor} variant="Linear" />
-                            </TouchableOpacity>
-                            <TouchableOpacity>
-                                <Edit2 size={24} color={colors.subTextColor} variant="Linear" />
-                            </TouchableOpacity>
-                        </View>
-                    </View>
-
-                    <View style={styles.sectionDivider} />
                 </View>
+                ) : null}
 
-                {/* Toggle Tab Bar */}
+                {group ? (
                 <View style={styles.toggleTabBar}>
-                    {tabs.map((tab) => (
+                    {(['athletes', 'coaches', 'events'] as const).map((tab) => (
                         <TouchableOpacity
                             key={tab}
                             style={[styles.toggleTab, activeTab === tab && styles.toggleTabActive]}
                             onPress={() => setActiveTab(tab)}
                         >
-                            <Text style={[styles.toggleTabText, activeTab === tab && styles.toggleTabTextActive]}>
-                                {t(tab === 'athletes' ? 'Athletes' : tab === 'coaches' ? 'Coaches' : 'Events')}
+                            <Text style={activeTab === tab ? styles.toggleTabTextActive : styles.toggleTabText}>
+                                {tab === 'athletes' ? t('Athletes') : tab === 'coaches' ? t('Coaches') : t('Events')}
                             </Text>
                         </TouchableOpacity>
                     ))}
                 </View>
+                ) : null}
 
-                {/* Tab Content */}
-                {renderTabContent()}
+                {loading && (
+                    <View style={localStyles.emptyState}>
+                        <ActivityIndicator size="small" color={colors.primaryColor} />
+                    </View>
+                )}
+
+                {!loading && group && activeTab === 'athletes' && (
+                    <View>
+                        {athletes.length === 0 ? (
+                            <View style={localStyles.emptyState}>
+                                <Text style={localStyles.emptyText}>{t('No athletes yet')}</Text>
+                            </View>
+                        ) : (
+                            athletes.map(renderMember)
+                        )}
+                    </View>
+                )}
+
+                {!loading && group && activeTab === 'coaches' && (
+                    <View>
+                        {coaches.length === 0 ? (
+                            <View style={localStyles.emptyState}>
+                                <Text style={localStyles.emptyText}>{t('No coaches yet')}</Text>
+                            </View>
+                        ) : (
+                            coaches.map(renderMember)
+                        )}
+                    </View>
+                )}
+
+                {!loading && group && activeTab === 'events' && (
+                    <View style={localStyles.emptyState}>
+                        <Location size={20} color={colors.subTextColor} variant="Linear" />
+                        <Text style={localStyles.emptyText}>{t('No events yet')}</Text>
+                    </View>
+                )}
 
                 <SizeBox height={insets.bottom > 0 ? insets.bottom + 20 : 40} />
             </ScrollView>
-
-            {/* Email Modal */}
-            <Modal
-                animationType="fade"
-                transparent={true}
-                visible={emailModalVisible}
-                onRequestClose={() => setEmailModalVisible(false)}
-            >
-                <View style={styles.modalOverlay}>
-                    <View style={styles.emailModalContainer}>
-                        <Text style={styles.emailModalTitle}>{t('Edit your Email')}</Text>
-
-                        <View style={styles.emailModalInputGroup}>
-                            <Text style={styles.emailModalInputLabel}>{t('Email')}</Text>
-                            <SizeBox height={8} />
-                            <View style={styles.emailModalInputContainer}>
-                                <Sms size={24} color={colors.primaryColor} variant="Linear" />
-                                <SizeBox width={10} />
-                                <TextInput
-                                    style={styles.emailModalInput}
-                                    placeholder={t('Enter email')}
-                                    placeholderTextColor={colors.grayColor}
-                                    value={emailInput}
-                                    onChangeText={setEmailInput}
-                                    keyboardType="email-address"
-                                    autoCapitalize="none"
-                                />
-                            </View>
-                        </View>
-
-                        <View style={styles.emailModalButtonsRow}>
-                            <TouchableOpacity
-                                style={styles.emailModalCancelButton}
-                                onPress={() => {
-                                    setEmailModalVisible(false);
-                                    setEmailInput('');
-                                }}
-                            >
-                                <Text style={styles.emailModalCancelButtonText}>{t('Cancel')}</Text>
-                            </TouchableOpacity>
-
-                            <TouchableOpacity
-                                style={styles.emailModalSaveButton}
-                                onPress={() => {
-                                    // Handle save email
-                                    setEmailModalVisible(false);
-                                    setEmailInput('');
-                                }}
-                            >
-                                <Text style={styles.emailModalSaveButtonText}>{t('Save')}</Text>
-                            </TouchableOpacity>
-                        </View>
-                    </View>
-                </View>
-            </Modal>
-
-            {/* Coach Details Modal */}
-            <Modal
-                animationType="fade"
-                transparent={true}
-                visible={coachModalVisible}
-                onRequestClose={() => setCoachModalVisible(false)}
-            >
-                <View style={styles.modalOverlay}>
-                    <View style={styles.coachModalContainer}>
-                        {selectedCoach && (
-                            <>
-                                {/* Coach Header */}
-                                <View style={styles.coachModalHeader}>
-                                    <FastImage source={Images.profilePic} style={styles.coachModalAvatar} resizeMode="cover" />
-                                    <View style={styles.coachModalInfo}>
-                                        <Text style={styles.coachModalName}>{selectedCoach.name}</Text>
-                                        <View style={styles.coachModalLocationRow}>
-                                            <Location size={14} color={colors.subTextColor} variant="Linear" />
-                                            <Text style={styles.coachModalLocation}>{selectedCoach.club}</Text>
-                                        </View>
-                                    </View>
-                                    <View style={styles.coachModalCategoryRow}>
-                                        <Icons.Run width={16} height={16} />
-                                        <Text style={styles.coachModalCategory}>{selectedCoach.category}</Text>
-                                    </View>
-                                </View>
-
-                                {/* Athletes Section */}
-                                <View style={styles.coachModalAthletesSection}>
-                                    <Text style={styles.coachModalAthletesTitle}>
-                                        {t('Athletes')} ({selectedCoach.athletes?.length || 0})
-                                    </Text>
-
-                                    {selectedCoach.athletes?.map((athlete: any, index: number) => (
-                                        <View key={index} style={styles.coachModalAthleteRow}>
-                                            <View style={styles.coachModalAthleteInfo}>
-                                                <Text style={styles.coachModalAthleteName}>{athlete.name}</Text>
-                                                <Text style={styles.coachModalAthleteEvent}>{athlete.event}</Text>
-                                            </View>
-                                            <View style={styles.coachModalAthletePB}>
-                                                <Text style={styles.coachModalAthletePBLabel}>{t('Personal Best')}</Text>
-                                                <Text style={styles.coachModalAthletePBValue}>{athlete.personalBest}</Text>
-                                            </View>
-                                        </View>
-                                    ))}
-                                </View>
-
-                                {/* Close Button */}
-                                <TouchableOpacity
-                                    style={styles.coachModalCloseButton}
-                                    onPress={() => {
-                                        setCoachModalVisible(false);
-                                        setSelectedCoach(null);
-                                    }}
-                                >
-                                    <Text style={styles.coachModalCloseButtonText}>{t('Close')}</Text>
-                                </TouchableOpacity>
-                            </>
-                        )}
-                    </View>
-                </View>
-            </Modal>
-
-            {/* Share Modal */}
-            <ShareModal
-                visible={showShareModal}
-                onClose={() => setShowShareModal(false)}
-            />
         </View>
     );
 };

@@ -27,42 +27,7 @@ interface Course {
     checkpoints: Array<{ id: string; label: string }>;
 }
 
-const FALLBACK_COURSES: Course[] = [
-    {
-        id: 'course-5k',
-        label: '5 km',
-        description: 'Fast city loop',
-        imageUrl: undefined,
-        checkpoints: [
-            { id: 'cp-1', label: '1 km' },
-            { id: 'cp-2', label: '3 km' },
-            { id: 'cp-3', label: '5 km' },
-        ],
-    },
-    {
-        id: 'course-10k',
-        label: '10 km',
-        description: 'Two-loop course',
-        imageUrl: undefined,
-        checkpoints: [
-            { id: 'cp-4', label: '2.5 km' },
-            { id: 'cp-5', label: '5 km' },
-            { id: 'cp-6', label: '7.5 km' },
-            { id: 'cp-7', label: '10 km' },
-        ],
-    },
-    {
-        id: 'course-15k',
-        label: '15 km',
-        description: 'River + park section',
-        imageUrl: undefined,
-        checkpoints: [
-            { id: 'cp-8', label: '5 km' },
-            { id: 'cp-9', label: '10 km' },
-            { id: 'cp-10', label: '15 km' },
-        ],
-    },
-];
+const FALLBACK_COURSES: Course[] = [];
 
 const CompetitionDetailsScreen = ({ navigation, route }: any) => {
     const insets = useSafeAreaInsets();
@@ -72,7 +37,7 @@ const CompetitionDetailsScreen = ({ navigation, route }: any) => {
     const { t } = useTranslation();
     const [selectedTab, setSelectedTab] = useState<'track' | 'field'>('track');
     const [showRelevantOnly, setShowRelevantOnly] = useState(false);
-    const [selectedCourseId, setSelectedCourseId] = useState('course-10k');
+    const [selectedCourseId, setSelectedCourseId] = useState('');
     const [checkpointModalVisible, setCheckpointModalVisible] = useState(false);
     const [selectedCheckpoint, setSelectedCheckpoint] = useState<{ id: string; label: string } | null>(null);
     const [courseOptions, setCourseOptions] = useState<Course[]>([]);
@@ -83,9 +48,12 @@ const CompetitionDetailsScreen = ({ navigation, route }: any) => {
     const [quickSearchLoading, setQuickSearchLoading] = useState(false);
     const [quickNeedsConsent, setQuickNeedsConsent] = useState(false);
     const [quickMissingAngles, setQuickMissingAngles] = useState<string[] | null>(null);
+    const [quickUseFace, setQuickUseFace] = useState(true);
 
-    const competitionName = route?.params?.name || 'BK Studentent 23';
-    const competitionDescription = route?.params?.description || 'This is the Belgium Championship 2023';
+    const competitionName = route?.params?.name || route?.params?.eventName || t('Competition');
+    const competitionDescription = route?.params?.description
+        || [route?.params?.location, route?.params?.date].filter(Boolean).join(' • ')
+        || t('Competition details');
     const competitionType: 'track' | 'marathon' = route?.params?.competitionType || 'track';
     const eventId = route?.params?.eventId as string | undefined;
     const competitionId = route?.params?.competitionId as string | undefined;
@@ -95,41 +63,28 @@ const CompetitionDetailsScreen = ({ navigation, route }: any) => {
         if (chest) setQuickChestNumber(chest);
     }, [userProfile?.chestNumber]);
 
-    const trackEvents: EventCategory[] = [
-        { id: 1, name: '100 Meters', badges: ['Found'], hasArrow: true, thumbnail: Images.photo1 },
-        { id: 2, name: '200 Meters', badges: ['Found'], hasArrow: true, thumbnail: Images.photo3 },
-        { id: 3, name: '400 Meters', hasArrow: true, thumbnail: Images.photo4 },
-        { id: 4, name: '800 Meters', hasArrow: true, thumbnail: Images.photo5 },
-        { id: 5, name: '1500 Meters', hasArrow: true, thumbnail: Images.photo6 },
-        { id: 6, name: '5000 Meters', hasArrow: true, thumbnail: Images.photo7 },
-    ];
-
-    const fieldEvents: EventCategory[] = [
-        { id: 1, name: 'Long Jump', badges: ['Found'], hasArrow: true, thumbnail: Images.photo8 },
-        { id: 2, name: 'High Jump', hasArrow: true, thumbnail: Images.photo9 },
-        { id: 3, name: 'Shot Put', hasArrow: true, thumbnail: Images.photo4 },
-        { id: 4, name: 'Discus Throw', hasArrow: true, thumbnail: Images.photo5 },
-    ];
+    const trackEvents: EventCategory[] = [];
+    const fieldEvents: EventCategory[] = [];
 
     const currentEvents = selectedTab === 'track' ? trackEvents : fieldEvents;
     const filteredEvents = showRelevantOnly
         ? currentEvents.filter((event) => event.badges?.includes('Found'))
         : currentEvents;
 
-    const selectedCourse = useMemo(() => {
-        const list = courseOptions.length > 0 ? courseOptions : FALLBACK_COURSES;
-        return list.find((course) => course.id === selectedCourseId) ?? list[0];
-    }, [courseOptions, selectedCourseId]);
-
     const visibleCourses = courseOptions.length > 0 ? courseOptions : FALLBACK_COURSES;
+
+    const selectedCourse = useMemo(() => {
+        if (visibleCourses.length === 0) return null;
+        return visibleCourses.find((course) => course.id === selectedCourseId) ?? visibleCourses[0];
+    }, [selectedCourseId, visibleCourses]);
 
     useEffect(() => {
         if (competitionType !== 'marathon') return;
 
         if (!apiAccessToken || (!eventId && !competitionId)) {
             if (courseOptions.length === 0) {
-                setCourseOptions(FALLBACK_COURSES);
-                setSelectedCourseId(FALLBACK_COURSES[0]?.id ?? 'course-10k');
+                setCourseOptions([]);
+                setSelectedCourseId('');
             }
             return;
         }
@@ -160,14 +115,14 @@ const CompetitionDetailsScreen = ({ navigation, route }: any) => {
                         normalized.some((course) => course.id === prev) ? prev : normalized[0].id
                     );
                 } else if (courseOptions.length === 0) {
-                    setCourseOptions(FALLBACK_COURSES);
+                    setCourseOptions([]);
                 }
             } catch (e: any) {
                 if (!isActive) return;
                 const message = e instanceof ApiError ? e.message : String(e?.message ?? e);
                 setMapError(message);
                 if (courseOptions.length === 0) {
-                    setCourseOptions(FALLBACK_COURSES);
+                    setCourseOptions([]);
                 }
             }
         };
@@ -220,7 +175,11 @@ const CompetitionDetailsScreen = ({ navigation, route }: any) => {
         <TouchableOpacity
             key={event.id}
             style={styles.eventCard}
-            onPress={() => navigation.navigate('EventDivisionScreen', { eventName: event.name, competitionName })}
+            onPress={() => navigation.navigate('EventDivisionScreen', {
+                eventName: event.name,
+                competitionName,
+                eventId: eventId ?? competitionId,
+            })}
         >
             <View style={styles.eventCardLeft}>
                 <Image source={event.thumbnail ?? Images.photo1} style={styles.eventThumbnail} />
@@ -254,7 +213,7 @@ const CompetitionDetailsScreen = ({ navigation, route }: any) => {
         } catch {
             return null;
         }
-    }, [apiAccessToken, competitionName, eventId]);
+    }, [apiAccessToken, competitionId, competitionName, eventId]);
 
     const runQuickCompare = useCallback(async () => {
         if (!apiAccessToken) {
@@ -267,8 +226,10 @@ const CompetitionDetailsScreen = ({ navigation, route }: any) => {
             return;
         }
         const bibValue = quickChestNumber.trim();
-        if (!bibValue) {
-            setQuickSearchError('Add a chest number to start the search.');
+        const wantsBib = bibValue.length > 0;
+        const wantsFace = quickUseFace;
+        if (!wantsBib && !wantsFace) {
+            setQuickSearchError('Add a chest number or enable face search.');
             return;
         }
 
@@ -296,38 +257,43 @@ const CompetitionDetailsScreen = ({ navigation, route }: any) => {
         const errors: string[] = [];
 
         try {
-            try {
-                const res = await searchMediaByBib(apiAccessToken, { event_id: resolvedId, bib: bibValue });
-                const results = Array.isArray(res?.results) ? res.results : [];
-                addResults(results, 'bib');
-            } catch (e: any) {
-                const msg = e instanceof ApiError ? e.message : String(e?.message ?? e);
-                errors.push(`Chest number: ${msg}`);
+            if (wantsBib) {
+                try {
+                    const res = await searchMediaByBib(apiAccessToken, { event_id: resolvedId, bib: bibValue });
+                    const results = Array.isArray(res?.results) ? res.results : [];
+                    addResults(results, 'bib');
+                } catch (e: any) {
+                    const msg = e instanceof ApiError ? e.message : String(e?.message ?? e);
+                    errors.push(`Chest number: ${msg}`);
+                }
             }
 
-            try {
-                const res = await searchFaceByEnrollment(apiAccessToken, {
-                    event_ids: [resolvedId],
-                    label: 'default',
-                    limit: 600,
-                    top: 100,
+            if (wantsFace) {
+                try {
+                    const res = await searchFaceByEnrollment(apiAccessToken, {
+                        event_ids: [resolvedId],
+                        label: 'default',
+                        limit: 600,
+                        top: 100,
+                        save: true,
                     });
-                const results = Array.isArray(res?.results) ? res.results : [];
-                addResults(results, 'face');
-            } catch (e: any) {
-                if (e instanceof ApiError) {
-                    const body = e.body ?? {};
-                    if (e.status === 403 && String(e.message).toLowerCase().includes('consent')) {
-                        setQuickNeedsConsent(true);
-                        errors.push('Face: consent required.');
-                    } else if (e.status === 400 && Array.isArray(body?.missing_angles)) {
-                        setQuickMissingAngles(body.missing_angles.map(String));
-                        errors.push('Face: enrollment required.');
+                    const results = Array.isArray(res?.results) ? res.results : [];
+                    addResults(results, 'face');
+                } catch (e: any) {
+                    if (e instanceof ApiError) {
+                        const body = e.body ?? {};
+                        if (e.status === 403 && String(e.message).toLowerCase().includes('consent')) {
+                            setQuickNeedsConsent(true);
+                            errors.push('Face: consent required.');
+                        } else if (e.status === 400 && Array.isArray(body?.missing_angles)) {
+                            setQuickMissingAngles(body.missing_angles.map(String));
+                            errors.push('Face: enrollment required.');
+                        } else {
+                            errors.push(`Face: ${e.message}`);
+                        }
                     } else {
-                        errors.push(`Face: ${e.message}`);
+                        errors.push(`Face: ${String(e?.message ?? e)}`);
                     }
-                } else {
-                    errors.push(`Face: ${String(e?.message ?? e)}`);
                 }
             }
 
@@ -345,7 +311,7 @@ const CompetitionDetailsScreen = ({ navigation, route }: any) => {
         } finally {
             setQuickSearchLoading(false);
         }
-    }, [apiAccessToken, competitionName, quickChestNumber, navigation, resolveEventId]);
+    }, [apiAccessToken, competitionName, navigation, quickChestNumber, quickUseFace, resolveEventId]);
 
     const handleGrantConsent = useCallback(async () => {
         if (!apiAccessToken) return;
@@ -392,57 +358,65 @@ const CompetitionDetailsScreen = ({ navigation, route }: any) => {
                     <>
                         <Text style={styles.sectionTitle}>{t('Courses')}</Text>
                         <SizeBox height={12} />
-                        <View style={styles.courseList}>
-                            {visibleCourses.map((course) => {
-                                const isActive = course.id === selectedCourse?.id;
-                                return (
-                                    <TouchableOpacity
-                                        key={course.id}
-                                        style={[styles.courseCard, isActive && styles.courseCardActive]}
-                                        onPress={() => setSelectedCourseId(course.id)}
-                                    >
-                                        <Text style={[styles.courseTitle, isActive && styles.courseTitleActive]}>{course.label}</Text>
-                                        <Text style={[styles.courseDescription, isActive && styles.courseDescriptionActive]}>{course.description}</Text>
-                                    </TouchableOpacity>
-                                );
-                            })}
-                        </View>
-
-                        <SizeBox height={20} />
-
-                        <Text style={styles.sectionTitle}>{t('Course map')}</Text>
-                        <SizeBox height={12} />
-                        <View style={styles.mapCard}>
-                            <Image
-                                source={selectedCourse?.imageUrl ? { uri: selectedCourse.imageUrl } : Images.map}
-                                style={styles.mapImage}
-                                resizeMode="cover"
-                            />
-                        </View>
-                        {mapError && (
+                        {visibleCourses.length === 0 ? (
+                            <View style={styles.emptyState}>
+                                <Text style={styles.emptyStateText}>{t('No courses available yet.')}</Text>
+                            </View>
+                        ) : (
                             <>
+                                <View style={styles.courseList}>
+                                    {visibleCourses.map((course) => {
+                                        const isActive = course.id === selectedCourse?.id;
+                                        return (
+                                            <TouchableOpacity
+                                                key={course.id}
+                                                style={[styles.courseCard, isActive && styles.courseCardActive]}
+                                                onPress={() => setSelectedCourseId(course.id)}
+                                            >
+                                                <Text style={[styles.courseTitle, isActive && styles.courseTitleActive]}>{course.label}</Text>
+                                                <Text style={[styles.courseDescription, isActive && styles.courseDescriptionActive]}>{course.description}</Text>
+                                            </TouchableOpacity>
+                                        );
+                                    })}
+                                </View>
+
+                                <SizeBox height={20} />
+
+                                <Text style={styles.sectionTitle}>{t('Course map')}</Text>
+                                <SizeBox height={12} />
+                                <View style={styles.mapCard}>
+                                    <Image
+                                        source={selectedCourse?.imageUrl ? { uri: selectedCourse.imageUrl } : Images.map}
+                                        style={styles.mapImage}
+                                        resizeMode="cover"
+                                    />
+                                </View>
+                                {mapError && (
+                                    <>
+                                        <SizeBox height={8} />
+                                        <Text style={styles.helperText}>{t('Map data unavailable. Showing placeholder map.')}</Text>
+                                    </>
+                                )}
+
+                                <SizeBox height={16} />
+
+                                <Text style={styles.sectionTitle}>{t('Checkpoints')}</Text>
+                                <SizeBox height={10} />
+                                <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                                    {selectedCourse?.checkpoints.map((checkpoint) => (
+                                        <TouchableOpacity
+                                            key={checkpoint.id}
+                                            style={styles.checkpointChip}
+                                            onPress={() => handleCheckpointPress(checkpoint)}
+                                        >
+                                            <Text style={styles.checkpointChipText}>{checkpoint.label}</Text>
+                                        </TouchableOpacity>
+                                    ))}
+                                </ScrollView>
                                 <SizeBox height={8} />
-                                <Text style={styles.helperText}>{t('Map data unavailable. Showing placeholder map.')}</Text>
+                                <Text style={styles.helperText}>{t('Tap a checkpoint to search photos, videos, or AI.')}</Text>
                             </>
                         )}
-
-                        <SizeBox height={16} />
-
-                        <Text style={styles.sectionTitle}>{t('Checkpoints')}</Text>
-                        <SizeBox height={10} />
-                        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-                            {selectedCourse?.checkpoints.map((checkpoint) => (
-                                <TouchableOpacity
-                                    key={checkpoint.id}
-                                    style={styles.checkpointChip}
-                                    onPress={() => handleCheckpointPress(checkpoint)}
-                                >
-                                    <Text style={styles.checkpointChipText}>{checkpoint.label}</Text>
-                                </TouchableOpacity>
-                            ))}
-                        </ScrollView>
-                        <SizeBox height={8} />
-                        <Text style={styles.helperText}>{t('Tap a checkpoint to search photos, videos, or AI.')}</Text>
 
                         <SizeBox height={insets.bottom > 0 ? insets.bottom + 80 : 100} />
                     </>
@@ -528,7 +502,10 @@ const CompetitionDetailsScreen = ({ navigation, route }: any) => {
                         {/* Show All Videos Button */}
                         <TouchableOpacity
                             style={styles.showAllButton}
-                            onPress={() => navigation.navigate('AllVideosOfEvents', { eventName: competitionName })}
+                            onPress={() => navigation.navigate('AllVideosOfEvents', {
+                                eventName: competitionName,
+                                eventId: eventId ?? competitionId,
+                            })}
                         >
                             <Text style={styles.showAllButtonText}>{t('Show All Videos')}</Text>
                             <ArrowRight size={18} color={colors.pureWhite} variant="Linear" />
@@ -544,7 +521,10 @@ const CompetitionDetailsScreen = ({ navigation, route }: any) => {
                         {/* Show All Photos Button */}
                         <TouchableOpacity
                             style={styles.showAllPhotosButton}
-                            onPress={() => navigation.navigate('AllPhotosOfEvents', { eventName: competitionName })}
+                            onPress={() => navigation.navigate('AllPhotosOfEvents', {
+                                eventName: competitionName,
+                                eventId: eventId ?? competitionId,
+                            })}
                         >
                             <Text style={styles.showAllPhotosButtonText}>{t('Show All Photos')}</Text>
                             <ArrowRight size={18} color={colors.primaryColor} variant="Linear" />
@@ -573,7 +553,11 @@ const CompetitionDetailsScreen = ({ navigation, route }: any) => {
                             style={styles.modalPrimaryButton}
                             onPress={() => {
                                 setCheckpointModalVisible(false);
-                                navigation.navigate('AllPhotosOfEvents', { checkpoint: selectedCheckpoint });
+                                navigation.navigate('AllPhotosOfEvents', {
+                                    checkpoint: selectedCheckpoint,
+                                    eventId: eventId ?? competitionId,
+                                    eventName: competitionName,
+                                });
                             }}
                         >
                             <Text style={styles.modalPrimaryButtonText}>{t('Search Photos')}</Text>
@@ -584,7 +568,11 @@ const CompetitionDetailsScreen = ({ navigation, route }: any) => {
                             style={styles.modalSecondaryButton}
                             onPress={() => {
                                 setCheckpointModalVisible(false);
-                                navigation.navigate('VideosForEvent', { eventName: selectedCheckpoint?.label });
+                                navigation.navigate('VideosForEvent', {
+                                    eventName: competitionName,
+                                    eventId: eventId ?? competitionId,
+                                    checkpoint: selectedCheckpoint,
+                                });
                             }}
                         >
                             <Text style={styles.modalSecondaryButtonText}>{t('Search Videos')}</Text>
@@ -623,7 +611,7 @@ const CompetitionDetailsScreen = ({ navigation, route }: any) => {
                         <Text style={styles.modalTitle}>{t('AI quick compare')}</Text>
                         <SizeBox height={12} />
                         <Text style={styles.helperText}>
-                            We will compare your saved face and chest number to find results in this competition.
+                            Use your chest number and optionally Face ID to find results in this competition.
                         </Text>
                         <SizeBox height={16} />
                         <Text style={styles.modalLabel}>{t('Chest number')}</Text>
@@ -637,13 +625,27 @@ const CompetitionDetailsScreen = ({ navigation, route }: any) => {
                                 onChangeText={setQuickChestNumber}
                             />
                         </View>
+                        <SizeBox height={12} />
+                        <Text style={styles.modalLabel}>{t('Face ID')}</Text>
+                        <View style={styles.toggleRow}>
+                            <View>
+                                <Text style={styles.toggleLabel}>{t('Use Face ID')}</Text>
+                                <Text style={styles.toggleHint}>{t('Match your enrolled face in this competition')}</Text>
+                            </View>
+                            <Switch
+                                value={quickUseFace}
+                                onValueChange={setQuickUseFace}
+                                trackColor={{ false: colors.lightGrayColor, true: colors.primaryColor }}
+                                thumbColor={colors.pureWhite}
+                            />
+                        </View>
                         {quickSearchError ? (
                             <>
                                 <SizeBox height={10} />
                                 <Text style={styles.modalErrorText}>{quickSearchError}</Text>
                             </>
                         ) : null}
-                        {quickNeedsConsent && (
+                        {quickUseFace && quickNeedsConsent && (
                             <>
                                 <SizeBox height={10} />
                                 <TouchableOpacity style={styles.modalSecondaryButton} onPress={handleGrantConsent}>
@@ -651,7 +653,7 @@ const CompetitionDetailsScreen = ({ navigation, route }: any) => {
                                 </TouchableOpacity>
                             </>
                         )}
-                        {quickMissingAngles && (
+                        {quickUseFace && quickMissingAngles && (
                             <>
                                 <SizeBox height={10} />
                                 <TouchableOpacity style={styles.modalSecondaryButton} onPress={handleEnroll}>

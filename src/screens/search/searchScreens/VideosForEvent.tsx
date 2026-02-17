@@ -6,8 +6,8 @@ import SizeBox from '../../../constants/SizeBox'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import Icons from '../../../constants/Icons'
 import { useAuth } from '../../../context/AuthContext'
-import { getMediaById } from '../../../services/apiGateway'
-import { getApiBaseUrl, getHlsBaseUrl } from '../../../constants/RuntimeConfig'
+import { getHubAppearanceMedia, getMediaViewAll, type MediaViewAllItem } from '../../../services/apiGateway'
+import { getHlsBaseUrl } from '../../../constants/RuntimeConfig'
 import Images from '../../../constants/Images'
 import { useTheme } from '../../../context/ThemeContext'
 import { useTranslation } from 'react-i18next'
@@ -15,15 +15,15 @@ import { useTranslation } from 'react-i18next'
 const VideosForEvent = ({ navigation, route }: any) => {
     const insets = useSafeAreaInsets();
     const eventName = route?.params?.eventName || 'Event';
+    const eventId = route?.params?.eventId;
+    const appearanceOnly = Boolean(route?.params?.appearanceOnly);
     const division = route?.params?.division;
     const gender = route?.params?.gender;
     const { apiAccessToken } = useAuth();
     const { colors } = useTheme();
     const { t } = useTranslation();
     const styles = createStyles(colors);
-    const mediaId = '86db92e8-1b8e-44a5-95c4-fb4764f6783e';
-    const [sharedThumbUrl, setSharedThumbUrl] = useState<string | null>(null);
-    const [sharedVideoUrl, setSharedVideoUrl] = useState<string | null>(null);
+    const [items, setItems] = useState<MediaViewAllItem[]>([]);
 
     const isSignedUrl = useCallback((value?: string | null) => {
         if (!value) return false;
@@ -47,15 +47,6 @@ const VideosForEvent = ({ navigation, route }: any) => {
         return `${value}${sep}access_token=${encodeURIComponent(apiAccessToken)}`;
     }, [apiAccessToken, isSignedUrl]);
 
-    const toAbsoluteUrl = useCallback((value?: string | null) => {
-        if (!value) return null;
-        const raw = String(value);
-        if (raw.startsWith('http://') || raw.startsWith('https://')) return raw;
-        const base = getApiBaseUrl();
-        if (!base) return raw;
-        return `${base.replace(/\/$/, '')}/${raw.replace(/^\//, '')}`;
-    }, []);
-
     const toHlsUrl = useCallback((value?: string | null) => {
         if (!value) return null;
         const raw = String(value);
@@ -65,61 +56,72 @@ const VideosForEvent = ({ navigation, route }: any) => {
         return `${base.replace(/\/$/, '')}/${raw.replace(/^\//, '')}`;
     }, []);
 
+    const formatDuration = (value?: string) => {
+        const totalSeconds = Number.parseInt(String(value ?? '0'), 10);
+        if (!Number.isFinite(totalSeconds) || totalSeconds <= 0) return '—';
+        const hours = Math.floor(totalSeconds / 3600);
+        const minutes = Math.floor((totalSeconds % 3600) / 60);
+        const seconds = totalSeconds % 60;
+        const paddedSeconds = seconds < 10 ? `0${seconds}` : `${seconds}`;
+        if (hours > 0) {
+            const paddedMinutes = minutes < 10 ? `0${minutes}` : `${minutes}`;
+            return `${hours}:${paddedMinutes}:${paddedSeconds}`;
+        }
+        return `${minutes}:${paddedSeconds}`;
+    };
+
     useEffect(() => {
         let mounted = true;
         if (!apiAccessToken) return () => {};
-        getMediaById(apiAccessToken, mediaId)
-            .then((media) => {
+        const load = async () => {
+            try {
+                let list: MediaViewAllItem[] = [];
+                if (appearanceOnly && eventId) {
+                    const res = await getHubAppearanceMedia(apiAccessToken, String(eventId));
+                    list = Array.isArray(res?.results) ? res.results : [];
+                } else {
+                    const res = await getMediaViewAll(apiAccessToken);
+                    list = Array.isArray(res) ? res : [];
+                }
                 if (!mounted) return;
-                const hls = media.hls_manifest_path ? toHlsUrl(media.hls_manifest_path) : null;
-                const candidates = [
-                    media.preview_url,
-                    media.original_url,
-                    media.full_url,
-                    media.raw_url,
-                ]
-                    .filter(Boolean)
-                    .map((value) => toAbsoluteUrl(String(value)) || '')
-                    .filter(Boolean);
-                const mp4 = candidates.find((value) => /\.(mp4|mov|m4v)(\?|$)/i.test(value));
-                const resolvedVideo = hls || mp4 || candidates[0] || null;
-                const thumbCandidate = media.thumbnail_url || media.preview_url || media.full_url || media.raw_url || null;
-                const resolvedThumb = thumbCandidate ? toAbsoluteUrl(String(thumbCandidate)) : null;
-                setSharedVideoUrl(withAccessToken(resolvedVideo) || resolvedVideo);
-                setSharedThumbUrl(withAccessToken(resolvedThumb) || resolvedThumb);
-            })
-            .catch(() => {});
+                const filtered = list.filter((item) => {
+                    if (eventId && String(item.event_id ?? '') !== String(eventId)) return false;
+                    return String(item.type).toLowerCase() === 'video';
+                });
+                setItems(filtered);
+            } catch {
+                if (!mounted) return;
+                setItems([]);
+            }
+        };
+        load();
         return () => {
             mounted = false;
         };
-    }, [apiAccessToken, mediaId, toAbsoluteUrl, toHlsUrl, withAccessToken]);
+    }, [apiAccessToken, appearanceOnly, eventId]);
 
-    const data = useMemo(() => ([
-        {
-            id: 1,
-            name: 'Passionate',
-            event: eventName,
-            videoUri: sharedVideoUrl,
-            timer: '2300',
-            thumbnail: sharedThumbUrl,
-        },
-        {
-            id: 2,
-            name: 'Passionate',
-            event: eventName,
-            videoUri: sharedVideoUrl,
-            timer: '2300',
-            thumbnail: sharedThumbUrl,
-        },
-        {
-            id: 3,
-            name: 'Passionate',
-            event: eventName,
-            videoUri: sharedVideoUrl,
-            timer: '2300',
-            thumbnail: sharedThumbUrl,
-        },
-    ]), [eventName, sharedThumbUrl, sharedVideoUrl]);
+    const data = useMemo(() => {
+        return items.map((item) => {
+            const thumbCandidate = item.thumbnail_url || item.preview_url || item.full_url || item.raw_url || null;
+            const resolvedThumb = withAccessToken(thumbCandidate) || thumbCandidate || '';
+            const hls = item.hls_manifest_path ? toHlsUrl(item.hls_manifest_path) : null;
+            const candidates = [item.full_url, item.original_url, item.raw_url, item.preview_url]
+                .filter(Boolean)
+                .map((value) => String(value));
+            const mp4 = candidates.find((value) => /\.(mp4|mov|m4v)(\?|$)/i.test(value));
+            const resolvedVideo = hls || mp4 || candidates[0] || null;
+            return {
+                id: item.media_id,
+                event: eventName,
+                videoUri: withAccessToken(resolvedVideo) || resolvedVideo,
+                timer: String(
+                    (item.assets || []).find((asset) => Number(asset.duration_seconds) > 0)?.duration_seconds ?? ''
+                ),
+                thumbnail: resolvedThumb,
+                media: item,
+            };
+        });
+    }, [eventName, items, toHlsUrl, withAccessToken]);
 
     const renderItem = ({ item }: any) => {
         return (
@@ -128,13 +130,13 @@ const VideosForEvent = ({ navigation, route }: any) => {
                 <SizeBox height={16} />
                 <View style={[styles.row, styles.spaceBetween]}>
                     <Text style={styles.subText}>{t('Author')}: {item.name}</Text>
-                    <Text style={styles.subText}>5:06 {t('Mins')}</Text>
-                    <Text style={styles.subText}>{t('5k Views')}</Text>
+                    <Text style={styles.subText}>{formatDuration(item.timer)} {t('Mins')}</Text>
+                    <Text style={styles.subText}>{Number(item.media.views_count ?? 0)} {t('Views')}</Text>
                 </View>
                 <SizeBox height={12} />
                 <TouchableOpacity
                     onPress={() => navigation.navigate('VideoPlayingScreen', {
-                        mediaId,
+                        mediaId: item.media.media_id,
                         video: {
                             title: eventName,
                             thumbnail: item.thumbnail ? { uri: item.thumbnail } : Images.photo7,

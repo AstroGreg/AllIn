@@ -235,41 +235,41 @@ const ViewUserBlogDetailsScreen = ({ navigation, route }: any) => {
 
                 <SizeBox height={8} />
 
-                {/* Share Button */}
-                <TouchableOpacity
-                    style={Styles.shareButton}
-                    onPress={async () => {
-                        try {
-                            await NativeShare.open({ message: postData?.title ? String(postData.title) : 'AllIn', subject: postData?.title ? String(postData.title) : undefined });
-                        } catch {
-                            // ignore
-                        }
-                    }}
-                >
-                    <Text style={Styles.shareButtonText}>{t('share')}</Text>
-                    <Image source={Icons.ShareBlue} style={{ width: 18, height: 18, tintColor: '#FFFFFF' }} />
-                </TouchableOpacity>
+                <View style={Styles.blogActionsRow}>
+                    <TouchableOpacity
+                        style={Styles.blogActionButton}
+                        onPress={async () => {
+                            try {
+                                await NativeShare.open({
+                                    message: postData?.title ? String(postData.title) : 'AllIn',
+                                    subject: postData?.title ? String(postData.title) : undefined,
+                                });
+                            } catch {
+                                // ignore
+                            }
+                        }}
+                    >
+                        <Image source={Icons.ShareBlue} style={Styles.blogActionIcon} />
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                        style={[Styles.blogActionButton, Styles.blogActionLike]}
+                        onPress={async () => {
+                            if (!apiAccessToken || !postId) return;
+                            try {
+                                const r = await togglePostLike(apiAccessToken, postId);
+                                setLiked(r.liked);
+                                setLikesCount(r.likes_count);
+                            } catch {
+                                // ignore
+                            }
+                        }}
+                    >
+                        <Heart size={18} color={colors.primaryColor} variant={liked ? 'Bold' : 'Linear'} />
+                        <Text style={Styles.blogActionText}>{likesCount}</Text>
+                    </TouchableOpacity>
+                </View>
 
                 <SizeBox height={10} />
-
-                <TouchableOpacity
-                    style={Styles.shareButton}
-                    onPress={async () => {
-                        if (!apiAccessToken || !postId) return;
-                        try {
-                            const r = await togglePostLike(apiAccessToken, postId);
-                            setLiked(r.liked);
-                            setLikesCount(r.likes_count);
-                        } catch {
-                            // ignore
-                        }
-                    }}
-                >
-                    <Text style={Styles.shareButtonText}>{`${likesCount} ${t('likes')}`}</Text>
-                    <Heart size={18} color={'#FFFFFF'} variant={liked ? 'Bold' : 'Linear'} />
-                </TouchableOpacity>
-
-                <SizeBox height={8} />
 
                 {/* Media Carousel (bottom) */}
                 {galleryItems.length > 0 && (

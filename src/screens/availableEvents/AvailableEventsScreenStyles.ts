@@ -167,6 +167,16 @@ export const createStyles = (colors: ThemeColors) => StyleSheet.create({
         ...Fonts.regular12,
         color: colors.subTextColor,
     },
+    errorText: {
+        ...Fonts.regular12,
+        color: colors.errorColor,
+        marginBottom: 12,
+    },
+    emptyStateText: {
+        ...Fonts.regular12,
+        color: colors.subTextColor,
+        textAlign: 'center',
+    },
     cardActions: {
         flexDirection: 'row',
         alignItems: 'center',

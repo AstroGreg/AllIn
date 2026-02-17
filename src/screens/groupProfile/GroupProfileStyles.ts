@@ -68,6 +68,10 @@ export const createStyles = (colors: ThemeColors) => StyleSheet.create({
         width: 100,
         height: 100,
         borderRadius: 50,
+        overflow: 'hidden',
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: colors.btnBackgroundColor,
     },
     profileNameRow: {
         flexDirection: 'row',

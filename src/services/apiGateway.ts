@@ -102,6 +102,195 @@ export async function getAuthMe(accessToken: string): Promise<AuthMeResponse> {
   return apiRequest<AuthMeResponse>('/auth/me', {method: 'GET', accessToken});
 }
 
+export interface ProfileSummary {
+  ok: boolean;
+  profile_id: string;
+  profile: {
+    display_name?: string | null;
+    bio?: string | null;
+    avatar_url?: string | null;
+    avatar_media_id?: string | null;
+    avatar_media?: any;
+  };
+  posts_count?: number;
+  followers_count?: number;
+  is_following?: boolean;
+}
+
+export async function getProfileSummaryById(
+  accessToken: string,
+  profileId: string,
+): Promise<ProfileSummary> {
+  const safeId = String(profileId || '').trim();
+  if (!safeId) {
+    throw new ApiError({status: 400, message: 'Missing profile_id'});
+  }
+  return apiRequest<ProfileSummary>(`/profiles/${encodeURIComponent(safeId)}/summary`, {
+    method: 'GET',
+    accessToken,
+  });
+}
+
+export async function followProfile(accessToken: string, profileId: string): Promise<{ok: boolean}> {
+  const safeId = String(profileId || '').trim();
+  if (!safeId) {
+    throw new ApiError({status: 400, message: 'Missing profile_id'});
+  }
+  return apiRequest<{ok: boolean}>(`/profiles/${encodeURIComponent(safeId)}/follow`, {
+    method: 'POST',
+    accessToken,
+  });
+}
+
+export async function unfollowProfile(accessToken: string, profileId: string): Promise<{ok: boolean}> {
+  const safeId = String(profileId || '').trim();
+  if (!safeId) {
+    throw new ApiError({status: 400, message: 'Missing profile_id'});
+  }
+  return apiRequest<{ok: boolean}>(`/profiles/${encodeURIComponent(safeId)}/follow`, {
+    method: 'DELETE',
+    accessToken,
+  });
+}
+
+export interface ProfileSearchResult {
+  profile_id: string;
+  display_name?: string | null;
+  avatar_url?: string | null;
+}
+
+export interface ProfileSearchResponse {
+  ok: boolean;
+  count: number;
+  profiles: ProfileSearchResult[];
+}
+
+export async function searchProfiles(
+  accessToken: string,
+  params: {q?: string; limit?: number; offset?: number},
+): Promise<ProfileSearchResponse> {
+  const qs = toQueryString({
+    q: params.q ?? undefined,
+    limit: params.limit ?? undefined,
+    offset: params.offset ?? undefined,
+  });
+  return apiRequest<ProfileSearchResponse>(`/profiles/search${qs}`, {method: 'GET', accessToken});
+}
+
+export interface GroupSummary {
+  group_id: string;
+  name: string;
+  description?: string | null;
+  avatar_media_id?: string | null;
+  owner_profile_id?: string;
+  owner_name?: string | null;
+  owner_avatar_url?: string | null;
+  my_role?: string | null;
+  member_count?: number;
+}
+
+export interface GroupResponse {
+  ok: boolean;
+  group: GroupSummary;
+}
+
+export interface GroupsResponse {
+  ok: boolean;
+  count: number;
+  groups: GroupSummary[];
+}
+
+export interface GroupMember {
+  profile_id: string;
+  role?: string | null;
+  display_name?: string | null;
+  avatar_url?: string | null;
+  is_following?: boolean;
+}
+
+export interface GroupMembersResponse {
+  ok: boolean;
+  count: number;
+  members: GroupMember[];
+}
+
+export async function createGroup(
+  accessToken: string,
+  payload: {name: string; description?: string | null; avatar_media_id?: string | null},
+): Promise<{ok: boolean; group: GroupSummary}> {
+  return apiRequest<{ok: boolean; group: GroupSummary}>(`/groups`, {
+    method: 'POST',
+    accessToken,
+    body: payload,
+  });
+}
+
+export async function getMyGroups(accessToken: string): Promise<GroupsResponse> {
+  return apiRequest<GroupsResponse>(`/groups/mine`, {
+    method: 'GET',
+    accessToken,
+  });
+}
+
+export async function getGroup(accessToken: string, groupId: string): Promise<GroupResponse> {
+  const safeId = String(groupId || '').trim();
+  if (!safeId) {
+    throw new ApiError({status: 400, message: 'Missing group_id'});
+  }
+  return apiRequest<GroupResponse>(`/groups/${encodeURIComponent(safeId)}`, {
+    method: 'GET',
+    accessToken,
+  });
+}
+
+export async function getGroupMembers(
+  accessToken: string,
+  groupId: string,
+  role?: string,
+): Promise<GroupMembersResponse> {
+  const safeId = String(groupId || '').trim();
+  if (!safeId) {
+    throw new ApiError({status: 400, message: 'Missing group_id'});
+  }
+  const qs = toQueryString({role: role ?? undefined});
+  return apiRequest<GroupMembersResponse>(`/groups/${encodeURIComponent(safeId)}/members${qs}`, {
+    method: 'GET',
+    accessToken,
+  });
+}
+
+export async function addGroupMember(
+  accessToken: string,
+  groupId: string,
+  payload: {profile_id: string; role?: string},
+): Promise<{ok: boolean}> {
+  const safeId = String(groupId || '').trim();
+  if (!safeId) {
+    throw new ApiError({status: 400, message: 'Missing group_id'});
+  }
+  return apiRequest<{ok: boolean}>(`/groups/${encodeURIComponent(safeId)}/members`, {
+    method: 'POST',
+    accessToken,
+    body: payload,
+  });
+}
+
+export async function removeGroupMember(
+  accessToken: string,
+  groupId: string,
+  profileId: string,
+): Promise<{ok: boolean}> {
+  const safeGroup = String(groupId || '').trim();
+  const safeProfile = String(profileId || '').trim();
+  if (!safeGroup || !safeProfile) {
+    throw new ApiError({status: 400, message: 'Missing ids'});
+  }
+  return apiRequest<{ok: boolean}>(`/groups/${encodeURIComponent(safeGroup)}/members/${encodeURIComponent(safeProfile)}`, {
+    method: 'DELETE',
+    accessToken,
+  });
+}
+
 export interface SubscribedEvent {
   event_id: string;
   event_name?: string | null;
@@ -118,6 +307,66 @@ export interface SubscribedEventsResponse {
 
 export async function getSubscribedEvents(accessToken: string): Promise<SubscribedEventsResponse> {
   return apiRequest<SubscribedEventsResponse>('/events/subscribed', {method: 'GET', accessToken});
+}
+
+export interface HubAppearanceSummary {
+  event_id: string;
+  event_name?: string | null;
+  event_location?: string | null;
+  event_date?: string | null;
+  photos_count?: number;
+  videos_count?: number;
+  match_types?: string[];
+  thumbnail_url?: string | null;
+}
+
+export interface HubAppearancesResponse {
+  ok: boolean;
+  count: number;
+  appearances: HubAppearanceSummary[];
+}
+
+export async function getHubAppearances(accessToken: string): Promise<HubAppearancesResponse> {
+  return apiRequest<HubAppearancesResponse>('/hub/appearances', {method: 'GET', accessToken});
+}
+
+export interface HubAppearanceMediaResponse {
+  ok: boolean;
+  count: number;
+  results: MediaViewAllItem[];
+}
+
+export async function getHubAppearanceMedia(
+  accessToken: string,
+  eventId: string,
+): Promise<HubAppearanceMediaResponse> {
+  const safeId = String(eventId || '').trim();
+  if (!safeId) {
+    throw new ApiError({status: 400, message: 'Missing event_id'});
+  }
+  return apiRequest<HubAppearanceMediaResponse>(`/hub/appearances/${encodeURIComponent(safeId)}/media`, {
+    method: 'GET',
+    accessToken,
+  });
+}
+
+export interface HubUploadItem extends MediaViewAllItem {
+  labels_yes?: number;
+  labels_no?: number;
+  labels_total?: number;
+  event_name?: string | null;
+  event_location?: string | null;
+  event_date?: string | null;
+}
+
+export interface HubUploadsResponse {
+  ok: boolean;
+  count: number;
+  results: HubUploadItem[];
+}
+
+export async function getHubUploads(accessToken: string): Promise<HubUploadsResponse> {
+  return apiRequest<HubUploadsResponse>('/hub/uploads', {method: 'GET', accessToken});
 }
 
 export interface EventSearchResponse {
@@ -203,7 +452,14 @@ export async function searchObject(
     event_id: params.event_id ?? undefined,
     top: params.top ?? undefined,
   });
-  return apiRequest<ObjectSearchResult[]>(`/ai/search/object${qs}`, {method: 'GET', accessToken});
+  const res = await apiRequest<any>(`/ai/search/object${qs}`, {method: 'GET', accessToken});
+  if (Array.isArray(res)) {
+    return res as ObjectSearchResult[];
+  }
+  if (Array.isArray(res?.results)) {
+    return res.results as ObjectSearchResult[];
+  }
+  return [];
 }
 
 export interface BibSearchResult {
@@ -420,6 +676,21 @@ export interface AiFeedbackLabelResponse {
   label: any;
 }
 
+export interface AiFeedbackLabel {
+  id?: string;
+  profile_id?: string;
+  media_id: string;
+  event_id?: string | null;
+  label: boolean;
+  source?: string | null;
+  meta?: any;
+  created_at?: string;
+  updated_at?: string;
+  thumbnail_url?: string | null;
+  preview_url?: string | null;
+  original_url?: string | null;
+}
+
 export async function postAiFeedbackLabel(
   accessToken: string,
   params: {media_id: string; label: boolean; event_id?: string | null; meta?: any; tags?: string[]},
@@ -435,6 +706,24 @@ export async function postAiFeedbackLabel(
       tags: params.tags ?? undefined,
     },
   });
+}
+
+export async function getAiFeedbackLabel(
+  accessToken: string,
+  params: {media_id: string; event_id?: string | null},
+): Promise<AiFeedbackLabel | null> {
+  const media_id = String(params.media_id || '').trim();
+  if (!media_id) {
+    throw new ApiError({status: 400, message: 'Missing media_id'});
+  }
+  const qs = toQueryString({
+    media_id,
+    event_id: params.event_id ?? undefined,
+    limit: 1,
+  });
+  const res = await apiRequest<any>(`/ai/feedback/labels${qs}`, {method: 'GET', accessToken});
+  const list = Array.isArray(res?.results) ? res.results : [];
+  return list.length > 0 ? (list[0] as AiFeedbackLabel) : null;
 }
 
 export async function subscribeToEvent(accessToken: string, eventId: string): Promise<{success: boolean; event_id: string; profile_id: string}> {
@@ -709,7 +998,7 @@ export interface ProfileTimelineLinkedEvent {
 }
 
 export interface ProfileTimelineEntry {
-  id: string;
+  id?: string;
   sort_order?: number;
   year: number;
   event_date?: string | null;
@@ -824,6 +1113,8 @@ export interface ProfileSummaryResponse {
     display_name?: string | null;
     bio?: string | null;
     avatar_url?: string | null;
+    avatar_media_id?: string | null;
+    avatar_media?: MediaViewAllItem | null;
   };
   posts_count: number;
   followers_count: number;
@@ -835,7 +1126,7 @@ export async function getProfileSummary(accessToken: string): Promise<ProfileSum
 
 export async function updateProfileSummary(
   accessToken: string,
-  params: {display_name?: string | null; bio?: string | null; avatar_url?: string | null},
+  params: {display_name?: string | null; bio?: string | null; avatar_url?: string | null; avatar_media_id?: string | null},
 ): Promise<ProfileSummaryResponse> {
   return apiRequest<ProfileSummaryResponse>('/profiles/me', {
     method: 'PUT',
@@ -844,6 +1135,7 @@ export async function updateProfileSummary(
       display_name: params.display_name ?? undefined,
       bio: params.bio ?? undefined,
       avatar_url: params.avatar_url ?? undefined,
+      avatar_media_id: params.avatar_media_id ?? undefined,
     },
   });
 }
@@ -1021,7 +1313,7 @@ export async function getPostById(accessToken: string, post_id: string): Promise
 
 export async function createPost(
   accessToken: string,
-  params: {title: string; description: string; summary?: string | null},
+  params: {title: string; description: string; summary?: string | null; created_at?: string | null},
 ): Promise<{ok: boolean; post: PostSummary}> {
   return apiRequest(`/posts`, {
     method: 'POST',
@@ -1030,6 +1322,7 @@ export async function createPost(
       title: params.title,
       description: params.description,
       summary: params.summary ?? undefined,
+      created_at: params.created_at ?? undefined,
     },
   });
 }
@@ -1037,7 +1330,7 @@ export async function createPost(
 export async function updatePost(
   accessToken: string,
   post_id: string,
-  params: {title?: string | null; description?: string | null; summary?: string | null},
+  params: {title?: string | null; description?: string | null; summary?: string | null; created_at?: string | null},
 ): Promise<{ok: boolean; post: PostSummary}> {
   return apiRequest(`/posts/${encodeURIComponent(post_id)}`, {
     method: 'PUT',
@@ -1046,6 +1339,7 @@ export async function updatePost(
       title: params.title ?? undefined,
       description: params.description ?? undefined,
       summary: params.summary ?? undefined,
+      created_at: params.created_at ?? undefined,
     },
   });
 }

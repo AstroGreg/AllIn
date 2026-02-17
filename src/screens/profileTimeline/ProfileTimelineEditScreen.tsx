@@ -1,8 +1,8 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { View, Text, TouchableOpacity, TextInput, ScrollView, Image } from 'react-native';
+import { View, Text, TouchableOpacity, TextInput, ScrollView, Image, Modal, Pressable, Alert, ActivityIndicator } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import DateTimePicker from '@react-native-community/datetimepicker';
-import { ArrowLeft2, Trash, Calendar } from 'iconsax-react-nativejs';
+import { Calendar } from 'react-native-calendars';
+import { ArrowLeft2, Trash, Calendar as CalendarIcon, CloseCircle, SearchNormal1, TickCircle } from 'iconsax-react-nativejs';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { launchImageLibrary } from 'react-native-image-picker';
 import SizeBox from '../../constants/SizeBox';
@@ -31,7 +31,8 @@ const ProfileTimelineEditScreen = ({ navigation, route }: any) => {
         highlight: '',
     });
     const [eventDate, setEventDate] = useState<Date>(new Date());
-    const [showDatePicker, setShowDatePicker] = useState(false);
+    const [showDateModal, setShowDateModal] = useState(false);
+    const [calendarDate, setCalendarDate] = useState<string | null>(null);
     const [mediaItems, setMediaItems] = useState<MediaViewAllItem[]>([]);
     const [coverMedia, setCoverMedia] = useState<MediaViewAllItem | null>(null);
     const [linkedBlogIds, setLinkedBlogIds] = useState<string[]>([]);
@@ -40,7 +41,10 @@ const ProfileTimelineEditScreen = ({ navigation, route }: any) => {
     const [availableCompetitions, setAvailableCompetitions] = useState<Array<{ event_id: string; event_name: string | null; event_date?: string | null }>>([]);
     const [blogSearch, setBlogSearch] = useState('');
     const [competitionSearch, setCompetitionSearch] = useState('');
+    const [showBlogModal, setShowBlogModal] = useState(false);
+    const [showCompetitionModal, setShowCompetitionModal] = useState(false);
     const [isUploading, setIsUploading] = useState(false);
+    const [isSaving, setIsSaving] = useState(false);
     const { apiAccessToken } = useAuth();
 
     const isSignedUrl = useCallback((value?: string | null) => {
@@ -81,6 +85,59 @@ const ProfileTimelineEditScreen = ({ navigation, route }: any) => {
         return withAccessToken(resolved) || resolved;
     }, [toAbsoluteUrl, withAccessToken]);
 
+    const isUuid = useCallback((value?: string | null) => {
+        if (!value) return false;
+        const v = String(value).toLowerCase();
+        return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(v);
+    }, []);
+
+    const toDateString = useCallback((date: Date) => {
+        const yyyy = date.getFullYear();
+        const mm = String(date.getMonth() + 1).padStart(2, '0');
+        const dd = String(date.getDate()).padStart(2, '0');
+        return `${yyyy}-${mm}-${dd}`;
+    }, []);
+
+    const parseDateValue = useCallback((value?: string | null) => {
+        if (!value) return null;
+        const raw = String(value).trim();
+        if (!raw) return null;
+        if (/^\d{4}-\d{1,2}-\d{1,2}/.test(raw) || raw.includes('T')) {
+            const iso = new Date(raw);
+            if (!Number.isNaN(iso.getTime())) return iso;
+        }
+        const match = raw.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})$/);
+        if (match) {
+            const day = Number(match[1]);
+            const month = Number(match[2]);
+            let year = Number(match[3]);
+            if (year < 100) year += 2000;
+            const parsed = new Date(year, month - 1, day);
+            if (!Number.isNaN(parsed.getTime())) return parsed;
+        }
+        const fallback = new Date(raw);
+        return Number.isNaN(fallback.getTime()) ? null : fallback;
+    }, []);
+
+    const openDateModal = useCallback(() => {
+        const seedDate = mode === 'edit' ? (eventDate || new Date()) : new Date();
+        const seed = toDateString(seedDate);
+        setCalendarDate(seed);
+        setShowDateModal(true);
+    }, [eventDate, mode, toDateString]);
+
+    const applyDateModal = useCallback(() => {
+        if (calendarDate) {
+            const [year, month, day] = calendarDate.split('-').map(Number);
+            if (year && month && day) {
+                const next = new Date(eventDate);
+                next.setFullYear(year, month - 1, day);
+                setEventDate(next);
+            }
+        }
+        setShowDateModal(false);
+    }, [calendarDate, eventDate]);
+
     useEffect(() => {
         if (!item) return;
         setForm({
@@ -88,20 +145,23 @@ const ProfileTimelineEditScreen = ({ navigation, route }: any) => {
             description: item.description,
             highlight: item.highlight ?? '',
         });
-        if (item.date) {
-            const dt = new Date(String(item.date));
-            if (!Number.isNaN(dt.getTime())) setEventDate(dt);
-        } else if (item.year) {
-            const fallback = new Date(`${item.year}-01-01T00:00:00.000Z`);
-            if (!Number.isNaN(fallback.getTime())) setEventDate(fallback);
-        }
+        const seeded = parseDateValue((item as any).event_date ?? item.date ?? null) ?? new Date();
+        setEventDate(seeded);
         setMediaItems(Array.isArray((item as any).mediaItems) ? (item as any).mediaItems : []);
         setCoverMedia((item as any).cover_media_id && Array.isArray((item as any).mediaItems)
             ? (item as any).mediaItems.find((m: any) => String(m.media_id) === String((item as any).cover_media_id)) ?? null
             : null);
-        setLinkedBlogIds(Array.isArray((item as any).linkedBlogIds) ? (item as any).linkedBlogIds : []);
-        setLinkedCompetitionIds(Array.isArray((item as any).linkedCompetitionIds) ? (item as any).linkedCompetitionIds : []);
-    }, [item]);
+        const linkedBlogsRaw = Array.isArray((item as any).linkedBlogs) ? (item as any).linkedBlogs : [];
+        const linkedCompsRaw = Array.isArray((item as any).linkedCompetitions) ? (item as any).linkedCompetitions : [];
+        const blogIds = Array.isArray((item as any).linkedBlogIds)
+            ? (item as any).linkedBlogIds
+            : linkedBlogsRaw.map((b: any) => (typeof b === 'string' ? b : b?.id)).filter(Boolean);
+        const compIds = Array.isArray((item as any).linkedCompetitionIds)
+            ? (item as any).linkedCompetitionIds
+            : linkedCompsRaw.map((c: any) => (typeof c === 'string' ? c : c?.id)).filter(Boolean);
+        setLinkedBlogIds(blogIds);
+        setLinkedCompetitionIds(compIds);
+    }, [item, parseDateValue]);
 
     useEffect(() => {
         if (!apiAccessToken || !item) return;
@@ -168,80 +228,106 @@ const ProfileTimelineEditScreen = ({ navigation, route }: any) => {
         loadOptions();
     }, [apiAccessToken, blogStorageKey, competitionOptions]);
 
+    useEffect(() => {
+        if (!showBlogModal) {
+            setBlogSearch('');
+        }
+    }, [showBlogModal]);
+
+    useEffect(() => {
+        if (!showCompetitionModal) {
+            setCompetitionSearch('');
+        }
+    }, [showCompetitionModal]);
+
     const saveItem = useCallback(async () => {
         const title = form.title.trim();
         const description = form.description.trim();
-        if (!title || !description) return;
+        if (!title || !description) {
+            Alert.alert(t('Missing info'), t('Please add a title and description.'));
+            return;
+        }
+        if (isUploading || isSaving) {
+            return;
+        }
+        setIsSaving(true);
 
         const eventDateIso = eventDate ? new Date(eventDate).toISOString() : null;
         const yearValue = eventDate ? new Date(eventDate).getFullYear() : new Date().getFullYear();
         const mediaIds = mediaItems.map((m) => String(m.media_id)).filter(Boolean);
         const coverId = coverMedia?.media_id ? String(coverMedia.media_id) : (mediaIds[0] || null);
 
-        // Prefer server timeline (source of truth). Fallback to local storage if no token.
-        if (apiAccessToken) {
-            const resp = await getProfileTimeline(apiAccessToken, 'me');
-            const current: ProfileTimelineEntry[] = Array.isArray((resp as any)?.items) ? (resp as any).items : [];
-            const nextId = item?.id ? String(item.id) : undefined;
-            const next: ProfileTimelineEntry = {
-                id: nextId || `tl-${Date.now()}`,
-                year: yearValue,
-                event_date: eventDateIso,
-                title,
-                description,
-                highlight: form.highlight.trim() || null,
-                cover_media_id: coverId || null,
-                media_ids: mediaIds,
-                linked_post_ids: linkedBlogIds,
-                linked_event_ids: linkedCompetitionIds,
-            } as any;
-            const updated = mode === 'edit' && item
-                ? current.map((e) => (String(e.id) === String(item.id) ? { ...e, ...next } : e))
-                : [...current, next];
-            await setMyProfileTimeline(apiAccessToken, updated);
-            navigation.goBack();
-            return;
-        }
+        try {
+            // Prefer server timeline (source of truth). Fallback to local storage if no token.
+            if (apiAccessToken) {
+                const resp = await getProfileTimeline(apiAccessToken, 'me');
+                const current: ProfileTimelineEntry[] = Array.isArray((resp as any)?.items) ? (resp as any).items : [];
+                const nextId = item?.id && isUuid(String(item.id)) ? String(item.id) : undefined;
+                const next: ProfileTimelineEntry = {
+                    ...(nextId ? { id: nextId } : {}),
+                    year: yearValue,
+                    event_date: eventDateIso,
+                    title,
+                    description,
+                    highlight: form.highlight.trim() || null,
+                    cover_media_id: coverId || null,
+                    media_ids: mediaIds,
+                    linked_post_ids: linkedBlogIds,
+                    linked_event_ids: linkedCompetitionIds,
+                } as any;
+                const updated = mode === 'edit' && item && nextId
+                    ? current.map((e) => (String(e.id) === String(nextId) ? { ...e, ...next } : e))
+                    : [...current, next];
+                await setMyProfileTimeline(apiAccessToken, updated);
+                navigation.goBack();
+                return;
+            }
 
-        const stored = await AsyncStorage.getItem(storageKey);
-        const list: TimelineEntry[] = stored ? JSON.parse(stored) : [];
-        const displayDate = eventDateIso ? new Date(eventDateIso).toLocaleDateString('en-GB') : '';
-        if (mode === 'edit' && item) {
-            const updated = list.map((entry) =>
-                entry.id === item.id
-                    ? {
-                        ...entry,
-                        year: String(yearValue),
-                        date: displayDate,
-                        title,
-                        description,
-                        highlight: form.highlight.trim(),
-                        photos: mediaItems.map((m) => resolveThumbUrl(m)).filter(Boolean) as string[],
-                        backgroundImage: coverMedia ? (resolveThumbUrl(coverMedia) || undefined) : undefined,
-                        linkedBlogs: linkedBlogIds,
-                        linkedCompetitions: linkedCompetitionIds,
-                    }
-                    : entry,
-            );
-            await AsyncStorage.setItem(storageKey, JSON.stringify(updated));
-        } else {
-            const nextLocal: TimelineEntry = {
-                id: `tl-${Date.now()}`,
-                year: String(yearValue),
-                date: displayDate,
-                title,
-                description,
-                highlight: form.highlight.trim(),
-                photos: mediaItems.map((m) => resolveThumbUrl(m)).filter(Boolean) as string[],
-                backgroundImage: coverMedia ? (resolveThumbUrl(coverMedia) || undefined) : undefined,
-                linkedBlogs: linkedBlogIds,
-                linkedCompetitions: linkedCompetitionIds,
-            };
-            const updated = [...list, nextLocal].sort((a, b) => Number(a.year) - Number(b.year));
-            await AsyncStorage.setItem(storageKey, JSON.stringify(updated));
+            const stored = await AsyncStorage.getItem(storageKey);
+            const list: TimelineEntry[] = stored ? JSON.parse(stored) : [];
+            const displayDate = eventDateIso ? new Date(eventDateIso).toLocaleDateString('en-GB') : '';
+            if (mode === 'edit' && item) {
+                const updated = list.map((entry) =>
+                    entry.id === item.id
+                        ? {
+                            ...entry,
+                            year: String(yearValue),
+                            date: displayDate,
+                            title,
+                            description,
+                            highlight: form.highlight.trim(),
+                            photos: mediaItems.map((m) => resolveThumbUrl(m)).filter(Boolean) as string[],
+                            backgroundImage: coverMedia ? (resolveThumbUrl(coverMedia) || undefined) : undefined,
+                            linkedBlogs: linkedBlogIds,
+                            linkedCompetitions: linkedCompetitionIds,
+                        }
+                        : entry,
+                );
+                await AsyncStorage.setItem(storageKey, JSON.stringify(updated));
+            } else {
+                const nextLocal: TimelineEntry = {
+                    id: `tl-${Date.now()}`,
+                    year: String(yearValue),
+                    date: displayDate,
+                    title,
+                    description,
+                    highlight: form.highlight.trim(),
+                    photos: mediaItems.map((m) => resolveThumbUrl(m)).filter(Boolean) as string[],
+                    backgroundImage: coverMedia ? (resolveThumbUrl(coverMedia) || undefined) : undefined,
+                    linkedBlogs: linkedBlogIds,
+                    linkedCompetitions: linkedCompetitionIds,
+                };
+                const updated = [...list, nextLocal].sort((a, b) => Number(a.year) - Number(b.year));
+                await AsyncStorage.setItem(storageKey, JSON.stringify(updated));
+            }
+            navigation.goBack();
+        } catch (e: any) {
+            const message = String(e?.message ?? e);
+            Alert.alert(t('Save failed'), message);
+        } finally {
+            setIsSaving(false);
         }
-        navigation.goBack();
-    }, [apiAccessToken, coverMedia, eventDate, form.description, form.highlight, form.title, item, linkedBlogIds, linkedCompetitionIds, mediaItems, mode, navigation, resolveThumbUrl, storageKey]);
+    }, [apiAccessToken, coverMedia, eventDate, form.description, form.highlight, form.title, isSaving, isUploading, item, linkedBlogIds, linkedCompetitionIds, mediaItems, mode, navigation, resolveThumbUrl, storageKey, t, isUuid]);
 
     const deleteItem = useCallback(async () => {
         if (!item) return;
@@ -262,11 +348,21 @@ const ProfileTimelineEditScreen = ({ navigation, route }: any) => {
 
     const uploadAssets = useCallback(async (assets: Array<{ uri?: string; type?: string | null; fileName?: string | null }>) => {
         if (!apiAccessToken) return [];
+        const guessMimeType = (asset: { uri?: string; type?: string | null; fileName?: string | null }) => {
+            if (asset.type) return asset.type;
+            const seed = String(asset.fileName || asset.uri || '').toLowerCase();
+            if (seed.endsWith('.mp4')) return 'video/mp4';
+            if (seed.endsWith('.mov')) return 'video/quicktime';
+            if (seed.endsWith('.m4v')) return 'video/x-m4v';
+            if (seed.endsWith('.jpg') || seed.endsWith('.jpeg')) return 'image/jpeg';
+            if (seed.endsWith('.png')) return 'image/png';
+            return 'application/octet-stream';
+        };
         const files = assets
             .filter((asset) => asset?.uri)
             .map((asset) => ({
                 uri: String(asset.uri),
-                type: asset.type ?? undefined,
+                type: guessMimeType(asset),
                 name: asset.fileName || `timeline-${Date.now()}`,
             }));
         if (files.length === 0) return [];
@@ -279,6 +375,9 @@ const ProfileTimelineEditScreen = ({ navigation, route }: any) => {
             if (mediaIds.length === 0) return [];
             const fetched = await Promise.all(mediaIds.map((id: string) => getMediaById(apiAccessToken, id)));
             return fetched.filter(Boolean) as MediaViewAllItem[];
+        } catch (e: any) {
+            Alert.alert(t('Upload failed'), String(e?.message ?? e));
+            return [];
         } finally {
             setIsUploading(false);
         }
@@ -352,29 +451,10 @@ const ProfileTimelineEditScreen = ({ navigation, route }: any) => {
             <ScrollView contentContainerStyle={Styles.scrollContent} showsVerticalScrollIndicator={false}>
                 <View style={Styles.fieldBlock}>
                     <Text style={Styles.fieldLabel}>{t('Date')}</Text>
-                    <View style={Styles.dateRow}>
-                        <TouchableOpacity style={Styles.dateButton} onPress={() => setShowDatePicker(true)}>
-                            <Calendar size={16} color={colors.mainTextColor} variant="Linear" />
-                            <Text style={Styles.dateText}>{eventDate.toLocaleString()}</Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity
-                            style={Styles.useCurrentButton}
-                            onPress={() => setEventDate(new Date())}
-                        >
-                            <Text style={Styles.useCurrentText}>{t('Use current date')}</Text>
-                        </TouchableOpacity>
-                    </View>
-                    {showDatePicker && (
-                        <DateTimePicker
-                            value={eventDate}
-                            mode="datetime"
-                            display="default"
-                            onChange={(_, date) => {
-                                setShowDatePicker(false);
-                                if (date) setEventDate(date);
-                            }}
-                        />
-                    )}
+                    <TouchableOpacity style={Styles.dateButton} onPress={openDateModal}>
+                        <CalendarIcon size={16} color={colors.mainTextColor} variant="Linear" />
+                        <Text style={Styles.dateText}>{eventDate.toLocaleDateString()}</Text>
+                    </TouchableOpacity>
                 </View>
                 <View style={Styles.fieldBlock}>
                     <Text style={Styles.fieldLabel}>{t('Title')}</Text>
@@ -412,7 +492,7 @@ const ProfileTimelineEditScreen = ({ navigation, route }: any) => {
                     <View style={Styles.inlineHeader}>
                         <Text style={Styles.fieldLabel}>{t('Timeline background')}</Text>
                         <TouchableOpacity style={Styles.inlineAction} onPress={pickBackground}>
-                            <Text style={Styles.inlineActionText}>{t('Select image')}</Text>
+                            <Text style={Styles.inlineActionText}>{coverMedia ? t('Replace image') : t('Select image')}</Text>
                         </TouchableOpacity>
                     </View>
                     {!coverMedia ? (
@@ -420,7 +500,11 @@ const ProfileTimelineEditScreen = ({ navigation, route }: any) => {
                     ) : (
                         <View style={Styles.backgroundPreviewRow}>
                             {resolveThumbUrl(coverMedia) ? (
-                                <Image source={{ uri: String(resolveThumbUrl(coverMedia)) }} style={Styles.backgroundPreview} />
+                                <Image
+                                    source={{ uri: String(resolveThumbUrl(coverMedia)) }}
+                                    style={Styles.backgroundPreview}
+                                    resizeMode="cover"
+                                />
                             ) : (
                                 <View style={[Styles.backgroundPreview, { backgroundColor: colors.btnBackgroundColor }]} />
                             )}
@@ -444,14 +528,24 @@ const ProfileTimelineEditScreen = ({ navigation, route }: any) => {
                         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={Styles.photoRow}>
                             {mediaItems.map((media) => {
                                 const thumb = resolveThumbUrl(media);
+                                const isVideo = media.type === 'video';
                                 return (
-                                <TouchableOpacity key={String(media.media_id)} onPress={() => removeMedia(String(media.media_id))}>
-                                    {thumb ? (
-                                        <Image source={{ uri: String(thumb) }} style={Styles.photoThumb} />
-                                    ) : (
-                                        <View style={[Styles.photoThumb, { backgroundColor: colors.btnBackgroundColor }]} />
-                                    )}
-                                </TouchableOpacity>
+                                    <TouchableOpacity
+                                        key={String(media.media_id)}
+                                        style={Styles.photoThumbWrapper}
+                                        onPress={() => removeMedia(String(media.media_id))}
+                                    >
+                                        {thumb ? (
+                                            <Image source={{ uri: String(thumb) }} style={Styles.photoThumbImage} resizeMode="cover" />
+                                        ) : (
+                                            <View style={Styles.photoThumbPlaceholder} />
+                                        )}
+                                        {isVideo && (
+                                            <View style={Styles.mediaBadge}>
+                                                <Text style={Styles.mediaBadgeText}>{t('Video')}</Text>
+                                            </View>
+                                        )}
+                                    </TouchableOpacity>
                                 );
                             })}
                         </ScrollView>
@@ -460,62 +554,81 @@ const ProfileTimelineEditScreen = ({ navigation, route }: any) => {
                 </View>
 
                 <View style={Styles.fieldBlock}>
-                    <Text style={Styles.fieldLabel}>{t('Link blogs')}</Text>
-                    <TextInput
-                        style={Styles.searchInput}
-                        placeholder={t('Search blogs')}
-                        placeholderTextColor="#9B9F9F"
-                        value={blogSearch}
-                        onChangeText={setBlogSearch}
-                    />
-                    {blogChoices.length === 0 ? (
-                        <Text style={Styles.helperText}>{t('Create a blog to link it here.')}</Text>
-                    ) : (
-                        <View style={Styles.choiceRow}>
-                            {blogChoices.map((entry) => {
-                                const active = linkedBlogIds.includes(entry.id);
+                    <View style={Styles.sectionHeaderRow}>
+                        <Text style={Styles.sectionTitle}>{t('Blogs')}</Text>
+                        <TouchableOpacity style={Styles.sectionAction} onPress={() => setShowBlogModal(true)}>
+                            <Text style={Styles.sectionActionText}>
+                                {linkedBlogIds.length > 0 ? t('Edit') : t('Select')}
+                            </Text>
+                        </TouchableOpacity>
+                    </View>
+                    <Text style={Styles.helperText}>{t('Choose one or more blogs to link.')}</Text>
+                    {linkedBlogIds.length > 0 ? (
+                        <View style={Styles.competitionChipsRow}>
+                            {linkedBlogIds.map((id) => {
+                                const match = availableBlogs.find((b) => b.id === id);
                                 return (
-                                    <TouchableOpacity
-                                        key={entry.id}
-                                        style={[Styles.choiceChip, active && Styles.choiceChipActive]}
-                                        onPress={() => toggleBlog(entry.id)}
-                                    >
-                                        <Text style={[Styles.choiceChipText, active && Styles.choiceChipTextActive]}>{entry.title}</Text>
-                                    </TouchableOpacity>
+                                    <View key={id} style={Styles.competitionChip}>
+                                        <Text style={Styles.competitionChipText} numberOfLines={1}>
+                                            {match?.title ?? t('Blog')}
+                                        </Text>
+                                        <TouchableOpacity
+                                            style={Styles.competitionChipRemove}
+                                            onPress={() => toggleBlog(id)}
+                                        >
+                                            <CloseCircle size={14} color={colors.subTextColor} variant="Linear" />
+                                        </TouchableOpacity>
+                                    </View>
                                 );
                             })}
                         </View>
+                    ) : (
+                        <TouchableOpacity
+                            style={Styles.emptyCompetitionCard}
+                            onPress={() => setShowBlogModal(true)}
+                        >
+                            <Text style={Styles.emptyCompetitionText}>{t('Select blogs')}</Text>
+                        </TouchableOpacity>
                     )}
                 </View>
 
                 <View style={Styles.fieldBlock}>
-                    <Text style={Styles.fieldLabel}>{t('Link competitions')}</Text>
-                    <TextInput
-                        style={Styles.searchInput}
-                        placeholder={t('Search competitions')}
-                        placeholderTextColor="#9B9F9F"
-                        value={competitionSearch}
-                        onChangeText={setCompetitionSearch}
-                    />
-                    {competitionChoices.length === 0 ? (
-                        <Text style={Styles.helperText}>{t('Subscribe to a competition to link it here.')}</Text>
-                    ) : (
-                        <View style={Styles.choiceRow}>
-                            {competitionChoices.map((entry) => {
-                                const active = linkedCompetitionIds.includes(entry.event_id);
+                    <View style={Styles.sectionHeaderRow}>
+                        <Text style={Styles.sectionTitle}>{t('Competitions')}</Text>
+                        <TouchableOpacity style={Styles.sectionAction} onPress={() => setShowCompetitionModal(true)}>
+                            <Text style={Styles.sectionActionText}>
+                                {linkedCompetitionIds.length > 0 ? t('Edit') : t('Select')}
+                            </Text>
+                        </TouchableOpacity>
+                    </View>
+                    <Text style={Styles.helperText}>{t('Choose one or more competitions to link.')}</Text>
+                    {linkedCompetitionIds.length > 0 ? (
+                        <View style={Styles.competitionChipsRow}>
+                            {linkedCompetitionIds.map((id) => {
+                                const match = availableCompetitions.find((c) => c.event_id === id);
+                                const label = match?.event_name || t('competition');
                                 return (
-                                    <TouchableOpacity
-                                        key={entry.event_id}
-                                        style={[Styles.choiceChip, active && Styles.choiceChipActive]}
-                                        onPress={() => toggleCompetition(entry.event_id)}
-                                    >
-                                        <Text style={[Styles.choiceChipText, active && Styles.choiceChipTextActive]}>
-                                            {entry.event_name || t('competition')}
+                                    <View key={id} style={Styles.competitionChip}>
+                                        <Text style={Styles.competitionChipText} numberOfLines={1}>
+                                            {label}
                                         </Text>
-                                    </TouchableOpacity>
+                                        <TouchableOpacity
+                                            style={Styles.competitionChipRemove}
+                                            onPress={() => toggleCompetition(id)}
+                                        >
+                                            <CloseCircle size={14} color={colors.subTextColor} variant="Linear" />
+                                        </TouchableOpacity>
+                                    </View>
                                 );
                             })}
                         </View>
+                    ) : (
+                        <TouchableOpacity
+                            style={Styles.emptyCompetitionCard}
+                            onPress={() => setShowCompetitionModal(true)}
+                        >
+                            <Text style={Styles.emptyCompetitionText}>{t('Select competitions')}</Text>
+                        </TouchableOpacity>
                     )}
                 </View>
 
@@ -523,8 +636,8 @@ const ProfileTimelineEditScreen = ({ navigation, route }: any) => {
                     <TouchableOpacity style={Styles.cancelButton} onPress={() => navigation.goBack()}>
                         <Text style={Styles.cancelText}>{t('Cancel')}</Text>
                     </TouchableOpacity>
-                    <TouchableOpacity style={Styles.saveButton} onPress={saveItem}>
-                        <Text style={Styles.saveText}>{t('Save')}</Text>
+                    <TouchableOpacity style={Styles.saveButton} onPress={saveItem} disabled={isSaving || isUploading}>
+                        <Text style={Styles.saveText}>{isSaving ? t('Saving...') : t('Save')}</Text>
                     </TouchableOpacity>
                 </View>
 
@@ -537,6 +650,168 @@ const ProfileTimelineEditScreen = ({ navigation, route }: any) => {
 
                 <SizeBox height={insets.bottom > 0 ? insets.bottom + 16 : 32} />
             </ScrollView>
+
+            <Modal
+                visible={showDateModal}
+                transparent
+                animationType="fade"
+                onRequestClose={() => setShowDateModal(false)}
+            >
+                <View style={Styles.modalOverlay}>
+                    <Pressable style={Styles.modalBackdrop} onPress={() => setShowDateModal(false)} />
+                    <View style={Styles.dateModalContainer}>
+                        <Text style={Styles.dateModalTitle}>{t('Select date')}</Text>
+                        <SizeBox height={10} />
+                        <Calendar
+                            current={calendarDate ?? undefined}
+                            markedDates={calendarDate ? { [calendarDate]: { selected: true, selectedColor: colors.primaryColor } } : undefined}
+                            onDayPress={(day) => setCalendarDate(day.dateString)}
+                            enableSwipeMonths
+                            theme={{
+                                calendarBackground: colors.cardBackground,
+                                textSectionTitleColor: colors.subTextColor,
+                                dayTextColor: colors.mainTextColor,
+                                monthTextColor: colors.mainTextColor,
+                                arrowColor: colors.primaryColor,
+                                selectedDayBackgroundColor: colors.primaryColor,
+                                selectedDayTextColor: colors.pureWhite,
+                                todayTextColor: colors.primaryColor,
+                            }}
+                            style={{ borderRadius: 12 }}
+                        />
+                        <TouchableOpacity style={Styles.modalDoneButton} onPress={applyDateModal}>
+                            <Text style={Styles.modalDoneButtonText}>{t('Done')}</Text>
+                        </TouchableOpacity>
+                    </View>
+                </View>
+            </Modal>
+
+            <Modal
+                visible={showBlogModal}
+                transparent
+                animationType="fade"
+                onRequestClose={() => setShowBlogModal(false)}
+            >
+                <View style={Styles.modalOverlay}>
+                    <View style={Styles.modalCard}>
+                        <View style={Styles.modalHeader}>
+                            <Text style={Styles.modalTitle}>{t('Select blogs')}</Text>
+                            <TouchableOpacity
+                                style={Styles.modalCloseButton}
+                                onPress={() => setShowBlogModal(false)}
+                            >
+                                <CloseCircle size={22} color={colors.subTextColor} variant="Linear" />
+                            </TouchableOpacity>
+                        </View>
+                        <View style={Styles.modalSearchRow}>
+                            <SearchNormal1 size={18} color={colors.subTextColor} variant="Linear" />
+                            <TextInput
+                                style={Styles.modalSearchInput}
+                                placeholder={t('Search blogs')}
+                                placeholderTextColor={colors.subTextColor}
+                                value={blogSearch}
+                                onChangeText={setBlogSearch}
+                            />
+                        </View>
+                        <ScrollView style={Styles.modalList} contentContainerStyle={Styles.modalListContent}>
+                            {blogChoices.length > 0 ? (
+                                blogChoices.map((entry) => {
+                                    const selected = linkedBlogIds.includes(entry.id);
+                                    return (
+                                        <TouchableOpacity
+                                            key={entry.id}
+                                            style={[Styles.modalOption, selected && Styles.modalOptionSelected]}
+                                            onPress={() => toggleBlog(entry.id)}
+                                        >
+                                            <View style={Styles.modalOptionTextWrap}>
+                                                <Text style={Styles.modalOptionTitle}>{entry.title}</Text>
+                                            </View>
+                                            {selected && (
+                                                <TickCircle size={22} color={colors.primaryColor} variant="Bold" />
+                                            )}
+                                        </TouchableOpacity>
+                                    );
+                                })
+                            ) : (
+                                <Text style={Styles.modalEmptyText}>{t('No blogs found.')}</Text>
+                            )}
+                        </ScrollView>
+                        <TouchableOpacity style={Styles.modalDoneButton} onPress={() => setShowBlogModal(false)}>
+                            <Text style={Styles.modalDoneButtonText}>{t('Done')} ({linkedBlogIds.length} {t('selected')})</Text>
+                        </TouchableOpacity>
+                    </View>
+                </View>
+            </Modal>
+
+            <Modal
+                visible={showCompetitionModal}
+                transparent
+                animationType="fade"
+                onRequestClose={() => setShowCompetitionModal(false)}
+            >
+                <View style={Styles.modalOverlay}>
+                    <View style={Styles.modalCard}>
+                        <View style={Styles.modalHeader}>
+                            <Text style={Styles.modalTitle}>{t('Select competitions')}</Text>
+                            <TouchableOpacity
+                                style={Styles.modalCloseButton}
+                                onPress={() => setShowCompetitionModal(false)}
+                            >
+                                <CloseCircle size={22} color={colors.subTextColor} variant="Linear" />
+                            </TouchableOpacity>
+                        </View>
+                        <View style={Styles.modalSearchRow}>
+                            <SearchNormal1 size={18} color={colors.subTextColor} variant="Linear" />
+                            <TextInput
+                                style={Styles.modalSearchInput}
+                                placeholder={t('Search competitions')}
+                                placeholderTextColor={colors.subTextColor}
+                                value={competitionSearch}
+                                onChangeText={setCompetitionSearch}
+                            />
+                        </View>
+                        <ScrollView style={Styles.modalList} contentContainerStyle={Styles.modalListContent}>
+                            {competitionChoices.length > 0 ? (
+                                competitionChoices.map((entry) => {
+                                    const selected = linkedCompetitionIds.includes(entry.event_id);
+                                    const meta = [entry.event_date ? new Date(entry.event_date).toLocaleDateString() : null]
+                                        .filter(Boolean)
+                                        .join(' • ');
+                                    return (
+                                        <TouchableOpacity
+                                            key={entry.event_id}
+                                            style={[Styles.modalOption, selected && Styles.modalOptionSelected]}
+                                            onPress={() => toggleCompetition(entry.event_id)}
+                                        >
+                                            <View style={Styles.modalOptionTextWrap}>
+                                                <Text style={Styles.modalOptionTitle}>{entry.event_name || t('competition')}</Text>
+                                                {!!meta && <Text style={Styles.modalOptionSubtext}>{meta}</Text>}
+                                            </View>
+                                            {selected && (
+                                                <TickCircle size={22} color={colors.primaryColor} variant="Bold" />
+                                            )}
+                                        </TouchableOpacity>
+                                    );
+                                })
+                            ) : (
+                                <Text style={Styles.modalEmptyText}>{t('No competitions found.')}</Text>
+                            )}
+                        </ScrollView>
+                        <TouchableOpacity style={Styles.modalDoneButton} onPress={() => setShowCompetitionModal(false)}>
+                            <Text style={Styles.modalDoneButtonText}>{t('Done')} ({linkedCompetitionIds.length} {t('selected')})</Text>
+                        </TouchableOpacity>
+                    </View>
+                </View>
+            </Modal>
+
+            {isUploading && (
+                <View style={Styles.loadingOverlay}>
+                    <View style={Styles.loadingCard}>
+                        <ActivityIndicator color={colors.primaryColor} />
+                        <Text style={Styles.loadingText}>{t('Uploading...')}</Text>
+                    </View>
+                </View>
+            )}
         </View>
     );
 };

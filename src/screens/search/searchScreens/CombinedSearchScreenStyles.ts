@@ -138,6 +138,25 @@ export const createStyles = (colors: ThemeColors) =>
       flex: 1,
       paddingRight: 12,
     },
+    faceActions: {
+      alignItems: 'flex-end',
+      gap: 8,
+    },
+    redoFaceButton: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 6,
+      paddingVertical: 4,
+      paddingHorizontal: 10,
+      borderRadius: 16,
+      borderWidth: 1,
+      borderColor: colors.primaryColor,
+      backgroundColor: colors.cardBackground,
+    },
+    redoFaceText: {
+      ...Fonts.medium12,
+      color: colors.primaryColor,
+    },
     primaryButton: {
       height: 52,
       borderRadius: 14,

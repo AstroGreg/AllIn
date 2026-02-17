@@ -12,7 +12,7 @@ import {
 import SizeBox from '../../../constants/SizeBox';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import {useTheme} from '../../../context/ThemeContext';
-import {ArrowLeft2, CloseCircle, SearchNormal1, TickCircle} from 'iconsax-react-nativejs';
+import {AddCircle, ArrowLeft2, CloseCircle, SearchNormal1, TickCircle} from 'iconsax-react-nativejs';
 import KeyboardAvoidingContainer from '../../../components/KeyboardAvoidingContainer';
 import CustomSwitch from '../../../components/customSwitch/CustomSwitch';
 import {useAuth} from '../../../context/AuthContext';
@@ -269,8 +269,9 @@ const CombinedSearchScreen = ({navigation}: any) => {
               top: 150,
               event_id: eventId,
             });
+            const list = Array.isArray(results) ? results : [];
             addResults(
-              results.map((r: any) => ({
+              list.map((r: any) => ({
                 ...r,
                 event_id: eventId,
                 event_name: eventNameLookup.get(eventId),
@@ -300,6 +301,7 @@ const CombinedSearchScreen = ({navigation}: any) => {
               label: 'default',
               limit: 600,
               top: 100,
+              save: true,
             });
             const results = Array.isArray(res?.results) ? res.results : [];
             addResults(
@@ -601,7 +603,13 @@ const CombinedSearchScreen = ({navigation}: any) => {
               <Text style={styles.sectionTitle}>{t('Face search')}</Text>
               <Text style={styles.helperText}>{t('Use your enrolled face to match photos.')}</Text>
             </View>
-            <CustomSwitch isEnabled={includeFace} toggleSwitch={() => setIncludeFace((prev) => !prev)} />
+            <View style={styles.faceActions}>
+              <TouchableOpacity style={styles.redoFaceButton} onPress={handleEnroll}>
+                <AddCircle size={20} color={colors.primaryColor} variant="Bold" />
+                <Text style={styles.redoFaceText}>{t('Redo face')}</Text>
+              </TouchableOpacity>
+              <CustomSwitch isEnabled={includeFace} toggleSwitch={() => setIncludeFace((prev) => !prev)} />
+            </View>
           </View>
 
           {needsConsent && (

@@ -1,4 +1,4 @@
-import { View, Text, TouchableOpacity, ScrollView, Dimensions, Platform, ActionSheetIOS, Modal } from 'react-native'
+import { View, Text, TouchableOpacity, ScrollView, Dimensions, Platform, ActionSheetIOS, Modal, ActivityIndicator, Alert } from 'react-native'
 import React, { useCallback, useMemo, useState } from 'react'
 import SizeBox from '../../constants/SizeBox'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
@@ -12,7 +12,7 @@ import { launchImageLibrary } from 'react-native-image-picker'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import ProfileTimeline, { TimelineEntry } from '../../components/profileTimeline/ProfileTimeline'
 import { useAuth } from '../../context/AuthContext'
-import { getDownloadsSummary, getPosts, getProfileCollectionByType, getProfileSummary, getProfileTimeline, getUploadedCompetitions, type PostSummary, type ProfileCollectionItem, type ProfileSummaryResponse, type ProfileTimelineEntry, type UploadedCompetition } from '../../services/apiGateway'
+import { getDownloadsSummary, getPosts, getProfileCollectionByType, getProfileSummary, getProfileTimeline, getUploadedCompetitions, updateProfileSummary, uploadMediaBatch, type PostSummary, type ProfileCollectionItem, type ProfileSummaryResponse, type ProfileTimelineEntry, type UploadedCompetition } from '../../services/apiGateway'
 import { getApiBaseUrl } from '../../constants/RuntimeConfig'
 import { useFocusEffect } from '@react-navigation/native'
 import { useTranslation } from 'react-i18next'
@@ -28,8 +28,9 @@ const UserProfileScreen = ({ navigation }: any) => {
     const [profileTab, setProfileTab] = useState<'timeline' | 'activity' | 'collections' | 'downloads'>('timeline');
     const [blogEntries, setBlogEntries] = useState<any[]>([]);
     const [profileCategory, setProfileCategory] = useState<'Track&Field' | 'Road&Trail'>('Track&Field');
-    const [showCategoryModal, setShowCategoryModal] = useState(false);
+    const [showProfileMenuModal, setShowProfileMenuModal] = useState(false);
     const [profileImage, setProfileImage] = useState<any>(Images.profile1);
+    const [isUpdatingAvatar, setIsUpdatingAvatar] = useState(false);
     const [downloadsSummary, setDownloadsSummary] = useState<{ total_downloads: number; total_views: number; total_profit_cents?: number } | null>(
         null,
     );
@@ -103,33 +104,6 @@ const UserProfileScreen = ({ navigation }: any) => {
         return `@profile_category_${key}`;
     }, [user?.email, user?.sub, userProfile?.username]);
 
-    const defaultTimeline = useMemo<TimelineEntry[]>(
-        () => ([
-            {
-                id: 'tl-2017',
-                year: '2017',
-                title: 'First national meet',
-                description: 'Debuted on the national stage and qualified for finals.',
-                highlight: '800m 1:54.30',
-            },
-            {
-                id: 'tl-2021',
-                year: '2021',
-                title: 'U23 breakthrough',
-                description: 'Podium finish and personal bests across the season.',
-                highlight: 'PB 400m 47.90',
-            },
-            {
-                id: 'tl-2024',
-                year: '2024',
-                title: 'Signed with pro team',
-                description: 'Joined an elite training group ahead of the Olympic cycle.',
-                highlight: 'Top 5 EU',
-            },
-        ]),
-        [],
-    );
-
     const blogStorageKey = useMemo(() => {
         const key = user?.sub || userProfile?.username || user?.email || 'self';
         return `@profile_blogs_${key}`;
@@ -194,12 +168,23 @@ const UserProfileScreen = ({ navigation }: any) => {
                 const summary = await getProfileSummary(apiAccessToken);
                 setProfileSummary(summary);
                 summaryProfileId = summary?.profile_id ? String(summary.profile_id) : null;
-                if (summary?.profile?.avatar_url) {
-                    const resolved = toAbsoluteUrl(String(summary.profile.avatar_url));
+                const avatarMedia = summary?.profile?.avatar_media ?? null;
+                const avatarCandidate =
+                    avatarMedia?.thumbnail_url ||
+                    avatarMedia?.preview_url ||
+                    avatarMedia?.full_url ||
+                    avatarMedia?.raw_url ||
+                    avatarMedia?.original_url ||
+                    summary?.profile?.avatar_url ||
+                    null;
+                if (avatarCandidate) {
+                    const resolved = toAbsoluteUrl(String(avatarCandidate));
                     const withToken = withAccessToken(resolved) || resolved;
                     if (withToken) {
                         setProfileImage({ uri: withToken });
                     }
+                } else {
+                    setProfileImage(Images.profile1);
                 }
             } catch {
                 setProfileSummary(null);
@@ -209,7 +194,7 @@ const UserProfileScreen = ({ navigation }: any) => {
         }
 
         // News/blogs: server-driven (no more local dummy list)
-        const postsProfileId = summaryProfileId || (userProfile as any)?.id || null;
+        const postsProfileId = summaryProfileId;
         if (apiAccessToken && postsProfileId) {
             try {
                 const resp = await getPosts(apiAccessToken, { author_profile_id: String(postsProfileId), limit: 50 });
@@ -283,15 +268,7 @@ const UserProfileScreen = ({ navigation }: any) => {
         } else {
             setUploadedCompetitions([]);
         }
-    }, [
-        apiAccessToken,
-        blogStorageKey,
-        categoryStorageKey,
-        timelineStorageKey,
-        toAbsoluteUrl,
-        withAccessToken,
-        userProfile?.id,
-    ]);
+    }, [apiAccessToken, categoryStorageKey, resolveTimelineMediaThumb, t, toAbsoluteUrl, withAccessToken]);
 
     useFocusEffect(
         useCallback(() => {
@@ -338,20 +315,29 @@ const UserProfileScreen = ({ navigation }: any) => {
         await AsyncStorage.setItem(categoryStorageKey, value);
     };
 
-    const openCategorySwitch = () => {
+    const openProfileMenu = () => {
         if (Platform.OS === 'ios') {
+            const options = [
+                t('cancel'),
+                `${t('Switch to')} ${t('trackAndField')}`,
+                `${t('Switch to')} ${t('roadAndTrail')}`,
+                t('Add profile'),
+                t('Add group'),
+            ];
             ActionSheetIOS.showActionSheetWithOptions(
                 {
-                    options: ['Cancel', 'Track&Field', 'Road&Trail'],
+                    options,
                     cancelButtonIndex: 0,
                 },
                 (buttonIndex) => {
                     if (buttonIndex === 1) setCategory('Track&Field');
                     if (buttonIndex === 2) setCategory('Road&Trail');
+                    if (buttonIndex === 3) navigation.navigate('SelectCategoryScreen');
+                    if (buttonIndex === 4) navigation.navigate('CreateGroupProfileScreen');
                 },
             );
         } else {
-            setShowCategoryModal(true);
+            setShowProfileMenuModal(true);
         }
     };
 
@@ -360,11 +346,54 @@ const UserProfileScreen = ({ navigation }: any) => {
             mediaType: 'photo',
             selectionLimit: 1,
         });
-        if (result?.assets?.length) {
-            const asset = result.assets[0];
-            if (asset?.uri) {
-                setProfileImage({ uri: asset.uri });
+        const asset = result?.assets?.[0];
+        if (!asset?.uri) return;
+
+        setProfileImage({ uri: asset.uri });
+
+        if (!apiAccessToken) return;
+        setIsUpdatingAvatar(true);
+        try {
+            const uploadResp = await uploadMediaBatch(apiAccessToken, {
+                files: [
+                    {
+                        uri: asset.uri,
+                        type: asset.type ?? 'image/jpeg',
+                        name: asset.fileName ?? `avatar-${Date.now()}.jpg`,
+                    },
+                ],
+            });
+            const firstResult = Array.isArray(uploadResp?.results) ? uploadResp.results.find((r: any) => r?.media_id || r?.storage_key) : null;
+            const mediaId = firstResult?.media_id ?? null;
+            let updated: ProfileSummaryResponse | null = null;
+            if (mediaId) {
+                updated = await updateProfileSummary(apiAccessToken, { avatar_media_id: String(mediaId) });
+            } else if (firstResult?.storage_key) {
+                updated = await updateProfileSummary(apiAccessToken, { avatar_url: String(firstResult.storage_key) });
             }
+            if (updated) {
+                setProfileSummary(updated);
+                const avatarMedia = updated?.profile?.avatar_media ?? null;
+                const avatarCandidate =
+                    avatarMedia?.thumbnail_url ||
+                    avatarMedia?.preview_url ||
+                    avatarMedia?.full_url ||
+                    avatarMedia?.raw_url ||
+                    avatarMedia?.original_url ||
+                    updated?.profile?.avatar_url ||
+                    null;
+                if (avatarCandidate) {
+                    const resolved = toAbsoluteUrl(String(avatarCandidate));
+                    const withToken = withAccessToken(resolved) || resolved;
+                    if (withToken) {
+                        setProfileImage({ uri: withToken });
+                    }
+                }
+            }
+        } catch (e: any) {
+            Alert.alert(t('Upload failed'), String(e?.message ?? e));
+        } finally {
+            setIsUpdatingAvatar(false);
         }
     };
 
@@ -495,19 +524,29 @@ const UserProfileScreen = ({ navigation }: any) => {
                     });
                 }}
             >
-                <View style={Styles.activityHeader}>
-                    <Text style={Styles.activityTitle}>{item.title}</Text>
-                    <View style={[Styles.activityBadge, Styles.activityBadgeBlog]}>
-                        <Text style={Styles.activityBadgeText}>{t('Blog')}</Text>
+                <View style={Styles.activityCardRow}>
+                    <View style={Styles.activityThumbWrap}>
+                        {item.coverImage ? (
+                            <FastImage source={{ uri: String(item.coverImage) }} style={Styles.activityThumb} resizeMode="cover" />
+                        ) : (
+                            <View style={Styles.activityThumbPlaceholder} />
+                        )}
+                    </View>
+                    <View style={Styles.activityTextColumn}>
+                        <View style={Styles.activityHeaderRow}>
+                            <Text style={Styles.activityTitle} numberOfLines={2}>
+                                {item.title}
+                            </Text>
+                            <View style={[Styles.activityBadge, Styles.activityBadgeBlog]}>
+                                <Text style={Styles.activityBadgeText}>{t('Blog')}</Text>
+                            </View>
+                        </View>
+                        <Text style={Styles.activityMeta}>{item.date}</Text>
+                        <Text style={Styles.activityDescription} numberOfLines={2}>
+                            {item.description}
+                        </Text>
                     </View>
                 </View>
-                <Text style={Styles.activityMeta}>{item.date}</Text>
-                {item.coverImage ? (
-                    <FastImage source={{ uri: String(item.coverImage) }} style={Styles.activityImage} resizeMode="cover" />
-                ) : null}
-                <Text style={Styles.activityDescription} numberOfLines={2}>
-                    {item.description}
-                </Text>
             </TouchableOpacity>
         );
     };
@@ -523,7 +562,7 @@ const UserProfileScreen = ({ navigation }: any) => {
                     <ArrowLeft2 size={24} color={colors.primaryColor} variant="Linear" />
                 </TouchableOpacity>
                 <Text style={Styles.headerTitle}>{t('Profile')}</Text>
-                <TouchableOpacity style={Styles.headerButton} onPress={openCategorySwitch}>
+                <TouchableOpacity style={Styles.headerButton} onPress={openProfileMenu}>
                     <User size={24} color={colors.primaryColor} variant="Linear" />
                 </TouchableOpacity>
             </View>
@@ -543,6 +582,11 @@ const UserProfileScreen = ({ navigation }: any) => {
                             >
                                 <View style={Styles.profileImageInner}>
                                     <FastImage source={profileImage} style={Styles.profileImage} />
+                                    {isUpdatingAvatar && (
+                                        <View style={Styles.profileImageLoading}>
+                                            <ActivityIndicator color={colors.primaryColor} />
+                                        </View>
+                                    )}
                                 </View>
                                 <View style={Styles.profileImageEditBadge}>
                                     <Edit2 size={14} color="#FFFFFF" variant="Linear" />
@@ -644,7 +688,15 @@ const UserProfileScreen = ({ navigation }: any) => {
                             </TouchableOpacity>
                         </View>
                         <SizeBox height={16} />
-                        {activityItems.map(renderActivityCard)}
+                        {activityItems.length === 0 ? (
+                            <View style={Styles.emptyStateCard}>
+                                <Text style={Styles.emptyStateText}>
+                                    {t('No news yet. Add your first blog to share updates.')}
+                                </Text>
+                            </View>
+                        ) : (
+                            activityItems.map(renderActivityCard)
+                        )}
                     </View>
                 )}
 
@@ -857,41 +909,61 @@ const UserProfileScreen = ({ navigation }: any) => {
 
             {Platform.OS !== 'ios' && (
                 <Modal
-                    visible={showCategoryModal}
+                    visible={showProfileMenuModal}
                     transparent
                     animationType="fade"
-                    onRequestClose={() => setShowCategoryModal(false)}
+                    onRequestClose={() => setShowProfileMenuModal(false)}
                 >
                     <TouchableOpacity
                         style={Styles.categoryModalBackdrop}
                         activeOpacity={1}
-                        onPress={() => setShowCategoryModal(false)}
+                        onPress={() => setShowProfileMenuModal(false)}
                     >
                         <TouchableOpacity
                             activeOpacity={1}
                             style={Styles.categoryModalCard}
                             onPress={() => {}}
                         >
-                            <Text style={Styles.categoryModalTitle}>{t('Switch category')}</Text>
+                            <Text style={Styles.categoryModalTitle}>{t('Profile options')}</Text>
                             <SizeBox height={12} />
                             <TouchableOpacity
                                 style={Styles.categoryOption}
                                 onPress={() => {
                                     setCategory('Track&Field');
-                                    setShowCategoryModal(false);
+                                    setShowProfileMenuModal(false);
                                 }}
                             >
-                                <Text style={Styles.categoryOptionText}>{t('trackAndField')}</Text>
+                                <Text style={Styles.categoryOptionText}>{`${t('Switch to')} ${t('trackAndField')}`}</Text>
                             </TouchableOpacity>
                             <View style={Styles.categoryOptionDivider} />
                             <TouchableOpacity
                                 style={Styles.categoryOption}
                                 onPress={() => {
                                     setCategory('Road&Trail');
-                                    setShowCategoryModal(false);
+                                    setShowProfileMenuModal(false);
                                 }}
                             >
-                                <Text style={Styles.categoryOptionText}>{t('roadAndTrail')}</Text>
+                                <Text style={Styles.categoryOptionText}>{`${t('Switch to')} ${t('roadAndTrail')}`}</Text>
+                            </TouchableOpacity>
+                            <View style={Styles.categoryOptionDivider} />
+                            <TouchableOpacity
+                                style={Styles.categoryOption}
+                                onPress={() => {
+                                    setShowProfileMenuModal(false);
+                                    navigation.navigate('SelectCategoryScreen');
+                                }}
+                            >
+                                <Text style={Styles.categoryOptionText}>{t('Add profile')}</Text>
+                            </TouchableOpacity>
+                            <View style={Styles.categoryOptionDivider} />
+                            <TouchableOpacity
+                                style={Styles.categoryOption}
+                                onPress={() => {
+                                    setShowProfileMenuModal(false);
+                                    navigation.navigate('CreateGroupProfileScreen');
+                                }}
+                            >
+                                <Text style={Styles.categoryOptionText}>{t('Add group')}</Text>
                             </TouchableOpacity>
                         </TouchableOpacity>
                     </TouchableOpacity>

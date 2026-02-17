@@ -15,7 +15,7 @@ import { useTheme } from '../../context/ThemeContext';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useAuth } from '../../context/AuthContext';
 import { useEvents } from '../../context/EventsContext';
-import { getMediaById, getMediaViewAll } from '../../services/apiGateway';
+import { getHubAppearances, getHubUploads, getMediaViewAll } from '../../services/apiGateway';
 import { getApiBaseUrl } from '../../constants/RuntimeConfig';
 import { useTranslation } from 'react-i18next'
 
@@ -35,15 +35,8 @@ const HubScreen = ({ navigation }: any) => {
     const [infoCard, setInfoCard] = useState<any | null>(null);
     const [neverShowAgain, setNeverShowAgain] = useState(false);
 
-    const photoIds = useMemo(
-        () => [
-            '87873d40-addf-4289-aa82-7cd300acdd94',
-            '4ac31817-e954-4d22-934d-27f82ddf5163',
-            '4fed0d64-9fd4-42c4-bf24-875aad683c6d',
-        ],
-        [],
-    );
-    const [photoMap, setPhotoMap] = useState<Record<string, string>>({});
+    const [appearanceCardsData, setAppearanceCardsData] = useState<any[]>([]);
+    const [uploadCardsData, setUploadCardsData] = useState<any[]>([]);
     const [mediaByEvent, setMediaByEvent] = useState<Record<string, { thumbUrl?: string; videoCount: number }>>({});
 
     const isSignedUrl = useCallback((value?: string | null) => {
@@ -86,28 +79,34 @@ const HubScreen = ({ navigation }: any) => {
     useEffect(() => {
         let mounted = true;
         if (!apiAccessToken) return () => {};
-        Promise.all(
-            photoIds.map(async (id) => {
-                const media = await getMediaById(apiAccessToken, id);
-                const thumbCandidate =
-                    media.thumbnail_url || media.preview_url || media.full_url || media.raw_url || null;
-                const resolvedThumb = thumbCandidate ? toAbsoluteUrl(String(thumbCandidate)) : null;
-                return [id, withAccessToken(resolvedThumb) || resolvedThumb] as const;
-            }),
-        )
-            .then((entries) => {
+        const load = async () => {
+            try {
+                const res = await getHubAppearances(apiAccessToken);
                 if (!mounted) return;
-                const map: Record<string, string> = {};
-                entries.forEach(([id, url]) => {
-                    if (url) map[id] = url;
-                });
-                setPhotoMap(map);
-            })
-            .catch(() => {});
+                const list = Array.isArray(res?.appearances) ? res.appearances : [];
+                setAppearanceCardsData(
+                    list.map((item) => ({
+                        id: item.event_id,
+                        eventId: item.event_id,
+                        title: item.event_name || 'Competition',
+                        found: `${Number(item.photos_count ?? 0)} photos • ${Number(item.videos_count ?? 0)} videos`,
+                        location: item.event_location ?? '—',
+                        date: item.event_date ?? '—',
+                        thumbnail: item.thumbnail_url ? { uri: item.thumbnail_url } : null,
+                        matchTypes: item.match_types ?? [],
+                        cardType: 'appearance',
+                    })),
+                );
+            } catch {
+                if (!mounted) return;
+                setAppearanceCardsData([]);
+            }
+        };
+        load();
         return () => {
             mounted = false;
         };
-    }, [apiAccessToken, photoIds, toAbsoluteUrl, withAccessToken]);
+    }, [apiAccessToken]);
 
     useEffect(() => {
         let mounted = true;
@@ -137,26 +136,45 @@ const HubScreen = ({ navigation }: any) => {
         };
     }, [apiAccessToken, normalizeThumb]);
 
-    const appearances = [
-        {
-            id: 1,
-            title: 'Sunrise 10K Community Run',
-            found: '12 photos • 3 videos',
-            location: 'Brussels',
-            date: '27/05/2025',
-            thumbnail: photoMap[photoIds[0]] ? { uri: photoMap[photoIds[0]] } : null,
-            match: 'Face + Chest',
-        },
-        {
-            id: 2,
-            title: 'BK Studentent 23',
-            found: '8 photos • 1 video',
-            location: 'Ghent',
-            date: '16/03/2025',
-            thumbnail: photoMap[photoIds[1]] ? { uri: photoMap[photoIds[1]] } : null,
-            match: 'Context',
-        },
-    ];
+    useEffect(() => {
+        let mounted = true;
+        if (!apiAccessToken) return () => {};
+        const load = async () => {
+            try {
+                const res = await getHubUploads(apiAccessToken);
+                if (!mounted) return;
+                const list = Array.isArray(res?.results) ? res.results : [];
+                setUploadCardsData(
+                    list.map((item) => ({
+                        id: item.media_id,
+                        mediaId: item.media_id,
+                        eventId: item.event_id ?? null,
+                        title: item.event_name || 'Upload',
+                        likes: Number(item.likes_count ?? 0),
+                        views: Number(item.views_count ?? 0),
+                        labelsYes: Number(item.labels_yes ?? 0),
+                        labelsNo: Number(item.labels_no ?? 0),
+                        labelsTotal: Number(item.labels_total ?? 0),
+                        type: String(item.type || 'image'),
+                        thumbnail: item.thumbnail_url ? { uri: item.thumbnail_url } : null,
+                        previewUrl: item.preview_url,
+                        originalUrl: item.original_url,
+                        fullUrl: item.full_url,
+                        rawUrl: item.raw_url,
+                        hlsManifestPath: item.hls_manifest_path,
+                        cardType: 'upload',
+                    })),
+                );
+            } catch {
+                if (!mounted) return;
+                setUploadCardsData([]);
+            }
+        };
+        load();
+        return () => {
+            mounted = false;
+        };
+    }, [apiAccessToken]);
 
     const formatDateOnly = (value?: string | null) => {
         if (!value || value === '—') return '—';
@@ -180,6 +198,7 @@ const HubScreen = ({ navigation }: any) => {
             const videoCount = mediaInfo?.videoCount ?? 0;
             return {
                 id: eventId || `${index}`,
+                eventId,
                 title,
                 status: 'Subscribed',
                 media: `${videoCount} videos`,
@@ -187,48 +206,14 @@ const HubScreen = ({ navigation }: any) => {
                 date,
                 thumbnail: mediaInfo?.thumbUrl ? { uri: mediaInfo.thumbUrl } : null,
                 competitionType: 'track',
+                cardType: 'subscription',
             };
         });
     }, [events, mediaByEvent]);
 
-    const createdMedia = [
-        {
-            id: 1,
-            title: 'PK 400m Limburg 2025',
-            comments: 3,
-            type: 'Video',
-            thumbnail: photoMap[photoIds[0]] ? { uri: photoMap[photoIds[0]] } : null,
-            videoUri: '',
-            location: 'Limburg, Belgium',
-            date: '04/02/2026',
-        },
-        {
-            id: 2,
-            title: 'BK Studentent 23',
-            comments: 1,
-            type: 'Event',
-            thumbnail: photoMap[photoIds[1]] ? { uri: photoMap[photoIds[1]] } : null,
-            videoUri: '',
-            location: 'Berlin, Germany',
-            date: '27/05/2025',
-        },
-    ];
-
     const hubCards = useMemo(() => {
-        const appearanceCards = appearances.map((item) => ({
-            ...item,
-            cardType: 'appearance',
-        }));
-        const eventCards = myCompetitions.map((item) => ({
-            ...item,
-            cardType: 'subscription',
-        }));
-        const uploadCards = createdMedia.map((item) => ({
-            ...item,
-            cardType: 'upload',
-        }));
-        return [...appearanceCards, ...eventCards, ...uploadCards];
-    }, [appearances, myCompetitions, createdMedia]);
+        return [...appearanceCardsData, ...myCompetitions, ...uploadCardsData];
+    }, [appearanceCardsData, myCompetitions, uploadCardsData]);
 
     const filteredCards = useMemo(() => {
         const normalizedQuery = query.trim().toLowerCase();
@@ -290,7 +275,11 @@ const HubScreen = ({ navigation }: any) => {
 
     const openCardAction = (card: any) => {
         if (card.cardType === 'appearance') {
-            navigation.navigate('AllPhotosOfEvents');
+            navigation.navigate('AllPhotosOfEvents', {
+                eventId: card.eventId ?? card.id,
+                eventName: card.title,
+                appearanceOnly: true,
+            });
             return;
         }
         if (card.cardType === 'subscription') {
@@ -298,17 +287,22 @@ const HubScreen = ({ navigation }: any) => {
                 name: card.title,
                 description: `Competition held in ${card.location}`,
                 competitionType: card.competitionType ?? 'track',
+                eventId: card.eventId ?? card.id,
             });
             return;
         }
-        navigation.navigate('VideoDetailsScreen', {
-            video: {
-                title: card.title,
-                location: card.location,
-                date: card.date,
-                duration: '2 Minutes',
-                uri: card.videoUri,
-                thumbnail: card.thumbnail,
+        navigation.navigate('PhotoDetailScreen', {
+            eventTitle: card.title,
+            media: {
+                id: card.mediaId ?? card.id,
+                type: card.type,
+                eventId: card.eventId ?? null,
+                thumbnailUrl: card.thumbnail?.uri,
+                previewUrl: card.previewUrl,
+                originalUrl: card.originalUrl,
+                fullUrl: card.fullUrl,
+                rawUrl: card.rawUrl,
+                hlsManifestPath: card.hlsManifestPath,
             },
         });
     };
@@ -362,9 +356,19 @@ const HubScreen = ({ navigation }: any) => {
                                 <Calendar size={14} color={colors.grayColor} variant="Linear" />
                                 <Text style={Styles.detailText}>{card.date}</Text>
                             </View>
-                            <View style={Styles.matchBadge}>
-                                <Text style={Styles.matchBadgeText}>{card.match}</Text>
-                            </View>
+                            {card.matchTypes?.length ? (
+                                <View style={Styles.matchBadge}>
+                                    <Text style={Styles.matchBadgeText}>
+                                        {card.matchTypes.includes('face') && card.matchTypes.includes('bib')
+                                            ? t('Face + Chest')
+                                            : card.matchTypes.includes('face')
+                                                ? t('Face')
+                                                : card.matchTypes.includes('bib')
+                                                    ? t('Chest')
+                                                    : t('Match')}
+                                    </Text>
+                                </View>
+                            ) : null}
                         </View>
                     </View>
                 </TouchableOpacity>
@@ -421,7 +425,9 @@ const HubScreen = ({ navigation }: any) => {
                                 <Text style={Styles.typeBadgeText}>{t('Upload')}</Text>
                             </View>
                         </View>
-                        <Text style={Styles.cardSubtitle}>{card.type} · {card.comments} comments</Text>
+                        <Text style={Styles.cardSubtitle}>
+                            {card.type} · {card.labelsTotal > 0 ? `${card.labelsYes} ${t('yes')} · ${card.labelsNo} ${t('no')}` : t('No feedback yet')}
+                        </Text>
                         <TouchableOpacity style={Styles.feedbackButton}>
                             <Text style={Styles.feedbackButtonText}>{t('Manage upload')}</Text>
                             <Icons.RightBtnIcon height={16} width={16} />

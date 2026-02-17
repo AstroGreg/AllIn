@@ -147,6 +147,10 @@ export const createStyles = (colors: ThemeColors) => StyleSheet.create({
     eventsList: {
         gap: 24,
     },
+    emptyStateText: {
+        ...Fonts.regular12,
+        color: '#9B9F9F',
+    },
     eventCard: {
         flexDirection: 'row',
         alignItems: 'center',

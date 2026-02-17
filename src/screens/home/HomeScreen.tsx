@@ -14,6 +14,7 @@ import {
     getAllPhotos,
     getAllVideos,
     getHomeOverview,
+    getProfileSummary,
     recordDownload,
     togglePostLike,
     toggleMediaLike,
@@ -75,7 +76,8 @@ const HomeScreen = ({ navigation }: any) => {
         return t('Guest');
     })();
 
-    const profilePic = user?.picture;
+    const [profileAvatarUrl, setProfileAvatarUrl] = useState<string | null>(null);
+    const profilePic = profileAvatarUrl ?? user?.picture ?? null;
 
     const [overview, setOverview] = useState<HomeOverviewResponse | null>(null);
     const [isLoadingOverview, setIsLoadingOverview] = useState(false);
@@ -256,6 +258,34 @@ const HomeScreen = ({ navigation }: any) => {
         if (str.startsWith('http://') || str.startsWith('https://')) return str;
         return `${apiBaseUrl}${str.startsWith('/') ? '' : '/'}${str}`;
     }, [apiBaseUrl]);
+
+    useEffect(() => {
+        if (!apiAccessToken || !isFocused) return;
+        let mounted = true;
+        getProfileSummary(apiAccessToken)
+            .then((summary) => {
+                if (!mounted) return;
+                const avatarMedia = summary?.profile?.avatar_media ?? null;
+                const avatarCandidate =
+                    avatarMedia?.thumbnail_url ||
+                    avatarMedia?.preview_url ||
+                    avatarMedia?.full_url ||
+                    avatarMedia?.raw_url ||
+                    avatarMedia?.original_url ||
+                    summary?.profile?.avatar_url ||
+                    null;
+                if (avatarCandidate) {
+                    const resolved = toAbsoluteUrl(String(avatarCandidate));
+                    setProfileAvatarUrl(resolved);
+                } else {
+                    setProfileAvatarUrl(null);
+                }
+            })
+            .catch(() => {});
+        return () => {
+            mounted = false;
+        };
+    }, [apiAccessToken, isFocused, toAbsoluteUrl]);
 
     const toHlsUrl = useCallback((value?: string | null) => {
         if (!value) return null;

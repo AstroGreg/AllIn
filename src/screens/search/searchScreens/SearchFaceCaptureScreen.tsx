@@ -48,11 +48,29 @@ const SAVE_FACE_CAPTURE_ANGLES: CaptureAngle[] = [
 
 // 5 angles for backend enrollment (/ai/faces/enroll)
 const ENROLL_FACE_CAPTURE_ANGLES: CaptureAngle[] = [
-    { id: 'frontal', title: 'Front', instruction: 'Look straight at the camera and hold still', yawMin: -10, yawMax: 10, pitchMin: -10, pitchMax: 10 },
-    { id: 'left_profile', title: 'Left Profile', instruction: 'Turn your head to the left and hold still', yawMin: 15, yawMax: 45, pitchMin: -15, pitchMax: 15 },
-    { id: 'right_profile', title: 'Right Profile', instruction: 'Turn your head to the right and hold still', yawMin: -45, yawMax: -15, pitchMin: -15, pitchMax: 15 },
-    { id: 'upward', title: 'Upward', instruction: 'Tilt your head up and hold still', yawMin: -10, yawMax: 10, pitchMin: 10, pitchMax: 35 },
-    { id: 'downward', title: 'Downward', instruction: 'Tilt your head down and hold still', yawMin: -10, yawMax: 10, pitchMin: -35, pitchMax: -10 },
+    { id: 'frontal', title: 'Front', instruction: 'Look straight at the camera and hold still', yawMin: -20, yawMax: 20, pitchMin: -20, pitchMax: 20 },
+    { id: 'left_profile', title: 'Left Profile', instruction: 'Turn your head to the left and hold still', yawMin: 10, yawMax: 70, pitchMin: -20, pitchMax: 20 },
+    { id: 'right_profile', title: 'Right Profile', instruction: 'Turn your head to the right and hold still', yawMin: -70, yawMax: -10, pitchMin: -20, pitchMax: 20 },
+    { id: 'upward', title: 'Upward', instruction: 'Tilt your head up and hold still', yawMin: -20, yawMax: 20, pitchMin: 5, pitchMax: 45 },
+    { id: 'downward', title: 'Downward', instruction: 'Tilt your head down and hold still', yawMin: -20, yawMax: 20, pitchMin: -45, pitchMax: -5 },
+];
+
+const ENROLL_DISTANCE_STEPS = [
+    {
+        id: 'close',
+        label: 'Close up',
+        instruction: 'Move closer so your face fills most of the frame.',
+    },
+    {
+        id: 'mid',
+        label: 'Mid range',
+        instruction: 'Hold the phone at arm\'s length.',
+    },
+    {
+        id: 'far',
+        label: 'Far away',
+        instruction: 'Step back slightly so your full head and shoulders are visible.',
+    },
 ];
 
 const SearchFaceCaptureScreen = ({ navigation, route }: any) => {
@@ -64,9 +82,7 @@ const SearchFaceCaptureScreen = ({ navigation, route }: any) => {
     const mode: 'saveFace' | 'enrolFace' = route?.params?.mode === 'enrolFace' ? 'enrolFace' : 'saveFace';
     const useLiveness: boolean = mode === 'enrolFace' && route?.params?.useLiveness === true;
     const enrollReplace: boolean = mode === 'enrolFace' ? (route?.params?.replace !== false) : true;
-    const templatesPerAngle: number = mode === 'enrolFace'
-        ? Math.min(5, Math.max(1, Number(route?.params?.templatesPerAngle ?? 3)))
-        : 1;
+    const templatesPerAngle: number = mode === 'enrolFace' ? (useLiveness ? 1 : 3) : 1;
     const afterEnroll = route?.params?.afterEnroll ?? null;
 
     const [livenessChallengeId, setLivenessChallengeId] = useState<string | null>(null);
@@ -99,6 +115,11 @@ const SearchFaceCaptureScreen = ({ navigation, route }: any) => {
     const [countdown, setCountdown] = useState<number | null>(null);
     const [isTransitioning, setIsTransitioning] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [isApproving, setIsApproving] = useState(false);
+    const [pendingPhotoUri, setPendingPhotoUri] = useState<string | null>(null);
+    const [pendingAngleId, setPendingAngleId] = useState<string | null>(null);
+    const [faceSizeRatio, setFaceSizeRatio] = useState<number>(0);
+    const [distanceMatched, setDistanceMatched] = useState(false);
     const [angleVerification, setAngleVerification] = useState<Record<string, AngleVerifyState>>(() => {
         if (mode !== 'enrolFace') return {};
         const init: Record<string, AngleVerifyState> = {};
@@ -115,6 +136,7 @@ const SearchFaceCaptureScreen = ({ navigation, route }: any) => {
     const isTransitioningRef = useRef(false);
     const countdownRef = useRef<NodeJS.Timeout | null>(null);
     const isMountedRef = useRef(true);
+    const distanceStepIdRef = useRef<string | null>(null);
 
     useEffect(() => {
         currentAngleIndexRef.current = currentAngleIndex;
@@ -131,6 +153,13 @@ const SearchFaceCaptureScreen = ({ navigation, route }: any) => {
     const currentAngle = captureAngles[currentAngleIndex];
     const currentImages = capturedImages[currentAngle?.id] ?? [];
     const currentImage = currentImages.length > 0 ? currentImages[currentImages.length - 1] : undefined;
+    const distanceIndex = mode === 'enrolFace' ? Math.min(currentImages.length, ENROLL_DISTANCE_STEPS.length - 1) : 0;
+    const distanceStep = mode === 'enrolFace' ? ENROLL_DISTANCE_STEPS[distanceIndex] : null;
+    const isReviewing = !!pendingPhotoUri;
+
+    useEffect(() => {
+        distanceStepIdRef.current = distanceStep?.id ?? null;
+    }, [distanceStep]);
     const verifiedCount = useMemo(() => {
         if (mode !== 'enrolFace') return 0;
         return captureAngles.filter(a => (capturedImages[a.id]?.length ?? 0) >= templatesPerAngle && angleVerification[a.id]?.status === 'accepted').length;
@@ -206,6 +235,19 @@ const SearchFaceCaptureScreen = ({ navigation, route }: any) => {
         return yawMatch && pitchMatch;
     }, [captureAngles]);
 
+    const getDistanceMatch = useCallback((ratio: number, stepId: string | null) => {
+        if (!stepId) return true;
+        if (!Number.isFinite(ratio) || ratio <= 0) return false;
+        const ranges: Record<string, { min: number; max: number }> = {
+            close: { min: 0.50, max: 0.8 },
+            mid: { min: 0.40, max: 0.6 },
+            far: { min: 0.25, max: 0.4 },
+        };
+        const range = ranges[stepId];
+        if (!range) return true;
+        return ratio >= range.min && ratio <= range.max;
+    }, []);
+
     const capturePhoto = useCallback(async () => {
         if (!cameraRef.current || isCapturingRef.current || isTransitioningRef.current) {
             return;
@@ -234,51 +276,51 @@ const SearchFaceCaptureScreen = ({ navigation, route }: any) => {
                     return;
                 }
 
-                setAngleVerification(prev => ({
-                    ...prev,
-                    [capturedAngle.id]: {status: 'verifying'},
-                }));
-
                 try {
                     let verified: any = null;
                     if (useLiveness && livenessChallengeId) {
+                        setAngleVerification(prev => ({
+                            ...prev,
+                            [capturedAngle.id]: {status: 'verifying'},
+                        }));
                         verified = await submitFaceLivenessStep(apiAccessToken, {
                             challenge_id: livenessChallengeId,
                             uri: photoUri,
                         });
-                    } else {
-                        verified = await verifyFaceAngle(apiAccessToken, {
-                            angle: capturedAngle.id as FaceAngleClass,
-                            uri: photoUri,
-                        });
-                    }
+                        if (!isMountedRef.current) return;
 
-                    if (!isMountedRef.current) return;
+                        canProceed = !!verified?.accepted;
+                        setAngleVerification(prev => ({
+                            ...prev,
+                            [capturedAngle.id]: canProceed
+                                ? {status: 'accepted'}
+                                : {status: 'rejected', reason: String(verified?.reason ?? 'angle_mismatch')},
+                        }));
 
-                    canProceed = !!verified?.accepted;
-                    setAngleVerification(prev => ({
-                        ...prev,
-                        [capturedAngle.id]: canProceed
-                            ? {status: 'accepted'}
-                            : {status: 'rejected', reason: String(verified?.reason ?? 'angle_mismatch')},
-                    }));
-
-                    if (canProceed) {
-                        const nextCount = beforeCount + 1;
-                        setCapturedImages(prev => {
-                            const cur = prev[capturedAngle.id] ?? [];
-                            return {
-                                ...prev,
-                                [capturedAngle.id]: [...cur, photoUri],
-                            };
-                        });
-                        // Mark angle complete only when enough templates are collected.
-                        if (nextCount < requiredCount) {
-                            setAngleVerification(prev => ({
-                                ...prev,
-                                [capturedAngle.id]: {status: 'partial'},
-                            }));
+                        if (canProceed) {
+                            const nextCount = beforeCount + 1;
+                            setCapturedImages(prev => {
+                                const cur = prev[capturedAngle.id] ?? [];
+                                return {
+                                    ...prev,
+                                    [capturedAngle.id]: [...cur, photoUri],
+                                };
+                            });
+                            // Mark angle complete only when enough templates are collected.
+                            if (nextCount < requiredCount) {
+                                setAngleVerification(prev => ({
+                                    ...prev,
+                                    [capturedAngle.id]: {status: 'partial'},
+                                }));
+                            }
                         }
+                    } else {
+                        // Manual approval for each photo (non-liveness).
+                        setPendingPhotoUri(photoUri);
+                        setPendingAngleId(capturedAngle.id);
+                        setCountdown(null);
+                        countdownActiveRef.current = false;
+                        return;
                     }
                 } catch (e: any) {
                     canProceed = false;
@@ -396,6 +438,95 @@ const SearchFaceCaptureScreen = ({ navigation, route }: any) => {
         }
     }, [angleVerification, clearCountdown, mode, startLiveness, useLiveness, t]);
 
+    const advanceAngle = useCallback((fromIndex: number) => {
+        if (fromIndex >= captureAngles.length - 1) return;
+        isTransitioningRef.current = true;
+        setIsTransitioning(true);
+        setTimeout(() => {
+            if (!isMountedRef.current) return;
+            setCurrentAngleIndex(fromIndex + 1);
+            setAngleMatched(false);
+            setCountdown(null);
+            countdownActiveRef.current = false;
+            setTimeout(() => {
+                if (!isMountedRef.current) return;
+                isTransitioningRef.current = false;
+                setIsTransitioning(false);
+            }, 500);
+        }, 600);
+    }, [captureAngles.length]);
+
+    const handleApprovePhoto = useCallback(() => {
+        if (!pendingPhotoUri || !pendingAngleId) return;
+        if (mode === 'enrolFace' && !apiAccessToken) {
+            Alert.alert(t('Missing API token'), t('Log in or set a Dev API token to enroll your face.'));
+            return;
+        }
+        const requiredCount = mode === 'enrolFace' ? templatesPerAngle : 1;
+        const before = capturedImages[pendingAngleId]?.length ?? 0;
+        const nextCount = before + 1;
+
+        const commitApproved = () => {
+            setCapturedImages(prev => {
+                const cur = prev[pendingAngleId] ?? [];
+                return {
+                    ...prev,
+                    [pendingAngleId]: [...cur, pendingPhotoUri],
+                };
+            });
+            if (mode === 'enrolFace') {
+                setAngleVerification(prev => ({
+                    ...prev,
+                    [pendingAngleId]: nextCount < requiredCount ? {status: 'partial'} : {status: 'accepted'},
+                }));
+            }
+            setPendingPhotoUri(null);
+            setPendingAngleId(null);
+
+            if (mode === 'enrolFace' && nextCount >= requiredCount) {
+                const idx = captureAngles.findIndex(a => a.id === pendingAngleId);
+                if (idx >= 0) {
+                    advanceAngle(idx);
+                }
+            }
+        };
+
+        if (mode !== 'enrolFace') {
+            commitApproved();
+            return;
+        }
+
+        setIsApproving(true);
+        verifyFaceAngle(apiAccessToken as string, {
+            angle: pendingAngleId as FaceAngleClass,
+            uri: pendingPhotoUri,
+        })
+            .then((verified) => {
+                if (verified?.accepted) {
+                    commitApproved();
+                } else {
+                    const reason = String(verified?.reason ?? '');
+                    if (reason === 'no_face_detected_or_too_small') {
+                        Alert.alert(t('No face detected'), t('Move closer and retake this photo.'));
+                    } else {
+                        Alert.alert(t('Angle check failed'), t('Please retake this photo.'));
+                    }
+                }
+            })
+            .catch((e: any) => {
+                const msg = e instanceof ApiError ? e.message : String(e?.message ?? e);
+                Alert.alert(t('Angle check failed'), msg);
+            })
+            .finally(() => {
+                setIsApproving(false);
+            });
+    }, [advanceAngle, apiAccessToken, captureAngles, capturedImages, mode, pendingAngleId, pendingPhotoUri, t, templatesPerAngle]);
+
+    const handleRejectPhoto = useCallback(() => {
+        setPendingPhotoUri(null);
+        setPendingAngleId(null);
+    }, []);
+
     const startCountdown = useCallback(() => {
         if (countdownActiveRef.current || isCapturingRef.current || hasCurrentImageRef.current || isTransitioningRef.current) {
             return;
@@ -424,22 +555,26 @@ const SearchFaceCaptureScreen = ({ navigation, route }: any) => {
     const handleFaceDetected = Worklets.createRunOnJS((
         detected: boolean,
         yaw: number,
-        pitch: number
+        pitch: number,
+        ratio: number
     ) => {
         if (!isMountedRef.current) return;
 
         setFaceDetected(detected);
+        setFaceSizeRatio(ratio);
 
-        if (isTransitioningRef.current || isCapturingRef.current || hasCurrentImageRef.current) {
+        if (isTransitioningRef.current || isCapturingRef.current || hasCurrentImageRef.current || isReviewing) {
             return;
         }
 
         if (detected) {
             const matched = checkAngleMatch(yaw, pitch, currentAngleIndexRef.current);
             setAngleMatched(matched);
+            const distanceOk = getDistanceMatch(ratio, distanceStepIdRef.current);
+            setDistanceMatched(distanceOk);
 
-            if (matched) {
-                if (!countdownActiveRef.current) {
+            if (matched && distanceOk) {
+                if (mode !== 'enrolFace' && !countdownActiveRef.current) {
                     startCountdown();
                 }
             } else {
@@ -447,6 +582,7 @@ const SearchFaceCaptureScreen = ({ navigation, route }: any) => {
             }
         } else {
             setAngleMatched(false);
+            setDistanceMatched(false);
             clearCountdown();
         }
     });
@@ -460,9 +596,13 @@ const SearchFaceCaptureScreen = ({ navigation, route }: any) => {
                 const face = faces[0];
                 const yaw = face.yawAngle || 0;
                 const pitch = face.pitchAngle || 0;
-                handleFaceDetected(true, yaw, pitch);
+                const bounds = (face as any).bounds ?? {};
+                const faceWidth = Number(bounds.width ?? 0);
+                const frameWidth = Number((frame as any).width ?? 1);
+                const ratio = frameWidth > 0 ? faceWidth / frameWidth : 0;
+                handleFaceDetected(true, yaw, pitch, ratio);
             } else {
-                handleFaceDetected(false, 0, 0);
+                handleFaceDetected(false, 0, 0, 0);
             }
         } catch (e) {
             // Silently handle frame processor errors
@@ -533,6 +673,9 @@ const SearchFaceCaptureScreen = ({ navigation, route }: any) => {
 
     const getInstructionText = () => {
         if (mode === 'enrolFace') {
+            if (isReviewing) {
+                return t('Review this photo. Use it or retake.');
+            }
             const verify = angleVerification[currentAngle?.id];
             if (verify?.status === 'verifying') {
                 return t('Checking this angle…');
@@ -540,14 +683,16 @@ const SearchFaceCaptureScreen = ({ navigation, route }: any) => {
             if (verify?.status === 'partial') {
                 const have = capturedImages[currentAngle?.id]?.length ?? 0;
                 const need = Math.max(0, templatesPerAngle - have);
-                return need <= 0
-                    ? t('Great! Moving on…')
-                    : `${t('Nice — take')} ${need} ${t('more photo(s) for this angle.')}`;
+                if (need <= 0) return t('Great! Moving on…');
+                if (distanceStep) {
+                    return `${t(distanceStep.instruction)} (${have + 1}/${templatesPerAngle})`;
+                }
+                return `${t('Nice — take')} ${need} ${t('more photo(s) for this angle.')}`;
             }
 
             if (verify?.status === 'rejected') {
                 if (verify.reason === 'no_face_detected_or_too_small') {
-                    return t('No face detected. Move closer and retake.');
+                    return t('Face too small or not detected. Move closer and retake.');
                 }
                 if (verify.reason === 'angle_mismatch') {
                     return t('Angle mismatch. Tap Retake and try again.');
@@ -562,10 +707,17 @@ const SearchFaceCaptureScreen = ({ navigation, route }: any) => {
         if (countdown !== null) {
             return t('Hold still...');
         }
-        if (angleMatched) {
-            return t('Perfect! Hold still...');
+        if (faceDetected && angleMatched && !distanceMatched && distanceStep) {
+            return t(distanceStep.instruction);
+        }
+        if (angleMatched && distanceMatched) {
+            return mode === 'enrolFace' ? t('Ready. Tap Capture.') : t('Perfect! Hold still...');
         }
         if (faceDetected) {
+            if (distanceStep) {
+                const have = capturedImages[currentAngle?.id]?.length ?? 0;
+                return `${t(distanceStep.instruction)} (${Math.min(have + 1, templatesPerAngle)}/${templatesPerAngle})`;
+            }
             return t(currentAngle.instruction);
         }
         return t('Position your face within the frame');
@@ -605,8 +757,20 @@ const SearchFaceCaptureScreen = ({ navigation, route }: any) => {
         );
     }
 
-    const showCameraPreview = !currentImage;
+    const requiredForAngle = mode === 'enrolFace' ? templatesPerAngle : 1;
+    const hasEnoughForAngle = currentImages.length >= requiredForAngle;
+    const showCameraPreview = !hasEnoughForAngle && !isReviewing;
+    const showCapturedPreview = (isReviewing && !!pendingPhotoUri) || (hasEnoughForAngle && !!currentImage);
     const currentVerify = mode === 'enrolFace' ? angleVerification[currentAngle?.id] : null;
+    const canCaptureNow =
+        !isReviewing &&
+        !isSubmitting &&
+        !isApproving &&
+        !isCapturing &&
+        !isTransitioning &&
+        faceDetected &&
+        angleMatched &&
+        (mode !== 'enrolFace' || distanceMatched);
 
     return (
         <View style={[styles.mainContainer, { backgroundColor: colors.backgroundColor }]}>
@@ -717,9 +881,9 @@ const SearchFaceCaptureScreen = ({ navigation, route }: any) => {
                                 </>
                             )}
                         </View>
-                        {currentImage && (
+                        {showCapturedPreview && (pendingPhotoUri || currentImage) && (
                             <FastImage
-                                source={{ uri: currentImage }}
+                                source={{ uri: String(pendingPhotoUri || currentImage) }}
                                 style={styles.capturedImage}
                                 resizeMode="cover"
                             />
@@ -742,7 +906,9 @@ const SearchFaceCaptureScreen = ({ navigation, route }: any) => {
                 {/* Title and Instructions */}
                 <View style={styles.textSection}>
                     <Text style={[styles.titleText, { color: colors.mainTextColor }]}>
-                        {currentAngle?.title ? t(currentAngle.title) : t('Capture Complete')}
+                        {currentAngle?.title
+                            ? `${t(currentAngle.title)}${distanceStep ? ` · ${t(distanceStep.label)}` : ''}`
+                            : t('Capture Complete')}
                     </Text>
                     <SizeBox height={8} />
                     <Text style={[styles.descriptionText, { color: colors.grayColor }]}>
@@ -754,42 +920,84 @@ const SearchFaceCaptureScreen = ({ navigation, route }: any) => {
 
                 {/* Buttons */}
                 <View style={styles.buttonContainer}>
-                    <TouchableOpacity
-                        style={[
-                            styles.primaryButton,
-                            { backgroundColor: colors.primaryColor },
-                            !allCaptured && styles.primaryButtonDisabled
-                        ]}
-                        activeOpacity={0.7}
-                        onPress={handleSaveFace}
-                        disabled={!allCaptured || isSubmitting}
-                    >
-                        <Text style={[styles.primaryButtonText, { color: colors.pureWhite }]}>
-                            {isSubmitting
-                                ? t('Saving…')
-                                : allCaptured
-                                    ? t('Continue')
-                                    : `${currentAngleIndex + 1} ${t('of')} ${captureAngles.length}`}
-                        </Text>
-                        <ArrowRight size={24} color={colors.pureWhite} />
-                    </TouchableOpacity>
+                    {isReviewing ? (
+                        <View style={styles.reviewRow}>
+                            <TouchableOpacity
+                                style={[styles.secondaryButton, styles.reviewButton, { backgroundColor: colors.backgroundColor, borderColor: colors.lightGrayColor }]}
+                                activeOpacity={0.7}
+                                onPress={handleRejectPhoto}
+                                disabled={isSubmitting || isApproving}
+                            >
+                                <Text style={[styles.secondaryButtonText, { color: colors.grayColor }]}>
+                                    {t('Retake')}
+                                </Text>
+                            </TouchableOpacity>
 
-                    <TouchableOpacity
-                        style={[styles.secondaryButton, { backgroundColor: colors.backgroundColor, borderColor: colors.lightGrayColor }]}
-                        activeOpacity={0.7}
-                        onPress={() => {
-                            if (currentAngle?.id && currentImage) {
-                                handleRetakeAngle(currentAngle.id);
-                                return;
-                            }
-                            handleCancel();
-                        }}
-                        disabled={!!currentImage && currentVerify?.status === 'verifying'}
-                    >
-                        <Text style={[styles.secondaryButtonText, { color: colors.grayColor }]}>
-                            {currentImage ? t('Retake') : t('Cancel')}
-                        </Text>
-                    </TouchableOpacity>
+                            <TouchableOpacity
+                                style={[
+                                    styles.primaryButton,
+                                    styles.reviewButton,
+                                    { backgroundColor: colors.primaryColor },
+                                    (isSubmitting || isApproving) && styles.primaryButtonDisabled,
+                                ]}
+                                activeOpacity={0.7}
+                                onPress={handleApprovePhoto}
+                                disabled={isSubmitting || isApproving}
+                            >
+                                <Text style={[styles.primaryButtonText, { color: colors.pureWhite }]}>
+                                    {isApproving ? t('Checking…') : t('Use photo')}
+                                </Text>
+                                <ArrowRight size={24} color={colors.pureWhite} />
+                            </TouchableOpacity>
+                        </View>
+                    ) : (
+                        <>
+                            <TouchableOpacity
+                                style={[
+                                    styles.primaryButton,
+                                    { backgroundColor: colors.primaryColor },
+                                    ((allCaptured ? false : !canCaptureNow) || isSubmitting || isApproving) && styles.primaryButtonDisabled
+                                ]}
+                                activeOpacity={0.7}
+                                onPress={() => {
+                                    if (allCaptured) {
+                                        handleSaveFace();
+                                        return;
+                                    }
+                                    if (canCaptureNow) {
+                                        capturePhoto();
+                                    }
+                                }}
+                                disabled={(allCaptured ? false : !canCaptureNow) || isSubmitting || isApproving}
+                            >
+                                <Text style={[styles.primaryButtonText, { color: colors.pureWhite }]}>
+                                    {isSubmitting
+                                        ? t('Saving…')
+                                        : allCaptured
+                                            ? t('Continue')
+                                            : t('Capture')}
+                                </Text>
+                                <ArrowRight size={24} color={colors.pureWhite} />
+                            </TouchableOpacity>
+
+                            <TouchableOpacity
+                                style={[styles.secondaryButton, { backgroundColor: colors.backgroundColor, borderColor: colors.lightGrayColor }]}
+                                activeOpacity={0.7}
+                                onPress={() => {
+                                    if (currentAngle?.id && currentImages.length > 0) {
+                                        handleRetakeAngle(currentAngle.id);
+                                        return;
+                                    }
+                                    handleCancel();
+                                }}
+                                disabled={isSubmitting || isApproving || isCapturing || (currentVerify?.status === 'verifying')}
+                            >
+                                <Text style={[styles.secondaryButtonText, { color: colors.grayColor }]}>
+                                    {currentImages.length > 0 ? t('Reset angle') : t('Cancel')}
+                                </Text>
+                            </TouchableOpacity>
+                        </>
+                    )}
                 </View>
 
                 <SizeBox height={insets.bottom + 20} />
@@ -978,6 +1186,14 @@ const styles = StyleSheet.create({
     buttonContainer: {
         width: '100%',
         gap: 16,
+    },
+    reviewRow: {
+        flexDirection: 'row',
+        gap: 12,
+        width: '100%',
+    },
+    reviewButton: {
+        flex: 1,
     },
     primaryButton: {
         height: 54,

@@ -1,33 +1,26 @@
 import { View, Text, FlatList, TouchableOpacity, Image } from 'react-native'
-import React, { useMemo, useEffect, useState, useCallback } from 'react'
+import React, { useEffect, useState, useCallback, useMemo } from 'react'
 import SizeBox from '../../../constants/SizeBox'
 import { createStyles } from '../SearchStyles';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import CustomHeader from '../../../components/customHeader/CustomHeader';
 import { useAuth } from '../../../context/AuthContext';
-import { getMediaById } from '../../../services/apiGateway';
-import { getApiBaseUrl } from '../../../constants/RuntimeConfig';
+import { getHubAppearanceMedia, getMediaViewAll, type MediaViewAllItem } from '../../../services/apiGateway';
 import { useTheme } from '../../../context/ThemeContext';
 import { useTranslation } from 'react-i18next';
 
 const AllPhotosOfEvents = ({ navigation, route }: any) => {
     const insets = useSafeAreaInsets();
     const eventName = route?.params?.eventName || 'Event';
+    const eventId = route?.params?.eventId;
+    const appearanceOnly = Boolean(route?.params?.appearanceOnly);
     const division = route?.params?.division;
     const gender = route?.params?.gender;
     const { apiAccessToken } = useAuth();
     const { colors } = useTheme();
     const { t } = useTranslation();
     const styles = createStyles(colors);
-    const photoIds = useMemo(
-        () => [
-            '87873d40-addf-4289-aa82-7cd300acdd94',
-            '4ac31817-e954-4d22-934d-27f82ddf5163',
-            '4fed0d64-9fd4-42c4-bf24-875aad683c6d',
-        ],
-        [],
-    );
-    const [photoMap, setPhotoMap] = useState<Record<string, string>>({});
+    const [items, setItems] = useState<MediaViewAllItem[]>([]);
 
     const isSignedUrl = useCallback((value?: string | null) => {
         if (!value) return false;
@@ -51,15 +44,6 @@ const AllPhotosOfEvents = ({ navigation, route }: any) => {
         return `${value}${sep}access_token=${encodeURIComponent(apiAccessToken)}`;
     }, [apiAccessToken, isSignedUrl]);
 
-    const toAbsoluteUrl = useCallback((value?: string | null) => {
-        if (!value) return null;
-        const raw = String(value);
-        if (raw.startsWith('http://') || raw.startsWith('https://')) return raw;
-        const base = getApiBaseUrl();
-        if (!base) return raw;
-        return `${base.replace(/\/$/, '')}/${raw.replace(/^\//, '')}`;
-    }, []);
-
     const formatDate = (value?: string) => {
         if (!value) return '—';
         const parsed = new Date(value);
@@ -74,55 +58,46 @@ const AllPhotosOfEvents = ({ navigation, route }: any) => {
     useEffect(() => {
         let mounted = true;
         if (!apiAccessToken) return () => {};
-        Promise.all(
-            photoIds.map(async (id) => {
-                const media = await getMediaById(apiAccessToken, id);
-                const thumbCandidate =
-                    media.thumbnail_url || media.preview_url || media.full_url || media.raw_url || null;
-                const resolvedThumb = thumbCandidate ? toAbsoluteUrl(String(thumbCandidate)) : null;
-                return [id, withAccessToken(resolvedThumb) || resolvedThumb] as const;
-            }),
-        )
-            .then((entries) => {
+        const load = async () => {
+            try {
+                let list: MediaViewAllItem[] = [];
+                if (appearanceOnly && eventId) {
+                    const res = await getHubAppearanceMedia(apiAccessToken, String(eventId));
+                    list = Array.isArray(res?.results) ? res.results : [];
+                } else {
+                    const res = await getMediaViewAll(apiAccessToken);
+                    list = Array.isArray(res) ? res : [];
+                }
                 if (!mounted) return;
-                const map: Record<string, string> = {};
-                entries.forEach(([id, url]) => {
-                    if (url) map[id] = url;
+                const filtered = list.filter((item) => {
+                    if (eventId && String(item.event_id ?? '') !== String(eventId)) return false;
+                    return String(item.type).toLowerCase() !== 'video';
                 });
-                setPhotoMap(map);
-            })
-            .catch(() => {});
+                setItems(filtered);
+            } catch {
+                if (!mounted) return;
+                setItems([]);
+            }
+        };
+        load();
         return () => {
             mounted = false;
         };
-    }, [apiAccessToken, photoIds, toAbsoluteUrl, withAccessToken]);
+    }, [apiAccessToken, appearanceOnly, eventId, withAccessToken]);
 
-    const data = useMemo(
-        () => ([
-            {
-                id: photoIds[0],
-                name: 'Passionate',
-                photoUrl: photoMap[photoIds[0]] ?? '',
-                price: '$15',
-                uploadedAt: '2026-02-05',
-            },
-            {
-                id: photoIds[1],
-                name: 'Passionate',
-                photoUrl: photoMap[photoIds[1]] ?? '',
-                price: '$15',
-                uploadedAt: '2026-02-02',
-            },
-            {
-                id: photoIds[2],
-                name: 'Passionate',
-                photoUrl: photoMap[photoIds[2]] ?? '',
-                price: '$15',
-                uploadedAt: '2026-01-29',
-            },
-        ]),
-        [photoIds, photoMap],
-    );
+    const data = useMemo(() => {
+        return items.map((item) => {
+            const candidate = item.thumbnail_url || item.preview_url || item.full_url || item.raw_url || null;
+            return {
+                id: item.media_id,
+                photoUrl: withAccessToken(candidate) || candidate || '',
+                uploadedAt: item.created_at ?? '',
+                likes: item.likes_count ?? 0,
+                views: item.views_count ?? 0,
+                media: item,
+            };
+        });
+    }, [items, withAccessToken]);
 
     return (
         <View style={styles.mainContainer}>
@@ -143,16 +118,18 @@ const AllPhotosOfEvents = ({ navigation, route }: any) => {
                             borderWidth: 1,
                             borderColor: colors.borderColor,
                         }}
-                        onPress={() => navigation.navigate('PhotoDetailScreen', {
+                            onPress={() => navigation.navigate('PhotoDetailScreen', {
                             eventTitle: eventName,
                             media: {
-                                id: item.id,
-                                type: 'image',
-                                title: `${eventName} ${item.name}`,
-                                thumbnailUrl: item.photoUrl,
-                                previewUrl: item.photoUrl,
-                                originalUrl: item.photoUrl,
-                                fullUrl: item.photoUrl,
+                                id: item.media.media_id,
+                                type: item.media.type,
+                                eventId: item.media.event_id,
+                                thumbnailUrl: item.media.thumbnail_url,
+                                previewUrl: item.media.preview_url,
+                                originalUrl: item.media.original_url,
+                                fullUrl: item.media.full_url,
+                                rawUrl: item.media.raw_url,
+                                hlsManifestPath: item.media.hls_manifest_path,
                             },
                         })}
                     >
@@ -169,7 +146,7 @@ const AllPhotosOfEvents = ({ navigation, route }: any) => {
                             <Text style={[styles.titleText, { fontSize: 16 }]} numberOfLines={1}>{eventName}</Text>
                             <SizeBox height={6} />
                             <Text style={styles.subText} numberOfLines={1}>
-                                {item.name} • {item.price}
+                                {item.likes} {t('likes')} • {item.views} {t('views')}
                             </Text>
                             <SizeBox height={4} />
                             <Text style={styles.subText} numberOfLines={1}>

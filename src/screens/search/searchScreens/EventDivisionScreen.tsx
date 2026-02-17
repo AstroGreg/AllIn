@@ -28,6 +28,7 @@ const EventDivisionScreen = ({navigation, route}: any) => {
 
   const eventName = route?.params?.eventName || 'Event';
   const competitionName = route?.params?.competitionName || '';
+  const eventId = route?.params?.eventId;
   const defaultMode = route?.params?.mode || 'video';
 
   const [selectedAge, setSelectedAge] = useState(AGE_GROUPS[0]);
@@ -41,6 +42,7 @@ const EventDivisionScreen = ({navigation, route}: any) => {
   const handleOpenVideos = () => {
     navigation.navigate('VideosForEvent', {
       eventName,
+      eventId,
       division: selectedAge,
       gender: selectedGender,
     });
@@ -49,6 +51,7 @@ const EventDivisionScreen = ({navigation, route}: any) => {
   const handleOpenPhotos = () => {
     navigation.navigate('AllPhotosOfEvents', {
       eventName,
+      eventId,
       division: selectedAge,
       gender: selectedGender,
     });

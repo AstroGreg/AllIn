@@ -1,7 +1,8 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { View, Text, TouchableOpacity, TextInput, ScrollView, Image } from 'react-native';
+import { View, Text, TouchableOpacity, TextInput, ScrollView, Image, ActivityIndicator, Modal, Pressable } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { ArrowLeft2, Add, Trash } from 'iconsax-react-nativejs';
+import { Calendar } from 'react-native-calendars';
+import { ArrowLeft2, Add, Trash, Calendar as CalendarIcon } from 'iconsax-react-nativejs';
 import { launchImageLibrary } from 'react-native-image-picker';
 import { useTheme } from '../../context/ThemeContext';
 import SizeBox from '../../constants/SizeBox';
@@ -30,10 +31,13 @@ const ProfileBlogEditorScreen = ({ navigation, route }: any) => {
 
     const [title, setTitle] = useState('');
     const [description, setDescription] = useState('');
-    const [date, setDate] = useState('');
+    const [postDate, setPostDate] = useState<Date>(new Date());
+    const [showDateModal, setShowDateModal] = useState(false);
+    const [calendarDate, setCalendarDate] = useState<string | null>(null);
     const [media, setMedia] = useState<BlogMedia[]>([]);
     const [existingMedia, setExistingMedia] = useState<MediaViewAllItem[]>([]);
     const [isSaving, setIsSaving] = useState(false);
+    const [isPickingMedia, setIsPickingMedia] = useState(false);
 
     const isSignedUrl = useCallback((value?: string | null) => {
         if (!value) return false;
@@ -86,15 +90,8 @@ const ProfileBlogEditorScreen = ({ navigation, route }: any) => {
         if (entryPreview && mode === 'add') {
             setTitle(entryPreview.title ?? '');
             setDescription(entryPreview.description ?? '');
-            setDate(entryPreview.date ?? '');
         }
     }, [entryPreview, mode]);
-
-    useEffect(() => {
-        if (!date) {
-            setDate(new Date().toLocaleDateString('en-GB'));
-        }
-    }, [date]);
 
     useEffect(() => {
         let mounted = true;
@@ -105,7 +102,12 @@ const ProfileBlogEditorScreen = ({ navigation, route }: any) => {
                 if (resp?.post) {
                     setTitle(resp.post.title ?? '');
                     setDescription(resp.post.description ?? '');
-                    setDate(resp.post.created_at ? String(resp.post.created_at).slice(0, 10) : '');
+                    if (resp.post.created_at) {
+                        const parsed = new Date(String(resp.post.created_at));
+                        if (!Number.isNaN(parsed.getTime())) {
+                            setPostDate(parsed);
+                        }
+                    }
                 }
                 setExistingMedia(Array.isArray((resp as any)?.media) ? (resp as any).media : []);
             })
@@ -115,22 +117,54 @@ const ProfileBlogEditorScreen = ({ navigation, route }: any) => {
         };
     }, [apiAccessToken, mode, postId]);
 
+    const toDateString = useCallback((date: Date) => {
+        const yyyy = date.getFullYear();
+        const mm = String(date.getMonth() + 1).padStart(2, '0');
+        const dd = String(date.getDate()).padStart(2, '0');
+        return `${yyyy}-${mm}-${dd}`;
+    }, []);
+
+    const openDateModal = useCallback(() => {
+        const seedDate = mode === 'add' ? new Date() : (postDate || new Date());
+        const seed = toDateString(seedDate);
+        setCalendarDate(seed);
+        setShowDateModal(true);
+    }, [mode, postDate, toDateString]);
+
+    const applyDateModal = useCallback(() => {
+        if (calendarDate) {
+            const [year, month, day] = calendarDate.split('-').map(Number);
+            if (year && month && day) {
+                const next = new Date(postDate || new Date());
+                next.setFullYear(year, month - 1, day);
+                next.setHours(0, 0, 0, 0);
+                setPostDate(next);
+            }
+        }
+        setShowDateModal(false);
+    }, [calendarDate, postDate]);
+
     const pickMedia = useCallback(async () => {
-        const result = await launchImageLibrary({
-            mediaType: 'mixed',
-            selectionLimit: 6,
-        });
-        const items = result.assets ?? [];
-        const mapped = items
-            .filter((asset) => asset.uri)
-            .map((asset) => ({
-                uri: asset.uri as string,
-                type: asset.type?.startsWith('video') ? 'video' : 'image',
-                name: asset.fileName ?? undefined,
-                mimeType: asset.type ?? undefined,
-            }));
-        if (mapped.length > 0) {
-            setMedia((prev) => [...prev, ...mapped].slice(0, 12));
+        setIsPickingMedia(true);
+        try {
+            const result = await launchImageLibrary({
+                mediaType: 'mixed',
+                selectionLimit: 6,
+            });
+            const items = result.assets ?? [];
+            const mapped = items
+                .filter((asset) => asset.uri)
+                .map((asset) => ({
+                    uri: asset.uri as string,
+                    type: asset.type?.startsWith('video') ? 'video' : 'image',
+                    name: asset.fileName ?? undefined,
+                    mimeType: asset.type ?? undefined,
+                }));
+            if (mapped.length > 0) {
+                setMedia((prev) => [...prev, ...mapped].slice(0, 12));
+            }
+        } finally {
+            setIsPickingMedia(false);
         }
     }, []);
 
@@ -145,12 +179,14 @@ const ProfileBlogEditorScreen = ({ navigation, route }: any) => {
                     title: title.trim(),
                     description: description.trim(),
                     summary,
+                    created_at: postDate ? postDate.toISOString() : undefined,
                 });
             } else {
                 const created = await createPost(apiAccessToken, {
                     title: title.trim(),
                     description: description.trim(),
                     summary,
+                    created_at: postDate ? postDate.toISOString() : undefined,
                 });
                 currentId = created?.post?.id ?? null;
             }
@@ -169,7 +205,7 @@ const ProfileBlogEditorScreen = ({ navigation, route }: any) => {
         } finally {
             setIsSaving(false);
         }
-    }, [apiAccessToken, createPost, description, media, mode, navigation, postId, title, updatePost]);
+    }, [apiAccessToken, createPost, description, media, mode, navigation, postDate, postId, title, updatePost]);
 
     const deleteEntry = useCallback(async () => {
         if (!apiAccessToken || !postId) return;
@@ -205,9 +241,10 @@ const ProfileBlogEditorScreen = ({ navigation, route }: any) => {
                 </View>
                 <View style={Styles.fieldBlock}>
                     <Text style={Styles.fieldLabel}>{t('Date')}</Text>
-                    <View style={Styles.readonlyField}>
-                        <Text style={Styles.readonlyText}>{date || new Date().toLocaleDateString('en-GB')}</Text>
-                    </View>
+                    <TouchableOpacity style={Styles.dateButton} onPress={openDateModal}>
+                        <CalendarIcon size={16} color={colors.primaryColor} variant="Linear" />
+                        <Text style={Styles.dateText}>{postDate.toLocaleDateString()}</Text>
+                    </TouchableOpacity>
                 </View>
                 <View style={Styles.fieldBlock}>
                     <Text style={Styles.fieldLabel}>{t('Description')}</Text>
@@ -272,6 +309,52 @@ const ProfileBlogEditorScreen = ({ navigation, route }: any) => {
 
                 <SizeBox height={insets.bottom > 0 ? insets.bottom + 16 : 32} />
             </ScrollView>
+
+            {(isSaving || isPickingMedia) && (
+                <View style={Styles.loadingOverlay}>
+                    <View style={Styles.loadingCard}>
+                        <ActivityIndicator color={colors.primaryColor} />
+                        <Text style={Styles.loadingText}>
+                            {isPickingMedia ? t('Preparing media...') : (media.length > 0 ? t('Uploading media...') : t('Saving...'))}
+                        </Text>
+                    </View>
+                </View>
+            )}
+
+            <Modal
+                visible={showDateModal}
+                transparent
+                animationType="fade"
+                onRequestClose={() => setShowDateModal(false)}
+            >
+                <View style={Styles.modalOverlay}>
+                    <Pressable style={Styles.modalBackdrop} onPress={() => setShowDateModal(false)} />
+                    <View style={Styles.dateModalContainer}>
+                        <Text style={Styles.dateModalTitle}>{t('Select date')}</Text>
+                        <SizeBox height={10} />
+                        <Calendar
+                            current={calendarDate ?? undefined}
+                            markedDates={calendarDate ? { [calendarDate]: { selected: true, selectedColor: colors.primaryColor } } : undefined}
+                            onDayPress={(day) => setCalendarDate(day.dateString)}
+                            enableSwipeMonths
+                            theme={{
+                                calendarBackground: colors.cardBackground,
+                                textSectionTitleColor: colors.subTextColor,
+                                dayTextColor: colors.mainTextColor,
+                                monthTextColor: colors.mainTextColor,
+                                arrowColor: colors.primaryColor,
+                                selectedDayBackgroundColor: colors.primaryColor,
+                                selectedDayTextColor: colors.pureWhite,
+                                todayTextColor: colors.primaryColor,
+                            }}
+                            style={{ borderRadius: 12 }}
+                        />
+                        <TouchableOpacity style={Styles.modalDoneButton} onPress={applyDateModal}>
+                            <Text style={Styles.modalDoneButtonText}>{t('Done')}</Text>
+                        </TouchableOpacity>
+                    </View>
+                </View>
+            </Modal>
         </View>
     );
 };
