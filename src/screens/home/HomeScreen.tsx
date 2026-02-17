@@ -900,8 +900,15 @@ const HomeScreen = ({ navigation }: any) => {
     const openProfileFromId = useCallback((profileId?: string | null) => {
         const safeProfileId = String(profileId || '').trim();
         if (!safeProfileId) return;
+        const ownProfileId = String(overview?.profile_id || '').trim();
+        if (ownProfileId && safeProfileId === ownProfileId) {
+            // console.log("own: " + ownProfileId);
+            // console.log("safe: " + safeProfileId);
+            navigation.navigate('BottomTabBar', { screen: 'Profile' });
+            return;
+        }
         navigation.navigate('ViewUserProfileScreen', { profileId: safeProfileId });
-    }, [navigation]);
+    }, [navigation, overview?.profile_id]);
 
     const updateVisibility = useCallback(() => {
         const scrollY = scrollYRef.current;
