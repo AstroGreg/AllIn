@@ -127,6 +127,30 @@ const CompetitionDetailsScreen = ({ navigation, route }: any) => {
         setCategoryModalVisible(true);
     };
 
+    const clearCategoryDraft = useCallback(async (categoryName: string) => {
+        try {
+            const key = `@upload_assets_${competitionId}`;
+            const assetsRaw = await AsyncStorage.getItem(key);
+            const parsed = assetsRaw ? JSON.parse(assetsRaw) : {};
+            if (!parsed || typeof parsed !== 'object') return;
+            if (!(categoryName in parsed)) return;
+
+            const next = { ...parsed };
+            delete (next as any)[categoryName];
+
+            const hasAny = Object.values(next).some((list: any) => Array.isArray(list) && list.length > 0);
+            if (hasAny) {
+                await AsyncStorage.setItem(key, JSON.stringify(next));
+            } else {
+                await AsyncStorage.removeItem(key);
+            }
+        } catch {
+            // ignore
+        } finally {
+            loadCounts();
+        }
+    }, [competitionId, loadCounts]);
+
     const handleContinue = () => {
         if (!selectedEvent || !selectedGender || !selectedDivision) return;
         navigation.navigate('UploadDetailsScreen', {
@@ -166,7 +190,13 @@ const CompetitionDetailsScreen = ({ navigation, route }: any) => {
             key={category.id}
             style={[Styles.eventCard, hasUploads && Styles.eventCardActive]}
             activeOpacity={0.85}
-            onPress={() => openCategoryModal(category)}
+            onPress={() => {
+                if (hasUploads) {
+                    clearCategoryDraft(category.name);
+                    return;
+                }
+                openCategoryModal(category);
+            }}
         >
             <View style={Styles.eventText}>
                 <Text style={Styles.eventName}>{category.name}</Text>

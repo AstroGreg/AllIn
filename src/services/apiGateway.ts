@@ -1313,7 +1313,7 @@ export async function getPostById(accessToken: string, post_id: string): Promise
 
 export async function createPost(
   accessToken: string,
-  params: {title: string; description: string; summary?: string | null; created_at?: string | null},
+  params: {title: string; description: string; summary?: string | null; created_at?: string | null; event_id?: string | null},
 ): Promise<{ok: boolean; post: PostSummary}> {
   return apiRequest(`/posts`, {
     method: 'POST',
@@ -1323,6 +1323,7 @@ export async function createPost(
       description: params.description,
       summary: params.summary ?? undefined,
       created_at: params.created_at ?? undefined,
+      event_id: params.event_id ?? undefined,
     },
   });
 }
@@ -1349,4 +1350,68 @@ export async function deletePost(
   post_id: string,
 ): Promise<{ok: boolean; post_id: string}> {
   return apiRequest(`/posts/${encodeURIComponent(post_id)}`, {method: 'DELETE', accessToken});
+}
+
+export interface AppNotification {
+  id: string;
+  type: string;
+  title: string;
+  body: string;
+  event_id?: string | null;
+  post_id?: string | null;
+  metadata?: Record<string, any>;
+  read_at?: string | null;
+  created_at?: string | null;
+}
+
+export interface NotificationsResponse {
+  ok: boolean;
+  count: number;
+  unread_count: number;
+  notifications: AppNotification[];
+}
+
+export async function getNotifications(
+  accessToken: string,
+  params?: {limit?: number; offset?: number; unread_only?: boolean},
+): Promise<NotificationsResponse> {
+  const qs = toQueryString({
+    limit: params?.limit ?? undefined,
+    offset: params?.offset ?? undefined,
+    unread_only: params?.unread_only ? 'true' : undefined,
+  });
+  return apiRequest<NotificationsResponse>(`/notifications${qs}`, {
+    method: 'GET',
+    accessToken,
+  });
+}
+
+export async function markNotificationRead(
+  accessToken: string,
+  id: string,
+): Promise<{ok: boolean; id: string; read_at?: string | null}> {
+  const safeId = String(id || '').trim();
+  if (!safeId) throw new ApiError({status: 400, message: 'Missing notification id'});
+  return apiRequest(`/notifications/${encodeURIComponent(safeId)}/read`, {
+    method: 'POST',
+    accessToken,
+    body: {},
+  });
+}
+
+export async function registerDeviceToken(
+  accessToken: string,
+  payload: {token: string; platform: 'ios' | 'android' | 'web'; enabled?: boolean},
+): Promise<{ok: boolean}> {
+  const token = String(payload?.token || '').trim();
+  if (!token) throw new ApiError({status: 400, message: 'Missing token'});
+  return apiRequest('/devices/token', {
+    method: 'POST',
+    accessToken,
+    body: {
+      token,
+      platform: payload.platform,
+      enabled: payload.enabled ?? true,
+    },
+  });
 }

@@ -98,6 +98,7 @@ const HomeScreen = ({ navigation }: any) => {
     const [overlayMedia, setOverlayMedia] = useState<HomeOverviewMedia | MediaViewAllItem | null>(null);
     const [overlayLoading, setOverlayLoading] = useState(true);
     const [overlayPlaying, setOverlayPlaying] = useState(true);
+    const [overlayMuted, setOverlayMuted] = useState(true);
     const [overlayDuration, setOverlayDuration] = useState(0);
     const [overlayCurrentTime, setOverlayCurrentTime] = useState(0);
     const [overlaySeeking, setOverlaySeeking] = useState(false);
@@ -716,6 +717,7 @@ const HomeScreen = ({ navigation }: any) => {
             resumeByUrlRef.current[playerUrl] = resumeTime;
         }
         setOverlayPlaying(true);
+        setOverlayMuted(true);
         setOverlayVisible(true);
     }, [buildMediaCardPress, overlayCurrentTime, overlayVideoUrl, pickPlayableVideoUrl, prewarmVideo, withAccessToken]);
 
@@ -1374,8 +1376,8 @@ const HomeScreen = ({ navigation }: any) => {
                                     : !(isFocused && (isVideoVisible || !overlayHasInitialTime))
                             }
                             controls={false}
-                            muted={false}
-                            volume={1.0}
+                            muted={overlayMuted}
+                            volume={overlayMuted ? 0 : 1.0}
                             repeat={false}
                             playInBackground={false}
                             playWhenInactive={false}
@@ -1451,6 +1453,17 @@ const HomeScreen = ({ navigation }: any) => {
                             pointerEvents={overlayVisible ? 'auto' : 'none'}
                             style={Styles.sharedVideoTap}
                         />
+                        {overlayVisible && !overlayLoading && (
+                            <TouchableOpacity
+                                style={Styles.videoMuteButton}
+                                activeOpacity={0.85}
+                                onPress={() => setOverlayMuted((prev) => !prev)}
+                            >
+                                <Text style={Styles.videoMuteButtonText}>
+                                    {overlayMuted ? t('Unmute') : t('Mute')}
+                                </Text>
+                            </TouchableOpacity>
+                        )}
                     </View>
 
                     {overlayVisible && (

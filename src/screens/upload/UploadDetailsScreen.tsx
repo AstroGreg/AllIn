@@ -41,7 +41,9 @@ const UploadDetailsScreen = ({ navigation, route }: any) => {
     const [selectedAssets, setSelectedAssets] = useState<any[]>([]);
     const competition = route?.params?.competition;
     const category = route?.params?.category;
+    const account = route?.params?.account;
     const anonymous = route?.params?.anonymous;
+    const competitionType = route?.params?.competitionType ?? competition?.competitionType;
 
     const handleFilePicker = async () => {
         const options: any = {
@@ -115,11 +117,16 @@ const UploadDetailsScreen = ({ navigation, route }: any) => {
         } catch {
             // ignore
         }
-        navigation.goBack();
+        navigation.navigate('UploadSummaryScreen', {
+            competition,
+            account,
+            anonymous,
+            competitionType,
+        });
     };
 
     const selectedCount = selectedAssets.length;
-    const buttonLabel = useMemo(() => (selectedCount > 0 ? t('Upload') : t('Select files')), [selectedCount]);
+    const buttonLabel = useMemo(() => (selectedCount > 0 ? t('Upload') : t('Select files')), [selectedCount, t]);
 
     return (
         <View style={Styles.mainContainer}>

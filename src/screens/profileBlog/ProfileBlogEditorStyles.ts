@@ -51,6 +51,9 @@ export const createStyles = (colors: ThemeColors) =>
             color: colors.mainTextColor,
             backgroundColor: colors.btnBackgroundColor,
         },
+        fieldInputError: {
+            borderColor: '#ED5454',
+        },
         readonlyField: {
             borderWidth: 1,
             borderColor: colors.lightGrayColor,
@@ -218,6 +221,29 @@ export const createStyles = (colors: ThemeColors) =>
         modalDoneButtonText: {
             ...Fonts.semibold13,
             color: colors.pureWhite,
+        },
+        eventList: {
+            maxHeight: 260,
+        },
+        eventRow: {
+            borderWidth: 1,
+            borderColor: colors.lightGrayColor,
+            borderRadius: 10,
+            paddingHorizontal: 12,
+            paddingVertical: 10,
+            marginBottom: 8,
+            backgroundColor: colors.btnBackgroundColor,
+        },
+        eventRowActive: {
+            borderColor: colors.primaryColor,
+            backgroundColor: colors.cardBackground,
+        },
+        eventRowText: {
+            ...Fonts.regular14,
+            color: colors.mainTextColor,
+        },
+        eventRowTextActive: {
+            color: colors.primaryColor,
         },
         loadingOverlay: {
             position: 'absolute',

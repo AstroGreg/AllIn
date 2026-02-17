@@ -8,6 +8,7 @@ import { useTheme } from '../../context/ThemeContext';
 import SizeBox from '../../constants/SizeBox';
 import { createStyles } from './ProfileBlogEditorStyles';
 import { useAuth } from '../../context/AuthContext';
+import { useEvents } from '../../context/EventsContext';
 import { createPost, deletePost, getPostById, updatePost, uploadMediaBatch, type MediaViewAllItem } from '../../services/apiGateway';
 import { getApiBaseUrl } from '../../constants/RuntimeConfig';
 import { useTranslation } from 'react-i18next'
@@ -28,16 +29,20 @@ const ProfileBlogEditorScreen = ({ navigation, route }: any) => {
     const postId: string | null = route?.params?.postId ?? route?.params?.entry?.id ?? null;
     const entryPreview: any = route?.params?.entry ?? null;
     const { apiAccessToken } = useAuth();
+    const { events: subscribedEvents } = useEvents();
 
     const [title, setTitle] = useState('');
     const [description, setDescription] = useState('');
-    const [postDate, setPostDate] = useState<Date>(new Date());
+    const [postDate, setPostDate] = useState<Date | null>(null);
     const [showDateModal, setShowDateModal] = useState(false);
     const [calendarDate, setCalendarDate] = useState<string | null>(null);
+    const [showEventModal, setShowEventModal] = useState(false);
+    const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
     const [media, setMedia] = useState<BlogMedia[]>([]);
     const [existingMedia, setExistingMedia] = useState<MediaViewAllItem[]>([]);
     const [isSaving, setIsSaving] = useState(false);
     const [isPickingMedia, setIsPickingMedia] = useState(false);
+    const [showValidation, setShowValidation] = useState(false);
 
     const isSignedUrl = useCallback((value?: string | null) => {
         if (!value) return false;
@@ -86,6 +91,30 @@ const ProfileBlogEditorScreen = ({ navigation, route }: any) => {
             .filter((item) => Boolean(item.uri));
     }, [existingMedia, resolveThumbUrl]);
 
+    const selectedEvent = useMemo(
+        () => subscribedEvents.find((event) => String(event.event_id) === String(selectedEventId)),
+        [selectedEventId, subscribedEvents],
+    );
+
+    const selectedEventLabel = useMemo(() => {
+        if (!selectedEvent) return t('No event selected');
+        return selectedEvent.event_name || selectedEvent.event_title || t('Event');
+    }, [selectedEvent, t]);
+
+    const parseEventDate = useCallback((value?: string | null): Date | null => {
+        if (!value) return null;
+        const raw = String(value).trim();
+        const direct = new Date(raw);
+        if (!Number.isNaN(direct.getTime())) return direct;
+        if (raw.includes('/')) {
+            const [day, month, year] = raw.split('/').map(Number);
+            if (!day || !month || !year) return null;
+            const parsed = new Date(year, month - 1, day, 0, 0, 0, 0);
+            return Number.isNaN(parsed.getTime()) ? null : parsed;
+        }
+        return null;
+    }, []);
+
     useEffect(() => {
         if (entryPreview && mode === 'add') {
             setTitle(entryPreview.title ?? '');
@@ -125,11 +154,11 @@ const ProfileBlogEditorScreen = ({ navigation, route }: any) => {
     }, []);
 
     const openDateModal = useCallback(() => {
-        const seedDate = mode === 'add' ? new Date() : (postDate || new Date());
+        const seedDate = postDate || new Date();
         const seed = toDateString(seedDate);
         setCalendarDate(seed);
         setShowDateModal(true);
-    }, [mode, postDate, toDateString]);
+    }, [postDate, toDateString]);
 
     const applyDateModal = useCallback(() => {
         if (calendarDate) {
@@ -169,7 +198,11 @@ const ProfileBlogEditorScreen = ({ navigation, route }: any) => {
     }, []);
 
     const saveEntry = useCallback(async () => {
-        if (!apiAccessToken || !title.trim() || !description.trim()) return;
+        setShowValidation(true);
+        const hasTitle = title.trim().length > 0;
+        const hasDescription = description.trim().length > 0;
+        const hasDate = !!postDate && !Number.isNaN(new Date(postDate).getTime());
+        if (!apiAccessToken || !hasTitle || !hasDescription || !hasDate) return;
         setIsSaving(true);
         try {
             const summary = description.length > 180 ? `${description.slice(0, 180)}…` : description;
@@ -187,6 +220,7 @@ const ProfileBlogEditorScreen = ({ navigation, route }: any) => {
                     description: description.trim(),
                     summary,
                     created_at: postDate ? postDate.toISOString() : undefined,
+                    event_id: selectedEventId ? String(selectedEventId) : undefined,
                 });
                 currentId = created?.post?.id ?? null;
             }
@@ -205,7 +239,11 @@ const ProfileBlogEditorScreen = ({ navigation, route }: any) => {
         } finally {
             setIsSaving(false);
         }
-    }, [apiAccessToken, createPost, description, media, mode, navigation, postDate, postId, title, updatePost]);
+    }, [apiAccessToken, description, media, mode, navigation, postDate, postId, selectedEventId, title]);
+
+    const titleInvalid = showValidation && title.trim().length === 0;
+    const descriptionInvalid = showValidation && description.trim().length === 0;
+    const dateInvalid = showValidation && (!postDate || Number.isNaN(new Date(postDate).getTime()));
 
     const deleteEntry = useCallback(async () => {
         if (!apiAccessToken || !postId) return;
@@ -232,7 +270,7 @@ const ProfileBlogEditorScreen = ({ navigation, route }: any) => {
                 <View style={Styles.fieldBlock}>
                     <Text style={Styles.fieldLabel}>{t('Title')}</Text>
                     <TextInput
-                        style={Styles.fieldInput}
+                        style={[Styles.fieldInput, titleInvalid && Styles.fieldInputError]}
                         placeholder={t('PK 400m Limburg 2025')}
                         placeholderTextColor="#9B9F9F"
                         value={title}
@@ -241,15 +279,21 @@ const ProfileBlogEditorScreen = ({ navigation, route }: any) => {
                 </View>
                 <View style={Styles.fieldBlock}>
                     <Text style={Styles.fieldLabel}>{t('Date')}</Text>
-                    <TouchableOpacity style={Styles.dateButton} onPress={openDateModal}>
+                    <TouchableOpacity style={[Styles.dateButton, dateInvalid && Styles.fieldInputError]} onPress={openDateModal}>
                         <CalendarIcon size={16} color={colors.primaryColor} variant="Linear" />
-                        <Text style={Styles.dateText}>{postDate.toLocaleDateString()}</Text>
+                        <Text style={Styles.dateText}>{postDate ? postDate.toLocaleDateString() : t('Select date')}</Text>
+                    </TouchableOpacity>
+                </View>
+                <View style={Styles.fieldBlock}>
+                    <Text style={Styles.fieldLabel}>{t('Event')}</Text>
+                    <TouchableOpacity style={Styles.dateButton} onPress={() => setShowEventModal(true)}>
+                        <Text style={Styles.dateText} numberOfLines={1}>{selectedEventLabel}</Text>
                     </TouchableOpacity>
                 </View>
                 <View style={Styles.fieldBlock}>
                     <Text style={Styles.fieldLabel}>{t('Description')}</Text>
                     <TextInput
-                        style={[Styles.fieldInput, Styles.fieldTextarea]}
+                        style={[Styles.fieldInput, Styles.fieldTextarea, descriptionInvalid && Styles.fieldInputError]}
                         placeholder={t('Write your story and results.')}
                         placeholderTextColor="#9B9F9F"
                         value={description}
@@ -320,6 +364,60 @@ const ProfileBlogEditorScreen = ({ navigation, route }: any) => {
                     </View>
                 </View>
             )}
+
+            <Modal
+                visible={showEventModal}
+                transparent
+                animationType="fade"
+                onRequestClose={() => setShowEventModal(false)}
+            >
+                <View style={Styles.modalOverlay}>
+                    <Pressable style={Styles.modalBackdrop} onPress={() => setShowEventModal(false)} />
+                    <View style={Styles.dateModalContainer}>
+                        <Text style={Styles.dateModalTitle}>{t('Select event')}</Text>
+                        <SizeBox height={10} />
+                        <ScrollView style={Styles.eventList} showsVerticalScrollIndicator={false}>
+                            <TouchableOpacity
+                                style={[Styles.eventRow, !selectedEventId && Styles.eventRowActive]}
+                                onPress={() => {
+                                    setSelectedEventId(null);
+                                    setShowEventModal(false);
+                                }}
+                            >
+                                <Text style={[Styles.eventRowText, !selectedEventId && Styles.eventRowTextActive]}>
+                                    {t('No event selected')}
+                                </Text>
+                            </TouchableOpacity>
+                            {subscribedEvents.map((event) => {
+                                const eventId = String(event.event_id);
+                                const active = String(selectedEventId || '') === eventId;
+                                const label = event.event_name || event.event_title || t('Event');
+                                return (
+                                    <TouchableOpacity
+                                        key={eventId}
+                                        style={[Styles.eventRow, active && Styles.eventRowActive]}
+                                        onPress={() => {
+                                            setSelectedEventId(eventId);
+                                            const eventDate = parseEventDate(event.event_date ?? null);
+                                            if (eventDate) {
+                                                setPostDate(eventDate);
+                                            }
+                                            setShowEventModal(false);
+                                        }}
+                                    >
+                                        <Text style={[Styles.eventRowText, active && Styles.eventRowTextActive]} numberOfLines={2}>
+                                            {label}
+                                        </Text>
+                                    </TouchableOpacity>
+                                );
+                            })}
+                        </ScrollView>
+                        <TouchableOpacity style={Styles.modalDoneButton} onPress={() => setShowEventModal(false)}>
+                            <Text style={Styles.modalDoneButtonText}>{t('Done')}</Text>
+                        </TouchableOpacity>
+                    </View>
+                </View>
+            </Modal>
 
             <Modal
                 visible={showDateModal}

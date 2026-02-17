@@ -111,6 +111,7 @@ const NewsFeedCard = ({
     const [videoLoading, setVideoLoading] = useState(true);
     const [currentTime, setCurrentTime] = useState(0);
     const [isManualPaused, setIsManualPaused] = useState(false);
+    const [isMuted, setIsMuted] = useState(true);
     const videoOpacity = useRef(new Animated.Value(0)).current;
     const videoRef = useRef<Video>(null);
     const hasSeekedRef = useRef(false);
@@ -157,6 +158,7 @@ const NewsFeedCard = ({
         hasSeekedRef.current = false;
         lastResumeRef.current = 0;
         setIsManualPaused(false);
+        setIsMuted(true);
     }, [videoOpacity, currentIndex, currentInlineVideoUri]);
 
     useEffect(() => {
@@ -308,8 +310,8 @@ const NewsFeedCard = ({
                                 resizeMode="cover"
                                 paused={!(isPlaying && isCurrent && isActive)}
                                 controls={false}
-                                muted={false}
-                                volume={1.0}
+                                muted={isMuted}
+                                volume={isMuted ? 0 : 1.0}
                                 repeat
                                 playInBackground={false}
                                 playWhenInactive={false}
@@ -337,6 +339,17 @@ const NewsFeedCard = ({
                                 }}
                             />
                         </Animated.View>
+                    )}
+                    {!useSharedPlayer && !videoFailed && (
+                        <TouchableOpacity
+                            style={Styles.videoMuteButton}
+                            activeOpacity={0.85}
+                            onPress={() => setIsMuted((prev) => !prev)}
+                        >
+                            <Text style={Styles.videoMuteButtonText}>
+                                {isMuted ? t('Unmute') : t('Mute')}
+                            </Text>
+                        </TouchableOpacity>
                     )}
                     {!useSharedPlayer && !isPlaying && isCurrent && (
                         <View style={Styles.videoOverlay}>

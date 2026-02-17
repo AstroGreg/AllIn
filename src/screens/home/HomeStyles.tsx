@@ -855,6 +855,23 @@ export const createStyles = (colors: ThemeColors) => StyleSheet.create({
         alignItems: 'center',
         zIndex: 4,
     },
+    videoMuteButton: {
+        position: 'absolute',
+        top: 12,
+        right: 12,
+        minWidth: 74,
+        borderRadius: 16,
+        paddingHorizontal: 10,
+        paddingVertical: 6,
+        backgroundColor: 'rgba(0,0,0,0.55)',
+        alignItems: 'center',
+        justifyContent: 'center',
+        zIndex: 5,
+    },
+    videoMuteButtonText: {
+        ...Fonts.medium12,
+        color: '#FFFFFF',
+    },
     playButtonLarge: {
         backgroundColor: 'rgba(0,0,0,0.25)',
         borderRadius: 30,

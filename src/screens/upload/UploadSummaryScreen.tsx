@@ -10,6 +10,7 @@ import Icons from '../../constants/Icons'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import Video from 'react-native-video'
 import { useTranslation } from 'react-i18next';
+import { useFocusEffect } from '@react-navigation/native';
 
 function normalizeLocalUri(uri?: string) {
     if (!uri) return uri;
@@ -63,6 +64,45 @@ const UploadSummaryScreen = ({ navigation, route }: any) => {
         return 'Original';
     }, []);
 
+    useFocusEffect(
+        useCallback(() => {
+            let mounted = true;
+            const loadAssets = async () => {
+                try {
+                    const assetsRaw = await AsyncStorage.getItem(`@upload_assets_${competitionId}`);
+                    const parsed = assetsRaw ? JSON.parse(assetsRaw) : {};
+                    if (!mounted) return;
+                    if (!parsed || typeof parsed !== 'object') {
+                        setCategories([]);
+                        return;
+                    }
+                    const sections: CategorySection[] = Object.entries(parsed).map(([name, items]) => {
+                        const list = Array.isArray(items) ? items : [];
+                        const mapped: UploadItem[] = list.map((asset: any, index: number) => ({
+                            id: index + 1,
+                            uri: normalizeLocalUri(asset?.uri),
+                            thumbnail: asset?.uri ? { uri: normalizeLocalUri(asset.uri) } : undefined,
+                            price: 'â‚¬0,10',
+                            resolution: formatResolution(asset),
+                            type: asset?.type,
+                        }));
+                        return {
+                            name,
+                            items: mapped,
+                        };
+                    });
+                    setCategories(sections);
+                } catch {
+                    if (mounted) setCategories([]);
+                }
+            };
+            loadAssets();
+            return () => {
+                mounted = false;
+            };
+        }, [competitionId, formatResolution]),
+    );
+
     useEffect(() => {
         let mounted = true;
         const loadAssets = async () => {
@@ -74,7 +114,7 @@ const UploadSummaryScreen = ({ navigation, route }: any) => {
                     setCategories([]);
                     return;
                 }
-                const sections: CategorySection[] = Object.entries(parsed).map(([name, items], idx) => {
+                const sections: CategorySection[] = Object.entries(parsed).map(([name, items]) => {
                     const list = Array.isArray(items) ? items : [];
                     const mapped: UploadItem[] = list.map((asset: any, index: number) => ({
                         id: index + 1,

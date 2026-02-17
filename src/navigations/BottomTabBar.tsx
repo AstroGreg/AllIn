@@ -364,9 +364,9 @@ const BottomTabBar = () => {
                 })}
                 listeners={({ navigation }) => ({
                     tabPress: (e) => {
-                        navigation.reset({
-                            index: 0,
-                            routes: [{ name: 'Upload' }],
+                        e.preventDefault();
+                        navigation.navigate('Upload', {
+                            screen: 'UploadScreen',
                         });
                     },
                 })}

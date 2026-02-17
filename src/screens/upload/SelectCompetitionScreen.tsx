@@ -11,6 +11,10 @@ import { ApiError, getMediaViewAll, searchEvents, subscribeToEvent, type MediaVi
 import { getApiBaseUrl } from '../../constants/RuntimeConfig'
 import { CalendarList } from 'react-native-calendars'
 import { useTranslation } from 'react-i18next'
+import { useFocusEffect } from '@react-navigation/native'
+import AsyncStorage from '@react-native-async-storage/async-storage'
+
+const UPLOAD_FLOW_RESET_KEY = '@upload_flow_reset_required';
 
 interface Competition {
     id: string;
@@ -48,6 +52,19 @@ const SelectCompetitionScreen = ({ navigation, route }: any) => {
     const [subscribePromptVisible, setSubscribePromptVisible] = useState(false);
     const [pendingCompetition, setPendingCompetition] = useState<Competition | null>(null);
     const [isSubscribing, setIsSubscribing] = useState(false);
+
+    const resetFilters = useCallback(() => {
+        setActiveFilter('Competition');
+        setFilterValues({ Competition: '', Location: '' });
+        setEventTypeFilter('all');
+        setTimeRange({ start: null, end: null });
+        setShowCalendar(false);
+        setCalendarStart(null);
+        setCalendarEnd(null);
+        setSubscribePromptVisible(false);
+        setPendingCompetition(null);
+        setIsSubscribing(false);
+    }, []);
 
     const isSignedUrl = useCallback((value?: string | null) => {
         if (!value) return false;
@@ -100,7 +117,7 @@ const SelectCompetitionScreen = ({ navigation, route }: any) => {
         return new Date(year, month - 1, day, 0, 0, 0, 0);
     };
 
-    const parseEventDate = (value?: string | null) => {
+    const parseEventDate = useCallback((value?: string | null) => {
         if (!value) return null;
         const raw = String(value);
         const direct = new Date(raw);
@@ -111,7 +128,7 @@ const SelectCompetitionScreen = ({ navigation, route }: any) => {
             return new Date(year, month - 1, day, 12, 0, 0, 0);
         }
         return null;
-    };
+    }, []);
 
     const openDateTimePicker = () => {
         const todaySeed = toDateString(new Date());
@@ -191,12 +208,6 @@ const SelectCompetitionScreen = ({ navigation, route }: any) => {
         }
     };
 
-    const clearDateRange = () => {
-        setCalendarStart(null);
-        setCalendarEnd(null);
-        setTimeRange({ start: null, end: null });
-    };
-
     const activeValue = filterValues[activeFilter];
     const handleSearchChange = (text: string) => {
         setFilterValues((prev) => ({ ...prev, [activeFilter]: text }));
@@ -256,6 +267,25 @@ const SelectCompetitionScreen = ({ navigation, route }: any) => {
         }, 300);
         return () => clearTimeout(handle);
     }, [loadCompetitions, filterValues, activeFilter]);
+
+    useFocusEffect(
+        useCallback(() => {
+            let active = true;
+            (async () => {
+                try {
+                    const shouldReset = await AsyncStorage.getItem(UPLOAD_FLOW_RESET_KEY);
+                    if (!active || shouldReset !== '1') return;
+                    resetFilters();
+                    await AsyncStorage.removeItem(UPLOAD_FLOW_RESET_KEY);
+                } catch {
+                    // ignore
+                }
+            })();
+            return () => {
+                active = false;
+            };
+        }, [resetFilters]),
+    );
 
     const competitions: Competition[] = useMemo(() => {
         return rawEvents.map((event) => {

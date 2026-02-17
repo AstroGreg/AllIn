@@ -82,6 +82,7 @@ type UploadItem = {
 
 const BATCH_SIZE = 5;
 const STATUS_POLL_MS = 5000;
+const UPLOAD_FLOW_RESET_KEY = '@upload_flow_reset_required';
 
 const UploadProgressScreen = ({navigation, route}: any) => {
   const insets = useSafeAreaInsets();
@@ -286,10 +287,22 @@ const UploadProgressScreen = ({navigation, route}: any) => {
     }
 
     const mediaIds = [...mediaIdsRef.current];
+    // Reset upload draft immediately after successful upload, without waiting for processing completion.
+    if (uploadedCount > 0) {
+      try {
+        await AsyncStorage.multiRemove([
+          assetsKey,
+          `@upload_counts_${competitionId}`,
+        ]);
+        await AsyncStorage.setItem(UPLOAD_FLOW_RESET_KEY, '1');
+      } catch {
+        // ignore
+      }
+    }
     await persistActivity({media_ids: mediaIds, phase: 'processing', processing_total: mediaIds.length});
     await persistSession({media_ids: mediaIds, phase: 'processing', processing_total: mediaIds.length});
     setPhase('processing');
-  }, [anonymous, apiAccessToken, competitionId, loadAssets, persistActivity, persistSession, t, watermarkText]);
+  }, [anonymous, apiAccessToken, assetsKey, competitionId, loadAssets, persistActivity, persistSession, t, watermarkText]);
 
   useEffect(() => {
     // If we opened this screen from "activity", we only display/poll.
@@ -338,7 +351,12 @@ const UploadProgressScreen = ({navigation, route}: any) => {
         await persistActivity({phase: 'done'});
         await persistSession({phase: 'done', processing_ready: ready, processing_total: ids.length});
         try {
-          await AsyncStorage.removeItem(assetsKey);
+          await AsyncStorage.multiRemove([
+            assetsKey,
+            `@upload_counts_${competitionId}`,
+            `@upload_session_${competitionId}`,
+          ]);
+          await AsyncStorage.setItem(UPLOAD_FLOW_RESET_KEY, '1');
         } catch {
           // ignore
         }
@@ -350,7 +368,7 @@ const UploadProgressScreen = ({navigation, route}: any) => {
     } catch {
       // ignore polling errors
     }
-  }, [apiAccessToken, assetsKey, persistActivity, persistSession]);
+  }, [apiAccessToken, assetsKey, competitionId, persistActivity, persistSession]);
 
   useEffect(() => {
     if (phase !== 'processing') return;

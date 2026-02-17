@@ -9,6 +9,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage'
 import FastImage from 'react-native-fast-image'
 import { useTranslation } from 'react-i18next';
 import Video from 'react-native-video';
+import { useFocusEffect } from '@react-navigation/native';
 
 function normalizeLocalUri(uri?: string | null) {
     if (!uri) return uri;
@@ -63,6 +64,45 @@ const WatermarkScreen = ({ navigation, route }: any) => {
             mounted = false;
         };
     }, [competitionId]);
+
+    useFocusEffect(
+        useCallback(() => {
+            let mounted = true;
+            const loadPreviewOnFocus = async () => {
+                try {
+                    const assetsRaw = await AsyncStorage.getItem(`@upload_assets_${competitionId}`);
+                    const parsed = assetsRaw ? JSON.parse(assetsRaw) : {};
+                    if (!parsed || typeof parsed !== 'object') {
+                        if (mounted) {
+                            setPreviewUri(null);
+                            setWatermarkText('');
+                            setUseNoWatermark(false);
+                        }
+                        return;
+                    }
+                    const allAssets = Object.values(parsed).flatMap((list: any) => (Array.isArray(list) ? list : []));
+                    const first = allAssets.find((asset: any) => asset?.uri) || null;
+                    if (mounted) {
+                        setPreviewUri(normalizeLocalUri(first?.uri ?? null) as any);
+                        if (!first) {
+                            setWatermarkText('');
+                            setUseNoWatermark(false);
+                        }
+                    }
+                } catch {
+                    if (mounted) {
+                        setPreviewUri(null);
+                        setWatermarkText('');
+                        setUseNoWatermark(false);
+                    }
+                }
+            };
+            loadPreviewOnFocus();
+            return () => {
+                mounted = false;
+            };
+        }, [competitionId]),
+    );
 
     const handleSave = () => {
         const sessionId = `u_${Date.now()}_${Math.random().toString(16).slice(2)}`;
