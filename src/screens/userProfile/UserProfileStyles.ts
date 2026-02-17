@@ -175,7 +175,7 @@ export const createStyles = (colors: ThemeColors) => StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'flex-start',
-        gap: 16,
+        gap: 10,
     },
     statItem: {
         alignItems: 'center',
@@ -445,7 +445,7 @@ export const createStyles = (colors: ThemeColors) => StyleSheet.create({
         borderRadius: 999,
     },
     activityBadgeBlog: {
-        backgroundColor: '#EAF1FF',
+        backgroundColor: colors.primaryColor,
     },
     activityBadgeEvent: {
         backgroundColor: '#EAF7EF',
@@ -453,6 +453,10 @@ export const createStyles = (colors: ThemeColors) => StyleSheet.create({
     activityBadgeText: {
         ...Fonts.regular12,
         color: colors.mainTextColor,
+    },
+    activityBadgeTextBlog: {
+        ...Fonts.regular12,
+        color: '#FFFFFF',
     },
     activityMeta: {
         ...Fonts.regular12,
@@ -564,6 +568,16 @@ export const createStyles = (colors: ThemeColors) => StyleSheet.create({
     viewAllText: {
         ...Fonts.regular14,
         color: colors.subTextColor,
+    },
+    actionPill: {
+        backgroundColor: colors.primaryColor,
+        paddingHorizontal: 14,
+        paddingVertical: 6,
+        borderRadius: 999,
+    },
+    actionPillText: {
+        ...Fonts.regular12,
+        color: '#FFFFFF',
     },
 
     // Post Card

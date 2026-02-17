@@ -538,7 +538,7 @@ const UserProfileScreen = ({ navigation }: any) => {
                                 {item.title}
                             </Text>
                             <View style={[Styles.activityBadge, Styles.activityBadgeBlog]}>
-                                <Text style={Styles.activityBadgeText}>{t('Blog')}</Text>
+                                <Text style={Styles.activityBadgeTextBlog}>{t('Blog')}</Text>
                             </View>
                         </View>
                         <Text style={Styles.activityMeta}>{item.date}</Text>
@@ -602,11 +602,12 @@ const UserProfileScreen = ({ navigation }: any) => {
                                     <Text style={Styles.statValue}>{formatCount(profileSummary?.followers_count ?? 0)}</Text>
                                     <Text style={Styles.statLabel}>{t('Followers')}</Text>
                                 </View>
+                                <View style={Styles.statDivider} />
+                                <View style={Styles.statItem}>
+                                    <Icons.TrackFieldLogo width={28} height={24} />
+                                    <Text style={Styles.statLabel}>{profileCategoryLabel}</Text>
+                                </View>
                             </View>
-                        </View>
-                        <View style={Styles.profileCategoryOnly}>
-                            <Icons.TrackFieldLogo width={28} height={24} />
-                            <Text style={Styles.profileCategoryText}>{profileCategoryLabel}</Text>
                         </View>
                     </View>
 
@@ -683,8 +684,8 @@ const UserProfileScreen = ({ navigation }: any) => {
                     <View style={Styles.activitySection}>
                         <View style={Styles.sectionHeader}>
                             <Text style={Styles.sectionTitle}>{t('News')}</Text>
-                            <TouchableOpacity onPress={() => openBlogEditor()}>
-                                <Text style={Styles.viewAllText}>{t('Add blog')}</Text>
+                            <TouchableOpacity style={Styles.actionPill} onPress={() => openBlogEditor()}>
+                                <Text style={Styles.actionPillText}>{t('Add blog')}</Text>
                             </TouchableOpacity>
                         </View>
                         <SizeBox height={16} />
@@ -705,14 +706,14 @@ const UserProfileScreen = ({ navigation }: any) => {
                         <View style={Styles.collectionsSection}>
                             <View style={Styles.sectionHeader}>
                                 <Text style={Styles.sectionTitle}>{t('Collections')}</Text>
-                                <TouchableOpacity onPress={() => {
+                                <TouchableOpacity style={Styles.actionPill} onPress={() => {
                                     if (activeTab === 'photos') {
                                         navigation.navigate('ViewUserCollectionsPhotosScreen', { initialTab: 'photos' });
                                     } else if (activeTab === 'videos') {
                                         navigation.navigate('ViewUserCollectionsVideosScreen', { initialTab: 'videos' });
                                     }
                                 }}>
-                                    <Text style={Styles.viewAllText}>{t('View all')}</Text>
+                                    <Text style={Styles.actionPillText}>{t('View all')}</Text>
                                 </TouchableOpacity>
                             </View>
                             <SizeBox height={16} />
