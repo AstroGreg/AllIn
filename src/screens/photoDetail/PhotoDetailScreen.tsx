@@ -1,5 +1,5 @@
 import React, {useCallback, useMemo, useState, useEffect, useRef} from 'react';
-import {ActionSheetIOS, ActivityIndicator, Alert, Image, Linking, Platform, Share, Text, TouchableOpacity, View} from 'react-native';
+import {ActivityIndicator, Alert, Image, Linking, Modal, Platform, Pressable, Share, Text, TouchableOpacity, View} from 'react-native';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 // useFocusEffect not available in some runtime bundles; use navigation listeners instead.
 import FastImage from 'react-native-fast-image';
@@ -22,8 +22,9 @@ type FeedbackChoice = 'yes' | 'no' | null;
 const PhotoDetailScreen = ({navigation, route}: any) => {
     const { t } = useTranslation();
     const insets = useSafeAreaInsets();
-    const {colors} = useTheme();
+    const {colors, isDark} = useTheme();
     const Styles = createStyles(colors);
+    const moreDotsColor = isDark ? '#FFFFFF' : '#000000';
     const {apiAccessToken} = useAuth();
     const {eventNameById} = useEvents();
 
@@ -277,6 +278,8 @@ const PhotoDetailScreen = ({navigation, route}: any) => {
     const downloadInFlightRef = useRef(false);
     const [downloadVisible, setDownloadVisible] = useState(false);
     const [downloadProgress, setDownloadProgress] = useState<number | null>(null);
+    const [moreMenuVisible, setMoreMenuVisible] = useState(false);
+    const [moreMenuActions, setMoreMenuActions] = useState<Array<{label: string; onPress: () => void}>>([]);
 
     const formatTime = useCallback((value: number) => {
         const safeValue = Number.isFinite(value) ? Math.max(0, value) : 0;
@@ -610,31 +613,9 @@ const PhotoDetailScreen = ({navigation, route}: any) => {
                 onPress: () => Alert.alert(t('Request sent'), t('We will review the removal request.')),
             },
         ];
-
-        if (Platform.OS === 'ios') {
-            ActionSheetIOS.showActionSheetWithOptions(
-                {
-                    options: [...actions.map((item) => item.label), 'Cancel'],
-                    cancelButtonIndex: actions.length,
-                },
-                (buttonIndex) => {
-                    if (buttonIndex < actions.length) {
-                        actions[buttonIndex].onPress();
-                    }
-                },
-            );
-            return;
-        }
-
-        Alert.alert(
-            'More options',
-            'Choose an action',
-            [
-                ...actions.map((item) => ({text: item.label, onPress: item.onPress})),
-                {text: 'Cancel', style: 'cancel'},
-            ],
-        );
-    }, [handleDownload, handleReportIssue, handleShareInstagram, handleShareNative, headerLabel, navigation]);
+        setMoreMenuActions(actions);
+        setMoreMenuVisible(true);
+    }, [handleDownload, handleReportIssue, handleShareInstagram, handleShareNative, headerLabel, navigation, t]);
 
     useEffect(() => {
         const parent = navigation.getParent?.();
@@ -732,9 +713,7 @@ const PhotoDetailScreen = ({navigation, route}: any) => {
                     <Icons.BackArrow height={24} width={24} />
                 </TouchableOpacity>
                 <Text style={Styles.headerTitle}>{headerLabel}</Text>
-                <TouchableOpacity style={Styles.headerAction} onPress={openMoreMenu}>
-                    <Icons.More height={24} width={24} />
-                </TouchableOpacity>
+                <View style={Styles.headerAction} />
             </View>
 
             <View style={[Styles.content, isVideo && Styles.contentFull]}>
@@ -909,8 +888,8 @@ const PhotoDetailScreen = ({navigation, route}: any) => {
                                     {matchPercent != null ? `Match ${matchPercent.toFixed(0)}%` : ''}
                                 </Text>
                             </View>
-                        <TouchableOpacity>
-                            <Icons.More height={24} width={24} />
+                        <TouchableOpacity onPress={openMoreMenu}>
+                            <Icons.More height={24} width={24} stroke={moreDotsColor} />
                         </TouchableOpacity>
                         </View>
                     )}
@@ -937,6 +916,39 @@ const PhotoDetailScreen = ({navigation, route}: any) => {
                     </View>
                 </View>
             )}
+
+            <Modal
+                visible={moreMenuVisible}
+                transparent
+                animationType="fade"
+                onRequestClose={() => setMoreMenuVisible(false)}
+            >
+                <View style={Styles.moreMenuOverlay}>
+                    <Pressable style={Styles.moreMenuBackdrop} onPress={() => setMoreMenuVisible(false)} />
+                    <View style={Styles.moreMenuContainer}>
+                        {moreMenuActions.map((item, index) => (
+                            <TouchableOpacity
+                                key={`${item.label}-${index}`}
+                                style={Styles.moreMenuAction}
+                                activeOpacity={0.85}
+                                onPress={() => {
+                                    setMoreMenuVisible(false);
+                                    setTimeout(() => item.onPress(), 120);
+                                }}
+                            >
+                                <Text style={Styles.moreMenuActionText}>{item.label}</Text>
+                            </TouchableOpacity>
+                        ))}
+                        <TouchableOpacity
+                            style={Styles.moreMenuCancel}
+                            activeOpacity={0.85}
+                            onPress={() => setMoreMenuVisible(false)}
+                        >
+                            <Text style={Styles.moreMenuCancelText}>Cancel</Text>
+                        </TouchableOpacity>
+                    </View>
+                </View>
+            </Modal>
         </View>
     );
 };

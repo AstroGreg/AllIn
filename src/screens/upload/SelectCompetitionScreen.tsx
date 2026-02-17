@@ -1,4 +1,4 @@
-import { View, Text, TouchableOpacity, ScrollView, TextInput, ActivityIndicator, Modal, Pressable } from 'react-native'
+import { View, Text, TouchableOpacity, ScrollView, TextInput, ActivityIndicator, Modal, Pressable, Alert } from 'react-native'
 import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import FastImage from 'react-native-fast-image'
@@ -7,7 +7,7 @@ import { createStyles } from './SelectCompetitionStyles'
 import SizeBox from '../../constants/SizeBox'
 import { useTheme } from '../../context/ThemeContext'
 import { useAuth } from '../../context/AuthContext'
-import { ApiError, getMediaViewAll, searchEvents, type MediaViewAllItem, type SubscribedEvent } from '../../services/apiGateway'
+import { ApiError, getMediaViewAll, searchEvents, subscribeToEvent, type MediaViewAllItem, type SubscribedEvent } from '../../services/apiGateway'
 import { getApiBaseUrl } from '../../constants/RuntimeConfig'
 import { CalendarList } from 'react-native-calendars'
 import { useTranslation } from 'react-i18next'
@@ -45,6 +45,9 @@ const SelectCompetitionScreen = ({ navigation, route }: any) => {
     const [mediaByEvent, setMediaByEvent] = useState<Record<string, { thumbUrl?: string; videoCount: number }>>({});
     const [isLoading, setIsLoading] = useState(false);
     const [errorText, setErrorText] = useState<string | null>(null);
+    const [subscribePromptVisible, setSubscribePromptVisible] = useState(false);
+    const [pendingCompetition, setPendingCompetition] = useState<Competition | null>(null);
+    const [isSubscribing, setIsSubscribing] = useState(false);
 
     const isSignedUrl = useCallback((value?: string | null) => {
         if (!value) return false;
@@ -304,13 +307,37 @@ const SelectCompetitionScreen = ({ navigation, route }: any) => {
         });
     }, [competitions, eventTypeFilter, filterValues.Competition, filterValues.Location, parseEventDate, timeRange.end, timeRange.start]);
 
-    const handleUploadToCompetition = (competition: Competition) => {
+    const continueToCompetition = useCallback((competition: Competition) => {
         navigation.navigate('CompetitionDetailsScreen', {
             competition,
             anonymous,
             competitionType: competition.competitionType,
         });
-    };
+    }, [anonymous, navigation]);
+
+    const handleUploadToCompetition = useCallback((competition: Competition) => {
+        setPendingCompetition(competition);
+        setSubscribePromptVisible(true);
+    }, []);
+
+    const handleConfirmSubscribe = useCallback(async () => {
+        if (!pendingCompetition) return;
+        if (!apiAccessToken) {
+            Alert.alert(t('Upload unavailable'), t('Log in to upload to a competition.'));
+            return;
+        }
+        setIsSubscribing(true);
+        try {
+            await subscribeToEvent(apiAccessToken, pendingCompetition.id);
+            setSubscribePromptVisible(false);
+            continueToCompetition(pendingCompetition);
+        } catch (e: any) {
+            const msg = e instanceof ApiError ? e.message : String(e?.message ?? e);
+            Alert.alert(t('Subscription failed'), msg || t('Could not subscribe to this event.'));
+        } finally {
+            setIsSubscribing(false);
+        }
+    }, [apiAccessToken, continueToCompetition, pendingCompetition, t]);
 
     const renderCompetitionCard = (competition: Competition) => (
         <TouchableOpacity
@@ -494,6 +521,47 @@ const SelectCompetitionScreen = ({ navigation, route }: any) => {
 
                 <SizeBox height={insets.bottom > 0 ? insets.bottom + 20 : 40} />
             </ScrollView>
+
+            <Modal
+                visible={subscribePromptVisible}
+                transparent
+                animationType="fade"
+                onRequestClose={() => setSubscribePromptVisible(false)}
+            >
+                <View style={Styles.modalOverlay}>
+                    <Pressable
+                        style={{ position: 'absolute', top: 0, bottom: 0, left: 0, right: 0 }}
+                        onPress={() => {
+                            if (isSubscribing) return;
+                            setSubscribePromptVisible(false);
+                        }}
+                    />
+                    <View style={Styles.subscribeModalContainer}>
+                        <Text style={Styles.subscribeModalTitle}>{t('Subscribe to event')}</Text>
+                        <SizeBox height={8} />
+                        <Text style={Styles.subscribeModalText}>
+                            {t('Do you want to subscribe to this event before uploading?')}
+                        </Text>
+                        <SizeBox height={14} />
+                        <View style={Styles.subscribeButtonRow}>
+                            <TouchableOpacity
+                                style={Styles.subscribeNoButton}
+                                disabled={isSubscribing}
+                                onPress={() => setSubscribePromptVisible(false)}
+                            >
+                                <Text style={Styles.subscribeNoText}>{t('No')}</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                                style={[Styles.subscribeYesButton, isSubscribing && Styles.modalSubmitButtonDisabled]}
+                                disabled={isSubscribing}
+                                onPress={handleConfirmSubscribe}
+                            >
+                                <Text style={Styles.subscribeYesText}>{isSubscribing ? t('Loading...') : t('Yes')}</Text>
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+                </View>
+            </Modal>
 
             <Modal visible={showCalendar} transparent animationType="fade" onRequestClose={() => setShowCalendar(false)}>
                 <View style={Styles.modalOverlay}>

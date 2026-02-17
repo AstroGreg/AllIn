@@ -334,6 +334,52 @@ export const createStyles = (colors: ThemeColors) => StyleSheet.create({
         borderRadius: 16,
         padding: 16,
     },
+    subscribeModalContainer: {
+        width: '100%',
+        maxWidth: 420,
+        backgroundColor: colors.modalBackground,
+        borderRadius: 16,
+        padding: 16,
+        borderWidth: 0.5,
+        borderColor: colors.lightGrayColor,
+    },
+    subscribeModalTitle: {
+        ...Fonts.medium16,
+        color: colors.mainTextColor,
+    },
+    subscribeModalText: {
+        ...Fonts.regular14,
+        color: colors.subTextColor,
+    },
+    subscribeButtonRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        gap: 12,
+    },
+    subscribeNoButton: {
+        flex: 1,
+        borderWidth: 1,
+        borderColor: colors.lightGrayColor,
+        borderRadius: 10,
+        alignItems: 'center',
+        paddingVertical: 12,
+        backgroundColor: colors.secondaryColor,
+    },
+    subscribeNoText: {
+        ...Fonts.medium14,
+        color: colors.grayColor,
+    },
+    subscribeYesButton: {
+        flex: 1,
+        backgroundColor: colors.primaryColor,
+        borderRadius: 10,
+        alignItems: 'center',
+        paddingVertical: 12,
+    },
+    subscribeYesText: {
+        ...Fonts.medium14,
+        color: colors.pureWhite,
+    },
     dateModalTitle: {
         ...Fonts.medium16,
         color: colors.mainTextColor,

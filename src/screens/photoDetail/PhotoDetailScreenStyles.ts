@@ -254,6 +254,54 @@ export const createStyles = (colors: ThemeColors) => StyleSheet.create({
         ...Fonts.regular14,
         color: colors.pureWhite,
     },
+    moreMenuOverlay: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        paddingHorizontal: 20,
+    },
+    moreMenuBackdrop: {
+        position: 'absolute',
+        top: 0,
+        bottom: 0,
+        left: 0,
+        right: 0,
+        backgroundColor: 'rgba(0,0,0,0.45)',
+    },
+    moreMenuContainer: {
+        width: '100%',
+        maxWidth: 420,
+        backgroundColor: colors.modalBackground,
+        borderRadius: 16,
+        borderWidth: 0.5,
+        borderColor: colors.lightGrayColor,
+        padding: 14,
+    },
+    moreMenuAction: {
+        backgroundColor: colors.secondaryColor,
+        borderRadius: 10,
+        paddingHorizontal: 12,
+        paddingVertical: 12,
+        marginBottom: 8,
+    },
+    moreMenuActionText: {
+        ...Fonts.regular14,
+        color: colors.mainTextColor,
+    },
+    moreMenuCancel: {
+        marginTop: 4,
+        borderWidth: 1,
+        borderColor: colors.lightGrayColor,
+        borderRadius: 10,
+        paddingHorizontal: 12,
+        paddingVertical: 12,
+        alignItems: 'center',
+        backgroundColor: colors.btnBackgroundColor,
+    },
+    moreMenuCancelText: {
+        ...Fonts.medium14,
+        color: colors.grayColor,
+    },
 });
 
 // Backward compatibility

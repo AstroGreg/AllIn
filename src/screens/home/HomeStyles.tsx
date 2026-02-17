@@ -1099,7 +1099,94 @@ export const createStyles = (colors: ThemeColors) => StyleSheet.create({
     aiSearchIntroNextText: {
         ...Fonts.medium14,
         color: colors.pureWhite,
-    }
+    },
+    feedMenuOverlay: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        paddingHorizontal: 20,
+    },
+    feedMenuBackdrop: {
+        position: 'absolute',
+        top: 0,
+        bottom: 0,
+        left: 0,
+        right: 0,
+        backgroundColor: 'rgba(0,0,0,0.45)',
+    },
+    feedMenuContainer: {
+        width: '100%',
+        maxWidth: 420,
+        backgroundColor: colors.modalBackground,
+        borderRadius: 16,
+        borderWidth: 0.5,
+        borderColor: colors.lightGrayColor,
+        padding: 14,
+    },
+    feedMenuTitle: {
+        ...Fonts.medium16,
+        color: colors.mainTextColor,
+        marginBottom: 8,
+    },
+    feedMenuDivider: {
+        height: 1,
+        backgroundColor: colors.lightGrayColor,
+        marginBottom: 8,
+    },
+    feedMenuAction: {
+        backgroundColor: colors.secondaryColor,
+        borderRadius: 10,
+        paddingHorizontal: 12,
+        paddingVertical: 12,
+        marginBottom: 8,
+    },
+    feedMenuActionText: {
+        ...Fonts.regular14,
+        color: colors.mainTextColor,
+    },
+    feedMenuCancel: {
+        marginTop: 4,
+        borderWidth: 1,
+        borderColor: colors.lightGrayColor,
+        borderRadius: 10,
+        paddingHorizontal: 12,
+        paddingVertical: 12,
+        alignItems: 'center',
+        backgroundColor: colors.btnBackgroundColor,
+    },
+    feedMenuCancelText: {
+        ...Fonts.medium14,
+        color: colors.grayColor,
+    },
+    feedInfoModalContainer: {
+        width: '100%',
+        maxWidth: 420,
+        backgroundColor: colors.modalBackground,
+        borderRadius: 16,
+        borderWidth: 0.5,
+        borderColor: colors.lightGrayColor,
+        padding: 16,
+        gap: 10,
+    },
+    feedInfoModalTitle: {
+        ...Fonts.medium16,
+        color: colors.mainTextColor,
+    },
+    feedInfoModalText: {
+        ...Fonts.regular14,
+        color: colors.subTextColor,
+    },
+    feedInfoModalButton: {
+        alignSelf: 'flex-end',
+        backgroundColor: colors.primaryColor,
+        borderRadius: 10,
+        paddingHorizontal: 16,
+        paddingVertical: 10,
+    },
+    feedInfoModalButtonText: {
+        ...Fonts.medium14,
+        color: colors.pureWhite,
+    },
 });
 
 // Backward compatibility

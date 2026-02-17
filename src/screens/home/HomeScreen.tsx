@@ -1,4 +1,4 @@
-import {ActivityIndicator, ScrollView, Text, TouchableOpacity, View, Share, Alert, useWindowDimensions, ActionSheetIOS, Platform} from 'react-native'
+import {ActivityIndicator, ScrollView, Text, TouchableOpacity, View, Share, Alert, useWindowDimensions, Modal, Pressable} from 'react-native'
 import React, {useCallback, useMemo, useRef, useState, useEffect} from 'react'
 import { createStyles } from './HomeStyles'
 import Header from './components/Header'
@@ -111,6 +111,12 @@ const HomeScreen = ({ navigation }: any) => {
     const [downloadVisible, setDownloadVisible] = useState(false);
     const [downloadProgress, setDownloadProgress] = useState<number | null>(null);
     const [showAiSearchIntro, setShowAiSearchIntro] = useState(true);
+    const [feedMenuVisible, setFeedMenuVisible] = useState(false);
+    const [feedMenuTitle, setFeedMenuTitle] = useState('');
+    const [feedMenuActions, setFeedMenuActions] = useState<Array<{ label: string; onPress: () => void }>>([]);
+    const [infoPopupVisible, setInfoPopupVisible] = useState(false);
+    const [infoPopupTitle, setInfoPopupTitle] = useState('');
+    const [infoPopupMessage, setInfoPopupMessage] = useState('');
     const aiSearchButtonRef = useRef<View>(null);
     const [aiSearchButtonRect, setAiSearchButtonRect] = useState<{ x: number; y: number; width: number; height: number } | null>(null);
     const loadDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -124,6 +130,12 @@ const HomeScreen = ({ navigation }: any) => {
         sharedVideoRect.width > 0 &&
         sharedVideoRect.height > 0
     );
+
+    const showInfoPopup = useCallback((title: string, message: string) => {
+        setInfoPopupTitle(title);
+        setInfoPopupMessage(message);
+        setInfoPopupVisible(true);
+    }, []);
 
     const performLoadOverview = useCallback(async (force = false) => {
         if (!apiAccessToken) {
@@ -577,7 +589,7 @@ const HomeScreen = ({ navigation }: any) => {
                 { label: t('Share to Instagram Story'), onPress: () => handleShareMedia(safeMedia) },
                 {
                     label: t('Report an issue with this video/photo'),
-                    onPress: () => Alert.alert(t('Request sent'), t('We received your issue report.')),
+                    onPress: () => showInfoPopup(t('Request sent'), t('We received your issue report.')),
                 },
                 {
                     label: t('Go to author profile'),
@@ -594,11 +606,11 @@ const HomeScreen = ({ navigation }: any) => {
                 },
                 {
                     label: t('Mark as inappropriate content'),
-                    onPress: () => Alert.alert(t('Thanks'), t('We will review this content.')),
+                    onPress: () => showInfoPopup(t('Thanks'), t('We will review this content.')),
                 },
                 {
                     label: t('Request this video removed'),
-                    onPress: () => Alert.alert(t('Request sent'), t('We will review the removal request.')),
+                    onPress: () => showInfoPopup(t('Request sent'), t('We will review the removal request.')),
                 },
             ];
 
@@ -616,32 +628,11 @@ const HomeScreen = ({ navigation }: any) => {
                         }),
                 });
             }
-
-            if (Platform.OS === 'ios') {
-                ActionSheetIOS.showActionSheetWithOptions(
-                    {
-                        options: [...actions.map((item) => item.label), t('Cancel')],
-                        cancelButtonIndex: actions.length,
-                    },
-                    (buttonIndex) => {
-                        if (buttonIndex < actions.length) {
-                            actions[buttonIndex].onPress();
-                        }
-                    },
-                );
-                return;
-            }
-
-            Alert.alert(
-                t('More options'),
-                t('Choose an action'),
-                [
-                    ...actions.map((item) => ({ text: item.label, onPress: item.onPress })),
-                    { text: t('Cancel'), style: 'cancel' },
-                ],
-            );
+            setFeedMenuTitle(label);
+            setFeedMenuActions(actions);
+            setFeedMenuVisible(true);
         },
-        [eventNameById, getMediaThumb, handleDownloadMedia, handleShareMedia, navigation, pickPlayableVideoUrl, t],
+        [eventNameById, getMediaThumb, handleDownloadMedia, handleShareMedia, navigation, pickPlayableVideoUrl, showInfoPopup, t],
     );
 
     const pickPlayableVideoUrl = useCallback((media?: HomeOverviewMedia | MediaViewAllItem | null) => {
@@ -1579,6 +1570,64 @@ const HomeScreen = ({ navigation }: any) => {
                     </View>
                 </View>
             )}
+
+            <Modal
+                visible={feedMenuVisible}
+                transparent
+                animationType="fade"
+                onRequestClose={() => setFeedMenuVisible(false)}
+            >
+                <View style={Styles.feedMenuOverlay}>
+                    <Pressable
+                        style={Styles.feedMenuBackdrop}
+                        onPress={() => setFeedMenuVisible(false)}
+                    />
+                    <View style={Styles.feedMenuContainer}>
+                        {feedMenuActions.map((item, index) => (
+                            <TouchableOpacity
+                                key={`${item.label}-${index}`}
+                                style={Styles.feedMenuAction}
+                                activeOpacity={0.85}
+                                onPress={() => {
+                                    setFeedMenuVisible(false);
+                                    setTimeout(() => item.onPress(), 120);
+                                }}
+                            >
+                                <Text style={Styles.feedMenuActionText}>{item.label}</Text>
+                            </TouchableOpacity>
+                        ))}
+                        <TouchableOpacity
+                            style={Styles.feedMenuCancel}
+                            activeOpacity={0.85}
+                            onPress={() => setFeedMenuVisible(false)}
+                        >
+                            <Text style={Styles.feedMenuCancelText}>{t('Cancel')}</Text>
+                        </TouchableOpacity>
+                    </View>
+                </View>
+            </Modal>
+
+            <Modal
+                visible={infoPopupVisible}
+                transparent
+                animationType="fade"
+                onRequestClose={() => setInfoPopupVisible(false)}
+            >
+                <View style={Styles.feedMenuOverlay}>
+                    <Pressable style={Styles.feedMenuBackdrop} onPress={() => setInfoPopupVisible(false)} />
+                    <View style={Styles.feedInfoModalContainer}>
+                        <Text style={Styles.feedInfoModalTitle}>{infoPopupTitle}</Text>
+                        <Text style={Styles.feedInfoModalText}>{infoPopupMessage}</Text>
+                        <TouchableOpacity
+                            style={Styles.feedInfoModalButton}
+                            activeOpacity={0.85}
+                            onPress={() => setInfoPopupVisible(false)}
+                        >
+                            <Text style={Styles.feedInfoModalButtonText}>{t('OK')}</Text>
+                        </TouchableOpacity>
+                    </View>
+                </View>
+            </Modal>
 
             {downloadVisible && (
                 <View style={Styles.downloadOverlay} pointerEvents="auto">
