@@ -1,4 +1,4 @@
-import { View, Text, ScrollView, TouchableOpacity, Alert } from 'react-native'
+import { View, Text, ScrollView, TouchableOpacity, Modal, Pressable } from 'react-native'
 import React, { useState } from 'react'
 import { createStyles } from './MenuStyles'
 import SizeBox from '../../constants/SizeBox'
@@ -17,6 +17,7 @@ const MenuScreen = ({ navigation }: any) => {
     const { logout, isAuthenticated } = useAuth();
     const [pushNotifications, setPushNotifications] = useState(true);
     const [ghostMode, setGhostMode] = useState(true);
+    const [showLogoutModal, setShowLogoutModal] = useState(false);
     const { t } = useTranslation();
 
     return (
@@ -143,12 +144,7 @@ const MenuScreen = ({ navigation }: any) => {
                     <MenuContainers
                       icon={<SecurityUser size={20} color={colors.primaryColor} variant="Linear" />}
                       title={t('Log out')}
-                      onPress={() => {
-                        Alert.alert(t('Log out'), t('Do you want to log out?'), [
-                          { text: t('Cancel'), style: 'cancel' },
-                          { text: t('Log out'), style: 'destructive', onPress: () => logout() },
-                        ]);
-                      }}
+                      onPress={() => setShowLogoutModal(true)}
                     />
                   </>
                 )}
@@ -185,6 +181,45 @@ const MenuScreen = ({ navigation }: any) => {
 
                 <SizeBox height={insets.bottom > 0 ? insets.bottom + 20 : 40} />
             </ScrollView>
+
+            <Modal
+                visible={showLogoutModal}
+                transparent
+                animationType="fade"
+                onRequestClose={() => setShowLogoutModal(false)}
+            >
+                <View style={Styles.modalContainer}>
+                    <Pressable
+                        style={{ position: 'absolute', top: 0, bottom: 0, left: 0, right: 0 }}
+                        onPress={() => setShowLogoutModal(false)}
+                    />
+                    <View style={[Styles.modalContaint, { width: '90%', maxWidth: 420, backgroundColor: colors.modalBackground, borderWidth: 0.5, borderColor: colors.lightGrayColor, borderRadius: 16 }]}>
+                        <Text style={[Styles.sectionTitle, { textAlign: 'center' }]}>{t('Log out')}</Text>
+                        <SizeBox height={10} />
+                        <Text style={[Styles.titlesText, { textAlign: 'center', color: colors.subTextColor }]}>
+                            {t('Do you want to log out?')}
+                        </Text>
+                        <SizeBox height={14} />
+                        <View style={{ flexDirection: 'row', gap: 12 }}>
+                            <TouchableOpacity
+                                style={[Styles.yesBtn, { flex: 1, backgroundColor: colors.primaryColor, paddingHorizontal: 10 }]}
+                                onPress={() => setShowLogoutModal(false)}
+                            >
+                                <Text style={[Styles.yesText, { color: '#FFFFFF' }]}>{t('Cancel')}</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                                style={{ flex: 1, alignItems: 'center', justifyContent: 'center', paddingVertical: 12 }}
+                                onPress={() => {
+                                    setShowLogoutModal(false);
+                                    logout();
+                                }}
+                            >
+                                <Text style={[Styles.noText, { color: colors.errorColor || '#D32F2F' }]}>{t('Log out')}</Text>
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+                </View>
+            </Modal>
         </View>
     )
 }

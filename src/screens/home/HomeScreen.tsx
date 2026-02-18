@@ -1,4 +1,4 @@
-import {ActivityIndicator, ScrollView, Text, TouchableOpacity, View, Share, Alert, useWindowDimensions, Modal, Pressable} from 'react-native'
+import {ActivityIndicator, ScrollView, Text, TouchableOpacity, View, Share, Alert, useWindowDimensions, Modal, Pressable, RefreshControl} from 'react-native'
 import React, {useCallback, useMemo, useRef, useState, useEffect} from 'react'
 import { createStyles } from './HomeStyles'
 import Header from './components/Header'
@@ -92,6 +92,7 @@ const HomeScreen = ({ navigation }: any) => {
     const [overview, setOverview] = useState<HomeOverviewResponse | null>(null);
     const [isLoadingOverview, setIsLoadingOverview] = useState(false);
     const [overviewError, setOverviewError] = useState<string | null>(null);
+    const [refreshingFeed, setRefreshingFeed] = useState(false);
     const [allVideos, setAllVideos] = useState<MediaViewAllItem[]>([]);
     const [allPhotos, setAllPhotos] = useState<MediaViewAllItem[]>([]);
     const [allPosts, setAllPosts] = useState<PostSummary[]>([]);
@@ -247,6 +248,17 @@ const HomeScreen = ({ navigation }: any) => {
             loadOverview(false);
         }, [loadOverview]),
     );
+
+    const handleRefresh = useCallback(async () => {
+        if (refreshingFeed) return;
+        setRefreshingFeed(true);
+        try {
+            await loadOverview(true);
+            setFeedVisibleCount(HOME_FEED_PAGE_SIZE);
+        } finally {
+            setRefreshingFeed(false);
+        }
+    }, [loadOverview, refreshingFeed]);
 
     useEffect(() => {
         if (isFocused) {
@@ -1189,7 +1201,9 @@ const HomeScreen = ({ navigation }: any) => {
                                         likeDisabled={!String(post?.id ?? '').trim()}
                                         onPress={() => {
                                             navigation.navigate('ViewUserBlogDetailsScreen', {
+                                                postId: post.id,
                                                 post: {
+                                                    id: post.id,
                                                     title: post.title ?? t('Latest blog'),
                                                     date: post.created_at
                                                         ? new Date(post.created_at).toLocaleDateString()
@@ -1200,6 +1214,11 @@ const HomeScreen = ({ navigation }: any) => {
                                                     readCount: post.reading_time_minutes
                                                         ? `${post.reading_time_minutes} min`
                                                         : '1 min',
+                                                    author: {
+                                                        profile_id: post.author?.profile_id ?? null,
+                                                        display_name: post.author?.display_name ?? userName,
+                                                        avatar_url: post.author?.avatar_url ?? null,
+                                                    },
                                                     writer: post.author?.display_name ?? userName,
                                                     writerImage: post.author?.avatar_url
                                                         ? { uri: toAbsoluteUrl(post.author.avatar_url) as string }
@@ -1341,6 +1360,13 @@ const HomeScreen = ({ navigation }: any) => {
             <ScrollView
                 showsVerticalScrollIndicator={false}
                 contentContainerStyle={{paddingBottom: insets.bottom > 0 ? insets.bottom + 20 : 40}}
+                refreshControl={
+                    <RefreshControl
+                        refreshing={refreshingFeed}
+                        onRefresh={handleRefresh}
+                        tintColor={colors.primaryColor}
+                    />
+                }
                 scrollEventThrottle={16}
                 scrollEnabled={!overlayVisible}
                 onLayout={(event) => {

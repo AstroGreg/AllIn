@@ -108,11 +108,40 @@ const ViewUserBlogDetailsScreen = ({ navigation, route }: any) => {
     const [selectedIndex, setSelectedIndex] = useState(0);
     const [showTranslation, setShowTranslation] = useState(false);
     const selectedItem = galleryItems[selectedIndex] ?? galleryItems[0];
-    const isSelectedVideo = selectedItem?.type === 'video' && !!selectedItem?.videoUri;
 
     const translatedDescription = useMemo(() => {
         return translateText(postData?.description ?? '', i18n.language);
     }, [i18n.language, postData?.description]);
+
+    const authorName = useMemo(
+        () =>
+            postData?.author?.display_name ||
+            postPreview?.author?.display_name ||
+            postPreview?.writer ||
+            t('Profile'),
+        [postData?.author?.display_name, postPreview?.author?.display_name, postPreview?.writer, t],
+    );
+
+    const authorImage = useMemo(() => {
+        const avatarCandidate =
+            postData?.author?.avatar_url ||
+            postPreview?.author?.avatar_url ||
+            postPreview?.writerImage?.uri ||
+            null;
+        if (avatarCandidate) {
+            const resolved = toAbsoluteUrl(String(avatarCandidate));
+            const withToken = withAccessToken(resolved) || resolved;
+            if (withToken) return { uri: String(withToken) };
+        }
+        if (postPreview?.writerImage) return postPreview.writerImage;
+        return Images.profile1;
+    }, [
+        postData?.author?.avatar_url,
+        postPreview?.author?.avatar_url,
+        postPreview?.writerImage,
+        toAbsoluteUrl,
+        withAccessToken,
+    ]);
 
     const openMediaDetail = useCallback((item: any) => {
         const media = item?.media;
@@ -213,8 +242,8 @@ const ViewUserBlogDetailsScreen = ({ navigation, route }: any) => {
 
                 {/* Author */}
                 <View style={Styles.authorRow}>
-                    <FastImage source={Images.profile1} style={Styles.writerImage} resizeMode="cover" />
-                    <Text style={Styles.writerName}>{postData?.author?.display_name ?? t('Profile')}</Text>
+                    <FastImage source={authorImage} style={Styles.writerImage} resizeMode="cover" />
+                    <Text style={Styles.writerName}>{authorName}</Text>
                 </View>
 
                 <SizeBox height={8} />

@@ -1,9 +1,10 @@
 import React, { useCallback, useMemo, useState } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator, RefreshControl } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator, RefreshControl, Animated, PanResponder } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
     ArrowLeft2,
     NotificationBing,
+    Eye,
 } from 'iconsax-react-nativejs';
 import { createStyles } from './NotificationsScreenStyles';
 import SizeBox from '../../constants/SizeBox';
@@ -12,6 +13,79 @@ import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../context/AuthContext';
 import { ApiError, getNotifications, markNotificationRead, type AppNotification } from '../../services/apiGateway';
 import { useFocusEffect } from '@react-navigation/native';
+
+const SwipeToReadCard = ({
+    enabled,
+    onSwipeRight,
+    children,
+}: {
+    enabled: boolean;
+    onSwipeRight: () => void;
+    children: React.ReactNode;
+}) => {
+    const translateX = React.useRef(new Animated.Value(0)).current;
+    const didTrigger = React.useRef(false);
+
+    const reset = useCallback(() => {
+        Animated.spring(translateX, {
+            toValue: 0,
+            useNativeDriver: true,
+            speed: 20,
+            bounciness: 0,
+        }).start(() => {
+            didTrigger.current = false;
+        });
+    }, [translateX]);
+
+    const panResponder = React.useMemo(
+        () =>
+            PanResponder.create({
+                onMoveShouldSetPanResponder: (_, gestureState) =>
+                    enabled && gestureState.dx > 12 && Math.abs(gestureState.dy) < 10,
+                onPanResponderMove: (_, gestureState) => {
+                    if (!enabled) return;
+                    const dx = Math.max(0, Math.min(gestureState.dx, 120));
+                    translateX.setValue(dx);
+                },
+                onPanResponderRelease: (_, gestureState) => {
+                    if (!enabled) return;
+                    if (!didTrigger.current && gestureState.dx > 90) {
+                        didTrigger.current = true;
+                        onSwipeRight();
+                    }
+                    reset();
+                },
+                onPanResponderTerminate: () => {
+                    reset();
+                },
+            }),
+        [enabled, onSwipeRight, reset, translateX],
+    );
+
+    if (!enabled) return <>{children}</>;
+
+    return (
+        <View style={{ borderRadius: 10, overflow: 'hidden' }}>
+            <View
+                pointerEvents="none"
+                style={{
+                    position: 'absolute',
+                    left: 16,
+                    top: 0,
+                    bottom: 0,
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                    opacity: 0.7,
+                }}
+            >
+                <Eye size={22} color="#8A8A8A" variant="Linear" />
+            </View>
+            <Animated.View style={{ transform: [{ translateX }] }} {...panResponder.panHandlers}>
+                {children}
+            </Animated.View>
+        </View>
+    );
+};
 
 const NotificationsScreen = ({ navigation }: any) => {
     const insets = useSafeAreaInsets();
@@ -24,6 +98,7 @@ const NotificationsScreen = ({ navigation }: any) => {
     const [refreshing, setRefreshing] = useState(false);
     const [errorText, setErrorText] = useState<string | null>(null);
     const [markingId, setMarkingId] = useState<string | null>(null);
+    const [markingAll, setMarkingAll] = useState(false);
 
     const loadNotifications = useCallback(async (isRefresh = false) => {
         if (!apiAccessToken) {
@@ -35,8 +110,11 @@ const NotificationsScreen = ({ navigation }: any) => {
         else setLoading(true);
         setErrorText(null);
         try {
-            const res = await getNotifications(apiAccessToken, { limit: 100, offset: 0 });
-            setItems(Array.isArray(res?.notifications) ? res.notifications : []);
+            const res = await getNotifications(apiAccessToken, { limit: 100, offset: 0, unread_only: true });
+            const unread = Array.isArray(res?.notifications)
+                ? res.notifications.filter((x) => !x.read_at)
+                : [];
+            setItems(unread);
         } catch (e: any) {
             const message = e instanceof ApiError ? e.message : String(e?.message ?? e);
             setErrorText(message);
@@ -65,12 +143,25 @@ const NotificationsScreen = ({ navigation }: any) => {
         [items],
     );
 
+    const handleMarkAllRead = useCallback(async () => {
+        if (!apiAccessToken || markingAll) return;
+        const unreadItems = items.filter((x) => !x.read_at);
+        if (unreadItems.length === 0) return;
+        setMarkingAll(true);
+        try {
+            await Promise.allSettled(unreadItems.map((x) => markNotificationRead(apiAccessToken, x.id)));
+            setItems([]);
+        } finally {
+            setMarkingAll(false);
+        }
+    }, [apiAccessToken, items, markingAll]);
+
     const handleMarkRead = useCallback(async (item: AppNotification) => {
         if (!apiAccessToken || item.read_at) return;
         setMarkingId(item.id);
         try {
             await markNotificationRead(apiAccessToken, item.id);
-            setItems((prev) => prev.map((x) => (x.id === item.id ? { ...x, read_at: new Date().toISOString() } : x)));
+            setItems((prev) => prev.filter((x) => x.id !== item.id));
         } catch {
             // keep silent for now
         } finally {
@@ -78,39 +169,75 @@ const NotificationsScreen = ({ navigation }: any) => {
         }
     }, [apiAccessToken]);
 
+    const handleOpenNotification = useCallback(async (item: AppNotification) => {
+        const rawPostId = item.post_id ?? (item.metadata as any)?.post_id ?? null;
+        const postId = rawPostId ? String(rawPostId).trim() : '';
+
+        if (!item.read_at) {
+            if (apiAccessToken) {
+                setMarkingId(item.id);
+                try {
+                    await markNotificationRead(apiAccessToken, item.id);
+                } catch {
+                    // ignore read failure and continue navigation
+                } finally {
+                    setMarkingId(null);
+                }
+            }
+            setItems((prev) => prev.filter((x) => x.id !== item.id));
+        }
+
+        if (postId) {
+            navigation.navigate('ViewUserBlogDetailsScreen', {
+                postId,
+                postPreview: {
+                    id: postId,
+                    title: item.title || t('notificationTitle'),
+                    description: item.body || '',
+                },
+            });
+        }
+    }, [apiAccessToken, navigation, t]);
+
     const renderNotificationCard = (item: AppNotification) => (
-        <View key={item.id} style={Styles.notificationCard}>
-            <View style={Styles.notificationLeft}>
-                <View style={Styles.iconContainer}>
-                    <NotificationBing size={24} color={colors.primaryColor} variant="Bold" />
+        <SwipeToReadCard
+            key={item.id}
+            enabled={!item.read_at && markingId !== item.id}
+            onSwipeRight={() => handleMarkRead(item)}
+        >
+            <TouchableOpacity style={Styles.notificationCard} activeOpacity={0.9} onPress={() => handleOpenNotification(item)}>
+                <View style={Styles.notificationLeft}>
+                    <View style={Styles.iconContainer}>
+                        <NotificationBing size={24} color={colors.primaryColor} variant="Bold" />
+                    </View>
+                    <View style={Styles.notificationContent}>
+                        <Text style={Styles.notificationTitle}>{item.title || t('notificationTitle')}</Text>
+                        <Text style={Styles.notificationDescription}>{item.body || t('notificationDescription')}</Text>
+                    </View>
                 </View>
-                <View style={Styles.notificationContent}>
-                    <Text style={Styles.notificationTitle}>{item.title || t('notificationTitle')}</Text>
-                    <Text style={Styles.notificationDescription}>{item.body || t('notificationDescription')}</Text>
+                <View style={Styles.notificationRight}>
+                    {!item.read_at ? (
+                        <>
+                            <View style={Styles.newBadge}>
+                                <Text style={Styles.newBadgeText}>{t('new')}</Text>
+                            </View>
+                            <TouchableOpacity onPress={() => handleMarkRead(item)} disabled={markingId === item.id}>
+                                <Text style={Styles.detailsLink}>
+                                    {markingId === item.id ? t('Loading...') : t('details')}
+                                </Text>
+                            </TouchableOpacity>
+                        </>
+                    ) : (
+                        <>
+                            <Text style={Styles.dateText}>{formatDate(item.created_at)}</Text>
+                            <TouchableOpacity>
+                                <Text style={Styles.detailsLink}>{t('details')}</Text>
+                            </TouchableOpacity>
+                        </>
+                    )}
                 </View>
-            </View>
-            <View style={Styles.notificationRight}>
-                {!item.read_at ? (
-                    <>
-                        <View style={Styles.newBadge}>
-                            <Text style={Styles.newBadgeText}>{t('new')}</Text>
-                        </View>
-                        <TouchableOpacity onPress={() => handleMarkRead(item)} disabled={markingId === item.id}>
-                            <Text style={Styles.detailsLink}>
-                                {markingId === item.id ? t('Loading...') : t('details')}
-                            </Text>
-                        </TouchableOpacity>
-                    </>
-                ) : (
-                    <>
-                        <Text style={Styles.dateText}>{formatDate(item.created_at)}</Text>
-                        <TouchableOpacity>
-                            <Text style={Styles.detailsLink}>{t('details')}</Text>
-                        </TouchableOpacity>
-                    </>
-                )}
-            </View>
-        </View>
+            </TouchableOpacity>
+        </SwipeToReadCard>
     );
 
     return (
@@ -140,7 +267,11 @@ const NotificationsScreen = ({ navigation }: any) => {
                 {/* Section Header */}
                 <View style={Styles.sectionHeader}>
                     <Text style={Styles.sectionTitle}>{t('notifications')}</Text>
-                    <Text style={Styles.viewAllText}>{`${unreadCount} ${t('new')}`}</Text>
+                    <TouchableOpacity disabled={markingAll || unreadCount === 0} onPress={handleMarkAllRead}>
+                        <Text style={Styles.viewAllText}>
+                            {markingAll ? t('Loading...') : t('Mark all as read')}
+                        </Text>
+                    </TouchableOpacity>
                 </View>
 
                 <SizeBox height={16} />

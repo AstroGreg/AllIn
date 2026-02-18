@@ -7,15 +7,16 @@ import Images from '../../constants/Images'
 import Icons from '../../constants/Icons'
 import { useTheme } from '../../context/ThemeContext'
 import { createStyles } from './UserProfileStyles'
-import { ArrowLeft2, User, Edit2, Clock, ArrowRight, DocumentText, Gallery, DocumentDownload, Location, VideoSquare } from 'iconsax-react-nativejs'
+import { ArrowLeft2, User, Edit2, Clock, ArrowRight, DocumentText, Gallery, DocumentDownload } from 'iconsax-react-nativejs'
 import { launchImageLibrary } from 'react-native-image-picker'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import ProfileTimeline, { TimelineEntry } from '../../components/profileTimeline/ProfileTimeline'
 import { useAuth } from '../../context/AuthContext'
-import { getDownloadsSummary, getPosts, getProfileCollectionByType, getProfileSummary, getProfileTimeline, getUploadedCompetitions, updateProfileSummary, uploadMediaBatch, type PostSummary, type ProfileCollectionItem, type ProfileSummaryResponse, type ProfileTimelineEntry, type UploadedCompetition } from '../../services/apiGateway'
+import { deletePost, getDownloadsSummary, getPosts, getProfileCollectionByType, getProfileSummary, getProfileTimeline, getUploadedCompetitions, updateProfileSummary, uploadMediaBatch, type PostSummary, type ProfileCollectionItem, type ProfileSummaryResponse, type ProfileTimelineEntry, type UploadedCompetition } from '../../services/apiGateway'
 import { getApiBaseUrl } from '../../constants/RuntimeConfig'
 import { useFocusEffect } from '@react-navigation/native'
 import { useTranslation } from 'react-i18next'
+import ProfileNewsSection, { type ProfileNewsItem } from '../../components/profileNews/ProfileNewsSection'
 
 const UserProfileScreen = ({ navigation }: any) => {
     const insets = useSafeAreaInsets();
@@ -29,6 +30,8 @@ const UserProfileScreen = ({ navigation }: any) => {
     const [blogEntries, setBlogEntries] = useState<any[]>([]);
     const [profileCategory, setProfileCategory] = useState<'Track&Field' | 'Road&Trail'>('Track&Field');
     const [showProfileMenuModal, setShowProfileMenuModal] = useState(false);
+    const [pendingDeleteBlog, setPendingDeleteBlog] = useState<ProfileNewsItem | null>(null);
+    const [isDeletingBlog, setIsDeletingBlog] = useState(false);
     const [profileImage, setProfileImage] = useState<any>(Images.profile1);
     const [isUpdatingAvatar, setIsUpdatingAvatar] = useState(false);
     const [downloadsSummary, setDownloadsSummary] = useState<{ total_downloads: number; total_views: number; total_profit_cents?: number } | null>(
@@ -202,7 +205,14 @@ const UserProfileScreen = ({ navigation }: any) => {
                 const sortedPosts = [...posts].sort((a: PostSummary, b: PostSummary) => {
                     const aTime = Date.parse(String(a?.created_at ?? ''));
                     const bTime = Date.parse(String(b?.created_at ?? ''));
-                    return (Number.isNaN(bTime) ? 0 : bTime) - (Number.isNaN(aTime) ? 0 : aTime);
+                    const timeDiff = (Number.isNaN(bTime) ? 0 : bTime) - (Number.isNaN(aTime) ? 0 : aTime);
+                    if (timeDiff !== 0) return timeDiff;
+                    const titleDiff = String(b?.title ?? '').localeCompare(String(a?.title ?? ''), undefined, {
+                        numeric: true,
+                        sensitivity: 'base',
+                    });
+                    if (titleDiff !== 0) return titleDiff;
+                    return String(b?.id ?? '').localeCompare(String(a?.id ?? ''));
                 });
                 const mapped = sortedPosts.map((p: PostSummary) => {
                     const cover = (p as any)?.cover_media || null;
@@ -462,99 +472,33 @@ const UserProfileScreen = ({ navigation }: any) => {
     );
 
 
-    const activityItems = useMemo(() => {
+    const activityItems = useMemo<ProfileNewsItem[]>(() => {
         return blogEntries.map((entry) => ({
-            ...entry,
-            type: 'blog',
+            id: String(entry.id),
+            title: String(entry.title || ''),
+            date: entry.date ? String(entry.date) : '',
+            description: entry.description ? String(entry.description) : '',
+            coverImage: entry.coverImage ? String(entry.coverImage) : null,
         }));
     }, [blogEntries]);
 
+    const handleSwipeDeleteBlog = useCallback((item: ProfileNewsItem) => {
+        setPendingDeleteBlog(item);
+    }, []);
 
-    const renderActivityCard = (item: any) => {
-        const isBlog = item.type === 'blog';
-        if (!isBlog) {
-            return (
-                <TouchableOpacity
-                    key={`${item.type}-${item.id}`}
-                    style={Styles.activityEventCard}
-                    activeOpacity={0.85}
-                    onPress={() => navigation.navigate('PhotosScreen', { eventTitle: item.title })}
-                >
-                    <View style={Styles.activityEventRow}>
-                        {item.image ? (
-                            <FastImage source={item.image} style={Styles.activityEventThumb} resizeMode="cover" />
-                        ) : (
-                            <View style={Styles.activityEventThumbPlaceholder} />
-                        )}
-                        <View style={Styles.activityEventInfo}>
-                            <View style={Styles.activityHeader}>
-                                <Text style={Styles.activityTitle}>{item.title}</Text>
-                                <View
-                                    style={[
-                                        Styles.activityStatusBadge,
-                                        item.status === 'Completed' ? Styles.activityStatusDone : Styles.activityStatusActive,
-                                    ]}
-                                >
-                                    <Text style={Styles.activityStatusText}>{item.status}</Text>
-                                </View>
-                            </View>
-                            <Text style={Styles.activityEventSubtitle}>{t('Subscribed competition')}</Text>
-                            <View style={Styles.activityEventMetaRow}>
-                                <VideoSquare size={14} color={colors.grayColor} variant="Linear" />
-                                <Text style={Styles.activityEventMetaText}>{item.media}</Text>
-                                <View style={Styles.activityEventDot} />
-                                <Location size={14} color={colors.grayColor} variant="Linear" />
-                                <Text style={Styles.activityEventMetaText}>{item.location}</Text>
-                            </View>
-                            <Text style={Styles.activityEventMetaText}>{item.date}</Text>
-                        </View>
-                    </View>
-                </TouchableOpacity>
-            );
+    const confirmDeleteBlog = useCallback(async () => {
+        if (!apiAccessToken || !pendingDeleteBlog || isDeletingBlog) return;
+        setIsDeletingBlog(true);
+        try {
+            await deletePost(apiAccessToken, String(pendingDeleteBlog.id));
+            setBlogEntries((prev) => prev.filter((entry) => String(entry.id) !== String(pendingDeleteBlog.id)));
+            setPendingDeleteBlog(null);
+        } catch {
+            Alert.alert(t('Error'), t('Could not delete this post.'));
+        } finally {
+            setIsDeletingBlog(false);
         }
-        return (
-            <TouchableOpacity
-                key={`${item.type}-${item.id}`}
-                style={Styles.activityCard}
-                activeOpacity={0.85}
-                onPress={() => {
-                    navigation.navigate('ViewUserBlogDetailsScreen', {
-                        postId: item.id,
-                        postPreview: {
-                            title: item.title,
-                            date: item.date,
-                            description: item.description,
-                            coverImage: item.coverImage,
-                        },
-                    });
-                }}
-            >
-                <View style={Styles.activityCardRow}>
-                    <View style={Styles.activityThumbWrap}>
-                        {item.coverImage ? (
-                            <FastImage source={{ uri: String(item.coverImage) }} style={Styles.activityThumb} resizeMode="cover" />
-                        ) : (
-                            <View style={Styles.activityThumbPlaceholder} />
-                        )}
-                    </View>
-                    <View style={Styles.activityTextColumn}>
-                        <View style={Styles.activityHeaderRow}>
-                            <Text style={Styles.activityTitle} numberOfLines={2}>
-                                {item.title}
-                            </Text>
-                            <View style={[Styles.activityBadge, Styles.activityBadgeBlog]}>
-                                <Text style={Styles.activityBadgeTextBlog}>{t('Blog')}</Text>
-                            </View>
-                        </View>
-                        <Text style={Styles.activityMeta}>{item.date}</Text>
-                        <Text style={Styles.activityDescription} numberOfLines={2}>
-                            {item.description}
-                        </Text>
-                    </View>
-                </View>
-            </TouchableOpacity>
-        );
-    };
+    }, [apiAccessToken, isDeletingBlog, pendingDeleteBlog, t]);
 
 
     return (
@@ -686,24 +630,28 @@ const UserProfileScreen = ({ navigation }: any) => {
                 )}
 
                 {profileTab === 'activity' && (
-                    <View style={Styles.activitySection}>
-                        <View style={Styles.sectionHeader}>
-                            <Text style={Styles.sectionTitle}>{t('News')}</Text>
-                            <TouchableOpacity style={Styles.actionPill} onPress={() => openBlogEditor()}>
-                                <Text style={Styles.actionPillText}>{t('Add blog')}</Text>
-                            </TouchableOpacity>
-                        </View>
-                        <SizeBox height={16} />
-                        {activityItems.length === 0 ? (
-                            <View style={Styles.emptyStateCard}>
-                                <Text style={Styles.emptyStateText}>
-                                    {t('No news yet. Add your first blog to share updates.')}
-                                </Text>
-                            </View>
-                        ) : (
-                            activityItems.map(renderActivityCard)
-                        )}
-                    </View>
+                    <ProfileNewsSection
+                        styles={Styles}
+                        sectionTitle={t('News')}
+                        actionLabel={t('Add blog')}
+                        onPressAction={() => openBlogEditor()}
+                        enableSwipeDelete
+                        onSwipeDelete={handleSwipeDeleteBlog}
+                        items={activityItems}
+                        emptyText={t('No news yet. Add your first blog to share updates.')}
+                        blogLabel={t('Blog')}
+                        onPressItem={(item) => {
+                            navigation.navigate('ViewUserBlogDetailsScreen', {
+                                postId: item.id,
+                                postPreview: {
+                                    title: item.title,
+                                    date: item.date,
+                                    description: item.description,
+                                    coverImage: item.coverImage,
+                                },
+                            });
+                        }}
+                    />
                 )}
 
                 {profileTab === 'collections' && (
@@ -975,6 +923,74 @@ const UserProfileScreen = ({ navigation }: any) => {
                     </TouchableOpacity>
                 </Modal>
             )}
+
+            <Modal
+                visible={Boolean(pendingDeleteBlog)}
+                transparent
+                animationType="fade"
+                onRequestClose={() => {
+                    if (!isDeletingBlog) setPendingDeleteBlog(null);
+                }}
+            >
+                <TouchableOpacity
+                    style={Styles.categoryModalBackdrop}
+                    activeOpacity={1}
+                    onPress={() => {
+                        if (!isDeletingBlog) setPendingDeleteBlog(null);
+                    }}
+                >
+                    <TouchableOpacity
+                        activeOpacity={1}
+                        style={[
+                            Styles.categoryModalCard,
+                            {
+                                backgroundColor: colors.modalBackground,
+                                borderWidth: 0.5,
+                                borderColor: colors.lightGrayColor,
+                                borderRadius: 16,
+                                padding: 16,
+                            },
+                        ]}
+                        onPress={() => {}}
+                    >
+                        <Text style={Styles.categoryModalTitle}>{t('Delete blog')}</Text>
+                        <SizeBox height={8} />
+                        <Text style={[Styles.emptyStateText, { textAlign: 'center' }]}>
+                            {t('Are you sure you want to delete this post?')}
+                        </Text>
+                        <SizeBox height={12} />
+                        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+                            <TouchableOpacity
+                                style={[Styles.categoryOption, { flex: 1, borderRadius: 10 }]}
+                                disabled={isDeletingBlog}
+                                onPress={() => setPendingDeleteBlog(null)}
+                            >
+                                <Text style={Styles.categoryOptionText}>{t('Cancel')}</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                                style={{
+                                    minWidth: 110,
+                                    minHeight: 44,
+                                    borderRadius: 12,
+                                    backgroundColor: colors.errorColor || '#D32F2F',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    paddingHorizontal: 16,
+                                    paddingVertical: 10,
+                                }}
+                                disabled={isDeletingBlog}
+                                onPress={confirmDeleteBlog}
+                            >
+                                {isDeletingBlog ? (
+                                    <ActivityIndicator size="small" color="#FFFFFF" />
+                                ) : (
+                                    <Text style={[Styles.categoryOptionText, { color: '#FFFFFF' }]}>{t('Delete')}</Text>
+                                )}
+                            </TouchableOpacity>
+                        </View>
+                    </TouchableOpacity>
+                </TouchableOpacity>
+            </Modal>
 
         </View>
     );

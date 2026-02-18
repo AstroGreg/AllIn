@@ -24,6 +24,7 @@ import {
 } from '../../services/apiGateway';
 import { getApiBaseUrl } from '../../constants/RuntimeConfig';
 import { useTranslation } from 'react-i18next';
+import ProfileNewsSection, { type ProfileNewsItem } from '../../components/profileNews/ProfileNewsSection';
 
 type PostSummaryWithCover = PostSummary & { coverImage?: string | null };
 
@@ -149,7 +150,19 @@ const ViewUserProfileScreen = ({ navigation, route }: any) => {
             try {
                 const p = await getPosts(apiAccessToken, { author_profile_id: String(profileId), limit: 50 });
                 const rawPosts = Array.isArray((p as any)?.posts) ? (p as any).posts : [];
-                const mapped = rawPosts.map((entry: PostSummary) => {
+                const sortedPosts = [...rawPosts].sort((a: PostSummary, b: PostSummary) => {
+                    const aTime = Date.parse(String(a?.created_at ?? ''));
+                    const bTime = Date.parse(String(b?.created_at ?? ''));
+                    const timeDiff = (Number.isNaN(bTime) ? 0 : bTime) - (Number.isNaN(aTime) ? 0 : aTime);
+                    if (timeDiff !== 0) return timeDiff;
+                    const titleDiff = String(b?.title ?? '').localeCompare(String(a?.title ?? ''), undefined, {
+                        numeric: true,
+                        sensitivity: 'base',
+                    });
+                    if (titleDiff !== 0) return titleDiff;
+                    return String(b?.id ?? '').localeCompare(String(a?.id ?? ''));
+                });
+                const mapped = sortedPosts.map((entry: PostSummary) => {
                     const cover = (entry as any)?.cover_media || null;
                     const coverCandidate = cover?.thumbnail_url || cover?.preview_url || cover?.full_url || cover?.raw_url || null;
                     const resolved = coverCandidate ? toAbsoluteUrl(String(coverCandidate)) : null;
@@ -221,17 +234,15 @@ const ViewUserProfileScreen = ({ navigation, route }: any) => {
         return list.slice(0, 4);
     }, [activeTab, photoCollections, videoCollections]);
 
-    const activityItems = useMemo(() => {
+    const activityItems = useMemo<ProfileNewsItem[]>(() => {
         return posts.map((entry) => ({
-            ...entry,
-            type: 'blog',
+            id: String(entry.id),
+            title: String(entry.title || ''),
+            date: entry.created_at ? String(entry.created_at).slice(0, 10) : '',
+            description: String(entry.summary || entry.description || ''),
+            coverImage: entry.coverImage ? String(entry.coverImage) : null,
         }));
     }, [posts]);
-
-    const formatDate = useCallback((value?: string | null) => {
-        if (!value) return '';
-        return String(value).slice(0, 10);
-    }, []);
 
     const localStyles = useMemo(
         () =>
@@ -249,30 +260,6 @@ const ViewUserProfileScreen = ({ navigation, route }: any) => {
                 followButtonText: {
                     fontSize: 14,
                     color: summary?.is_following ? colors.primaryColor : colors.whiteColor,
-                },
-                activityCardRow: {
-                    flexDirection: 'row',
-                    gap: 12,
-                },
-                activityThumbWrap: {
-                    width: 86,
-                    height: 72,
-                    borderRadius: 8,
-                    overflow: 'hidden',
-                    backgroundColor: colors.btnBackgroundColor,
-                },
-                activityThumb: {
-                    width: '100%',
-                    height: '100%',
-                },
-                activityThumbPlaceholder: {
-                    width: '100%',
-                    height: '100%',
-                    backgroundColor: colors.btnBackgroundColor,
-                },
-                activityTextColumn: {
-                    flex: 1,
-                    justifyContent: 'center',
                 },
             }),
         [colors, summary?.is_following],
@@ -375,61 +362,24 @@ const ViewUserProfileScreen = ({ navigation, route }: any) => {
                 )}
 
                 {profileTab === 'activity' && (
-                    <View style={Styles.activitySection}>
-                        <View style={Styles.sectionHeader}>
-                            <Text style={Styles.sectionTitle}>{t('News')}</Text>
-                        </View>
-                        <View>
-                            {activityItems.length === 0 ? (
-                                <View style={Styles.emptyStateCard}>
-                                    <Text style={Styles.emptyStateText}>{t('No news yet.')}</Text>
-                                </View>
-                            ) : (
-                                activityItems.map((item) => (
-                                <TouchableOpacity
-                                    key={`blog-${item.id}`}
-                                    style={Styles.activityCard}
-                                    activeOpacity={0.85}
-                                    onPress={() => {
-                                        navigation.navigate('ViewUserBlogDetailsScreen', {
-                                            postId: item.id,
-                                            postPreview: {
-                                                title: item.title,
-                                                date: formatDate(item.created_at),
-                                                description: item.summary || item.description || '',
-                                                coverImage: item.coverImage,
-                                            },
-                                        });
-                                    }}
-                                >
-                                    <View style={localStyles.activityCardRow}>
-                                        <View style={localStyles.activityThumbWrap}>
-                                            {item.coverImage ? (
-                                                <FastImage source={{ uri: String(item.coverImage) }} style={localStyles.activityThumb} resizeMode="cover" />
-                                            ) : (
-                                                <View style={localStyles.activityThumbPlaceholder} />
-                                            )}
-                                        </View>
-                                        <View style={localStyles.activityTextColumn}>
-                                            <View style={Styles.activityHeaderRow}>
-                                                <Text style={Styles.activityTitle} numberOfLines={2}>
-                                                    {item.title}
-                                                </Text>
-                                                <View style={[Styles.activityBadge, Styles.activityBadgeBlog]}>
-                                                    <Text style={Styles.activityBadgeText}>{t('Blog')}</Text>
-                                                </View>
-                                            </View>
-                                            <Text style={Styles.activityMeta}>{formatDate(item.created_at)}</Text>
-                                            <Text style={Styles.activityDescription} numberOfLines={2}>
-                                                {item.summary || item.description || ''}
-                                            </Text>
-                                        </View>
-                                    </View>
-                                </TouchableOpacity>
-                                ))
-                            )}
-                        </View>
-                    </View>
+                    <ProfileNewsSection
+                        styles={Styles}
+                        sectionTitle={t('News')}
+                        items={activityItems}
+                        emptyText={t('No news yet.')}
+                        blogLabel={t('Blog')}
+                        onPressItem={(item) => {
+                            navigation.navigate('ViewUserBlogDetailsScreen', {
+                                postId: item.id,
+                                postPreview: {
+                                    title: item.title,
+                                    date: item.date,
+                                    description: item.description,
+                                    coverImage: item.coverImage,
+                                },
+                            });
+                        }}
+                    />
                 )}
 
                 {profileTab === 'collections' && (
