@@ -251,6 +251,7 @@ const HomeScreen = ({ navigation }: any) => {
         }, [loadOverview]),
     );
 
+<<<<<<< HEAD
     const loadUnreadNotificationsCount = useCallback(async () => {
         if (!apiAccessToken) {
             setUnreadNotificationsCount(0);
@@ -271,6 +272,8 @@ const HomeScreen = ({ navigation }: any) => {
         }, [loadUnreadNotificationsCount]),
     );
 
+=======
+>>>>>>> 4d0cdb6041be08ed53f97af04fa4e95406491682
     const handleRefresh = useCallback(async () => {
         if (refreshingFeed) return;
         setRefreshingFeed(true);
