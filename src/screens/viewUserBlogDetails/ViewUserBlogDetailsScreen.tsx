@@ -84,7 +84,8 @@ const ViewUserBlogDetailsScreen = ({ navigation, route }: any) => {
 
     const galleryItems = useMemo(() => {
         if (mediaItems.length > 0) {
-            return mediaItems.map((media: any) => {
+            return mediaItems
+                .map((media: any) => {
                 const thumbCandidate = media.thumbnail_url || media.preview_url || media.full_url || media.raw_url || null;
                 const resolved = thumbCandidate ? toAbsoluteUrl(String(thumbCandidate)) : null;
                 const thumb = resolved ? (withAccessToken(resolved) || resolved) : null;
@@ -92,17 +93,18 @@ const ViewUserBlogDetailsScreen = ({ navigation, route }: any) => {
                 const previewResolved = previewCandidate ? toAbsoluteUrl(String(previewCandidate)) : null;
                 const preview = previewResolved ? (withAccessToken(previewResolved) || previewResolved) : null;
                 return {
-                    image: thumb ? { uri: String(thumb) } : Images.photo1,
+                    image: thumb ? { uri: String(thumb) } : null,
                     type: media.type === 'video' ? 'video' : 'image',
                     videoUri: preview || undefined,
                     media,
                 };
-            });
+                })
+                .filter((item: any) => !!item?.image);
         }
         if (postData?.coverImage) {
             return [{ image: { uri: String(postData.coverImage) }, type: 'image', videoUri: undefined }];
         }
-        return [{ image: Images.photo1, type: 'image', videoUri: undefined }];
+        return [];
     }, [mediaItems, postData?.coverImage, toAbsoluteUrl, withAccessToken]);
 
     const [selectedIndex, setSelectedIndex] = useState(0);
@@ -112,6 +114,22 @@ const ViewUserBlogDetailsScreen = ({ navigation, route }: any) => {
     const translatedDescription = useMemo(() => {
         return translateText(postData?.description ?? '', i18n.language);
     }, [i18n.language, postData?.description]);
+    const createdLabel = postData?.created_at ? String(postData.created_at).slice(0, 10) : (postPreview?.date || '');
+    const readTimeLabel = postData?.reading_time_minutes ? `${postData.reading_time_minutes} ${t('min')}` : '';
+    const titleTimeAgo = useMemo(() => {
+        const raw = postData?.created_at || postPreview?.date;
+        if (!raw) return '';
+        const date = new Date(raw);
+        if (Number.isNaN(date.getTime())) return '';
+        const diffSec = Math.max(0, Math.floor((Date.now() - date.getTime()) / 1000));
+        if (diffSec < 60) return t('just now');
+        const mins = Math.floor(diffSec / 60);
+        if (mins < 60) return `${mins}${t('m ago')}`;
+        const hrs = Math.floor(mins / 60);
+        if (hrs < 24) return `${hrs}${t('h ago')}`;
+        const days = Math.floor(hrs / 24);
+        return `${days}${t('d ago')}`;
+    }, [postData?.created_at, postPreview?.date, t]);
 
     const authorName = useMemo(
         () =>
@@ -224,84 +242,87 @@ const ViewUserBlogDetailsScreen = ({ navigation, route }: any) => {
             <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={Styles.scrollContent}>
                 <SizeBox height={8} />
 
-                {/* Title */}
-                <View style={Styles.headerCard}>
+                {/* Reddit-style text post */}
+                <View style={Styles.redditPostCard}>
+                    <View style={Styles.redditMetaRow}>
+                        <FastImage source={authorImage} style={Styles.writerImage} resizeMode="cover" />
+                        <View style={Styles.redditMetaTextBlock}>
+                            <Text style={Styles.redditMetaName} numberOfLines={1}>
+                                {authorName}
+                            </Text>
+                            {titleTimeAgo ? (
+                                <Text style={Styles.redditMetaSubText} numberOfLines={1}>
+                                    {titleTimeAgo}
+                                </Text>
+                            ) : null}
+                        </View>
+                    </View>
+
+                    <SizeBox height={8} />
+
                     <Text style={Styles.blogTitle}>{postData?.title ?? t('Blog')}</Text>
-                    <Text style={Styles.metaInline}>
-                        {[(postData?.reading_time_minutes ? `${postData.reading_time_minutes} ${t('min')}` : ''), (postData?.created_at ? String(postData.created_at).slice(0, 10) : postPreview?.date || '')].filter(Boolean).join(' • ')}
+
+                    <SizeBox height={8} />
+
+                    <Text style={Styles.description}>
+                        {showTranslation ? translatedDescription : (postData?.description ?? '')}
                     </Text>
-                </View>
 
-                <SizeBox height={10} />
+                    {galleryItems[0]?.image ? (
+                        <>
+                            <SizeBox height={12} />
+                            <FastImage source={galleryItems[0].image} style={Styles.heroImage} resizeMode="cover" />
+                        </>
+                    ) : null}
 
-                {galleryItems[0]?.image ? (
-                    <FastImage source={galleryItems[0].image} style={Styles.heroImage} resizeMode="cover" />
-                ) : null}
+                    <SizeBox height={10} />
 
-                <SizeBox height={10} />
-
-                {/* Author */}
-                <View style={Styles.authorRow}>
-                    <FastImage source={authorImage} style={Styles.writerImage} resizeMode="cover" />
-                    <Text style={Styles.writerName}>{authorName}</Text>
-                </View>
-
-                <SizeBox height={8} />
-
-                {/* Description */}
-                <TouchableOpacity
-                    style={Styles.translateToggle}
-                    onPress={() => setShowTranslation((prev) => !prev)}
-                    activeOpacity={0.8}
-                >
-                    <Text style={Styles.translateToggleText}>
-                        {showTranslation ? t('showOriginal') : t('translate')}
-                    </Text>
-                </TouchableOpacity>
-                <Text style={Styles.description}>
-                    {showTranslation ? translatedDescription : (postData?.description ?? '')}
-                </Text>
-
-                <SizeBox height={8} />
-
-                <View style={Styles.blogActionsRow}>
-                    <TouchableOpacity
-                        style={Styles.blogActionButton}
-                        onPress={async () => {
-                            try {
-                                await NativeShare.open({
-                                    message: postData?.title ? String(postData.title) : 'AllIn',
-                                    subject: postData?.title ? String(postData.title) : undefined,
-                                });
-                            } catch {
-                                // ignore
-                            }
-                        }}
-                    >
-                        <Image source={Icons.ShareBlue} style={Styles.blogActionIcon} />
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                        style={[Styles.blogActionButton, Styles.blogActionLike]}
-                        onPress={async () => {
-                            if (!apiAccessToken || !postId) return;
-                            try {
-                                const r = await togglePostLike(apiAccessToken, postId);
-                                setLiked(r.liked);
-                                setLikesCount(r.likes_count);
-                            } catch {
-                                // ignore
-                            }
-                        }}
-                    >
-                        <Heart size={18} color={colors.primaryColor} variant={liked ? 'Bold' : 'Linear'} />
-                        <Text style={Styles.blogActionText}>{likesCount}</Text>
-                    </TouchableOpacity>
+                    <View style={Styles.blogActionsRow}>
+                        <TouchableOpacity
+                            style={[Styles.blogActionButton, Styles.blogActionButtonCompact]}
+                            onPress={() => setShowTranslation((prev) => !prev)}
+                            activeOpacity={0.8}
+                        >
+                            <Icons.LanguageSetting width={14} height={14} />
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                            style={[Styles.blogActionButton, Styles.blogActionButtonCompact]}
+                            onPress={async () => {
+                                try {
+                                    await NativeShare.open({
+                                        message: postData?.title ? String(postData.title) : 'AllIn',
+                                        subject: postData?.title ? String(postData.title) : undefined,
+                                    });
+                                } catch {
+                                    // ignore
+                                }
+                            }}
+                        >
+                            <Image source={Icons.ShareBlue} style={[Styles.blogActionIcon, Styles.blogActionIconCompact]} />
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                            style={[Styles.blogActionButton, Styles.blogActionLike, { marginLeft: 'auto' }]}
+                            onPress={async () => {
+                                if (!apiAccessToken || !postId) return;
+                                try {
+                                    const r = await togglePostLike(apiAccessToken, postId);
+                                    setLiked(r.liked);
+                                    setLikesCount(r.likes_count);
+                                } catch {
+                                    // ignore
+                                }
+                            }}
+                        >
+                            <Heart size={18} color={colors.primaryColor} variant={liked ? 'Bold' : 'Linear'} />
+                            <Text style={Styles.blogActionText}>{likesCount}</Text>
+                        </TouchableOpacity>
+                    </View>
                 </View>
 
                 <SizeBox height={10} />
 
                 {/* Media Carousel (bottom) */}
-                {galleryItems.length > 0 && (
+                {mediaItems.length > 0 && galleryItems.length > 0 && (
                     <>
                         <Text style={Styles.sectionLabel}>{t('media')}</Text>
                         <SizeBox height={4} />

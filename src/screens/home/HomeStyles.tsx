@@ -598,11 +598,25 @@ export const createStyles = (colors: ThemeColors) => StyleSheet.create({
 
         borderBottomWidth: 0,
     },
+    userPostHeaderLeft: {
+        flex: 1,
+        minWidth: 0,
+    },
+    userPostHeaderLeftRow: {
+        flexDirection: 'row',
+        alignItems: 'flex-start',
+        width: '100%',
+    },
     userPostInfo: {
         flexDirection: 'row',
         alignItems: 'flex-start',
         gap: 10,
+        alignSelf: 'flex-start',
+        maxWidth: '100%',
+    },
+    userPostHeaderSpacerTap: {
         flex: 1,
+        minHeight: 36,
     },
     userPostTextBlock: {
         justifyContent: 'flex-start',
@@ -669,9 +683,9 @@ export const createStyles = (colors: ThemeColors) => StyleSheet.create({
         gap: 10,
     },
     feedActionButton: {
-        width: 40,
-        height: 40,
-        borderRadius: 20,
+        width: 34,
+        height: 34,
+        borderRadius: 10,
         backgroundColor: colors.btnBackgroundColor,
         borderWidth: 0,
         alignItems: 'center',
@@ -704,8 +718,8 @@ export const createStyles = (colors: ThemeColors) => StyleSheet.create({
         zIndex: 6,
     },
     feedActionIcon: {
-        width: 20,
-        height: 20,
+        width: 14,
+        height: 14,
         tintColor: colors.primaryColor,
     },
     // Instant video overlay

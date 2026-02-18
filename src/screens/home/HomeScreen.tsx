@@ -251,7 +251,6 @@ const HomeScreen = ({ navigation }: any) => {
         }, [loadOverview]),
     );
 
-<<<<<<< HEAD
     const loadUnreadNotificationsCount = useCallback(async () => {
         if (!apiAccessToken) {
             setUnreadNotificationsCount(0);
@@ -271,9 +270,6 @@ const HomeScreen = ({ navigation }: any) => {
             loadUnreadNotificationsCount();
         }, [loadUnreadNotificationsCount]),
     );
-
-=======
->>>>>>> 4d0cdb6041be08ed53f97af04fa4e95406491682
     const handleRefresh = useCallback(async () => {
         if (refreshingFeed) return;
         setRefreshingFeed(true);
@@ -1222,6 +1218,19 @@ const HomeScreen = ({ navigation }: any) => {
                                         liked={Boolean(post?.liked_by_me)}
                                         onToggleLike={() => handleTogglePostLike(post.id)}
                                         likeDisabled={!String(post?.id ?? '').trim()}
+                                        showActions
+                                        onShare={async () => {
+                                            try {
+                                                await NativeShare.open({
+                                                    message: post?.title
+                                                        ? String(post.title)
+                                                        : String(post?.description ?? post?.summary ?? t('Latest blog')),
+                                                    subject: post?.title ? String(post.title) : undefined,
+                                                });
+                                            } catch {
+                                                // ignore
+                                            }
+                                        }}
                                         onPress={() => {
                                             navigation.navigate('ViewUserBlogDetailsScreen', {
                                                 postId: post.id,

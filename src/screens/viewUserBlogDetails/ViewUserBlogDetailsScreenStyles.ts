@@ -46,6 +46,33 @@ export const createStyles = (colors: ThemeColors) => StyleSheet.create({
     scrollContent: {
         paddingHorizontal: 20,
         paddingTop: 24,
+        paddingBottom: 16,
+    },
+    redditPostCard: {
+        borderWidth: 1,
+        borderColor: colors.borderColor,
+        borderRadius: 14,
+        backgroundColor: colors.secondaryColor,
+        padding: 14,
+    },
+    redditMetaRow: {
+        flexDirection: 'row',
+        alignItems: 'flex-start',
+        gap: 8,
+    },
+    redditMetaTextBlock: {
+        flex: 1,
+    },
+    redditMetaName: {
+        ...Fonts.medium14,
+        color: colors.mainTextColor,
+        lineHeight: 18,
+        paddingTop: 1,
+    },
+    redditMetaSubText: {
+        ...Fonts.regular12,
+        color: colors.subTextColor,
+        marginTop: 2,
     },
     headerCard: {
         backgroundColor: 'transparent',
@@ -90,7 +117,7 @@ export const createStyles = (colors: ThemeColors) => StyleSheet.create({
     blogTitle: {
         ...Fonts.semibold22,
         color: colors.mainTextColor,
-        lineHeight: 28,
+        lineHeight: 30,
     },
     metaInline: {
         ...Fonts.regular12,
@@ -111,9 +138,9 @@ export const createStyles = (colors: ThemeColors) => StyleSheet.create({
         color: colors.mainTextColor,
     },
     description: {
-        ...Fonts.regular12,
-        color: colors.subTextColor,
-        lineHeight: 20,
+        ...Fonts.regular15,
+        color: colors.mainTextColor,
+        lineHeight: 24,
         backgroundColor: 'transparent',
         paddingHorizontal: 0,
         paddingVertical: 0,
@@ -140,6 +167,9 @@ export const createStyles = (colors: ThemeColors) => StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         gap: 10,
+        borderTopWidth: 1,
+        borderTopColor: colors.borderColor,
+        paddingTop: 10,
     },
     blogActionButton: {
         flexDirection: 'row',
@@ -153,6 +183,11 @@ export const createStyles = (colors: ThemeColors) => StyleSheet.create({
         paddingHorizontal: 12,
         height: 40,
     },
+    blogActionButtonCompact: {
+        paddingHorizontal: 9,
+        height: 34,
+        borderRadius: 10,
+    },
     blogActionLike: {
         paddingHorizontal: 14,
     },
@@ -161,9 +196,16 @@ export const createStyles = (colors: ThemeColors) => StyleSheet.create({
         height: 18,
         tintColor: colors.primaryColor,
     },
+    blogActionIconCompact: {
+        width: 14,
+        height: 14,
+    },
     blogActionText: {
         ...Fonts.medium12,
         color: colors.mainTextColor,
+    },
+    blogActionTextCompact: {
+        ...Fonts.medium11,
     },
     galleryThumbWrap: {
         width: 132,

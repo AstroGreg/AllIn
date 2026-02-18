@@ -419,20 +419,35 @@ const NewsFeedCard = ({
                     Styles.feedPadding,
                     headerSeparated && Styles.userPostHeaderSeparated,
                 ]}>
-                    <TouchableOpacity style={Styles.userPostInfo} onPress={onPressUser}>
-                        {!hideAvatar && user.avatar ? (
-                            <FastImage
-                                source={user.avatar}
-                                style={Styles.userPostAvatar}
+                    <View style={Styles.userPostHeaderLeft}>
+                        <View style={Styles.userPostHeaderLeftRow}>
+                            <TouchableOpacity
+                                style={Styles.userPostInfo}
+                                onPress={onPressUser}
+                                disabled={!onPressUser}
+                                activeOpacity={0.8}
+                            >
+                                {!hideAvatar && user.avatar ? (
+                                    <FastImage
+                                        source={user.avatar}
+                                        style={Styles.userPostAvatar}
+                                    />
+                                ) : null}
+                                <View style={Styles.userPostTextBlock}>
+                                    <Text style={Styles.userPostName}>{user.name}</Text>
+                                    {!hideUserDate && !!user.date && (
+                                        <Text style={Styles.userPostTime}>{user.date}</Text>
+                                    )}
+                                </View>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                                style={Styles.userPostHeaderSpacerTap}
+                                onPress={onPress}
+                                disabled={!onPress}
+                                activeOpacity={0.9}
                             />
-                        ) : null}
-                        <View style={Styles.userPostTextBlock}>
-                            <Text style={Styles.userPostName}>{user.name}</Text>
-                            {!hideUserDate && !!user.date && (
-                                <Text style={Styles.userPostTime}>{user.date}</Text>
-                            )}
                         </View>
-                    </TouchableOpacity>
+                    </View>
                     {headerTag || onPressMore ? (
                         <View style={Styles.feedHeaderActions}>
                             {headerTag ? (
