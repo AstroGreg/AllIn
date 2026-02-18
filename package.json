@@ -22,7 +22,7 @@
     "@react-native-community/slider": "^4.5.6",
     "@react-native-community/template": "^0.77.0",
     "@react-native-masked-view/masked-view": "^0.3.2",
-    "@react-navigation/bottom-tabs": "^7.3.10",
+    "@react-navigation/bottom-tabs": "7.3.10",
     "@react-navigation/elements": "^2.3.8",
     "@react-navigation/native": "^7.1.6",
     "@react-navigation/native-stack": "^7.3.10",
@@ -74,5 +74,8 @@
   },
   "engines": {
     "node": ">=18"
+  },
+  "overrides": {
+    "@react-navigation/bottom-tabs": "7.3.10"
   }
 }

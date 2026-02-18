@@ -199,7 +199,12 @@ const UserProfileScreen = ({ navigation }: any) => {
             try {
                 const resp = await getPosts(apiAccessToken, { author_profile_id: String(postsProfileId), limit: 50 });
                 const posts = Array.isArray((resp as any)?.posts) ? (resp as any).posts : [];
-                const mapped = posts.map((p: PostSummary) => {
+                const sortedPosts = [...posts].sort((a: PostSummary, b: PostSummary) => {
+                    const aTime = Date.parse(String(a?.created_at ?? ''));
+                    const bTime = Date.parse(String(b?.created_at ?? ''));
+                    return (Number.isNaN(bTime) ? 0 : bTime) - (Number.isNaN(aTime) ? 0 : aTime);
+                });
+                const mapped = sortedPosts.map((p: PostSummary) => {
                     const cover = (p as any)?.cover_media || null;
                     const coverCandidate = cover?.thumbnail_url || cover?.preview_url || cover?.full_url || cover?.raw_url || null;
                     const resolved = coverCandidate ? toAbsoluteUrl(String(coverCandidate)) : null;
