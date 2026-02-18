@@ -11,6 +11,7 @@ import { useTranslation } from 'react-i18next'
 interface HeaderProps {
     userName: string;
     profilePic?: string;
+    notificationCount?: number;
     onPressFeed?: () => void;
     onPressProfile?: () => void;
     onPressNotifications?: () => void;
@@ -19,6 +20,7 @@ interface HeaderProps {
 const Header = ({
     userName,
     profilePic,
+    notificationCount = 0,
     onPressFeed,
     onPressProfile,
     onPressNotifications
@@ -45,9 +47,18 @@ const Header = ({
                 <TouchableOpacity onPress={onPressFeed} style={Styles.headerIconBtn}>
                     <Icons.FeedBlue height={24} width={24} />
                 </TouchableOpacity>
-                <TouchableOpacity onPress={onPressNotifications} style={Styles.headerIconBtn}>
-                    <Icons.NotificationBoldBlue height={24} width={24} />
-                </TouchableOpacity>
+                <View style={Styles.notificationIconWrap}>
+                    {notificationCount > 0 ? (
+                        <View style={Styles.notificationCountBanner}>
+                            <Text style={Styles.notificationCountText}>
+                                {notificationCount > 99 ? '99+' : String(notificationCount)}
+                            </Text>
+                        </View>
+                    ) : null}
+                    <TouchableOpacity onPress={onPressNotifications} style={Styles.headerIconBtn}>
+                        <Icons.NotificationBoldBlue height={24} width={24} />
+                    </TouchableOpacity>
+                </View>
             </View>
         </View>
     )

@@ -628,46 +628,46 @@ const SearchScreen = ({ navigation }: any) => {
 
                 <SizeBox height={24} />
 
-                <View style={Styles.resultsHeader}>
-                    <Text style={Styles.resultsTitle}>{t('Results')}</Text>
-                    {hasActiveFilters && (
-                        <View style={Styles.resultsBadge}>
-                            <Text style={Styles.resultsBadgeText}>{totalCount} {t('found')}</Text>
-                        </View>
-                    )}
-                </View>
-
-                <SizeBox height={16} />
-
-                {!hasActiveFilters ? (
-                    renderNoResults(t('Start typing to search'))
-                ) : !hasAnyResults ? (
-                    renderNoResults(t('No results found'))
-                ) : (
+                {hasActiveFilters && (
                     <>
-                        {filteredEvents.length > 0 && (
-                            <>
-                                <Text style={Styles.sectionTitle}>{t('Competitions')}</Text>
-                                <SizeBox height={10} />
-                                {filteredEvents.map(renderEventCard)}
-                                <SizeBox height={20} />
-                            </>
-                        )}
+                        <View style={Styles.resultsHeader}>
+                            <Text style={Styles.resultsTitle}>{t('Results')}</Text>
+                            <View style={Styles.resultsBadge}>
+                                <Text style={Styles.resultsBadgeText}>{totalCount} {t('found')}</Text>
+                            </View>
+                        </View>
 
-                        {filteredPeople.length > 0 && (
-                            <>
-                                <Text style={Styles.sectionTitle}>{t('People')}</Text>
-                                <SizeBox height={10} />
-                                {filteredPeople.map(renderPersonCard)}
-                                <SizeBox height={20} />
-                            </>
-                        )}
+                        <SizeBox height={16} />
 
-                        {filteredGroups.length > 0 && (
+                        {!hasAnyResults ? (
+                            renderNoResults(t('No results found'))
+                        ) : (
                             <>
-                                <Text style={Styles.sectionTitle}>{t('Groups')}</Text>
-                                <SizeBox height={10} />
-                                {filteredGroups.map(renderGroupCard)}
+                                {filteredEvents.length > 0 && (
+                                    <>
+                                        <Text style={Styles.sectionTitle}>{t('Competitions')}</Text>
+                                        <SizeBox height={10} />
+                                        {filteredEvents.map(renderEventCard)}
+                                        <SizeBox height={20} />
+                                    </>
+                                )}
+
+                                {filteredPeople.length > 0 && (
+                                    <>
+                                        <Text style={Styles.sectionTitle}>{t('People')}</Text>
+                                        <SizeBox height={10} />
+                                        {filteredPeople.map(renderPersonCard)}
+                                        <SizeBox height={20} />
+                                    </>
+                                )}
+
+                                {filteredGroups.length > 0 && (
+                                    <>
+                                        <Text style={Styles.sectionTitle}>{t('Groups')}</Text>
+                                        <SizeBox height={10} />
+                                        {filteredGroups.map(renderGroupCard)}
+                                    </>
+                                )}
                             </>
                         )}
                     </>

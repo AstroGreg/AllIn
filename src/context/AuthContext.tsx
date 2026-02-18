@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { AppConfig } from '../constants/AppConfig';
+import { getApiBaseUrl } from '../constants/RuntimeConfig';
 
 // Auth0 credentials
 const AUTH0_DOMAIN = (AppConfig.AUTH0_DOMAIN || 'dev-lfzk0n81zjp0c3x3.us.auth0.com').trim();
@@ -112,6 +113,26 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 const AUTH_STORAGE_KEY = '@auth_credentials';
 const PROFILE_STORAGE_KEY = '@user_profile';
 const DEV_API_TOKEN_KEY = '@dev_api_token';
+
+const triggerProfileProvisioning = async (accessToken: string) => {
+    try {
+        const url = `${getApiBaseUrl()}/auth/me`;
+        const res = await fetch(url, {
+            method: 'GET',
+            headers: {
+                Authorization: `Bearer ${accessToken}`,
+            },
+        });
+        if (!res.ok) {
+            const body = await res.text().catch(() => '');
+            console.log('[Auth] Provisioning ping returned non-OK:', res.status, body);
+            return;
+        }
+        console.log('[Auth] Provisioning ping succeeded.');
+    } catch (err: any) {
+        console.log('[Auth] Provisioning ping failed:', err?.message ?? err);
+    }
+};
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -342,6 +363,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
                 setAccessToken(credentials.accessToken);
                 setIsAuthenticated(true);
                 await storeCredentials(credentials);
+                await triggerProfileProvisioning(credentials.accessToken);
                 console.log('[Auth] Login successful!');
             } else {
                 console.log('[Auth] No access token in credentials, login may have been cancelled');
@@ -439,6 +461,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
                 setAccessToken(credentials.accessToken);
                 setIsAuthenticated(true);
                 await storeCredentials(credentials);
+                await triggerProfileProvisioning(credentials.accessToken);
                 console.log('[Auth] Signup successful!');
             } else {
                 console.log('[Auth] No access token in credentials, signup may have been cancelled');

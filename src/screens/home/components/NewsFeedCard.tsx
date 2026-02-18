@@ -6,7 +6,7 @@ import Video from 'react-native-video';
 import { createStyles } from '../HomeStyles';
 import Icons from '../../../constants/Icons';
 import { useTheme } from '../../../context/ThemeContext';
-import { Heart } from 'iconsax-react-nativejs';
+import { Heart, Import } from 'iconsax-react-nativejs';
 import { useTranslation } from 'react-i18next'
 
 const { width: screenWidth } = Dimensions.get('window');
@@ -403,6 +403,13 @@ const NewsFeedCard = ({
     const showDescription =
         normalizedDescription.length > 0 &&
         normalizedDescription.toLowerCase() !== normalizedTitle.toLowerCase();
+    const isTextOnlyPost = Boolean(textSlide && images.length === 1 && String(images[0]) === '__text__');
+    const likeCountText = useMemo(() => {
+        const raw = String(likesLabel ?? '').trim();
+        if (!raw) return '';
+        const match = raw.match(/[0-9][0-9.,]*/);
+        return match ? match[0] : raw;
+    }, [likesLabel]);
 
     return (
         <View style={[hasBorder ? Styles.newsFeedCard : Styles.newsFeedCardNoBorder, Styles.newsFeedCardFull]}>
@@ -419,7 +426,7 @@ const NewsFeedCard = ({
                                 style={Styles.userPostAvatar}
                             />
                         ) : null}
-                        <View>
+                        <View style={Styles.userPostTextBlock}>
                             <Text style={Styles.userPostName}>{user.name}</Text>
                             {!hideUserDate && !!user.date && (
                                 <Text style={Styles.userPostTime}>{user.date}</Text>
@@ -443,71 +450,81 @@ const NewsFeedCard = ({
                 </View>
             )}
 
-            <View
-                style={Styles.mediaWrapper}
-                onLayout={(event) => {
-                    const width = event.nativeEvent.layout.width;
-                    if (width && Math.abs(width - mediaWidth) > 1) {
-                        setMediaWidth(width);
-                    }
-                }}
-            >
-                <FlatList
-                    ref={flatListRef}
-                    data={images}
-                    renderItem={renderImage}
-                    keyExtractor={(_, index) => `image-${index}`}
-                    horizontal
-                    showsHorizontalScrollIndicator={false}
-                    snapToInterval={imageWidth}
-                    snapToAlignment="start"
-                    decelerationRate="fast"
-                    bounces={false}
-                    getItemLayout={getItemLayout}
-                    onViewableItemsChanged={onViewableItemsChanged}
-                    viewabilityConfig={viewabilityConfig}
-                    scrollEnabled={true}
-                    style={{ width: imageWidth, height: imageHeight }}
-                    contentContainerStyle={{ width: imageWidth, height: imageHeight }}
-                />
-                <Animated.View
-                    pointerEvents="none"
-                    style={[
-                        Styles.likePulse,
-                        {
-                            opacity: likeOpacity,
-                            transform: [{ scale: likeScale }],
-                        },
-                    ]}
+            {isTextOnlyPost ? (
+                <TouchableOpacity
+                    activeOpacity={0.9}
+                    onPress={onPress}
+                    style={Styles.redditTextCard}
                 >
-                    <Heart size={78} color={colors.pureWhite} variant="Bold" />
-                </Animated.View>
-                {images.length > 1 && (
-                    <View style={Styles.paginationBadge}>
-                        <Text style={Styles.paginationText}>{currentIndex + 1}/{images.length}</Text>
+                    <Text style={Styles.redditTextTitle} numberOfLines={3}>
+                        {textSlide?.title || normalizedTitle}
+                    </Text>
+                    {textSlide?.description ? (
+                        <Text style={Styles.redditTextBody} numberOfLines={10}>
+                            {textSlide.description}
+                        </Text>
+                    ) : null}
+                </TouchableOpacity>
+            ) : (
+                <>
+                    <View
+                        style={Styles.mediaWrapper}
+                        onLayout={(event) => {
+                            const width = event.nativeEvent.layout.width;
+                            if (width && Math.abs(width - mediaWidth) > 1) {
+                                setMediaWidth(width);
+                            }
+                        }}
+                    >
+                        <FlatList
+                            ref={flatListRef}
+                            data={images}
+                            renderItem={renderImage}
+                            keyExtractor={(_, index) => `image-${index}`}
+                            horizontal
+                            showsHorizontalScrollIndicator={false}
+                            snapToInterval={imageWidth}
+                            snapToAlignment="start"
+                            decelerationRate="fast"
+                            bounces={false}
+                            getItemLayout={getItemLayout}
+                            onViewableItemsChanged={onViewableItemsChanged}
+                            viewabilityConfig={viewabilityConfig}
+                            scrollEnabled={true}
+                            style={{ width: imageWidth, height: imageHeight }}
+                            contentContainerStyle={{ width: imageWidth, height: imageHeight }}
+                        />
+                        <Animated.View
+                            pointerEvents="none"
+                            style={[
+                                Styles.likePulse,
+                                {
+                                    opacity: likeOpacity,
+                                    transform: [{ scale: likeScale }],
+                                },
+                            ]}
+                        >
+                            <Heart size={78} color={colors.pureWhite} variant="Bold" />
+                        </Animated.View>
+                        {images.length > 1 && (
+                            <View style={Styles.paginationBadge}>
+                                <Text style={Styles.paginationText}>{currentIndex + 1}/{images.length}</Text>
+                            </View>
+                        )}
                     </View>
-                )}
-            </View>
 
-            {images.length > 1 && renderPaginationDots()}
+                    {images.length > 1 && renderPaginationDots()}
+                </>
+            )}
 
      
 
             <View style={[Styles.feedPadding, Styles.feedMetaRow]}>
-                <TouchableOpacity
-                    style={[Styles.feedLikeButton, likeDisabled && { opacity: 0.45 }]}
-                    activeOpacity={likeDisabled ? 1 : 0.85}
-                    onPress={onToggleLike}
-                    disabled={likeDisabled || !onToggleLike}
-                >
-                    <Heart size={25} color={colors.primaryColor} variant={liked ? "Bold" : "Linear"} />
-                    <Text style={Styles.feedLikeText}>{likesLabel ?? t('Like')}</Text>
-                </TouchableOpacity>
                 {showActions && (onShare || onDownload) && (
                     <View style={Styles.feedActionsRow}>
                         {onDownload ? (
-                            <TouchableOpacity style={Styles.feedActionTextButton} activeOpacity={0.85} onPress={onDownload}>
-                                <Text style={Styles.feedActionText}>{t('Download')}</Text>
+                            <TouchableOpacity style={Styles.feedActionButton} activeOpacity={0.85} onPress={onDownload}>
+                                <Import size={20} color={'#3B82F6'} variant="Linear" />
                             </TouchableOpacity>
                         ) : null}
                         {onShare ? (
@@ -517,6 +534,15 @@ const NewsFeedCard = ({
                         ) : null}
                     </View>
                 )}
+                <TouchableOpacity
+                    style={[Styles.feedLikeButton, { marginLeft: 'auto' }, likeDisabled && { opacity: 0.45 }]}
+                    activeOpacity={likeDisabled ? 1 : 0.85}
+                    onPress={onToggleLike}
+                    disabled={likeDisabled || !onToggleLike}
+                >
+                    <Heart size={25} color={colors.primaryColor} variant={liked ? "Bold" : "Linear"} />
+                    {likeCountText ? <Text style={Styles.feedLikeText}>{likeCountText}</Text> : null}
+                </TouchableOpacity>
             </View>
 
         </View>

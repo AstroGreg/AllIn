@@ -219,7 +219,6 @@ const ProfileBlogEditorScreen = ({ navigation, route }: any) => {
                     title: title.trim(),
                     description: description.trim(),
                     summary,
-                    created_at: postDate ? postDate.toISOString() : undefined,
                     event_id: selectedEventId ? String(selectedEventId) : undefined,
                 });
                 currentId = created?.post?.id ?? null;

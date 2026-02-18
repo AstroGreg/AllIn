@@ -1,4 +1,4 @@
-import {ActivityIndicator, ScrollView, Text, TouchableOpacity, View, Share, Alert, useWindowDimensions, Modal, Pressable} from 'react-native'
+import {ActivityIndicator, ScrollView, Text, TouchableOpacity, View, Share, Alert, useWindowDimensions, Modal, Pressable, RefreshControl} from 'react-native'
 import React, {useCallback, useMemo, useRef, useState, useEffect} from 'react'
 import { createStyles } from './HomeStyles'
 import Header from './components/Header'
@@ -14,6 +14,7 @@ import {
     getAllPhotos,
     getAllVideos,
     getHomeOverview,
+    getNotifications,
     getProfileSummaryById,
     getPosts,
     getProfileSummary,
@@ -92,6 +93,7 @@ const HomeScreen = ({ navigation }: any) => {
     const [overview, setOverview] = useState<HomeOverviewResponse | null>(null);
     const [isLoadingOverview, setIsLoadingOverview] = useState(false);
     const [overviewError, setOverviewError] = useState<string | null>(null);
+    const [refreshingFeed, setRefreshingFeed] = useState(false);
     const [allVideos, setAllVideos] = useState<MediaViewAllItem[]>([]);
     const [allPhotos, setAllPhotos] = useState<MediaViewAllItem[]>([]);
     const [allPosts, setAllPosts] = useState<PostSummary[]>([]);
@@ -125,6 +127,7 @@ const HomeScreen = ({ navigation }: any) => {
     const [downloadVisible, setDownloadVisible] = useState(false);
     const [downloadProgress, setDownloadProgress] = useState<number | null>(null);
     const [showAiSearchIntro, setShowAiSearchIntro] = useState(true);
+    const [unreadNotificationsCount, setUnreadNotificationsCount] = useState(0);
     const [feedMenuVisible, setFeedMenuVisible] = useState(false);
     const [feedMenuTitle, setFeedMenuTitle] = useState('');
     const [feedMenuActions, setFeedMenuActions] = useState<Array<{ label: string; onPress: () => void }>>([]);
@@ -248,6 +251,37 @@ const HomeScreen = ({ navigation }: any) => {
         }, [loadOverview]),
     );
 
+    const loadUnreadNotificationsCount = useCallback(async () => {
+        if (!apiAccessToken) {
+            setUnreadNotificationsCount(0);
+            return;
+        }
+        try {
+            const resp = await getNotifications(apiAccessToken, { limit: 1, offset: 0 });
+            const count = Number(resp?.unread_count ?? 0);
+            setUnreadNotificationsCount(Number.isFinite(count) && count > 0 ? count : 0);
+        } catch {
+            setUnreadNotificationsCount(0);
+        }
+    }, [apiAccessToken]);
+
+    useFocusEffect(
+        useCallback(() => {
+            loadUnreadNotificationsCount();
+        }, [loadUnreadNotificationsCount]),
+    );
+
+    const handleRefresh = useCallback(async () => {
+        if (refreshingFeed) return;
+        setRefreshingFeed(true);
+        try {
+            await loadOverview(true);
+            setFeedVisibleCount(HOME_FEED_PAGE_SIZE);
+        } finally {
+            setRefreshingFeed(false);
+        }
+    }, [loadOverview, refreshingFeed]);
+
     useEffect(() => {
         if (isFocused) {
             setResumeVideoAt(videoResumeRef.current || 0);
@@ -364,11 +398,11 @@ const HomeScreen = ({ navigation }: any) => {
         const date = new Date(value);
         if (Number.isNaN(date.getTime())) return '';
         const diffSeconds = Math.floor((Date.now() - date.getTime()) / 1000);
-        if (diffSeconds < 60) return t('Posted just now');
+        if (diffSeconds < 60) return t('just now');
         const minutes = Math.floor(diffSeconds / 60);
-        if (minutes < 60) return `${t('Posted')} ${minutes}${t('m ago')}`;
+        if (minutes < 60) return `${minutes}${t('m ago')}`;
         const hours = Math.floor(minutes / 60);
-        if (hours < 24) return `${t('Posted')} ${hours}${t('h ago')}`;
+        if (hours < 24) return `${hours}${t('h ago')}`;
         return date.toLocaleDateString('en-GB', {
             day: '2-digit',
             month: 'short',
@@ -1171,16 +1205,14 @@ const HomeScreen = ({ navigation }: any) => {
                                             title: post.title ?? t('Latest blog'),
                                             description: post.summary ?? post.description ?? '',
                                         }}
-                                        headerTag={formatPostTime(post.created_at)}
                                         user={{
                                             name: post.author?.display_name ?? userName,
                                             avatar: post.author?.avatar_url
                                                 ? { uri: toAbsoluteUrl(post.author.avatar_url) as string }
                                                 : (profilePic ? { uri: profilePic } : Images.profile1),
-                                            date: formatUploadDate(post.created_at),
+                                            date: formatPostTime(post.created_at),
                                         }}
                                         onPressUser={() => openProfileFromId(post.author?.profile_id)}
-                                        hideUserDate
                                         headerSeparated
                                         hideBelowText
                                         likesLabel={`${Number(post?.likes_count ?? 0).toLocaleString()} ${t('likes')}`}
@@ -1189,7 +1221,9 @@ const HomeScreen = ({ navigation }: any) => {
                                         likeDisabled={!String(post?.id ?? '').trim()}
                                         onPress={() => {
                                             navigation.navigate('ViewUserBlogDetailsScreen', {
+                                                postId: post.id,
                                                 post: {
+                                                    id: post.id,
                                                     title: post.title ?? t('Latest blog'),
                                                     date: post.created_at
                                                         ? new Date(post.created_at).toLocaleDateString()
@@ -1200,6 +1234,11 @@ const HomeScreen = ({ navigation }: any) => {
                                                     readCount: post.reading_time_minutes
                                                         ? `${post.reading_time_minutes} min`
                                                         : '1 min',
+                                                    author: {
+                                                        profile_id: post.author?.profile_id ?? null,
+                                                        display_name: post.author?.display_name ?? userName,
+                                                        avatar_url: post.author?.avatar_url ?? null,
+                                                    },
                                                     writer: post.author?.display_name ?? userName,
                                                     writerImage: post.author?.avatar_url
                                                         ? { uri: toAbsoluteUrl(post.author.avatar_url) as string }
@@ -1215,6 +1254,9 @@ const HomeScreen = ({ navigation }: any) => {
                             const media = item.media;
                             const isVideoItem = String(media.type || '').toLowerCase() === 'video';
                             const thumb = getMediaThumb(media as any) || Images.photo1;
+                            const playableVideoUrl = isVideoItem
+                                ? (withAccessToken(pickPlayableVideoUrl(media) || '') || undefined)
+                                : undefined;
                             const titleText = isVideoItem ? t('Video') : t('Photo');
                             const uploader = getMediaUploaderInfo(media);
                             return (
@@ -1223,20 +1265,21 @@ const HomeScreen = ({ navigation }: any) => {
                                     title={titleText}
                                     description=""
                                     images={[thumb]}
+                                    isVideo={isVideoItem}
+                                    videoUri={playableVideoUrl}
                                     showPlayOverlay={isVideoItem}
                                     videoIndexes={isVideoItem ? [0] : []}
-                                    headerTag={formatPostTime(media.created_at)}
+                                    toggleVideoOnPress={isVideoItem}
                                     user={{
                                         name: uploader.name,
                                         avatar: uploader.avatar,
-                                        date: formatUploadDate(media.created_at),
+                                        date: formatPostTime(media.created_at),
                                     }}
                                     onPressUser={() =>
                                         openProfileFromId(
                                             uploader.profileId || overview?.profile_id
                                         )
                                     }
-                                    hideUserDate
                                     headerSeparated
                                     likesLabel={formatLikesLabel(media)}
                                     liked={Boolean(media?.liked_by_me)}
@@ -1334,6 +1377,7 @@ const HomeScreen = ({ navigation }: any) => {
             <Header
                 userName={userName}
                 profilePic={profilePic}
+                notificationCount={unreadNotificationsCount}
                 onPressFeed={() => navigation.navigate('HubScreen')}
                 onPressNotifications={() => navigation.navigate('NotificationsScreen')}
                 onPressProfile={() => navigation.navigate('BottomTabBar', { screen: 'Profile' })}
@@ -1341,6 +1385,13 @@ const HomeScreen = ({ navigation }: any) => {
             <ScrollView
                 showsVerticalScrollIndicator={false}
                 contentContainerStyle={{paddingBottom: insets.bottom > 0 ? insets.bottom + 20 : 40}}
+                refreshControl={
+                    <RefreshControl
+                        refreshing={refreshingFeed}
+                        onRefresh={handleRefresh}
+                        tintColor={colors.primaryColor}
+                    />
+                }
                 scrollEventThrottle={16}
                 scrollEnabled={!overlayVisible}
                 onLayout={(event) => {
