@@ -58,7 +58,13 @@ const CategorySelectionScreen = ({ navigation }: any) => {
         setIsLoading(true);
         try {
             await updateUserProfile({ category: selectedCategory });
-            navigation.navigate('SelectEventScreen', { selectedCategory });
+            if (selectedCategory === 'sell') {
+                navigation.navigate('CreatePhotographerProfileScreen');
+            } else if (selectedCategory === 'manage') {
+                navigation.navigate('CreateGroupProfileScreen');
+            } else {
+                navigation.navigate('CompleteAthleteDetailsScreen');
+            }
         } catch (err: any) {
             Alert.alert(t('Error'), t('Failed to save category. Please try again.'));
         } finally {

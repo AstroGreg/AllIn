@@ -45,7 +45,7 @@ export const createStyles = (colors: ThemeColors) => StyleSheet.create({
     sectionHeader: {
         flexDirection: 'row',
         alignItems: 'center',
-        justifyContent: 'space-between',
+        justifyContent: 'flex-end',
     },
     sectionTitle: {
         ...Fonts.medium16,

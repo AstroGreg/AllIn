@@ -32,7 +32,10 @@ const CreatePhotographerProfileScreen = ({ navigation }: any) => {
                 photographerName,
                 photographerWebsite: website,
             });
-            navigation.navigate('DocumentUploadScreen');
+            navigation.reset({
+                index: 0,
+                routes: [{ name: 'BottomTabBar' }],
+            });
         } catch (err: any) {
             Alert.alert(t('Error'), t('Failed to save profile. Please try again.'));
         } finally {

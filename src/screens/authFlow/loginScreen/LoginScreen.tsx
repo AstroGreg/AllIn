@@ -34,10 +34,10 @@ const LoginScreen = ({ navigation }: any) => {
         console.log('[LoginScreen] Sign In button pressed');
         try {
             await login();
-            console.log('[LoginScreen] Login successful, navigating to BottomTabBar');
+            console.log('[LoginScreen] Login successful, navigating to CategorySelectionScreen');
             navigation.reset({
                 index: 0,
-                routes: [{ name: 'BottomTabBar' }],
+                routes: [{ name: 'CategorySelectionScreen' }],
             });
         } catch (err: any) {
             console.log('[LoginScreen] Login error:', err.message);
@@ -52,7 +52,7 @@ const LoginScreen = ({ navigation }: any) => {
             await login('google-oauth2');
             navigation.reset({
                 index: 0,
-                routes: [{ name: 'BottomTabBar' }],
+                routes: [{ name: 'CategorySelectionScreen' }],
             });
         } catch (err: any) {
             if (err.message !== 'User cancelled the Auth') {
@@ -66,7 +66,7 @@ const LoginScreen = ({ navigation }: any) => {
             await login('apple');
             navigation.reset({
                 index: 0,
-                routes: [{ name: 'BottomTabBar' }],
+                routes: [{ name: 'CategorySelectionScreen' }],
             });
         } catch (err: any) {
             if (err.message !== 'User cancelled the Auth') {

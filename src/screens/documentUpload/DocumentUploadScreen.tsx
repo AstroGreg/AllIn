@@ -2,7 +2,8 @@ import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, Alert, ActivityIndicator } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import FastImage from 'react-native-fast-image';
-import { Export, Sms } from 'iconsax-react-nativejs';
+import { Export } from 'iconsax-react-nativejs';
+import { launchImageLibrary } from 'react-native-image-picker';
 import { createStyles } from './DocumentUploadScreenStyles';
 import SizeBox from '../../constants/SizeBox';
 import Images from '../../constants/Images';
@@ -19,6 +20,7 @@ const DocumentUploadScreen = ({ navigation }: any) => {
     const { updateUserProfile } = useAuth();
     const [isLoading, setIsLoading] = useState(false);
     const [documentSelected, setDocumentSelected] = useState(false);
+    const [selectedFileName, setSelectedFileName] = useState<string>('');
 
     const handleContinue = async () => {
         setIsLoading(true);
@@ -34,9 +36,29 @@ const DocumentUploadScreen = ({ navigation }: any) => {
         }
     };
 
-    const handleChooseFile = () => {
-        // TODO: Implement file picker
-        setDocumentSelected(true);
+    const handleChooseFile = async () => {
+        try {
+            const result = await launchImageLibrary({
+                mediaType: 'photo',
+                selectionLimit: 1,
+                quality: 0.9,
+            });
+
+            if (result.didCancel) return;
+            if (result.errorCode) {
+                Alert.alert(t('Error'), result.errorMessage || t('Could not open file picker.'));
+                return;
+            }
+
+            const asset = Array.isArray(result.assets) ? result.assets[0] : null;
+            if (!asset?.uri) return;
+
+            const fallbackName = String(asset.uri).split('/').pop() || t('Selected file');
+            setSelectedFileName(asset.fileName || fallbackName);
+            setDocumentSelected(true);
+        } catch (err: any) {
+            Alert.alert(t('Error'), String(err?.message || t('Could not open file picker.')));
+        }
     };
 
     return (
@@ -91,21 +113,15 @@ const DocumentUploadScreen = ({ navigation }: any) => {
                                     >
                                         <Text style={Styles.chooseFileText}>{t('Choose File')}</Text>
                                     </TouchableOpacity>
-                                    <Text style={Styles.noFileText}>{t('No File Chosen')}</Text>
+                                    <Text style={Styles.noFileText}>
+                                        {selectedFileName || t('No File Chosen')}
+                                    </Text>
                                 </View>
                                 <Text style={Styles.supportedText}>{t('Supported JPEG, PDF')}</Text>
                             </View>
                         </View>
                     </View>
 
-                    {/* Coach Email Section */}
-                    <View style={{ gap: 8 }}>
-                        <Text style={Styles.inputLabel}>{t('Coach Email')}</Text>
-                        <View style={Styles.inputContainer}>
-                            <Sms size={24} color={colors.grayColor} />
-                            <Text style={Styles.inputText}>{t('Enter Coach Email')}</Text>
-                        </View>
-                    </View>
                 </View>
 
                 <SizeBox height={40} />

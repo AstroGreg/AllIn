@@ -8,13 +8,16 @@ import {useAuth} from '../../../context/AuthContext';
 import KeyboardAvoidingContainer from '../../../components/KeyboardAvoidingContainer';
 import { useTranslation } from 'react-i18next'
 
+const DEFAULT_DEV_API_TOKEN =
+  'eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6InpNLTc5M0NEdVB3RTR2dUxfaEJnbCJ9.eyJwcm9maWxlX2lkIjoiOWYzYzFkN2UtOGEyYi00YzlkLWJmNzItMWM1YjlhOGE2ZTIxIiwiaXNzIjoiaHR0cHM6Ly9kZXYtbGZ6azBuODF6anAwYzN4My51cy5hdXRoMC5jb20vIiwic3ViIjoiS3ZXMWJ3U1hMUVZ0a2swM0QyTjFBSE5oNVAwQ3pHTnhAY2xpZW50cyIsImF1ZCI6Imh0dHBzOi8vbXlqb3VybmV5LmNvZmZlZS9tYWluX2FwaS8iLCJpYXQiOjE3NzE0MjYyNDgsImV4cCI6MTc3MTUxMjY0OCwic2NvcGUiOiJyZWFkOnVzZXJzIHdyaXRlOm1lZGlhIGxpc3Q6bWVkaWEgc2VhcmNoOm1lZGlhIGFjY2VzczphaSBkZWxldGU6bWVkaWEiLCJndHkiOiJjbGllbnQtY3JlZGVudGlhbHMiLCJhenAiOiJLdlcxYndTWExRVnRrazAzRDJOMUFITmg1UDBDekdOeCIsInBlcm1pc3Npb25zIjpbInJlYWQ6dXNlcnMiLCJ3cml0ZTptZWRpYSIsImxpc3Q6bWVkaWEiLCJzZWFyY2g6bWVkaWEiLCJhY2Nlc3M6YWkiLCJkZWxldGU6bWVkaWEiXX0.BwTIq80nrOAtTURMBiFhx_uSIy1ebBpYe_TiUZpEpdWh8Cb7v5Zo-p3GV-LG8FDjJcOsKT6midWy_U34qudTga0L8x20m5l6tIw6JLu1u3fQAHDw8zykJbu0aZp8P2UkgQdecI6I60Q0BkhTICpD6j4u8ndvOSOlVVsGambx3O0DjKAJ31fzjXHBXCm2FJmeoADGjVXb-lqgcpLwd1hGS7oUkKBdpNAw_9enZhCnv1XkLbybvs99n_Z3vShVO75OjxQ3XcT9B6mckYLrzR1pAxCvvwd9jsbvtRjFqn4zHMdv1jXCKAegXl22-I7RR_uyHSMyPQm4kHG9zuXKu12w6g';
+
 const DevApiTokenScreen = ({navigation}: any) => {
     const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   const {colors} = useTheme();
   const {devApiToken, setDevApiToken, clearDevApiToken} = useAuth();
 
-  const [tokenInput, setTokenInput] = useState(devApiToken ?? '');
+  const [tokenInput, setTokenInput] = useState(devApiToken ?? DEFAULT_DEV_API_TOKEN);
 
   return (
     <View style={{flex: 1, backgroundColor: colors.backgroundColor}}>

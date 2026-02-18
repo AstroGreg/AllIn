@@ -279,7 +279,7 @@ const FaceVerificationScreen = ({ navigation }: any) => {
         setIsSaving(true);
         try {
             await updateUserProfile({
-                faceVerified: true,
+                faceVerified: allCaptured,
             });
             navigation.reset({
                 index: 0,
@@ -290,7 +290,7 @@ const FaceVerificationScreen = ({ navigation }: any) => {
         } finally {
             setIsSaving(false);
         }
-    }, [navigation, updateUserProfile]);
+    }, [allCaptured, navigation, t, updateUserProfile]);
 
     const handleCancel = useCallback(() => {
         navigation.goBack();
@@ -447,18 +447,18 @@ const FaceVerificationScreen = ({ navigation }: any) => {
                     <TouchableOpacity
                         style={[
                             Styles.primaryButton,
-                            (!allCaptured || isSaving) && Styles.primaryButtonDisabled
+                            isSaving && Styles.primaryButtonDisabled
                         ]}
                         activeOpacity={0.7}
                         onPress={handleContinue}
-                        disabled={!allCaptured || isSaving}
+                        disabled={isSaving}
                     >
                         {isSaving ? (
                             <ActivityIndicator size="small" color={colors.pureWhite} />
                         ) : (
                             <>
                                 <Text style={Styles.primaryButtonText}>
-                                    {allCaptured ? t('Save Preferences') : `${currentAngleIndex + 1} ${t('of')} ${CAPTURE_ANGLES.length}`}
+                                    {allCaptured ? t('Save Preferences') : t('Continue')}
                                 </Text>
                                 <ArrowRight size={24} color={colors.pureWhite} />
                             </>

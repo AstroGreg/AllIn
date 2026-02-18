@@ -22,7 +22,10 @@ const SignupScreen = ({ navigation }: any) => {
     const handleSignup = async () => {
         try {
             await signup();
-            navigation.navigate('CreateProfileScreen');
+            navigation.reset({
+                index: 0,
+                routes: [{ name: 'CategorySelectionScreen' }],
+            });
         } catch (err: any) {
             if (err.message !== 'User cancelled the Auth') {
                 Alert.alert('Signup Failed', err.message || 'Please try again');
@@ -33,7 +36,10 @@ const SignupScreen = ({ navigation }: any) => {
     const handleGoogleSignup = async () => {
         try {
             await signup('google-oauth2');
-            navigation.navigate('CreateProfileScreen');
+            navigation.reset({
+                index: 0,
+                routes: [{ name: 'CategorySelectionScreen' }],
+            });
         } catch (err: any) {
             if (err.message !== 'User cancelled the Auth') {
                 Alert.alert('Signup Failed', err.message || 'Google signup failed');
@@ -44,7 +50,10 @@ const SignupScreen = ({ navigation }: any) => {
     const handleAppleSignup = async () => {
         try {
             await signup('apple');
-            navigation.navigate('CreateProfileScreen');
+            navigation.reset({
+                index: 0,
+                routes: [{ name: 'CategorySelectionScreen' }],
+            });
         } catch (err: any) {
             if (err.message !== 'User cancelled the Auth') {
                 Alert.alert('Signup Failed', err.message || 'Apple signup failed');

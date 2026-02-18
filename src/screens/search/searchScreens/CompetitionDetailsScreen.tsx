@@ -1,4 +1,4 @@
-import { View, Text, TouchableOpacity, ScrollView, Switch, Modal, Image, TextInput, ActivityIndicator } from 'react-native'
+import { View, Text, TouchableOpacity, ScrollView, Switch, Modal, Image, TextInput, ActivityIndicator, Alert } from 'react-native'
 import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import SizeBox from '../../../constants/SizeBox'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
@@ -7,9 +7,10 @@ import Icons from '../../../constants/Icons'
 import Images from '../../../constants/Images'
 import { createStyles } from './CompetitionDetailsScreenStyles'
 import { useAuth } from '../../../context/AuthContext'
-import { ApiError, CompetitionMapCheckpoint, CompetitionMapSummary, getCompetitionMapById, getCompetitionMaps, searchEvents, searchFaceByEnrollment, searchMediaByBib, grantFaceRecognitionConsent } from '../../../services/apiGateway'
+import { ApiError, CompetitionMapCheckpoint, CompetitionMapSummary, getCompetitionMapById, getCompetitionMaps, getEventCompetitions, searchEvents, searchFaceByEnrollment, searchMediaByBib, grantFaceRecognitionConsent, subscribeToEvent, unsubscribeToEvent } from '../../../services/apiGateway'
 import { useTheme } from '../../../context/ThemeContext'
 import { useTranslation } from 'react-i18next'
+import { useEvents } from '../../../context/EventsContext'
 
 interface EventCategory {
     id: number;
@@ -35,6 +36,7 @@ const CompetitionDetailsScreen = ({ navigation, route }: any) => {
     const { colors } = useTheme();
     const styles = createStyles(colors);
     const { t } = useTranslation();
+    const { events: subscribedEvents, refresh: refreshSubscribed } = useEvents();
     const [selectedTab, setSelectedTab] = useState<'track' | 'field'>('track');
     const [selectedCourseId, setSelectedCourseId] = useState('');
     const [checkpointModalVisible, setCheckpointModalVisible] = useState(false);
@@ -48,6 +50,7 @@ const CompetitionDetailsScreen = ({ navigation, route }: any) => {
     const [quickNeedsConsent, setQuickNeedsConsent] = useState(false);
     const [quickMissingAngles, setQuickMissingAngles] = useState<string[] | null>(null);
     const [quickUseFace, setQuickUseFace] = useState(true);
+    const [isSubscriptionLoading, setIsSubscriptionLoading] = useState(false);
 
     const competitionName = route?.params?.name || route?.params?.eventName || t('Competition');
     const competitionDescription = route?.params?.description
@@ -56,6 +59,12 @@ const CompetitionDetailsScreen = ({ navigation, route }: any) => {
     const competitionType: 'track' | 'marathon' = route?.params?.competitionType || 'track';
     const eventId = route?.params?.eventId as string | undefined;
     const competitionId = route?.params?.competitionId as string | undefined;
+    const resolvedEventId = useMemo(() => String(eventId ?? competitionId ?? '').trim(), [competitionId, eventId]);
+    const canSubscribe = resolvedEventId.length > 0;
+    const isSubscribed = useMemo(
+        () => canSubscribe && subscribedEvents.some((event) => String(event.event_id) === resolvedEventId),
+        [canSubscribe, resolvedEventId, subscribedEvents],
+    );
 
     useEffect(() => {
         const chest = String(userProfile?.chestNumber ?? '').trim();
@@ -68,6 +77,7 @@ const CompetitionDetailsScreen = ({ navigation, route }: any) => {
     const currentEvents = selectedTab === 'track' ? trackEvents : fieldEvents;
 
     const visibleCourses = courseOptions.length > 0 ? courseOptions : FALLBACK_COURSES;
+    const showCoursesSection = competitionType === 'marathon' || visibleCourses.length > 0;
 
     const selectedCourse = useMemo(() => {
         if (visibleCourses.length === 0) return null;
@@ -75,8 +85,6 @@ const CompetitionDetailsScreen = ({ navigation, route }: any) => {
     }, [selectedCourseId, visibleCourses]);
 
     useEffect(() => {
-        if (competitionType !== 'marathon') return;
-
         if (!apiAccessToken || (!eventId && !competitionId)) {
             if (courseOptions.length === 0) {
                 setCourseOptions([]);
@@ -110,6 +118,26 @@ const CompetitionDetailsScreen = ({ navigation, route }: any) => {
                     setSelectedCourseId((prev) =>
                         normalized.some((course) => course.id === prev) ? prev : normalized[0].id
                     );
+                } else if (eventId) {
+                    try {
+                        const comps = await getEventCompetitions(apiAccessToken, String(eventId));
+                        if (!isActive) return;
+                        const fallbackCourses = (comps.competitions || []).map((comp) => ({
+                            id: String(comp.id),
+                            label: String(comp.competition_name || comp.competition_name_normalized || 'Course'),
+                            description: 'Course',
+                            imageUrl: undefined,
+                            checkpoints: [],
+                        }));
+                        setCourseOptions(fallbackCourses);
+                        setSelectedCourseId((prev) =>
+                            fallbackCourses.some((course) => course.id === prev) ? prev : (fallbackCourses[0]?.id || '')
+                        );
+                    } catch {
+                        if (courseOptions.length === 0) {
+                            setCourseOptions([]);
+                        }
+                    }
                 } else if (courseOptions.length === 0) {
                     setCourseOptions([]);
                 }
@@ -117,7 +145,27 @@ const CompetitionDetailsScreen = ({ navigation, route }: any) => {
                 if (!isActive) return;
                 const message = e instanceof ApiError ? e.message : String(e?.message ?? e);
                 setMapError(message);
-                if (courseOptions.length === 0) {
+                if (eventId) {
+                    try {
+                        const comps = await getEventCompetitions(apiAccessToken, String(eventId));
+                        if (!isActive) return;
+                        const fallbackCourses = (comps.competitions || []).map((comp) => ({
+                            id: String(comp.id),
+                            label: String(comp.competition_name || comp.competition_name_normalized || 'Course'),
+                            description: 'Course',
+                            imageUrl: undefined,
+                            checkpoints: [],
+                        }));
+                        setCourseOptions(fallbackCourses);
+                        setSelectedCourseId((prev) =>
+                            fallbackCourses.some((course) => course.id === prev) ? prev : (fallbackCourses[0]?.id || '')
+                        );
+                    } catch {
+                        if (courseOptions.length === 0) {
+                            setCourseOptions([]);
+                        }
+                    }
+                } else if (courseOptions.length === 0) {
                     setCourseOptions([]);
                 }
             }
@@ -130,7 +178,6 @@ const CompetitionDetailsScreen = ({ navigation, route }: any) => {
     }, [apiAccessToken, competitionId, competitionType, courseOptions.length, eventId]);
 
     useEffect(() => {
-        if (competitionType !== 'marathon') return;
         if (!apiAccessToken) return;
         if (courseOptions.length === 0) return;
 
@@ -165,7 +212,7 @@ const CompetitionDetailsScreen = ({ navigation, route }: any) => {
         return () => {
             isActive = false;
         };
-    }, [apiAccessToken, competitionType, courseOptions, selectedCourseId]);
+    }, [apiAccessToken, courseOptions, selectedCourseId]);
 
     const renderEventCard = (event: EventCategory) => (
         <TouchableOpacity
@@ -209,7 +256,7 @@ const CompetitionDetailsScreen = ({ navigation, route }: any) => {
         } catch {
             return null;
         }
-    }, [apiAccessToken, competitionId, competitionName, eventId]);
+    }, [apiAccessToken, competitionName, eventId]);
 
     const runQuickCompare = useCallback(async () => {
         if (!apiAccessToken) {
@@ -329,6 +376,24 @@ const CompetitionDetailsScreen = ({ navigation, route }: any) => {
         });
     }, [navigation]);
 
+    const handleSubscriptionToggle = useCallback(async () => {
+        if (!apiAccessToken || !canSubscribe || isSubscriptionLoading) return;
+        setIsSubscriptionLoading(true);
+        try {
+            if (isSubscribed) {
+                await unsubscribeToEvent(apiAccessToken, resolvedEventId);
+            } else {
+                await subscribeToEvent(apiAccessToken, resolvedEventId);
+            }
+            await refreshSubscribed();
+        } catch (e: any) {
+            const msg = e instanceof ApiError ? e.message : String(e?.message ?? e);
+            Alert.alert(isSubscribed ? 'Could not unsubscribe' : t('Could not subscribe'), msg);
+        } finally {
+            setIsSubscriptionLoading(false);
+        }
+    }, [apiAccessToken, canSubscribe, isSubscribed, isSubscriptionLoading, refreshSubscribed, resolvedEventId, t]);
+
     return (
         <View style={styles.mainContainer}>
             <SizeBox height={insets.top} />
@@ -347,10 +412,31 @@ const CompetitionDetailsScreen = ({ navigation, route }: any) => {
                 <Text style={styles.competitionName}>{competitionName}</Text>
                 <SizeBox height={4} />
                 <Text style={styles.competitionDescription}>{competitionDescription}</Text>
+                {canSubscribe ? (
+                    <>
+                        <SizeBox height={12} />
+                        <TouchableOpacity
+                            style={[
+                                styles.subscribeButton,
+                                isSubscriptionLoading && styles.subscribeButtonDisabled,
+                            ]}
+                            onPress={handleSubscriptionToggle}
+                            disabled={isSubscriptionLoading}
+                        >
+                            {isSubscriptionLoading ? (
+                                <ActivityIndicator color={colors.pureWhite} />
+                            ) : (
+                                <Text style={styles.subscribeButtonText}>
+                                    {isSubscribed ? 'Unsubscribe' : t('subscribeToEvent')}
+                                </Text>
+                            )}
+                        </TouchableOpacity>
+                    </>
+                ) : null}
 
                 <SizeBox height={20} />
 
-                {competitionType === 'marathon' ? (
+                {showCoursesSection ? (
                     <>
                         <Text style={styles.sectionTitle}>{t('Courses')}</Text>
                         <SizeBox height={12} />

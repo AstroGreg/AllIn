@@ -41,6 +41,22 @@ export const createStyles = (colors: ThemeColors) => StyleSheet.create({
         ...Fonts.regular14,
         color: colors.subTextColor,
     },
+    subscribeButton: {
+        height: 44,
+        width: '25%',
+        alignSelf: 'flex-end',
+        borderRadius: 10,
+        backgroundColor: colors.primaryColor,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    subscribeButtonDisabled: {
+        opacity: 0.7,
+    },
+    subscribeButtonText: {
+        ...Fonts.medium14,
+        color: colors.pureWhite,
+    },
     tabsContainer: {
         flexDirection: 'row',
         borderWidth: 0.5,

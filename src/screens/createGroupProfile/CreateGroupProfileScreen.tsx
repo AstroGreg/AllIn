@@ -194,7 +194,10 @@ const CreateGroupProfileScreen = ({ navigation }: any) => {
                 if (additions.length) {
                     await Promise.allSettled(additions);
                 }
-                navigation.navigate('GroupProfileScreen', { groupId });
+                navigation.reset({
+                    index: 0,
+                    routes: [{ name: 'BottomTabBar' }],
+                });
             } else {
                 Alert.alert(t('Error'), t('Could not create group. Please try again.'));
             }

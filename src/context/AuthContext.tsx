@@ -69,6 +69,7 @@ export interface UserProfile {
     chestNumber?: string;
     website?: string;
     runningClub?: string;
+    runningClubGroupId?: string;
 
     // Group profile
     groupName?: string;

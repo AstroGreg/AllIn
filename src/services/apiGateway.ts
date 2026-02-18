@@ -232,6 +232,21 @@ export async function getMyGroups(accessToken: string): Promise<GroupsResponse> 
   });
 }
 
+export async function searchGroups(
+  accessToken: string,
+  params: {q?: string; limit?: number; offset?: number},
+): Promise<GroupsResponse> {
+  const qs = toQueryString({
+    q: params.q ?? undefined,
+    limit: params.limit ?? undefined,
+    offset: params.offset ?? undefined,
+  });
+  return apiRequest<GroupsResponse>(`/groups/search${qs}`, {
+    method: 'GET',
+    accessToken,
+  });
+}
+
 export async function getGroup(accessToken: string, groupId: string): Promise<GroupResponse> {
   const safeId = String(groupId || '').trim();
   if (!safeId) {
@@ -375,6 +390,20 @@ export interface EventSearchResponse {
   events: SubscribedEvent[];
 }
 
+export interface EventCompetition {
+  id: string;
+  event_id: string;
+  competition_name?: string | null;
+  competition_name_normalized?: string | null;
+  competition_type?: string | null;
+}
+
+export interface EventCompetitionsResponse {
+  ok: boolean;
+  count: number;
+  competitions: EventCompetition[];
+}
+
 export async function searchEvents(
   accessToken: string,
   params: {q?: string; limit?: number; offset?: number},
@@ -385,6 +414,20 @@ export async function searchEvents(
     offset: params.offset ?? undefined,
   });
   return apiRequest<EventSearchResponse>(`/events/search${qs}`, {method: 'GET', accessToken});
+}
+
+export async function getEventCompetitions(
+  accessToken: string,
+  eventId: string,
+): Promise<EventCompetitionsResponse> {
+  const safeId = String(eventId || '').trim();
+  if (!safeId) {
+    throw new ApiError({status: 400, message: 'Missing event_id'});
+  }
+  return apiRequest<EventCompetitionsResponse>(`/events/${encodeURIComponent(safeId)}/competitions`, {
+    method: 'GET',
+    accessToken,
+  });
 }
 
 export async function grantFaceRecognitionConsent(accessToken: string): Promise<{ok: boolean; message?: string}> {
@@ -732,6 +775,14 @@ export async function subscribeToEvent(accessToken: string, eventId: string): Pr
     throw new ApiError({status: 400, message: 'Missing event_id'});
   }
   return apiRequest(`/events/${encodeURIComponent(safeId)}/subscribe`, {method: 'POST', accessToken, body: {}});
+}
+
+export async function unsubscribeToEvent(accessToken: string, eventId: string): Promise<{success: boolean; event_id: string; profile_id: string}> {
+  const safeId = String(eventId || '').trim();
+  if (!safeId) {
+    throw new ApiError({status: 400, message: 'Missing event_id'});
+  }
+  return apiRequest(`/events/${encodeURIComponent(safeId)}/subscribe`, {method: 'DELETE', accessToken});
 }
 
 export interface MediaAsset {

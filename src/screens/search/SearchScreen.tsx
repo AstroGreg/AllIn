@@ -1,5 +1,5 @@
 import { View, Text, ScrollView, TouchableOpacity, TextInput, Image, Modal, Pressable, useWindowDimensions } from 'react-native'
-import React, { useMemo, useState } from 'react'
+import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import { CalendarList } from 'react-native-calendars'
 import { createStyles } from './SearchStyles'
 import SizeBox from '../../constants/SizeBox'
@@ -10,6 +10,8 @@ import Images from '../../constants/Images'
 import FastImage from 'react-native-fast-image'
 import { SearchNormal1, Calendar, Location, CloseCircle, Clock, ArrowDown2, Camera } from 'iconsax-react-nativejs'
 import { useTranslation } from 'react-i18next'
+import { useAuth } from '../../context/AuthContext'
+import { ApiError, searchEvents } from '../../services/apiGateway'
  
 
 const FILTERS = ['Competition', 'Person', 'Group', 'Location'] as const
@@ -19,7 +21,7 @@ type CompetitionType = 'track' | 'marathon'
 type CompetitionTypeFilter = 'all' | CompetitionType
 
 interface EventResult {
-    id: number;
+    id: string;
     name: string;
     date: string;
     location: string;
@@ -50,6 +52,7 @@ const SearchScreen = ({ navigation }: any) => {
     const insets = useSafeAreaInsets();
     const { colors } = useTheme();
     const { t } = useTranslation();
+    const { apiAccessToken } = useAuth();
     const { width: windowWidth } = useWindowDimensions();
     const Styles = createStyles(colors);
 
@@ -68,6 +71,8 @@ const SearchScreen = ({ navigation }: any) => {
     const [showIosPicker, setShowIosPicker] = useState(false);
     const [calendarStart, setCalendarStart] = useState<string | null>(null);
     const [calendarEnd, setCalendarEnd] = useState<string | null>(null);
+    const [eventResults, setEventResults] = useState<EventResult[]>([]);
+    const [eventsError, setEventsError] = useState<string | null>(null);
  
     const competitionTypeFilters = useMemo(
         () => ([
@@ -79,14 +84,53 @@ const SearchScreen = ({ navigation }: any) => {
     );
 
     const activeValue = filterValues[activeFilter] ?? '';
+    const formatEventDate = useCallback((value?: string | null) => {
+        if (!value) return '';
+        const d = new Date(String(value));
+        if (Number.isNaN(d.getTime())) return String(value);
+        const day = String(d.getDate()).padStart(2, '0');
+        const month = String(d.getMonth() + 1).padStart(2, '0');
+        const year = d.getFullYear();
+        return `${day}/${month}/${year}`;
+    }, []);
+    const resolveCompetitionType = useCallback((name?: string | null) => {
+        const token = String(name || '').toLowerCase();
+        if (/marathon|trail|road|run|5k|10k|half/.test(token)) return 'marathon' as const;
+        return 'track' as const;
+    }, []);
 
-    const eventResults: EventResult[] = [
-        { id: 1, name: t('BK Studenten 23'), date: '27/05/2025', location: t('Gent'), competitionType: 'track' },
-        { id: 2, name: t('Vlaams Kampioenschap'), date: '27/05/2025', location: t('Hasselt'), competitionType: 'track' },
-        { id: 3, name: t('IFAM 2024'), date: '27/05/2025', location: t('Brussels'), competitionType: 'track' },
-        { id: 4, name: t('KBC Nacht 2024'), date: '27/05/2025', location: t('Hasselt'), competitionType: 'track' },
-        { id: 5, name: t('Brussels City Run 2026'), date: '12/06/2026', location: t('Brussels'), competitionType: 'marathon' },
-    ];
+    useEffect(() => {
+        let mounted = true;
+        if (!apiAccessToken) {
+            setEventResults([]);
+            setEventsError(null);
+            return () => {};
+        }
+        setEventsError(null);
+        searchEvents(apiAccessToken, { q: '', limit: 200 })
+            .then((res) => {
+                if (!mounted) return;
+                const list = Array.isArray(res?.events) ? res.events : [];
+                setEventResults(
+                    list.map((event: any) => ({
+                        id: String(event.event_id),
+                        name: String(event.event_name || event.event_title || t('Competition')),
+                        date: formatEventDate(event.event_date),
+                        location: String(event.event_location || ''),
+                        competitionType: resolveCompetitionType(event.event_name || event.event_title),
+                    })),
+                );
+            })
+            .catch((e: any) => {
+                if (!mounted) return;
+                const msg = e instanceof ApiError ? e.message : String(e?.message ?? e);
+                setEventsError(msg);
+                setEventResults([]);
+            });
+        return () => {
+            mounted = false;
+        };
+    }, [apiAccessToken, formatEventDate, resolveCompetitionType, t]);
 
     const peopleResults: PersonResult[] = [
         { id: 1, name: t('James Ray'), role: 'Athlete', activity: t('Marathon'), location: t('Dhaka'), isFollowing: false, events: [t('Brussels City Run 2026')] },
@@ -274,6 +318,7 @@ const SearchScreen = ({ navigation }: any) => {
             key={event.id}
             style={Styles.eventCard}
             onPress={() => navigation.navigate('CompetitionDetailsScreen', {
+                eventId: event.id,
                 name: event.name,
                 description: `${t('Competition held in')} ${event.location}`,
                 competitionType: event.competitionType,
@@ -643,6 +688,12 @@ const SearchScreen = ({ navigation }: any) => {
                             renderNoResults(t('No results found'))
                         ) : (
                             <>
+                                {eventsError ? (
+                                    <>
+                                        <Text style={Styles.emptyStateText}>{eventsError}</Text>
+                                        <SizeBox height={10} />
+                                    </>
+                                ) : null}
                                 {filteredEvents.length > 0 && (
                                     <>
                                         <Text style={Styles.sectionTitle}>{t('Competitions')}</Text>

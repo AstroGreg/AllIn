@@ -266,7 +266,6 @@ const NotificationsScreen = ({ navigation }: any) => {
             >
                 {/* Section Header */}
                 <View style={Styles.sectionHeader}>
-                    <Text style={Styles.sectionTitle}>{t('notifications')}</Text>
                     <TouchableOpacity disabled={markingAll || unreadCount === 0} onPress={handleMarkAllRead}>
                         <Text style={Styles.viewAllText}>
                             {markingAll ? t('Loading...') : t('Mark all as read')}
@@ -281,7 +280,9 @@ const NotificationsScreen = ({ navigation }: any) => {
                 ) : errorText ? (
                     <Text style={[Styles.notificationDescription, { color: '#ED5454' }]}>{errorText}</Text>
                 ) : items.length === 0 ? (
-                    <Text style={Styles.notificationDescription}>{t('No notifications yet')}</Text>
+                    <View style={{ alignItems: 'center', paddingTop: 8 }}>
+                        <Text style={Styles.notificationDescription}>{t('No notifications yet')}</Text>
+                    </View>
                 ) : (
                     <View style={Styles.notificationsList}>
                         {items.map(renderNotificationCard)}
