@@ -105,8 +105,8 @@ const CompetitionDetailsScreen = ({ navigation, route }: any) => {
                 if (!isActive) return;
                 const normalized = (res.maps || []).map((map: CompetitionMapSummary) => ({
                     id: map.id,
-                    label: map.name ?? 'Course',
-                    description: map.name ? 'Course map' : 'Course map',
+                    label: map.name ?? t('Course'),
+                    description: map.name ? t('Course map') : t('Course map'),
                     imageUrl: map.image_url ?? undefined,
                     checkpoints: (map.checkpoints ?? []).map((cp: CompetitionMapCheckpoint) => ({
                         id: cp.id,
@@ -124,8 +124,8 @@ const CompetitionDetailsScreen = ({ navigation, route }: any) => {
                         if (!isActive) return;
                         const fallbackCourses = (comps.competitions || []).map((comp) => ({
                             id: String(comp.id),
-                            label: String(comp.competition_name || comp.competition_name_normalized || 'Course'),
-                            description: 'Course',
+                            label: String(comp.competition_name || comp.competition_name_normalized || t('Course')),
+                            description: t('Course'),
                             imageUrl: undefined,
                             checkpoints: [],
                         }));
@@ -151,8 +151,8 @@ const CompetitionDetailsScreen = ({ navigation, route }: any) => {
                         if (!isActive) return;
                         const fallbackCourses = (comps.competitions || []).map((comp) => ({
                             id: String(comp.id),
-                            label: String(comp.competition_name || comp.competition_name_normalized || 'Course'),
-                            description: 'Course',
+                            label: String(comp.competition_name || comp.competition_name_normalized || t('Course')),
+                            description: t('Course'),
                             imageUrl: undefined,
                             checkpoints: [],
                         }));
@@ -175,7 +175,7 @@ const CompetitionDetailsScreen = ({ navigation, route }: any) => {
         return () => {
             isActive = false;
         };
-    }, [apiAccessToken, competitionId, competitionType, courseOptions.length, eventId]);
+    }, [apiAccessToken, competitionId, competitionType, courseOptions.length, eventId, t]);
 
     useEffect(() => {
         if (!apiAccessToken) return;
@@ -260,19 +260,19 @@ const CompetitionDetailsScreen = ({ navigation, route }: any) => {
 
     const runQuickCompare = useCallback(async () => {
         if (!apiAccessToken) {
-            setQuickSearchError('Missing API token. Please log in again.');
+            setQuickSearchError(t('Missing API token. Please log in again.'));
             return;
         }
         const resolvedId = await resolveEventId();
         if (!resolvedId) {
-            setQuickSearchError('Could not resolve this competition.');
+            setQuickSearchError(t('Could not resolve this competition.'));
             return;
         }
         const bibValue = quickChestNumber.trim();
         const wantsBib = bibValue.length > 0;
         const wantsFace = quickUseFace;
         if (!wantsBib && !wantsFace) {
-            setQuickSearchError('Add a chest number or enable face search.');
+            setQuickSearchError(t('Add a chest number or enable face search.'));
             return;
         }
 
@@ -307,7 +307,7 @@ const CompetitionDetailsScreen = ({ navigation, route }: any) => {
                     addResults(results, 'bib');
                 } catch (e: any) {
                     const msg = e instanceof ApiError ? e.message : String(e?.message ?? e);
-                    errors.push(`Chest number: ${msg}`);
+                    errors.push(`${t('Chest number')}: ${msg}`);
                 }
             }
 
@@ -327,21 +327,21 @@ const CompetitionDetailsScreen = ({ navigation, route }: any) => {
                         const body = e.body ?? {};
                         if (e.status === 403 && String(e.message).toLowerCase().includes('consent')) {
                             setQuickNeedsConsent(true);
-                            errors.push('Face: consent required.');
+                            errors.push(t('Face: consent required.'));
                         } else if (e.status === 400 && Array.isArray(body?.missing_angles)) {
                             setQuickMissingAngles(body.missing_angles.map(String));
-                            errors.push('Face: enrollment required.');
+                            errors.push(t('Face: enrollment required.'));
                         } else {
-                            errors.push(`Face: ${e.message}`);
+                            errors.push(`${t('Face')}: ${e.message}`);
                         }
                     } else {
-                        errors.push(`Face: ${String(e?.message ?? e)}`);
+                        errors.push(`${t('Face')}: ${String(e?.message ?? e)}`);
                     }
                 }
             }
 
             if (collected.length === 0) {
-                setQuickSearchError(errors[0] ?? 'No matches found.');
+                setQuickSearchError(errors[0] ?? t('No matches found.'));
                 return;
             }
 
@@ -354,7 +354,7 @@ const CompetitionDetailsScreen = ({ navigation, route }: any) => {
         } finally {
             setQuickSearchLoading(false);
         }
-    }, [apiAccessToken, competitionName, navigation, quickChestNumber, quickUseFace, resolveEventId]);
+    }, [apiAccessToken, competitionName, navigation, quickChestNumber, quickUseFace, resolveEventId, t]);
 
     const handleGrantConsent = useCallback(async () => {
         if (!apiAccessToken) return;
@@ -388,7 +388,7 @@ const CompetitionDetailsScreen = ({ navigation, route }: any) => {
             await refreshSubscribed();
         } catch (e: any) {
             const msg = e instanceof ApiError ? e.message : String(e?.message ?? e);
-            Alert.alert(isSubscribed ? 'Could not unsubscribe' : t('Could not subscribe'), msg);
+            Alert.alert(isSubscribed ? t('Could not unsubscribe') : t('Could not subscribe'), msg);
         } finally {
             setIsSubscriptionLoading(false);
         }
@@ -427,7 +427,7 @@ const CompetitionDetailsScreen = ({ navigation, route }: any) => {
                                 <ActivityIndicator color={colors.pureWhite} />
                             ) : (
                                 <Text style={styles.subscribeButtonText}>
-                                    {isSubscribed ? 'Unsubscribe' : t('subscribeToEvent')}
+                                    {isSubscribed ? t('Unsubscribe') : t('subscribeToEvent')}
                                 </Text>
                             )}
                         </TouchableOpacity>
@@ -614,7 +614,7 @@ const CompetitionDetailsScreen = ({ navigation, route }: any) => {
                     onPress={() => setCheckpointModalVisible(false)}
                 >
                     <TouchableOpacity style={styles.checkpointModal} activeOpacity={1}>
-                        <Text style={styles.modalTitle}>Search {selectedCheckpoint?.label}</Text>
+                        <Text style={styles.modalTitle}>{t('Search')} {selectedCheckpoint?.label}</Text>
                         <SizeBox height={16} />
                         <TouchableOpacity
                             style={styles.modalPrimaryButton}
@@ -678,7 +678,7 @@ const CompetitionDetailsScreen = ({ navigation, route }: any) => {
                         <Text style={styles.modalTitle}>{t('AI quick compare')}</Text>
                         <SizeBox height={12} />
                         <Text style={styles.helperText}>
-                            Use your chest number and optionally Face ID to find results in this competition.
+                            {t('Use your chest number and optionally Face ID to find results in this competition.')}
                         </Text>
                         <SizeBox height={16} />
                         <Text style={styles.modalLabel}>{t('Chest number')}</Text>

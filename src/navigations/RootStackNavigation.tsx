@@ -3,7 +3,6 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { useTheme } from '../context/ThemeContext';
 import SplashScreen from '../screens/splashScreen/SplashScreen';
 import LoginScreen from '../screens/authFlow/loginScreen/LoginScreen';
-import SignupScreen from '../screens/authFlow/signupScreen/SignupScreen';
 import LanguageScreen from '../screens/authFlow/languageScreen/LanguageScreen';
 import SelectLanguageScreen from '../screens/authFlow/selectLanguageScreen/SelectLanguageScreen';
 import CreateProfileScreen from '../screens/authFlow/createProfileScreen/CreateProfileScreen';
@@ -96,7 +95,6 @@ const RootStackNavigation = () => {
             <Stack.Screen name="FaceVerificationScreen" component={FaceVerificationScreen} />
             <Stack.Screen name="SelectLanguageScreen" component={SelectLanguageScreen} />
             <Stack.Screen name="LoginScreen" component={LoginScreen} />
-            <Stack.Screen name="SignupScreen" component={SignupScreen} />
             <Stack.Screen name="CreateProfileScreen" component={CreateProfileScreen} />
             <Stack.Screen name="SelectEventScreen" component={SelectEventScreen} />
             <Stack.Screen name="CompleteAthleteDetailsScreen" component={CompleteAthleteDetailsScreen} />

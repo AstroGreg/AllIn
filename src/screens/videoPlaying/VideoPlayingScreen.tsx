@@ -31,7 +31,7 @@ const VideoPlayingScreen = ({ navigation, route }: any) => {
     const showBuyModalOnLoad = route?.params?.showBuyModal || false;
     const videoPrice = route?.params?.video?.price || '€0,20';
     const fallbackVideo = route?.params?.video || {
-        title: 'PK 800m 2023 indoor',
+        title: t('PK 800m 2023 indoor'),
         thumbnail: Images.photo1,
         uri: '',
     };
@@ -194,7 +194,7 @@ const VideoPlayingScreen = ({ navigation, route }: any) => {
     const handleGoToEvent = () => {
         navigation.navigate('CompetitionDetailsScreen', {
             name: videoTitle,
-            description: `Competition held in ${videoTitle}`,
+            description: `${t('Competition held in')} ${videoTitle}`,
             competitionType: 'track',
         });
     };
@@ -209,17 +209,17 @@ const VideoPlayingScreen = ({ navigation, route }: any) => {
 
     const openMoreMenu = useCallback(() => {
         const actions = [
-            {label: 'Report an issue with this video/photo', onPress: handleRequestIssue},
-            {label: 'Go to author profile', onPress: handleGoToProfile},
-            {label: 'Go to event', onPress: handleGoToEvent},
-            {label: 'Mark as inappropriate content', onPress: handleMarkInappropriate},
-            {label: 'Request this video removed', onPress: handleRequestRemoval},
+            {label: t('Report an issue with this video/photo'), onPress: handleRequestIssue},
+            {label: t('Go to author profile'), onPress: handleGoToProfile},
+            {label: t('Go to event'), onPress: handleGoToEvent},
+            {label: t('Mark as inappropriate content'), onPress: handleMarkInappropriate},
+            {label: t('Request this video removed'), onPress: handleRequestRemoval},
         ];
 
         if (Platform.OS === 'ios') {
             ActionSheetIOS.showActionSheetWithOptions(
                 {
-                    options: [...actions.map((item) => item.label), 'Cancel'],
+                    options: [...actions.map((item) => item.label), t('Cancel')],
                     cancelButtonIndex: actions.length,
                 },
                 (buttonIndex) => {
@@ -237,9 +237,9 @@ const VideoPlayingScreen = ({ navigation, route }: any) => {
             {text: actions[2].label, onPress: actions[2].onPress},
             {text: actions[3].label, onPress: actions[3].onPress},
             {text: actions[4].label, onPress: actions[4].onPress},
-            {text: 'Cancel', style: 'cancel'},
+            {text: t('Cancel'), style: 'cancel'},
         ]);
-    }, [handleGoToEvent, handleGoToProfile, handleMarkInappropriate, handleRequestIssue, handleRequestRemoval]);
+    }, [handleGoToEvent, handleGoToProfile, handleMarkInappropriate, handleRequestIssue, handleRequestRemoval, t]);
 
     return (
         <View style={Styles.mainContainer}>

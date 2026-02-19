@@ -104,7 +104,7 @@ const AISearchOptions = ({ navigation }: any) => {
                     styles.optionButtonText,
                     isSelected && styles.optionButtonTextActive,
                 ]}>
-                    {option.title}
+                    {t(option.title)}
                 </Text>
             </TouchableOpacity>
         );
@@ -119,7 +119,7 @@ const AISearchOptions = ({ navigation }: any) => {
             <View style={styles.filterLabelContainer}>
                 <Category size={20} color={colors.grayColor} variant="Linear" />
                 <SizeBox width={12} />
-                <Text style={styles.filterLabel}>{filter.label}</Text>
+                <Text style={styles.filterLabel}>{t(filter.label)}</Text>
             </View>
             <View style={[styles.checkbox, filter.checked && styles.checkboxChecked]}>
                 {filter.checked && (

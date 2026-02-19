@@ -19,40 +19,40 @@ interface AiSearchModalProps {
 
 const options: Array<{
   id: AiSearchType;
-  label: string;
-  subtitle: string;
+  labelKey: string;
+  subtitleKey: string;
   color: string;
   gradient: string[];
   icon: React.ReactNode;
 }> = [
   {
     id: 'combined',
-    label: 'Combined',
-    subtitle: 'Chest + face + context',
+    labelKey: 'Combined',
+    subtitleKey: 'Chest + face + context',
     color: '#0EA5E9',
     gradient: ['#0EA5E9', '#38BDF8'],
     icon: <Icons.AiWhiteSquare width={22} height={22} />,
   },
   {
     id: 'bib',
-    label: 'Chest number',
-    subtitle: 'Find your photos by number',
+    labelKey: 'Chest number',
+    subtitleKey: 'Find your photos by number',
     color: '#2563EB',
     gradient: ['#1D4ED8', '#60A5FA'],
     icon: <Icons.HashWhite width={26} height={26} />,
   },
   {
     id: 'face',
-    label: 'Face',
-    subtitle: 'Use your face to match',
+    labelKey: 'Face',
+    subtitleKey: 'Use your face to match',
     color: '#4F46E5',
     gradient: ['#4338CA', '#818CF8'],
     icon: <Icons.FacescanWhite width={26} height={26} />,
   },
   {
     id: 'context',
-    label: 'Context',
-    subtitle: 'Search by scene or moment',
+    labelKey: 'Context',
+    subtitleKey: 'Search by scene or moment',
     color: '#7C3AED',
     gradient: ['#6D28D9', '#A78BFA'],
     icon: <Icons.ImageWhite width={26} height={26} />,
@@ -262,7 +262,7 @@ const AiSearchModal = ({ visible, onClose, onSelect, title = 'AI Search' }: AiSe
                   <Text style={styles.headerPillText}>{t('AI SEARCH')}</Text>
                 </View>
               </View>
-              <Text style={styles.title}>{title}</Text>
+              <Text style={styles.title}>{t(title)}</Text>
               <Text style={styles.subtitle}>{t('Pick a mode for AI search')}</Text>
             </View>
 
@@ -280,8 +280,8 @@ const AiSearchModal = ({ visible, onClose, onSelect, title = 'AI Search' }: AiSe
                   <View style={styles.optionContent}>
                     <View style={styles.optionIconWrap}>{option.icon}</View>
                     <View style={styles.optionTextWrap}>
-                      <Text style={styles.optionButtonText}>{option.label}</Text>
-                      <Text style={styles.optionSubtitle}>{option.subtitle}</Text>
+                      <Text style={styles.optionButtonText}>{t(option.labelKey)}</Text>
+                      <Text style={styles.optionSubtitle}>{t(option.subtitleKey)}</Text>
                     </View>
                   </View>
                 </View>

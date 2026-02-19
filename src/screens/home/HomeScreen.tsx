@@ -1663,13 +1663,13 @@ const HomeScreen = ({ navigation }: any) => {
                                 : undefined,
                         ]}
                     >
-                        <Text style={Styles.aiSearchIntroText}>Find yourself</Text>
+                        <Text style={Styles.aiSearchIntroText}>{t('Find yourself')}</Text>
                         <TouchableOpacity
                             style={Styles.aiSearchIntroNextButton}
                             activeOpacity={0.85}
                             onPress={() => setShowAiSearchIntro(false)}
                         >
-                            <Text style={Styles.aiSearchIntroNextText}>Next</Text>
+                            <Text style={Styles.aiSearchIntroNextText}>{t('Next')}</Text>
                         </TouchableOpacity>
                     </View>
                 </View>

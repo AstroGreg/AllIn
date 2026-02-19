@@ -38,7 +38,7 @@ const AISearchScreen = ({ navigation }: any) => {
                 onPress={() => handleOptionPress(option.id)}
             >
                 <Text style={[Styles.optionButtonText, isSelected && Styles.optionButtonTextActive]}>
-                    {option.label}
+                    {t(option.label)}
                 </Text>
             </TouchableOpacity>
         );
@@ -107,7 +107,7 @@ const AISearchScreen = ({ navigation }: any) => {
 
                         {/* Modal Description */}
                         <Text style={Styles.modalDescription}>
-                            Fast AI search by face, chest number, or context in seconds.
+                            {t('Fast AI search by face, chest number, or context in seconds.')}
                         </Text>
 
                         {/* Subscribe Button */}

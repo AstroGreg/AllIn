@@ -517,7 +517,7 @@ const PhotoDetailScreen = ({navigation, route}: any) => {
             }
         } catch (err: any) {
             const msg = String(err?.message ?? err);
-            Alert.alert('Download failed', msg);
+            Alert.alert(t('Download failed'), msg);
         } finally {
             setDownloadVisible(false);
             setDownloadProgress(null);
@@ -540,7 +540,7 @@ const PhotoDetailScreen = ({navigation, route}: any) => {
             await Share.share({message: 'AllIn media', url: localShareUrl});
         } catch (e: any) {
             const msg = String(e?.message ?? e);
-            Alert.alert('Share failed', msg);
+            Alert.alert(t('Share failed'), msg);
         }
     }, [ensureLocalFile, extensionFromUrl, resolveShareUrl]);
 
@@ -571,7 +571,7 @@ const PhotoDetailScreen = ({navigation, route}: any) => {
                 return;
             } catch (e: any) {
                 const msg = String(e?.message ?? e);
-                Alert.alert('Instagram Story failed', msg);
+                Alert.alert(t('Instagram Story failed'), msg);
                 return;
             }
         }
@@ -585,31 +585,31 @@ const PhotoDetailScreen = ({navigation, route}: any) => {
 
     const openMoreMenu = useCallback(() => {
         const actions = [
-            {label: 'Download', onPress: handleDownload},
-            {label: 'Share', onPress: handleShareNative},
-            {label: 'Share to Instagram Story', onPress: handleShareInstagram},
-            {label: 'Report an issue with this video/photo', onPress: handleReportIssue},
+            {label: t('Download'), onPress: handleDownload},
+            {label: t('Share'), onPress: handleShareNative},
+            {label: t('Share to Instagram Story'), onPress: handleShareInstagram},
+            {label: t('Report an issue with this video/photo'), onPress: handleReportIssue},
             {
-                label: 'Go to author profile',
+                label: t('Go to author profile'),
                 onPress: () => navigation.navigate('BottomTabBar', {screen: 'Profile'}),
             },
             {
-                label: 'Go to event',
+                label: t('Go to event'),
                 onPress: () => {
-                    const eventName = headerLabel || 'Competition';
+                    const eventName = headerLabel || t('Competition');
                     navigation.navigate('CompetitionDetailsScreen', {
                         name: eventName,
-                        description: `Competition held in ${eventName}`,
+                        description: `${t('Competition held in')} ${eventName}`,
                         competitionType: 'track',
                     });
                 },
             },
             {
-                label: 'Mark as inappropriate content',
+                label: t('Mark as inappropriate content'),
                 onPress: () => Alert.alert(t('Thanks'), t('We will review this content.')),
             },
             {
-                label: 'Request this video removed',
+                label: t('Request this video removed'),
                 onPress: () => Alert.alert(t('Request sent'), t('We will review the removal request.')),
             },
         ];
@@ -695,7 +695,7 @@ const PhotoDetailScreen = ({navigation, route}: any) => {
                 setFeedback(choice);
             } catch (e: any) {
                 const msg = e instanceof ApiError ? e.message : String(e?.message ?? e);
-                Alert.alert('Could not save label', msg);
+                Alert.alert(t('Could not save label'), msg);
             } finally {
                 setIsSavingFeedback(false);
             }
@@ -944,7 +944,7 @@ const PhotoDetailScreen = ({navigation, route}: any) => {
                             activeOpacity={0.85}
                             onPress={() => setMoreMenuVisible(false)}
                         >
-                            <Text style={Styles.moreMenuCancelText}>Cancel</Text>
+                            <Text style={Styles.moreMenuCancelText}>{t('Cancel')}</Text>
                         </TouchableOpacity>
                     </View>
                 </View>

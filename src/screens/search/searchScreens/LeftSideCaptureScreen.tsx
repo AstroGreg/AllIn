@@ -227,7 +227,7 @@ const LeftSideCaptureScreen = ({ navigation, route }: any) => {
                         <Text style={[
                             styles.outlineButtonText,
                             !capturedImage && styles.outlineButtonTextDisabled
-                        ]}>Next</Text>
+                        ]}>{t('Next')}</Text>
                     </TouchableOpacity>
                 </View>
             </View>

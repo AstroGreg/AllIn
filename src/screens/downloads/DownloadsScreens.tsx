@@ -60,7 +60,7 @@ const DownloadsScreens = ({ navigation }: any) => {
                 <Text style={[Styles.headings, {
                     ...Fonts.regular12,
                     color: colors.grayColor,
-                }]}>Downloads: 1400+</Text>
+                }]}>{t('Downloads')}: 1400+</Text>
             </View>
             <SizeBox height={10} />
 

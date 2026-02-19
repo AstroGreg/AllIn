@@ -62,22 +62,22 @@ const AISearchResultsScreen = ({navigation, route}: any) => {
     const map = new Map<string, ResultGroup>();
     parsedResults.forEach((item) => {
       const eventId = item.eventId ? String(item.eventId) : 'unknown';
-      const name = item.eventName || eventNameById(item.eventId) || 'Competition';
+      const name = item.eventName || eventNameById(item.eventId) || t('Competition');
       if (!map.has(eventId)) {
         map.set(eventId, {id: eventId, name, items: []});
       }
       map.get(eventId)!.items.push(item);
     });
     return Array.from(map.values()).sort((a, b) => a.name.localeCompare(b.name));
-  }, [eventNameById, parsedResults]);
+  }, [eventNameById, parsedResults, t]);
 
   const matchLabel = useCallback((matchType?: string) => {
     const key = String(matchType ?? '').toLowerCase();
-    if (key === 'bib') return 'Chest number';
-    if (key === 'context') return 'Context';
-    if (key === 'face') return 'Face';
-    return 'AI';
-  }, []);
+    if (key === 'bib') return t('Chest number');
+    if (key === 'context') return t('Context');
+    if (key === 'face') return t('Face');
+    return t('AI');
+  }, [t]);
 
   const downloadOne = useCallback(
     async (item: ResultItem) => {
@@ -113,10 +113,10 @@ const AISearchResultsScreen = ({navigation, route}: any) => {
         await Share.share({message: url, url});
       } catch (e: any) {
         const msg = e instanceof ApiError ? e.message : String(e?.message ?? e);
-        Alert.alert('Download failed', msg);
+        Alert.alert(t('Download failed'), msg);
       }
     },
-    [apiAccessToken],
+    [apiAccessToken, t],
   );
 
   const openMedia = (item: ResultItem) => {
@@ -161,7 +161,7 @@ const AISearchResultsScreen = ({navigation, route}: any) => {
         <View style={styles.resultsHeader}>
           <Text style={styles.resultsTitle}>{t('Results')}</Text>
           <View style={styles.resultsBadge}>
-            <Text style={styles.resultsBadgeText}>{matchedCount} found</Text>
+            <Text style={styles.resultsBadgeText}>{matchedCount} {t('found')}</Text>
           </View>
         </View>
 

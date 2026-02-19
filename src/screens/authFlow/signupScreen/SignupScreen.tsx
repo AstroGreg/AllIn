@@ -28,7 +28,7 @@ const SignupScreen = ({ navigation }: any) => {
             });
         } catch (err: any) {
             if (err.message !== 'User cancelled the Auth') {
-                Alert.alert('Signup Failed', err.message || 'Please try again');
+                Alert.alert(t('Signup Failed'), err.message || t('Please try again'));
             }
         }
     };
@@ -42,7 +42,7 @@ const SignupScreen = ({ navigation }: any) => {
             });
         } catch (err: any) {
             if (err.message !== 'User cancelled the Auth') {
-                Alert.alert('Signup Failed', err.message || 'Google signup failed');
+                Alert.alert(t('Signup Failed'), err.message || t('Google signup failed'));
             }
         }
     };
@@ -56,7 +56,7 @@ const SignupScreen = ({ navigation }: any) => {
             });
         } catch (err: any) {
             if (err.message !== 'User cancelled the Auth') {
-                Alert.alert('Signup Failed', err.message || 'Apple signup failed');
+                Alert.alert(t('Signup Failed'), err.message || t('Apple signup failed'));
             }
         }
     };
@@ -81,7 +81,7 @@ const SignupScreen = ({ navigation }: any) => {
                     {isLoading ? (
                         <ActivityIndicator size="large" color={colors.primaryColor} />
                     ) : (
-                        <CustomButton title={'Sign Up'} onPress={handleSignup} />
+                        <CustomButton title={t('Sign Up')} onPress={handleSignup} />
                     )}
 
                     <SizeBox height={16} />

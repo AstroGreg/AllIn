@@ -140,7 +140,7 @@ const UserProfileScreen = ({ navigation }: any) => {
                         mediaItems,
                         cover_media_id: (it as any)?.cover_media_id ?? null,
                         backgroundImage: backgroundImage || undefined,
-                        linkedBlogs: linkedPosts.map((p: any) => ({ id: String(p.id), title: String(p.title ?? 'Blog') })),
+                        linkedBlogs: linkedPosts.map((p: any) => ({ id: String(p.id), title: String(p.title ?? t('Blog')) })),
                         linkedCompetitions: linkedEvents.map((e: any) => ({
                             id: String(e.event_id),
                             title: String(e.event_name ?? t('competition')),
@@ -313,7 +313,7 @@ const UserProfileScreen = ({ navigation }: any) => {
     const openTimelineDetail = (item: TimelineEntry) => {
         navigation.navigate('ProfileTimelineDetailScreen', {
             item,
-            ownerName: user?.name ?? 'Profile',
+            ownerName: user?.name ?? t('Profile'),
         });
     };
 

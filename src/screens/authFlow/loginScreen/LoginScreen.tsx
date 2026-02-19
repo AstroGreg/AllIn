@@ -18,7 +18,7 @@ const LoginScreen = ({ navigation }: any) => {
     const { colors } = useTheme();
     const Styles = createStyles(colors);
     const insets = useSafeAreaInsets();
-    const { login, isLoading, isAuthenticated } = useAuth();
+    const { login, signup, isLoading, isAuthenticated } = useAuth();
 
     // Debug: Clear all stored auth data
     const handleClearAuth = async () => {
@@ -42,7 +42,7 @@ const LoginScreen = ({ navigation }: any) => {
         } catch (err: any) {
             console.log('[LoginScreen] Login error:', err.message);
             if (err.message !== 'User cancelled the Auth') {
-                Alert.alert('Login Failed', err.message || 'Please try again');
+                Alert.alert(t('Login Failed'), err.message || t('Please try again'));
             }
         }
     };
@@ -56,7 +56,7 @@ const LoginScreen = ({ navigation }: any) => {
             });
         } catch (err: any) {
             if (err.message !== 'User cancelled the Auth') {
-                Alert.alert('Login Failed', err.message || 'Google login failed');
+                Alert.alert(t('Login Failed'), err.message || t('Google login failed'));
             }
         }
     };
@@ -70,7 +70,21 @@ const LoginScreen = ({ navigation }: any) => {
             });
         } catch (err: any) {
             if (err.message !== 'User cancelled the Auth') {
-                Alert.alert('Login Failed', err.message || 'Apple login failed');
+                Alert.alert(t('Login Failed'), err.message || t('Apple login failed'));
+            }
+        }
+    };
+
+    const handleSignup = async () => {
+        try {
+            await signup();
+            navigation.reset({
+                index: 0,
+                routes: [{ name: 'CategorySelectionScreen' }],
+            });
+        } catch (err: any) {
+            if (err.message !== 'User cancelled the Auth') {
+                Alert.alert(t('Signup Failed'), err.message || t('Please try again'));
             }
         }
     };
@@ -95,7 +109,7 @@ const LoginScreen = ({ navigation }: any) => {
                     {isLoading ? (
                         <ActivityIndicator size="large" color={colors.primaryColor} />
                     ) : (
-                        <CustomButton title={'Sign In'} onPress={handleLogin} />
+                        <CustomButton title={t('Email Sign In')} onPress={handleLogin} />
                     )}
 
                     <SizeBox height={16} />
@@ -120,7 +134,7 @@ const LoginScreen = ({ navigation }: any) => {
                     <View style={Styles.signUpContainer}>
                         <Text style={Styles.rememberMeText}>{t("Don't have an account?")}</Text>
                         <SizeBox width={3} />
-                        <TouchableOpacity onPress={() => navigation.navigate('SignupScreen')}>
+                        <TouchableOpacity onPress={handleSignup}>
                             <Text style={[Styles.rememberMeText, { color: colors.primaryColor }]}>{t('Sign Up')}</Text>
                         </TouchableOpacity>
                     </View>

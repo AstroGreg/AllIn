@@ -17,7 +17,7 @@ import { useAuth } from '../../context/AuthContext';
 import { useEvents } from '../../context/EventsContext';
 import { getHubAppearances, getHubUploads, getMediaViewAll } from '../../services/apiGateway';
 import { getApiBaseUrl } from '../../constants/RuntimeConfig';
-import { useTranslation } from 'react-i18next'
+import { useTranslation } from 'react-i18next';
 
 const HubScreen = ({ navigation }: any) => {
     const { t } = useTranslation();
@@ -88,10 +88,10 @@ const HubScreen = ({ navigation }: any) => {
                     list.map((item) => ({
                         id: item.event_id,
                         eventId: item.event_id,
-                        title: item.event_name || 'Competition',
-                        found: `${Number(item.photos_count ?? 0)} photos • ${Number(item.videos_count ?? 0)} videos`,
-                        location: item.event_location ?? '—',
-                        date: item.event_date ?? '—',
+                        title: item.event_name || t('competition'),
+                        found: `${Number(item.photos_count ?? 0)} ${t('photos')} | ${Number(item.videos_count ?? 0)} ${t('videos')}`,
+                        location: item.event_location ?? '-',
+                        date: item.event_date ?? '-',
                         thumbnail: item.thumbnail_url ? { uri: item.thumbnail_url } : null,
                         matchTypes: item.match_types ?? [],
                         cardType: 'appearance',
@@ -106,7 +106,7 @@ const HubScreen = ({ navigation }: any) => {
         return () => {
             mounted = false;
         };
-    }, [apiAccessToken]);
+    }, [apiAccessToken, t]);
 
     useEffect(() => {
         let mounted = true;
@@ -149,7 +149,7 @@ const HubScreen = ({ navigation }: any) => {
                         id: item.media_id,
                         mediaId: item.media_id,
                         eventId: item.event_id ?? null,
-                        title: item.event_name || 'Upload',
+                        title: item.event_name || t('upload'),
                         likes: Number(item.likes_count ?? 0),
                         views: Number(item.views_count ?? 0),
                         labelsYes: Number(item.labels_yes ?? 0),
@@ -174,10 +174,10 @@ const HubScreen = ({ navigation }: any) => {
         return () => {
             mounted = false;
         };
-    }, [apiAccessToken]);
+    }, [apiAccessToken, t]);
 
     const formatDateOnly = (value?: string | null) => {
-        if (!value || value === '—') return '—';
+        if (!value || value === '-') return '-';
         const parsed = new Date(value);
         if (Number.isNaN(parsed.getTime())) {
             return value;
@@ -192,16 +192,16 @@ const HubScreen = ({ navigation }: any) => {
         return (events || []).map((event, index) => {
             const eventId = String(event.event_id);
             const mediaInfo = mediaByEvent[eventId];
-            const title = event.event_name || event.event_title || 'Competition';
-            const location = event.event_location || '—';
-            const date = formatDateOnly(event.event_date || '—');
+            const title = event.event_name || event.event_title || t('competition');
+            const location = event.event_location || '-';
+            const date = formatDateOnly(event.event_date || '-');
             const videoCount = mediaInfo?.videoCount ?? 0;
             return {
                 id: eventId || `${index}`,
                 eventId,
                 title,
                 status: 'Subscribed',
-                media: `${videoCount} videos`,
+                media: `${videoCount} ${t('videos')}`,
                 location,
                 date,
                 thumbnail: mediaInfo?.thumbUrl ? { uri: mediaInfo.thumbUrl } : null,
@@ -209,7 +209,7 @@ const HubScreen = ({ navigation }: any) => {
                 cardType: 'subscription',
             };
         });
-    }, [events, mediaByEvent]);
+    }, [events, mediaByEvent, t]);
 
     const hubCards = useMemo(() => {
         return [...appearanceCardsData, ...myCompetitions, ...uploadCardsData];
@@ -285,7 +285,7 @@ const HubScreen = ({ navigation }: any) => {
         if (card.cardType === 'subscription') {
             navigation.navigate('CompetitionDetailsScreen', {
                 name: card.title,
-                description: `Competition held in ${card.location}`,
+                description: `${t('Competition held in')} ${card.location}`,
                 competitionType: card.competitionType ?? 'track',
                 eventId: card.eventId ?? card.id,
             });
@@ -327,6 +327,13 @@ const HubScreen = ({ navigation }: any) => {
         if (infoCard) {
             openCardAction(infoCard);
         }
+    };
+
+    const getUploadTypeLabel = (type?: string) => {
+        const normalized = String(type || '').toLowerCase();
+        if (normalized === 'video') return t('Video');
+        if (normalized === 'image' || normalized === 'photo') return t('Photo');
+        return t('media');
     };
 
     const renderHubCard = (card: any) => {
@@ -385,14 +392,14 @@ const HubScreen = ({ navigation }: any) => {
                             <View style={Styles.squareThumbnailPlaceholder} />
                         )}
                         <View style={Styles.cardInfo}>
-                        <View style={Styles.cardHeaderRow}>
-                            <Text style={Styles.cardTitle} numberOfLines={2}>{card.title}</Text>
-                            <View style={[Styles.statusBadge, card.status === 'Completed' ? Styles.statusDone : Styles.statusActive]}>
-                                <Text style={[Styles.statusText, card.status !== 'Completed' && Styles.statusTextActive]}>
-                                    {card.status}
-                                </Text>
+                            <View style={Styles.cardHeaderRow}>
+                                <Text style={Styles.cardTitle} numberOfLines={2}>{card.title}</Text>
+                                <View style={[Styles.statusBadge, card.status === 'Completed' ? Styles.statusDone : Styles.statusActive]}>
+                                    <Text style={[Styles.statusText, card.status !== 'Completed' && Styles.statusTextActive]}>
+                                        {t(card.status)}
+                                    </Text>
+                                </View>
                             </View>
-                        </View>
                             <Text style={Styles.cardSubtitle}>{t('Subscribed competition')}</Text>
                             <View style={Styles.detailValue}>
                                 <VideoSquare size={14} color={colors.grayColor} variant="Linear" />
@@ -422,11 +429,11 @@ const HubScreen = ({ navigation }: any) => {
                         <View style={Styles.cardHeaderRow}>
                             <Text style={Styles.cardTitle} numberOfLines={2}>{card.title}</Text>
                             <View style={Styles.typeBadge}>
-                                <Text style={Styles.typeBadgeText}>{t('Upload')}</Text>
+                                <Text style={Styles.typeBadgeText}>{t('upload')}</Text>
                             </View>
                         </View>
                         <Text style={Styles.cardSubtitle}>
-                            {card.type} · {card.labelsTotal > 0 ? `${card.labelsYes} ${t('yes')} · ${card.labelsNo} ${t('no')}` : t('No feedback yet')}
+                            {getUploadTypeLabel(card.type)} | {card.labelsTotal > 0 ? `${card.labelsYes} ${t('yes')} | ${card.labelsNo} ${t('no')}` : t('No feedback yet')}
                         </Text>
                         <TouchableOpacity style={Styles.feedbackButton}>
                             <Text style={Styles.feedbackButtonText}>{t('Manage upload')}</Text>
@@ -442,7 +449,6 @@ const HubScreen = ({ navigation }: any) => {
         <View style={Styles.mainContainer}>
             <SizeBox height={insets.top} />
 
-            {/* Header */}
             <View style={Styles.header}>
                 <TouchableOpacity style={Styles.backButton} onPress={() => navigation.goBack()}>
                     <ArrowLeft2 size={20} color={colors.mainTextColor} variant="Linear" />
@@ -452,7 +458,6 @@ const HubScreen = ({ navigation }: any) => {
             </View>
 
             <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={Styles.scrollContent}>
-                {/* Competitions list */}
                 <View style={Styles.sectionBlock}>
                     <Text style={Styles.sectionTitle}>{t('Competitions')}</Text>
                     <Text style={Styles.sectionSubtitle}>{t('Appearances, subscriptions, and your uploads.')}</Text>
@@ -479,7 +484,7 @@ const HubScreen = ({ navigation }: any) => {
                                     filterType === option.key && Styles.filterChipTextActive,
                                 ]}
                             >
-                                {option.label}
+                                {t(option.label)}
                             </Text>
                         </TouchableOpacity>
                     ))}
@@ -505,7 +510,7 @@ const HubScreen = ({ navigation }: any) => {
                     style={Styles.primaryButton}
                     onPress={() => navigation.navigate('AvailableEventsScreen')}
                 >
-                    <Text style={Styles.primaryButtonText}>{t('Subscribe to a competition')}</Text>
+                    <Text style={Styles.primaryButtonText}>{t('subscribeCompetition')}</Text>
                     <Icons.RightBtnIcon height={18} width={18} />
                 </TouchableOpacity>
 
@@ -517,7 +522,6 @@ const HubScreen = ({ navigation }: any) => {
                     </TouchableOpacity>
                 )}
 
-                {/* Downloads */}
                 <View style={Styles.sectionBlock}>
                     <Text style={Styles.sectionTitle}>{t('Downloads')}</Text>
                     <Text style={Styles.sectionSubtitle}>{t('Your saved photos and videos.')}</Text>
@@ -526,7 +530,7 @@ const HubScreen = ({ navigation }: any) => {
                     <View style={Styles.downloadsInfo}>
                         <Icons.Downloads height={24} width={24} />
                         <Text style={Styles.downloadsText}>{t('Total downloads')}</Text>
-                        <Text style={Styles.downloadsNumber}>{t('346,456')}</Text>
+                        <Text style={Styles.downloadsNumber}>{'346,456'}</Text>
                     </View>
                 </TouchableOpacity>
 
@@ -538,13 +542,13 @@ const HubScreen = ({ navigation }: any) => {
                     <View style={Styles.infoCard}>
                         <Text style={Styles.infoTitle}>{t('About this card')}</Text>
                         <Text style={Styles.infoText}>
-                            {infoCard?.cardType === 'appearance' && 'This card shows where we found you in photos or videos and how you matched.'}
-                            {infoCard?.cardType === 'subscription' && 'This card is a competition you subscribed to. Tap to open it.'}
-                            {infoCard?.cardType === 'upload' && 'This card is media you uploaded. Tap to manage details and comments.'}
+                            {infoCard?.cardType === 'appearance' && t('This card shows where we found you in photos or videos and how you matched.')}
+                            {infoCard?.cardType === 'subscription' && t('This card is a competition you subscribed to. Tap to open it.')}
+                            {infoCard?.cardType === 'upload' && t('This card is media you uploaded. Tap to manage details and comments.')}
                         </Text>
                         <TouchableOpacity style={Styles.infoCheckRow} onPress={() => setNeverShowAgain((prev) => !prev)}>
                             <View style={[Styles.infoCheckBox, neverShowAgain && Styles.infoCheckBoxActive]}>
-                                {neverShowAgain && <Text style={Styles.infoCheckMark}>{t('✓')}</Text>}
+                                {neverShowAgain && <Text style={Styles.infoCheckMark}>✓</Text>}
                             </View>
                             <Text style={Styles.infoCheckText}>{t('Never show again')}</Text>
                         </TouchableOpacity>

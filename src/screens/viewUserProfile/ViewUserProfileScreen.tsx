@@ -414,7 +414,7 @@ const ViewUserProfileScreen = ({ navigation, route }: any) => {
                                             onPress={() => {
                                                 if (c.cover_media_id) {
                                                     navigation.navigate('PhotoDetailScreen', {
-                                                        eventTitle: c.name || 'Collection',
+                                                        eventTitle: c.name || t('Collection'),
                                                         media: { id: c.cover_media_id, type: 'photo' },
                                                     });
                                                 }
@@ -445,7 +445,7 @@ const ViewUserProfileScreen = ({ navigation, route }: any) => {
                                             onPress={() => {
                                                 if (c.cover_media_id) {
                                                     navigation.navigate('PhotoDetailScreen', {
-                                                        eventTitle: c.name || 'Collection',
+                                                        eventTitle: c.name || t('Collection'),
                                                         media: { id: c.cover_media_id, type: 'video' },
                                                     });
                                                 }
