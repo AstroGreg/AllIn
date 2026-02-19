@@ -128,6 +128,18 @@ export const createStyles = (colors: ThemeColors) => StyleSheet.create({
         ...Fonts.medium16,
         color: colors.primaryColor,
     },
+    previewWatermarkOverlay: {
+        ...StyleSheet.absoluteFillObject,
+        justifyContent: 'space-around',
+        transform: [{ rotate: '-18deg' }],
+        paddingVertical: 4,
+    },
+    previewWatermarkRow: {
+        ...Fonts.medium12,
+        color: colors.primaryColor,
+        opacity: 0.48,
+        letterSpacing: 0.5,
+    },
     previewButton: {
         flexDirection: 'row',
         alignItems: 'center',
@@ -139,6 +151,38 @@ export const createStyles = (colors: ThemeColors) => StyleSheet.create({
     },
     previewButtonText: {
         ...Fonts.medium16,
+        color: colors.pureWhite,
+    },
+    previewModalOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0,0,0,0.85)',
+        justifyContent: 'center',
+        alignItems: 'center',
+        paddingHorizontal: 16,
+        paddingVertical: 20,
+    },
+    previewModalBackdrop: {
+        ...StyleSheet.absoluteFillObject,
+    },
+    previewModalContent: {
+        width: '100%',
+        height: '82%',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    previewModalImage: {
+        width: '100%',
+        height: '100%',
+    },
+    previewModalCloseButton: {
+        marginTop: 12,
+        backgroundColor: colors.primaryColor,
+        borderRadius: 10,
+        paddingHorizontal: 18,
+        paddingVertical: 10,
+    },
+    previewModalCloseText: {
+        ...Fonts.medium14,
         color: colors.pureWhite,
     },
 });

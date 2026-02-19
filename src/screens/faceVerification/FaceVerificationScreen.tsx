@@ -36,12 +36,13 @@ const CAPTURE_ANGLES: CaptureAngle[] = [
     { id: 'back_front', title: 'Front Again', instruction: 'Look straight at the camera one more time', yawMin: -10, yawMax: 10, pitchMin: -10, pitchMax: 10 },
 ];
 
-const FaceVerificationScreen = ({ navigation }: any) => {
+const FaceVerificationScreen = ({ navigation, route }: any) => {
     const { t } = useTranslation();
     const { colors } = useTheme();
     const Styles = createStyles(colors);
     const insets = useSafeAreaInsets();
     const { updateUserProfile } = useAuth();
+    const afterVerification = route?.params?.afterVerification ?? null;
 
     const cameraRef = useRef<Camera>(null);
     const [isSaving, setIsSaving] = useState(false);
@@ -281,16 +282,20 @@ const FaceVerificationScreen = ({ navigation }: any) => {
             await updateUserProfile({
                 faceVerified: allCaptured,
             });
-            navigation.reset({
-                index: 0,
-                routes: [{ name: 'BottomTabBar' }],
-            });
+            if (afterVerification?.screen) {
+                navigation.navigate(afterVerification.screen, afterVerification.params ?? {});
+            } else {
+                navigation.reset({
+                    index: 0,
+                    routes: [{ name: 'BottomTabBar' }],
+                });
+            }
         } catch (err: any) {
             Alert.alert(t('Error'), t('Failed to save verification. Please try again.'));
         } finally {
             setIsSaving(false);
         }
-    }, [allCaptured, navigation, t, updateUserProfile]);
+    }, [afterVerification, allCaptured, navigation, t, updateUserProfile]);
 
     const handleCancel = useCallback(() => {
         navigation.goBack();

@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { View, Text, TouchableOpacity, Image, Modal, Alert, ActionSheetIOS, Platform } from 'react-native';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import { View, Text, TouchableOpacity, Image, Modal, Alert, Pressable } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import FastImage from 'react-native-fast-image';
 import Video from 'react-native-video';
@@ -66,6 +66,14 @@ const VideoPlayingScreen = ({ navigation, route }: any) => {
     const [pendingSeek, setPendingSeek] = useState(0);
     const videoRef = useRef<Video>(null);
     const [sliderWidth, setSliderWidth] = useState(0);
+    const [moreMenuVisible, setMoreMenuVisible] = useState(false);
+    const [moreMenuActions, setMoreMenuActions] = useState<Array<{ label: string; onPress: () => void }>>([]);
+    const [reportIssueVisible, setReportIssueVisible] = useState(false);
+    const [reportStep, setReportStep] = useState<'reason' | 'confirm'>('reason');
+    const [selectedReportReason, setSelectedReportReason] = useState('');
+    const [infoPopupVisible, setInfoPopupVisible] = useState(false);
+    const [infoPopupTitle, setInfoPopupTitle] = useState('');
+    const [infoPopupMessage, setInfoPopupMessage] = useState('');
 
     useEffect(() => {
         setVideoTitle(fallbackVideo.title);
@@ -183,9 +191,36 @@ const VideoPlayingScreen = ({ navigation, route }: any) => {
         setShowSubscriptionModal(true);
     };
 
-    const handleRequestIssue = () => {
-        Alert.alert(t('Request sent'), t('We received your issue report.'));
-    };
+    const showInfoPopup = useCallback((title: string, message: string) => {
+        setInfoPopupTitle(title);
+        setInfoPopupMessage(message);
+        setInfoPopupVisible(true);
+    }, []);
+
+    useEffect(() => {
+        if (!infoPopupVisible) return;
+        const timer = setTimeout(() => {
+            setInfoPopupVisible(false);
+        }, 2000);
+        return () => clearTimeout(timer);
+    }, [infoPopupVisible]);
+
+    const reportReasons = useMemo(
+        () => [
+            t('Spam or misleading'),
+            t('Harassment or hate'),
+            t('Violence or unsafe content'),
+            t('Copyright or privacy issue'),
+            t('Other'),
+        ],
+        [t],
+    );
+
+    const openReportIssuePopup = useCallback(() => {
+        setSelectedReportReason('');
+        setReportStep('reason');
+        setReportIssueVisible(true);
+    }, []);
 
     const handleGoToProfile = () => {
         navigation.navigate('BottomTabBar', { screen: 'Profile' });
@@ -209,37 +244,15 @@ const VideoPlayingScreen = ({ navigation, route }: any) => {
 
     const openMoreMenu = useCallback(() => {
         const actions = [
-            {label: t('Report an issue with this video/photo'), onPress: handleRequestIssue},
+            {label: t('Report an issue with this video/photo'), onPress: openReportIssuePopup},
             {label: t('Go to author profile'), onPress: handleGoToProfile},
             {label: t('Go to event'), onPress: handleGoToEvent},
             {label: t('Mark as inappropriate content'), onPress: handleMarkInappropriate},
             {label: t('Request this video removed'), onPress: handleRequestRemoval},
         ];
-
-        if (Platform.OS === 'ios') {
-            ActionSheetIOS.showActionSheetWithOptions(
-                {
-                    options: [...actions.map((item) => item.label), t('Cancel')],
-                    cancelButtonIndex: actions.length,
-                },
-                (buttonIndex) => {
-                    if (buttonIndex < actions.length) {
-                        actions[buttonIndex].onPress();
-                    }
-                },
-            );
-            return;
-        }
-
-        Alert.alert(t('More options'), t('Choose an action'), [
-            {text: actions[0].label, onPress: actions[0].onPress},
-            {text: actions[1].label, onPress: actions[1].onPress},
-            {text: actions[2].label, onPress: actions[2].onPress},
-            {text: actions[3].label, onPress: actions[3].onPress},
-            {text: actions[4].label, onPress: actions[4].onPress},
-            {text: t('Cancel'), style: 'cancel'},
-        ]);
-    }, [handleGoToEvent, handleGoToProfile, handleMarkInappropriate, handleRequestIssue, handleRequestRemoval, t]);
+        setMoreMenuActions(actions);
+        setMoreMenuVisible(true);
+    }, [handleGoToEvent, handleGoToProfile, handleMarkInappropriate, handleRequestRemoval, openReportIssuePopup, t]);
 
     return (
         <View style={Styles.mainContainer}>
@@ -348,6 +361,133 @@ const VideoPlayingScreen = ({ navigation, route }: any) => {
 
             <SizeBox height={insets.bottom > 0 ? insets.bottom : 0} />
 
+            <Modal
+                visible={moreMenuVisible}
+                transparent
+                animationType="fade"
+                onRequestClose={() => setMoreMenuVisible(false)}
+            >
+                <View style={Styles.moreMenuOverlay}>
+                    <Pressable style={Styles.moreMenuBackdrop} onPress={() => setMoreMenuVisible(false)} />
+                    <View style={Styles.moreMenuContainer}>
+                        {moreMenuActions.map((item, index) => (
+                            <TouchableOpacity
+                                key={`${item.label}-${index}`}
+                                style={Styles.moreMenuAction}
+                                activeOpacity={0.85}
+                                onPress={() => {
+                                    setMoreMenuVisible(false);
+                                    setTimeout(() => item.onPress(), 120);
+                                }}
+                            >
+                                <Text style={Styles.moreMenuActionText}>{item.label}</Text>
+                            </TouchableOpacity>
+                        ))}
+                        <TouchableOpacity
+                            style={Styles.moreMenuCancel}
+                            activeOpacity={0.85}
+                            onPress={() => setMoreMenuVisible(false)}
+                        >
+                            <Text style={Styles.moreMenuCancelText}>{t('Cancel')}</Text>
+                        </TouchableOpacity>
+                    </View>
+                </View>
+            </Modal>
+
+            <Modal
+                visible={reportIssueVisible}
+                transparent
+                animationType="fade"
+                onRequestClose={() => {
+                    setReportIssueVisible(false);
+                    setReportStep('reason');
+                    setSelectedReportReason('');
+                }}
+            >
+                <View style={Styles.moreMenuOverlay}>
+                    <Pressable
+                        style={Styles.moreMenuBackdrop}
+                        onPress={() => {
+                            setReportIssueVisible(false);
+                            setReportStep('reason');
+                            setSelectedReportReason('');
+                        }}
+                    />
+                    <View style={Styles.moreMenuContainer}>
+                        <Text style={Styles.moreMenuTitle}>
+                            {reportStep === 'reason'
+                                ? t('Why are you reporting this post?')
+                                : t("Your're about to submit a report")}
+                        </Text>
+                        <View style={Styles.moreMenuDivider} />
+                        {reportStep === 'reason' ? (
+                            <>
+                                {reportReasons.map((reason) => (
+                                    <TouchableOpacity
+                                        key={reason}
+                                        style={Styles.moreMenuAction}
+                                        activeOpacity={0.85}
+                                        onPress={() => {
+                                            setSelectedReportReason(reason);
+                                            setReportStep('confirm');
+                                        }}
+                                    >
+                                        <Text style={Styles.moreMenuActionText}>{reason}</Text>
+                                    </TouchableOpacity>
+                                ))}
+                                <TouchableOpacity
+                                    style={Styles.moreMenuCancel}
+                                    activeOpacity={0.85}
+                                    onPress={() => {
+                                        setReportIssueVisible(false);
+                                        setReportStep('reason');
+                                        setSelectedReportReason('');
+                                    }}
+                                >
+                                    <Text style={Styles.moreMenuCancelText}>{t('Cancel')}</Text>
+                                </TouchableOpacity>
+                            </>
+                        ) : (
+                            <>
+                                <View style={Styles.moreMenuAction}>
+                                    <Text style={Styles.moreMenuActionText}>
+                                        {`${t('Reason')}: ${selectedReportReason}`}
+                                    </Text>
+                                </View>
+                                <TouchableOpacity
+                                    style={[Styles.infoModalSubmitButton, { marginTop: 8 }]}
+                                    activeOpacity={0.85}
+                                    onPress={() => {
+                                        setReportIssueVisible(false);
+                                        setReportStep('reason');
+                                        setSelectedReportReason('');
+                                        setTimeout(() => {
+                                            showInfoPopup(t('Request sent'), t('We received your issue report.'));
+                                        }, 120);
+                                    }}
+                                >
+                                    <Text style={Styles.infoModalSubmitButtonText}>{t('Submit')}</Text>
+                                </TouchableOpacity>
+                            </>
+                        )}
+                    </View>
+                </View>
+            </Modal>
+
+            <Modal
+                visible={infoPopupVisible}
+                transparent
+                animationType="fade"
+                onRequestClose={() => setInfoPopupVisible(false)}
+            >
+                <View style={Styles.moreMenuOverlay}>
+                    <Pressable style={Styles.moreMenuBackdrop} onPress={() => setInfoPopupVisible(false)} />
+                    <View style={Styles.infoModalContainer}>
+                        <Text style={Styles.infoModalTitle}>{infoPopupTitle}</Text>
+                        <Text style={Styles.infoModalText}>{infoPopupMessage}</Text>
+                    </View>
+                </View>
+            </Modal>
 
             {/* Buy Modal */}
             <Modal

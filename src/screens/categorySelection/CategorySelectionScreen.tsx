@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, Alert, ActivityIndicator } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Gallery, Camera, Profile2User, ArrowRight, TickCircle } from 'iconsax-react-nativejs';
+import { Gallery, Profile2User, ArrowRight, TickCircle } from 'iconsax-react-nativejs';
 import { createStyles } from './CategorySelectionScreenStyles';
 import SizeBox from '../../constants/SizeBox';
 import CustomButton from '../../components/customButton/CustomButton';
@@ -24,25 +24,17 @@ const CategorySelectionScreen = ({ navigation }: any) => {
     const Styles = createStyles(colors);
     const insets = useSafeAreaInsets();
     const { updateUserProfile } = useAuth();
-    const [selectedCategory, setSelectedCategory] = useState<'find' | 'sell' | 'manage'>('find');
+    const [selectedCategory, setSelectedCategory] = useState<'find' | 'manage'>('find');
     const [isLoading, setIsLoading] = useState(false);
 
     const categories: CategoryOption[] = [
         {
             id: 'find',
-            title: 'Find my photos/videos',
-            subtitle: 'Athlete / Parent',
-            description: 'Access all your content from events and matches in one place',
+            title: 'Single User',
+            subtitle: 'Individual',
+            description: 'Access all your content from event to matches in one place.',
             icon: <Gallery size={24} color={colors.grayColor} />,
             iconSelected: <Gallery size={24} color={colors.primaryColor} />,
-        },
-        {
-            id: 'sell',
-            title: 'Sell my photos/videos',
-            subtitle: 'Photographer',
-            description: 'Upload, license, and monetize your work',
-            icon: <Camera size={24} color={colors.grayColor} />,
-            iconSelected: <Camera size={24} color={colors.primaryColor} />,
         },
         {
             id: 'manage',
@@ -58,12 +50,13 @@ const CategorySelectionScreen = ({ navigation }: any) => {
         setIsLoading(true);
         try {
             await updateUserProfile({ category: selectedCategory });
-            if (selectedCategory === 'sell') {
-                navigation.navigate('CreatePhotographerProfileScreen');
-            } else if (selectedCategory === 'manage') {
+            if (selectedCategory === 'manage') {
                 navigation.navigate('CreateGroupProfileScreen');
             } else {
-                navigation.navigate('CompleteAthleteDetailsScreen');
+                navigation.reset({
+                    index: 0,
+                    routes: [{ name: 'BottomTabBar' }],
+                });
             }
         } catch (err: any) {
             Alert.alert(t('Error'), t('Failed to save category. Please try again.'));
@@ -105,7 +98,7 @@ const CategorySelectionScreen = ({ navigation }: any) => {
                                     isSelected && Styles.optionCardSelected,
                                 ]}
                                 activeOpacity={0.7}
-                                onPress={() => setSelectedCategory(category.id as 'find' | 'sell' | 'manage')}
+                                onPress={() => setSelectedCategory(category.id as 'find' | 'manage')}
                             >
                                 <View style={Styles.optionContent}>
                                     <View style={Styles.optionHeader}>

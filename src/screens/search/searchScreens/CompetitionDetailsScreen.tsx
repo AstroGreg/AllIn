@@ -258,6 +258,33 @@ const CompetitionDetailsScreen = ({ navigation, route }: any) => {
         }
     }, [apiAccessToken, competitionName, eventId]);
 
+    const startFaceRegistrationGovIdFlow = useCallback(() => {
+        setAiCompareModalVisible(false);
+        const rootNav = navigation.getParent?.()?.getParent?.();
+        if (rootNav) {
+            rootNav.navigate('DocumentUploadScreen', {
+                afterVerification: {
+                    screen: 'BottomTabBar',
+                    params: {
+                        screen: 'Search',
+                        params: {
+                            screen: 'SearchFaceCaptureScreen',
+                            params: {
+                                mode: 'enrolFace',
+                                afterEnroll: {screen: 'AISearchScreen'},
+                            },
+                        },
+                    },
+                },
+            });
+            return;
+        }
+        navigation.navigate('SearchFaceCaptureScreen', {
+            mode: 'enrolFace',
+            afterEnroll: {screen: 'AISearchScreen'},
+        });
+    }, [navigation]);
+
     const runQuickCompare = useCallback(async () => {
         if (!apiAccessToken) {
             setQuickSearchError(t('Missing API token. Please log in again.'));
@@ -331,6 +358,8 @@ const CompetitionDetailsScreen = ({ navigation, route }: any) => {
                         } else if (e.status === 400 && Array.isArray(body?.missing_angles)) {
                             setQuickMissingAngles(body.missing_angles.map(String));
                             errors.push(t('Face: enrollment required.'));
+                            startFaceRegistrationGovIdFlow();
+                            return;
                         } else {
                             errors.push(`${t('Face')}: ${e.message}`);
                         }
@@ -354,7 +383,7 @@ const CompetitionDetailsScreen = ({ navigation, route }: any) => {
         } finally {
             setQuickSearchLoading(false);
         }
-    }, [apiAccessToken, competitionName, navigation, quickChestNumber, quickUseFace, resolveEventId, t]);
+    }, [apiAccessToken, competitionName, navigation, quickChestNumber, quickUseFace, resolveEventId, startFaceRegistrationGovIdFlow, t]);
 
     const handleGrantConsent = useCallback(async () => {
         if (!apiAccessToken) return;

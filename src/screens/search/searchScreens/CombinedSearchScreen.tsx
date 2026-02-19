@@ -36,6 +36,14 @@ interface EventOption {
   date?: string | null;
 }
 
+interface ResumeCombinedSearchPayload {
+  selectedEvents?: Array<Partial<EventOption>>;
+  bib?: string;
+  contextText?: string;
+  includeFace?: boolean;
+  autoRun?: boolean;
+}
+
 const CombinedSearchScreen = ({navigation}: any) => {
     const { t } = useTranslation();
   const insets = useSafeAreaInsets();
@@ -44,11 +52,15 @@ const CombinedSearchScreen = ({navigation}: any) => {
   const {apiAccessToken, userProfile} = useAuth();
   const route = useRoute<any>();
   const origin = route?.params?.origin;
-  const preselectedEventsParam = Array.isArray(route?.params?.preselectedEvents)
-    ? route?.params?.preselectedEvents
-    : [];
+  const preselectedEventsParam = useMemo(
+    () => (Array.isArray(route?.params?.preselectedEvents) ? route?.params?.preselectedEvents : []),
+    [route?.params?.preselectedEvents],
+  );
   const prefillCompetitionName = route?.params?.prefillCompetitionName;
   const autoCompare = Boolean(route?.params?.autoCompare);
+  const resumeCombinedSearch = route?.params?.resumeCombinedSearch as
+    | ResumeCombinedSearchPayload
+    | undefined;
 
   const [bib, setBib] = useState('');
   const [contextText, setContextText] = useState('');
@@ -68,6 +80,17 @@ const CombinedSearchScreen = ({navigation}: any) => {
   const [authMe, setAuthMe] = useState<any | null>(null);
   const [showAutoCompareModal, setShowAutoCompareModal] = useState(false);
   const [pendingAutoRun, setPendingAutoRun] = useState(false);
+
+  const normalizeEventOptions = useCallback((events: any[]): EventOption[] => {
+    return events
+      .map((event: any) => ({
+        id: String(event.id ?? event.event_id ?? ''),
+        name: String(event.name ?? event.event_name ?? event.event_title ?? ''),
+        location: event.location ?? event.event_location ?? null,
+        date: event.date ?? event.event_date ?? null,
+      }))
+      .filter((event: EventOption) => Boolean(event.id && event.name));
+  }, []);
 
   const selectedEventIds = useMemo(() => selectedEvents.map((event) => event.id), [selectedEvents]);
   const hasCompetition = selectedEventIds.length > 0;
@@ -136,14 +159,7 @@ const CombinedSearchScreen = ({navigation}: any) => {
   useEffect(() => {
     if (selectedEvents.length > 0) return;
     if (preselectedEventsParam.length > 0) {
-      const normalized = preselectedEventsParam
-        .map((event: any) => ({
-          id: String(event.id ?? event.event_id ?? ''),
-          name: String(event.name ?? event.event_name ?? event.event_title ?? ''),
-          location: event.location ?? event.event_location ?? null,
-          date: event.date ?? event.event_date ?? null,
-        }))
-        .filter((event: EventOption) => Boolean(event.id && event.name));
+      const normalized = normalizeEventOptions(preselectedEventsParam);
       if (normalized.length > 0) {
         setSelectedEvents(normalized);
       }
@@ -151,7 +167,33 @@ const CombinedSearchScreen = ({navigation}: any) => {
       setCompetitionQuery(String(prefillCompetitionName));
       setShowCompetitionModal(true);
     }
-  }, [prefillCompetitionName, preselectedEventsParam, selectedEvents.length]);
+  }, [normalizeEventOptions, prefillCompetitionName, preselectedEventsParam, selectedEvents.length]);
+
+  useEffect(() => {
+    if (!resumeCombinedSearch) return;
+
+    const restoredEvents = Array.isArray(resumeCombinedSearch.selectedEvents)
+      ? normalizeEventOptions(resumeCombinedSearch.selectedEvents)
+      : [];
+    if (restoredEvents.length > 0) {
+      setSelectedEvents(restoredEvents);
+    }
+
+    if (typeof resumeCombinedSearch.bib === 'string') {
+      setBib(resumeCombinedSearch.bib);
+    }
+    if (typeof resumeCombinedSearch.contextText === 'string') {
+      setContextText(resumeCombinedSearch.contextText);
+    }
+    if (typeof resumeCombinedSearch.includeFace === 'boolean') {
+      setIncludeFace(resumeCombinedSearch.includeFace);
+    }
+    if (resumeCombinedSearch.autoRun) {
+      setPendingAutoRun(true);
+    }
+
+    navigation.setParams({resumeCombinedSearch: undefined});
+  }, [navigation, normalizeEventOptions, resumeCombinedSearch]);
 
   useEffect(() => {
     if (autoCompare) {
@@ -162,10 +204,10 @@ const CombinedSearchScreen = ({navigation}: any) => {
   useEffect(() => {
     if (!pendingAutoRun) return;
     if (!hasCompetition) return;
-    if (!bib.trim() && !includeFace) return;
+    if (!bib.trim() && !contextText.trim() && !includeFace) return;
     setPendingAutoRun(false);
     runCombinedSearch();
-  }, [bib, hasCompetition, includeFace, pendingAutoRun, runCombinedSearch]);
+  }, [bib, contextText, hasCompetition, includeFace, pendingAutoRun, runCombinedSearch]);
 
   const toggleEvent = (option: EventOption) => {
     setSelectedEvents((prev) => {
@@ -192,6 +234,52 @@ const CombinedSearchScreen = ({navigation}: any) => {
       setErrorText('Add your chest number to compare automatically.');
     }
   };
+
+  const startFaceRegistrationGovIdFlow = useCallback(() => {
+    const resumePayload: ResumeCombinedSearchPayload = {
+      selectedEvents,
+      bib,
+      contextText,
+      includeFace,
+      autoRun: true,
+    };
+    const targetParams = {
+      screen: 'Search',
+      params: {
+        screen: 'SearchFaceCaptureScreen',
+        params: {
+          mode: 'enrolFace',
+          afterEnroll: {
+            screen: 'AISearchScreen',
+            params: {
+              ...(origin ? {origin} : {}),
+              resumeCombinedSearch: resumePayload,
+            },
+          },
+        },
+      },
+    };
+    const rootNav = navigation.getParent?.()?.getParent?.();
+    if (rootNav) {
+      rootNav.navigate('DocumentUploadScreen', {
+        afterVerification: {
+          screen: 'BottomTabBar',
+          params: targetParams,
+        },
+      });
+      return;
+    }
+    navigation.navigate('SearchFaceCaptureScreen', {
+      mode: 'enrolFace',
+      afterEnroll: {
+        screen: 'AISearchScreen',
+        params: {
+          ...(origin ? {origin} : {}),
+          resumeCombinedSearch: resumePayload,
+        },
+      },
+    });
+  }, [bib, contextText, includeFace, navigation, origin, selectedEvents]);
 
   const runCombinedSearch = useCallback(async () => {
     if (!apiAccessToken) {
@@ -321,6 +409,8 @@ const CombinedSearchScreen = ({navigation}: any) => {
             } else if (e.status === 400 && Array.isArray(body?.missing_angles)) {
               setMissingAngles(body.missing_angles.map(String));
               errors.push('Face: enrollment required.');
+              startFaceRegistrationGovIdFlow();
+              return;
             } else {
               errors.push(`Face: ${e.message}`);
             }
@@ -354,6 +444,8 @@ const CombinedSearchScreen = ({navigation}: any) => {
     contextText,
     includeFace,
     navigation,
+    startFaceRegistrationGovIdFlow,
+    t,
     selectedEvents,
     selectedEventIds,
   ]);

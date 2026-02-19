@@ -12,12 +12,13 @@ import { useTheme } from '../../context/ThemeContext';
 import { useAuth } from '../../context/AuthContext';
 import { useTranslation } from 'react-i18next'
 
-const DocumentUploadScreen = ({ navigation }: any) => {
+const DocumentUploadScreen = ({ navigation, route }: any) => {
     const { t } = useTranslation();
     const { colors } = useTheme();
     const Styles = createStyles(colors);
     const insets = useSafeAreaInsets();
     const { updateUserProfile } = useAuth();
+    const afterVerification = route?.params?.afterVerification ?? null;
     const [isLoading, setIsLoading] = useState(false);
     const [documentSelected, setDocumentSelected] = useState(false);
     const [selectedFileName, setSelectedFileName] = useState<string>('');
@@ -28,7 +29,9 @@ const DocumentUploadScreen = ({ navigation }: any) => {
             await updateUserProfile({
                 documentUploaded: documentSelected,
             });
-            navigation.navigate('FaceVerificationScreen');
+            navigation.navigate('FaceVerificationScreen', {
+                afterVerification,
+            });
         } catch (err: any) {
             Alert.alert(t('Error'), t('Failed to save. Please try again.'));
         } finally {

@@ -1259,7 +1259,7 @@ export async function uploadMediaBatchWatermark(
   },
 ): Promise<MediaUploadBatchResponse> {
   const form = new FormData();
-  form.append('watermark_text', String(params.watermark_text || 'AllIN'));
+  form.append('watermark_text', String(params.watermark_text || 'SpotMe'));
   for (let i = 0; i < params.files.length; i += 1) {
     const f = params.files[i];
     form.append('files', {

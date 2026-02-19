@@ -1,4 +1,4 @@
-import { View, Text, ScrollView, TouchableOpacity, Modal, Pressable } from 'react-native'
+import { View, Text, ScrollView, TouchableOpacity, Modal, Pressable, Alert } from 'react-native'
 import React, { useState } from 'react'
 import { createStyles } from './MenuStyles'
 import SizeBox from '../../constants/SizeBox'
@@ -9,6 +9,7 @@ import { useTheme } from '../../context/ThemeContext'
 import { ArrowLeft2, Money3, UserOctagon, Eye, Copy, SecurityUser } from 'iconsax-react-nativejs'
 import { useAuth } from '../../context/AuthContext'
 import { useTranslation } from 'react-i18next'
+import AsyncStorage from '@react-native-async-storage/async-storage'
 
 const MenuScreen = ({ navigation }: any) => {
     const insets = useSafeAreaInsets();
@@ -19,6 +20,13 @@ const MenuScreen = ({ navigation }: any) => {
     const [ghostMode, setGhostMode] = useState(true);
     const [showLogoutModal, setShowLogoutModal] = useState(false);
     const { t } = useTranslation();
+
+    const handleClearAuth = async () => {
+        await AsyncStorage.removeItem('@auth_credentials');
+        await AsyncStorage.removeItem('@user_profile');
+        console.log('[MenuScreen] Cleared all auth data');
+        Alert.alert(t('Debug'), t('Auth data cleared. Please restart the app.'));
+    };
 
     return (
         <View style={Styles.mainContainer}>
@@ -178,6 +186,11 @@ const MenuScreen = ({ navigation }: any) => {
                     <Text style={Styles.privacyDescription}>{t('• Existing friends can still see your profile.')}</Text>
                     <Text style={Styles.privacyDescription}>{t('• You can still browse and interact normally.')}</Text>
                 </View>
+
+                <SizeBox height={24} />
+                <TouchableOpacity onPress={handleClearAuth} style={{ padding: 10, alignItems: 'center' }}>
+                    <Text style={{ color: colors.grayColor, fontSize: 12 }}>{t('[Debug] Clear Auth Data')}</Text>
+                </TouchableOpacity>
 
                 <SizeBox height={insets.bottom > 0 ? insets.bottom + 20 : 40} />
             </ScrollView>

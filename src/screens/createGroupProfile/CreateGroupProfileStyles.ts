@@ -17,7 +17,7 @@ export const createStyles = (colors: ThemeColors) => StyleSheet.create({
         width: 44,
         height: 44,
         borderRadius: 22,
-        backgroundColor: '#F5F5F5',
+        backgroundColor: colors.btnBackgroundColor,
         alignItems: 'center',
         justifyContent: 'center',
     },
@@ -51,7 +51,7 @@ export const createStyles = (colors: ThemeColors) => StyleSheet.create({
     },
     subtitle: {
         ...Fonts.regular14,
-        color: '#9B9F9F',
+        color: colors.subTextColor,
         textAlign: 'center',
         marginTop: 8,
     },
@@ -70,9 +70,9 @@ export const createStyles = (colors: ThemeColors) => StyleSheet.create({
     inputContainer: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: '#F7FAFF',
+        backgroundColor: colors.secondaryColor,
         borderWidth: 0.5,
-        borderColor: '#E0ECFE',
+        borderColor: colors.borderColor,
         borderRadius: 10,
         paddingHorizontal: 16,
         height: 54,
@@ -90,7 +90,7 @@ export const createStyles = (colors: ThemeColors) => StyleSheet.create({
         color: colors.mainTextColor,
     },
     placeholderText: {
-        color: '#777777',
+        color: colors.grayColor,
     },
 
     // Add More Athletes Button
@@ -103,14 +103,14 @@ export const createStyles = (colors: ThemeColors) => StyleSheet.create({
         paddingHorizontal: 16,
         height: 38,
         borderWidth: 0.5,
-        borderColor: '#DEDEDE',
+        borderColor: colors.lightGrayColor,
         borderRadius: 6,
         backgroundColor: colors.whiteColor,
         alignSelf: 'flex-start',
     },
     addMoreText: {
         ...Fonts.regular14,
-        color: '#898989',
+        color: colors.subTextColor,
     },
 
     // Continue Button

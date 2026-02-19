@@ -7,7 +7,7 @@ import { createStyles } from './SelectCompetitionStyles'
 import SizeBox from '../../constants/SizeBox'
 import { useTheme } from '../../context/ThemeContext'
 import { useAuth } from '../../context/AuthContext'
-import { ApiError, getMediaViewAll, searchEvents, subscribeToEvent, type MediaViewAllItem, type SubscribedEvent } from '../../services/apiGateway'
+import { ApiError, getMediaViewAll, getSubscribedEvents, searchEvents, subscribeToEvent, type MediaViewAllItem, type SubscribedEvent } from '../../services/apiGateway'
 import { getApiBaseUrl } from '../../constants/RuntimeConfig'
 import { CalendarList } from 'react-native-calendars'
 import { useTranslation } from 'react-i18next'
@@ -46,6 +46,7 @@ const SelectCompetitionScreen = ({ navigation, route }: any) => {
     const [calendarStart, setCalendarStart] = useState<string | null>(null);
     const [calendarEnd, setCalendarEnd] = useState<string | null>(null);
     const [rawEvents, setRawEvents] = useState<SubscribedEvent[]>([]);
+    const [subscribedEventIds, setSubscribedEventIds] = useState<Set<string>>(new Set());
     const [mediaByEvent, setMediaByEvent] = useState<Record<string, { thumbUrl?: string; videoCount: number }>>({});
     const [isLoading, setIsLoading] = useState(false);
     const [errorText, setErrorText] = useState<string | null>(null);
@@ -240,6 +241,31 @@ const SelectCompetitionScreen = ({ navigation, route }: any) => {
         };
     }, [apiAccessToken, normalizeThumb]);
 
+    useEffect(() => {
+        let mounted = true;
+        if (!apiAccessToken) {
+            setSubscribedEventIds(new Set());
+            return () => {};
+        }
+        getSubscribedEvents(apiAccessToken)
+            .then((resp) => {
+                if (!mounted) return;
+                const ids = new Set(
+                    (Array.isArray(resp?.events) ? resp.events : [])
+                        .map((event) => String(event?.event_id || '').trim())
+                        .filter(Boolean),
+                );
+                setSubscribedEventIds(ids);
+            })
+            .catch(() => {
+                if (!mounted) return;
+                setSubscribedEventIds(new Set());
+            });
+        return () => {
+            mounted = false;
+        };
+    }, [apiAccessToken]);
+
     const loadCompetitions = useCallback(async (query: string) => {
         if (!apiAccessToken) {
             setRawEvents([]);
@@ -346,9 +372,13 @@ const SelectCompetitionScreen = ({ navigation, route }: any) => {
     }, [anonymous, navigation]);
 
     const handleUploadToCompetition = useCallback((competition: Competition) => {
+        if (subscribedEventIds.has(String(competition.id))) {
+            continueToCompetition(competition);
+            return;
+        }
         setPendingCompetition(competition);
         setSubscribePromptVisible(true);
-    }, []);
+    }, [continueToCompetition, subscribedEventIds]);
 
     const handleConfirmSubscribe = useCallback(async () => {
         if (!pendingCompetition) return;
@@ -359,6 +389,11 @@ const SelectCompetitionScreen = ({ navigation, route }: any) => {
         setIsSubscribing(true);
         try {
             await subscribeToEvent(apiAccessToken, pendingCompetition.id);
+            setSubscribedEventIds((prev) => {
+                const next = new Set(prev);
+                next.add(String(pendingCompetition.id));
+                return next;
+            });
             setSubscribePromptVisible(false);
             continueToCompetition(pendingCompetition);
         } catch (e: any) {

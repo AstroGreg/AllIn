@@ -1,4 +1,4 @@
-import { View, Text, TouchableOpacity, ScrollView, TextInput } from 'react-native'
+import { View, Text, TouchableOpacity, ScrollView, TextInput, Modal, Pressable } from 'react-native'
 import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { ArrowLeft2, ArrowRight, Ghost } from 'iconsax-react-nativejs'
@@ -23,6 +23,8 @@ function normalizeLocalUri(uri?: string | null) {
     return `file://${path}`;
 }
 
+const DEFAULT_WATERMARK_TEXT = 'SpotMe';
+
 const WatermarkScreen = ({ navigation, route }: any) => {
     const insets = useSafeAreaInsets();
     const { colors } = useTheme();
@@ -33,9 +35,16 @@ const WatermarkScreen = ({ navigation, route }: any) => {
     const anonymous = route?.params?.anonymous;
     const competitionType = route?.params?.competitionType ?? competition?.competitionType;
 
-    const [watermarkText, setWatermarkText] = useState('');
+    const [watermarkText, setWatermarkText] = useState(DEFAULT_WATERMARK_TEXT);
     const [useNoWatermark, setUseNoWatermark] = useState(false);
     const [previewUri, setPreviewUri] = useState<string | null>(null);
+    const [previewModalVisible, setPreviewModalVisible] = useState(false);
+    const watermarkLabel = (watermarkText || DEFAULT_WATERMARK_TEXT).trim();
+    const watermarkRows = useMemo(() => Array.from({ length: 7 }, (_, i) => i), []);
+    const isVideoPreview = useMemo(() => {
+        const uri = String(previewUri || '').toLowerCase();
+        return uri.includes('.mp4') || uri.includes('video');
+    }, [previewUri]);
 
     const competitionId = useMemo(
         () => String(competition?.id || competition?.event_id || competition?.eventId || 'competition'),
@@ -75,7 +84,7 @@ const WatermarkScreen = ({ navigation, route }: any) => {
                     if (!parsed || typeof parsed !== 'object') {
                         if (mounted) {
                             setPreviewUri(null);
-                            setWatermarkText('');
+                            setWatermarkText(DEFAULT_WATERMARK_TEXT);
                             setUseNoWatermark(false);
                         }
                         return;
@@ -85,14 +94,14 @@ const WatermarkScreen = ({ navigation, route }: any) => {
                     if (mounted) {
                         setPreviewUri(normalizeLocalUri(first?.uri ?? null) as any);
                         if (!first) {
-                            setWatermarkText('');
+                            setWatermarkText(DEFAULT_WATERMARK_TEXT);
                             setUseNoWatermark(false);
                         }
                     }
                 } catch {
                     if (mounted) {
                         setPreviewUri(null);
-                        setWatermarkText('');
+                        setWatermarkText(DEFAULT_WATERMARK_TEXT);
                         setUseNoWatermark(false);
                     }
                 }
@@ -111,7 +120,7 @@ const WatermarkScreen = ({ navigation, route }: any) => {
             account,
             anonymous,
             competitionType,
-            watermarkText: useNoWatermark ? '' : watermarkText,
+            watermarkText: useNoWatermark ? '' : (watermarkText.trim() || DEFAULT_WATERMARK_TEXT),
             sessionId,
             autoStart: true,
         });
@@ -169,7 +178,12 @@ const WatermarkScreen = ({ navigation, route }: any) => {
 
                 <View style={Styles.previewCard}>
                     <Text style={Styles.previewLabel}>{t('Preview')}</Text>
-                    <View style={Styles.previewBox}>
+                    <TouchableOpacity
+                        style={Styles.previewBox}
+                        activeOpacity={0.9}
+                        disabled={!previewUri}
+                        onPress={() => setPreviewModalVisible(true)}
+                    >
                         {previewUri ? (
                             String(previewUri).toLowerCase().includes('.mp4') || String(previewUri).toLowerCase().includes('video')
                                 ? (
@@ -189,11 +203,15 @@ const WatermarkScreen = ({ navigation, route }: any) => {
                                 )
                         ) : null}
                         {!useNoWatermark && (
-                            <Text style={Styles.previewText}>
-                                {watermarkText ? watermarkText : t('Your watermark')}
-                            </Text>
+                            <View style={Styles.previewWatermarkOverlay} pointerEvents="none">
+                                {watermarkRows.map((row) => (
+                                    <Text key={`wm-row-${row}`} style={Styles.previewWatermarkRow} numberOfLines={1}>
+                                        {`${row % 2 === 0 ? '' : '   '}${(`${watermarkLabel}   `).repeat(8)}`}
+                                    </Text>
+                                ))}
+                            </View>
                         )}
-                    </View>
+                    </TouchableOpacity>
                 </View>
 
                 <SizeBox height={30} />
@@ -205,6 +223,54 @@ const WatermarkScreen = ({ navigation, route }: any) => {
 
                 <SizeBox height={insets.bottom > 0 ? insets.bottom + 20 : 40} />
             </ScrollView>
+
+            <Modal
+                visible={previewModalVisible}
+                transparent
+                animationType="fade"
+                onRequestClose={() => setPreviewModalVisible(false)}
+            >
+                <View style={Styles.previewModalOverlay}>
+                    <Pressable style={Styles.previewModalBackdrop} onPress={() => setPreviewModalVisible(false)} />
+                    <View style={Styles.previewModalContent}>
+                        {previewUri ? (
+                            isVideoPreview ? (
+                                <Video
+                                    source={{ uri: normalizeLocalUri(previewUri) as any }}
+                                    style={Styles.previewModalImage}
+                                    resizeMode="contain"
+                                    paused
+                                    muted
+                                    repeat={false}
+                                    controls={false}
+                                />
+                            ) : (
+                                <FastImage
+                                    source={{ uri: normalizeLocalUri(previewUri) as any }}
+                                    style={Styles.previewModalImage}
+                                    resizeMode="contain"
+                                />
+                            )
+                        ) : null}
+                        {!useNoWatermark && (
+                            <View style={Styles.previewWatermarkOverlay} pointerEvents="none">
+                                {watermarkRows.map((row) => (
+                                    <Text key={`wm-modal-row-${row}`} style={Styles.previewWatermarkRow} numberOfLines={1}>
+                                        {`${row % 2 === 0 ? '' : '   '}${(`${watermarkLabel}   `).repeat(8)}`}
+                                    </Text>
+                                ))}
+                            </View>
+                        )}
+                    </View>
+                    <TouchableOpacity
+                        style={Styles.previewModalCloseButton}
+                        activeOpacity={0.85}
+                        onPress={() => setPreviewModalVisible(false)}
+                    >
+                        <Text style={Styles.previewModalCloseText}>{t('Close')}</Text>
+                    </TouchableOpacity>
+                </View>
+            </Modal>
         </View>
     );
 };

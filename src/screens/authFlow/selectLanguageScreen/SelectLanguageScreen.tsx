@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { View, Text, TouchableOpacity, Image, ScrollView } from 'react-native';
 import { createStyles } from './SelectLanguageScreenStyles';
 import SizeBox from '../../../constants/SizeBox';
@@ -6,6 +6,8 @@ import CustomButton from '../../../components/customButton/CustomButton';
 import Images from '../../../constants/Images';
 import { useTheme } from '../../../context/ThemeContext';
 import { useTranslation } from 'react-i18next'
+import i18n from '../../../i18n';
+import { getLanguageOptions, setAppLanguage } from '../../../i18n';
 
 interface LanguageOption {
     id: string;
@@ -13,20 +15,36 @@ interface LanguageOption {
     flag: any;
 }
 
-const languages: LanguageOption[] = [
-    { id: 'en', name: 'English', flag: Images.englishFlag },
-    { id: 'nl', name: 'Dutch', flag: Images.dutchFlag },
-    { id: 'fr', name: 'French', flag: Images.franceFlag },
-    { id: 'de', name: 'German', flag: Images.germanyFlag },
-    { id: 'es', name: 'Spanish', flag: Images.spanishFlag },
-    { id: 'it', name: 'Italian', flag: Images.italianFlag },
-];
+const languageFlags: Record<string, any> = {
+    en: Images.englishFlag,
+    nl: Images.dutchFlag,
+    fr: Images.franceFlag,
+    de: Images.germanyFlag,
+    es: Images.spanishFlag,
+    it: Images.italianFlag,
+    pt: Images.spanishFlag,
+};
 
 const SelectLanguageScreen = ({ navigation }: any) => {
     const { t } = useTranslation();
     const { colors } = useTheme();
     const Styles = createStyles(colors);
-    const [selectedLanguage, setSelectedLanguage] = useState('en');
+    const [selectedLanguage, setSelectedLanguage] = useState(i18n.language ?? 'en');
+
+    const languages: LanguageOption[] = useMemo(
+        () =>
+            getLanguageOptions().map((lang) => ({
+                id: lang.code,
+                name: lang.label,
+                flag: languageFlags[lang.code] ?? Images.englishFlag,
+            })),
+        [],
+    );
+
+    const handleSelectLanguage = async (languageId: string) => {
+        setSelectedLanguage(languageId);
+        await setAppLanguage(languageId);
+    };
 
     const handleContinue = () => {
         navigation.navigate('LoginScreen');
@@ -45,10 +63,10 @@ const SelectLanguageScreen = ({ navigation }: any) => {
                 contentContainerStyle={Styles.contentContainer}
             >
                 <View style={Styles.headerContainer}>
-                    <Text style={Styles.headingText}>{t('Select Your Language')}</Text>
+                    <Text style={Styles.headingText}>{t('chooseLanguage')}</Text>
                     <SizeBox height={10} />
                     <Text style={Styles.subHeadingText}>
-                        Please choose your preferred language{'\n'}to continue.
+                        {t('Please choose your preferred language to continue.')}
                     </Text>
                 </View>
 
@@ -60,7 +78,9 @@ const SelectLanguageScreen = ({ navigation }: any) => {
                             <TouchableOpacity
                                 style={Styles.languageItem}
                                 activeOpacity={0.7}
-                                onPress={() => setSelectedLanguage(language.id)}
+                                onPress={() => {
+                                    handleSelectLanguage(language.id);
+                                }}
                             >
                                 <View style={Styles.languageInfo}>
                                     <View style={Styles.flagContainer}>
@@ -86,7 +106,7 @@ const SelectLanguageScreen = ({ navigation }: any) => {
 
                 <SizeBox height={30} />
 
-                <CustomButton title={t('Continue')} onPress={handleContinue} />
+                <CustomButton title={t('continue')} onPress={handleContinue} />
             </ScrollView>
         </View>
     );

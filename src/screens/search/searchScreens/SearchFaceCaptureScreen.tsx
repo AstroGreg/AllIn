@@ -64,7 +64,7 @@ const ENROLL_DISTANCE_STEPS = [
     {
         id: 'mid',
         label: 'Mid range',
-        instruction: 'Hold the phone at arm\'s length.',
+        instruction: 'Hold the phone about 30 cm (12 in) from your face.',
     },
     {
         id: 'far',
@@ -72,6 +72,46 @@ const ENROLL_DISTANCE_STEPS = [
         instruction: 'Step back slightly so your full head and shoulders are visible.',
     },
 ];
+
+const normalizeAngleId = (value: string | null | undefined): FaceAngleClass | null => {
+    const s = String(value ?? '').trim().toLowerCase();
+    switch (s) {
+        case 'frontal':
+        case 'front':
+            return 'frontal';
+        case 'left_profile':
+        case 'left':
+            return 'left_profile';
+        case 'right_profile':
+        case 'right':
+            return 'right_profile';
+        case 'upward':
+        case 'up':
+            return 'upward';
+        case 'downward':
+        case 'down':
+            return 'downward';
+        default:
+            return null;
+    }
+};
+
+const angleLabel = (angle: FaceAngleClass | null): string => {
+    switch (angle) {
+        case 'frontal':
+            return 'Front';
+        case 'left_profile':
+            return 'Left Profile';
+        case 'right_profile':
+            return 'Right Profile';
+        case 'upward':
+            return 'Upward';
+        case 'downward':
+            return 'Downward';
+        default:
+            return 'Unknown';
+    }
+};
 
 const SearchFaceCaptureScreen = ({ navigation, route }: any) => {
     const { t } = useTranslation();
@@ -118,7 +158,7 @@ const SearchFaceCaptureScreen = ({ navigation, route }: any) => {
     const [isApproving, setIsApproving] = useState(false);
     const [pendingPhotoUri, setPendingPhotoUri] = useState<string | null>(null);
     const [pendingAngleId, setPendingAngleId] = useState<string | null>(null);
-    const [faceSizeRatio, setFaceSizeRatio] = useState<number>(0);
+    const [, setFaceSizeRatio] = useState<number>(0);
     const [distanceMatched, setDistanceMatched] = useState(false);
     const [angleVerification, setAngleVerification] = useState<Record<string, AngleVerifyState>>(() => {
         if (mode !== 'enrolFace') return {};
@@ -230,7 +270,20 @@ const SearchFaceCaptureScreen = ({ navigation, route }: any) => {
     const checkAngleMatch = useCallback((yaw: number, pitch: number, angleIndex: number) => {
         const angle = captureAngles[angleIndex];
         if (!angle) return false;
-        const yawMatch = yaw >= angle.yawMin && yaw <= angle.yawMax;
+
+        const isProfileAngle =
+            angle.id === 'left' ||
+            angle.id === 'right' ||
+            angle.id === 'left_profile' ||
+            angle.id === 'right_profile';
+
+        // On front camera previews, yaw sign may appear mirrored across devices.
+        // Use absolute yaw for profile pre-gating; backend verify still enforces exact angle.
+        const yawMatch = isProfileAngle
+            ? Math.abs(yaw) >= Math.min(Math.abs(angle.yawMin), Math.abs(angle.yawMax)) &&
+              Math.abs(yaw) <= Math.max(Math.abs(angle.yawMin), Math.abs(angle.yawMax))
+            : yaw >= angle.yawMin && yaw <= angle.yawMax;
+
         const pitchMatch = pitch >= angle.pitchMin && pitch <= angle.pitchMax;
         return yawMatch && pitchMatch;
     }, [captureAngles]);
@@ -378,7 +431,7 @@ const SearchFaceCaptureScreen = ({ navigation, route }: any) => {
                 setIsCapturing(false);
             }
         }
-    }, [apiAccessToken, captureAngles, livenessChallengeId, mode, useLiveness, t]);
+    }, [apiAccessToken, captureAngles, capturedImages, livenessChallengeId, mode, templatesPerAngle, useLiveness, t]);
 
     const clearCountdown = useCallback(() => {
         if (countdownRef.current) {
@@ -508,6 +561,35 @@ const SearchFaceCaptureScreen = ({ navigation, route }: any) => {
                     const reason = String(verified?.reason ?? '');
                     if (reason === 'no_face_detected_or_too_small') {
                         Alert.alert(t('No face detected'), t('Move closer and retake this photo.'));
+                    } else if (reason === 'angle_mismatch') {
+                        const expected = normalizeAngleId(String(verified?.expected_angle ?? pendingAngleId ?? ''));
+                        const detected = normalizeAngleId(
+                            verified?.detected_angle != null ? String(verified.detected_angle) : null,
+                        );
+                        const oppositeProfileMismatch =
+                            (expected === 'left_profile' && detected === 'right_profile') ||
+                            (expected === 'right_profile' && detected === 'left_profile');
+
+                        if (oppositeProfileMismatch) {
+                            Alert.alert(
+                                t('Angle check failed'),
+                                t(
+                                    'Detected {{detected}} instead of {{expected}}. Front camera can feel mirrored: turn to the opposite side and retake.',
+                                    {
+                                        expected: angleLabel(expected),
+                                        detected: angleLabel(detected),
+                                    },
+                                ),
+                            );
+                        } else {
+                            Alert.alert(
+                                t('Angle check failed'),
+                                t('Expected {{expected}}, detected {{detected}}. Please retake this photo.', {
+                                    expected: angleLabel(expected),
+                                    detected: angleLabel(detected),
+                                }),
+                            );
+                        }
                     } else {
                         Alert.alert(t('Angle check failed'), t('Please retake this photo.'));
                     }

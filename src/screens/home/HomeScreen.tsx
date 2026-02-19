@@ -131,6 +131,9 @@ const HomeScreen = ({ navigation }: any) => {
     const [feedMenuVisible, setFeedMenuVisible] = useState(false);
     const [feedMenuTitle, setFeedMenuTitle] = useState('');
     const [feedMenuActions, setFeedMenuActions] = useState<Array<{ label: string; onPress: () => void }>>([]);
+    const [reportIssueVisible, setReportIssueVisible] = useState(false);
+    const [reportStep, setReportStep] = useState<'reason' | 'confirm'>('reason');
+    const [selectedReportReason, setSelectedReportReason] = useState('');
     const [infoPopupVisible, setInfoPopupVisible] = useState(false);
     const [infoPopupTitle, setInfoPopupTitle] = useState('');
     const [infoPopupMessage, setInfoPopupMessage] = useState('');
@@ -154,6 +157,31 @@ const HomeScreen = ({ navigation }: any) => {
         setInfoPopupTitle(title);
         setInfoPopupMessage(message);
         setInfoPopupVisible(true);
+    }, []);
+
+    useEffect(() => {
+        if (!infoPopupVisible) return;
+        const timer = setTimeout(() => {
+            setInfoPopupVisible(false);
+        }, 2000);
+        return () => clearTimeout(timer);
+    }, [infoPopupVisible]);
+
+    const reportReasons = useMemo(
+        () => [
+            t('Spam or misleading'),
+            t('Harassment or hate'),
+            t('Violence or unsafe content'),
+            t('Copyright or privacy issue'),
+            t('Other'),
+        ],
+        [t],
+    );
+
+    const openReportIssuePopup = useCallback(() => {
+        setSelectedReportReason('');
+        setReportStep('reason');
+        setReportIssueVisible(true);
     }, []);
 
     const performLoadOverview = useCallback(async (force = false) => {
@@ -650,7 +678,7 @@ const HomeScreen = ({ navigation }: any) => {
                 { label: t('Share to Instagram Story'), onPress: () => handleShareMedia(safeMedia) },
                 {
                     label: t('Report an issue with this video/photo'),
-                    onPress: () => showInfoPopup(t('Request sent'), t('We received your issue report.')),
+                    onPress: openReportIssuePopup,
                 },
                 {
                     label: t('Go to author profile'),
@@ -693,7 +721,7 @@ const HomeScreen = ({ navigation }: any) => {
             setFeedMenuActions(actions);
             setFeedMenuVisible(true);
         },
-        [eventNameById, getMediaThumb, handleDownloadMedia, handleShareMedia, navigation, pickPlayableVideoUrl, showInfoPopup, t],
+        [eventNameById, getMediaThumb, handleDownloadMedia, handleShareMedia, navigation, openReportIssuePopup, pickPlayableVideoUrl, showInfoPopup, t],
     );
 
     const pickPlayableVideoUrl = useCallback((media?: HomeOverviewMedia | MediaViewAllItem | null) => {
@@ -1722,13 +1750,85 @@ const HomeScreen = ({ navigation }: any) => {
                     <View style={Styles.feedInfoModalContainer}>
                         <Text style={Styles.feedInfoModalTitle}>{infoPopupTitle}</Text>
                         <Text style={Styles.feedInfoModalText}>{infoPopupMessage}</Text>
-                        <TouchableOpacity
-                            style={Styles.feedInfoModalButton}
-                            activeOpacity={0.85}
-                            onPress={() => setInfoPopupVisible(false)}
-                        >
-                            <Text style={Styles.feedInfoModalButtonText}>{t('OK')}</Text>
-                        </TouchableOpacity>
+                    </View>
+                </View>
+            </Modal>
+            <Modal
+                visible={reportIssueVisible}
+                transparent
+                animationType="fade"
+                onRequestClose={() => {
+                    setReportIssueVisible(false);
+                    setReportStep('reason');
+                    setSelectedReportReason('');
+                }}
+            >
+                <View style={Styles.feedMenuOverlay}>
+                    <Pressable
+                        style={Styles.feedMenuBackdrop}
+                        onPress={() => {
+                            setReportIssueVisible(false);
+                            setReportStep('reason');
+                            setSelectedReportReason('');
+                        }}
+                    />
+                    <View style={Styles.feedMenuContainer}>
+                        <Text style={Styles.feedMenuTitle}>
+                            {reportStep === 'reason'
+                                ? t('Why are you reporting this post?')
+                                : t("Your're about to submit a report")}
+                        </Text>
+                        <View style={Styles.feedMenuDivider} />
+                        {reportStep === 'reason' ? (
+                            <>
+                                {reportReasons.map((reason) => (
+                                    <TouchableOpacity
+                                        key={reason}
+                                        style={Styles.feedMenuAction}
+                                        activeOpacity={0.85}
+                                        onPress={() => {
+                                            setSelectedReportReason(reason);
+                                            setReportStep('confirm');
+                                        }}
+                                    >
+                                        <Text style={Styles.feedMenuActionText}>{reason}</Text>
+                                    </TouchableOpacity>
+                                ))}
+                                <TouchableOpacity
+                                    style={Styles.feedMenuCancel}
+                                    activeOpacity={0.85}
+                                    onPress={() => {
+                                        setReportIssueVisible(false);
+                                        setReportStep('reason');
+                                        setSelectedReportReason('');
+                                    }}
+                                >
+                                    <Text style={Styles.feedMenuCancelText}>{t('Cancel')}</Text>
+                                </TouchableOpacity>
+                            </>
+                        ) : (
+                            <>
+                                <View style={Styles.feedMenuAction}>
+                                    <Text style={Styles.feedMenuActionText}>
+                                        {`${t('Reason')}: ${selectedReportReason}`}
+                                    </Text>
+                                </View>
+                                <TouchableOpacity
+                                    style={[Styles.feedInfoModalButton, { alignSelf: 'stretch', alignItems: 'center', marginTop: 8 }]}
+                                    activeOpacity={0.85}
+                                    onPress={() => {
+                                        setReportIssueVisible(false);
+                                        setReportStep('reason');
+                                        setSelectedReportReason('');
+                                        setTimeout(() => {
+                                            showInfoPopup(t('Request sent'), t('We received your issue report.'));
+                                        }, 120);
+                                    }}
+                                >
+                                    <Text style={Styles.feedInfoModalButtonText}>{t('Submit')}</Text>
+                                </TouchableOpacity>
+                            </>
+                        )}
                     </View>
                 </View>
             </Modal>

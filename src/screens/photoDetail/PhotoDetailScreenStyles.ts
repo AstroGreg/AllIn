@@ -277,6 +277,16 @@ export const createStyles = (colors: ThemeColors) => StyleSheet.create({
         borderColor: colors.lightGrayColor,
         padding: 14,
     },
+    moreMenuTitle: {
+        ...Fonts.medium16,
+        color: colors.mainTextColor,
+        marginBottom: 8,
+    },
+    moreMenuDivider: {
+        height: 1,
+        backgroundColor: colors.lightGrayColor,
+        marginBottom: 8,
+    },
     moreMenuAction: {
         backgroundColor: colors.secondaryColor,
         borderRadius: 10,
@@ -301,6 +311,36 @@ export const createStyles = (colors: ThemeColors) => StyleSheet.create({
     moreMenuCancelText: {
         ...Fonts.medium14,
         color: colors.grayColor,
+    },
+    infoModalContainer: {
+        width: '100%',
+        maxWidth: 420,
+        backgroundColor: colors.modalBackground,
+        borderRadius: 16,
+        borderWidth: 0.5,
+        borderColor: colors.lightGrayColor,
+        padding: 16,
+        gap: 10,
+    },
+    infoModalTitle: {
+        ...Fonts.medium16,
+        color: colors.mainTextColor,
+    },
+    infoModalText: {
+        ...Fonts.regular14,
+        color: colors.subTextColor,
+    },
+    infoModalSubmitButton: {
+        alignSelf: 'stretch',
+        alignItems: 'center',
+        backgroundColor: colors.primaryColor,
+        borderRadius: 10,
+        paddingHorizontal: 16,
+        paddingVertical: 12,
+    },
+    infoModalSubmitButtonText: {
+        ...Fonts.medium14,
+        color: colors.pureWhite,
     },
 });
 
