@@ -1,5 +1,5 @@
 import { FlatList, View, Text } from 'react-native'
-import React from 'react'
+import React, { useCallback } from 'react'
 import { createStyles } from './ParticipantStyles';
 import SizeBox from '../../constants/SizeBox';
 import CustomHeader from '../../components/customHeader/CustomHeader';
@@ -13,6 +13,15 @@ const ParticipantScreen = ({ navigation }: any) => {
     const { colors } = useTheme();
     const { t } = useTranslation();
     const styles = createStyles(colors);
+
+    const openProfileFromId = useCallback((profileId?: string | null) => {
+        const safeProfileId = String(profileId || '').trim();
+        if (!safeProfileId) {
+            navigation.navigate('BottomTabBar', { screen: 'Profile' });
+            return;
+        }
+        navigation.navigate('ViewUserProfileScreen', { profileId: safeProfileId });
+    }, [navigation]);
 
     const headerComponent = () => {
         return (
@@ -36,7 +45,7 @@ const ParticipantScreen = ({ navigation }: any) => {
 
             <FlatList
                 data={['', '', '', '', '']}
-                renderItem={() => <ParticipantContainer onPress={() => navigation.navigate('UserProfileScreen')} />}
+                renderItem={() => <ParticipantContainer onPress={() => openProfileFromId()} />}
                 keyExtractor={(item, index) => index.toString()}
                 style={{ paddingHorizontal: 20, }}
                 ListHeaderComponent={headerComponent}

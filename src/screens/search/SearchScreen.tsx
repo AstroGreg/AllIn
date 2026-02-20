@@ -11,7 +11,7 @@ import FastImage from 'react-native-fast-image'
 import { SearchNormal1, Calendar, Location, CloseCircle, Clock, ArrowDown2, Camera } from 'iconsax-react-nativejs'
 import { useTranslation } from 'react-i18next'
 import { useAuth } from '../../context/AuthContext'
-import { ApiError, searchEvents } from '../../services/apiGateway'
+import { ApiError, getProfileSummary, searchEvents, searchGroups } from '../../services/apiGateway'
  
 
 const FILTERS = ['Competition', 'Person', 'Group', 'Location'] as const
@@ -40,12 +40,12 @@ interface PersonResult {
 }
 
 interface GroupResult {
-    id: number;
+    id: string;
+    group_id: string;
     name: string;
     activity: string;
     location: string;
     images: string[];
-    events?: string[];
 }
 
 const SearchScreen = ({ navigation }: any) => {
@@ -55,6 +55,7 @@ const SearchScreen = ({ navigation }: any) => {
     const { apiAccessToken } = useAuth();
     const { width: windowWidth } = useWindowDimensions();
     const Styles = createStyles(colors);
+    const [ownProfileId, setOwnProfileId] = useState<string | null>(null);
 
     const [activeFilter, setActiveFilter] = useState<FilterKey>('Competition');
     const [filterValues, setFilterValues] = useState<Record<FilterKey, string>>({
@@ -73,6 +74,8 @@ const SearchScreen = ({ navigation }: any) => {
     const [calendarEnd, setCalendarEnd] = useState<string | null>(null);
     const [eventResults, setEventResults] = useState<EventResult[]>([]);
     const [eventsError, setEventsError] = useState<string | null>(null);
+    const [groupResults, setGroupResults] = useState<GroupResult[]>([]);
+    const [groupsError, setGroupsError] = useState<string | null>(null);
  
     const competitionTypeFilters = useMemo(
         () => ([
@@ -132,41 +135,55 @@ const SearchScreen = ({ navigation }: any) => {
         };
     }, [apiAccessToken, formatEventDate, resolveCompetitionType, t]);
 
-    const peopleResults: PersonResult[] = [
-        { id: 1, name: t('James Ray'), role: 'Athlete', activity: t('Marathon'), location: t('Dhaka'), isFollowing: false, events: [t('Brussels City Run 2026')] },
-        { id: 2, name: t('Sofia Klein'), role: 'Athlete', activity: t('800m'), location: t('Berlin'), isFollowing: false, events: [t('IFAM 2024')] },
-        { id: 3, name: t('Liam Carter'), role: 'Photographer', activity: t('Sports Events'), location: t('Brussels'), events: [t('IFAM 2024'), t('BK Studenten 23')] },
-        { id: 4, name: t('Emma Novak'), role: 'Photographer', activity: t('Track Events'), location: t('Gent'), events: [t('BK Studenten 23')] },
-        { id: 5, name: t('Greg Reynders'), role: 'Athlete', activity: t('1500m'), location: t('Hasselt'), events: [t('IFAM 2024'), t('BK Studenten 23')] },
-    ];
+    useEffect(() => {
+        let mounted = true;
+        if (!apiAccessToken) {
+            setOwnProfileId(null);
+            return () => {};
+        }
+        getProfileSummary(apiAccessToken)
+            .then((resp) => {
+                if (!mounted) return;
+                const id = resp?.profile_id ? String(resp.profile_id) : null;
+                setOwnProfileId(id);
+            })
+            .catch(() => {
+                if (!mounted) return;
+                setOwnProfileId(null);
+            });
+        return () => {
+            mounted = false;
+        };
+    }, [apiAccessToken]);
 
-    const groupResults: GroupResult[] = [
-        {
-            id: 1,
-            name: t('Olympic Track Club'),
-            activity: t('Track & Field'),
-            location: t('Brussels'),
-            events: [t('IFAM 2024'), t('BK Studenten 23')],
-            images: [
-                'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100',
-                'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=100',
-                'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=100',
-                'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100',
-            ]
-        },
-        {
-            id: 2,
-            name: t('Marathon Pacers'),
-            activity: t('Road Running'),
-            location: t('Gent'),
-            events: [t('Brussels City Run 2026')],
-            images: [
-                'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=100',
-                'https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?w=100',
-                'https://images.unsplash.com/photo-1504257432389-52343af06ae3?w=100',
-                'https://images.unsplash.com/photo-1463453091185-61582044d556?w=100',
-            ]
-        },
+    const openProfileFromSearch = useCallback((profileIdLike?: string | number | null) => {
+        const safeProfileId = String(profileIdLike ?? '').trim();
+        const own = String(ownProfileId || '').trim();
+        if (!safeProfileId) {
+            return;
+        }
+        if (own && own === safeProfileId) {
+            navigation.navigate('BottomTabBar', { screen: 'Profile' });
+            return;
+        }
+        navigation.navigate('ViewUserProfileScreen', { profileId: safeProfileId });
+    }, [navigation, ownProfileId]);
+
+    const openGroupFromSearch = useCallback((groupIdLike?: string | number | null) => {
+        const safeGroupId = String(groupIdLike ?? '').trim();
+        if (safeGroupId) {
+            navigation.navigate('GroupProfileScreen', { groupId: safeGroupId });
+            return;
+        }
+        navigation.navigate('GroupProfileScreen');
+    }, [navigation]);
+
+    const peopleResults: PersonResult[] = [
+        { id: 1, profile_id: '9c76f2d3-2e0f-46c3-b2f5-7c8c4c0d8a01', name: t('James Ray'), role: 'Athlete', activity: t('Marathon'), location: t('Dhaka'), isFollowing: false, events: [t('Brussels City Run 2026')] },
+        { id: 2, profile_id: 'c8cba4c8-bd41-4dc5-99c3-3b1a0a7c5c02', name: t('Sofia Klein'), role: 'Athlete', activity: t('800m'), location: t('Berlin'), isFollowing: false, events: [t('IFAM 2024')] },
+        { id: 3, profile_id: '4bdc3f1e-3a40-4a7f-8c68-a5f9c8db7f07', name: t('Liam Carter'), role: 'Photographer', activity: t('Sports Events'), location: t('Brussels'), events: [t('IFAM 2024'), t('BK Studenten 23')] },
+        { id: 4, profile_id: '7e3e6f6d-6d9e-4c1b-8bdb-05aefcbd0a04', name: t('Emma Novak'), role: 'Photographer', activity: t('Track Events'), location: t('Gent'), events: [t('BK Studenten 23')] },
+        { id: 5, profile_id: '2c7c74c8-3e14-4c8d-9bb8-07d4d2f06a03', name: t('Greg Reynders'), role: 'Athlete', activity: t('1500m'), location: t('Hasselt'), events: [t('IFAM 2024'), t('BK Studenten 23')] },
     ];
 
     const competitionQuery = filterValues.Competition.trim().toLowerCase();
@@ -185,6 +202,49 @@ const SearchScreen = ({ navigation }: any) => {
 
     const shouldShowPeople = personQuery.length > 0 || locationQuery.length > 0;
     const shouldShowGroups = groupQuery.length > 0 || locationQuery.length > 0;
+
+    useEffect(() => {
+        let mounted = true;
+        if (!apiAccessToken || !shouldShowGroups) {
+            setGroupResults([]);
+            setGroupsError(null);
+            return () => {};
+        }
+
+        setGroupsError(null);
+        const query = filterValues.Group.trim();
+        searchGroups(apiAccessToken, { q: query || '', limit: 100, offset: 0 })
+            .then((res) => {
+                if (!mounted) return;
+                const rows = Array.isArray(res?.groups) ? res.groups : [];
+                const placeholderImages = [
+                    'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100',
+                    'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=100',
+                    'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=100',
+                    'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100',
+                ];
+                setGroupResults(
+                    rows.map((group) => ({
+                        id: String(group.group_id),
+                        group_id: String(group.group_id),
+                        name: String(group.name || t('Group')),
+                        activity: `${Number(group.member_count ?? 0)} ${t('Members')}`,
+                        location: String(group.description || ''),
+                        images: placeholderImages,
+                    })),
+                );
+            })
+            .catch((e: unknown) => {
+                if (!mounted) return;
+                const msg = e instanceof ApiError ? e.message : String((e as any)?.message ?? e);
+                setGroupsError(msg);
+                setGroupResults([]);
+            });
+
+        return () => {
+            mounted = false;
+        };
+    }, [apiAccessToken, filterValues.Group, shouldShowGroups, t]);
 
     const parseEventDate = (value: string) => {
         const [day, month, year] = value.split('/').map(Number);
@@ -262,30 +322,17 @@ const SearchScreen = ({ navigation }: any) => {
 
     const filteredGroups = useMemo(() => {
         if (!shouldShowGroups) return [];
-        const competitionFilter = groupQuery.length > 0 ? competitionQuery : '';
-        const eventFilteredNames = new Set(filteredEvents.map((event) => event.name.toLowerCase()));
-        const shouldApplyEventFilters = Boolean(timeRange.start || timeRange.end || competitionTypeFilter !== 'all');
         return groupResults.filter((group) => {
-            const hasEventMatch = matchAny(group.events, competitionFilter);
-            const withinEventFilters = !shouldApplyEventFilters
-                ? true
-                : (group.events ?? []).some((eventName) => eventFilteredNames.has(eventName.toLowerCase()));
             return (
                 matchValue(group.name, groupQuery) &&
-                matchValue(group.location, locationQuery) &&
-                hasEventMatch &&
-                withinEventFilters
+                matchValue(`${group.location} ${group.activity}`, locationQuery)
             );
         });
     }, [
-        competitionQuery,
-        competitionTypeFilter,
-        filteredEvents,
         groupQuery,
+        groupResults,
         locationQuery,
         shouldShowGroups,
-        timeRange.end,
-        timeRange.start,
     ]);
 
     const totalCount = useMemo(() => (
@@ -356,7 +403,7 @@ const SearchScreen = ({ navigation }: any) => {
         <TouchableOpacity
             key={person.id}
             style={Styles.userCard}
-            onPress={() => navigation.navigate('UserProfileScreen', { profileId: person.profile_id ?? String(person.id) })}
+            onPress={() => openProfileFromSearch(person.profile_id ?? null)}
         >
             <View style={Styles.userCardContent}>
                 <View style={Styles.userHeader}>
@@ -395,7 +442,7 @@ const SearchScreen = ({ navigation }: any) => {
                         <SizeBox height={10} />
                         <TouchableOpacity
                             style={Styles.followBtn}
-                            onPress={() => navigation.navigate('UserProfileScreen', { profileId: person.profile_id ?? String(person.id) })}
+                            onPress={() => openProfileFromSearch(person.profile_id ?? null)}
                         >
                             <Text style={Styles.followBtnText}>{t('Follow')}</Text>
                         </TouchableOpacity>
@@ -409,7 +456,7 @@ const SearchScreen = ({ navigation }: any) => {
         <TouchableOpacity
             key={group.id}
             style={Styles.userCard}
-            onPress={() => navigation.navigate('GroupProfileScreen')}
+            onPress={() => openGroupFromSearch(group.group_id)}
         >
             <View style={Styles.userCardContent}>
                 <View style={Styles.userHeader}>
@@ -690,7 +737,13 @@ const SearchScreen = ({ navigation }: any) => {
                             <>
                                 {eventsError ? (
                                     <>
-                                        <Text style={Styles.emptyStateText}>{eventsError}</Text>
+                                        <Text style={Styles.noResultsText}>{eventsError}</Text>
+                                        <SizeBox height={10} />
+                                    </>
+                                ) : null}
+                                {groupsError ? (
+                                    <>
+                                        <Text style={Styles.noResultsText}>{groupsError}</Text>
                                         <SizeBox height={10} />
                                     </>
                                 ) : null}

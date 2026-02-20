@@ -125,6 +125,16 @@ export const createStyles = (colors: ThemeColors) => StyleSheet.create({
         zIndex: 10,
         elevation: 6,
     },
+    profileIdentityBlock: {
+        marginTop: 14,
+        alignItems: 'center',
+    },
+    profileIdentityRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        width: '100%',
+    },
     nameContainer: {
         flexDirection: 'row',
         alignItems: 'center',
@@ -134,10 +144,37 @@ export const createStyles = (colors: ThemeColors) => StyleSheet.create({
         ...Fonts.medium14,
         color: colors.mainTextColor,
     },
-    userHandle: {
-        ...Fonts.regular12,
+    userHandleInline: {
+        ...Fonts.medium12,
         color: colors.subTextColor,
-        marginTop: 6,
+        letterSpacing: 0.2,
+    },
+    profileIdentityHandleWrap: {
+        flex: 1,
+        alignItems: 'flex-start',
+        justifyContent: 'center',
+        marginRight: 8,
+    },
+    profileIdentityNameWrap: {
+        flex: 1,
+        alignItems: 'flex-end',
+        justifyContent: 'center',
+        marginLeft: 8,
+    },
+    userHandlePill: {
+        marginTop: 8,
+        paddingHorizontal: 10,
+        paddingVertical: 4,
+        borderRadius: 999,
+        borderWidth: 0.5,
+        borderColor: colors.lightGrayColor,
+        backgroundColor: colors.btnBackgroundColor,
+        alignSelf: 'flex-start',
+    },
+    userHandle: {
+        ...Fonts.medium12,
+        color: colors.subTextColor,
+        letterSpacing: 0.2,
     },
     categoryRow: {
         marginTop: 10,
@@ -174,7 +211,8 @@ export const createStyles = (colors: ThemeColors) => StyleSheet.create({
     statsContainerRight: {
         flexDirection: 'row',
         alignItems: 'center',
-        justifyContent: 'flex-start',
+        justifyContent: 'flex-end',
+        flex: 1,
         gap: 10,
     },
     statItem: {
@@ -257,6 +295,31 @@ export const createStyles = (colors: ThemeColors) => StyleSheet.create({
         height: 1,
         backgroundColor: colors.lightGrayColor,
         marginTop: 14,
+    },
+    athleteMetaSection: {
+        marginTop: 14,
+        gap: 8,
+    },
+    athleteMetaRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        backgroundColor: colors.btnBackgroundColor,
+        borderWidth: 0.5,
+        borderColor: colors.lightGrayColor,
+        borderRadius: 10,
+        paddingHorizontal: 12,
+        paddingVertical: 10,
+    },
+    athleteMetaLabel: {
+        ...Fonts.regular12,
+        color: colors.subTextColor,
+    },
+    athleteMetaValue: {
+        ...Fonts.medium14,
+        color: colors.mainTextColor,
+        maxWidth: '58%',
+        textAlign: 'right',
     },
     chestNumberSection: {
         marginTop: 14,

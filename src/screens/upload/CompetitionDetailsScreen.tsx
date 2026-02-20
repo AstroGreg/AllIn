@@ -1,7 +1,7 @@
 import { View, Text, TouchableOpacity, ScrollView, Modal, Pressable, Alert } from 'react-native'
 import React, { useCallback, useMemo, useState } from 'react'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { ArrowLeft2, ArrowRight, Ghost, Trash } from 'iconsax-react-nativejs'
+import { ArrowLeft2, Ghost, Trash } from 'iconsax-react-nativejs'
 import { createStyles } from './CompetitionDetailsStyles'
 import SizeBox from '../../constants/SizeBox'
 import { useTheme } from '../../context/ThemeContext'
@@ -30,7 +30,6 @@ const CompetitionDetailsScreen = ({ navigation, route }: any) => {
     const [selectedGender, setSelectedGender] = useState<'Men' | 'Women' | null>(null);
     const [selectedDivision, setSelectedDivision] = useState<string | null>(null);
     const [uploadCounts, setUploadCounts] = useState<Record<string, { photos: number; videos: number }>>({});
-    const [canFinish, setCanFinish] = useState(false);
 
     const trackEvents: EventCategory[] = [
         { id: 1, name: '200 Meters' },
@@ -106,11 +105,8 @@ const CompetitionDetailsScreen = ({ navigation, route }: any) => {
                 }
             }
             setUploadCounts(counts);
-            const hasDraft = Object.values(counts).some((c) => Number(c.photos || 0) + Number(c.videos || 0) > 0);
-            setCanFinish(hasDraft);
         } catch {
             setUploadCounts({});
-            setCanFinish(false);
         }
     }, [competitionId]);
 
@@ -127,30 +123,6 @@ const CompetitionDetailsScreen = ({ navigation, route }: any) => {
         setCategoryModalVisible(true);
     };
 
-    const clearCategoryDraft = useCallback(async (categoryName: string) => {
-        try {
-            const key = `@upload_assets_${competitionId}`;
-            const assetsRaw = await AsyncStorage.getItem(key);
-            const parsed = assetsRaw ? JSON.parse(assetsRaw) : {};
-            if (!parsed || typeof parsed !== 'object') return;
-            if (!(categoryName in parsed)) return;
-
-            const next = { ...parsed };
-            delete (next as any)[categoryName];
-
-            const hasAny = Object.values(next).some((list: any) => Array.isArray(list) && list.length > 0);
-            if (hasAny) {
-                await AsyncStorage.setItem(key, JSON.stringify(next));
-            } else {
-                await AsyncStorage.removeItem(key);
-            }
-        } catch {
-            // ignore
-        } finally {
-            loadCounts();
-        }
-    }, [competitionId, loadCounts]);
-
     const handleContinue = () => {
         if (!selectedEvent || !selectedGender || !selectedDivision) return;
         navigation.navigate('UploadDetailsScreen', {
@@ -163,16 +135,6 @@ const CompetitionDetailsScreen = ({ navigation, route }: any) => {
             competitionType,
         });
         setCategoryModalVisible(false);
-    };
-
-    const handleFinish = () => {
-        if (!canFinish) return;
-        navigation.navigate('WatermarkScreen', {
-            competition,
-            account,
-            anonymous,
-            competitionType,
-        });
     };
 
     const renderEventCard = (category: EventCategory) => {
@@ -190,19 +152,12 @@ const CompetitionDetailsScreen = ({ navigation, route }: any) => {
             key={category.id}
             style={[Styles.eventCard, hasUploads && Styles.eventCardActive]}
             activeOpacity={0.85}
-            onPress={() => {
-                if (hasUploads) {
-                    clearCategoryDraft(category.name);
-                    return;
-                }
-                openCategoryModal(category);
-            }}
+            onPress={() => openCategoryModal(category)}
         >
             <View style={Styles.eventText}>
                 <Text style={Styles.eventName}>{category.name}</Text>
                 <Text style={[Styles.eventMeta, hasUploads && Styles.eventMetaActive]}>{countLabel}</Text>
             </View>
-            <ArrowRight size={18} color={colors.grayColor} variant="Linear" />
         </TouchableOpacity>
         );
     };
@@ -288,20 +243,11 @@ const CompetitionDetailsScreen = ({ navigation, route }: any) => {
                 )}
 
                 <Text style={Styles.sectionTitle}>
-                    {competitionType === 'road' ? 'Courses' : 'Events'}
+                    {competitionType === 'road' ? 'Choose a checkpoint' : 'Events'}
                 </Text>
                 <SizeBox height={16} />
 
                 {activeEvents.map(renderEventCard)}
-
-                <SizeBox height={24} />
-                <TouchableOpacity
-                    style={[Styles.finishButton, !canFinish && Styles.finishButtonDisabled]}
-                    onPress={handleFinish}
-                    disabled={!canFinish}
-                >
-                    <Text style={Styles.finishButtonText}>{t('Finish')}</Text>
-                </TouchableOpacity>
 
                 <SizeBox height={insets.bottom > 0 ? insets.bottom + 20 : 40} />
             </ScrollView>

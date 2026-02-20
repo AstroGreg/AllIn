@@ -95,6 +95,7 @@ import ChangePassword from "../screens/menu/menuScreens/ChangePassword";
 import ChangeUsername from "../screens/menu/menuScreens/ChangeUsername";
 import ChangeNationality from "../screens/menu/menuScreens/ChangeNationality";
 import DateOfBirth from "../screens/menu/menuScreens/DateOfBirth";
+import ChestNumberSettings from "../screens/menu/menuScreens/ChestNumberSettings";
 import RightToBeForgotten from "../screens/menu/menuScreens/RightToBeForgotten";
 import Authentication from "../screens/menu/menuScreens/Authentication";
 import AuthenticatorSetup from "../screens/menu/menuScreens/AuthenticatorSetup";
@@ -177,6 +178,7 @@ const ProfileStackNavigator = () => {
             <ProfileStack.Screen name="CreateNewPostScreen" component={CreateNewPostScreen} />
             <ProfileStack.Screen name="EditBioScreens" component={EditBioScreens} />
             <ProfileStack.Screen name="ProfileSettings" component={ProfileSettings} />
+            <ProfileStack.Screen name="ChestNumberSettings" component={ChestNumberSettings} />
             <ProfileStack.Screen name="PhotoDetailScreen" component={PhotoDetailScreen} />
             <ProfileStack.Screen name="VideoPlayingScreen" component={VideoPlayingScreen} />
             <ProfileStack.Screen name="DownloadsDetailsScreen" component={DownloadsDetailsScreen} />
@@ -218,6 +220,7 @@ const MenuStackNavigator = () => {
             <MenuStack.Screen name="ChangeUsername" component={ChangeUsername} />
             <MenuStack.Screen name="ChangeNationality" component={ChangeNationality} />
             <MenuStack.Screen name="DateOfBirth" component={DateOfBirth} />
+            <MenuStack.Screen name="ChestNumberSettings" component={ChestNumberSettings} />
             <MenuStack.Screen name="RightToBeForgotten" component={RightToBeForgotten} />
             <MenuStack.Screen name="AISearchScreen" component={CombinedSearchScreen} />
             <MenuStack.Screen name="Authentication" component={Authentication} />

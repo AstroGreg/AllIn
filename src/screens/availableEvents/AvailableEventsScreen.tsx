@@ -73,7 +73,10 @@ const AvailableEventsScreen = ({ navigation }: any) => {
     }, []);
     const defaultChestNumber = useMemo(() => {
         const byYear = (userProfile?.chestNumbersByYear ?? {}) as Record<string, string>;
-        const eventYear = getYearFromDateLike(modalEvent?.date ?? null);
+        const eventYear =
+            getYearFromDateLike(modalEvent?.date ?? null) ||
+            getYearFromDateLike(modalEvent?.name ?? null) ||
+            getYearFromDateLike(modalEvent?.location ?? null);
         if (eventYear && byYear[eventYear] != null && String(byYear[eventYear]).trim().length > 0) {
             return String(byYear[eventYear]).trim();
         }
@@ -82,7 +85,7 @@ const AvailableEventsScreen = ({ navigation }: any) => {
             return String(byYear[currentYear]).trim();
         }
         return '';
-    }, [getYearFromDateLike, modalEvent?.date, userProfile?.chestNumbersByYear]);
+    }, [getYearFromDateLike, modalEvent?.date, modalEvent?.location, modalEvent?.name, userProfile?.chestNumbersByYear]);
 
     const activeValue = filterValues[activeFilter] ?? '';
     const searchPlaceholder = activeFilter === 'Competition' ? t('typeCompetition') : t('typeLocation');

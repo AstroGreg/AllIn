@@ -183,7 +183,7 @@ const CreateGroupProfileScreen = ({ navigation }: any) => {
                 name: groupName.trim(),
                 description: groupDescription.trim() || undefined,
             });
-            const groupId = created?.group?.group_id;
+            const groupId = String((created as any)?.group?.group_id || (created as any)?.group?.id || '').trim();
             if (groupId) {
                 const additions = selectedMembers.map((member) =>
                     addGroupMember(apiAccessToken, groupId, {

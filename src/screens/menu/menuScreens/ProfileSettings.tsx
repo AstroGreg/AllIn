@@ -41,6 +41,11 @@ const ProfileSettings = ({ navigation }: any) => {
             onPress: () => navigation.navigate('DateOfBirth'),
         },
         {
+            icon: <Card size={20} color={colors.primaryColor} variant="Linear" />,
+            title: 'Chest number by year',
+            onPress: () => navigation.navigate('ChestNumberSettings'),
+        },
+        {
             icon: <Scan size={20} color={colors.primaryColor} variant="Linear" />,
             title: 'Facial Recognition',
             onPress: () => navigation.navigate('FacialRecognitionSettings'),

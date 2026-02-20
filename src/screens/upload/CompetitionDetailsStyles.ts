@@ -130,20 +130,6 @@ export const createStyles = (colors: ThemeColors) => StyleSheet.create({
     eventMetaActive: {
         color: colors.primaryColor,
     },
-    finishButton: {
-        backgroundColor: colors.primaryColor,
-        borderRadius: 12,
-        paddingVertical: 16,
-        alignItems: 'center',
-        justifyContent: 'center',
-    },
-    finishButtonDisabled: {
-        opacity: 0.4,
-    },
-    finishButtonText: {
-        ...Fonts.medium16,
-        color: colors.pureWhite,
-    },
     modalBackdrop: {
         flex: 1,
         backgroundColor: 'rgba(0,0,0,0.4)',

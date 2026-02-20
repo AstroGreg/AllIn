@@ -733,9 +733,16 @@ export const createStyles = (colors: ThemeColors) => StyleSheet.create({
     feedImagePreviewBackdrop: {
         ...StyleSheet.absoluteFillObject,
     },
+    feedImagePreviewViewport: {
+        width: '100%',
+        height: '100%',
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
     feedImagePreviewContent: {
         justifyContent: 'center',
         alignItems: 'center',
+        overflow: 'hidden',
     },
     feedImagePreviewImage: {
         width: '100%',

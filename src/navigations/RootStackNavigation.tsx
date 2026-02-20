@@ -53,6 +53,7 @@ import ChangePassword from '../screens/menu/menuScreens/ChangePassword';
 import ChangeUsername from '../screens/menu/menuScreens/ChangeUsername';
 import ChangeNationality from '../screens/menu/menuScreens/ChangeNationality';
 import DateOfBirth from '../screens/menu/menuScreens/DateOfBirth';
+import ChestNumberSettings from '../screens/menu/menuScreens/ChestNumberSettings';
 import UserProfileScreen from '../screens/userProfile/UserProfileScreen';
 import ViewUserProfileScreen from '../screens/viewUserProfile/ViewUserProfileScreen';
 import ViewUserCollectionsPhotosScreen from '../screens/viewUserCollectionsPhotos/ViewUserCollectionsPhotosScreen';
@@ -146,6 +147,7 @@ const RootStackNavigation = () => {
             <Stack.Screen name="ChangeUsername" component={ChangeUsername} />
             <Stack.Screen name="ChangeNationality" component={ChangeNationality} />
             <Stack.Screen name="DateOfBirth" component={DateOfBirth} />
+            <Stack.Screen name="ChestNumberSettings" component={ChestNumberSettings} />
             <Stack.Screen name="UserProfileScreen" component={UserProfileScreen} />
             <Stack.Screen name="ViewUserProfileScreen" component={ViewUserProfileScreen} />
             <Stack.Screen name="ViewUserCollectionsPhotosScreen" component={ViewUserCollectionsPhotosScreen} />

@@ -44,14 +44,14 @@ const VideoDetailsScreen = ({ navigation, route }: any) => {
     const [statusChoice, setStatusChoice] = useState<'fixed' | 'wont_fix'>('fixed');
 
     const routeVideo = route?.params?.video;
-    const mediaId = '86db92e8-1b8e-44a5-95c4-fb4764f6783e';
+    const mediaId = String(route?.params?.mediaId || routeVideo?.media_id || '86db92e8-1b8e-44a5-95c4-fb4764f6783e');
     const [videoData, setVideoData] = useState({
         title: routeVideo?.title ?? 'BK Studentent 23',
         location: routeVideo?.location ?? 'Berlin, Germany',
         duration: routeVideo?.duration ?? '2 Minutes',
         date: routeVideo?.date ?? '27/05/2025',
-        videoUri: '',
-        thumbnail: Images.photo7,
+        videoUri: routeVideo?.uri ?? '',
+        thumbnail: routeVideo?.thumbnail ?? Images.photo7,
     });
 
     const isSignedUrl = useCallback((value?: string | null) => {

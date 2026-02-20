@@ -118,6 +118,13 @@ const CombinedSearchScreen = ({navigation}: any) => {
     const m = raw.match(/\b(19|20)\d{2}\b/);
     return m ? m[0] : null;
   }, []);
+  const getYearFromEvent = useCallback(
+    (event: EventOption) =>
+      getYearFromDateLike(event.date ?? null) ||
+      getYearFromDateLike(event.name ?? null) ||
+      getYearFromDateLike(event.location ?? null),
+    [getYearFromDateLike],
+  );
   const resolveDefaultChestForEvents = useCallback(
     (events: EventOption[]) => {
       const byYear = {
@@ -125,14 +132,14 @@ const CombinedSearchScreen = ({navigation}: any) => {
         ...profileChestByYear,
       };
       for (const event of events) {
-        const year = getYearFromDateLike(event.date ?? null);
+        const year = getYearFromEvent(event);
         if (year && byYear[year] != null && String(byYear[year]).trim().length > 0) {
           return String(byYear[year]).trim();
         }
       }
       return '';
     },
-    [getYearFromDateLike, normalizeChestByYear, profileChestByYear, userProfile?.chestNumbersByYear],
+    [getYearFromEvent, normalizeChestByYear, profileChestByYear, userProfile?.chestNumbersByYear],
   );
 
   const refreshMe = useCallback(async () => {

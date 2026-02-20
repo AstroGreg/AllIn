@@ -126,7 +126,7 @@ const UploadDetailsScreen = ({ navigation, route }: any) => {
     };
 
     const selectedCount = selectedAssets.length;
-    const buttonLabel = useMemo(() => (selectedCount > 0 ? t('Upload') : t('Select files')), [selectedCount, t]);
+    const buttonLabel = useMemo(() => (selectedCount > 0 ? t('Next') : t('Select files')), [selectedCount, t]);
 
     return (
         <View style={Styles.mainContainer}>

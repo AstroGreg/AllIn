@@ -9,7 +9,7 @@ import { useTheme } from '../../../context/ThemeContext';
 import { Heart, Import } from 'iconsax-react-nativejs';
 import { useTranslation } from 'react-i18next'
 
-const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
+const { width: screenWidth } = Dimensions.get('window');
 
 interface NewsFeedCardProps {
     title: string;
@@ -115,6 +115,7 @@ const NewsFeedCard = ({
     const [imagePreviewVisible, setImagePreviewVisible] = useState(false);
     const [imagePreviewSource, setImagePreviewSource] = useState<any | null>(null);
     const [imagePreviewAspectRatio, setImagePreviewAspectRatio] = useState(1);
+    const [imagePreviewModalSize, setImagePreviewModalSize] = useState<{ width: number; height: number }>({ width: 0, height: 0 });
     const videoOpacity = useRef(new Animated.Value(0)).current;
     const videoRef = useRef<Video>(null);
     const hasSeekedRef = useRef(false);
@@ -433,8 +434,11 @@ const NewsFeedCard = ({
     }, [likesLabel]);
 
     const previewFrameStyle = useMemo(() => {
-        const maxWidth = screenWidth * 0.94;
-        const maxHeight = screenHeight * 0.82;
+        const maxWidth = Math.max(0, imagePreviewModalSize.width);
+        const maxHeight = Math.max(0, imagePreviewModalSize.height);
+        if (!maxWidth || !maxHeight) {
+            return { width: 0, height: 0 };
+        }
         const safeRatio = Number.isFinite(imagePreviewAspectRatio) && imagePreviewAspectRatio > 0
             ? imagePreviewAspectRatio
             : 1;
@@ -445,7 +449,7 @@ const NewsFeedCard = ({
             width = height * safeRatio;
         }
         return { width, height };
-    }, [imagePreviewAspectRatio]);
+    }, [imagePreviewAspectRatio, imagePreviewModalSize.height, imagePreviewModalSize.width]);
 
     return (
         <View style={[hasBorder ? Styles.newsFeedCard : Styles.newsFeedCardNoBorder, Styles.newsFeedCardFull]}>
@@ -607,22 +611,39 @@ const NewsFeedCard = ({
                         style={Styles.feedImagePreviewBackdrop}
                         onPress={() => setImagePreviewVisible(false)}
                     />
-                    <Pressable style={[Styles.feedImagePreviewContent, previewFrameStyle]} onPress={() => {}}>
-                        {imagePreviewSource ? (
-                            <FastImage
-                                source={imagePreviewSource}
-                                style={Styles.feedImagePreviewImage}
-                                resizeMode="contain"
-                                onLoad={(event) => {
-                                    const w = Number(event?.nativeEvent?.width ?? 0);
-                                    const h = Number(event?.nativeEvent?.height ?? 0);
-                                    if (w > 0 && h > 0) {
-                                        setImagePreviewAspectRatio(w / h);
-                                    }
-                                }}
-                            />
-                        ) : null}
-                    </Pressable>
+                    <View
+                        style={Styles.feedImagePreviewViewport}
+                        onLayout={(event) => {
+                            const { width, height } = event.nativeEvent.layout;
+                            setImagePreviewModalSize({ width, height });
+                        }}
+                    >
+                        <Pressable
+                            style={[
+                                Styles.feedImagePreviewContent,
+                                {
+                                    width: previewFrameStyle.width > 0 ? previewFrameStyle.width : '100%',
+                                    height: previewFrameStyle.height > 0 ? previewFrameStyle.height : '100%',
+                                },
+                            ]}
+                            onPress={() => {}}
+                        >
+                            {imagePreviewSource ? (
+                                <FastImage
+                                    source={imagePreviewSource}
+                                    style={Styles.feedImagePreviewImage}
+                                    resizeMode="contain"
+                                    onLoad={(event) => {
+                                        const w = Number(event?.nativeEvent?.width ?? 0);
+                                        const h = Number(event?.nativeEvent?.height ?? 0);
+                                        if (w > 0 && h > 0) {
+                                            setImagePreviewAspectRatio(w / h);
+                                        }
+                                    }}
+                                />
+                            ) : null}
+                        </Pressable>
+                    </View>
                 </View>
             </Modal>
 

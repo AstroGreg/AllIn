@@ -4,12 +4,17 @@ import FastImage from 'react-native-fast-image';
 import SizeBox from '../../constants/SizeBox';
 import { Trash } from 'iconsax-react-nativejs';
 
+export type ProfileNewsItemKind = 'blog' | 'competition';
 export type ProfileNewsItem = {
     id: string;
+    kind?: ProfileNewsItemKind;
     title: string;
     date?: string | null;
+    sortAt?: string | null;
     description?: string | null;
     coverImage?: string | null;
+    postId?: string | null;
+    eventId?: string | null;
 };
 
 type Props = {
@@ -18,6 +23,7 @@ type Props = {
     items: ProfileNewsItem[];
     emptyText: string;
     blogLabel: string;
+    eventLabel?: string;
     onPressItem: (item: ProfileNewsItem) => void;
     actionLabel?: string;
     onPressAction?: () => void;
@@ -99,15 +105,19 @@ const ProfileNewsSection = ({
     items,
     emptyText,
     blogLabel,
+    eventLabel,
     onPressItem,
     actionLabel,
     onPressAction,
     enableSwipeDelete,
     onSwipeDelete,
 }: Props) => {
-    const renderCard = (item: ProfileNewsItem) => (
+    const renderCard = (item: ProfileNewsItem) => {
+        const isBlog = (item.kind ?? 'blog') === 'blog';
+        const badgeLabel = isBlog ? blogLabel : (eventLabel || 'Event');
+        return (
         <TouchableOpacity
-            key={`blog-${item.id}`}
+            key={`news-${item.id}`}
             style={styles.activityCard}
             activeOpacity={0.85}
             onPress={() => onPressItem(item)}
@@ -125,8 +135,8 @@ const ProfileNewsSection = ({
                         <Text style={styles.activityTitle} numberOfLines={2}>
                             {item.title}
                         </Text>
-                        <View style={[styles.activityBadge, styles.activityBadgeBlog]}>
-                            <Text style={styles.activityBadgeTextBlog}>{blogLabel}</Text>
+                        <View style={[styles.activityBadge, isBlog ? styles.activityBadgeBlog : styles.activityBadgeEvent]}>
+                            <Text style={isBlog ? styles.activityBadgeTextBlog : styles.activityBadgeText}>{badgeLabel}</Text>
                         </View>
                     </View>
                     <Text style={styles.activityMeta}>{item.date || ''}</Text>
@@ -137,6 +147,7 @@ const ProfileNewsSection = ({
             </View>
         </TouchableOpacity>
     );
+    };
 
     return (
         <View style={styles.activitySection}>
@@ -156,8 +167,8 @@ const ProfileNewsSection = ({
                 ) : (
                     items.map((item) => (
                     <SwipeDeleteRow
-                        key={`blog-swipe-${item.id}`}
-                        enabled={Boolean(enableSwipeDelete && onSwipeDelete)}
+                        key={`news-swipe-${item.id}`}
+                        enabled={Boolean(enableSwipeDelete && onSwipeDelete && (item.kind ?? 'blog') === 'blog')}
                         onSwipeRight={() => {
                             if (onSwipeDelete) onSwipeDelete(item);
                         }}

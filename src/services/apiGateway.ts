@@ -107,6 +107,7 @@ export interface ProfileSummary {
   profile_id: string;
   profile: {
     display_name?: string | null;
+    username?: string | null;
     bio?: string | null;
     chest_numbers_by_year?: Record<string, number> | null;
     avatar_url?: string | null;
@@ -188,6 +189,7 @@ export interface GroupSummary {
   owner_avatar_url?: string | null;
   my_role?: string | null;
   member_count?: number;
+  followers_count?: number;
 }
 
 export interface GroupResponse {
@@ -213,6 +215,20 @@ export interface GroupMembersResponse {
   ok: boolean;
   count: number;
   members: GroupMember[];
+}
+
+export interface GroupAssignedEvent {
+  event_id: string;
+  event_name?: string | null;
+  event_location?: string | null;
+  event_date?: string | null;
+  assigned_athletes_count?: number;
+}
+
+export interface GroupAssignedEventsResponse {
+  ok: boolean;
+  count: number;
+  events: GroupAssignedEvent[];
 }
 
 export async function createGroup(
@@ -305,6 +321,41 @@ export async function removeGroupMember(
     method: 'DELETE',
     accessToken,
   });
+}
+
+export async function getGroupAssignedEvents(
+  accessToken: string,
+  groupId: string,
+): Promise<GroupAssignedEventsResponse> {
+  const safeId = String(groupId || '').trim();
+  if (!safeId) {
+    throw new ApiError({status: 400, message: 'Missing group_id'});
+  }
+  return apiRequest<GroupAssignedEventsResponse>(`/groups/${encodeURIComponent(safeId)}/events`, {
+    method: 'GET',
+    accessToken,
+  });
+}
+
+export async function assignGroupMembersToEvent(
+  accessToken: string,
+  groupId: string,
+  eventId: string,
+  payload: {profile_ids: string[]},
+): Promise<{ok: boolean; group_id: string; event_id: string; requested_count: number; inserted_count: number}> {
+  const safeGroupId = String(groupId || '').trim();
+  const safeEventId = String(eventId || '').trim();
+  if (!safeGroupId || !safeEventId) {
+    throw new ApiError({status: 400, message: 'Missing group_id or event_id'});
+  }
+  return apiRequest<{ok: boolean; group_id: string; event_id: string; requested_count: number; inserted_count: number}>(
+    `/groups/${encodeURIComponent(safeGroupId)}/events/${encodeURIComponent(safeEventId)}/assign`,
+    {
+      method: 'POST',
+      accessToken,
+      body: payload,
+    },
+  );
 }
 
 export interface SubscribedEvent {
@@ -1163,6 +1214,7 @@ export interface ProfileSummaryResponse {
   profile_id: string;
   profile: {
     display_name?: string | null;
+    username?: string | null;
     bio?: string | null;
     chest_numbers_by_year?: Record<string, number> | null;
     avatar_url?: string | null;

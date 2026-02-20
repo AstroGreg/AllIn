@@ -144,7 +144,7 @@ const EventsViewAllScreen = ({ navigation }: any) => {
                         <View style={styles.modalOptionsContainer}>
                             <TouchableOpacity style={styles.modalOptionButton} onPress={() => {
                                 setModalVisible(false);
-                                navigation.navigate('ViewUserProfileScreen');
+                                navigation.navigate('BottomTabBar', { screen: 'Profile' });
                             }}>
                                 <Text style={styles.modalOptionText}>{t('Standard')}</Text>
                                 <ArrowRight size={20} color={colors.subTextColor} variant="Linear" />
@@ -152,7 +152,7 @@ const EventsViewAllScreen = ({ navigation }: any) => {
 
                             <TouchableOpacity style={styles.modalOptionButton} onPress={() => {
                                 setModalVisible(false);
-                                navigation.navigate('ViewUserProfileScreen');
+                                navigation.navigate('BottomTabBar', { screen: 'Profile' });
                             }}>
                                 <Text style={styles.modalOptionText}>{t('Photographer')}</Text>
                                 <ArrowRight size={20} color={colors.subTextColor} variant="Linear" />

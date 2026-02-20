@@ -1,5 +1,5 @@
-import { View, Text, TouchableOpacity, ScrollView, Dimensions, Platform, ActionSheetIOS, Modal, ActivityIndicator, Alert, TextInput } from 'react-native'
-import React, { useCallback, useEffect, useMemo, useState } from 'react'
+import { View, Text, TouchableOpacity, ScrollView, Dimensions, Platform, ActionSheetIOS, Modal, ActivityIndicator, Alert } from 'react-native'
+import React, { useCallback, useMemo, useState } from 'react'
 import SizeBox from '../../constants/SizeBox'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import FastImage from 'react-native-fast-image'
@@ -7,12 +7,34 @@ import Images from '../../constants/Images'
 import Icons from '../../constants/Icons'
 import { useTheme } from '../../context/ThemeContext'
 import { createStyles } from './UserProfileStyles'
-import { ArrowLeft2, User, Edit2, Clock, ArrowRight, DocumentText, Gallery, DocumentDownload, ArrowDown2 } from 'iconsax-react-nativejs'
+import { ArrowLeft2, User, Edit2, Clock, ArrowRight, DocumentText, Gallery, DocumentDownload } from 'iconsax-react-nativejs'
 import { launchImageLibrary } from 'react-native-image-picker'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import ProfileTimeline, { TimelineEntry } from '../../components/profileTimeline/ProfileTimeline'
 import { useAuth } from '../../context/AuthContext'
-import { deletePost, getDownloadsSummary, getPosts, getProfileCollectionByType, getProfileSummary, getProfileTimeline, getUploadedCompetitions, updateProfileSummary, uploadMediaBatch, type PostSummary, type ProfileCollectionItem, type ProfileSummaryResponse, type ProfileTimelineEntry, type UploadedCompetition } from '../../services/apiGateway'
+import {
+    deletePost,
+    getDownloadsSummary,
+    getHubAppearanceMedia,
+    getHubAppearances,
+    getMyGroups,
+    getPosts,
+    getProfileCollectionByType,
+    getProfileSummary,
+    getProfileTimeline,
+    getSubscribedEvents,
+    getUploadedCompetitions,
+    updateProfileSummary,
+    uploadMediaBatch,
+    type HubAppearanceSummary,
+    type GroupSummary,
+    type PostSummary,
+    type ProfileCollectionItem,
+    type ProfileSummaryResponse,
+    type ProfileTimelineEntry,
+    type SubscribedEvent,
+    type UploadedCompetition,
+} from '../../services/apiGateway'
 import { getApiBaseUrl } from '../../constants/RuntimeConfig'
 import { useFocusEffect } from '@react-navigation/native'
 import { useTranslation } from 'react-i18next'
@@ -23,11 +45,13 @@ const UserProfileScreen = ({ navigation }: any) => {
     const { colors } = useTheme();
     const { t } = useTranslation();
     const Styles = createStyles(colors);
-    const { user, userProfile, apiAccessToken, updateUserProfile } = useAuth();
+    const { user, userProfile, apiAccessToken } = useAuth();
     const [activeTab, setActiveTab] = useState('photos');
     const [timelineItems, setTimelineItems] = useState<TimelineEntry[]>([]);
     const [profileTab, setProfileTab] = useState<'timeline' | 'activity' | 'collections' | 'downloads'>('timeline');
     const [blogEntries, setBlogEntries] = useState<any[]>([]);
+    const [subscribedEvents, setSubscribedEvents] = useState<SubscribedEvent[]>([]);
+    const [appearanceEvents, setAppearanceEvents] = useState<HubAppearanceSummary[]>([]);
     const [profileCategory, setProfileCategory] = useState<'Track&Field' | 'Road&Trail'>('Track&Field');
     const [showProfileMenuModal, setShowProfileMenuModal] = useState(false);
     const [pendingDeleteBlog, setPendingDeleteBlog] = useState<ProfileNewsItem | null>(null);
@@ -39,24 +63,15 @@ const UserProfileScreen = ({ navigation }: any) => {
     );
     const [profileSummary, setProfileSummary] = useState<ProfileSummaryResponse | null>(null);
     const currentYear = useMemo(() => String(new Date().getFullYear()), []);
-    const currentYearNumber = useMemo(() => Number(currentYear), [currentYear]);
-    const [chestYearInput, setChestYearInput] = useState<string>(currentYear);
-    const [showChestYearModal, setShowChestYearModal] = useState(false);
-    const [chestNumberInput, setChestNumberInput] = useState<string>('');
     const [chestNumbersByYear, setChestNumbersByYear] = useState<Record<string, string>>({});
-    const [isSavingChestNumber, setIsSavingChestNumber] = useState(false);
-    const [showSaveFailedModal, setShowSaveFailedModal] = useState(false);
     const [photoCollectionItems, setPhotoCollectionItems] = useState<ProfileCollectionItem[]>([]);
     const [videoCollectionItems, setVideoCollectionItems] = useState<ProfileCollectionItem[]>([]);
     const [uploadedCompetitions, setUploadedCompetitions] = useState<UploadedCompetition[]>([]);
+    const [myGroups, setMyGroups] = useState<GroupSummary[]>([]);
 
     const { width } = Dimensions.get('window');
     const imageWidth = Math.floor((width - 40 - 24 - 30) / 4);
     const profileCategoryLabel = profileCategory === 'Road&Trail' ? t('roadAndTrail') : t('trackAndField');
-    const chestYearOptions = useMemo(
-        () => Array.from({ length: Math.max(0, currentYearNumber - 2000 + 1) }, (_, i) => String(2000 + i)),
-        [currentYearNumber],
-    );
 
     const normalizeChestByYear = useCallback((raw: any): Record<string, string> => {
         if (!raw || typeof raw !== 'object') return {};
@@ -69,14 +84,6 @@ const UserProfileScreen = ({ navigation }: any) => {
             out[safeYear] = String(parsed);
         }
         return out;
-    }, []);
-
-    const getChestForYear = useCallback((year: string, source: Record<string, string>) => {
-        const safeYear = String(year || '').trim();
-        if (/^\d{4}$/.test(safeYear) && source[safeYear] != null) {
-            return String(source[safeYear]);
-        }
-        return '';
     }, []);
 
     const isSignedUrl = useCallback((value?: string | null) => {
@@ -205,7 +212,6 @@ const UserProfileScreen = ({ navigation }: any) => {
                 setProfileSummary(summary);
                 const serverChestByYear = normalizeChestByYear(summary?.profile?.chest_numbers_by_year ?? {});
                 setChestNumbersByYear(serverChestByYear);
-                setChestNumberInput(getChestForYear(chestYearInput, serverChestByYear));
                 summaryProfileId = summary?.profile_id ? String(summary.profile_id) : null;
                 const avatarMedia = summary?.profile?.avatar_media ?? null;
                 const avatarCandidate =
@@ -229,13 +235,11 @@ const UserProfileScreen = ({ navigation }: any) => {
                 setProfileSummary(null);
                 const localChestByYear = normalizeChestByYear(userProfile?.chestNumbersByYear ?? {});
                 setChestNumbersByYear(localChestByYear);
-                setChestNumberInput(getChestForYear(chestYearInput, localChestByYear));
             }
         } else {
             setProfileSummary(null);
             const localChestByYear = normalizeChestByYear(userProfile?.chestNumbersByYear ?? {});
             setChestNumbersByYear(localChestByYear);
-            setChestNumberInput(getChestForYear(chestYearInput, localChestByYear));
         }
 
         // News/blogs: server-driven (no more local dummy list)
@@ -264,6 +268,7 @@ const UserProfileScreen = ({ navigation }: any) => {
                     return ({
                         id: String(p.id),
                         title: String(p.title || ''),
+                        createdAt: p.created_at ? String(p.created_at) : null,
                         date: p.created_at ? String(p.created_at).slice(0, 10) : '',
                         description: p.summary || p.description || '',
                         coverImage,
@@ -277,6 +282,32 @@ const UserProfileScreen = ({ navigation }: any) => {
             }
         } else {
             setBlogEntries([]);
+        }
+
+        if (apiAccessToken) {
+            try {
+                const resp = await getSubscribedEvents(apiAccessToken);
+                setSubscribedEvents(Array.isArray((resp as any)?.events) ? (resp as any).events : []);
+            } catch {
+                setSubscribedEvents([]);
+            }
+            try {
+                const resp = await getHubAppearances(apiAccessToken);
+                const appearances = Array.isArray((resp as any)?.appearances) ? (resp as any).appearances : [];
+                const mapped = appearances.map((entry: HubAppearanceSummary) => {
+                    const thumb = entry?.thumbnail_url ? toAbsoluteUrl(String(entry.thumbnail_url)) : null;
+                    return {
+                        ...entry,
+                        thumbnail_url: thumb ? (withAccessToken(thumb) || thumb) : null,
+                    } as HubAppearanceSummary;
+                });
+                setAppearanceEvents(mapped);
+            } catch {
+                setAppearanceEvents([]);
+            }
+        } else {
+            setSubscribedEvents([]);
+            setAppearanceEvents([]);
         }
 
         // Collections by type
@@ -322,14 +353,19 @@ const UserProfileScreen = ({ navigation }: any) => {
             } catch {
                 setUploadedCompetitions([]);
             }
+            try {
+                const resp = await getMyGroups(apiAccessToken);
+                setMyGroups(Array.isArray((resp as any)?.groups) ? (resp as any).groups : []);
+            } catch {
+                setMyGroups([]);
+            }
         } else {
             setUploadedCompetitions([]);
+            setMyGroups([]);
         }
     }, [
         apiAccessToken,
         categoryStorageKey,
-        chestYearInput,
-        getChestForYear,
         normalizeChestByYear,
         resolveTimelineMediaThumb,
         t,
@@ -343,10 +379,6 @@ const UserProfileScreen = ({ navigation }: any) => {
             loadProfileData();
         }, [loadProfileData]),
     );
-
-    useEffect(() => {
-        setChestNumberInput(getChestForYear(chestYearInput, chestNumbersByYear));
-    }, [chestNumbersByYear, chestYearInput, getChestForYear]);
 
     const openAddTimeline = () => {
         navigation.navigate('ProfileTimelineEditScreen', {
@@ -389,12 +421,21 @@ const UserProfileScreen = ({ navigation }: any) => {
 
     const openProfileMenu = () => {
         if (Platform.OS === 'ios') {
+            const groupSwitchOptions = myGroups
+                .map((group) => {
+                    const label = String(group?.name ?? '').trim();
+                    if (!label) return null;
+                    return `${t('Switch to')} ${label}`;
+                })
+                .filter(Boolean) as string[];
+            const groupOptionStartIndex = 5;
             const options = [
                 t('cancel'),
                 `${t('Switch to')} ${t('trackAndField')}`,
                 `${t('Switch to')} ${t('roadAndTrail')}`,
                 t('Add profile'),
                 t('Add group'),
+                ...groupSwitchOptions,
             ];
             ActionSheetIOS.showActionSheetWithOptions(
                 {
@@ -406,6 +447,13 @@ const UserProfileScreen = ({ navigation }: any) => {
                     if (buttonIndex === 2) setCategory('Road&Trail');
                     if (buttonIndex === 3) navigation.navigate('SelectCategoryScreen');
                     if (buttonIndex === 4) navigation.navigate('CreateGroupProfileScreen');
+                    if (buttonIndex >= groupOptionStartIndex) {
+                        const group = myGroups[buttonIndex - groupOptionStartIndex];
+                        const groupId = String(group?.group_id ?? '').trim();
+                        if (groupId) {
+                            navigation.navigate('GroupProfileScreen', { groupId });
+                        }
+                    }
                 },
             );
         } else {
@@ -469,67 +517,66 @@ const UserProfileScreen = ({ navigation }: any) => {
         }
     };
 
-    const handleSaveChestNumber = useCallback(async () => {
-        if (!apiAccessToken) return;
-        const year = String(chestYearInput || '').trim();
-        if (!/^\d{4}$/.test(year)) {
-            setShowSaveFailedModal(true);
-            return;
-        }
-        const trimmed = String(chestNumberInput || '').trim();
-        const nextChest = trimmed.length > 0 ? Number(trimmed) : null;
-        if (nextChest != null && (!Number.isInteger(nextChest) || nextChest < 0)) {
-            setShowSaveFailedModal(true);
-            return;
-        }
-        const nextByYear: Record<string, string> = { ...chestNumbersByYear };
-        if (nextChest == null) {
-            delete nextByYear[year];
-        } else {
-            nextByYear[year] = String(nextChest);
-        }
-        const payloadByYear: Record<string, number> = Object.entries(nextByYear).reduce((acc, [k, v]) => {
-            const parsed = Number(v);
-            if (/^\d{4}$/.test(String(k)) && Number.isInteger(parsed) && parsed >= 0) {
-                acc[String(k)] = parsed;
-            }
-            return acc;
-        }, {} as Record<string, number>);
-        setIsSavingChestNumber(true);
-        try {
-            const updated = await updateProfileSummary(apiAccessToken, {
-                chest_numbers_by_year: payloadByYear,
-            });
-            setProfileSummary(updated);
-            const storedByYear = normalizeChestByYear(updated?.profile?.chest_numbers_by_year ?? payloadByYear);
-            setChestNumbersByYear(storedByYear);
-            setChestNumberInput(getChestForYear(year, storedByYear));
-            await updateUserProfile({ chestNumbersByYear: storedByYear });
-        } catch {
-            setShowSaveFailedModal(true);
-        } finally {
-            setIsSavingChestNumber(false);
-        }
-    }, [
-        apiAccessToken,
-        chestNumberInput,
-        chestNumbersByYear,
-        chestYearInput,
-        getChestForYear,
-        normalizeChestByYear,
-        updateUserProfile,
-    ]);
-
     const showDownloadsTab = true;
-    const savedChestByYear = useMemo(
-        () => normalizeChestByYear(profileSummary?.profile?.chest_numbers_by_year ?? {}),
-        [normalizeChestByYear, profileSummary?.profile?.chest_numbers_by_year],
-    );
-    const savedChestNumberForYear = getChestForYear(chestYearInput, savedChestByYear);
-    const canSaveChestNumber =
-        !isSavingChestNumber &&
-        /^\d{4}$/.test(String(chestYearInput || '').trim()) &&
-        String(chestNumberInput).trim() !== String(savedChestNumberForYear).trim();
+    const currentChestNumber = useMemo(() => {
+        const byYear = normalizeChestByYear(profileSummary?.profile?.chest_numbers_by_year ?? chestNumbersByYear);
+        const thisYearChest = String(byYear[currentYear] ?? '').trim();
+        if (thisYearChest.length > 0) return thisYearChest;
+        const latestYear = Object.keys(byYear)
+            .filter((year) => /^\d{4}$/.test(String(year)))
+            .sort((a, b) => Number(b) - Number(a))
+            .find((year) => String(byYear[year] ?? '').trim().length > 0);
+        if (!latestYear) return '';
+        return String(byYear[latestYear]).trim();
+    }, [chestNumbersByYear, currentYear, normalizeChestByYear, profileSummary?.profile?.chest_numbers_by_year]);
+
+    const athleticsClub = useMemo(() => {
+        const fromSummary =
+            (profileSummary as any)?.profile?.athletics_club ??
+            (profileSummary as any)?.profile?.running_club ??
+            (profileSummary as any)?.profile?.running_club_name ??
+            null;
+        const fromLocal = userProfile?.runningClub ?? null;
+        return String(fromSummary ?? fromLocal ?? '').trim();
+    }, [profileSummary, userProfile?.runningClub]);
+
+    const profileDisplayName = useMemo(() => {
+        const fromSummary = String((profileSummary as any)?.profile?.display_name ?? '').trim();
+        if (fromSummary) return fromSummary;
+
+        const fromLocal = [userProfile?.firstName, userProfile?.lastName]
+            .filter((part) => String(part ?? '').trim().length > 0)
+            .join(' ')
+            .trim();
+        if (fromLocal) return fromLocal;
+
+        const fromAuth = String(user?.name ?? '').trim();
+        if (fromAuth) return fromAuth;
+
+        return t('Profile');
+    }, [profileSummary, t, user?.name, userProfile?.firstName, userProfile?.lastName]);
+
+    const profileHandle = useMemo(() => {
+        const raw =
+            (profileSummary as any)?.profile?.username ??
+            userProfile?.username ??
+            user?.nickname ??
+            (user?.email ? String(user.email).split('@')[0] : '');
+        const safe = String(raw ?? '').trim().replace(/^@+/, '');
+        if (!safe) return '';
+        return safe.replace(/\s+/g, '');
+    }, [profileSummary, user?.email, user?.nickname, userProfile?.username]);
+
+    const profileBioText = useMemo(() => {
+        const raw = String(profileSummary?.profile?.bio ?? '').trim();
+        if (!raw) return t('Write your bio...');
+        const normalizedRaw = raw.replace(/^@+/, '').trim().toLowerCase();
+        const normalizedHandle = profileHandle.trim().toLowerCase();
+        if (normalizedHandle.length > 0 && normalizedRaw === normalizedHandle) {
+            return t('Write your bio...');
+        }
+        return raw;
+    }, [profileHandle, profileSummary?.profile?.bio, t]);
 
     const sortCollectionItems = useCallback((items: ProfileCollectionItem[]) => {
         const featured = items
@@ -590,25 +637,135 @@ const UserProfileScreen = ({ navigation }: any) => {
 
 
     const activityItems = useMemo<ProfileNewsItem[]>(() => {
-        return blogEntries.map((entry) => ({
+        const toTimestamp = (value?: string | null) => {
+            if (!value) return 0;
+            const ts = Date.parse(String(value));
+            return Number.isNaN(ts) ? 0 : ts;
+        };
+
+        const toDateLabel = (value?: string | null) => {
+            if (!value) return '';
+            const raw = String(value);
+            const dt = new Date(raw);
+            if (Number.isNaN(dt.getTime())) return raw.slice(0, 10);
+            return dt.toLocaleDateString();
+        };
+
+        const blogItems: ProfileNewsItem[] = blogEntries.map((entry) => ({
             id: String(entry.id),
+            kind: 'blog',
+            postId: String(entry.id),
             title: String(entry.title || ''),
-            date: entry.date ? String(entry.date) : '',
+            sortAt: entry.createdAt ? String(entry.createdAt) : (entry.date ? String(entry.date) : null),
+            date: entry.createdAt ? toDateLabel(String(entry.createdAt)) : (entry.date ? String(entry.date) : ''),
             description: entry.description ? String(entry.description) : '',
             coverImage: entry.coverImage ? String(entry.coverImage) : null,
         }));
-    }, [blogEntries]);
+
+        const eventsMap = new Map<
+            string,
+            {
+                eventId: string;
+                eventName: string;
+                eventDate: string | null;
+                eventLocation: string | null;
+                coverImage: string | null;
+                isSubscribed: boolean;
+                photosCount: number;
+                videosCount: number;
+            }
+        >();
+
+        for (const event of subscribedEvents) {
+            const eventId = String(event?.event_id || '').trim();
+            if (!eventId) continue;
+            const current =
+                eventsMap.get(eventId) ??
+                {
+                    eventId,
+                    eventName: '',
+                    eventDate: null,
+                    eventLocation: null,
+                    coverImage: null,
+                    isSubscribed: false,
+                    photosCount: 0,
+                    videosCount: 0,
+                };
+            current.eventName = String(event?.event_name ?? event?.event_title ?? current.eventName ?? '').trim();
+            current.eventDate = event?.event_date ? String(event.event_date) : current.eventDate;
+            current.eventLocation = event?.event_location ? String(event.event_location) : current.eventLocation;
+            current.isSubscribed = true;
+            eventsMap.set(eventId, current);
+        }
+
+        for (const appearance of appearanceEvents) {
+            const eventId = String(appearance?.event_id || '').trim();
+            if (!eventId) continue;
+            const current =
+                eventsMap.get(eventId) ??
+                {
+                    eventId,
+                    eventName: '',
+                    eventDate: null,
+                    eventLocation: null,
+                    coverImage: null,
+                    isSubscribed: false,
+                    photosCount: 0,
+                    videosCount: 0,
+                };
+            current.eventName = String(appearance?.event_name ?? current.eventName ?? '').trim();
+            current.eventDate = appearance?.event_date ? String(appearance.event_date) : current.eventDate;
+            current.eventLocation = appearance?.event_location ? String(appearance.event_location) : current.eventLocation;
+            current.coverImage =
+                appearance?.thumbnail_url && String(appearance.thumbnail_url).trim().length > 0
+                    ? String(appearance.thumbnail_url)
+                    : current.coverImage;
+            current.photosCount = Number(appearance?.photos_count ?? current.photosCount ?? 0);
+            current.videosCount = Number(appearance?.videos_count ?? current.videosCount ?? 0);
+            eventsMap.set(eventId, current);
+        }
+
+        const eventItems: ProfileNewsItem[] = Array.from(eventsMap.values()).map((event) => {
+            const details: string[] = [];
+            if (event.isSubscribed) details.push(t('Subscribed competition'));
+            const mediaParts: string[] = [];
+            if (event.photosCount > 0) mediaParts.push(`${event.photosCount} ${t('Photos')}`);
+            if (event.videosCount > 0) mediaParts.push(`${event.videosCount} ${t('Videos')}`);
+            if (mediaParts.length > 0) details.push(mediaParts.join(' | '));
+            if (event.eventLocation) details.push(String(event.eventLocation));
+
+            return {
+                id: `event:${event.eventId}`,
+                kind: 'competition',
+                eventId: event.eventId,
+                title: event.eventName || t('competition'),
+                sortAt: event.eventDate,
+                date: toDateLabel(event.eventDate),
+                description: details.join(' - '),
+                coverImage: event.coverImage,
+            };
+        });
+
+        return [...blogItems, ...eventItems].sort((a, b) => {
+            const aDate = toTimestamp(a.sortAt ?? a.date ?? null);
+            const bDate = toTimestamp(b.sortAt ?? b.date ?? null);
+            if (bDate !== aDate) return bDate - aDate;
+            return String(b.id).localeCompare(String(a.id));
+        });
+    }, [appearanceEvents, blogEntries, subscribedEvents, t]);
 
     const handleSwipeDeleteBlog = useCallback((item: ProfileNewsItem) => {
+        if ((item.kind ?? 'blog') !== 'blog') return;
         setPendingDeleteBlog(item);
     }, []);
 
     const confirmDeleteBlog = useCallback(async () => {
         if (!apiAccessToken || !pendingDeleteBlog || isDeletingBlog) return;
         setIsDeletingBlog(true);
+        const blogId = String(pendingDeleteBlog.postId ?? pendingDeleteBlog.id);
         try {
-            await deletePost(apiAccessToken, String(pendingDeleteBlog.id));
-            setBlogEntries((prev) => prev.filter((entry) => String(entry.id) !== String(pendingDeleteBlog.id)));
+            await deletePost(apiAccessToken, blogId);
+            setBlogEntries((prev) => prev.filter((entry) => String(entry.id) !== blogId));
             setPendingDeleteBlog(null);
         } catch {
             Alert.alert(t('Error'), t('Could not delete this post.'));
@@ -616,6 +773,43 @@ const UserProfileScreen = ({ navigation }: any) => {
             setIsDeletingBlog(false);
         }
     }, [apiAccessToken, isDeletingBlog, pendingDeleteBlog, t]);
+
+    const handlePressActivityItem = useCallback(async (item: ProfileNewsItem) => {
+        if ((item.kind ?? 'blog') === 'blog') {
+            const postId = String(item.postId ?? item.id);
+            navigation.navigate('ViewUserBlogDetailsScreen', {
+                postId,
+                postPreview: {
+                    title: item.title,
+                    date: item.date,
+                    description: item.description,
+                    coverImage: item.coverImage,
+                },
+            });
+            return;
+        }
+
+        const eventId = String(item.eventId || '').trim();
+        if (!apiAccessToken || !eventId) {
+            return;
+        }
+
+        try {
+            const resp = await getHubAppearanceMedia(apiAccessToken, eventId);
+            const baseResults = Array.isArray((resp as any)?.results) ? (resp as any).results : [];
+            const results = baseResults.map((entry: any) => ({
+                ...entry,
+                event_name: entry?.event_name ?? item.title,
+            }));
+            navigation.navigate('AISearchResultsScreen', {
+                results,
+                matchedCount: results.length,
+                matchType: 'context',
+            });
+        } catch {
+            Alert.alert(t('Error'), t('Could not open this competition.'));
+        }
+    }, [apiAccessToken, navigation, t]);
 
 
     return (
@@ -660,11 +854,6 @@ const UserProfileScreen = ({ navigation }: any) => {
                             </TouchableOpacity>
                             <View style={Styles.statsContainerRight}>
                                 <View style={Styles.statItem}>
-                                    <Text style={Styles.statValue}>{formatCount(profileSummary?.posts_count ?? blogEntries.length)}</Text>
-                                    <Text style={Styles.statLabel}>{t('Posts')}</Text>
-                                </View>
-                                <View style={Styles.statDivider} />
-                                <View style={Styles.statItem}>
                                     <Text style={Styles.statValue}>{formatCount(profileSummary?.followers_count ?? 0)}</Text>
                                     <Text style={Styles.statLabel}>{t('Followers')}</Text>
                                 </View>
@@ -673,6 +862,23 @@ const UserProfileScreen = ({ navigation }: any) => {
                                     <Icons.TrackFieldLogo width={28} height={24} />
                                     <Text style={Styles.statLabel}>{profileCategoryLabel}</Text>
                                 </View>
+                            </View>
+                        </View>
+                    </View>
+
+                    <View style={Styles.profileIdentityBlock}>
+                        <View style={Styles.profileIdentityRow}>
+                            <View style={Styles.profileIdentityHandleWrap}>
+                                {profileHandle.length > 0 ? (
+                                    <Text style={Styles.userHandleInline} numberOfLines={1}>
+                                        @{profileHandle}
+                                    </Text>
+                                ) : null}
+                            </View>
+                            <View style={Styles.profileIdentityNameWrap}>
+                                <Text style={Styles.userName} numberOfLines={1}>
+                                    {profileDisplayName}
+                                </Text>
                             </View>
                         </View>
                     </View>
@@ -686,52 +892,26 @@ const UserProfileScreen = ({ navigation }: any) => {
                             </TouchableOpacity>
                         </View>
                         <Text style={Styles.bioText}>
-                            {profileSummary?.profile?.bio
-                                ? String(profileSummary.profile.bio)
-                                : t('Write your bio...')}
+                            {profileBioText}
                         </Text>
                         <View style={Styles.bioDivider} />
                     </View>
-                    <View style={Styles.chestNumberSection}>
-                        <Text style={Styles.chestNumberLabel}>{t('chestNumber')}</Text>
-                        <View style={Styles.chestNumberRow}>
-                            <TouchableOpacity
-                                style={Styles.chestYearPickerButton}
-                                activeOpacity={0.85}
-                                onPress={() => {
-                                    if (!isSavingChestNumber) setShowChestYearModal(true);
-                                }}
-                            >
-                                <Text style={Styles.chestYearPickerText}>{chestYearInput}</Text>
-                                <ArrowDown2 size={14} color={colors.subTextColor} variant="Linear" />
-                            </TouchableOpacity>
-                            <TextInput
-                                value={chestNumberInput}
-                                onChangeText={(value) => setChestNumberInput(String(value || '').replace(/[^0-9]/g, ''))}
-                                keyboardType="number-pad"
-                                placeholder={t('chestNumber')}
-                                placeholderTextColor={colors.subTextColor}
-                                style={Styles.chestNumberInput}
-                                editable={!isSavingChestNumber}
-                                returnKeyType="done"
-                                onSubmitEditing={handleSaveChestNumber}
-                            />
-                            <TouchableOpacity
-                                style={[
-                                    Styles.chestNumberSaveButton,
-                                    !canSaveChestNumber && Styles.chestNumberSaveButtonDisabled,
-                                ]}
-                                disabled={!canSaveChestNumber}
-                                onPress={handleSaveChestNumber}
-                            >
-                                {isSavingChestNumber ? (
-                                    <ActivityIndicator size="small" color="#FFFFFF" />
-                                ) : (
-                                    <Text style={Styles.chestNumberSaveText}>{t('save')}</Text>
-                                )}
-                            </TouchableOpacity>
+                    {(currentChestNumber.length > 0 || athleticsClub.length > 0) && (
+                        <View style={Styles.athleteMetaSection}>
+                            {currentChestNumber.length > 0 && (
+                                <View style={Styles.athleteMetaRow}>
+                                    <Text style={Styles.athleteMetaLabel}>{t('chestNumber')}</Text>
+                                    <Text style={Styles.athleteMetaValue}>{currentChestNumber}</Text>
+                                </View>
+                            )}
+                            {athleticsClub.length > 0 && (
+                                <View style={Styles.athleteMetaRow}>
+                                    <Text style={Styles.athleteMetaLabel}>{t('Athletics club')}</Text>
+                                    <Text style={Styles.athleteMetaValue}>{athleticsClub}</Text>
+                                </View>
+                            )}
                         </View>
-                    </View>
+                    )}
 
                     <SizeBox height={10} />
 
@@ -797,17 +977,8 @@ const UserProfileScreen = ({ navigation }: any) => {
                         items={activityItems}
                         emptyText={t('No news yet. Add your first blog to share updates.')}
                         blogLabel={t('Blog')}
-                        onPressItem={(item) => {
-                            navigation.navigate('ViewUserBlogDetailsScreen', {
-                                postId: item.id,
-                                postPreview: {
-                                    title: item.title,
-                                    date: item.date,
-                                    description: item.description,
-                                    coverImage: item.coverImage,
-                                },
-                            });
-                        }}
+                        eventLabel={t('competition')}
+                        onPressItem={handlePressActivityItem}
                     />
                 )}
 
@@ -1002,7 +1173,7 @@ const UserProfileScreen = ({ navigation }: any) => {
                                     <View style={Styles.competitionInfo}>
                                         <Text style={Styles.competitionTitle}>{item.event_name || t('competition')}</Text>
                                         <Text style={Styles.competitionMeta}>
-                                            {Number(item.uploads_count ?? 0)} {t('uploads')} • {formatEventDate(item.event_date)}
+                                            {Number(item.uploads_count ?? 0)} {t('uploads')} | {formatEventDate(item.event_date)}
                                         </Text>
                                         <Text style={Styles.competitionMetaSecondary}>{item.event_location ?? ''}</Text>
                                     </View>
@@ -1076,92 +1247,32 @@ const UserProfileScreen = ({ navigation }: any) => {
                             >
                                 <Text style={Styles.categoryOptionText}>{t('Add group')}</Text>
                             </TouchableOpacity>
+                            {myGroups
+                                .map((group) => ({
+                                    id: String(group?.group_id ?? '').trim(),
+                                    name: String(group?.name ?? '').trim(),
+                                }))
+                                .filter((group) => group.id.length > 0)
+                                .map((group) => (
+                                    <React.Fragment key={group.id}>
+                                        <View style={Styles.categoryOptionDivider} />
+                                        <TouchableOpacity
+                                            style={Styles.categoryOption}
+                                            onPress={() => {
+                                                setShowProfileMenuModal(false);
+                                                navigation.navigate('GroupProfileScreen', { groupId: group.id });
+                                            }}
+                                        >
+                                            <Text style={Styles.categoryOptionText}>
+                                                {`${t('Switch to')} ${group.name || t('Group')}`}
+                                            </Text>
+                                        </TouchableOpacity>
+                                    </React.Fragment>
+                                ))}
                         </TouchableOpacity>
                     </TouchableOpacity>
                 </Modal>
             )}
-
-            <Modal
-                visible={showChestYearModal}
-                transparent
-                animationType="fade"
-                onRequestClose={() => setShowChestYearModal(false)}
-            >
-                <TouchableOpacity
-                    style={Styles.categoryModalBackdrop}
-                    activeOpacity={1}
-                    onPress={() => setShowChestYearModal(false)}
-                >
-                    <TouchableOpacity
-                        activeOpacity={1}
-                        style={Styles.categoryModalCard}
-                        onPress={() => {}}
-                    >
-                        <Text style={Styles.categoryModalTitle}>{t('year')}</Text>
-                        <SizeBox height={8} />
-                        <ScrollView style={Styles.chestYearList}>
-                            {chestYearOptions.map((year) => {
-                                const active = year === chestYearInput;
-                                return (
-                                    <TouchableOpacity
-                                        key={`chest-year-${year}`}
-                                        style={Styles.chestYearOption}
-                                        onPress={() => {
-                                            setChestYearInput(year);
-                                            setShowChestYearModal(false);
-                                        }}
-                                    >
-                                        <Text style={[Styles.chestYearOptionText, active && Styles.chestYearOptionTextActive]}>
-                                            {year}
-                                        </Text>
-                                    </TouchableOpacity>
-                                );
-                            })}
-                        </ScrollView>
-                    </TouchableOpacity>
-                </TouchableOpacity>
-            </Modal>
-
-            <Modal
-                visible={showSaveFailedModal}
-                transparent
-                animationType="fade"
-                onRequestClose={() => setShowSaveFailedModal(false)}
-            >
-                <TouchableOpacity
-                    style={Styles.categoryModalBackdrop}
-                    activeOpacity={1}
-                    onPress={() => setShowSaveFailedModal(false)}
-                >
-                    <TouchableOpacity
-                        activeOpacity={1}
-                        style={[
-                            Styles.categoryModalCard,
-                            {
-                                backgroundColor: colors.modalBackground,
-                                borderWidth: 0.5,
-                                borderColor: colors.lightGrayColor,
-                                borderRadius: 16,
-                                padding: 16,
-                            },
-                        ]}
-                        onPress={() => {}}
-                    >
-                        <Text style={Styles.categoryModalTitle}>{t('Save failed')}</Text>
-                        <SizeBox height={8} />
-                        <Text style={[Styles.emptyStateText, { textAlign: 'center' }]}>
-                            {t('Please try again')}
-                        </Text>
-                        <SizeBox height={12} />
-                        <TouchableOpacity
-                            style={[Styles.categoryOption, { borderRadius: 10 }]}
-                            onPress={() => setShowSaveFailedModal(false)}
-                        >
-                            <Text style={Styles.categoryOptionText}>{t('Cancel')}</Text>
-                        </TouchableOpacity>
-                    </TouchableOpacity>
-                </TouchableOpacity>
-            </Modal>
 
             <Modal
                 visible={Boolean(pendingDeleteBlog)}
@@ -1236,3 +1347,4 @@ const UserProfileScreen = ({ navigation }: any) => {
 };
 
 export default UserProfileScreen;
+

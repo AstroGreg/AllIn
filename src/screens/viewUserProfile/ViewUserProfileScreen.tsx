@@ -47,16 +47,17 @@ const ViewUserProfileScreen = ({ navigation, route }: any) => {
     const imageWidth = Math.floor((width - 40 - 24 - 30) / 4);
 
     const profileId = useMemo(() => {
-        const fromParams = route?.params?.profileId;
+        const fromParams = route?.params?.profileId ?? route?.params?.profile_id;
         const user = route?.params?.user;
-        return (
+        const resolved =
             fromParams ||
             user?.profile_id ||
+            user?.profileId ||
             user?.id ||
             user?.user_id ||
-            null
-        );
-    }, [route?.params?.profileId, route?.params?.user]);
+            null;
+        return resolved ? String(resolved) : null;
+    }, [route?.params?.profileId, route?.params?.profile_id, route?.params?.user]);
 
     const isSignedUrl = useCallback((value?: string | null) => {
         if (!value) return false;
@@ -180,21 +181,31 @@ const ViewUserProfileScreen = ({ navigation, route }: any) => {
         };
     }, [apiAccessToken, profileId, toAbsoluteUrl, withAccessToken]);
 
+    const targetProfileId = useMemo(() => {
+        const value = String(summary?.profile_id ?? profileId ?? '').trim();
+        return value.length > 0 ? value : null;
+    }, [profileId, summary?.profile_id]);
+
+    const isOwnProfile = useMemo(() => {
+        const viewerId = String(viewerProfileId || '').trim();
+        const targetId = String(targetProfileId || '').trim();
+        return viewerId.length > 0 && targetId.length > 0 && viewerId === targetId;
+    }, [targetProfileId, viewerProfileId]);
+
     const followAllowed = useMemo(() => {
-        if (!summary?.profile_id) return false;
-        if (!viewerProfileId) return true;
-        return String(summary.profile_id) !== String(viewerProfileId);
-    }, [summary?.profile_id, viewerProfileId]);
+        if (!summary?.profile_id || !targetProfileId) return false;
+        return !isOwnProfile;
+    }, [isOwnProfile, summary?.profile_id, targetProfileId]);
 
     const handleToggleFollow = async () => {
-        if (!apiAccessToken || !summary?.profile_id || isUpdatingFollow) return;
+        if (!apiAccessToken || !targetProfileId || !summary || isUpdatingFollow) return;
         setIsUpdatingFollow(true);
         try {
-            if (summary.is_following) {
-                await unfollowProfile(apiAccessToken, String(summary.profile_id));
+            if (summary?.is_following) {
+                await unfollowProfile(apiAccessToken, targetProfileId);
                 setSummary((prev) => (prev ? { ...prev, is_following: false, followers_count: Math.max(0, (prev.followers_count ?? 0) - 1) } : prev));
             } else {
-                await followProfile(apiAccessToken, String(summary.profile_id));
+                await followProfile(apiAccessToken, targetProfileId);
                 setSummary((prev) => (prev ? { ...prev, is_following: true, followers_count: (prev.followers_count ?? 0) + 1 } : prev));
             }
         } finally {
@@ -218,7 +229,21 @@ const ViewUserProfileScreen = ({ navigation, route }: any) => {
     }, [summary?.profile, toAbsoluteUrl, withAccessToken]);
 
     const displayName = summary?.profile?.display_name || t('Profile');
-    const bioText = summary?.profile?.bio || t('No bio added yet.');
+    const displayHandle = useMemo(() => {
+        const raw = String(summary?.profile?.username ?? '').trim().replace(/^@+/, '');
+        if (!raw) return '';
+        return raw.replace(/\s+/g, '');
+    }, [summary?.profile?.username]);
+    const bioText = useMemo(() => {
+        const raw = String(summary?.profile?.bio ?? '').trim();
+        if (!raw) return t('No bio added yet.');
+        const normalizedRaw = raw.replace(/^@+/, '').trim().toLowerCase();
+        const normalizedHandle = displayHandle.trim().toLowerCase();
+        if (normalizedHandle.length > 0 && normalizedRaw === normalizedHandle) {
+            return t('No bio added yet.');
+        }
+        return raw;
+    }, [displayHandle, summary?.profile?.bio, t]);
 
     const photoCollections = useMemo(
         () => collections.filter((c) => String(c.collection_type || '').toLowerCase() === 'image'),
@@ -292,11 +317,6 @@ const ViewUserProfileScreen = ({ navigation, route }: any) => {
                             </View>
                             <View style={Styles.statsContainerRight}>
                                 <View style={Styles.statItem}>
-                                    <Text style={Styles.statValue}>{summary?.posts_count ?? 0}</Text>
-                                    <Text style={Styles.statLabel}>{t('Posts')}</Text>
-                                </View>
-                                <View style={Styles.statDivider} />
-                                <View style={Styles.statItem}>
                                     <Text style={Styles.statValue}>{summary?.followers_count ?? 0}</Text>
                                     <Text style={Styles.statLabel}>{t('Followers')}</Text>
                                 </View>
@@ -305,6 +325,23 @@ const ViewUserProfileScreen = ({ navigation, route }: any) => {
                         <View style={Styles.profileCategoryOnly}>
                             <Icons.TrackFieldLogo width={28} height={24} />
                             <Text style={Styles.profileCategoryText}>{t('trackAndField')}</Text>
+                        </View>
+                    </View>
+
+                    <View style={Styles.profileIdentityBlock}>
+                        <View style={Styles.profileIdentityRow}>
+                            <View style={Styles.profileIdentityHandleWrap}>
+                                {displayHandle.length > 0 ? (
+                                    <Text style={Styles.userHandleInline} numberOfLines={1}>
+                                        @{displayHandle}
+                                    </Text>
+                                ) : null}
+                            </View>
+                            <View style={Styles.profileIdentityNameWrap}>
+                                <Text style={Styles.userName} numberOfLines={1}>
+                                    {displayName}
+                                </Text>
+                            </View>
                         </View>
                     </View>
 

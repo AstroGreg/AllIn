@@ -91,12 +91,15 @@ const CompetitionDetailsScreen = ({ navigation, route }: any) => {
             ...normalizeChestByYear(userProfile?.chestNumbersByYear ?? {}),
             ...profileChestByYear,
         };
-        const eventYear = getYearFromDateLike(String(route?.params?.date ?? ''));
+        const eventYear =
+            getYearFromDateLike(String(route?.params?.date ?? '')) ||
+            getYearFromDateLike(String(route?.params?.name ?? route?.params?.eventName ?? '')) ||
+            getYearFromDateLike(String(route?.params?.location ?? ''));
         if (eventYear && byYear[eventYear] != null && String(byYear[eventYear]).trim().length > 0) {
             return String(byYear[eventYear]).trim();
         }
         return '';
-    }, [getYearFromDateLike, normalizeChestByYear, profileChestByYear, route?.params?.date, userProfile?.chestNumbersByYear]);
+    }, [getYearFromDateLike, normalizeChestByYear, profileChestByYear, route?.params?.date, route?.params?.eventName, route?.params?.location, route?.params?.name, userProfile?.chestNumbersByYear]);
 
     useEffect(() => {
         if (!apiAccessToken) return;

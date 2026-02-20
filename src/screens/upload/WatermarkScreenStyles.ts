@@ -121,8 +121,37 @@ export const createStyles = (colors: ThemeColors) => StyleSheet.create({
         borderColor: colors.borderColor,
         overflow: 'hidden',
     },
+    previewPage: {
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    previewDotsRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 6,
+        marginTop: 10,
+    },
+    previewDot: {
+        width: 7,
+        height: 7,
+        borderRadius: 4,
+        backgroundColor: colors.lightGrayColor,
+        opacity: 0.9,
+    },
+    previewDotActive: {
+        width: 20,
+        backgroundColor: colors.primaryColor,
+    },
+    previewMediaFrame: {
+        position: 'relative',
+        alignItems: 'center',
+        justifyContent: 'center',
+        overflow: 'hidden',
+    },
     previewImage: {
-        ...StyleSheet.absoluteFillObject,
+        width: '100%',
+        height: '100%',
     },
     previewText: {
         ...Fonts.medium16,
@@ -186,23 +215,18 @@ export const createStyles = (colors: ThemeColors) => StyleSheet.create({
         width: '100%',
         height: '100%',
     },
+    previewModalFrame: {
+        borderRadius: 12,
+    },
+    previewModalPage: {
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
     previewModalWatermarkOverlay: {
-        position: 'absolute',
+        ...StyleSheet.absoluteFillObject,
         justifyContent: 'space-around',
         transform: [{ rotate: '-18deg' }],
         paddingVertical: 4,
-        overflow: 'hidden',
-    },
-    previewModalCloseButton: {
-        marginTop: 12,
-        backgroundColor: colors.primaryColor,
-        borderRadius: 10,
-        paddingHorizontal: 18,
-        paddingVertical: 10,
-    },
-    previewModalCloseText: {
-        ...Fonts.medium14,
-        color: colors.pureWhite,
     },
 });
 

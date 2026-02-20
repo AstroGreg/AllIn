@@ -150,6 +150,8 @@ const HubScreen = ({ navigation }: any) => {
                         mediaId: item.media_id,
                         eventId: item.event_id ?? null,
                         title: item.event_name || t('upload'),
+                        location: item.event_location ?? '-',
+                        date: item.event_date ?? '-',
                         likes: Number(item.likes_count ?? 0),
                         views: Number(item.views_count ?? 0),
                         labelsYes: Number(item.labels_yes ?? 0),
@@ -273,6 +275,29 @@ const HubScreen = ({ navigation }: any) => {
         loadHidden();
     }, []);
 
+    const openUploadManage = (card: any) => {
+        const mediaId = String(card.mediaId ?? card.id ?? '').trim();
+        if (!mediaId) return;
+        const thumbnailUri = card.thumbnail?.uri ? String(card.thumbnail.uri) : undefined;
+        const fallbackUri =
+            card.previewUrl ||
+            card.originalUrl ||
+            card.fullUrl ||
+            card.rawUrl ||
+            undefined;
+        navigation.navigate('VideoDetailsScreen', {
+            mediaId,
+            video: {
+                media_id: mediaId,
+                title: card.title,
+                location: card.location,
+                date: formatDateOnly(card.date),
+                thumbnail: thumbnailUri ? { uri: thumbnailUri } : undefined,
+                uri: fallbackUri,
+            },
+        });
+    };
+
     const openCardAction = (card: any) => {
         if (card.cardType === 'appearance') {
             navigation.navigate('AllPhotosOfEvents', {
@@ -291,20 +316,7 @@ const HubScreen = ({ navigation }: any) => {
             });
             return;
         }
-        navigation.navigate('PhotoDetailScreen', {
-            eventTitle: card.title,
-            media: {
-                id: card.mediaId ?? card.id,
-                type: card.type,
-                eventId: card.eventId ?? null,
-                thumbnailUrl: card.thumbnail?.uri,
-                previewUrl: card.previewUrl,
-                originalUrl: card.originalUrl,
-                fullUrl: card.fullUrl,
-                rawUrl: card.rawUrl,
-                hlsManifestPath: card.hlsManifestPath,
-            },
-        });
+        openUploadManage(card);
     };
 
     const handleCardPress = (card: any) => {
@@ -435,7 +447,13 @@ const HubScreen = ({ navigation }: any) => {
                         <Text style={Styles.cardSubtitle}>
                             {getUploadTypeLabel(card.type)} | {card.labelsTotal > 0 ? `${card.labelsYes} ${t('yes')} | ${card.labelsNo} ${t('no')}` : t('No feedback yet')}
                         </Text>
-                        <TouchableOpacity style={Styles.feedbackButton}>
+                        <TouchableOpacity
+                            style={Styles.feedbackButton}
+                            onPress={(e: any) => {
+                                if (e?.stopPropagation) e.stopPropagation();
+                                handleCardPress(card);
+                            }}
+                        >
                             <Text style={Styles.feedbackButtonText}>{t('Manage upload')}</Text>
                             <Icons.RightBtnIcon height={16} width={16} />
                         </TouchableOpacity>
