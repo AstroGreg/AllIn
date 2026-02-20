@@ -1,5 +1,5 @@
 import React, { useState, useRef, useCallback, useEffect, useMemo } from 'react';
-import { View, Text, TouchableOpacity, Dimensions, FlatList, ViewToken, Image, Animated } from 'react-native';
+import { View, Text, TouchableOpacity, Dimensions, FlatList, ViewToken, Image, Animated, Modal, Pressable } from 'react-native';
 import FastImage from 'react-native-fast-image';
 import ShimmerEffect from '../../../components/shimmerEffect/ShimmerEffect';
 import Video from 'react-native-video';
@@ -9,7 +9,7 @@ import { useTheme } from '../../../context/ThemeContext';
 import { Heart, Import } from 'iconsax-react-nativejs';
 import { useTranslation } from 'react-i18next'
 
-const { width: screenWidth } = Dimensions.get('window');
+const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
 interface NewsFeedCardProps {
     title: string;
@@ -112,6 +112,9 @@ const NewsFeedCard = ({
     const [currentTime, setCurrentTime] = useState(0);
     const [isManualPaused, setIsManualPaused] = useState(false);
     const [isMuted, setIsMuted] = useState(true);
+    const [imagePreviewVisible, setImagePreviewVisible] = useState(false);
+    const [imagePreviewSource, setImagePreviewSource] = useState<any | null>(null);
+    const [imagePreviewAspectRatio, setImagePreviewAspectRatio] = useState(1);
     const videoOpacity = useRef(new Animated.Value(0)).current;
     const videoRef = useRef<Video>(null);
     const hasSeekedRef = useRef(false);
@@ -230,6 +233,24 @@ const NewsFeedCard = ({
         }
         if (onImagePress) {
             onImagePress(index);
+            return;
+        }
+        const selectedImage = images?.[index];
+        if (selectedImage && String(selectedImage) !== '__text__') {
+            if (typeof selectedImage === 'number') {
+                const resolved = Image.resolveAssetSource(selectedImage);
+                if (resolved?.width && resolved?.height) {
+                    setImagePreviewAspectRatio(resolved.width / resolved.height);
+                } else {
+                    setImagePreviewAspectRatio(1);
+                }
+            } else if (selectedImage?.width && selectedImage?.height) {
+                setImagePreviewAspectRatio(Number(selectedImage.width) / Number(selectedImage.height));
+            } else {
+                setImagePreviewAspectRatio(1);
+            }
+            setImagePreviewSource(selectedImage);
+            setImagePreviewVisible(true);
             return;
         }
         if (onPress) {
@@ -371,7 +392,7 @@ const NewsFeedCard = ({
                 <FastImage
                     source={item}
                     style={Styles.newsFeedImage}
-                    resizeMode="cover"
+                    resizeMode="contain"
                 />
             {(showPlayOverlay || videoIndexes.includes(index)) && index === currentIndex && (
                 <View style={Styles.videoOverlay}>
@@ -410,6 +431,21 @@ const NewsFeedCard = ({
         const match = raw.match(/[0-9][0-9.,]*/);
         return match ? match[0] : raw;
     }, [likesLabel]);
+
+    const previewFrameStyle = useMemo(() => {
+        const maxWidth = screenWidth * 0.94;
+        const maxHeight = screenHeight * 0.82;
+        const safeRatio = Number.isFinite(imagePreviewAspectRatio) && imagePreviewAspectRatio > 0
+            ? imagePreviewAspectRatio
+            : 1;
+        let width = maxWidth;
+        let height = width / safeRatio;
+        if (height > maxHeight) {
+            height = maxHeight;
+            width = height * safeRatio;
+        }
+        return { width, height };
+    }, [imagePreviewAspectRatio]);
 
     return (
         <View style={[hasBorder ? Styles.newsFeedCard : Styles.newsFeedCardNoBorder, Styles.newsFeedCardFull]}>
@@ -559,6 +595,36 @@ const NewsFeedCard = ({
                     {likeCountText ? <Text style={Styles.feedLikeText}>{likeCountText}</Text> : null}
                 </TouchableOpacity>
             </View>
+
+            <Modal
+                visible={imagePreviewVisible}
+                transparent
+                animationType="fade"
+                onRequestClose={() => setImagePreviewVisible(false)}
+            >
+                <View style={Styles.feedImagePreviewOverlay}>
+                    <Pressable
+                        style={Styles.feedImagePreviewBackdrop}
+                        onPress={() => setImagePreviewVisible(false)}
+                    />
+                    <Pressable style={[Styles.feedImagePreviewContent, previewFrameStyle]} onPress={() => {}}>
+                        {imagePreviewSource ? (
+                            <FastImage
+                                source={imagePreviewSource}
+                                style={Styles.feedImagePreviewImage}
+                                resizeMode="contain"
+                                onLoad={(event) => {
+                                    const w = Number(event?.nativeEvent?.width ?? 0);
+                                    const h = Number(event?.nativeEvent?.height ?? 0);
+                                    if (w > 0 && h > 0) {
+                                        setImagePreviewAspectRatio(w / h);
+                                    }
+                                }}
+                            />
+                        ) : null}
+                    </Pressable>
+                </View>
+            </Modal>
 
         </View>
     );

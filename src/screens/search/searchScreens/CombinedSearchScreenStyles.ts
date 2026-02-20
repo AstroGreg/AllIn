@@ -52,6 +52,13 @@ export const createStyles = (colors: ThemeColors) =>
       color: colors.mainTextColor,
       marginBottom: 8,
     },
+    faceSectionTitle: {
+      ...Fonts.semibold14,
+      color: colors.mainTextColor,
+      marginBottom: 8,
+      fontSize: 15,
+      lineHeight: 20,
+    },
     sectionAction: {
       borderWidth: 1,
       borderColor: colors.lightGrayColor,
@@ -77,6 +84,21 @@ export const createStyles = (colors: ThemeColors) =>
       flexWrap: 'wrap',
       gap: 8,
       marginTop: 12,
+    },
+    selectedCompetitionsRow: {
+      marginTop: 12,
+      flexDirection: 'row',
+      alignItems: 'flex-start',
+      gap: 8,
+    },
+    competitionChipsWrap: {
+      flex: 1,
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: 8,
+    },
+    inlineEditAction: {
+      marginTop: 2,
     },
     competitionChip: {
       flexDirection: 'row',
@@ -109,6 +131,9 @@ export const createStyles = (colors: ThemeColors) =>
       backgroundColor: colors.cardBackground,
       alignItems: 'center',
       justifyContent: 'center',
+    },
+    emptyCompetitionCardError: {
+      borderColor: colors.errorColor,
     },
     emptyCompetitionText: {
       ...Fonts.semibold14,

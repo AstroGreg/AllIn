@@ -19,6 +19,7 @@ import {useAuth} from '../../../context/AuthContext';
 import {
   ApiError,
   getAuthMe,
+  getProfileSummary,
   grantFaceRecognitionConsent,
   searchFaceByEnrollment,
   searchMediaByBib,
@@ -80,6 +81,21 @@ const CombinedSearchScreen = ({navigation}: any) => {
   const [authMe, setAuthMe] = useState<any | null>(null);
   const [showAutoCompareModal, setShowAutoCompareModal] = useState(false);
   const [pendingAutoRun, setPendingAutoRun] = useState(false);
+  const [profileChestByYear, setProfileChestByYear] = useState<Record<string, string>>({});
+  const [competitionRequiredError, setCompetitionRequiredError] = useState(false);
+
+  const normalizeChestByYear = useCallback((raw: any): Record<string, string> => {
+    if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return {};
+    const out: Record<string, string> = {};
+    for (const [year, chest] of Object.entries(raw as Record<string, unknown>)) {
+      const safeYear = String(year ?? '').trim();
+      if (!/^\d{4}$/.test(safeYear)) continue;
+      const parsed = Number(chest);
+      if (!Number.isInteger(parsed) || parsed < 0) continue;
+      out[safeYear] = String(parsed);
+    }
+    return out;
+  }, []);
 
   const normalizeEventOptions = useCallback((events: any[]): EventOption[] => {
     return events
@@ -94,17 +110,47 @@ const CombinedSearchScreen = ({navigation}: any) => {
 
   const selectedEventIds = useMemo(() => selectedEvents.map((event) => event.id), [selectedEvents]);
   const hasCompetition = selectedEventIds.length > 0;
+  const getYearFromDateLike = useCallback((value?: string | null) => {
+    const raw = String(value ?? '').trim();
+    if (!raw) return null;
+    const dt = new Date(raw);
+    if (!Number.isNaN(dt.getTime())) return String(dt.getFullYear());
+    const m = raw.match(/\b(19|20)\d{2}\b/);
+    return m ? m[0] : null;
+  }, []);
+  const resolveDefaultChestForEvents = useCallback(
+    (events: EventOption[]) => {
+      const byYear = {
+        ...normalizeChestByYear(userProfile?.chestNumbersByYear ?? {}),
+        ...profileChestByYear,
+      };
+      for (const event of events) {
+        const year = getYearFromDateLike(event.date ?? null);
+        if (year && byYear[year] != null && String(byYear[year]).trim().length > 0) {
+          return String(byYear[year]).trim();
+        }
+      }
+      return '';
+    },
+    [getYearFromDateLike, normalizeChestByYear, profileChestByYear, userProfile?.chestNumbersByYear],
+  );
 
   const refreshMe = useCallback(async () => {
     if (!apiAccessToken) return;
     try {
       const me = await getAuthMe(apiAccessToken);
       setAuthMe(me);
+      try {
+        const summary = await getProfileSummary(apiAccessToken);
+        setProfileChestByYear(normalizeChestByYear(summary?.profile?.chest_numbers_by_year ?? {}));
+      } catch {
+        // keep local fallback from userProfile
+      }
     } catch (e: any) {
       const msg = e instanceof ApiError ? e.message : String(e?.message ?? e);
       setErrorText(msg);
     }
-  }, [apiAccessToken]);
+  }, [apiAccessToken, normalizeChestByYear]);
 
   useFocusEffect(
     useCallback(() => {
@@ -209,12 +255,21 @@ const CombinedSearchScreen = ({navigation}: any) => {
     runCombinedSearch();
   }, [bib, contextText, hasCompetition, includeFace, pendingAutoRun, runCombinedSearch]);
 
+  useEffect(() => {
+    if (selectedEvents.length === 0) return;
+    const chestNumber = resolveDefaultChestForEvents(selectedEvents);
+    if (chestNumber) {
+      setBib(chestNumber);
+    }
+  }, [resolveDefaultChestForEvents, selectedEvents]);
+
   const toggleEvent = (option: EventOption) => {
     setSelectedEvents((prev) => {
       const exists = prev.some((event) => event.id === option.id);
       if (exists) {
         return prev.filter((event) => event.id !== option.id);
       }
+      setCompetitionRequiredError(false);
       return [...prev, option];
     });
   };
@@ -226,13 +281,11 @@ const CombinedSearchScreen = ({navigation}: any) => {
   const applyAutoCompare = () => {
     setShowAutoCompareModal(false);
     setIncludeFace(true);
-    const chestNumber = String(userProfile?.chestNumber ?? '').trim();
+    const chestNumber = resolveDefaultChestForEvents(selectedEvents);
     if (chestNumber) {
       setBib(chestNumber);
-      setPendingAutoRun(true);
-    } else {
-      setErrorText('Add your chest number to compare automatically.');
     }
+    setPendingAutoRun(true);
   };
 
   const startFaceRegistrationGovIdFlow = useCallback(() => {
@@ -288,9 +341,10 @@ const CombinedSearchScreen = ({navigation}: any) => {
     }
 
     if (selectedEventIds.length === 0) {
-      setErrorText('Select at least one competition.');
+      setCompetitionRequiredError(true);
       return;
     }
+    setCompetitionRequiredError(false);
 
     const wantsBib = bib.trim().length > 0;
     const wantsContext = contextText.trim().length > 0;
@@ -504,43 +558,40 @@ const CombinedSearchScreen = ({navigation}: any) => {
           <SizeBox height={18} />
           <Text style={styles.title}>{t('Search by chest, face, and context')}</Text>
           <SizeBox height={6} />
-          <Text style={styles.subtitle}>
-            Select competitions first, then add any details you remember.
-          </Text>
 
           <View style={styles.competitionSection}>
-            <View style={styles.sectionHeaderRow}>
-              <Text style={styles.sectionTitle}>{t('Competitions')}</Text>
-              <TouchableOpacity
-                style={styles.sectionAction}
-                onPress={() => setShowCompetitionModal(true)}
-              >
-                <Text style={styles.sectionActionText}>
-                  {hasCompetition ? 'Edit' : 'Select'}
-                </Text>
-              </TouchableOpacity>
-            </View>
-            <Text style={styles.helperText}>{t('Choose one or more competitions to search.')}</Text>
+            <Text style={styles.sectionTitle}>{t('Competitions')}</Text>
 
             {selectedEvents.length > 0 ? (
-              <View style={styles.competitionChipsRow}>
-                {selectedEvents.map((event) => (
-                  <View key={event.id} style={styles.competitionChip}>
-                    <Text style={styles.competitionChipText} numberOfLines={1}>
-                      {event.name}
-                    </Text>
-                    <TouchableOpacity
-                      style={styles.competitionChipRemove}
-                      onPress={() => removeEvent(event.id)}
-                    >
-                      <CloseCircle size={14} color={colors.subTextColor} variant="Linear" />
-                    </TouchableOpacity>
-                  </View>
-                ))}
+              <View style={styles.selectedCompetitionsRow}>
+                <View style={styles.competitionChipsWrap}>
+                  {selectedEvents.map((event) => (
+                    <View key={event.id} style={styles.competitionChip}>
+                      <Text style={styles.competitionChipText} numberOfLines={1}>
+                        {event.name}
+                      </Text>
+                      <TouchableOpacity
+                        style={styles.competitionChipRemove}
+                        onPress={() => removeEvent(event.id)}
+                      >
+                        <CloseCircle size={14} color={colors.subTextColor} variant="Linear" />
+                      </TouchableOpacity>
+                    </View>
+                  ))}
+                </View>
+                <TouchableOpacity
+                  style={[styles.sectionAction, styles.inlineEditAction]}
+                  onPress={() => setShowCompetitionModal(true)}
+                >
+                  <Text style={styles.sectionActionText}>Edit</Text>
+                </TouchableOpacity>
               </View>
             ) : (
               <TouchableOpacity
-                style={styles.emptyCompetitionCard}
+                style={[
+                  styles.emptyCompetitionCard,
+                  competitionRequiredError && styles.emptyCompetitionCardError,
+                ]}
                 onPress={() => setShowCompetitionModal(true)}
               >
                 <Text style={styles.emptyCompetitionText}>{t('Select competitions')}</Text>
@@ -557,7 +608,7 @@ const CombinedSearchScreen = ({navigation}: any) => {
             <View style={styles.modalOverlay}>
               <View style={styles.modalCard}>
                 <View style={styles.modalHeader}>
-                  <Text style={styles.modalTitle}>{t('Select competitions')}</Text>
+                  <Text style={styles.modalTitle}>Choose one or more</Text>
                   <TouchableOpacity
                     style={styles.modalCloseButton}
                     onPress={() => setShowCompetitionModal(false)}
@@ -659,6 +710,33 @@ const CombinedSearchScreen = ({navigation}: any) => {
           </Modal>
 
           <SizeBox height={22} />
+          <View style={styles.toggleRow}>
+            <View style={styles.toggleInfo}>
+              <Text style={styles.faceSectionTitle}>{t('Face search')}</Text>
+              <Text style={styles.helperText}>{t('Use your enrolled face to match photos.')}</Text>
+            </View>
+            <View style={styles.faceActions}>
+              <TouchableOpacity style={styles.redoFaceButton} onPress={handleEnroll}>
+                <AddCircle size={20} color={colors.primaryColor} variant="Bold" />
+                <Text style={styles.redoFaceText}>{t('Redo face')}</Text>
+              </TouchableOpacity>
+              <CustomSwitch isEnabled={includeFace} toggleSwitch={() => setIncludeFace((prev) => !prev)} />
+            </View>
+          </View>
+
+          {needsConsent && (
+            <TouchableOpacity style={styles.secondaryButton} onPress={handleGrantConsent}>
+              <Text style={styles.secondaryButtonText}>{t('Grant face consent')}</Text>
+            </TouchableOpacity>
+          )}
+
+          {missingAngles && (
+            <TouchableOpacity style={styles.secondaryButton} onPress={handleEnroll}>
+              <Text style={styles.secondaryButtonText}>{t('Enroll your face')}</Text>
+            </TouchableOpacity>
+          )}
+
+          <SizeBox height={20} />
           <Text style={styles.sectionTitle}>{t('Chest number')}</Text>
           <View style={styles.inputContainer}>
             <SearchNormal1 size={20} color={colors.grayColor} variant="Linear" />
@@ -688,33 +766,6 @@ const CombinedSearchScreen = ({navigation}: any) => {
               returnKeyType="done"
             />
           </View>
-
-          <SizeBox height={20} />
-          <View style={styles.toggleRow}>
-            <View style={styles.toggleInfo}>
-              <Text style={styles.sectionTitle}>{t('Face search')}</Text>
-              <Text style={styles.helperText}>{t('Use your enrolled face to match photos.')}</Text>
-            </View>
-            <View style={styles.faceActions}>
-              <TouchableOpacity style={styles.redoFaceButton} onPress={handleEnroll}>
-                <AddCircle size={20} color={colors.primaryColor} variant="Bold" />
-                <Text style={styles.redoFaceText}>{t('Redo face')}</Text>
-              </TouchableOpacity>
-              <CustomSwitch isEnabled={includeFace} toggleSwitch={() => setIncludeFace((prev) => !prev)} />
-            </View>
-          </View>
-
-          {needsConsent && (
-            <TouchableOpacity style={styles.secondaryButton} onPress={handleGrantConsent}>
-              <Text style={styles.secondaryButtonText}>{t('Grant face consent')}</Text>
-            </TouchableOpacity>
-          )}
-
-          {missingAngles && (
-            <TouchableOpacity style={styles.secondaryButton} onPress={handleEnroll}>
-              <Text style={styles.secondaryButtonText}>{t('Enroll your face')}</Text>
-            </TouchableOpacity>
-          )}
 
           {errorText && <Text style={styles.errorText}>{errorText}</Text>}
 

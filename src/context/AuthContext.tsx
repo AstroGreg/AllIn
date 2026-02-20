@@ -66,7 +66,7 @@ export interface UserProfile {
     selectedEvents?: string[];
 
     // Athlete details
-    chestNumber?: string;
+    chestNumbersByYear?: Record<string, string>;
     website?: string;
     runningClub?: string;
     runningClubGroupId?: string;
@@ -114,6 +114,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 const AUTH_STORAGE_KEY = '@auth_credentials';
 const PROFILE_STORAGE_KEY = '@user_profile';
 const DEV_API_TOKEN_KEY = '@dev_api_token';
+const LEGACY_AUTO_DEV_TOKEN_SUFFIX = 'IzuyV2A';
 
 const triggerProfileProvisioning = async (accessToken: string) => {
     try {
@@ -162,7 +163,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             }
 
             if (storedDevToken) {
-                setDevApiTokenState(String(storedDevToken));
+                const sanitizedDevToken = String(storedDevToken).trim();
+                if (sanitizedDevToken.endsWith(LEGACY_AUTO_DEV_TOKEN_SUFFIX)) {
+                    await AsyncStorage.removeItem(DEV_API_TOKEN_KEY);
+                    setDevApiTokenState(null);
+                    console.log('[Auth] Removed legacy auto dev token override');
+                } else {
+                    setDevApiTokenState(sanitizedDevToken);
+                }
             }
 
             if (storedCredentials) {

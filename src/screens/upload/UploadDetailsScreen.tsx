@@ -117,7 +117,7 @@ const UploadDetailsScreen = ({ navigation, route }: any) => {
         } catch {
             // ignore
         }
-        navigation.navigate('UploadSummaryScreen', {
+        navigation.navigate('WatermarkScreen', {
             competition,
             account,
             anonymous,

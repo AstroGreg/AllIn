@@ -722,6 +722,25 @@ export const createStyles = (colors: ThemeColors) => StyleSheet.create({
         height: 14,
         tintColor: colors.primaryColor,
     },
+    feedImagePreviewOverlay: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        paddingHorizontal: 8,
+        paddingVertical: 8,
+        backgroundColor: 'rgba(0,0,0,0.92)',
+    },
+    feedImagePreviewBackdrop: {
+        ...StyleSheet.absoluteFillObject,
+    },
+    feedImagePreviewContent: {
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    feedImagePreviewImage: {
+        width: '100%',
+        height: '100%',
+    },
     // Instant video overlay
     videoOverlayContainer: {
         flex: 1,

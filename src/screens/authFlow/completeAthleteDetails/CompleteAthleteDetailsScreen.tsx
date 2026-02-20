@@ -73,8 +73,14 @@ const CompleteAthleteDetailsScreen = ({ navigation }: any) => {
     const handleFinish = async () => {
         setIsLoading(true);
         try {
+            const trimmedChest = String(chestNumber || '').trim();
+            const currentYear = String(new Date().getFullYear());
+            const chestNumbersByYear =
+                trimmedChest.length > 0
+                    ? { [currentYear]: trimmedChest }
+                    : {};
             await updateUserProfile({
-                chestNumber,
+                chestNumbersByYear,
                 website,
                 runningClub,
                 runningClubGroupId,

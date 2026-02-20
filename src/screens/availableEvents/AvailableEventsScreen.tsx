@@ -63,7 +63,26 @@ const AvailableEventsScreen = ({ navigation }: any) => {
     const [isSubscribing, setIsSubscribing] = useState(false);
     const { apiAccessToken, userProfile } = useAuth();
     const { refresh: refreshSubscribed } = useEvents();
-    const defaultChestNumber = String(userProfile?.chestNumber ?? '').trim();
+    const getYearFromDateLike = useCallback((value?: string | null) => {
+        const raw = String(value ?? '').trim();
+        if (!raw) return null;
+        const iso = new Date(raw);
+        if (!Number.isNaN(iso.getTime())) return String(iso.getFullYear());
+        const m = raw.match(/\b(19|20)\d{2}\b/);
+        return m ? m[0] : null;
+    }, []);
+    const defaultChestNumber = useMemo(() => {
+        const byYear = (userProfile?.chestNumbersByYear ?? {}) as Record<string, string>;
+        const eventYear = getYearFromDateLike(modalEvent?.date ?? null);
+        if (eventYear && byYear[eventYear] != null && String(byYear[eventYear]).trim().length > 0) {
+            return String(byYear[eventYear]).trim();
+        }
+        const currentYear = String(new Date().getFullYear());
+        if (byYear[currentYear] != null && String(byYear[currentYear]).trim().length > 0) {
+            return String(byYear[currentYear]).trim();
+        }
+        return '';
+    }, [getYearFromDateLike, modalEvent?.date, userProfile?.chestNumbersByYear]);
 
     const activeValue = filterValues[activeFilter] ?? '';
     const searchPlaceholder = activeFilter === 'Competition' ? t('typeCompetition') : t('typeLocation');

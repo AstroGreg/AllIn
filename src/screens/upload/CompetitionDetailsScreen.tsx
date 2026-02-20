@@ -167,7 +167,7 @@ const CompetitionDetailsScreen = ({ navigation, route }: any) => {
 
     const handleFinish = () => {
         if (!canFinish) return;
-        navigation.navigate('UploadSummaryScreen', {
+        navigation.navigate('WatermarkScreen', {
             competition,
             account,
             anonymous,

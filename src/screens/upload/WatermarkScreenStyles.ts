@@ -153,6 +153,18 @@ export const createStyles = (colors: ThemeColors) => StyleSheet.create({
         ...Fonts.medium16,
         color: colors.pureWhite,
     },
+    skipButton: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: colors.grayColor,
+        borderRadius: 10,
+        height: 54,
+    },
+    skipButtonText: {
+        ...Fonts.medium16,
+        color: colors.pureWhite,
+    },
     previewModalOverlay: {
         flex: 1,
         backgroundColor: 'rgba(0,0,0,0.85)',
@@ -173,6 +185,13 @@ export const createStyles = (colors: ThemeColors) => StyleSheet.create({
     previewModalImage: {
         width: '100%',
         height: '100%',
+    },
+    previewModalWatermarkOverlay: {
+        position: 'absolute',
+        justifyContent: 'space-around',
+        transform: [{ rotate: '-18deg' }],
+        paddingVertical: 4,
+        overflow: 'hidden',
     },
     previewModalCloseButton: {
         marginTop: 12,

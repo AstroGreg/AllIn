@@ -258,6 +258,65 @@ export const createStyles = (colors: ThemeColors) => StyleSheet.create({
         backgroundColor: colors.lightGrayColor,
         marginTop: 14,
     },
+    chestNumberSection: {
+        marginTop: 14,
+    },
+    chestNumberLabel: {
+        ...Fonts.medium14,
+        color: colors.mainTextColor,
+        marginBottom: 8,
+    },
+    chestNumberRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 10,
+    },
+    chestYearPickerButton: {
+        width: 84,
+        height: 42,
+        borderWidth: 1,
+        borderColor: colors.lightGrayColor,
+        borderRadius: 10,
+        paddingHorizontal: 10,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        gap: 6,
+        backgroundColor: colors.btnBackgroundColor,
+    },
+    chestYearPickerText: {
+        ...Fonts.regular14,
+        color: colors.mainTextColor,
+        textAlign: 'center',
+    },
+    chestNumberInput: {
+        flex: 1,
+        height: 42,
+        borderWidth: 1,
+        borderColor: colors.lightGrayColor,
+        borderRadius: 10,
+        paddingHorizontal: 12,
+        paddingVertical: 0,
+        ...Fonts.regular12,
+        color: colors.mainTextColor,
+        backgroundColor: colors.btnBackgroundColor,
+    },
+    chestNumberSaveButton: {
+        minWidth: 72,
+        alignItems: 'center',
+        justifyContent: 'center',
+        borderRadius: 10,
+        paddingHorizontal: 12,
+        paddingVertical: 10,
+        backgroundColor: colors.primaryColor,
+    },
+    chestNumberSaveButtonDisabled: {
+        opacity: 0.6,
+    },
+    chestNumberSaveText: {
+        ...Fonts.medium14,
+        color: colors.pureWhite,
+    },
 
     // Manage Social Media Button
     manageSocialMediaButton: {
@@ -1094,6 +1153,20 @@ export const createStyles = (colors: ThemeColors) => StyleSheet.create({
     categoryOptionDivider: {
         height: 1,
         backgroundColor: colors.lightGrayColor,
+    },
+    chestYearList: {
+        maxHeight: 320,
+    },
+    chestYearOption: {
+        paddingVertical: 10,
+        alignItems: 'center',
+    },
+    chestYearOptionText: {
+        ...Fonts.medium14,
+        color: colors.subTextColor,
+    },
+    chestYearOptionTextActive: {
+        color: colors.primaryColor,
     },
 
     // Timeline modal

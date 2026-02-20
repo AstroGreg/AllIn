@@ -7,7 +7,7 @@ import Icons from '../../../constants/Icons'
 import Images from '../../../constants/Images'
 import { createStyles } from './CompetitionDetailsScreenStyles'
 import { useAuth } from '../../../context/AuthContext'
-import { ApiError, CompetitionMapCheckpoint, CompetitionMapSummary, getCompetitionMapById, getCompetitionMaps, getEventCompetitions, searchEvents, searchFaceByEnrollment, searchMediaByBib, grantFaceRecognitionConsent, subscribeToEvent, unsubscribeToEvent } from '../../../services/apiGateway'
+import { ApiError, CompetitionMapCheckpoint, CompetitionMapSummary, getCompetitionMapById, getCompetitionMaps, getEventCompetitions, getProfileSummary, searchEvents, searchFaceByEnrollment, searchMediaByBib, grantFaceRecognitionConsent, subscribeToEvent, unsubscribeToEvent } from '../../../services/apiGateway'
 import { useTheme } from '../../../context/ThemeContext'
 import { useTranslation } from 'react-i18next'
 import { useEvents } from '../../../context/EventsContext'
@@ -51,6 +51,7 @@ const CompetitionDetailsScreen = ({ navigation, route }: any) => {
     const [quickMissingAngles, setQuickMissingAngles] = useState<string[] | null>(null);
     const [quickUseFace, setQuickUseFace] = useState(true);
     const [isSubscriptionLoading, setIsSubscriptionLoading] = useState(false);
+    const [profileChestByYear, setProfileChestByYear] = useState<Record<string, string>>({});
 
     const competitionName = route?.params?.name || route?.params?.eventName || t('Competition');
     const competitionDescription = route?.params?.description
@@ -65,11 +66,59 @@ const CompetitionDetailsScreen = ({ navigation, route }: any) => {
         () => canSubscribe && subscribedEvents.some((event) => String(event.event_id) === resolvedEventId),
         [canSubscribe, resolvedEventId, subscribedEvents],
     );
+    const getYearFromDateLike = useCallback((value?: string | null) => {
+        const raw = String(value ?? '').trim();
+        if (!raw) return null;
+        const dt = new Date(raw);
+        if (!Number.isNaN(dt.getTime())) return String(dt.getFullYear());
+        const m = raw.match(/\b(19|20)\d{2}\b/);
+        return m ? m[0] : null;
+    }, []);
+    const normalizeChestByYear = useCallback((raw: any): Record<string, string> => {
+        if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return {};
+        const out: Record<string, string> = {};
+        for (const [year, chest] of Object.entries(raw as Record<string, unknown>)) {
+            const safeYear = String(year ?? '').trim();
+            if (!/^\d{4}$/.test(safeYear)) continue;
+            const parsed = Number(chest);
+            if (!Number.isInteger(parsed) || parsed < 0) continue;
+            out[safeYear] = String(parsed);
+        }
+        return out;
+    }, []);
+    const defaultChestNumber = useMemo(() => {
+        const byYear = {
+            ...normalizeChestByYear(userProfile?.chestNumbersByYear ?? {}),
+            ...profileChestByYear,
+        };
+        const eventYear = getYearFromDateLike(String(route?.params?.date ?? ''));
+        if (eventYear && byYear[eventYear] != null && String(byYear[eventYear]).trim().length > 0) {
+            return String(byYear[eventYear]).trim();
+        }
+        return '';
+    }, [getYearFromDateLike, normalizeChestByYear, profileChestByYear, route?.params?.date, userProfile?.chestNumbersByYear]);
 
     useEffect(() => {
-        const chest = String(userProfile?.chestNumber ?? '').trim();
+        if (!apiAccessToken) return;
+        let active = true;
+        (async () => {
+            try {
+                const summary = await getProfileSummary(apiAccessToken);
+                if (!active) return;
+                setProfileChestByYear(normalizeChestByYear(summary?.profile?.chest_numbers_by_year ?? {}));
+            } catch {
+                // keep local fallback from userProfile
+            }
+        })();
+        return () => {
+            active = false;
+        };
+    }, [apiAccessToken, normalizeChestByYear]);
+
+    useEffect(() => {
+        const chest = String(defaultChestNumber || '').trim();
         if (chest) setQuickChestNumber(chest);
-    }, [userProfile?.chestNumber]);
+    }, [defaultChestNumber]);
 
     const trackEvents: EventCategory[] = [];
     const fieldEvents: EventCategory[] = [];

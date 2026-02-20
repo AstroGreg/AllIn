@@ -1,5 +1,5 @@
-import { View, Text, TouchableOpacity, ScrollView, Dimensions, Platform, ActionSheetIOS, Modal, ActivityIndicator, Alert } from 'react-native'
-import React, { useCallback, useMemo, useState } from 'react'
+import { View, Text, TouchableOpacity, ScrollView, Dimensions, Platform, ActionSheetIOS, Modal, ActivityIndicator, Alert, TextInput } from 'react-native'
+import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import SizeBox from '../../constants/SizeBox'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import FastImage from 'react-native-fast-image'
@@ -7,7 +7,7 @@ import Images from '../../constants/Images'
 import Icons from '../../constants/Icons'
 import { useTheme } from '../../context/ThemeContext'
 import { createStyles } from './UserProfileStyles'
-import { ArrowLeft2, User, Edit2, Clock, ArrowRight, DocumentText, Gallery, DocumentDownload } from 'iconsax-react-nativejs'
+import { ArrowLeft2, User, Edit2, Clock, ArrowRight, DocumentText, Gallery, DocumentDownload, ArrowDown2 } from 'iconsax-react-nativejs'
 import { launchImageLibrary } from 'react-native-image-picker'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import ProfileTimeline, { TimelineEntry } from '../../components/profileTimeline/ProfileTimeline'
@@ -23,7 +23,7 @@ const UserProfileScreen = ({ navigation }: any) => {
     const { colors } = useTheme();
     const { t } = useTranslation();
     const Styles = createStyles(colors);
-    const { user, userProfile, apiAccessToken } = useAuth();
+    const { user, userProfile, apiAccessToken, updateUserProfile } = useAuth();
     const [activeTab, setActiveTab] = useState('photos');
     const [timelineItems, setTimelineItems] = useState<TimelineEntry[]>([]);
     const [profileTab, setProfileTab] = useState<'timeline' | 'activity' | 'collections' | 'downloads'>('timeline');
@@ -38,6 +38,14 @@ const UserProfileScreen = ({ navigation }: any) => {
         null,
     );
     const [profileSummary, setProfileSummary] = useState<ProfileSummaryResponse | null>(null);
+    const currentYear = useMemo(() => String(new Date().getFullYear()), []);
+    const currentYearNumber = useMemo(() => Number(currentYear), [currentYear]);
+    const [chestYearInput, setChestYearInput] = useState<string>(currentYear);
+    const [showChestYearModal, setShowChestYearModal] = useState(false);
+    const [chestNumberInput, setChestNumberInput] = useState<string>('');
+    const [chestNumbersByYear, setChestNumbersByYear] = useState<Record<string, string>>({});
+    const [isSavingChestNumber, setIsSavingChestNumber] = useState(false);
+    const [showSaveFailedModal, setShowSaveFailedModal] = useState(false);
     const [photoCollectionItems, setPhotoCollectionItems] = useState<ProfileCollectionItem[]>([]);
     const [videoCollectionItems, setVideoCollectionItems] = useState<ProfileCollectionItem[]>([]);
     const [uploadedCompetitions, setUploadedCompetitions] = useState<UploadedCompetition[]>([]);
@@ -45,6 +53,31 @@ const UserProfileScreen = ({ navigation }: any) => {
     const { width } = Dimensions.get('window');
     const imageWidth = Math.floor((width - 40 - 24 - 30) / 4);
     const profileCategoryLabel = profileCategory === 'Road&Trail' ? t('roadAndTrail') : t('trackAndField');
+    const chestYearOptions = useMemo(
+        () => Array.from({ length: Math.max(0, currentYearNumber - 2000 + 1) }, (_, i) => String(2000 + i)),
+        [currentYearNumber],
+    );
+
+    const normalizeChestByYear = useCallback((raw: any): Record<string, string> => {
+        if (!raw || typeof raw !== 'object') return {};
+        const out: Record<string, string> = {};
+        for (const [year, chest] of Object.entries(raw)) {
+            const safeYear = String(year || '').trim();
+            if (!/^\d{4}$/.test(safeYear)) continue;
+            const parsed = Number(chest);
+            if (!Number.isInteger(parsed) || parsed < 0) continue;
+            out[safeYear] = String(parsed);
+        }
+        return out;
+    }, []);
+
+    const getChestForYear = useCallback((year: string, source: Record<string, string>) => {
+        const safeYear = String(year || '').trim();
+        if (/^\d{4}$/.test(safeYear) && source[safeYear] != null) {
+            return String(source[safeYear]);
+        }
+        return '';
+    }, []);
 
     const isSignedUrl = useCallback((value?: string | null) => {
         if (!value) return false;
@@ -170,6 +203,9 @@ const UserProfileScreen = ({ navigation }: any) => {
             try {
                 const summary = await getProfileSummary(apiAccessToken);
                 setProfileSummary(summary);
+                const serverChestByYear = normalizeChestByYear(summary?.profile?.chest_numbers_by_year ?? {});
+                setChestNumbersByYear(serverChestByYear);
+                setChestNumberInput(getChestForYear(chestYearInput, serverChestByYear));
                 summaryProfileId = summary?.profile_id ? String(summary.profile_id) : null;
                 const avatarMedia = summary?.profile?.avatar_media ?? null;
                 const avatarCandidate =
@@ -191,9 +227,15 @@ const UserProfileScreen = ({ navigation }: any) => {
                 }
             } catch {
                 setProfileSummary(null);
+                const localChestByYear = normalizeChestByYear(userProfile?.chestNumbersByYear ?? {});
+                setChestNumbersByYear(localChestByYear);
+                setChestNumberInput(getChestForYear(chestYearInput, localChestByYear));
             }
         } else {
             setProfileSummary(null);
+            const localChestByYear = normalizeChestByYear(userProfile?.chestNumbersByYear ?? {});
+            setChestNumbersByYear(localChestByYear);
+            setChestNumberInput(getChestForYear(chestYearInput, localChestByYear));
         }
 
         // News/blogs: server-driven (no more local dummy list)
@@ -283,13 +325,28 @@ const UserProfileScreen = ({ navigation }: any) => {
         } else {
             setUploadedCompetitions([]);
         }
-    }, [apiAccessToken, categoryStorageKey, resolveTimelineMediaThumb, t, toAbsoluteUrl, withAccessToken]);
+    }, [
+        apiAccessToken,
+        categoryStorageKey,
+        chestYearInput,
+        getChestForYear,
+        normalizeChestByYear,
+        resolveTimelineMediaThumb,
+        t,
+        toAbsoluteUrl,
+        userProfile?.chestNumbersByYear,
+        withAccessToken,
+    ]);
 
     useFocusEffect(
         useCallback(() => {
             loadProfileData();
         }, [loadProfileData]),
     );
+
+    useEffect(() => {
+        setChestNumberInput(getChestForYear(chestYearInput, chestNumbersByYear));
+    }, [chestNumbersByYear, chestYearInput, getChestForYear]);
 
     const openAddTimeline = () => {
         navigation.navigate('ProfileTimelineEditScreen', {
@@ -412,7 +469,67 @@ const UserProfileScreen = ({ navigation }: any) => {
         }
     };
 
+    const handleSaveChestNumber = useCallback(async () => {
+        if (!apiAccessToken) return;
+        const year = String(chestYearInput || '').trim();
+        if (!/^\d{4}$/.test(year)) {
+            setShowSaveFailedModal(true);
+            return;
+        }
+        const trimmed = String(chestNumberInput || '').trim();
+        const nextChest = trimmed.length > 0 ? Number(trimmed) : null;
+        if (nextChest != null && (!Number.isInteger(nextChest) || nextChest < 0)) {
+            setShowSaveFailedModal(true);
+            return;
+        }
+        const nextByYear: Record<string, string> = { ...chestNumbersByYear };
+        if (nextChest == null) {
+            delete nextByYear[year];
+        } else {
+            nextByYear[year] = String(nextChest);
+        }
+        const payloadByYear: Record<string, number> = Object.entries(nextByYear).reduce((acc, [k, v]) => {
+            const parsed = Number(v);
+            if (/^\d{4}$/.test(String(k)) && Number.isInteger(parsed) && parsed >= 0) {
+                acc[String(k)] = parsed;
+            }
+            return acc;
+        }, {} as Record<string, number>);
+        setIsSavingChestNumber(true);
+        try {
+            const updated = await updateProfileSummary(apiAccessToken, {
+                chest_numbers_by_year: payloadByYear,
+            });
+            setProfileSummary(updated);
+            const storedByYear = normalizeChestByYear(updated?.profile?.chest_numbers_by_year ?? payloadByYear);
+            setChestNumbersByYear(storedByYear);
+            setChestNumberInput(getChestForYear(year, storedByYear));
+            await updateUserProfile({ chestNumbersByYear: storedByYear });
+        } catch {
+            setShowSaveFailedModal(true);
+        } finally {
+            setIsSavingChestNumber(false);
+        }
+    }, [
+        apiAccessToken,
+        chestNumberInput,
+        chestNumbersByYear,
+        chestYearInput,
+        getChestForYear,
+        normalizeChestByYear,
+        updateUserProfile,
+    ]);
+
     const showDownloadsTab = true;
+    const savedChestByYear = useMemo(
+        () => normalizeChestByYear(profileSummary?.profile?.chest_numbers_by_year ?? {}),
+        [normalizeChestByYear, profileSummary?.profile?.chest_numbers_by_year],
+    );
+    const savedChestNumberForYear = getChestForYear(chestYearInput, savedChestByYear);
+    const canSaveChestNumber =
+        !isSavingChestNumber &&
+        /^\d{4}$/.test(String(chestYearInput || '').trim()) &&
+        String(chestNumberInput).trim() !== String(savedChestNumberForYear).trim();
 
     const sortCollectionItems = useCallback((items: ProfileCollectionItem[]) => {
         const featured = items
@@ -574,6 +691,46 @@ const UserProfileScreen = ({ navigation }: any) => {
                                 : t('Write your bio...')}
                         </Text>
                         <View style={Styles.bioDivider} />
+                    </View>
+                    <View style={Styles.chestNumberSection}>
+                        <Text style={Styles.chestNumberLabel}>{t('chestNumber')}</Text>
+                        <View style={Styles.chestNumberRow}>
+                            <TouchableOpacity
+                                style={Styles.chestYearPickerButton}
+                                activeOpacity={0.85}
+                                onPress={() => {
+                                    if (!isSavingChestNumber) setShowChestYearModal(true);
+                                }}
+                            >
+                                <Text style={Styles.chestYearPickerText}>{chestYearInput}</Text>
+                                <ArrowDown2 size={14} color={colors.subTextColor} variant="Linear" />
+                            </TouchableOpacity>
+                            <TextInput
+                                value={chestNumberInput}
+                                onChangeText={(value) => setChestNumberInput(String(value || '').replace(/[^0-9]/g, ''))}
+                                keyboardType="number-pad"
+                                placeholder={t('chestNumber')}
+                                placeholderTextColor={colors.subTextColor}
+                                style={Styles.chestNumberInput}
+                                editable={!isSavingChestNumber}
+                                returnKeyType="done"
+                                onSubmitEditing={handleSaveChestNumber}
+                            />
+                            <TouchableOpacity
+                                style={[
+                                    Styles.chestNumberSaveButton,
+                                    !canSaveChestNumber && Styles.chestNumberSaveButtonDisabled,
+                                ]}
+                                disabled={!canSaveChestNumber}
+                                onPress={handleSaveChestNumber}
+                            >
+                                {isSavingChestNumber ? (
+                                    <ActivityIndicator size="small" color="#FFFFFF" />
+                                ) : (
+                                    <Text style={Styles.chestNumberSaveText}>{t('save')}</Text>
+                                )}
+                            </TouchableOpacity>
+                        </View>
                     </View>
 
                     <SizeBox height={10} />
@@ -923,6 +1080,88 @@ const UserProfileScreen = ({ navigation }: any) => {
                     </TouchableOpacity>
                 </Modal>
             )}
+
+            <Modal
+                visible={showChestYearModal}
+                transparent
+                animationType="fade"
+                onRequestClose={() => setShowChestYearModal(false)}
+            >
+                <TouchableOpacity
+                    style={Styles.categoryModalBackdrop}
+                    activeOpacity={1}
+                    onPress={() => setShowChestYearModal(false)}
+                >
+                    <TouchableOpacity
+                        activeOpacity={1}
+                        style={Styles.categoryModalCard}
+                        onPress={() => {}}
+                    >
+                        <Text style={Styles.categoryModalTitle}>{t('year')}</Text>
+                        <SizeBox height={8} />
+                        <ScrollView style={Styles.chestYearList}>
+                            {chestYearOptions.map((year) => {
+                                const active = year === chestYearInput;
+                                return (
+                                    <TouchableOpacity
+                                        key={`chest-year-${year}`}
+                                        style={Styles.chestYearOption}
+                                        onPress={() => {
+                                            setChestYearInput(year);
+                                            setShowChestYearModal(false);
+                                        }}
+                                    >
+                                        <Text style={[Styles.chestYearOptionText, active && Styles.chestYearOptionTextActive]}>
+                                            {year}
+                                        </Text>
+                                    </TouchableOpacity>
+                                );
+                            })}
+                        </ScrollView>
+                    </TouchableOpacity>
+                </TouchableOpacity>
+            </Modal>
+
+            <Modal
+                visible={showSaveFailedModal}
+                transparent
+                animationType="fade"
+                onRequestClose={() => setShowSaveFailedModal(false)}
+            >
+                <TouchableOpacity
+                    style={Styles.categoryModalBackdrop}
+                    activeOpacity={1}
+                    onPress={() => setShowSaveFailedModal(false)}
+                >
+                    <TouchableOpacity
+                        activeOpacity={1}
+                        style={[
+                            Styles.categoryModalCard,
+                            {
+                                backgroundColor: colors.modalBackground,
+                                borderWidth: 0.5,
+                                borderColor: colors.lightGrayColor,
+                                borderRadius: 16,
+                                padding: 16,
+                            },
+                        ]}
+                        onPress={() => {}}
+                    >
+                        <Text style={Styles.categoryModalTitle}>{t('Save failed')}</Text>
+                        <SizeBox height={8} />
+                        <Text style={[Styles.emptyStateText, { textAlign: 'center' }]}>
+                            {t('Please try again')}
+                        </Text>
+                        <SizeBox height={12} />
+                        <TouchableOpacity
+                            style={[Styles.categoryOption, { borderRadius: 10 }]}
+                            onPress={() => setShowSaveFailedModal(false)}
+                        >
+                            <Text style={Styles.categoryOptionText}>{t('Cancel')}</Text>
+                        </TouchableOpacity>
+                    </TouchableOpacity>
+                </TouchableOpacity>
+            </Modal>
 
             <Modal
                 visible={Boolean(pendingDeleteBlog)}

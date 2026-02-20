@@ -108,6 +108,7 @@ export interface ProfileSummary {
   profile: {
     display_name?: string | null;
     bio?: string | null;
+    chest_numbers_by_year?: Record<string, number> | null;
     avatar_url?: string | null;
     avatar_media_id?: string | null;
     avatar_media?: any;
@@ -1163,6 +1164,7 @@ export interface ProfileSummaryResponse {
   profile: {
     display_name?: string | null;
     bio?: string | null;
+    chest_numbers_by_year?: Record<string, number> | null;
     avatar_url?: string | null;
     avatar_media_id?: string | null;
     avatar_media?: MediaViewAllItem | null;
@@ -1177,17 +1179,30 @@ export async function getProfileSummary(accessToken: string): Promise<ProfileSum
 
 export async function updateProfileSummary(
   accessToken: string,
-  params: {display_name?: string | null; bio?: string | null; avatar_url?: string | null; avatar_media_id?: string | null},
+  params: {
+    display_name?: string | null;
+    bio?: string | null;
+    chest_numbers_by_year?: Record<string, number> | null;
+    chestNumbersByYear?: Record<string, number> | null;
+    avatar_url?: string | null;
+    avatar_media_id?: string | null;
+  },
 ): Promise<ProfileSummaryResponse> {
+  const body: any = {
+    display_name: params.display_name ?? undefined,
+    bio: params.bio ?? undefined,
+    avatar_url: params.avatar_url ?? undefined,
+    avatar_media_id: params.avatar_media_id ?? undefined,
+  };
+  if (Object.prototype.hasOwnProperty.call(params, 'chest_numbers_by_year')) {
+    body.chest_numbers_by_year = params.chest_numbers_by_year;
+  } else if (Object.prototype.hasOwnProperty.call(params, 'chestNumbersByYear')) {
+    body.chest_numbers_by_year = params.chestNumbersByYear;
+  }
   return apiRequest<ProfileSummaryResponse>('/profiles/me', {
     method: 'PUT',
     accessToken,
-    body: {
-      display_name: params.display_name ?? undefined,
-      bio: params.bio ?? undefined,
-      avatar_url: params.avatar_url ?? undefined,
-      avatar_media_id: params.avatar_media_id ?? undefined,
-    },
+    body,
   });
 }
 

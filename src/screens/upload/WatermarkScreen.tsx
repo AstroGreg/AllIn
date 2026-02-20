@@ -1,4 +1,4 @@
-import { View, Text, TouchableOpacity, ScrollView, TextInput, Modal, Pressable } from 'react-native'
+import { View, Text, TouchableOpacity, ScrollView, TextInput, Modal, Pressable, Image } from 'react-native'
 import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { ArrowLeft2, ArrowRight, Ghost } from 'iconsax-react-nativejs'
@@ -36,9 +36,10 @@ const WatermarkScreen = ({ navigation, route }: any) => {
     const competitionType = route?.params?.competitionType ?? competition?.competitionType;
 
     const [watermarkText, setWatermarkText] = useState(DEFAULT_WATERMARK_TEXT);
-    const [useNoWatermark, setUseNoWatermark] = useState(false);
     const [previewUri, setPreviewUri] = useState<string | null>(null);
     const [previewModalVisible, setPreviewModalVisible] = useState(false);
+    const [previewMediaSize, setPreviewMediaSize] = useState<{ width: number; height: number } | null>(null);
+    const [previewModalSize, setPreviewModalSize] = useState<{ width: number; height: number }>({ width: 0, height: 0 });
     const watermarkLabel = (watermarkText || DEFAULT_WATERMARK_TEXT).trim();
     const watermarkRows = useMemo(() => Array.from({ length: 7 }, (_, i) => i), []);
     const isVideoPreview = useMemo(() => {
@@ -50,6 +51,12 @@ const WatermarkScreen = ({ navigation, route }: any) => {
         () => String(competition?.id || competition?.event_id || competition?.eventId || 'competition'),
         [competition?.event_id, competition?.eventId, competition?.id],
     );
+    const getAssetSize = useCallback((asset: any) => {
+        const width = Number(asset?.width ?? 0);
+        const height = Number(asset?.height ?? 0);
+        if (!Number.isFinite(width) || !Number.isFinite(height) || width <= 0 || height <= 0) return null;
+        return { width, height };
+    }, []);
 
     useEffect(() => {
         let mounted = true;
@@ -63,7 +70,10 @@ const WatermarkScreen = ({ navigation, route }: any) => {
                 }
                 const allAssets = Object.values(parsed).flatMap((list: any) => (Array.isArray(list) ? list : []));
                 const first = allAssets.find((asset: any) => asset?.uri) || null;
-                if (mounted) setPreviewUri(normalizeLocalUri(first?.uri ?? null) as any);
+                if (mounted) {
+                    setPreviewUri(normalizeLocalUri(first?.uri ?? null) as any);
+                    setPreviewMediaSize(getAssetSize(first));
+                }
             } catch {
                 if (mounted) setPreviewUri(null);
             }
@@ -85,7 +95,7 @@ const WatermarkScreen = ({ navigation, route }: any) => {
                         if (mounted) {
                             setPreviewUri(null);
                             setWatermarkText(DEFAULT_WATERMARK_TEXT);
-                            setUseNoWatermark(false);
+                            setPreviewMediaSize(null);
                         }
                         return;
                     }
@@ -93,16 +103,16 @@ const WatermarkScreen = ({ navigation, route }: any) => {
                     const first = allAssets.find((asset: any) => asset?.uri) || null;
                     if (mounted) {
                         setPreviewUri(normalizeLocalUri(first?.uri ?? null) as any);
+                        setPreviewMediaSize(getAssetSize(first));
                         if (!first) {
                             setWatermarkText(DEFAULT_WATERMARK_TEXT);
-                            setUseNoWatermark(false);
                         }
                     }
                 } catch {
                     if (mounted) {
                         setPreviewUri(null);
                         setWatermarkText(DEFAULT_WATERMARK_TEXT);
-                        setUseNoWatermark(false);
+                        setPreviewMediaSize(null);
                     }
                 }
             };
@@ -110,19 +120,62 @@ const WatermarkScreen = ({ navigation, route }: any) => {
             return () => {
                 mounted = false;
             };
-        }, [competitionId]),
+        }, [competitionId, getAssetSize]),
     );
 
+    const modalWatermarkFrame = useMemo(() => {
+        const containerWidth = Number(previewModalSize.width || 0);
+        const containerHeight = Number(previewModalSize.height || 0);
+        if (containerWidth <= 0 || containerHeight <= 0) {
+            return { left: 0, top: 0, width: 0, height: 0 };
+        }
+        if (!previewMediaSize || previewMediaSize.width <= 0 || previewMediaSize.height <= 0) {
+            return { left: 0, top: 0, width: 0, height: 0 };
+        }
+        const mediaRatio = previewMediaSize.width / previewMediaSize.height;
+        const containerRatio = containerWidth / containerHeight;
+        if (mediaRatio > containerRatio) {
+            const width = containerWidth;
+            const height = width / mediaRatio;
+            return { left: 0, top: (containerHeight - height) / 2, width, height };
+        }
+        const height = containerHeight;
+        const width = height * mediaRatio;
+        return { left: (containerWidth - width) / 2, top: 0, width, height };
+    }, [previewMediaSize, previewModalSize.height, previewModalSize.width]);
+
+    useEffect(() => {
+        if (!previewUri || isVideoPreview) return;
+        if (previewMediaSize && previewMediaSize.width > 0 && previewMediaSize.height > 0) return;
+        const uri = normalizeLocalUri(previewUri) as string;
+        Image.getSize(
+            uri,
+            (width, height) => {
+                if (width > 0 && height > 0) {
+                    setPreviewMediaSize({ width, height });
+                }
+            },
+            () => {},
+        );
+    }, [isVideoPreview, previewMediaSize, previewUri]);
+
     const handleSave = () => {
-        const sessionId = `u_${Date.now()}_${Math.random().toString(16).slice(2)}`;
-        navigation.navigate('UploadProgressScreen', {
+        navigation.navigate('UploadSummaryScreen', {
             competition,
             account,
             anonymous,
             competitionType,
-            watermarkText: useNoWatermark ? '' : (watermarkText.trim() || DEFAULT_WATERMARK_TEXT),
-            sessionId,
-            autoStart: true,
+            watermarkText: watermarkText.trim() || DEFAULT_WATERMARK_TEXT,
+        });
+    };
+
+    const handleSkip = () => {
+        navigation.navigate('UploadSummaryScreen', {
+            competition,
+            account,
+            anonymous,
+            competitionType,
+            watermarkText: '',
         });
     };
 
@@ -159,21 +212,9 @@ const WatermarkScreen = ({ navigation, route }: any) => {
                     placeholderTextColor="#9B9F9F"
                     value={watermarkText}
                     onChangeText={setWatermarkText}
-                    editable={!useNoWatermark}
                 />
 
                 <SizeBox height={20} />
-
-                <TouchableOpacity
-                    style={Styles.noWatermarkRow}
-                    onPress={() => setUseNoWatermark((prev) => !prev)}
-                >
-                    <View style={[Styles.noWatermarkCheck, useNoWatermark && Styles.noWatermarkCheckActive]}>
-                        {useNoWatermark && <Text style={Styles.noWatermarkCheckMark}>{t('✓')}</Text>}
-                    </View>
-                    <Text style={Styles.noWatermarkText}>{t('Do not use a watermark')}</Text>
-                </TouchableOpacity>
-
                 <SizeBox height={20} />
 
                 <View style={Styles.previewCard}>
@@ -202,23 +243,25 @@ const WatermarkScreen = ({ navigation, route }: any) => {
                                     <FastImage source={{ uri: normalizeLocalUri(previewUri) as any }} style={Styles.previewImage} resizeMode="cover" />
                                 )
                         ) : null}
-                        {!useNoWatermark && (
-                            <View style={Styles.previewWatermarkOverlay} pointerEvents="none">
-                                {watermarkRows.map((row) => (
-                                    <Text key={`wm-row-${row}`} style={Styles.previewWatermarkRow} numberOfLines={1}>
-                                        {`${row % 2 === 0 ? '' : '   '}${(`${watermarkLabel}   `).repeat(8)}`}
-                                    </Text>
-                                ))}
-                            </View>
-                        )}
+                        <View style={Styles.previewWatermarkOverlay} pointerEvents="none">
+                            {watermarkRows.map((row) => (
+                                <Text key={`wm-row-${row}`} style={Styles.previewWatermarkRow} numberOfLines={1}>
+                                    {`${row % 2 === 0 ? '' : '   '}${(`${watermarkLabel}   `).repeat(8)}`}
+                                </Text>
+                            ))}
+                        </View>
                     </TouchableOpacity>
                 </View>
 
                 <SizeBox height={30} />
 
                 <TouchableOpacity style={Styles.previewButton} onPress={handleSave}>
-                    <Text style={Styles.previewButtonText}>{t('Start upload')}</Text>
+                    <Text style={Styles.previewButtonText}>{t('Continue')}</Text>
                     <ArrowRight size={18} color={colors.pureWhite} variant="Linear" />
+                </TouchableOpacity>
+                <SizeBox height={10} />
+                <TouchableOpacity style={Styles.skipButton} onPress={handleSkip}>
+                    <Text style={Styles.skipButtonText}>{t('Skip')}</Text>
                 </TouchableOpacity>
 
                 <SizeBox height={insets.bottom > 0 ? insets.bottom + 20 : 40} />
@@ -232,7 +275,13 @@ const WatermarkScreen = ({ navigation, route }: any) => {
             >
                 <View style={Styles.previewModalOverlay}>
                     <Pressable style={Styles.previewModalBackdrop} onPress={() => setPreviewModalVisible(false)} />
-                    <View style={Styles.previewModalContent}>
+                    <View
+                        style={Styles.previewModalContent}
+                        onLayout={(event) => {
+                            const { width, height } = event.nativeEvent.layout;
+                            setPreviewModalSize({ width, height });
+                        }}
+                    >
                         {previewUri ? (
                             isVideoPreview ? (
                                 <Video
@@ -243,17 +292,42 @@ const WatermarkScreen = ({ navigation, route }: any) => {
                                     muted
                                     repeat={false}
                                     controls={false}
+                                    onLoad={(event: any) => {
+                                        const width = Number(event?.naturalSize?.width ?? 0);
+                                        const height = Number(event?.naturalSize?.height ?? 0);
+                                        if (width > 0 && height > 0) {
+                                            setPreviewMediaSize({ width, height });
+                                        }
+                                    }}
                                 />
                             ) : (
                                 <FastImage
                                     source={{ uri: normalizeLocalUri(previewUri) as any }}
                                     style={Styles.previewModalImage}
                                     resizeMode="contain"
+                                    onLoad={(event: any) => {
+                                        const width = Number(event?.nativeEvent?.width ?? 0);
+                                        const height = Number(event?.nativeEvent?.height ?? 0);
+                                        if (width > 0 && height > 0) {
+                                            setPreviewMediaSize({ width, height });
+                                        }
+                                    }}
                                 />
                             )
                         ) : null}
-                        {!useNoWatermark && (
-                            <View style={Styles.previewWatermarkOverlay} pointerEvents="none">
+                        {modalWatermarkFrame.width > 0 && modalWatermarkFrame.height > 0 && (
+                            <View
+                                style={[
+                                    Styles.previewModalWatermarkOverlay,
+                                    {
+                                        left: modalWatermarkFrame.left,
+                                        top: modalWatermarkFrame.top,
+                                        width: modalWatermarkFrame.width,
+                                        height: modalWatermarkFrame.height,
+                                    },
+                                ]}
+                                pointerEvents="none"
+                            >
                                 {watermarkRows.map((row) => (
                                     <Text key={`wm-modal-row-${row}`} style={Styles.previewWatermarkRow} numberOfLines={1}>
                                         {`${row % 2 === 0 ? '' : '   '}${(`${watermarkLabel}   `).repeat(8)}`}

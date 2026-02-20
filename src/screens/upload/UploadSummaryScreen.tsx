@@ -47,6 +47,7 @@ const UploadSummaryScreen = ({ navigation, route }: any) => {
     const account = route?.params?.account;
     const anonymous = route?.params?.anonymous;
     const competitionType = route?.params?.competitionType ?? competition?.competitionType;
+    const watermarkText = String(route?.params?.watermarkText ?? route?.params?.watermark_text ?? '').trim();
 
     const [categories, setCategories] = useState<CategorySection[]>([]);
 
@@ -141,11 +142,15 @@ const UploadSummaryScreen = ({ navigation, route }: any) => {
     }, [competitionId, formatResolution]);
 
     const handleConfirm = () => {
-        navigation.navigate('WatermarkScreen', {
+        const sessionId = `u_${Date.now()}_${Math.random().toString(16).slice(2)}`;
+        navigation.navigate('UploadProgressScreen', {
             competition,
             account,
             anonymous,
             competitionType,
+            watermarkText,
+            sessionId,
+            autoStart: true,
         });
     };
 
@@ -225,7 +230,7 @@ const UploadSummaryScreen = ({ navigation, route }: any) => {
 
                 {/* Confirm Button */}
                 <TouchableOpacity style={Styles.confirmButton} onPress={handleConfirm}>
-                    <Text style={Styles.confirmButtonText}>{t('Set watermark')}</Text>
+                    <Text style={Styles.confirmButtonText}>{t('Start upload')}</Text>
                     <ArrowRight size={18} color={colors.pureWhite} variant="Linear" />
                 </TouchableOpacity>
 
