@@ -87,7 +87,6 @@ const HomeScreen = ({ navigation }: any) => {
         return t('Guest');
     })();
 
-    //  Test
 
     const [profileAvatarUrl, setProfileAvatarUrl] = useState<string | null>(null);
     const profilePic = profileAvatarUrl ?? user?.picture ?? null;

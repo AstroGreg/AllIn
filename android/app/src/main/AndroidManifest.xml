@@ -36,9 +36,9 @@
           <category android:name="android.intent.category.DEFAULT" />
           <category android:name="android.intent.category.BROWSABLE" />
           <data
-            android:host="dev-lfzk0n81zjp0c3x3.us.auth0.com"
-            android:pathPrefix="/android/com.allin/callback"
-            android:scheme="com.allin.auth0" />
+            android:host="auth.spot-me.ai"
+            android:pathPrefix="/android/com.spotme/callback"
+            android:scheme="com.spotme.auth0" />
         </intent-filter>
       </activity>
 

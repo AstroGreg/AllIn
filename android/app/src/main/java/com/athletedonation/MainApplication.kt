@@ -1,4 +1,4 @@
-package com.AllIn
+package com.spotme
 
 import android.app.Application
 import com.facebook.react.PackageList
