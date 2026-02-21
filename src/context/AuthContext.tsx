@@ -1,13 +1,18 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { AppConfig } from '../constants/AppConfig';
 
 // Auth0 credentials
-const AUTH0_DOMAIN = (AppConfig.AUTH0_DOMAIN || 'dev-lfzk0n81zjp0c3x3.us.auth0.com').trim();
-const AUTH0_CLIENT_ID = (AppConfig.AUTH0_CLIENT_ID || 'czlUtPo1WSw72XpcqHKSzO5MsuUzTV5P').trim();
+const AUTH0_DOMAIN = (AppConfig.AUTH0_DOMAIN || 'auth.spot-me.ai').trim();
+const AUTH0_CLIENT_ID = (AppConfig.AUTH0_CLIENT_ID || '9hoAMRZsk87vtZi3rA2HPP9W5wMlPNGp').trim();
 const AUTH0_AUDIENCE = (AppConfig.AUTH0_AUDIENCE || '').trim();
-// Custom redirect URI with lowercase package name (required for Android)
-const AUTH0_REDIRECT_URI = 'com.allin.auth0://dev-lfzk0n81zjp0c3x3.us.auth0.com/android/com.allin/callback';
+const ANDROID_APP_ID = 'com.spotme';
+const IOS_BUNDLE_ID = 'com.spotme';
+const AUTH0_REDIRECT_URI = Platform.select({
+    ios: `${IOS_BUNDLE_ID}.auth0://${AUTH0_DOMAIN}/ios/${IOS_BUNDLE_ID}/callback`,
+    default: `${ANDROID_APP_ID}.auth0://${AUTH0_DOMAIN}/android/${ANDROID_APP_ID}/callback`,
+}) as string;
 
 type User = {
     sub?: string;

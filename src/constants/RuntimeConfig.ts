@@ -24,7 +24,7 @@ export const getApiBaseUrl = () => {
         }
         const devOverride = (AppConfig.DEV_API_GATEWAY_URL ?? '').trim();
         if (devOverride) return devOverride;
-        return 'http://10.215.86.82:3000';
+        return 'http://172.31.240.1:3000';
     }
 
     return 'https://myjourney.coffee';
