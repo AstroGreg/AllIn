@@ -102,12 +102,9 @@ interface AuthContextType {
     userProfile: UserProfile | null;
     accessToken: string | null;
     apiAccessToken: string | null;
-    devApiToken: string | null;
     login: (connection?: string) => Promise<void>;
     signup: (connection?: string) => Promise<void>;
     logout: () => Promise<void>;
-    setDevApiToken: (token: string) => Promise<void>;
-    clearDevApiToken: () => Promise<void>;
     updateUserProfile: (profileData: Partial<UserProfile>) => Promise<void>;
     getUserProfile: () => Promise<UserProfile | null>;
     error: string | null;
@@ -118,8 +115,6 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 const AUTH_STORAGE_KEY = '@auth_credentials';
 const PROFILE_STORAGE_KEY = '@user_profile';
-const DEV_API_TOKEN_KEY = '@dev_api_token';
-const LEGACY_AUTO_DEV_TOKEN_SUFFIX = 'IzuyV2A';
 
 const triggerProfileProvisioning = async (accessToken: string) => {
     try {
@@ -147,7 +142,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const [user, setUser] = useState<User | null>(null);
     const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
     const [accessToken, setAccessToken] = useState<string | null>(null);
-    const [devApiToken, setDevApiTokenState] = useState<string | null>(null);
     const [error, setError] = useState<string | null>(null);
 
     // Check for stored credentials on app start
@@ -160,22 +154,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         try {
             const storedCredentials = await AsyncStorage.getItem(AUTH_STORAGE_KEY);
             const storedProfile = await AsyncStorage.getItem(PROFILE_STORAGE_KEY);
-            const storedDevToken = await AsyncStorage.getItem(DEV_API_TOKEN_KEY);
 
             if (storedProfile) {
                 console.log('[Auth] Found stored profile');
                 setUserProfile(JSON.parse(storedProfile));
-            }
-
-            if (storedDevToken) {
-                const sanitizedDevToken = String(storedDevToken).trim();
-                if (sanitizedDevToken.endsWith(LEGACY_AUTO_DEV_TOKEN_SUFFIX)) {
-                    await AsyncStorage.removeItem(DEV_API_TOKEN_KEY);
-                    setDevApiTokenState(null);
-                    console.log('[Auth] Removed legacy auto dev token override');
-                } else {
-                    setDevApiTokenState(sanitizedDevToken);
-                }
             }
 
             if (storedCredentials) {
@@ -233,17 +215,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         } finally {
             setIsLoading(false);
         }
-    };
-
-    const setDevApiToken = async (token: string) => {
-        const t = String(token || '').trim();
-        await AsyncStorage.setItem(DEV_API_TOKEN_KEY, t);
-        setDevApiTokenState(t);
-    };
-
-    const clearDevApiToken = async () => {
-        await AsyncStorage.removeItem(DEV_API_TOKEN_KEY);
-        setDevApiTokenState(null);
     };
 
     const storeCredentials = async (credentials: Credentials) => {
@@ -525,7 +496,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         }
     };
 
-    const apiAccessToken = devApiToken || accessToken;
+    const apiAccessToken = accessToken;
 
     const clearError = () => {
         setError(null);
@@ -540,12 +511,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
                 userProfile,
                 accessToken,
                 apiAccessToken,
-                devApiToken,
                 login,
                 signup,
                 logout,
-                setDevApiToken,
-                clearDevApiToken,
                 updateUserProfile,
                 getUserProfile,
                 error,

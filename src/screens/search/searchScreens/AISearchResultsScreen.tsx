@@ -82,7 +82,7 @@ const AISearchResultsScreen = ({navigation, route}: any) => {
   const downloadOne = useCallback(
     async (item: ResultItem) => {
       if (!apiAccessToken) {
-        Alert.alert(t('Missing API token'), t('Log in or set a Dev API token to download.'));
+        Alert.alert(t('Missing API token'), t('Log in to download.'));
         return;
       }
 

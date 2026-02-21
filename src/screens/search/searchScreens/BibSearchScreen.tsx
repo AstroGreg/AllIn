@@ -177,7 +177,7 @@ const BibSearchScreen = ({navigation}: any) => {
 
   const runSearch = useCallback(async () => {
     if (!apiAccessToken) {
-      Alert.alert(t('Missing API token'), t('Log in or set a Dev API token to use Chest Number Search.'));
+      Alert.alert(t('Missing API token'), t('Log in to use Chest Number Search.'));
       return;
     }
 

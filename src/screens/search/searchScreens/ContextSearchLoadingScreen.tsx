@@ -95,7 +95,7 @@ const ContextSearchLoadingScreen = ({ navigation, route }: any) => {
 
         const run = async () => {
             if (!apiAccessToken) {
-                setErrorText(t('Missing API token. Log in or set a Dev API token to use Context Search.'));
+                setErrorText(t('Missing API token. Log in to use Context Search.'));
                 return;
             }
 

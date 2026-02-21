@@ -36,7 +36,7 @@ const DownloadsDetailsScreen = ({ navigation, route }: any) => {
     const loadDownloads = useCallback(async () => {
         if (!apiAccessToken) {
             setDownloads([]);
-            setErrorText(t('Log in (or set a Dev API token) to view downloads.'));
+            setErrorText(t('Log in to view downloads.'));
             return;
         }
 

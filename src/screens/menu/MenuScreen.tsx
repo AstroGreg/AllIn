@@ -106,16 +106,6 @@ const MenuScreen = ({ navigation }: any) => {
                     title={t('paymentMethod')}
                     onPress={() => navigation.navigate('PaymentMethod')}
                 />
-                {__DEV__ && (
-                  <>
-                    <SizeBox height={12} />
-                    <MenuContainers
-                      icon={<SecurityUser size={20} color={colors.primaryColor} variant="Linear" />}
-                      title={t('Dev API Token')}
-                      onPress={() => navigation.navigate('DevApiTokenScreen')}
-                    />
-                  </>
-                )}
                 <SizeBox height={12} />
                 <MenuContainers
                     icon={<Money3 size={20} color={colors.primaryColor} variant="Linear" />}

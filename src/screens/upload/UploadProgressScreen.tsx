@@ -187,7 +187,7 @@ const UploadProgressScreen = ({navigation, route}: any) => {
 
   const uploadAll = useCallback(async () => {
     if (!apiAccessToken) {
-      setError(t('Log in (or set a Dev API token) to upload.'));
+      setError(t('Log in to upload.'));
       return;
     }
     setError(null);

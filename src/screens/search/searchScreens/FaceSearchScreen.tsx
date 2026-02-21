@@ -191,7 +191,7 @@ const FaceSearchScreen = ({navigation, route}: any) => {
 
     const runSearch = useCallback(async () => {
         if (!apiAccessToken) {
-            Alert.alert(t('Missing API token'), t('Log in or set a Dev API token to use Face Search.'));
+            Alert.alert(t('Missing API token'), t('Log in to use Face Search.'));
             return;
         }
 

@@ -496,7 +496,7 @@ const PhotoDetailScreen = ({navigation, route}: any) => {
     const handleDownload = useCallback(async () => {
         if (downloadInFlightRef.current) return;
         if (!apiAccessToken) {
-            Alert.alert(t('Missing API token'), t('Log in or set a Dev API token to download.'));
+            Alert.alert(t('Missing API token'), t('Log in to download.'));
             return;
         }
 
@@ -705,7 +705,7 @@ const PhotoDetailScreen = ({navigation, route}: any) => {
             const feedbackId = resolvedMediaId;
             if (!feedbackId) return;
             if (!apiAccessToken) {
-                Alert.alert(t('Missing API token'), t('Log in or set a Dev API token to label results.'));
+                Alert.alert(t('Missing API token'), t('Log in to label results.'));
                 return;
             }
 

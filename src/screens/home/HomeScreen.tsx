@@ -188,7 +188,7 @@ const HomeScreen = ({ navigation }: any) => {
     const performLoadOverview = useCallback(async (force = false) => {
         if (!apiAccessToken) {
             setOverview(null);
-            setOverviewError(t('Log in (or set a Dev API token) to load overview.'));
+            setOverviewError(t('Log in to load overview.'));
             return;
         }
         const now = Date.now();
@@ -234,7 +234,7 @@ const HomeScreen = ({ navigation }: any) => {
     const loadOverview = useCallback((force = false) => {
         if (!apiAccessToken) {
             setOverview(null);
-            setOverviewError(t('Log in (or set a Dev API token) to load overview.'));
+            setOverviewError(t('Log in to load overview.'));
             return Promise.resolve();
         }
 

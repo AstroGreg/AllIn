@@ -343,7 +343,7 @@ const CombinedSearchScreen = ({navigation}: any) => {
 
   const runCombinedSearch = useCallback(async () => {
     if (!apiAccessToken) {
-      Alert.alert(t('Missing API token'), t('Log in or set a Dev API token to use AI Search.'));
+      Alert.alert(t('Missing API token'), t('Log in to use AI Search.'));
       return;
     }
 

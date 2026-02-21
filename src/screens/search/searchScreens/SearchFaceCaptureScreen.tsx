@@ -325,7 +325,7 @@ const SearchFaceCaptureScreen = ({ navigation, route }: any) => {
             let canProceed = true;
             if (mode === 'enrolFace') {
                 if (!apiAccessToken) {
-                    Alert.alert(t('Missing API token'), t('Log in or set a Dev API token to enroll your face.'));
+                    Alert.alert(t('Missing API token'), t('Log in to enroll your face.'));
                     return;
                 }
 
@@ -512,7 +512,7 @@ const SearchFaceCaptureScreen = ({ navigation, route }: any) => {
     const handleApprovePhoto = useCallback(() => {
         if (!pendingPhotoUri || !pendingAngleId) return;
         if (mode === 'enrolFace' && !apiAccessToken) {
-            Alert.alert(t('Missing API token'), t('Log in or set a Dev API token to enroll your face.'));
+            Alert.alert(t('Missing API token'), t('Log in to enroll your face.'));
             return;
         }
         const requiredCount = mode === 'enrolFace' ? templatesPerAngle : 1;
@@ -694,7 +694,7 @@ const SearchFaceCaptureScreen = ({ navigation, route }: any) => {
     const handleSaveFace = useCallback(async () => {
         if (mode === 'enrolFace') {
             if (!apiAccessToken) {
-                Alert.alert(t('Missing API token'), t('Log in or set a Dev API token to enroll your face.'));
+                Alert.alert(t('Missing API token'), t('Log in to enroll your face.'));
                 return;
             }
 
