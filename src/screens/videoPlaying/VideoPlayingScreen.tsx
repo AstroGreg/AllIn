@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { View, Text, TouchableOpacity, Image, Modal, Alert, Pressable } from 'react-native';
+import { View, Text, TouchableOpacity, Image, Modal, Alert, Pressable, TextInput } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import FastImage from 'react-native-fast-image';
 import Video from 'react-native-video';
@@ -18,7 +18,7 @@ import Icons from '../../constants/Icons';
 import SubscriptionModal from '../../components/subscriptionModal/SubscriptionModal';
 import { useTheme } from '../../context/ThemeContext';
 import { useAuth } from '../../context/AuthContext';
-import { getMediaById } from '../../services/apiGateway';
+import { createMediaIssueRequest, getMediaById } from '../../services/apiGateway';
 import { getApiBaseUrl, getHlsBaseUrl } from '../../constants/RuntimeConfig';
 import { useTranslation } from 'react-i18next'
 
@@ -71,6 +71,7 @@ const VideoPlayingScreen = ({ navigation, route }: any) => {
     const [reportIssueVisible, setReportIssueVisible] = useState(false);
     const [reportStep, setReportStep] = useState<'reason' | 'confirm'>('reason');
     const [selectedReportReason, setSelectedReportReason] = useState('');
+    const [customReportReason, setCustomReportReason] = useState('');
     const [infoPopupVisible, setInfoPopupVisible] = useState(false);
     const [infoPopupTitle, setInfoPopupTitle] = useState('');
     const [infoPopupMessage, setInfoPopupMessage] = useState('');
@@ -207,17 +208,16 @@ const VideoPlayingScreen = ({ navigation, route }: any) => {
 
     const reportReasons = useMemo(
         () => [
-            t('Spam or misleading'),
-            t('Harassment or hate'),
-            t('Violence or unsafe content'),
-            t('Copyright or privacy issue'),
-            t('Other'),
+            t('Wrong competition'),
+            t('Wrong heat'),
+            t('Custom'),
         ],
         [t],
     );
 
     const openReportIssuePopup = useCallback(() => {
         setSelectedReportReason('');
+        setCustomReportReason('');
         setReportStep('reason');
         setReportIssueVisible(true);
     }, []);
@@ -402,6 +402,7 @@ const VideoPlayingScreen = ({ navigation, route }: any) => {
                     setReportIssueVisible(false);
                     setReportStep('reason');
                     setSelectedReportReason('');
+                    setCustomReportReason('');
                 }}
             >
                 <View style={Styles.moreMenuOverlay}>
@@ -411,13 +412,14 @@ const VideoPlayingScreen = ({ navigation, route }: any) => {
                             setReportIssueVisible(false);
                             setReportStep('reason');
                             setSelectedReportReason('');
+                            setCustomReportReason('');
                         }}
                     />
                     <View style={Styles.moreMenuContainer}>
                         <Text style={Styles.moreMenuTitle}>
                             {reportStep === 'reason'
-                                ? t('Why are you reporting this post?')
-                                : t("Your're about to submit a report")}
+                                ? t('Report an issue with this photo/video')
+                                : t('Confirm request')}
                         </Text>
                         <View style={Styles.moreMenuDivider} />
                         {reportStep === 'reason' ? (
@@ -429,12 +431,36 @@ const VideoPlayingScreen = ({ navigation, route }: any) => {
                                         activeOpacity={0.85}
                                         onPress={() => {
                                             setSelectedReportReason(reason);
+                                            if (reason === t('Custom')) {
+                                                return;
+                                            }
                                             setReportStep('confirm');
                                         }}
                                     >
                                         <Text style={Styles.moreMenuActionText}>{reason}</Text>
                                     </TouchableOpacity>
                                 ))}
+                                {selectedReportReason === t('Custom') ? (
+                                    <View style={[Styles.moreMenuAction, { borderBottomWidth: 0 }]}>
+                                        <TextInput
+                                            style={[Styles.moreMenuActionText, { borderWidth: 1, borderColor: colors.borderColor, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 10 }]}
+                                            value={customReportReason}
+                                            onChangeText={setCustomReportReason}
+                                            placeholder={t('Type your request')}
+                                            placeholderTextColor={colors.subTextColor}
+                                        />
+                                        <TouchableOpacity
+                                            style={[Styles.infoModalSubmitButton, { marginTop: 10 }]}
+                                            activeOpacity={0.85}
+                                            onPress={() => {
+                                                if (!customReportReason.trim()) return;
+                                                setReportStep('confirm');
+                                            }}
+                                        >
+                                            <Text style={Styles.infoModalSubmitButtonText}>{t('Next')}</Text>
+                                        </TouchableOpacity>
+                                    </View>
+                                ) : null}
                                 <TouchableOpacity
                                     style={Styles.moreMenuCancel}
                                     activeOpacity={0.85}
@@ -442,6 +468,7 @@ const VideoPlayingScreen = ({ navigation, route }: any) => {
                                         setReportIssueVisible(false);
                                         setReportStep('reason');
                                         setSelectedReportReason('');
+                                        setCustomReportReason('');
                                     }}
                                 >
                                     <Text style={Styles.moreMenuCancelText}>{t('Cancel')}</Text>
@@ -451,18 +478,37 @@ const VideoPlayingScreen = ({ navigation, route }: any) => {
                             <>
                                 <View style={Styles.moreMenuAction}>
                                     <Text style={Styles.moreMenuActionText}>
-                                        {`${t('Reason')}: ${selectedReportReason}`}
+                                        {`${t('Reason')}: ${selectedReportReason}${selectedReportReason === t('Custom') ? ` - ${customReportReason.trim()}` : ''}`}
                                     </Text>
                                 </View>
                                 <TouchableOpacity
                                     style={[Styles.infoModalSubmitButton, { marginTop: 8 }]}
                                     activeOpacity={0.85}
-                                    onPress={() => {
+                                    onPress={async () => {
+                                        const mediaId = String(routeMediaId || '').trim();
+                                        if (!apiAccessToken || !mediaId) return;
+                                        const issue_type = selectedReportReason === t('Wrong competition')
+                                            ? 'wrong_competition'
+                                            : selectedReportReason === t('Wrong heat')
+                                                ? 'wrong_heat'
+                                                : 'custom';
+                                        try {
+                                            await createMediaIssueRequest(apiAccessToken, {
+                                                media_id: mediaId,
+                                                issue_type,
+                                                custom_text: issue_type === 'custom' ? customReportReason.trim() : undefined,
+                                            });
+                                        } catch (e: any) {
+                                            const msg = String(e?.message || t('Could not submit request'));
+                                            showInfoPopup(t('Request failed'), msg);
+                                            return;
+                                        }
                                         setReportIssueVisible(false);
                                         setReportStep('reason');
                                         setSelectedReportReason('');
+                                        setCustomReportReason('');
                                         setTimeout(() => {
-                                            showInfoPopup(t('Request sent'), t('We received your issue report.'));
+                                            showInfoPopup(t('Request sent'), t('Your edit request is now pending.'));
                                         }, 120);
                                     }}
                                 >

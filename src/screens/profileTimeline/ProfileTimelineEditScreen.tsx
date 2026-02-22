@@ -10,9 +10,10 @@ import { useTheme } from '../../context/ThemeContext';
 import { createStyles } from './ProfileTimelineEditStyles';
 import type { TimelineEntry } from '../../components/profileTimeline/ProfileTimeline';
 import { useAuth } from '../../context/AuthContext';
-import { getMediaById, getPosts, getProfileSummary, getProfileTimeline, getUploadedCompetitions, setMyProfileTimeline, uploadMediaBatch, type MediaViewAllItem, type PostSummary, type ProfileTimelineEntry } from '../../services/apiGateway';
+import { getMediaById, getPosts, getProfileSummary, getProfileTimeline, getUploadedCompetitions, searchProfiles, setMyProfileTimeline, uploadMediaBatch, type MediaViewAllItem, type PostSummary, type ProfileTimelineEntry } from '../../services/apiGateway';
 import { getApiBaseUrl } from '../../constants/RuntimeConfig';
 import { useTranslation } from 'react-i18next'
+import CheckBox from '../../components/checkbox/CheckBox';
 
 const ProfileTimelineEditScreen = ({ navigation, route }: any) => {
     const { t } = useTranslation();
@@ -23,7 +24,10 @@ const ProfileTimelineEditScreen = ({ navigation, route }: any) => {
     const storageKey: string = route?.params?.storageKey ?? '@profile_timeline_self';
     const item: TimelineEntry | null = route?.params?.item ?? null;
     const blogStorageKey: string | null = route?.params?.blogStorageKey ?? null;
-    const competitionOptions: string[] = route?.params?.competitionOptions ?? [];
+    const competitionOptions: string[] = useMemo(() => {
+        const raw = route?.params?.competitionOptions;
+        return Array.isArray(raw) ? raw : [];
+    }, [route?.params?.competitionOptions]);
 
     const [form, setForm] = useState({
         title: '',
@@ -45,7 +49,15 @@ const ProfileTimelineEditScreen = ({ navigation, route }: any) => {
     const [showCompetitionModal, setShowCompetitionModal] = useState(false);
     const [isUploading, setIsUploading] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
+    const [currentStep, setCurrentStep] = useState(1);
+    const [skipHighlight, setSkipHighlight] = useState(false);
+    const [linkedPeople, setLinkedPeople] = useState<string[]>([]);
+    const [peopleQuery, setPeopleQuery] = useState('');
+    const [peopleResults, setPeopleResults] = useState<Array<{ profile_id: string; display_name: string }>>([]);
+    const [peopleSearchLoading, setPeopleSearchLoading] = useState(false);
     const { apiAccessToken } = useAuth();
+
+    const TOTAL_STEPS = 7;
 
     const isSignedUrl = useCallback((value?: string | null) => {
         if (!value) return false;
@@ -119,6 +131,32 @@ const ProfileTimelineEditScreen = ({ navigation, route }: any) => {
         return Number.isNaN(fallback.getTime()) ? null : fallback;
     }, []);
 
+    const splitDescriptionAndPeople = useCallback((value?: string | null) => {
+        const raw = String(value || '');
+        const rows = raw.split('\n').map((entry) => entry.trimEnd());
+        const peopleLine = rows.length > 0 ? rows[rows.length - 1] : '';
+        const match = peopleLine.match(/^people:\s*(.+)$/i);
+        if (!match) {
+            return { description: raw.trim(), people: [] as string[] };
+        }
+        const people = match[1]
+            .split(',')
+            .map((entry) => entry.trim())
+            .filter(Boolean);
+        return {
+            description: rows.slice(0, -1).join('\n').trim(),
+            people,
+        };
+    }, []);
+
+    const buildDescriptionWithPeople = useCallback((description: string, people: string[]) => {
+        const base = String(description || '').trim();
+        const cleanPeople = Array.from(new Set(people.map((p) => String(p || '').trim()).filter(Boolean)));
+        if (cleanPeople.length === 0) return base;
+        if (!base) return `People: ${cleanPeople.join(', ')}`;
+        return `${base}\nPeople: ${cleanPeople.join(', ')}`;
+    }, []);
+
     const openDateModal = useCallback(() => {
         const seedDate = mode === 'edit' ? (eventDate || new Date()) : new Date();
         const seed = toDateString(seedDate);
@@ -142,9 +180,11 @@ const ProfileTimelineEditScreen = ({ navigation, route }: any) => {
         if (!item) return;
         setForm({
             title: item.title,
-            description: item.description,
+            description: splitDescriptionAndPeople(item.description).description,
             highlight: item.highlight ?? '',
         });
+        setLinkedPeople(splitDescriptionAndPeople(item.description).people);
+        setSkipHighlight(!String(item.highlight ?? '').trim());
         const seeded = parseDateValue((item as any).event_date ?? item.date ?? null) ?? new Date();
         setEventDate(seeded);
         setMediaItems(Array.isArray((item as any).mediaItems) ? (item as any).mediaItems : []);
@@ -161,7 +201,7 @@ const ProfileTimelineEditScreen = ({ navigation, route }: any) => {
             : linkedCompsRaw.map((c: any) => (typeof c === 'string' ? c : c?.id)).filter(Boolean);
         setLinkedBlogIds(blogIds);
         setLinkedCompetitionIds(compIds);
-    }, [item, parseDateValue]);
+    }, [item, parseDateValue, splitDescriptionAndPeople]);
 
     useEffect(() => {
         if (!apiAccessToken || !item) return;
@@ -242,7 +282,7 @@ const ProfileTimelineEditScreen = ({ navigation, route }: any) => {
 
     const saveItem = useCallback(async () => {
         const title = form.title.trim();
-        const description = form.description.trim();
+        const description = buildDescriptionWithPeople(form.description.trim(), linkedPeople);
         if (!title || !description) {
             Alert.alert(t('Missing info'), t('Please add a title and description.'));
             return;
@@ -269,7 +309,7 @@ const ProfileTimelineEditScreen = ({ navigation, route }: any) => {
                     event_date: eventDateIso,
                     title,
                     description,
-                    highlight: form.highlight.trim() || null,
+                    highlight: skipHighlight ? null : (form.highlight.trim() || null),
                     cover_media_id: coverId || null,
                     media_ids: mediaIds,
                     linked_post_ids: linkedBlogIds,
@@ -295,7 +335,7 @@ const ProfileTimelineEditScreen = ({ navigation, route }: any) => {
                             date: displayDate,
                             title,
                             description,
-                            highlight: form.highlight.trim(),
+                            highlight: skipHighlight ? '' : form.highlight.trim(),
                             photos: mediaItems.map((m) => resolveThumbUrl(m)).filter(Boolean) as string[],
                             backgroundImage: coverMedia ? (resolveThumbUrl(coverMedia) || undefined) : undefined,
                             linkedBlogs: linkedBlogIds,
@@ -310,8 +350,8 @@ const ProfileTimelineEditScreen = ({ navigation, route }: any) => {
                     year: String(yearValue),
                     date: displayDate,
                     title,
-                    description,
-                    highlight: form.highlight.trim(),
+                            description,
+                            highlight: skipHighlight ? '' : form.highlight.trim(),
                     photos: mediaItems.map((m) => resolveThumbUrl(m)).filter(Boolean) as string[],
                     backgroundImage: coverMedia ? (resolveThumbUrl(coverMedia) || undefined) : undefined,
                     linkedBlogs: linkedBlogIds,
@@ -327,7 +367,7 @@ const ProfileTimelineEditScreen = ({ navigation, route }: any) => {
         } finally {
             setIsSaving(false);
         }
-    }, [apiAccessToken, coverMedia, eventDate, form.description, form.highlight, form.title, isSaving, isUploading, item, linkedBlogIds, linkedCompetitionIds, mediaItems, mode, navigation, resolveThumbUrl, storageKey, t, isUuid]);
+    }, [apiAccessToken, buildDescriptionWithPeople, coverMedia, eventDate, form.description, form.highlight, form.title, isSaving, isUploading, item, linkedBlogIds, linkedCompetitionIds, linkedPeople, mediaItems, mode, navigation, resolveThumbUrl, skipHighlight, storageKey, t, isUuid]);
 
     const deleteItem = useCallback(async () => {
         if (!item) return;
@@ -381,7 +421,7 @@ const ProfileTimelineEditScreen = ({ navigation, route }: any) => {
         } finally {
             setIsUploading(false);
         }
-    }, [apiAccessToken]);
+    }, [apiAccessToken, t]);
 
     const addMedia = useCallback(async () => {
         const res = await launchImageLibrary({
@@ -425,6 +465,18 @@ const ProfileTimelineEditScreen = ({ navigation, route }: any) => {
         setLinkedCompetitionIds((prev) => (prev.includes(id) ? prev.filter((t) => t !== id) : [...prev, id]));
     }, []);
 
+    const addPerson = useCallback((name: string) => {
+        const safe = String(name || '').trim();
+        if (!safe) return;
+        setLinkedPeople((prev) => (prev.includes(safe) ? prev : [...prev, safe]));
+        setPeopleQuery('');
+        setPeopleResults([]);
+    }, []);
+
+    const removePerson = useCallback((name: string) => {
+        setLinkedPeople((prev) => prev.filter((entry) => entry !== name));
+    }, []);
+
     const blogChoices = useMemo(() => {
         const q = blogSearch.trim().toLowerCase();
         return availableBlogs.filter((b) => !q || b.title.toLowerCase().includes(q));
@@ -434,6 +486,62 @@ const ProfileTimelineEditScreen = ({ navigation, route }: any) => {
         const base = availableCompetitions.length ? availableCompetitions : competitionOptions.map((title) => ({ event_id: title, event_name: title, event_date: null }));
         return base.filter((c) => !q || String(c.event_name || '').toLowerCase().includes(q));
     }, [availableCompetitions, competitionOptions, competitionSearch]);
+
+    useEffect(() => {
+        let mounted = true;
+        if (!apiAccessToken || !peopleQuery.trim()) {
+            setPeopleResults([]);
+            setPeopleSearchLoading(false);
+            return () => {
+                mounted = false;
+            };
+        }
+        const timer = setTimeout(async () => {
+            setPeopleSearchLoading(true);
+            try {
+                const resp = await searchProfiles(apiAccessToken, { q: peopleQuery.trim(), limit: 8 });
+                if (!mounted) return;
+                const list = Array.isArray(resp?.profiles)
+                    ? resp.profiles
+                        .map((p) => ({
+                            profile_id: String(p.profile_id || ''),
+                            display_name: String(p.display_name || '').trim(),
+                        }))
+                        .filter((p) => p.profile_id && p.display_name)
+                    : [];
+                setPeopleResults(list);
+            } catch {
+                if (mounted) setPeopleResults([]);
+            } finally {
+                if (mounted) setPeopleSearchLoading(false);
+            }
+        }, 250);
+        return () => {
+            mounted = false;
+            clearTimeout(timer);
+        };
+    }, [apiAccessToken, peopleQuery]);
+
+    const goNextStep = useCallback(() => {
+        if (currentStep === 2) {
+            if (!form.title.trim() || !form.description.trim()) {
+                Alert.alert(t('Missing info'), t('Please add a title and description.'));
+                return;
+            }
+        }
+        if (currentStep < TOTAL_STEPS) {
+            setCurrentStep((prev) => prev + 1);
+        }
+    }, [currentStep, form.description, form.title, t]);
+
+    const goPrevStep = useCallback(() => {
+        if (currentStep > 1) setCurrentStep((prev) => prev - 1);
+    }, [currentStep]);
+    const goPreviewStep = useCallback(() => {
+        if (currentStep < TOTAL_STEPS) {
+            setCurrentStep(TOTAL_STEPS);
+        }
+    }, [currentStep, TOTAL_STEPS]);
 
     return (
         <View style={Styles.mainContainer}>
@@ -449,196 +557,243 @@ const ProfileTimelineEditScreen = ({ navigation, route }: any) => {
             </View>
 
             <ScrollView contentContainerStyle={Styles.scrollContent} showsVerticalScrollIndicator={false}>
-                <View style={Styles.fieldBlock}>
-                    <Text style={Styles.fieldLabel}>{t('Date')}</Text>
-                    <TouchableOpacity style={Styles.dateButton} onPress={openDateModal}>
-                        <CalendarIcon size={16} color={colors.mainTextColor} variant="Linear" />
-                        <Text style={Styles.dateText}>{eventDate.toLocaleDateString()}</Text>
-                    </TouchableOpacity>
-                </View>
-                <View style={Styles.fieldBlock}>
-                    <Text style={Styles.fieldLabel}>{t('Title')}</Text>
-                    <TextInput
-                        style={Styles.fieldInput}
-                        placeholder={t('Qualified for nationals')}
-                        placeholderTextColor="#9B9F9F"
-                        value={form.title}
-                        onChangeText={(text) => setForm((prev) => ({ ...prev, title: text }))}
-                    />
-                </View>
-                <View style={Styles.fieldBlock}>
-                    <Text style={Styles.fieldLabel}>{t('Description')}</Text>
-                    <TextInput
-                        style={[Styles.fieldInput, Styles.fieldTextarea]}
-                        placeholder={t('Share the highlight and what it meant.')}
-                        placeholderTextColor="#9B9F9F"
-                        value={form.description}
-                        onChangeText={(text) => setForm((prev) => ({ ...prev, description: text }))}
-                        multiline
-                    />
-                </View>
-                <View style={Styles.fieldBlock}>
-                    <Text style={Styles.fieldLabel}>{t('Highlight (optional)')}</Text>
-                    <TextInput
-                        style={Styles.fieldInput}
-                        placeholder={t('PB 1:54.30')}
-                        placeholderTextColor="#9B9F9F"
-                        value={form.highlight}
-                        onChangeText={(text) => setForm((prev) => ({ ...prev, highlight: text }))}
-                    />
+                <View style={Styles.stepHeaderRow}>
+                    <Text style={Styles.stepCounter}>{t('Step')} {currentStep}/{TOTAL_STEPS}</Text>
+                    <Text style={Styles.stepTitle}>
+                        {currentStep === 1 ? t('Date') :
+                            currentStep === 2 ? t('Description') :
+                                currentStep === 3 ? t('Highlight') :
+                                    currentStep === 4 ? t('Timeline background') :
+                                        currentStep === 5 ? t('Milestone media') :
+                                            currentStep === 6 ? t('Links') : t('Preview')}
+                    </Text>
                 </View>
 
-                <View style={Styles.fieldBlock}>
-                    <View style={Styles.inlineHeader}>
-                        <Text style={Styles.fieldLabel}>{t('Timeline background')}</Text>
-                        <TouchableOpacity style={Styles.inlineAction} onPress={pickBackground}>
-                            <Text style={Styles.inlineActionText}>{coverMedia ? t('Replace image') : t('Select image')}</Text>
+                {currentStep === 1 && (
+                    <View style={Styles.fieldBlock}>
+                        <Text style={Styles.fieldLabel}>{t('Date')}</Text>
+                        <TouchableOpacity style={Styles.dateButton} onPress={openDateModal}>
+                            <CalendarIcon size={16} color={colors.mainTextColor} variant="Linear" />
+                            <Text style={Styles.dateText}>{eventDate.toLocaleDateString()}</Text>
                         </TouchableOpacity>
                     </View>
-                    {!coverMedia ? (
-                        <Text style={Styles.helperText}>{t('Pick one image to show as the timeline card background.')}</Text>
-                    ) : (
-                        <View style={Styles.backgroundPreviewRow}>
-                            {resolveThumbUrl(coverMedia) ? (
-                                <Image
-                                    source={{ uri: String(resolveThumbUrl(coverMedia)) }}
-                                    style={Styles.backgroundPreview}
-                                    resizeMode="cover"
+                )}
+
+                {currentStep === 2 && (
+                    <>
+                        <View style={Styles.fieldBlock}>
+                            <Text style={Styles.fieldLabel}>{t('Title')}</Text>
+                            <TextInput
+                                style={Styles.fieldInput}
+                                placeholder={t('Qualified for nationals')}
+                                placeholderTextColor="#9B9F9F"
+                                value={form.title}
+                                onChangeText={(text) => setForm((prev) => ({ ...prev, title: text }))}
+                            />
+                        </View>
+                        <View style={Styles.fieldBlock}>
+                            <Text style={Styles.fieldLabel}>{t('Description')}</Text>
+                            <TextInput
+                                style={[Styles.fieldInput, Styles.fieldTextarea]}
+                                placeholder={t('Share the highlight and what it meant.')}
+                                placeholderTextColor="#9B9F9F"
+                                value={form.description}
+                                onChangeText={(text) => setForm((prev) => ({ ...prev, description: text }))}
+                                multiline
+                            />
+                        </View>
+                    </>
+                )}
+
+                {currentStep === 3 && (
+                    <View style={Styles.fieldBlock}>
+                        <View style={Styles.skipRow}>
+                            <CheckBox isChecked={skipHighlight} onPressCheckBox={(checked) => setSkipHighlight(Boolean(checked))} />
+                            <Text style={Styles.skipLabel}>{t('Skip highlight')}</Text>
+                        </View>
+                        {!skipHighlight && (
+                            <>
+                                <Text style={Styles.fieldLabel}>{t('Highlight (optional)')}</Text>
+                                <TextInput
+                                    style={Styles.fieldInput}
+                                    placeholder={t('PB 1:54.30')}
+                                    placeholderTextColor="#9B9F9F"
+                                    value={form.highlight}
+                                    onChangeText={(text) => setForm((prev) => ({ ...prev, highlight: text }))}
                                 />
-                            ) : (
-                                <View style={[Styles.backgroundPreview, { backgroundColor: colors.btnBackgroundColor }]} />
-                            )}
-                            <TouchableOpacity style={Styles.inlineAction} onPress={clearBackground}>
-                                <Text style={Styles.inlineActionText}>{t('Remove')}</Text>
+                            </>
+                        )}
+                    </View>
+                )}
+
+                {currentStep === 4 && (
+                    <View style={Styles.fieldBlock}>
+                        <View style={Styles.inlineHeader}>
+                            <Text style={Styles.fieldLabel}>{t('Timeline background')}</Text>
+                            <TouchableOpacity style={Styles.inlineAction} onPress={pickBackground}>
+                                <Text style={Styles.inlineActionText}>{coverMedia ? t('Replace image') : t('Select image')}</Text>
                             </TouchableOpacity>
                         </View>
-                    )}
-                </View>
-
-                <View style={Styles.fieldBlock}>
-                    <View style={Styles.inlineHeader}>
-                        <Text style={Styles.fieldLabel}>{t('Milestone media')}</Text>
-                        <TouchableOpacity style={Styles.inlineAction} onPress={addMedia}>
-                            <Text style={Styles.inlineActionText}>{t('Add media')}</Text>
-                        </TouchableOpacity>
+                        {!coverMedia ? (
+                            <Text style={Styles.helperText}>{t('Pick one image to show as the timeline card background.')}</Text>
+                        ) : (
+                            <View style={Styles.backgroundPreviewRow}>
+                                {resolveThumbUrl(coverMedia) ? (
+                                    <Image
+                                        source={{ uri: String(resolveThumbUrl(coverMedia)) }}
+                                        style={Styles.backgroundPreview}
+                                        resizeMode="cover"
+                                    />
+                                ) : (
+                                    <View style={[Styles.backgroundPreview, { backgroundColor: colors.btnBackgroundColor }]} />
+                                )}
+                                <TouchableOpacity style={Styles.inlineAction} onPress={clearBackground}>
+                                    <Text style={Styles.inlineActionText}>{t('Remove')}</Text>
+                                </TouchableOpacity>
+                            </View>
+                        )}
                     </View>
-                    {mediaItems.length === 0 ? (
-                        <Text style={Styles.helperText}>{t('Add photos or videos to show this milestone.')}</Text>
-                    ) : (
-                        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={Styles.photoRow}>
-                            {mediaItems.map((media) => {
-                                const thumb = resolveThumbUrl(media);
-                                const isVideo = media.type === 'video';
-                                return (
-                                    <TouchableOpacity
-                                        key={String(media.media_id)}
-                                        style={Styles.photoThumbWrapper}
-                                        onPress={() => removeMedia(String(media.media_id))}
-                                    >
-                                        {thumb ? (
-                                            <Image source={{ uri: String(thumb) }} style={Styles.photoThumbImage} resizeMode="cover" />
-                                        ) : (
-                                            <View style={Styles.photoThumbPlaceholder} />
-                                        )}
-                                        {isVideo && (
-                                            <View style={Styles.mediaBadge}>
-                                                <Text style={Styles.mediaBadgeText}>{t('Video')}</Text>
-                                            </View>
-                                        )}
-                                    </TouchableOpacity>
-                                );
-                            })}
-                        </ScrollView>
-                    )}
-                    {isUploading && <Text style={Styles.helperText}>{t('Uploading...')}</Text>}
-                </View>
+                )}
 
-                <View style={Styles.fieldBlock}>
-                    <View style={Styles.sectionHeaderRow}>
-                        <Text style={Styles.sectionTitle}>{t('Blogs')}</Text>
-                        <TouchableOpacity style={Styles.sectionAction} onPress={() => setShowBlogModal(true)}>
-                            <Text style={Styles.sectionActionText}>
-                                {linkedBlogIds.length > 0 ? t('Edit') : t('Select')}
-                            </Text>
-                        </TouchableOpacity>
-                    </View>
-                    <Text style={Styles.helperText}>{t('Choose one or more blogs to link.')}</Text>
-                    {linkedBlogIds.length > 0 ? (
-                        <View style={Styles.competitionChipsRow}>
-                            {linkedBlogIds.map((id) => {
-                                const match = availableBlogs.find((b) => b.id === id);
-                                return (
-                                    <View key={id} style={Styles.competitionChip}>
-                                        <Text style={Styles.competitionChipText} numberOfLines={1}>
-                                            {match?.title ?? t('Blog')}
-                                        </Text>
-                                        <TouchableOpacity
-                                            style={Styles.competitionChipRemove}
-                                            onPress={() => toggleBlog(id)}
-                                        >
-                                            <CloseCircle size={14} color={colors.subTextColor} variant="Linear" />
-                                        </TouchableOpacity>
-                                    </View>
-                                );
-                            })}
+                {currentStep === 5 && (
+                    <View style={Styles.fieldBlock}>
+                        <View style={Styles.inlineHeader}>
+                            <Text style={Styles.fieldLabel}>{t('Milestone media')}</Text>
+                            <TouchableOpacity style={Styles.inlineAction} onPress={addMedia}>
+                                <Text style={Styles.inlineActionText}>{t('Add media')}</Text>
+                            </TouchableOpacity>
                         </View>
-                    ) : (
-                        <TouchableOpacity
-                            style={Styles.emptyCompetitionCard}
-                            onPress={() => setShowBlogModal(true)}
-                        >
-                            <Text style={Styles.emptyCompetitionText}>{t('Select blogs')}</Text>
-                        </TouchableOpacity>
-                    )}
-                </View>
-
-                <View style={Styles.fieldBlock}>
-                    <View style={Styles.sectionHeaderRow}>
-                        <Text style={Styles.sectionTitle}>{t('Competitions')}</Text>
-                        <TouchableOpacity style={Styles.sectionAction} onPress={() => setShowCompetitionModal(true)}>
-                            <Text style={Styles.sectionActionText}>
-                                {linkedCompetitionIds.length > 0 ? t('Edit') : t('Select')}
-                            </Text>
-                        </TouchableOpacity>
-                    </View>
-                    <Text style={Styles.helperText}>{t('Choose one or more competitions to link.')}</Text>
-                    {linkedCompetitionIds.length > 0 ? (
-                        <View style={Styles.competitionChipsRow}>
-                            {linkedCompetitionIds.map((id) => {
-                                const match = availableCompetitions.find((c) => c.event_id === id);
-                                const label = match?.event_name || t('competition');
-                                return (
-                                    <View key={id} style={Styles.competitionChip}>
-                                        <Text style={Styles.competitionChipText} numberOfLines={1}>
-                                            {label}
-                                        </Text>
+                        {mediaItems.length === 0 ? (
+                            <Text style={Styles.helperText}>{t('Add photos or videos to show this milestone.')}</Text>
+                        ) : (
+                            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={Styles.photoRow}>
+                                {mediaItems.map((media) => {
+                                    const thumb = resolveThumbUrl(media);
+                                    const isVideo = media.type === 'video';
+                                    return (
                                         <TouchableOpacity
-                                            style={Styles.competitionChipRemove}
-                                            onPress={() => toggleCompetition(id)}
+                                            key={String(media.media_id)}
+                                            style={Styles.photoThumbWrapper}
+                                            onPress={() => removeMedia(String(media.media_id))}
                                         >
-                                            <CloseCircle size={14} color={colors.subTextColor} variant="Linear" />
+                                            {thumb ? (
+                                                <Image source={{ uri: String(thumb) }} style={Styles.photoThumbImage} resizeMode="cover" />
+                                            ) : (
+                                                <View style={Styles.photoThumbPlaceholder} />
+                                            )}
+                                            {isVideo && (
+                                                <View style={Styles.mediaBadge}>
+                                                    <Text style={Styles.mediaBadgeText}>{t('Video')}</Text>
+                                                </View>
+                                            )}
                                         </TouchableOpacity>
-                                    </View>
-                                );
-                            })}
+                                    );
+                                })}
+                            </ScrollView>
+                        )}
+                        {isUploading && <Text style={Styles.helperText}>{t('Uploading...')}</Text>}
+                    </View>
+                )}
+
+                {currentStep === 6 && (
+                    <>
+                        <View style={Styles.fieldBlock}>
+                            <View style={Styles.sectionHeaderRow}>
+                                <Text style={Styles.sectionTitle}>{t('Blogs')}</Text>
+                                <TouchableOpacity style={Styles.sectionAction} onPress={() => setShowBlogModal(true)}>
+                                    <Text style={Styles.sectionActionText}>{linkedBlogIds.length > 0 ? t('Edit') : t('Select')}</Text>
+                                </TouchableOpacity>
+                            </View>
                         </View>
-                    ) : (
-                        <TouchableOpacity
-                            style={Styles.emptyCompetitionCard}
-                            onPress={() => setShowCompetitionModal(true)}
-                        >
-                            <Text style={Styles.emptyCompetitionText}>{t('Select competitions')}</Text>
-                        </TouchableOpacity>
-                    )}
-                </View>
+                        <View style={Styles.fieldBlock}>
+                            <View style={Styles.sectionHeaderRow}>
+                                <Text style={Styles.sectionTitle}>{t('Competitions')}</Text>
+                                <TouchableOpacity style={Styles.sectionAction} onPress={() => setShowCompetitionModal(true)}>
+                                    <Text style={Styles.sectionActionText}>{linkedCompetitionIds.length > 0 ? t('Edit') : t('Select')}</Text>
+                                </TouchableOpacity>
+                            </View>
+                        </View>
+                        <View style={Styles.fieldBlock}>
+                            <Text style={Styles.sectionTitle}>{t('People')}</Text>
+                            <View style={Styles.modalSearchRow}>
+                                <SearchNormal1 size={18} color={colors.subTextColor} variant="Linear" />
+                                <TextInput
+                                    style={Styles.modalSearchInput}
+                                    placeholder={t('Search people or type a name')}
+                                    placeholderTextColor={colors.subTextColor}
+                                    value={peopleQuery}
+                                    onChangeText={setPeopleQuery}
+                                    onSubmitEditing={() => addPerson(peopleQuery)}
+                                />
+                            </View>
+                            {peopleSearchLoading && <Text style={Styles.helperText}>{t('Searching...')}</Text>}
+                            {!peopleSearchLoading && peopleQuery.trim().length > 0 && peopleResults.length > 0 && (
+                                <View style={Styles.modalListContent}>
+                                    {peopleResults.map((person) => (
+                                        <TouchableOpacity
+                                            key={person.profile_id}
+                                            style={Styles.modalOption}
+                                            onPress={() => addPerson(person.display_name)}
+                                        >
+                                            <Text style={Styles.modalOptionTitle}>{person.display_name}</Text>
+                                        </TouchableOpacity>
+                                    ))}
+                                </View>
+                            )}
+                            {linkedPeople.length > 0 && (
+                                <View style={Styles.competitionChipsRow}>
+                                    {linkedPeople.map((person) => (
+                                        <View key={person} style={Styles.competitionChip}>
+                                            <Text style={Styles.competitionChipText} numberOfLines={1}>{person}</Text>
+                                            <TouchableOpacity style={Styles.competitionChipRemove} onPress={() => removePerson(person)}>
+                                                <CloseCircle size={14} color={colors.subTextColor} variant="Linear" />
+                                            </TouchableOpacity>
+                                        </View>
+                                    ))}
+                                </View>
+                            )}
+                        </View>
+                    </>
+                )}
+
+                {currentStep === 7 && (
+                    <View style={Styles.previewCard}>
+                        <Text style={Styles.previewTitle}>{form.title || t('Untitled milestone')}</Text>
+                        <Text style={Styles.previewMeta}>{eventDate.toLocaleDateString()}</Text>
+                        <Text style={Styles.previewText}>{form.description || t('No description')}</Text>
+                        {!skipHighlight && !!form.highlight.trim() && (
+                            <Text style={Styles.previewSubline}>{t('Highlight')}: {form.highlight.trim()}</Text>
+                        )}
+                        {linkedPeople.length > 0 && (
+                            <Text style={Styles.previewSubline}>{t('People')}: {linkedPeople.join(', ')}</Text>
+                        )}
+                        <Text style={Styles.previewMeta}>
+                            {t('Media')}: {mediaItems.length} · {t('Blogs')}: {linkedBlogIds.length} · {t('Competitions')}: {linkedCompetitionIds.length}
+                        </Text>
+                    </View>
+                )}
 
                 <View style={Styles.actionRow}>
-                    <TouchableOpacity style={Styles.cancelButton} onPress={() => navigation.goBack()}>
-                        <Text style={Styles.cancelText}>{t('Cancel')}</Text>
+                    {currentStep < TOTAL_STEPS ? (
+                        <TouchableOpacity style={Styles.previewShortcutButton} onPress={goPreviewStep}>
+                            <Text style={Styles.previewShortcutText}>{t('Preview')}</Text>
+                        </TouchableOpacity>
+                    ) : null}
+                    <TouchableOpacity
+                        style={Styles.cancelButton}
+                        onPress={currentStep === 1 ? () => navigation.goBack() : goPrevStep}
+                    >
+                        <Text style={Styles.cancelText}>{currentStep === 1 ? t('Cancel') : t('Back')}</Text>
                     </TouchableOpacity>
-                    <TouchableOpacity style={Styles.saveButton} onPress={saveItem} disabled={isSaving || isUploading}>
-                        <Text style={Styles.saveText}>{isSaving ? t('Saving...') : t('Save')}</Text>
-                    </TouchableOpacity>
+                    {currentStep < TOTAL_STEPS ? (
+                        <TouchableOpacity style={Styles.saveButton} onPress={goNextStep}>
+                            <Text style={Styles.saveText}>{t('Next')}</Text>
+                        </TouchableOpacity>
+                    ) : (
+                        <TouchableOpacity style={Styles.saveButton} onPress={saveItem} disabled={isSaving || isUploading}>
+                            <Text style={Styles.saveText}>{isSaving ? t('Saving...') : t('Save')}</Text>
+                        </TouchableOpacity>
+                    )}
                 </View>
 
                 {mode === 'edit' && item ? (

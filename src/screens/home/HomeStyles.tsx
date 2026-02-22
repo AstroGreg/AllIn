@@ -456,12 +456,11 @@ export const createStyles = (colors: ThemeColors) => StyleSheet.create({
     // News Feed Card
     newsFeedCard: {
         backgroundColor: colors.backgroundColor,
-        marginBottom: 0,
+        marginBottom: 16,
         marginHorizontal: 0,
         borderRadius: 0,
         borderWidth: 0,
-        borderBottomWidth: 6,
-        borderBottomColor: colors.btnBackgroundColor,
+        borderBottomWidth: 0,
         overflow: 'hidden',
     },
     newsFeedCardFull: {
@@ -469,12 +468,11 @@ export const createStyles = (colors: ThemeColors) => StyleSheet.create({
     },
     newsFeedCardNoBorder: {
         backgroundColor: colors.backgroundColor,
-        marginBottom: 0,
+        marginBottom: 16,
         marginHorizontal: 0,
         borderRadius: 0,
         borderWidth: 0,
-        borderBottomWidth: 6,
-        borderBottomColor: colors.btnBackgroundColor,
+        borderBottomWidth: 0,
         overflow: 'hidden',
     },
     newsFeedTitle: {
@@ -485,8 +483,8 @@ export const createStyles = (colors: ThemeColors) => StyleSheet.create({
         marginBottom: 4,
     },
     feedPadding: {
-        paddingHorizontal: 10,
-        paddingVertical: 12,
+        paddingHorizontal: 14,
+        paddingVertical: 14,
     },
     newsFeedImageContainer: {
         width: '100%',
@@ -624,19 +622,19 @@ export const createStyles = (colors: ThemeColors) => StyleSheet.create({
         paddingBottom: 4,
     },
     userPostAvatar: {
-        width: 36,
-        height: 36,
-        borderRadius: 18,
+        width: 42,
+        height: 42,
+        borderRadius: 21,
     },
     userPostName: {
         ...Fonts.medium14,
-        fontSize: 14,
-        lineHeight: 18,
+        fontSize: 16,
+        lineHeight: 20,
         color: colors.mainTextColor,
         flexShrink: 1,
     },
     userPostTime: {
-        ...Fonts.regular12,
+        ...Fonts.regular14,
         color: colors.subTextColor,
     },
     followButton: {
@@ -667,14 +665,14 @@ export const createStyles = (colors: ThemeColors) => StyleSheet.create({
         backgroundColor: 'transparent',
     },
     feedLikeText: {
-        ...Fonts.regular14,
+        ...Fonts.regular16,
         color: colors.subTextColor,
     },
     feedMetaRow: {
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
-        paddingBottom: 14,
+        paddingBottom: 16,
         borderTopWidth: 0,
     },
     feedActionsRow: {
@@ -683,9 +681,9 @@ export const createStyles = (colors: ThemeColors) => StyleSheet.create({
         gap: 10,
     },
     feedActionButton: {
-        width: 34,
-        height: 34,
-        borderRadius: 10,
+        width: 42,
+        height: 42,
+        borderRadius: 12,
         backgroundColor: colors.btnBackgroundColor,
         borderWidth: 0,
         alignItems: 'center',
@@ -718,8 +716,8 @@ export const createStyles = (colors: ThemeColors) => StyleSheet.create({
         zIndex: 6,
     },
     feedActionIcon: {
-        width: 14,
-        height: 14,
+        width: 18,
+        height: 18,
         tintColor: colors.primaryColor,
     },
     feedImagePreviewOverlay: {
@@ -946,20 +944,22 @@ export const createStyles = (colors: ThemeColors) => StyleSheet.create({
     },
     videoMuteButton: {
         position: 'absolute',
-        top: 12,
+        bottom: 12,
         right: 12,
-        minWidth: 74,
-        borderRadius: 16,
-        paddingHorizontal: 10,
-        paddingVertical: 6,
+        width: 34,
+        height: 34,
+        borderRadius: 17,
         backgroundColor: 'rgba(0,0,0,0.55)',
         alignItems: 'center',
         justifyContent: 'center',
         zIndex: 5,
     },
-    videoMuteButtonText: {
-        ...Fonts.medium12,
-        color: '#FFFFFF',
+    videoMuteSlash: {
+        position: 'absolute',
+        width: 18,
+        height: 2,
+        backgroundColor: '#FFFFFF',
+        transform: [{ rotate: '-35deg' }],
     },
     playButtonLarge: {
         backgroundColor: 'rgba(0,0,0,0.25)',
@@ -1292,6 +1292,56 @@ export const createStyles = (colors: ThemeColors) => StyleSheet.create({
     feedInfoModalButtonText: {
         ...Fonts.medium14,
         color: colors.pureWhite,
+    },
+    tutorialIntroCard: {
+        backgroundColor: colors.cardBackground,
+        borderRadius: 16,
+        borderWidth: 1,
+        borderColor: colors.lightGrayColor,
+        padding: 16,
+        marginHorizontal: 20,
+    },
+    tutorialIntroTitle: {
+        ...Fonts.semibold18,
+        color: colors.mainTextColor,
+        marginBottom: 8,
+    },
+    tutorialIntroSubtitle: {
+        ...Fonts.regular13,
+        color: colors.subTextColor,
+        lineHeight: 19,
+        marginBottom: 12,
+    },
+    tutorialIntroImage: {
+        width: '100%',
+        height: 190,
+        borderRadius: 12,
+        marginBottom: 14,
+        backgroundColor: colors.btnBackgroundColor,
+    },
+    tutorialIntroPrimary: {
+        backgroundColor: colors.primaryColor,
+        borderRadius: 12,
+        height: 46,
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginBottom: 10,
+    },
+    tutorialIntroPrimaryText: {
+        ...Fonts.semibold14,
+        color: colors.pureWhite,
+    },
+    tutorialIntroSecondary: {
+        borderWidth: 1,
+        borderColor: colors.lightGrayColor,
+        borderRadius: 12,
+        height: 44,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    tutorialIntroSecondaryText: {
+        ...Fonts.medium13,
+        color: colors.mainTextColor,
     },
 });
 

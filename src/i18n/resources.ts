@@ -6,6 +6,19 @@ export const languageOptions = [
     { code: 'es', label: 'Espanol' },
     { code: 'it', label: 'Italiano' },
     { code: 'pt', label: 'Portugues' },
+    { code: 'zh', label: 'Chinese (Mandarin)' },
+    { code: 'hi', label: 'Hindi' },
+    { code: 'ar', label: 'Arabic' },
+    { code: 'bn', label: 'Bengali' },
+    { code: 'ru', label: 'Russian' },
+    { code: 'ja', label: 'Japanese' },
+    { code: 'pa', label: 'Punjabi' },
+    { code: 'ko', label: 'Korean' },
+    { code: 'tr', label: 'Turkish' },
+    { code: 'vi', label: 'Vietnamese' },
+    { code: 'te', label: 'Telugu' },
+    { code: 'mr', label: 'Marathi' },
+    { code: 'ta', label: 'Tamil' },
 ];
 
 const commonExtraTranslations = {

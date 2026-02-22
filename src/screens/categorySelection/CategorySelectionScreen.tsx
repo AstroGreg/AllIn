@@ -18,7 +18,7 @@ interface CategoryOption {
     iconSelected: React.ReactNode;
 }
 
-const CategorySelectionScreen = ({ navigation }: any) => {
+const CategorySelectionScreen = ({ navigation, route }: any) => {
     const { t } = useTranslation();
     const { colors } = useTheme();
     const Styles = createStyles(colors);
@@ -26,6 +26,7 @@ const CategorySelectionScreen = ({ navigation }: any) => {
     const { updateUserProfile } = useAuth();
     const [selectedCategory, setSelectedCategory] = useState<'find' | 'manage'>('find');
     const [isLoading, setIsLoading] = useState(false);
+    const fromAddFlow = Boolean(route?.params?.fromAddFlow);
 
     const categories: CategoryOption[] = [
         {
@@ -50,14 +51,7 @@ const CategorySelectionScreen = ({ navigation }: any) => {
         setIsLoading(true);
         try {
             await updateUserProfile({ category: selectedCategory });
-            if (selectedCategory === 'manage') {
-                navigation.navigate('CreateGroupProfileScreen');
-            } else {
-                navigation.reset({
-                    index: 0,
-                    routes: [{ name: 'BottomTabBar' }],
-                });
-            }
+            navigation.navigate('SelectEventScreen', { selectedCategory, fromAddFlow });
         } catch (err: any) {
             Alert.alert(t('Error'), t('Failed to save category. Please try again.'));
         } finally {
@@ -79,9 +73,11 @@ const CategorySelectionScreen = ({ navigation }: any) => {
                 <SizeBox height={60} />
 
                 <View style={Styles.headerContainer}>
-                    <Text style={Styles.headingText}>{t('What are you here for?')}</Text>
+                    <Text style={Styles.headingText}>
+                        {fromAddFlow ? t('What would you like to add?') : t('How will you use AllIn?')}
+                    </Text>
                     <Text style={Styles.subHeadingText}>
-                        Please choose your Category{'\n'}to continue.
+                        {fromAddFlow ? t('Choose profile type to continue.') : t('Choose profile type to continue.')}
                     </Text>
                 </View>
 
@@ -132,13 +128,15 @@ const CategorySelectionScreen = ({ navigation }: any) => {
             </ScrollView>
 
             <View style={[Styles.buttonContainer, { paddingBottom: insets.bottom + 20 }]}>
-                <TouchableOpacity
-                    style={Styles.guestButton}
-                    activeOpacity={0.7}
-                    onPress={handleGuestLogin}
-                >
-                    <Text style={Styles.guestButtonText}>{t('Login as a guest')}</Text>
-                </TouchableOpacity>
+                {!fromAddFlow && (
+                    <TouchableOpacity
+                        style={Styles.guestButton}
+                        activeOpacity={0.7}
+                        onPress={handleGuestLogin}
+                    >
+                        <Text style={Styles.guestButtonText}>{t('Login as a guest')}</Text>
+                    </TouchableOpacity>
+                )}
 {isLoading ? (
                     <ActivityIndicator size="large" color={colors.primaryColor} />
                 ) : (

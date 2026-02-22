@@ -284,6 +284,9 @@ const ViewUserBlogDetailsScreen = ({ navigation, route }: any) => {
                             activeOpacity={0.8}
                         >
                             <Icons.LanguageSetting width={14} height={14} />
+                            <Text style={Styles.blogActionText}>
+                                {showTranslation ? t('showOriginal') : t('translate')}
+                            </Text>
                         </TouchableOpacity>
                         <TouchableOpacity
                             style={[Styles.blogActionButton, Styles.blogActionButtonCompact]}

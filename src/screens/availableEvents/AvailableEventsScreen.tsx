@@ -30,7 +30,6 @@ const COMPETITION_TYPE_FILTERS: Array<{ key: CompetitionTypeFilter; labelKey: st
     { key: 'track', labelKey: 'trackAndField' },
     { key: 'marathon', labelKey: 'roadAndTrail' },
 ];
-
 const AvailableEventsScreen = ({ navigation }: any) => {
     const insets = useSafeAreaInsets();
     const { width: windowWidth } = useWindowDimensions();
@@ -206,16 +205,15 @@ const AvailableEventsScreen = ({ navigation }: any) => {
         try {
             const res = await searchEvents(apiAccessToken, { q: query, limit: 200 });
             const list = Array.isArray(res?.events) ? res.events : [];
-            setAvailableEvents(
-                list.map((event: any) => ({
+            const mapped = list.map((event: any) => ({
                     id: String(event.event_id),
                     title: event.event_name || event.event_title || 'Competition',
                     location: event.event_location || '—',
                     date: event.event_date || '—',
                     competitionType: (event.competition_type || 'track') as CompetitionType,
                     thumbnail: event.thumbnail_url ? { uri: event.thumbnail_url } : Images.photo4,
-                })),
-            );
+                }));
+            setAvailableEvents(mapped);
         } catch (e: any) {
             const msg = e instanceof ApiError ? e.message : String(e?.message ?? e);
             setEventsError(msg);
@@ -271,9 +269,12 @@ const AvailableEventsScreen = ({ navigation }: any) => {
         });
     };
 
-    const hasChestNumber = useDefaultChest
-        ? Boolean(defaultChestNumber)
-        : chestNumber.trim().length > 0;
+    const isTrackCompetition = String(modalEvent?.competitionType || '').toLowerCase() === 'track';
+    const hasChestNumber = !isTrackCompetition || (
+        useDefaultChest
+            ? Boolean(defaultChestNumber)
+            : chestNumber.trim().length > 0
+    );
     const canContinue = selectedEvents.length > 0 && hasChestNumber;
 
     const handleSubscribeContinue = async () => {
@@ -294,7 +295,7 @@ const AvailableEventsScreen = ({ navigation }: any) => {
                 },
                 personal: {
                     name: userProfile?.firstName || 'Athlete',
-                    chestNumber: useDefaultChest ? defaultChestNumber : (chestNumber || defaultChestNumber),
+                    chestNumber: isTrackCompetition ? (useDefaultChest ? defaultChestNumber : (chestNumber || defaultChestNumber)) : '',
                     events: selectedEvents,
                     categories: selectedCategories,
                     allowFaceRecognition,
@@ -595,30 +596,34 @@ const AvailableEventsScreen = ({ navigation }: any) => {
                             })}
                         </View>
 
-                        <Text style={Styles.modalSectionTitle}>{t('chestNumber')}</Text>
-                        <View style={Styles.modalChestInput}>
-                            <User size={16} color={colors.subTextColor} variant="Linear" />
-                            <TextInput
-                                style={Styles.modalChestTextInput}
-                                placeholder={t('enterChestNumber')}
-                                placeholderTextColor={colors.subTextColor}
-                                value={useDefaultChest ? defaultChestNumber : chestNumber}
-                                onChangeText={setChestNumber}
-                                editable={!useDefaultChest}
-                            />
-                        </View>
-                        <TouchableOpacity
-                            style={Styles.defaultChestRow}
-                            onPress={() => setUseDefaultChest((prev) => !prev)}
-                            activeOpacity={0.8}
-                        >
-                            <View style={[Styles.defaultChestBox, useDefaultChest && Styles.defaultChestBoxActive]}>
-                                {useDefaultChest && <Text style={Styles.defaultChestCheck}>{t('✓')}</Text>}
-                            </View>
-                            <Text style={Styles.defaultChestText}>
-                                {t('useDefaultNumber')} ({defaultChestNumber})
-                            </Text>
-                        </TouchableOpacity>
+                        {isTrackCompetition && (
+                            <>
+                                <Text style={Styles.modalSectionTitle}>{t('chestNumber')}</Text>
+                                <View style={Styles.modalChestInput}>
+                                    <User size={16} color={colors.subTextColor} variant="Linear" />
+                                    <TextInput
+                                        style={Styles.modalChestTextInput}
+                                        placeholder={t('enterChestNumber')}
+                                        placeholderTextColor={colors.subTextColor}
+                                        value={useDefaultChest ? defaultChestNumber : chestNumber}
+                                        onChangeText={setChestNumber}
+                                        editable={!useDefaultChest}
+                                    />
+                                </View>
+                                <TouchableOpacity
+                                    style={Styles.defaultChestRow}
+                                    onPress={() => setUseDefaultChest((prev) => !prev)}
+                                    activeOpacity={0.8}
+                                >
+                                    <View style={[Styles.defaultChestBox, useDefaultChest && Styles.defaultChestBoxActive]}>
+                                        {useDefaultChest && <Text style={Styles.defaultChestCheck}>{t('✓')}</Text>}
+                                    </View>
+                                    <Text style={Styles.defaultChestText}>
+                                        {t('useDefaultNumber')} ({defaultChestNumber})
+                                    </Text>
+                                </TouchableOpacity>
+                            </>
+                        )}
 
                         <TouchableOpacity
                             style={Styles.defaultChestRow}

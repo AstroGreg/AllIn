@@ -11,7 +11,7 @@ import FastImage from 'react-native-fast-image'
 import { SearchNormal1, Calendar, Location, CloseCircle, Clock, ArrowDown2, Camera } from 'iconsax-react-nativejs'
 import { useTranslation } from 'react-i18next'
 import { useAuth } from '../../context/AuthContext'
-import { ApiError, getProfileSummary, searchEvents, searchGroups } from '../../services/apiGateway'
+import { ApiError, getGroupMembers, getProfileSummary, searchEvents, searchGroups, searchProfiles } from '../../services/apiGateway'
  
 
 const FILTERS = ['Competition', 'Person', 'Group', 'Location'] as const
@@ -76,6 +76,9 @@ const SearchScreen = ({ navigation }: any) => {
     const [eventsError, setEventsError] = useState<string | null>(null);
     const [groupResults, setGroupResults] = useState<GroupResult[]>([]);
     const [groupsError, setGroupsError] = useState<string | null>(null);
+    const [peopleResults, setPeopleResults] = useState<PersonResult[]>([]);
+    const [peopleError, setPeopleError] = useState<string | null>(null);
+    const [groupLinkedPeople, setGroupLinkedPeople] = useState<PersonResult[]>([]);
  
     const competitionTypeFilters = useMemo(
         () => ([
@@ -163,7 +166,7 @@ const SearchScreen = ({ navigation }: any) => {
             return;
         }
         if (own && own === safeProfileId) {
-            navigation.navigate('BottomTabBar', { screen: 'Profile' });
+            navigation.navigate('UserProfileScreen', { showBackButton: true, origin: 'search' });
             return;
         }
         navigation.navigate('ViewUserProfileScreen', { profileId: safeProfileId });
@@ -172,25 +175,18 @@ const SearchScreen = ({ navigation }: any) => {
     const openGroupFromSearch = useCallback((groupIdLike?: string | number | null) => {
         const safeGroupId = String(groupIdLike ?? '').trim();
         if (safeGroupId) {
-            navigation.navigate('GroupProfileScreen', { groupId: safeGroupId });
+            navigation.navigate('GroupProfileScreen', { groupId: safeGroupId, showBackButton: true, origin: 'search' });
             return;
         }
-        navigation.navigate('GroupProfileScreen');
+        navigation.navigate('GroupProfileScreen', { showBackButton: true, origin: 'search' });
     }, [navigation]);
-
-    const peopleResults: PersonResult[] = [
-        { id: 1, profile_id: '9c76f2d3-2e0f-46c3-b2f5-7c8c4c0d8a01', name: t('James Ray'), role: 'Athlete', activity: t('Marathon'), location: t('Dhaka'), isFollowing: false, events: [t('Brussels City Run 2026')] },
-        { id: 2, profile_id: 'c8cba4c8-bd41-4dc5-99c3-3b1a0a7c5c02', name: t('Sofia Klein'), role: 'Athlete', activity: t('800m'), location: t('Berlin'), isFollowing: false, events: [t('IFAM 2024')] },
-        { id: 3, profile_id: '4bdc3f1e-3a40-4a7f-8c68-a5f9c8db7f07', name: t('Liam Carter'), role: 'Photographer', activity: t('Sports Events'), location: t('Brussels'), events: [t('IFAM 2024'), t('BK Studenten 23')] },
-        { id: 4, profile_id: '7e3e6f6d-6d9e-4c1b-8bdb-05aefcbd0a04', name: t('Emma Novak'), role: 'Photographer', activity: t('Track Events'), location: t('Gent'), events: [t('BK Studenten 23')] },
-        { id: 5, profile_id: '2c7c74c8-3e14-4c8d-9bb8-07d4d2f06a03', name: t('Greg Reynders'), role: 'Athlete', activity: t('1500m'), location: t('Hasselt'), events: [t('IFAM 2024'), t('BK Studenten 23')] },
-    ];
 
     const competitionQuery = filterValues.Competition.trim().toLowerCase();
     const personQuery = filterValues.Person.trim().toLowerCase();
     const groupQuery = filterValues.Group.trim().toLowerCase();
     const locationQuery = filterValues.Location.trim().toLowerCase();
-    const hasActiveFilters = Object.values(filterValues).some((value) => value.trim().length > 0) ||
+    const hasTypedQuery = Object.values(filterValues).some((value) => value.trim().length > 0);
+    const hasActiveFilters = hasTypedQuery ||
         !!timeRange.start ||
         !!timeRange.end ||
         competitionTypeFilter !== 'all';
@@ -200,12 +196,12 @@ const SearchScreen = ({ navigation }: any) => {
     const matchAny = (values: string[] | undefined, q: string) =>
         q ? (values ?? []).some((value) => value.toLowerCase().includes(q)) : true;
 
-    const shouldShowPeople = personQuery.length > 0 || locationQuery.length > 0;
-    const shouldShowGroups = groupQuery.length > 0 || locationQuery.length > 0;
+    const shouldShowPeople = hasTypedQuery && (personQuery.length > 0 || locationQuery.length > 0 || groupQuery.length > 0);
+    const shouldShowGroups = hasTypedQuery && groupQuery.length > 0;
 
     useEffect(() => {
         let mounted = true;
-        if (!apiAccessToken || !shouldShowGroups) {
+        if (!apiAccessToken || !hasTypedQuery || !shouldShowGroups) {
             setGroupResults([]);
             setGroupsError(null);
             return () => {};
@@ -244,7 +240,95 @@ const SearchScreen = ({ navigation }: any) => {
         return () => {
             mounted = false;
         };
-    }, [apiAccessToken, filterValues.Group, shouldShowGroups, t]);
+    }, [apiAccessToken, filterValues.Group, hasTypedQuery, shouldShowGroups, t]);
+
+    useEffect(() => {
+        let mounted = true;
+        if (!apiAccessToken || !hasTypedQuery || !shouldShowPeople) {
+            setPeopleResults([]);
+            setPeopleError(null);
+            return () => {};
+        }
+        setPeopleError(null);
+        const q = (personQuery || locationQuery || groupQuery).trim();
+        if (!q) {
+            setPeopleResults([]);
+            return () => {};
+        }
+        searchProfiles(apiAccessToken, { q, limit: 80, offset: 0 })
+            .then((res) => {
+                if (!mounted) return;
+                const rows = Array.isArray(res?.profiles) ? res.profiles : [];
+                setPeopleResults(
+                    rows.map((profile, idx) => ({
+                        id: idx + 1,
+                        profile_id: String(profile.profile_id || ''),
+                        name: String(profile.display_name || t('User')),
+                        role: 'Athlete',
+                        activity: t('Profile'),
+                        location: '',
+                    })),
+                );
+            })
+            .catch((e: unknown) => {
+                if (!mounted) return;
+                const msg = e instanceof ApiError ? e.message : String((e as any)?.message ?? e);
+                setPeopleError(msg);
+                setPeopleResults([]);
+            });
+        return () => {
+            mounted = false;
+        };
+    }, [apiAccessToken, groupQuery, hasTypedQuery, locationQuery, personQuery, shouldShowPeople, t]);
+
+    useEffect(() => {
+        let mounted = true;
+        if (!apiAccessToken || !hasTypedQuery || !groupQuery || groupResults.length === 0) {
+            setGroupLinkedPeople([]);
+            return () => {};
+        }
+        const load = async () => {
+            try {
+                const topGroups = groupResults.slice(0, 6);
+                const responses = await Promise.all(
+                    topGroups.map(async (group) => {
+                        try {
+                            return await getGroupMembers(apiAccessToken, String(group.group_id));
+                        } catch {
+                            return null;
+                        }
+                    }),
+                );
+                if (!mounted) return;
+                const dedupe = new Set<string>();
+                const members: PersonResult[] = [];
+                responses.forEach((resp) => {
+                    const list = Array.isArray(resp?.members) ? resp?.members ?? [] : [];
+                    list.forEach((member) => {
+                        const profileId = String(member.profile_id || '').trim();
+                        if (!profileId || dedupe.has(profileId)) return;
+                        dedupe.add(profileId);
+                        members.push({
+                            id: members.length + 1,
+                            profile_id: profileId,
+                            name: String(member.display_name || t('User')),
+                            role: 'Athlete',
+                            activity: t('Group member'),
+                            location: '',
+                        });
+                    });
+                });
+                setGroupLinkedPeople(members);
+            } catch {
+                if (!mounted) return;
+                setGroupLinkedPeople([]);
+            }
+        };
+        load();
+        return () => {
+            mounted = false;
+        };
+    }, [apiAccessToken, groupQuery, groupResults, hasTypedQuery, t]);
 
     const parseEventDate = (value: string) => {
         const [day, month, year] = value.split('/').map(Number);
@@ -293,11 +377,18 @@ const SearchScreen = ({ navigation }: any) => {
     }, [competitionQuery, competitionTypeFilter, locationQuery, timeRange.end, timeRange.start]);
 
     const filteredPeople = useMemo(() => {
-        if (!shouldShowPeople) return [];
+        if (!hasTypedQuery || !shouldShowPeople) return [];
         const competitionFilter = personQuery.length > 0 ? competitionQuery : '';
         const eventFilteredNames = new Set(filteredEvents.map((event) => event.name.toLowerCase()));
         const shouldApplyEventFilters = Boolean(timeRange.start || timeRange.end || competitionTypeFilter !== 'all');
-        return peopleResults.filter((person) => {
+        const mergedPeople = [...peopleResults, ...groupLinkedPeople];
+        const seenProfiles = new Set<string>();
+        return mergedPeople.filter((person) => {
+            const pid = String(person.profile_id || '').trim();
+            if (pid) {
+                if (seenProfiles.has(pid)) return false;
+                seenProfiles.add(pid);
+            }
             const hasEventMatch = matchAny(person.events, competitionFilter);
             const withinEventFilters = !shouldApplyEventFilters
                 ? true
@@ -311,17 +402,20 @@ const SearchScreen = ({ navigation }: any) => {
         });
     }, [
         competitionQuery,
+        hasTypedQuery,
         competitionTypeFilter,
         filteredEvents,
+        groupLinkedPeople,
         locationQuery,
         personQuery,
+        peopleResults,
         shouldShowPeople,
         timeRange.end,
         timeRange.start,
     ]);
 
     const filteredGroups = useMemo(() => {
-        if (!shouldShowGroups) return [];
+        if (!hasTypedQuery || !shouldShowGroups) return [];
         return groupResults.filter((group) => {
             return (
                 matchValue(group.name, groupQuery) &&
@@ -329,6 +423,7 @@ const SearchScreen = ({ navigation }: any) => {
             );
         });
     }, [
+        hasTypedQuery,
         groupQuery,
         groupResults,
         locationQuery,
@@ -720,7 +815,7 @@ const SearchScreen = ({ navigation }: any) => {
 
                 <SizeBox height={24} />
 
-                {hasActiveFilters && (
+                {hasTypedQuery && hasActiveFilters && (
                     <>
                         <View style={Styles.resultsHeader}>
                             <Text style={Styles.resultsTitle}>{t('Results')}</Text>
@@ -744,6 +839,12 @@ const SearchScreen = ({ navigation }: any) => {
                                 {groupsError ? (
                                     <>
                                         <Text style={Styles.noResultsText}>{groupsError}</Text>
+                                        <SizeBox height={10} />
+                                    </>
+                                ) : null}
+                                {peopleError ? (
+                                    <>
+                                        <Text style={Styles.noResultsText}>{peopleError}</Text>
                                         <SizeBox height={10} />
                                     </>
                                 ) : null}

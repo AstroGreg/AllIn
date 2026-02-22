@@ -6,8 +6,7 @@ import Video from 'react-native-video';
 import { createStyles } from '../HomeStyles';
 import Icons from '../../../constants/Icons';
 import { useTheme } from '../../../context/ThemeContext';
-import { Heart, Import } from 'iconsax-react-nativejs';
-import { useTranslation } from 'react-i18next'
+import { Heart, Import, Eye } from 'iconsax-react-nativejs';
 
 const { width: screenWidth } = Dimensions.get('window');
 
@@ -28,6 +27,7 @@ interface NewsFeedCardProps {
     };
     hideBelowText?: boolean;
     headerTag?: string;
+    viewsLabel?: string;
     likesLabel?: string;
     liked?: boolean;
     onToggleLike?: () => void;
@@ -37,6 +37,7 @@ interface NewsFeedCardProps {
     onVideoProgress?: (currentTime: number) => void;
     onShare?: () => void;
     onDownload?: () => void;
+    onTranslate?: () => void;
     onPressMore?: () => void;
     isActive?: boolean;
     resumeAt?: number;
@@ -66,8 +67,8 @@ const NewsFeedCard = ({
     showPlayOverlay = false,
     videoIndexes = [],
     textSlide,
-    hideBelowText = false,
     headerTag,
+    viewsLabel,
     likesLabel,
     liked = false,
     onToggleLike,
@@ -77,6 +78,7 @@ const NewsFeedCard = ({
     onVideoProgress,
     onShare,
     onDownload,
+    onTranslate,
     onPressMore,
     isActive = true,
     resumeAt,
@@ -84,7 +86,7 @@ const NewsFeedCard = ({
     onVideoLayout,
     videoSources,
     user,
-    description,
+    description: _description,
     onPressUser,
     hideUserDate = false,
     headerSeparated = false,
@@ -92,7 +94,6 @@ const NewsFeedCard = ({
     hideAvatar = false
 }: NewsFeedCardProps) => {
     const { colors } = useTheme();
-    const { t } = useTranslation();
     const Styles = createStyles(colors);
     const [currentIndex, setCurrentIndex] = useState(0);
     const flatListRef = useRef<FlatList>(null);
@@ -105,7 +106,7 @@ const NewsFeedCard = ({
     // Full-width media for feed
     const [mediaWidth, setMediaWidth] = useState(screenWidth);
     const imageWidth = Math.round(mediaWidth);
-    const imageHeight = Math.round(imageWidth * 0.78);
+    const [aspectRatiosByIndex, setAspectRatiosByIndex] = useState<Record<number, number>>({});
     const [isPlaying, setIsPlaying] = useState(false);
     const [videoFailed, setVideoFailed] = useState(false);
     const [videoLoading, setVideoLoading] = useState(true);
@@ -129,6 +130,12 @@ const NewsFeedCard = ({
     }, [isVideo, videoUri, videoSources]);
 
     const currentInlineVideoUri = useMemo(() => getInlineVideoUri(currentIndex), [currentIndex, getInlineVideoUri]);
+    const isCurrentSlideVideo = Boolean(currentInlineVideoUri);
+    const currentAspectRatio = aspectRatiosByIndex[currentIndex] || (isCurrentSlideVideo ? 16 / 9 : 4 / 5);
+    const unclampedHeight = imageWidth / currentAspectRatio;
+    const minHeight = imageWidth * 0.56;
+    const maxHeight = imageWidth * 1.25;
+    const imageHeight = Math.round(Math.max(minHeight, Math.min(maxHeight, unclampedHeight)));
 
     const attemptAutoplay = useCallback(() => {
         if (!currentInlineVideoUri) return;
@@ -236,6 +243,10 @@ const NewsFeedCard = ({
             onImagePress(index);
             return;
         }
+        if (onPress) {
+            onPress();
+            return;
+        }
         const selectedImage = images?.[index];
         if (selectedImage && String(selectedImage) !== '__text__') {
             if (typeof selectedImage === 'number') {
@@ -253,9 +264,6 @@ const NewsFeedCard = ({
             setImagePreviewSource(selectedImage);
             setImagePreviewVisible(true);
             return;
-        }
-        if (onPress) {
-            onPress();
         }
     };
 
@@ -368,9 +376,8 @@ const NewsFeedCard = ({
                             activeOpacity={0.85}
                             onPress={() => setIsMuted((prev) => !prev)}
                         >
-                            <Text style={Styles.videoMuteButtonText}>
-                                {isMuted ? t('Unmute') : t('Mute')}
-                            </Text>
+                            <Icons.Volume width={18} height={18} />
+                            {isMuted ? <View style={Styles.videoMuteSlash} /> : null}
                         </TouchableOpacity>
                     )}
                     {!useSharedPlayer && !isPlaying && isCurrent && (
@@ -393,7 +400,18 @@ const NewsFeedCard = ({
                 <FastImage
                     source={item}
                     style={Styles.newsFeedImage}
-                    resizeMode="contain"
+                    resizeMode="cover"
+                    onLoad={(event) => {
+                        const w = Number(event?.nativeEvent?.width ?? 0);
+                        const h = Number(event?.nativeEvent?.height ?? 0);
+                        if (w <= 0 || h <= 0) return;
+                        const ratio = w / h;
+                        if (!Number.isFinite(ratio) || ratio <= 0) return;
+                        setAspectRatiosByIndex((prev) => {
+                            if (Math.abs((prev[index] || 0) - ratio) < 0.01) return prev;
+                            return { ...prev, [index]: ratio };
+                        });
+                    }}
                 />
             {(showPlayOverlay || videoIndexes.includes(index)) && index === currentIndex && (
                 <View style={Styles.videoOverlay}>
@@ -421,10 +439,6 @@ const NewsFeedCard = ({
     );
 
     const normalizedTitle = (title ?? '').trim();
-    const normalizedDescription = (description ?? '').trim();
-    const showDescription =
-        normalizedDescription.length > 0 &&
-        normalizedDescription.toLowerCase() !== normalizedTitle.toLowerCase();
     const isTextOnlyPost = Boolean(textSlide && images.length === 1 && String(images[0]) === '__text__');
     const likeCountText = useMemo(() => {
         const raw = String(likesLabel ?? '').trim();
@@ -432,6 +446,12 @@ const NewsFeedCard = ({
         const match = raw.match(/[0-9][0-9.,]*/);
         return match ? match[0] : raw;
     }, [likesLabel]);
+    const viewCountText = useMemo(() => {
+        const raw = String(viewsLabel ?? '').trim();
+        if (!raw) return '';
+        const match = raw.match(/[0-9][0-9.,]*/);
+        return match ? match[0] : raw;
+    }, [viewsLabel]);
 
     const previewFrameStyle = useMemo(() => {
         const maxWidth = Math.max(0, imagePreviewModalSize.width);
@@ -575,11 +595,16 @@ const NewsFeedCard = ({
      
 
             <View style={[Styles.feedPadding, Styles.feedMetaRow]}>
-                {showActions && (onShare || onDownload) && (
+                {showActions && (onShare || onDownload || onTranslate) && (
                     <View style={Styles.feedActionsRow}>
+                        {onTranslate ? (
+                            <TouchableOpacity style={Styles.feedActionButton} activeOpacity={0.85} onPress={onTranslate}>
+                                <Icons.LanguageSetting width={18} height={18} />
+                            </TouchableOpacity>
+                        ) : null}
                         {onDownload ? (
                             <TouchableOpacity style={Styles.feedActionButton} activeOpacity={0.85} onPress={onDownload}>
-                                <Import size={20} color={'#3B82F6'} variant="Linear" />
+                                <Import size={23} color={'#3B82F6'} variant="Linear" />
                             </TouchableOpacity>
                         ) : null}
                         {onShare ? (
@@ -589,15 +614,23 @@ const NewsFeedCard = ({
                         ) : null}
                     </View>
                 )}
-                <TouchableOpacity
-                    style={[Styles.feedLikeButton, { marginLeft: 'auto' }, likeDisabled && { opacity: 0.45 }]}
-                    activeOpacity={likeDisabled ? 1 : 0.85}
-                    onPress={onToggleLike}
-                    disabled={likeDisabled || !onToggleLike}
-                >
-                    <Heart size={25} color={colors.primaryColor} variant={liked ? "Bold" : "Linear"} />
-                    {likeCountText ? <Text style={Styles.feedLikeText}>{likeCountText}</Text> : null}
-                </TouchableOpacity>
+                <View style={[Styles.feedActionsRow, { marginLeft: 'auto' }]}>
+                    {viewCountText ? (
+                        <View style={Styles.feedLikeButton}>
+                            <Eye size={24} color={colors.primaryColor} variant="Linear" />
+                            <Text style={Styles.feedLikeText}>{viewCountText}</Text>
+                        </View>
+                    ) : null}
+                    <TouchableOpacity
+                        style={[Styles.feedLikeButton, likeDisabled && { opacity: 0.45 }]}
+                        activeOpacity={likeDisabled ? 1 : 0.85}
+                        onPress={onToggleLike}
+                        disabled={likeDisabled || !onToggleLike}
+                    >
+                        <Heart size={28} color={colors.primaryColor} variant={liked ? "Bold" : "Linear"} />
+                        {likeCountText ? <Text style={Styles.feedLikeText}>{likeCountText}</Text> : null}
+                    </TouchableOpacity>
+                </View>
             </View>
 
             <Modal

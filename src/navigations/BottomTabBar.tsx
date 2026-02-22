@@ -39,15 +39,20 @@ import EditBioScreens from "../screens/viewUserProfile/profileScreens/EditBioScr
 import DownloadsDetailsScreen from "../screens/downloadsDetails/DownloadsDetailsScreen";
 import EventsViewAllScreen from "../screens/eventsViewAll/EventsViewAllScreen";
 import SelectCategoryScreen from "../screens/selectCategory/SelectCategoryScreen";
+import CategorySelectionScreen from "../screens/categorySelection/CategorySelectionScreen";
 import SelectEventInterestScreen from "../screens/selectEventInterest/SelectEventInterestScreen";
 import CompleteAthleteDetailsScreen from "../screens/completeAthleteDetails/CompleteAthleteDetailsScreen";
 import CreatePhotographerProfileScreen from "../screens/createPhotographerProfile/CreatePhotographerProfileScreen";
 import CreateGroupProfileScreen from "../screens/createGroupProfile/CreateGroupProfileScreen";
 import GroupProfileScreen from "../screens/groupProfile/GroupProfileScreen";
+import GroupManageScreen from "../screens/groupManage/GroupManageScreen";
+import GroupCompetitionSelectScreen from "../screens/groupCompetitionSelect/GroupCompetitionSelectScreen";
+import GroupCompetitionAssignScreen from "../screens/groupCompetitionAssign/GroupCompetitionAssignScreen";
 import AddCoachScreen from "../screens/addCoach/AddCoachScreen";
 import AddAthleteScreen from "../screens/addAthlete/AddAthleteScreen";
 import EventAthletesScreen from "../screens/eventAthletes/EventAthletesScreen";
 import GroupEventsViewAllScreen from "../screens/groupEventsViewAll/GroupEventsViewAllScreen";
+import GroupCollectionsManageScreen from "../screens/groupCollectionsManage/GroupCollectionsManageScreen";
 import AthleteProfileScreen from "../screens/athleteProfile/AthleteProfileScreen";
 import { Platform } from "react-native";
 import { getFocusedRouteNameFromRoute } from "@react-navigation/native";
@@ -96,6 +101,10 @@ import ChangeUsername from "../screens/menu/menuScreens/ChangeUsername";
 import ChangeNationality from "../screens/menu/menuScreens/ChangeNationality";
 import DateOfBirth from "../screens/menu/menuScreens/DateOfBirth";
 import ChestNumberSettings from "../screens/menu/menuScreens/ChestNumberSettings";
+import TrackFieldSettings from "../screens/menu/menuScreens/TrackFieldSettings";
+import RoadTrailSettings from "../screens/menu/menuScreens/RoadTrailSettings";
+import NameSettings from "../screens/menu/menuScreens/NameSettings";
+import ManageProfiles from "../screens/menu/menuScreens/ManageProfiles";
 import RightToBeForgotten from "../screens/menu/menuScreens/RightToBeForgotten";
 import Authentication from "../screens/menu/menuScreens/Authentication";
 import AuthenticatorSetup from "../screens/menu/menuScreens/AuthenticatorSetup";
@@ -134,6 +143,7 @@ const HomeStackNavigator = () => {
             <HomeStack.Screen name="VideosScreen" component={VideosScreen} />
             <HomeStack.Screen name="VideoPlayingScreen" component={VideoPlayingScreen} />
             <HomeStack.Screen name="AISearchScreen" component={CombinedSearchScreen} />
+            <HomeStack.Screen name="CategorySelectionScreen" component={CategorySelectionScreen} />
             <HomeStack.Screen name="SelectEventInterestScreen" component={SelectEventInterestScreen} />
             <HomeStack.Screen name="DownloadsDetailsScreen" component={DownloadsDetailsScreen} />
             <HomeStack.Screen name="ViewUserProfileScreen" component={ViewUserProfileScreen} />
@@ -179,20 +189,30 @@ const ProfileStackNavigator = () => {
             <ProfileStack.Screen name="EditBioScreens" component={EditBioScreens} />
             <ProfileStack.Screen name="ProfileSettings" component={ProfileSettings} />
             <ProfileStack.Screen name="ChestNumberSettings" component={ChestNumberSettings} />
+            <ProfileStack.Screen name="TrackFieldSettings" component={TrackFieldSettings} />
+            <ProfileStack.Screen name="RoadTrailSettings" component={RoadTrailSettings} />
+            <ProfileStack.Screen name="NameSettings" component={NameSettings} />
+            <ProfileStack.Screen name="ManageProfiles" component={ManageProfiles} />
             <ProfileStack.Screen name="PhotoDetailScreen" component={PhotoDetailScreen} />
             <ProfileStack.Screen name="VideoPlayingScreen" component={VideoPlayingScreen} />
             <ProfileStack.Screen name="DownloadsDetailsScreen" component={DownloadsDetailsScreen} />
             <ProfileStack.Screen name="EventsViewAllScreen" component={EventsViewAllScreen} />
+            <ProfileStack.Screen name="CategorySelectionScreen" component={CategorySelectionScreen} />
             <ProfileStack.Screen name="SelectCategoryScreen" component={SelectCategoryScreen} />
             <ProfileStack.Screen name="SelectEventInterestScreen" component={SelectEventInterestScreen} />
             <ProfileStack.Screen name="CompleteAthleteDetailsScreen" component={CompleteAthleteDetailsScreen} />
             <ProfileStack.Screen name="CreatePhotographerProfileScreen" component={CreatePhotographerProfileScreen} />
             <ProfileStack.Screen name="CreateGroupProfileScreen" component={CreateGroupProfileScreen} />
             <ProfileStack.Screen name="GroupProfileScreen" component={GroupProfileScreen} />
+            <ProfileStack.Screen name="GroupManageScreen" component={GroupManageScreen} />
+            <ProfileStack.Screen name="GroupCompetitionSelectScreen" component={GroupCompetitionSelectScreen} />
+            <ProfileStack.Screen name="GroupCompetitionAssignScreen" component={GroupCompetitionAssignScreen} />
             <ProfileStack.Screen name="AddCoachScreen" component={AddCoachScreen} />
             <ProfileStack.Screen name="AddAthleteScreen" component={AddAthleteScreen} />
             <ProfileStack.Screen name="EventAthletesScreen" component={EventAthletesScreen} />
             <ProfileStack.Screen name="GroupEventsViewAllScreen" component={GroupEventsViewAllScreen} />
+            <ProfileStack.Screen name="GroupCollectionsManageScreen" component={GroupCollectionsManageScreen} />
+            <ProfileStack.Screen name="CompetitionDetailsScreen" component={SearchCompetitionDetailsScreen} />
             <ProfileStack.Screen name="CongratulationsScreen" component={CongratulationsScreen} />
             <ProfileStack.Screen name="AthleteProfileScreen" component={AthleteProfileScreen} />
             <ProfileStack.Screen name="ProfileTimelineDetailScreen" component={ProfileTimelineDetailScreen} />
@@ -221,12 +241,17 @@ const MenuStackNavigator = () => {
             <MenuStack.Screen name="ChangeNationality" component={ChangeNationality} />
             <MenuStack.Screen name="DateOfBirth" component={DateOfBirth} />
             <MenuStack.Screen name="ChestNumberSettings" component={ChestNumberSettings} />
+            <MenuStack.Screen name="TrackFieldSettings" component={TrackFieldSettings} />
+            <MenuStack.Screen name="RoadTrailSettings" component={RoadTrailSettings} />
+            <MenuStack.Screen name="NameSettings" component={NameSettings} />
+            <MenuStack.Screen name="ManageProfiles" component={ManageProfiles} />
             <MenuStack.Screen name="RightToBeForgotten" component={RightToBeForgotten} />
             <MenuStack.Screen name="AISearchScreen" component={CombinedSearchScreen} />
             <MenuStack.Screen name="Authentication" component={Authentication} />
             <MenuStack.Screen name="AuthenticatorSetup" component={AuthenticatorSetup} />
             <MenuStack.Screen name="VerificationCode" component={VerificationCode} />
             <MenuStack.Screen name="DevApiTokenScreen" component={DevApiTokenScreen} />
+            <MenuStack.Screen name="CategorySelectionScreen" component={CategorySelectionScreen} />
         </MenuStack.Navigator>
     );
 };
@@ -240,6 +265,10 @@ const SearchStackNavigator = () => {
             <SearchStack.Screen name="ViewUserProfileScreen" component={ViewUserProfileScreen} />
             <SearchStack.Screen name="AthleteProfileScreen" component={AthleteProfileScreen} />
             <SearchStack.Screen name="GroupProfileScreen" component={GroupProfileScreen} />
+            <SearchStack.Screen name="GroupManageScreen" component={GroupManageScreen} />
+            <SearchStack.Screen name="GroupCompetitionSelectScreen" component={GroupCompetitionSelectScreen} />
+            <SearchStack.Screen name="GroupCompetitionAssignScreen" component={GroupCompetitionAssignScreen} />
+            <SearchStack.Screen name="GroupCollectionsManageScreen" component={GroupCollectionsManageScreen} />
             <SearchStack.Screen name="ViewUserPostsViewAllScreen" component={ViewUserPostsViewAllScreen} />
             <SearchStack.Screen name="ViewUserBlogDetailsScreen" component={ViewUserBlogDetailsScreen} />
             <SearchStack.Screen name="ViewUserCollectionsPhotosScreen" component={ViewUserCollectionsPhotosScreen} />
@@ -319,6 +348,9 @@ const BottomTabBar = () => {
                 tabBarLabelStyle: {
                     ...Fonts.regular12,
                     color: colors.subTextColor
+                },
+                sceneStyle: {
+                    backgroundColor: colors.backgroundColor,
                 },
                 tabBarStyle: baseTabBarStyle,
             })}

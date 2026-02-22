@@ -223,13 +223,12 @@ export const createStyles = (colors: ThemeColors) => StyleSheet.create({
         color: colors.subTextColor,
     },
     topRow: {
-        position: 'absolute',
-        top: 12,
-        left: 14,
-        right: 14,
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
+        marginTop: 0,
+        marginBottom: 10,
+        marginHorizontal: 4,
     },
     viewsContainer: {
         flexDirection: 'row',
@@ -238,7 +237,7 @@ export const createStyles = (colors: ThemeColors) => StyleSheet.create({
     },
     viewsText: {
         ...Fonts.regular16,
-        color: colors.pureWhite,
+        color: colors.mainTextColor,
     },
     buyButton: {
         backgroundColor: colors.primaryColor,

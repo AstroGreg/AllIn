@@ -1,5 +1,5 @@
 import React, {useCallback, useMemo, useState, useEffect, useRef} from 'react';
-import {ActivityIndicator, Alert, Image, Modal, Platform, Pressable, Share, Text, TouchableOpacity, View} from 'react-native';
+import {ActivityIndicator, Alert, Image, Modal, Platform, Pressable, Share, Text, TouchableOpacity, View, TextInput} from 'react-native';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 // useFocusEffect not available in some runtime bundles; use navigation listeners instead.
 import FastImage from 'react-native-fast-image';
@@ -8,7 +8,7 @@ import SizeBox from '../../constants/SizeBox';
 import {useTheme} from '../../context/ThemeContext';
 import {useAuth} from '../../context/AuthContext';
 import {useEvents} from '../../context/EventsContext';
-import {ApiError, getAiFeedbackLabel, getMediaById, postAiFeedbackLabel, recordDownload, recordMediaView, type MediaViewAllItem} from '../../services/apiGateway';
+import {ApiError, createMediaIssueRequest, getAiFeedbackLabel, getMediaById, postAiFeedbackLabel, recordDownload, recordMediaView, type MediaViewAllItem} from '../../services/apiGateway';
 import Video from 'react-native-video';
 import ShimmerEffect from '../../components/shimmerEffect/ShimmerEffect';
 import {getApiBaseUrl, getHlsBaseUrl} from '../../constants/RuntimeConfig';
@@ -22,13 +22,14 @@ type FeedbackChoice = 'yes' | 'no' | null;
 const PhotoDetailScreen = ({navigation, route}: any) => {
     const { t } = useTranslation();
     const insets = useSafeAreaInsets();
-    const {colors, isDark} = useTheme();
+    const {colors} = useTheme();
     const Styles = createStyles(colors);
-    const moreDotsColor = isDark ? '#FFFFFF' : '#000000';
+    const moreDotsColor = colors.mainTextColor;
     const {apiAccessToken} = useAuth();
     const {eventNameById} = useEvents();
 
     const eventTitle = route?.params?.eventTitle || '';
+    const blogTitleFromRoute = route?.params?.blogTitle || route?.params?.postTitle || route?.params?.post?.title || '';
     const legacyPhoto = route?.params?.photo ?? null;
     const media = route?.params?.media ?? null;
     const startAt = Number(route?.params?.startAt ?? 0);
@@ -99,7 +100,24 @@ const PhotoDetailScreen = ({navigation, route}: any) => {
     const [resolvedMedia, setResolvedMedia] = useState<ReturnType<typeof normalizeMedia> | null>(null);
     const activeMedia = isPhotoView ? resolvedMedia : (resolvedMedia ?? media);
     const matchPercent = typeof media?.matchPercent === 'number' ? media.matchPercent : null;
-    const headerLabel = eventTitle || eventNameById(eventId) || 'Media';
+    const mediaViews = Number((activeMedia as any)?.views_count ?? (media as any)?.views_count ?? 0);
+    const mediaViewsLabel = Number.isFinite(mediaViews) ? mediaViews.toLocaleString() : '0';
+    const normalizeHeaderLabel = useCallback((value?: string | null) => {
+        const raw = String(value ?? '').trim();
+        if (!raw) return '';
+        const lowered = raw.toLowerCase();
+        if (lowered === 'event') return '';
+        return raw;
+    }, []);
+    const headerLabel = useMemo(() => {
+        const blogTitle = normalizeHeaderLabel(blogTitleFromRoute);
+        if (blogTitle) return blogTitle;
+        const routeEventTitle = normalizeHeaderLabel(eventTitle);
+        if (routeEventTitle) return routeEventTitle;
+        const resolvedEventName = normalizeHeaderLabel(eventNameById(eventId));
+        if (resolvedEventName) return resolvedEventName;
+        return '';
+    }, [blogTitleFromRoute, eventId, eventNameById, eventTitle, normalizeHeaderLabel]);
 
     const shouldFetchMedia = useMemo(() => {
         if (!apiAccessToken || !effectiveMediaId) return false;
@@ -283,6 +301,7 @@ const PhotoDetailScreen = ({navigation, route}: any) => {
     const [reportIssueVisible, setReportIssueVisible] = useState(false);
     const [reportStep, setReportStep] = useState<'reason' | 'confirm'>('reason');
     const [selectedReportReason, setSelectedReportReason] = useState('');
+    const [customReportReason, setCustomReportReason] = useState('');
     const [infoPopupVisible, setInfoPopupVisible] = useState(false);
     const [infoPopupTitle, setInfoPopupTitle] = useState('');
     const [infoPopupMessage, setInfoPopupMessage] = useState('');
@@ -303,17 +322,16 @@ const PhotoDetailScreen = ({navigation, route}: any) => {
 
     const reportReasons = useMemo(
         () => [
-            t('Spam or misleading'),
-            t('Harassment or hate'),
-            t('Violence or unsafe content'),
-            t('Copyright or privacy issue'),
-            t('Other'),
+            t('Wrong competition'),
+            t('Wrong heat'),
+            t('Custom'),
         ],
         [t],
     );
 
     const openReportIssuePopup = useCallback(() => {
         setSelectedReportReason('');
+        setCustomReportReason('');
         setReportStep('reason');
         setReportIssueVisible(true);
     }, []);
@@ -781,6 +799,21 @@ const PhotoDetailScreen = ({navigation, route}: any) => {
 
                 {!isVideo && <SizeBox height={18} />}
 
+                {!isVideo && (
+                    <View style={Styles.topRow}>
+                        <View style={Styles.viewsContainer}>
+                            <Icons.Eye height={22} width={22} />
+                            <Text style={Styles.viewsText}>{mediaViewsLabel}</Text>
+                            {matchPercent != null ? (
+                                <Text style={Styles.viewsText}>• {`Match ${matchPercent.toFixed(0)}%`}</Text>
+                            ) : null}
+                        </View>
+                        <TouchableOpacity onPress={openMoreMenu}>
+                            <Icons.More height={24} width={24} stroke={moreDotsColor} />
+                        </TouchableOpacity>
+                    </View>
+                )}
+
                 {/* Photo Preview */}
                 <View style={[Styles.photoContainer, isVideo && Styles.photoContainerFull]}>
                     {isVideo && activeVideoUrl ? (
@@ -903,22 +936,6 @@ const PhotoDetailScreen = ({navigation, route}: any) => {
                             <Text style={Styles.videoPlaceholderText}>{t('No preview available')}</Text>
                         </View>
                     )}
-
-                    {/* Top Row - Views and More */}
-                    {!isVideo && (
-                        <View style={Styles.topRow}>
-                        <View style={Styles.viewsContainer}>
-                            <Icons.Eye height={24} width={24} />
-                                <Text style={Styles.viewsText}>
-                                    {matchPercent != null ? `Match ${matchPercent.toFixed(0)}%` : ''}
-                                </Text>
-                            </View>
-                        <TouchableOpacity onPress={openMoreMenu}>
-                            <Icons.More height={24} width={24} stroke={moreDotsColor} />
-                        </TouchableOpacity>
-                        </View>
-                    )}
-
                 </View>
             </View>
 
@@ -983,6 +1000,7 @@ const PhotoDetailScreen = ({navigation, route}: any) => {
                     setReportIssueVisible(false);
                     setReportStep('reason');
                     setSelectedReportReason('');
+                    setCustomReportReason('');
                 }}
             >
                 <View style={Styles.moreMenuOverlay}>
@@ -992,13 +1010,14 @@ const PhotoDetailScreen = ({navigation, route}: any) => {
                             setReportIssueVisible(false);
                             setReportStep('reason');
                             setSelectedReportReason('');
+                            setCustomReportReason('');
                         }}
                     />
                     <View style={Styles.moreMenuContainer}>
                         <Text style={Styles.moreMenuTitle}>
                             {reportStep === 'reason'
-                                ? t('Why are you reporting this post?')
-                                : t("Your're about to submit a report")}
+                                ? t('Report an issue with this photo/video')
+                                : t('Confirm request')}
                         </Text>
                         <View style={Styles.moreMenuDivider} />
                         {reportStep === 'reason' ? (
@@ -1010,12 +1029,36 @@ const PhotoDetailScreen = ({navigation, route}: any) => {
                                         activeOpacity={0.85}
                                         onPress={() => {
                                             setSelectedReportReason(reason);
+                                            if (reason === t('Custom')) {
+                                                return;
+                                            }
                                             setReportStep('confirm');
                                         }}
                                     >
                                         <Text style={Styles.moreMenuActionText}>{reason}</Text>
                                     </TouchableOpacity>
                                 ))}
+                                {selectedReportReason === t('Custom') ? (
+                                    <View style={[Styles.moreMenuAction, { borderBottomWidth: 0 }]}>
+                                        <TextInput
+                                            style={[Styles.moreMenuActionText, { borderWidth: 1, borderColor: colors.borderColor, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 10 }]}
+                                            value={customReportReason}
+                                            onChangeText={setCustomReportReason}
+                                            placeholder={t('Type your request')}
+                                            placeholderTextColor={colors.subTextColor}
+                                        />
+                                        <TouchableOpacity
+                                            style={[Styles.infoModalSubmitButton, { marginTop: 10 }]}
+                                            activeOpacity={0.85}
+                                            onPress={() => {
+                                                if (!customReportReason.trim()) return;
+                                                setReportStep('confirm');
+                                            }}
+                                        >
+                                            <Text style={Styles.infoModalSubmitButtonText}>{t('Next')}</Text>
+                                        </TouchableOpacity>
+                                    </View>
+                                ) : null}
                                 <TouchableOpacity
                                     style={Styles.moreMenuCancel}
                                     activeOpacity={0.85}
@@ -1023,6 +1066,7 @@ const PhotoDetailScreen = ({navigation, route}: any) => {
                                         setReportIssueVisible(false);
                                         setReportStep('reason');
                                         setSelectedReportReason('');
+                                        setCustomReportReason('');
                                     }}
                                 >
                                     <Text style={Styles.moreMenuCancelText}>{t('Cancel')}</Text>
@@ -1032,18 +1076,38 @@ const PhotoDetailScreen = ({navigation, route}: any) => {
                             <>
                                 <View style={Styles.moreMenuAction}>
                                     <Text style={Styles.moreMenuActionText}>
-                                        {`${t('Reason')}: ${selectedReportReason}`}
+                                        {`${t('Reason')}: ${selectedReportReason}${selectedReportReason === t('Custom') ? ` - ${customReportReason.trim()}` : ''}`}
                                     </Text>
                                 </View>
                                 <TouchableOpacity
                                     style={[Styles.infoModalSubmitButton, { marginTop: 8 }]}
                                     activeOpacity={0.85}
-                                    onPress={() => {
+                                    onPress={async () => {
+                                        const mediaId = String(resolvedMediaId || '').trim();
+                                        if (!apiAccessToken || !mediaId) return;
+                                        const issue_type = selectedReportReason === t('Wrong competition')
+                                            ? 'wrong_competition'
+                                            : selectedReportReason === t('Wrong heat')
+                                                ? 'wrong_heat'
+                                                : 'custom';
+                                        try {
+                                            await createMediaIssueRequest(apiAccessToken, {
+                                                media_id: mediaId,
+                                                event_id: eventId || undefined,
+                                                issue_type,
+                                                custom_text: issue_type === 'custom' ? customReportReason.trim() : undefined,
+                                            });
+                                        } catch (e: any) {
+                                            const msg = String(e?.message || t('Could not submit request'));
+                                            showInfoPopup(t('Request failed'), msg);
+                                            return;
+                                        }
                                         setReportIssueVisible(false);
                                         setReportStep('reason');
                                         setSelectedReportReason('');
+                                        setCustomReportReason('');
                                         setTimeout(() => {
-                                            showInfoPopup(t('Request sent'), t('We received your issue report.'));
+                                            showInfoPopup(t('Request sent'), t('Your edit request is now pending.'));
                                         }, 120);
                                     }}
                                 >

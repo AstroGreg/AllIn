@@ -1,4 +1,4 @@
-import { View, Text, TouchableOpacity, ScrollView } from 'react-native'
+import { View, Text, TouchableOpacity, ScrollView, TextInput } from 'react-native'
 import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import FastImage from 'react-native-fast-image'
@@ -29,6 +29,9 @@ interface UploadItem {
     thumbnail?: any;
     uri?: string;
     price: string;
+    priceInput: string;
+    priceCents: number;
+    maxPriceCents: number;
     resolution: string;
     type?: string;
 }
@@ -36,6 +39,26 @@ interface UploadItem {
 interface CategorySection {
     name: string;
     items: UploadItem[];
+}
+
+const PHOTO_PRICE_CAP_CENTS = 100;
+const VIDEO_PRICE_CAP_CENTS = 500;
+
+function isVideoType(type?: string | null) {
+    return String(type || '').toLowerCase().includes('video');
+}
+
+function priceCapForType(type?: string | null) {
+    return isVideoType(type) ? VIDEO_PRICE_CAP_CENTS : PHOTO_PRICE_CAP_CENTS;
+}
+
+function clampPriceCents(rawValue: string, maxCents: number) {
+    const normalized = rawValue.replace(',', '.').replace(/[^\d.]/g, '');
+    if (!normalized) return 0;
+    const numeric = Number(normalized);
+    if (!Number.isFinite(numeric)) return 0;
+    const cents = Math.round(Math.max(0, numeric) * 100);
+    return Math.min(maxCents, cents);
 }
 
 const UploadSummaryScreen = ({ navigation, route }: any) => {
@@ -80,10 +103,22 @@ const UploadSummaryScreen = ({ navigation, route }: any) => {
                     const sections: CategorySection[] = Object.entries(parsed).map(([name, items]) => {
                         const list = Array.isArray(items) ? items : [];
                         const mapped: UploadItem[] = list.map((asset: any, index: number) => ({
+                            maxPriceCents: priceCapForType(asset?.type),
+                            priceCents: Math.min(
+                                priceCapForType(asset?.type),
+                                Math.max(0, Number(asset?.price_cents ?? (isVideoType(asset?.type) ? VIDEO_PRICE_CAP_CENTS : PHOTO_PRICE_CAP_CENTS))),
+                            ),
                             id: index + 1,
                             uri: normalizeLocalUri(asset?.uri),
                             thumbnail: asset?.uri ? { uri: normalizeLocalUri(asset.uri) } : undefined,
-                            price: 'â‚¬0,10',
+                            price: `€${(Math.min(
+                                priceCapForType(asset?.type),
+                                Math.max(0, Number(asset?.price_cents ?? (isVideoType(asset?.type) ? VIDEO_PRICE_CAP_CENTS : PHOTO_PRICE_CAP_CENTS))),
+                            ) / 100).toFixed(2)}`,
+                            priceInput: (Math.min(
+                                priceCapForType(asset?.type),
+                                Math.max(0, Number(asset?.price_cents ?? (isVideoType(asset?.type) ? VIDEO_PRICE_CAP_CENTS : PHOTO_PRICE_CAP_CENTS))),
+                            ) / 100).toFixed(2),
                             resolution: formatResolution(asset),
                             type: asset?.type,
                         }));
@@ -118,10 +153,22 @@ const UploadSummaryScreen = ({ navigation, route }: any) => {
                 const sections: CategorySection[] = Object.entries(parsed).map(([name, items]) => {
                     const list = Array.isArray(items) ? items : [];
                     const mapped: UploadItem[] = list.map((asset: any, index: number) => ({
+                        maxPriceCents: priceCapForType(asset?.type),
+                        priceCents: Math.min(
+                            priceCapForType(asset?.type),
+                            Math.max(0, Number(asset?.price_cents ?? (isVideoType(asset?.type) ? VIDEO_PRICE_CAP_CENTS : PHOTO_PRICE_CAP_CENTS))),
+                        ),
                         id: index + 1,
                         uri: normalizeLocalUri(asset?.uri),
                         thumbnail: asset?.uri ? { uri: normalizeLocalUri(asset.uri) } : undefined,
-                        price: '€0,10',
+                        price: `€${(Math.min(
+                            priceCapForType(asset?.type),
+                            Math.max(0, Number(asset?.price_cents ?? (isVideoType(asset?.type) ? VIDEO_PRICE_CAP_CENTS : PHOTO_PRICE_CAP_CENTS))),
+                        ) / 100).toFixed(2)}`,
+                        priceInput: (Math.min(
+                            priceCapForType(asset?.type),
+                            Math.max(0, Number(asset?.price_cents ?? (isVideoType(asset?.type) ? VIDEO_PRICE_CAP_CENTS : PHOTO_PRICE_CAP_CENTS))),
+                        ) / 100).toFixed(2),
                         resolution: formatResolution(asset),
                         type: asset?.type,
                     }));
@@ -154,7 +201,71 @@ const UploadSummaryScreen = ({ navigation, route }: any) => {
         });
     };
 
-    const renderUploadItem = (item: UploadItem) => {
+    const persistPrice = useCallback(async (categoryName: string, itemIndex: number, cents: number) => {
+        try {
+            const key = `@upload_assets_${competitionId}`;
+            const assetsRaw = await AsyncStorage.getItem(key);
+            const parsed = assetsRaw ? JSON.parse(assetsRaw) : {};
+            const list = Array.isArray(parsed?.[categoryName]) ? [...parsed[categoryName]] : [];
+            if (!list[itemIndex]) return;
+            list[itemIndex] = {
+                ...list[itemIndex],
+                price_cents: cents,
+                price_currency: 'EUR',
+            };
+            parsed[categoryName] = list;
+            await AsyncStorage.setItem(key, JSON.stringify(parsed));
+        } catch {
+            // ignore
+        }
+    }, [competitionId]);
+
+    const handlePriceInputChange = useCallback((categoryName: string, itemId: number, value: string) => {
+        setCategories((prev) =>
+            prev.map((section) => {
+                if (section.name !== categoryName) return section;
+                return {
+                    ...section,
+                    items: section.items.map((item) => {
+                        if (item.id !== itemId) return item;
+                        const cents = clampPriceCents(value, item.maxPriceCents);
+                        return {
+                            ...item,
+                            priceInput: value,
+                            priceCents: cents,
+                            price: `€${(cents / 100).toFixed(2)}`,
+                        };
+                    }),
+                };
+            }),
+        );
+    }, []);
+
+    const handlePriceInputBlur = useCallback((categoryName: string, itemId: number) => {
+        const section = categories.find((s) => s.name === categoryName);
+        const idx = section?.items.findIndex((it) => it.id === itemId) ?? -1;
+        const current = idx >= 0 && section ? section.items[idx] : null;
+        if (!current || idx < 0) return;
+        const cents = clampPriceCents(current.priceInput, current.maxPriceCents);
+        setCategories((prev) =>
+            prev.map((section) => {
+                if (section.name !== categoryName) return section;
+                const nextItems = section.items.map((item, idx) => {
+                    if (item.id !== itemId) return item;
+                    return {
+                        ...item,
+                        priceCents: cents,
+                        price: `€${(cents / 100).toFixed(2)}`,
+                        priceInput: (cents / 100).toFixed(2),
+                    };
+                });
+                return { ...section, items: nextItems };
+            }),
+        );
+        persistPrice(categoryName, idx, cents);
+    }, [categories, persistPrice]);
+
+    const renderUploadItem = (item: UploadItem, categoryName: string) => {
         const isVideo = String(item.type || '').toLowerCase().includes('video');
         return (
         <View key={item.id} style={Styles.uploadItem}>
@@ -182,8 +293,19 @@ const UploadSummaryScreen = ({ navigation, route }: any) => {
                 )}
             </View>
             <View style={Styles.itemInfo}>
-                <Text style={Styles.priceText}>{item.price}</Text>
-                <Text style={Styles.resolutionText}>{item.resolution}</Text>
+                <View style={Styles.priceInputRow}>
+                    <Text style={Styles.priceEuro}>€</Text>
+                    <TextInput
+                        style={Styles.priceInput}
+                        value={item.priceInput}
+                        keyboardType="decimal-pad"
+                        onChangeText={(value) => handlePriceInputChange(categoryName, item.id, value)}
+                        onBlur={() => handlePriceInputBlur(categoryName, item.id)}
+                    />
+                </View>
+                <Text style={Styles.resolutionText}>
+                    {item.resolution} · max €{(item.maxPriceCents / 100).toFixed(2)}
+                </Text>
             </View>
         </View>
         );
@@ -194,7 +316,7 @@ const UploadSummaryScreen = ({ navigation, route }: any) => {
             <Text style={Styles.categoryTitle}>{category.name}</Text>
             <SizeBox height={16} />
             <View style={Styles.itemsRow}>
-                {category.items.map(renderUploadItem)}
+                {category.items.map((item) => renderUploadItem(item, category.name))}
             </View>
         </View>
     );

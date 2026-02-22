@@ -1,4 +1,4 @@
-import { Text, View, TouchableOpacity } from 'react-native'
+import { Text, View, TouchableOpacity, ScrollView } from 'react-native'
 import React from 'react'
 import { createStyles } from '../MenuStyles'
 import SizeBox from '../../../constants/SizeBox'
@@ -32,7 +32,7 @@ const Language = ({ navigation }: any) => {
                 <View style={Styles.headerSpacer} />
             </View>
 
-            <View style={Styles.container}>
+            <ScrollView style={Styles.container} contentContainerStyle={{ paddingBottom: insets.bottom > 0 ? insets.bottom + 20 : 24 }} showsVerticalScrollIndicator={false}>
                 <SizeBox height={24} />
                 <Text style={Styles.sectionTitle}>{t('chooseLanguage')}</Text>
                 <SizeBox height={16} />
@@ -48,7 +48,7 @@ const Language = ({ navigation }: any) => {
                         <SizeBox height={12} />
                     </React.Fragment>
                 ))}
-            </View>
+            </ScrollView>
         </View>
     )
 }

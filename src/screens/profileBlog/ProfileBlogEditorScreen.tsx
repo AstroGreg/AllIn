@@ -9,7 +9,8 @@ import SizeBox from '../../constants/SizeBox';
 import { createStyles } from './ProfileBlogEditorStyles';
 import { useAuth } from '../../context/AuthContext';
 import { useEvents } from '../../context/EventsContext';
-import { createPost, deletePost, getPostById, updatePost, uploadMediaBatch, type MediaViewAllItem } from '../../services/apiGateway';
+import { createPost, deletePost, getPostById, searchProfiles, updatePost, uploadMediaBatch, type MediaViewAllItem } from '../../services/apiGateway';
+import CheckBox from '../../components/checkbox/CheckBox';
 import { getApiBaseUrl } from '../../constants/RuntimeConfig';
 import { useTranslation } from 'react-i18next'
 
@@ -28,6 +29,7 @@ const ProfileBlogEditorScreen = ({ navigation, route }: any) => {
     const mode: 'add' | 'edit' = route?.params?.mode ?? 'add';
     const postId: string | null = route?.params?.postId ?? route?.params?.entry?.id ?? null;
     const entryPreview: any = route?.params?.entry ?? null;
+    const groupId: string | null = route?.params?.groupId ? String(route.params.groupId) : null;
     const { apiAccessToken } = useAuth();
     const { events: subscribedEvents } = useEvents();
 
@@ -43,6 +45,16 @@ const ProfileBlogEditorScreen = ({ navigation, route }: any) => {
     const [isSaving, setIsSaving] = useState(false);
     const [isPickingMedia, setIsPickingMedia] = useState(false);
     const [showValidation, setShowValidation] = useState(false);
+    const [currentStep, setCurrentStep] = useState(1);
+    const [skipHighlight, setSkipHighlight] = useState(false);
+    const [skipMedia, setSkipMedia] = useState(false);
+    const [skipEvent, setSkipEvent] = useState(false);
+    const [skipPeople, setSkipPeople] = useState(false);
+    const [highlight, setHighlight] = useState('');
+    const [linkedPeople, setLinkedPeople] = useState<string[]>([]);
+    const [peopleQuery, setPeopleQuery] = useState('');
+    const [peopleResults, setPeopleResults] = useState<Array<{ profile_id: string; display_name: string }>>([]);
+    const [peopleSearchLoading, setPeopleSearchLoading] = useState(false);
 
     const isSignedUrl = useCallback((value?: string | null) => {
         if (!value) return false;
@@ -115,6 +127,46 @@ const ProfileBlogEditorScreen = ({ navigation, route }: any) => {
         return null;
     }, []);
 
+    const splitDescriptionMeta = useCallback((value?: string | null) => {
+        const lines = String(value || '').split('\n');
+        let parsedHighlight = '';
+        let parsedPeople: string[] = [];
+        const base = [...lines];
+        while (base.length > 0) {
+            const last = String(base[base.length - 1] || '').trim();
+            const highlightMatch = last.match(/^highlight:\s*(.+)$/i);
+            if (highlightMatch) {
+                parsedHighlight = highlightMatch[1].trim();
+                base.pop();
+                continue;
+            }
+            const peopleMatch = last.match(/^people:\s*(.+)$/i);
+            if (peopleMatch) {
+                parsedPeople = peopleMatch[1].split(',').map((p) => p.trim()).filter(Boolean);
+                base.pop();
+                continue;
+            }
+            break;
+        }
+        return {
+            description: base.join('\n').trim(),
+            highlight: parsedHighlight,
+            people: parsedPeople,
+        };
+    }, []);
+
+    const buildDescriptionWithMeta = useCallback((baseDescription: string, valueHighlight: string, people: string[], skip: boolean) => {
+        const out: string[] = [String(baseDescription || '').trim()].filter(Boolean);
+        if (!skip && String(valueHighlight || '').trim()) {
+            out.push(`Highlight: ${String(valueHighlight).trim()}`);
+        }
+        const cleanPeople = Array.from(new Set(people.map((p) => String(p || '').trim()).filter(Boolean)));
+        if (cleanPeople.length > 0) {
+            out.push(`People: ${cleanPeople.join(', ')}`);
+        }
+        return out.join('\n');
+    }, []);
+
     useEffect(() => {
         if (entryPreview && mode === 'add') {
             setTitle(entryPreview.title ?? '');
@@ -130,7 +182,11 @@ const ProfileBlogEditorScreen = ({ navigation, route }: any) => {
                 if (!mounted) return;
                 if (resp?.post) {
                     setTitle(resp.post.title ?? '');
-                    setDescription(resp.post.description ?? '');
+                    const parsed = splitDescriptionMeta(resp.post.description ?? '');
+                    setDescription(parsed.description);
+                    setHighlight(parsed.highlight);
+                    setLinkedPeople(parsed.people);
+                    setSkipHighlight(!parsed.highlight);
                     if (resp.post.created_at) {
                         const parsed = new Date(String(resp.post.created_at));
                         if (!Number.isNaN(parsed.getTime())) {
@@ -144,7 +200,7 @@ const ProfileBlogEditorScreen = ({ navigation, route }: any) => {
         return () => {
             mounted = false;
         };
-    }, [apiAccessToken, mode, postId]);
+    }, [apiAccessToken, mode, postId, splitDescriptionMeta]);
 
     const toDateString = useCallback((date: Date) => {
         const yyyy = date.getFullYear();
@@ -185,7 +241,7 @@ const ProfileBlogEditorScreen = ({ navigation, route }: any) => {
                 .filter((asset) => asset.uri)
                 .map((asset) => ({
                     uri: asset.uri as string,
-                    type: asset.type?.startsWith('video') ? 'video' : 'image',
+                    type: (asset.type?.startsWith('video') ? 'video' : 'image') as 'image' | 'video',
                     name: asset.fileName ?? undefined,
                     mimeType: asset.type ?? undefined,
                 }));
@@ -205,21 +261,23 @@ const ProfileBlogEditorScreen = ({ navigation, route }: any) => {
         if (!apiAccessToken || !hasTitle || !hasDescription || !hasDate) return;
         setIsSaving(true);
         try {
-            const summary = description.length > 180 ? `${description.slice(0, 180)}…` : description;
+            const fullDescription = buildDescriptionWithMeta(description, highlight, linkedPeople, skipHighlight);
+            const summary = fullDescription.length > 180 ? `${fullDescription.slice(0, 180)}…` : fullDescription;
             let currentId = postId;
             if (mode === 'edit' && postId) {
                 await updatePost(apiAccessToken, String(postId), {
                     title: title.trim(),
-                    description: description.trim(),
+                    description: fullDescription,
                     summary,
                     created_at: postDate ? postDate.toISOString() : undefined,
                 });
             } else {
                 const created = await createPost(apiAccessToken, {
                     title: title.trim(),
-                    description: description.trim(),
+                    description: fullDescription,
                     summary,
                     event_id: selectedEventId ? String(selectedEventId) : undefined,
+                    group_id: groupId || undefined,
                 });
                 currentId = created?.post?.id ?? null;
             }
@@ -238,7 +296,7 @@ const ProfileBlogEditorScreen = ({ navigation, route }: any) => {
         } finally {
             setIsSaving(false);
         }
-    }, [apiAccessToken, description, media, mode, navigation, postDate, postId, selectedEventId, title]);
+    }, [apiAccessToken, buildDescriptionWithMeta, description, groupId, highlight, linkedPeople, media, mode, navigation, postDate, postId, selectedEventId, skipHighlight, title]);
 
     const titleInvalid = showValidation && title.trim().length === 0;
     const descriptionInvalid = showValidation && description.trim().length === 0;
@@ -254,6 +312,98 @@ const ProfileBlogEditorScreen = ({ navigation, route }: any) => {
         }
     }, [apiAccessToken, navigation, postId]);
 
+    const TOTAL_STEPS = 7;
+
+    const addPerson = useCallback((name: string) => {
+        const safe = String(name || '').trim();
+        if (!safe) return;
+        setLinkedPeople((prev) => (prev.includes(safe) ? prev : [...prev, safe]));
+        setPeopleQuery('');
+        setPeopleResults([]);
+    }, []);
+
+    const removePerson = useCallback((name: string) => {
+        setLinkedPeople((prev) => prev.filter((entry) => entry !== name));
+    }, []);
+
+    useEffect(() => {
+        let mounted = true;
+        if (!apiAccessToken || !peopleQuery.trim()) {
+            setPeopleResults([]);
+            setPeopleSearchLoading(false);
+            return () => {
+                mounted = false;
+            };
+        }
+        const timer = setTimeout(async () => {
+            setPeopleSearchLoading(true);
+            try {
+                const resp = await searchProfiles(apiAccessToken, { q: peopleQuery.trim(), limit: 8 });
+                if (!mounted) return;
+                const list = Array.isArray(resp?.profiles)
+                    ? resp.profiles
+                        .map((p) => ({
+                            profile_id: String(p.profile_id || ''),
+                            display_name: String(p.display_name || '').trim(),
+                        }))
+                        .filter((p) => p.profile_id && p.display_name)
+                    : [];
+                setPeopleResults(list);
+            } catch {
+                if (mounted) setPeopleResults([]);
+            } finally {
+                if (mounted) setPeopleSearchLoading(false);
+            }
+        }, 250);
+        return () => {
+            mounted = false;
+            clearTimeout(timer);
+        };
+    }, [apiAccessToken, peopleQuery]);
+
+    const goNextStep = useCallback(() => {
+        if (currentStep === 2) {
+            setShowValidation(true);
+            if (!title.trim() || !description.trim()) return;
+        }
+        if (currentStep === 1) {
+            setShowValidation(true);
+            if (!postDate || Number.isNaN(new Date(postDate).getTime())) return;
+        }
+        if (currentStep === 4 && !skipMedia && (media.length + existingPreview.length === 0)) {
+            return;
+        }
+        if (currentStep === 3 && !skipHighlight && !highlight.trim()) {
+            return;
+        }
+        if (currentStep === 5 && !skipEvent && !selectedEventId) {
+            return;
+        }
+        if (currentStep === 6 && !skipPeople && linkedPeople.length === 0) {
+            return;
+        }
+        if (currentStep < TOTAL_STEPS) setCurrentStep((prev) => prev + 1);
+    }, [currentStep, description, existingPreview.length, highlight, linkedPeople.length, media.length, postDate, selectedEventId, skipEvent, skipHighlight, skipMedia, skipPeople, title]);
+
+    const goPrevStep = useCallback(() => {
+        if (currentStep > 1) setCurrentStep((prev) => prev - 1);
+    }, [currentStep]);
+    const goPreviewStep = useCallback(() => {
+        if (currentStep < TOTAL_STEPS) {
+            setCurrentStep(TOTAL_STEPS);
+        }
+    }, [currentStep, TOTAL_STEPS]);
+
+    const canGoNext = useMemo(() => {
+        if (currentStep === 1) return !!postDate && !Number.isNaN(new Date(postDate).getTime());
+        if (currentStep === 2) return title.trim().length > 0 && description.trim().length > 0;
+        if (currentStep === 3) return skipHighlight || highlight.trim().length > 0;
+        if (currentStep === 4) return skipMedia || (media.length + existingPreview.length > 0);
+        if (currentStep === 5) return skipEvent || !!selectedEventId;
+        if (currentStep === 6) return skipPeople || linkedPeople.length > 0;
+        return true;
+    }, [currentStep, description, existingPreview.length, highlight, linkedPeople.length, media.length, postDate, selectedEventId, skipEvent, skipHighlight, skipMedia, skipPeople, title]);
+
     return (
         <View style={Styles.mainContainer}>
             <SizeBox height={insets.top} />
@@ -266,81 +416,211 @@ const ProfileBlogEditorScreen = ({ navigation, route }: any) => {
             </View>
 
             <ScrollView contentContainerStyle={Styles.scrollContent} showsVerticalScrollIndicator={false}>
-                <View style={Styles.fieldBlock}>
-                    <Text style={Styles.fieldLabel}>{t('Title')}</Text>
-                    <TextInput
-                        style={[Styles.fieldInput, titleInvalid && Styles.fieldInputError]}
-                        placeholder={t('PK 400m Limburg 2025')}
-                        placeholderTextColor="#9B9F9F"
-                        value={title}
-                        onChangeText={setTitle}
-                    />
-                </View>
-                <View style={Styles.fieldBlock}>
-                    <Text style={Styles.fieldLabel}>{t('Date')}</Text>
-                    <TouchableOpacity style={[Styles.dateButton, dateInvalid && Styles.fieldInputError]} onPress={openDateModal}>
-                        <CalendarIcon size={16} color={colors.primaryColor} variant="Linear" />
-                        <Text style={Styles.dateText}>{postDate ? postDate.toLocaleDateString() : t('Select date')}</Text>
-                    </TouchableOpacity>
-                </View>
-                <View style={Styles.fieldBlock}>
-                    <Text style={Styles.fieldLabel}>{t('Event')}</Text>
-                    <TouchableOpacity style={Styles.dateButton} onPress={() => setShowEventModal(true)}>
-                        <Text style={Styles.dateText} numberOfLines={1}>{selectedEventLabel}</Text>
-                    </TouchableOpacity>
-                </View>
-                <View style={Styles.fieldBlock}>
-                    <Text style={Styles.fieldLabel}>{t('Description')}</Text>
-                    <TextInput
-                        style={[Styles.fieldInput, Styles.fieldTextarea, descriptionInvalid && Styles.fieldInputError]}
-                        placeholder={t('Write your story and results.')}
-                        placeholderTextColor="#9B9F9F"
-                        value={description}
-                        onChangeText={setDescription}
-                        multiline
-                    />
+                <View style={Styles.stepHeaderRow}>
+                    <Text style={Styles.stepCounter}>{t('Step')} {currentStep}/{TOTAL_STEPS}</Text>
+                    <Text style={Styles.stepTitle}>
+                        {currentStep === 1 ? t('Date') :
+                            currentStep === 2 ? t('Description') :
+                                currentStep === 3 ? t('Highlight') :
+                                    currentStep === 4 ? t('Blog media') :
+                                        currentStep === 5 ? t('Event') :
+                                            currentStep === 6 ? t('People') : t('Preview')}
+                    </Text>
                 </View>
 
-                <View style={Styles.mediaHeader}>
-                    <Text style={Styles.fieldLabel}>{t('Media')}</Text>
-                    <TouchableOpacity style={Styles.mediaAddButton} onPress={pickMedia}>
-                        <Add size={14} color="#FFFFFF" variant="Linear" />
-                        <Text style={Styles.mediaAddText}>{t('Add media')}</Text>
-                    </TouchableOpacity>
-                </View>
-                <View style={Styles.mediaGrid}>
-                    {existingPreview.map((item, index) => (
-                        <View key={`existing-${item.uri}-${index}`} style={Styles.mediaTile}>
-                            <Image source={{ uri: String(item.uri) }} style={Styles.mediaImage} />
-                            {item.type === 'video' && (
-                                <View style={Styles.mediaBadge}>
-                                    <Text style={Styles.mediaBadgeText}>{t('Video')}</Text>
+                {currentStep === 1 && (
+                    <View style={Styles.fieldBlock}>
+                        <Text style={Styles.fieldLabel}>{t('Date')}</Text>
+                        <TouchableOpacity style={[Styles.dateButton, dateInvalid && Styles.fieldInputError]} onPress={openDateModal}>
+                            <CalendarIcon size={16} color={colors.primaryColor} variant="Linear" />
+                            <Text style={Styles.dateText}>{postDate ? postDate.toLocaleDateString() : t('Select date')}</Text>
+                        </TouchableOpacity>
+                    </View>
+                )}
+
+                {currentStep === 2 && (
+                    <>
+                        <View style={Styles.fieldBlock}>
+                            <Text style={Styles.fieldLabel}>{t('Title')}</Text>
+                            <TextInput
+                                style={[Styles.fieldInput, titleInvalid && Styles.fieldInputError]}
+                                placeholder={t('PK 400m Limburg 2025')}
+                                placeholderTextColor="#9B9F9F"
+                                value={title}
+                                onChangeText={setTitle}
+                            />
+                        </View>
+                        <View style={Styles.fieldBlock}>
+                            <Text style={Styles.fieldLabel}>{t('Description')}</Text>
+                            <TextInput
+                                style={[Styles.fieldInput, Styles.fieldTextarea, descriptionInvalid && Styles.fieldInputError]}
+                                placeholder={t('Write your story and results.')}
+                                placeholderTextColor="#9B9F9F"
+                                value={description}
+                                onChangeText={setDescription}
+                                multiline
+                            />
+                        </View>
+                    </>
+                )}
+
+                {currentStep === 3 && (
+                    <View style={Styles.fieldBlock}>
+                        <View style={Styles.skipRow}>
+                            <CheckBox isChecked={skipHighlight} onPressCheckBox={(checked) => setSkipHighlight(Boolean(checked))} />
+                            <Text style={Styles.skipLabel}>{t('Skip highlight')}</Text>
+                        </View>
+                        {!skipHighlight && (
+                            <TextInput
+                                style={Styles.fieldInput}
+                                placeholder={t('Race winning move, comeback, PR...')}
+                                placeholderTextColor="#9B9F9F"
+                                value={highlight}
+                                onChangeText={setHighlight}
+                            />
+                        )}
+                    </View>
+                )}
+
+                {currentStep === 4 && (
+                    <>
+                        <View style={Styles.skipRow}>
+                            <CheckBox isChecked={skipMedia} onPressCheckBox={(checked) => setSkipMedia(Boolean(checked))} />
+                            <Text style={Styles.skipLabel}>{t('Skip media')}</Text>
+                        </View>
+                        <SizeBox height={8} />
+                        <View style={Styles.mediaHeader}>
+                            <Text style={Styles.fieldLabel}>{t('Media')}</Text>
+                            <TouchableOpacity style={Styles.mediaAddButton} onPress={pickMedia}>
+                                <Add size={14} color="#FFFFFF" variant="Linear" />
+                                <Text style={Styles.mediaAddText}>{t('Add media')}</Text>
+                            </TouchableOpacity>
+                        </View>
+                        <View style={Styles.mediaGrid}>
+                            {existingPreview.map((item, index) => (
+                                <View key={`existing-${item.uri}-${index}`} style={Styles.mediaTile}>
+                                    <Image source={{ uri: String(item.uri) }} style={Styles.mediaImage} />
+                                    {item.type === 'video' && (
+                                        <View style={Styles.mediaBadge}>
+                                            <Text style={Styles.mediaBadgeText}>{t('Video')}</Text>
+                                        </View>
+                                    )}
                                 </View>
+                            ))}
+                            {media.map((item, index) => (
+                                <View key={`${item.uri}-${index}`} style={Styles.mediaTile}>
+                                    <Image source={{ uri: item.uri }} style={Styles.mediaImage} />
+                                    {item.type === 'video' && (
+                                        <View style={Styles.mediaBadge}>
+                                            <Text style={Styles.mediaBadgeText}>{t('Video')}</Text>
+                                        </View>
+                                    )}
+                                </View>
+                            ))}
+                            {media.length === 0 && existingPreview.length === 0 && (
+                                <Text style={Styles.mediaEmptyText}>{t('No media added yet.')}</Text>
                             )}
                         </View>
-                    ))}
-                    {media.map((item, index) => (
-                        <View key={`${item.uri}-${index}`} style={Styles.mediaTile}>
-                            <Image source={{ uri: item.uri }} style={Styles.mediaImage} />
-                            {item.type === 'video' && (
-                                <View style={Styles.mediaBadge}>
-                                    <Text style={Styles.mediaBadgeText}>{t('Video')}</Text>
-                                </View>
-                            )}
+                    </>
+                )}
+
+                {currentStep === 5 && (
+                    <View style={Styles.fieldBlock}>
+                        <View style={Styles.skipRow}>
+                            <CheckBox isChecked={skipEvent} onPressCheckBox={(checked) => setSkipEvent(Boolean(checked))} />
+                            <Text style={Styles.skipLabel}>{t('Skip event')}</Text>
                         </View>
-                    ))}
-                    {media.length === 0 && existingPreview.length === 0 && (
-                        <Text style={Styles.mediaEmptyText}>{t('No media added yet.')}</Text>
-                    )}
-                </View>
+                        <SizeBox height={8} />
+                        <Text style={Styles.fieldLabel}>{t('Event')}</Text>
+                        <TouchableOpacity style={Styles.dateButton} onPress={() => setShowEventModal(true)}>
+                            <Text style={Styles.dateText} numberOfLines={1}>{selectedEventLabel}</Text>
+                        </TouchableOpacity>
+                    </View>
+                )}
+
+                {currentStep === 6 && (
+                    <View style={Styles.fieldBlock}>
+                        <View style={Styles.skipRow}>
+                            <CheckBox isChecked={skipPeople} onPressCheckBox={(checked) => setSkipPeople(Boolean(checked))} />
+                            <Text style={Styles.skipLabel}>{t('Skip people')}</Text>
+                        </View>
+                        <SizeBox height={8} />
+                        <Text style={Styles.fieldLabel}>{t('People')}</Text>
+                        <View style={Styles.dateButton}>
+                            <TextInput
+                                style={Styles.dateText}
+                                placeholder={t('Search people or type a name')}
+                                placeholderTextColor={colors.subTextColor}
+                                value={peopleQuery}
+                                onChangeText={setPeopleQuery}
+                                onSubmitEditing={() => addPerson(peopleQuery)}
+                            />
+                        </View>
+                        {peopleSearchLoading && <Text style={Styles.mediaEmptyText}>{t('Searching...')}</Text>}
+                        {!peopleSearchLoading && peopleQuery.trim().length > 0 && peopleResults.length > 0 && (
+                            <View style={Styles.eventListContent}>
+                                {peopleResults.map((person) => (
+                                    <TouchableOpacity key={person.profile_id} style={Styles.eventRow} onPress={() => addPerson(person.display_name)}>
+                                        <Text style={Styles.eventRowText}>{person.display_name}</Text>
+                                    </TouchableOpacity>
+                                ))}
+                            </View>
+                        )}
+                        {linkedPeople.length > 0 && (
+                            <View style={Styles.peopleChipsRow}>
+                                {linkedPeople.map((person) => (
+                                    <View key={person} style={Styles.peopleChip}>
+                                        <Text style={Styles.peopleChipText}>{person}</Text>
+                                        <TouchableOpacity onPress={() => removePerson(person)}>
+                                            <Trash size={14} color={colors.subTextColor} variant="Linear" />
+                                        </TouchableOpacity>
+                                    </View>
+                                ))}
+                            </View>
+                        )}
+                    </View>
+                )}
+
+                {currentStep === 7 && (
+                    <View style={Styles.previewCard}>
+                        <Text style={Styles.previewTitle}>{title || t('Untitled blog')}</Text>
+                        <Text style={Styles.previewMeta}>{postDate ? postDate.toLocaleDateString() : t('No date')}</Text>
+                        <Text style={Styles.previewText}>{description || t('No description')}</Text>
+                        {!skipHighlight && !!highlight.trim() && (
+                            <Text style={Styles.previewMeta}>{t('Highlight')}: {highlight.trim()}</Text>
+                        )}
+                        {selectedEvent ? (
+                            <Text style={Styles.previewMeta}>{t('Event')}: {selectedEventLabel}</Text>
+                        ) : null}
+                        {linkedPeople.length > 0 ? (
+                            <Text style={Styles.previewMeta}>{t('People')}: {linkedPeople.join(', ')}</Text>
+                        ) : null}
+                        <Text style={Styles.previewMeta}>{t('Media')}: {existingPreview.length + media.length}</Text>
+                    </View>
+                )}
 
                 <View style={Styles.actionRow}>
-                    <TouchableOpacity style={Styles.cancelButton} onPress={() => navigation.goBack()}>
-                        <Text style={Styles.cancelText}>{t('Cancel')}</Text>
+                    {currentStep < TOTAL_STEPS ? (
+                        <TouchableOpacity style={Styles.previewShortcutButton} onPress={goPreviewStep}>
+                            <Text style={Styles.previewShortcutText}>{t('Preview')}</Text>
+                        </TouchableOpacity>
+                    ) : null}
+                    <TouchableOpacity style={Styles.cancelButton} onPress={currentStep === 1 ? () => navigation.goBack() : goPrevStep}>
+                        <Text style={Styles.cancelText}>{currentStep === 1 ? t('Cancel') : t('Back')}</Text>
                     </TouchableOpacity>
-                    <TouchableOpacity style={Styles.saveButton} onPress={saveEntry} disabled={isSaving}>
-                        <Text style={Styles.saveText}>{isSaving ? t('Saving...') : t('Save')}</Text>
-                    </TouchableOpacity>
+                    {currentStep < TOTAL_STEPS ? (
+                        <TouchableOpacity
+                            style={[Styles.saveButton, !canGoNext && Styles.saveButtonDisabled]}
+                            onPress={goNextStep}
+                            disabled={!canGoNext}
+                        >
+                            <Text style={Styles.saveText}>{t('Next')}</Text>
+                        </TouchableOpacity>
+                    ) : (
+                        <TouchableOpacity style={Styles.saveButton} onPress={saveEntry} disabled={isSaving}>
+                            <Text style={Styles.saveText}>{isSaving ? t('Saving...') : t('Save')}</Text>
+                        </TouchableOpacity>
+                    )}
                 </View>
 
                 {mode === 'edit' && postId ? (

@@ -60,7 +60,7 @@ const UploadScreen = ({ navigation }: any) => {
                     <Text style={Styles.createAccountButtonText}>{t('Upload')}</Text>
                 </TouchableOpacity>
 
-                <SizeBox height={20} />
+                <SizeBox height={10} />
 
                 {/* Upload Anonymously Button */}
                 <TouchableOpacity

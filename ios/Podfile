@@ -41,6 +41,11 @@ target 'AllIn' do
     installer.pods_project.targets.each do |target|
       target.build_configurations.each do |build_config|
         build_config.build_settings['EXCLUDED_ARCHS[sdk=iphonesimulator*]'] = 'arm64'
+        # VisionCamera uses UIWindowScene APIs (iOS 13+). Ensure Pods don't compile below 13.0.
+        current_target = build_config.build_settings['IPHONEOS_DEPLOYMENT_TARGET']
+        if current_target.nil? || Gem::Version.new(current_target.to_s) < Gem::Version.new('13.0')
+          build_config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '13.0'
+        end
       end
     end
 

@@ -71,6 +71,31 @@ export const createStyles = (colors: ThemeColors) => StyleSheet.create({
         ...Fonts.regular12,
         color: colors.grayColor,
     },
+    mapCard: {
+        borderRadius: 12,
+        overflow: 'hidden',
+        borderWidth: 0.5,
+        borderColor: colors.lightGrayColor,
+        backgroundColor: colors.cardBackground,
+        height: 150,
+    },
+    mapImage: {
+        width: '100%',
+        height: '100%',
+    },
+    mapOverlay: {
+        position: 'absolute',
+        bottom: 10,
+        left: 10,
+        backgroundColor: 'rgba(3,4,9,0.6)',
+        borderRadius: 999,
+        paddingHorizontal: 10,
+        paddingVertical: 5,
+    },
+    mapTitle: {
+        ...Fonts.medium12,
+        color: colors.pureWhite,
+    },
     toggleContainer: {
         flexDirection: 'row',
         backgroundColor: colors.btnBackgroundColor,

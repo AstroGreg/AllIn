@@ -92,6 +92,52 @@ export const createStyles = (colors: ThemeColors) => StyleSheet.create({
         backgroundColor: colors.secondaryColor,
         borderRadius: 8,
     },
+    bulkPriceCard: {
+        borderWidth: 0.5,
+        borderColor: colors.lightGrayColor,
+        borderRadius: 10,
+        padding: 12,
+        backgroundColor: colors.cardBackground,
+    },
+    bulkPriceTitle: {
+        ...Fonts.regular14,
+        color: colors.mainTextColor,
+        fontWeight: '600',
+        marginBottom: 10,
+    },
+    bulkPriceRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 8,
+        marginBottom: 6,
+    },
+    bulkPriceInput: {
+        flex: 1,
+        height: 40,
+        borderWidth: 0.5,
+        borderColor: colors.lightGrayColor,
+        borderRadius: 8,
+        paddingHorizontal: 10,
+        color: colors.mainTextColor,
+        backgroundColor: colors.secondaryColor,
+    },
+    bulkPriceButton: {
+        height: 40,
+        borderRadius: 8,
+        backgroundColor: colors.primaryColor,
+        alignItems: 'center',
+        justifyContent: 'center',
+        paddingHorizontal: 12,
+    },
+    bulkPriceButtonText: {
+        ...Fonts.regular12,
+        color: colors.pureWhite,
+    },
+    bulkPriceHint: {
+        ...Fonts.regular12,
+        color: colors.grayColor,
+        marginBottom: 10,
+    },
     bottomBtn: {
         height: 90, position: 'absolute', bottom: 10, width: '100%', paddingHorizontal: 20
     },

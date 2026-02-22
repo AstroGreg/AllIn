@@ -67,6 +67,9 @@ export interface UserProfile {
 
     // Athlete details
     chestNumbersByYear?: Record<string, string>;
+    trackFieldClub?: string;
+    trackFieldMainEvent?: string;
+    roadTrailMainEvent?: string;
     website?: string;
     runningClub?: string;
     runningClubGroupId?: string;

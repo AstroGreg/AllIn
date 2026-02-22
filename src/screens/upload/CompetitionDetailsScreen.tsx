@@ -8,6 +8,8 @@ import { useTheme } from '../../context/ThemeContext'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import { useFocusEffect } from '@react-navigation/native'
 import { useTranslation } from 'react-i18next'
+import Images from '../../constants/Images'
+import FastImage from 'react-native-fast-image'
 
 interface EventCategory {
     id: number;
@@ -215,6 +217,18 @@ const CompetitionDetailsScreen = ({ navigation, route }: any) => {
                         {competition?.location || 'Location'} • {formatDate(competition?.date)}
                     </Text>
                 </View>
+
+                {competitionType === 'road' ? (
+                    <>
+                        <SizeBox height={12} />
+                        <View style={Styles.mapCard}>
+                            <FastImage source={Images.map} style={Styles.mapImage} resizeMode="cover" />
+                            <View style={Styles.mapOverlay}>
+                                <Text style={Styles.mapTitle}>{t('Course map')}</Text>
+                            </View>
+                        </View>
+                    </>
+                ) : null}
 
                 <SizeBox height={20} />
 

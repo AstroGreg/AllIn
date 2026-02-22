@@ -36,6 +36,28 @@ export const createStyles = (colors: ThemeColors) =>
         fieldBlock: {
             marginBottom: 16,
         },
+        stepHeaderRow: {
+            marginBottom: 18,
+        },
+        stepCounter: {
+            ...Fonts.regular12,
+            color: colors.primaryColor,
+            marginBottom: 4,
+        },
+        stepTitle: {
+            ...Fonts.semibold16,
+            color: colors.mainTextColor,
+        },
+        skipRow: {
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: 10,
+            marginBottom: 10,
+        },
+        skipLabel: {
+            ...Fonts.regular13,
+            color: colors.mainTextColor,
+        },
         fieldLabel: {
             ...Fonts.regular12,
             color: colors.grayColor,
@@ -98,14 +120,15 @@ export const createStyles = (colors: ThemeColors) =>
             borderWidth: 1,
             borderColor: colors.lightGrayColor,
             borderRadius: 12,
-            paddingHorizontal: 12,
-            paddingVertical: 12,
-            ...Fonts.regular14,
+            paddingHorizontal: 14,
+            paddingVertical: 15,
+            minHeight: 54,
+            ...Fonts.regular15,
             color: colors.mainTextColor,
             backgroundColor: colors.btnBackgroundColor,
         },
         fieldTextarea: {
-            minHeight: 100,
+            minHeight: 150,
             textAlignVertical: 'top',
         },
         helperText: {
@@ -204,8 +227,24 @@ export const createStyles = (colors: ThemeColors) =>
         },
         actionRow: {
             flexDirection: 'row',
+            alignItems: 'center',
             gap: 12,
             marginTop: 8,
+        },
+        previewShortcutButton: {
+            minWidth: 94,
+            borderWidth: 1,
+            borderColor: colors.primaryColor,
+            borderRadius: 12,
+            alignItems: 'center',
+            justifyContent: 'center',
+            paddingVertical: 12,
+            paddingHorizontal: 12,
+            backgroundColor: colors.cardBackground,
+        },
+        previewShortcutText: {
+            ...Fonts.medium13,
+            color: colors.primaryColor,
         },
         cancelButton: {
             flex: 1,
@@ -245,6 +284,30 @@ export const createStyles = (colors: ThemeColors) =>
         deleteText: {
             ...Fonts.medium14,
             color: '#ED5454',
+        },
+        previewCard: {
+            borderWidth: 1,
+            borderColor: colors.lightGrayColor,
+            borderRadius: 14,
+            padding: 14,
+            backgroundColor: colors.cardBackground,
+            gap: 8,
+        },
+        previewTitle: {
+            ...Fonts.semibold16,
+            color: colors.mainTextColor,
+        },
+        previewMeta: {
+            ...Fonts.regular12,
+            color: colors.subTextColor,
+        },
+        previewText: {
+            ...Fonts.regular14,
+            color: colors.mainTextColor,
+        },
+        previewSubline: {
+            ...Fonts.regular13,
+            color: colors.mainTextColor,
         },
         modalOverlay: {
             flex: 1,

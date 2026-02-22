@@ -1,4 +1,4 @@
-import { View, Text, TouchableOpacity } from 'react-native'
+import { View, Text, TouchableOpacity, TextInput } from 'react-native'
 import React, { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next';
 import { createStyles } from './UploadDetailsStyles'
@@ -33,12 +33,22 @@ function normalizeFileUri(uri: string) {
     return ensureFileScheme(fileUriToPath(uri));
 }
 
+function isVideoAssetType(type?: string | null) {
+    return String(type || '').toLowerCase().includes('video');
+}
+
+function defaultPriceCentsForType(type?: string | null) {
+    return isVideoAssetType(type) ? 500 : 100;
+}
+
 const UploadDetailsScreen = ({ navigation, route }: any) => {
     const insets = useSafeAreaInsets();
     const { colors } = useTheme();
     const Styles = createStyles(colors);
     const { t } = useTranslation();
     const [selectedAssets, setSelectedAssets] = useState<any[]>([]);
+    const [allPhotosPrice, setAllPhotosPrice] = useState('1.00');
+    const [allVideosPrice, setAllVideosPrice] = useState('5.00');
     const competition = route?.params?.competition;
     const category = route?.params?.category;
     const account = route?.params?.account;
@@ -85,6 +95,8 @@ const UploadDetailsScreen = ({ navigation, route }: any) => {
                         ...a,
                         uri: finalUri,
                         fileName: safeName,
+                        price_cents: defaultPriceCentsForType(a?.type),
+                        price_currency: 'EUR',
                     });
                 }
 
@@ -93,6 +105,30 @@ const UploadDetailsScreen = ({ navigation, route }: any) => {
         } catch (error) {
             console.error('Error picking media:', error);
         }
+    };
+
+    const parseEuroToCents = (value: string, maxCents: number) => {
+        const normalized = String(value || '').replace(',', '.').trim();
+        const parsed = Number.parseFloat(normalized);
+        if (!Number.isFinite(parsed) || parsed < 0) return 0;
+        return Math.min(Math.round(parsed * 100), maxCents);
+    };
+
+    const applyPriceToType = (type: 'photo' | 'video') => {
+        setSelectedAssets((prev) =>
+            prev.map((asset) => {
+                const isVideo = isVideoAssetType(asset?.type);
+                if ((type === 'video') !== isVideo) return asset;
+                const cents = type === 'video'
+                    ? parseEuroToCents(allVideosPrice, 500)
+                    : parseEuroToCents(allPhotosPrice, 100);
+                return {
+                    ...asset,
+                    price_cents: cents,
+                    price_currency: 'EUR',
+                };
+            }),
+        );
     };
 
     const handleUpload = async () => {
@@ -110,6 +146,8 @@ const UploadDetailsScreen = ({ navigation, route }: any) => {
                 fileName: asset?.fileName,
                 width: asset?.width,
                 height: asset?.height,
+                price_cents: Number(asset?.price_cents ?? defaultPriceCentsForType(asset?.type)),
+                price_currency: String(asset?.price_currency || 'EUR'),
             })).filter((asset) => asset.uri);
             // Overwrite the category selection instead of appending forever (keeps the UI clean).
             safeExisting[eventName] = mappedAssets;
@@ -160,6 +198,42 @@ const UploadDetailsScreen = ({ navigation, route }: any) => {
                 <TouchableOpacity style={Styles.uploadContainer} onPress={handleFilePicker}>
                     <Text style={Styles.uploadText}>{t('Browse files')}</Text>
                 </TouchableOpacity>
+                {selectedCount > 0 ? (
+                    <>
+                        <SizeBox height={14} />
+                        <View style={Styles.bulkPriceCard}>
+                            <Text style={Styles.bulkPriceTitle}>{t('Bulk price')}</Text>
+                            <View style={Styles.bulkPriceRow}>
+                                <TextInput
+                                    style={Styles.bulkPriceInput}
+                                    value={allPhotosPrice}
+                                    onChangeText={setAllPhotosPrice}
+                                    keyboardType="decimal-pad"
+                                    placeholder="1.00"
+                                    placeholderTextColor={colors.grayColor}
+                                />
+                                <TouchableOpacity style={Styles.bulkPriceButton} onPress={() => applyPriceToType('photo')}>
+                                    <Text style={Styles.bulkPriceButtonText}>{t('Set all photos')}</Text>
+                                </TouchableOpacity>
+                            </View>
+                            <Text style={Styles.bulkPriceHint}>{t('Max €1.00 per photo')}</Text>
+                            <View style={Styles.bulkPriceRow}>
+                                <TextInput
+                                    style={Styles.bulkPriceInput}
+                                    value={allVideosPrice}
+                                    onChangeText={setAllVideosPrice}
+                                    keyboardType="decimal-pad"
+                                    placeholder="5.00"
+                                    placeholderTextColor={colors.grayColor}
+                                />
+                                <TouchableOpacity style={Styles.bulkPriceButton} onPress={() => applyPriceToType('video')}>
+                                    <Text style={Styles.bulkPriceButtonText}>{t('Set all videos')}</Text>
+                                </TouchableOpacity>
+                            </View>
+                            <Text style={Styles.bulkPriceHint}>{t('Max €5.00 per video')}</Text>
+                        </View>
+                    </>
+                ) : null}
                 <SizeBox height={20} />
 
                 <TouchableOpacity

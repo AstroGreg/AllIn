@@ -1,5 +1,5 @@
-import { View, Text, TouchableOpacity, ScrollView, Dimensions, Platform, ActionSheetIOS, Modal, ActivityIndicator, Alert } from 'react-native'
-import React, { useCallback, useMemo, useState } from 'react'
+import { View, Text, TouchableOpacity, ScrollView, Dimensions, Modal, ActivityIndicator, Alert, Linking, TextInput } from 'react-native'
+import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import SizeBox from '../../constants/SizeBox'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import FastImage from 'react-native-fast-image'
@@ -7,7 +7,7 @@ import Images from '../../constants/Images'
 import Icons from '../../constants/Icons'
 import { useTheme } from '../../context/ThemeContext'
 import { createStyles } from './UserProfileStyles'
-import { ArrowLeft2, User, Edit2, Clock, ArrowRight, DocumentText, Gallery, DocumentDownload } from 'iconsax-react-nativejs'
+import { User, Edit2, Clock, ArrowRight, DocumentText, Gallery, DocumentDownload } from 'iconsax-react-nativejs'
 import { launchImageLibrary } from 'react-native-image-picker'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import ProfileTimeline, { TimelineEntry } from '../../components/profileTimeline/ProfileTimeline'
@@ -40,20 +40,20 @@ import { useFocusEffect } from '@react-navigation/native'
 import { useTranslation } from 'react-i18next'
 import ProfileNewsSection, { type ProfileNewsItem } from '../../components/profileNews/ProfileNewsSection'
 
-const UserProfileScreen = ({ navigation }: any) => {
+const UserProfileScreen = ({ navigation, route }: any) => {
     const insets = useSafeAreaInsets();
     const { colors } = useTheme();
     const { t } = useTranslation();
     const Styles = createStyles(colors);
-    const { user, userProfile, apiAccessToken } = useAuth();
+    const { user, userProfile, apiAccessToken, updateUserProfile } = useAuth();
     const [activeTab, setActiveTab] = useState('photos');
     const [timelineItems, setTimelineItems] = useState<TimelineEntry[]>([]);
     const [profileTab, setProfileTab] = useState<'timeline' | 'activity' | 'collections' | 'downloads'>('timeline');
     const [blogEntries, setBlogEntries] = useState<any[]>([]);
     const [subscribedEvents, setSubscribedEvents] = useState<SubscribedEvent[]>([]);
     const [appearanceEvents, setAppearanceEvents] = useState<HubAppearanceSummary[]>([]);
-    const [profileCategory, setProfileCategory] = useState<'Track&Field' | 'Road&Trail'>('Track&Field');
-    const [showProfileMenuModal, setShowProfileMenuModal] = useState(false);
+    const [profileCategory, setProfileCategory] = useState<'Track&Field' | 'Road&Trail' | null>(null);
+    const [showProfileSwitcherModal, setShowProfileSwitcherModal] = useState(false);
     const [pendingDeleteBlog, setPendingDeleteBlog] = useState<ProfileNewsItem | null>(null);
     const [isDeletingBlog, setIsDeletingBlog] = useState(false);
     const [profileImage, setProfileImage] = useState<any>(Images.profile1);
@@ -68,10 +68,40 @@ const UserProfileScreen = ({ navigation }: any) => {
     const [videoCollectionItems, setVideoCollectionItems] = useState<ProfileCollectionItem[]>([]);
     const [uploadedCompetitions, setUploadedCompetitions] = useState<UploadedCompetition[]>([]);
     const [myGroups, setMyGroups] = useState<GroupSummary[]>([]);
+    const [websiteEditVisible, setWebsiteEditVisible] = useState(false);
+    const [websiteDraft, setWebsiteDraft] = useState('');
+    const [websiteSaveBusy, setWebsiteSaveBusy] = useState(false);
 
     const { width } = Dimensions.get('window');
+    const showBackButton = Boolean(route?.params?.showBackButton) || String(route?.params?.origin || '').toLowerCase() === 'search';
     const imageWidth = Math.floor((width - 40 - 24 - 30) / 4);
-    const profileCategoryLabel = profileCategory === 'Road&Trail' ? t('roadAndTrail') : t('trackAndField');
+    const profileCategoryLabel = profileCategory === 'Road&Trail'
+        ? t('roadAndTrail')
+        : profileCategory === 'Track&Field'
+            ? t('trackAndField')
+            : '';
+    const selectedEventProfiles = useMemo(() => {
+        const events = userProfile?.selectedEvents;
+        return Array.isArray(events) ? events : [];
+    }, [userProfile?.selectedEvents]);
+    const selectedEventProfilesNormalized = useMemo(
+        () =>
+            selectedEventProfiles
+                .map((entry: any) => String(
+                    typeof entry === 'string'
+                        ? entry
+                        : entry?.id ?? entry?.value ?? entry?.event_id ?? entry?.name ?? '',
+                ).trim().toLowerCase())
+                .filter(Boolean),
+        [selectedEventProfiles],
+    );
+    const hasTrackFieldProfile = selectedEventProfilesNormalized.some((entry) =>
+        entry === 'track-field' || entry === 'track&field' || entry === 'track_field' || entry.includes('track'),
+    );
+    const hasRoadTrailProfile = selectedEventProfilesNormalized.some((entry) =>
+        entry === 'road-events' || entry === 'road&trail' || entry === 'road_trail' || entry.includes('road') || entry.includes('trail'),
+    );
+    const hasAnyLinkedProfiles = hasTrackFieldProfile || hasRoadTrailProfile || myGroups.length > 0;
 
     const normalizeChestByYear = useCallback((raw: any): Record<string, string> => {
         if (!raw || typeof raw !== 'object') return {};
@@ -151,6 +181,34 @@ const UserProfileScreen = ({ navigation }: any) => {
         const key = user?.sub || userProfile?.username || user?.email || 'self';
         return `@profile_blogs_${key}`;
     }, [user?.email, user?.sub, userProfile?.username]);
+
+    useEffect(() => {
+        const reconcileCategory = async () => {
+            if (!hasTrackFieldProfile && !hasRoadTrailProfile) {
+                setProfileCategory(null);
+                await AsyncStorage.removeItem(categoryStorageKey);
+                return;
+            }
+            if (profileCategory === 'Track&Field' && !hasTrackFieldProfile) {
+                const fallback = hasRoadTrailProfile ? 'Road&Trail' : null;
+                setProfileCategory(fallback);
+                if (fallback) await AsyncStorage.setItem(categoryStorageKey, fallback);
+                return;
+            }
+            if (profileCategory === 'Road&Trail' && !hasRoadTrailProfile) {
+                const fallback = hasTrackFieldProfile ? 'Track&Field' : null;
+                setProfileCategory(fallback);
+                if (fallback) await AsyncStorage.setItem(categoryStorageKey, fallback);
+                return;
+            }
+            if (!profileCategory) {
+                const fallback = hasTrackFieldProfile ? 'Track&Field' : 'Road&Trail';
+                setProfileCategory(fallback);
+                await AsyncStorage.setItem(categoryStorageKey, fallback);
+            }
+        };
+        reconcileCategory();
+    }, [categoryStorageKey, hasRoadTrailProfile, hasTrackFieldProfile, profileCategory]);
 
     const loadProfileData = useCallback(async () => {
         // Timeline: server is the source of truth (no more device-local dummy timeline)
@@ -249,8 +307,10 @@ const UserProfileScreen = ({ navigation }: any) => {
                 const resp = await getPosts(apiAccessToken, { author_profile_id: String(postsProfileId), limit: 50 });
                 const posts = Array.isArray((resp as any)?.posts) ? (resp as any).posts : [];
                 const sortedPosts = [...posts].sort((a: PostSummary, b: PostSummary) => {
-                    const aTime = Date.parse(String(a?.created_at ?? ''));
-                    const bTime = Date.parse(String(b?.created_at ?? ''));
+                    const aCreated = (a as any)?.created_at ?? (a as any)?.createdAt ?? null;
+                    const bCreated = (b as any)?.created_at ?? (b as any)?.createdAt ?? null;
+                    const aTime = Date.parse(String(aCreated ?? ''));
+                    const bTime = Date.parse(String(bCreated ?? ''));
                     const timeDiff = (Number.isNaN(bTime) ? 0 : bTime) - (Number.isNaN(aTime) ? 0 : aTime);
                     if (timeDiff !== 0) return timeDiff;
                     const titleDiff = String(b?.title ?? '').localeCompare(String(a?.title ?? ''), undefined, {
@@ -261,6 +321,7 @@ const UserProfileScreen = ({ navigation }: any) => {
                     return String(b?.id ?? '').localeCompare(String(a?.id ?? ''));
                 });
                 const mapped = sortedPosts.map((p: PostSummary) => {
+                    const createdAtRaw = (p as any)?.created_at ?? (p as any)?.createdAt ?? null;
                     const cover = (p as any)?.cover_media || null;
                     const coverCandidate = cover?.thumbnail_url || cover?.preview_url || cover?.full_url || cover?.raw_url || null;
                     const resolved = coverCandidate ? toAbsoluteUrl(String(coverCandidate)) : null;
@@ -268,8 +329,8 @@ const UserProfileScreen = ({ navigation }: any) => {
                     return ({
                         id: String(p.id),
                         title: String(p.title || ''),
-                        createdAt: p.created_at ? String(p.created_at) : null,
-                        date: p.created_at ? String(p.created_at).slice(0, 10) : '',
+                        createdAt: createdAtRaw ? String(createdAtRaw) : null,
+                        date: createdAtRaw ? String(createdAtRaw).slice(0, 10) : '',
                         description: p.summary || p.description || '',
                         coverImage,
                         likes_count: Number((p as any)?.likes_count ?? 0),
@@ -414,52 +475,30 @@ const UserProfileScreen = ({ navigation }: any) => {
         });
     };
 
-    const setCategory = async (value: 'Track&Field' | 'Road&Trail') => {
+    const setCategory = useCallback(async (value: 'Track&Field' | 'Road&Trail') => {
+        if (value === 'Track&Field' && !hasTrackFieldProfile) return;
+        if (value === 'Road&Trail' && !hasRoadTrailProfile) return;
         setProfileCategory(value);
         await AsyncStorage.setItem(categoryStorageKey, value);
-    };
+    }, [categoryStorageKey, hasRoadTrailProfile, hasTrackFieldProfile]);
 
     const openProfileMenu = () => {
-        if (Platform.OS === 'ios') {
-            const groupSwitchOptions = myGroups
-                .map((group) => {
-                    const label = String(group?.name ?? '').trim();
-                    if (!label) return null;
-                    return `${t('Switch to')} ${label}`;
-                })
-                .filter(Boolean) as string[];
-            const groupOptionStartIndex = 5;
-            const options = [
-                t('cancel'),
-                `${t('Switch to')} ${t('trackAndField')}`,
-                `${t('Switch to')} ${t('roadAndTrail')}`,
-                t('Add profile'),
-                t('Add group'),
-                ...groupSwitchOptions,
-            ];
-            ActionSheetIOS.showActionSheetWithOptions(
-                {
-                    options,
-                    cancelButtonIndex: 0,
-                },
-                (buttonIndex) => {
-                    if (buttonIndex === 1) setCategory('Track&Field');
-                    if (buttonIndex === 2) setCategory('Road&Trail');
-                    if (buttonIndex === 3) navigation.navigate('SelectCategoryScreen');
-                    if (buttonIndex === 4) navigation.navigate('CreateGroupProfileScreen');
-                    if (buttonIndex >= groupOptionStartIndex) {
-                        const group = myGroups[buttonIndex - groupOptionStartIndex];
-                        const groupId = String(group?.group_id ?? '').trim();
-                        if (groupId) {
-                            navigation.navigate('GroupProfileScreen', { groupId });
-                        }
-                    }
-                },
-            );
-        } else {
-            setShowProfileMenuModal(true);
-        }
+        setShowProfileSwitcherModal(true);
     };
+
+    useEffect(() => {
+        const shouldOpen = Boolean(route?.params?.openProfileSwitcher);
+        if (!shouldOpen) return;
+        setShowProfileSwitcherModal(true);
+        navigation.setParams?.({ openProfileSwitcher: false });
+    }, [navigation, route?.params?.openProfileSwitcher]);
+
+    useEffect(() => {
+        const forcedCategory = String(route?.params?.forceProfileCategory || '').trim();
+        if (forcedCategory !== 'Track&Field' && forcedCategory !== 'Road&Trail') return;
+        setCategory(forcedCategory as 'Track&Field' | 'Road&Trail');
+        navigation.setParams?.({ forceProfileCategory: undefined });
+    }, [navigation, route?.params?.forceProfileCategory, setCategory]);
 
     const handleProfileImageChange = async () => {
         const result = await launchImageLibrary({
@@ -532,13 +571,98 @@ const UserProfileScreen = ({ navigation }: any) => {
 
     const athleticsClub = useMemo(() => {
         const fromSummary =
+            (profileSummary as any)?.profile?.track_field_club ??
             (profileSummary as any)?.profile?.athletics_club ??
             (profileSummary as any)?.profile?.running_club ??
             (profileSummary as any)?.profile?.running_club_name ??
             null;
-        const fromLocal = userProfile?.runningClub ?? null;
+        const fromLocal = (userProfile as any)?.trackFieldClub ?? userProfile?.runningClub ?? null;
         return String(fromSummary ?? fromLocal ?? '').trim();
-    }, [profileSummary, userProfile?.runningClub]);
+    }, [profileSummary, userProfile]);
+
+    const trackFieldMainEvent = useMemo(() => {
+        return String(
+            (profileSummary as any)?.profile?.track_field_main_event ??
+            (userProfile as any)?.trackFieldMainEvent ??
+            '',
+        ).trim();
+    }, [profileSummary, userProfile]);
+
+    const roadTrailMainEvent = useMemo(() => {
+        return String(
+            (profileSummary as any)?.profile?.road_trail_main_event ??
+            (userProfile as any)?.roadTrailMainEvent ??
+            '',
+        ).trim();
+    }, [profileSummary, userProfile]);
+    const profileWebsite = useMemo(() => {
+        return String(
+            (profileSummary as any)?.profile?.website ??
+            userProfile?.website ??
+            '',
+        ).trim();
+    }, [profileSummary, userProfile?.website]);
+
+    const profileNationality = useMemo(() => {
+        return String(
+            (profileSummary as any)?.profile?.nationality ??
+            userProfile?.nationality ??
+            '',
+        ).trim();
+    }, [profileSummary, userProfile?.nationality]);
+
+    const profileMetaTokens = useMemo(() => {
+        const trackEventWithClub = [trackFieldMainEvent, athleticsClub].map((entry) => String(entry || '').trim()).filter(Boolean).join(' · ');
+        const roadEventWithClub = [roadTrailMainEvent, athleticsClub].map((entry) => String(entry || '').trim()).filter(Boolean).join(' · ');
+        if (profileCategory === 'Track&Field') {
+            return [
+                profileNationality,
+                currentChestNumber,
+                trackEventWithClub,
+            ].map((entry) => String(entry || '').trim()).filter(Boolean);
+        }
+        if (profileCategory === 'Road&Trail') {
+            return [
+                profileNationality,
+                roadEventWithClub,
+            ].map((entry) => String(entry || '').trim()).filter(Boolean);
+        }
+        return [];
+    }, [athleticsClub, currentChestNumber, profileCategory, profileNationality, roadTrailMainEvent, trackFieldMainEvent]);
+
+    const openProfileWebsite = useCallback(async () => {
+        const raw = String(profileWebsite || '').trim();
+        if (!raw) return;
+        const normalized = /^https?:\/\//i.test(raw) ? raw : `https://${raw}`;
+        try {
+            await Linking.openURL(normalized);
+        } catch {
+            Alert.alert(t('Error'), t('Could not open website.'));
+        }
+    }, [profileWebsite, t]);
+    const openWebsiteEditor = useCallback(() => {
+        setWebsiteDraft(String(profileWebsite || ''));
+        setWebsiteEditVisible(true);
+    }, [profileWebsite]);
+
+    const saveWebsiteOnly = useCallback(async () => {
+        const nextValue = String(websiteDraft || '').trim();
+        if (websiteSaveBusy) return;
+        setWebsiteSaveBusy(true);
+        try {
+            if (apiAccessToken) {
+                const updated = await updateProfileSummary(apiAccessToken, { website: nextValue || null });
+                if (updated) setProfileSummary(updated);
+            }
+            await updateUserProfile({ website: nextValue } as any);
+            setWebsiteEditVisible(false);
+        } catch (e: any) {
+            const message = String(e?.message ?? e ?? '');
+            Alert.alert(t('Save failed'), message || t('Please try again'));
+        } finally {
+            setWebsiteSaveBusy(false);
+        }
+    }, [apiAccessToken, t, updateUserProfile, websiteDraft, websiteSaveBusy]);
 
     const profileDisplayName = useMemo(() => {
         const fromSummary = String((profileSummary as any)?.profile?.display_name ?? '').trim();
@@ -812,15 +936,51 @@ const UserProfileScreen = ({ navigation }: any) => {
     }, [apiAccessToken, navigation, t]);
 
 
+    if (!hasAnyLinkedProfiles) {
+        return (
+            <View style={Styles.mainContainer}>
+                <SizeBox height={insets.top} />
+                <View style={Styles.header}>
+                    {showBackButton ? (
+                        <TouchableOpacity style={Styles.headerButton} onPress={() => navigation.goBack()}>
+                            <Icons.BackArrow width={20} height={20} />
+                        </TouchableOpacity>
+                    ) : (
+                        <View style={Styles.headerSpacer} />
+                    )}
+                    <Text style={Styles.headerTitle}>{t('Profile')}</Text>
+                    <TouchableOpacity style={Styles.headerButton} onPress={openProfileMenu}>
+                        <User size={24} color={colors.primaryColor} variant="Linear" />
+                    </TouchableOpacity>
+                </View>
+                <View style={Styles.emptyProfileContainer}>
+                    <TouchableOpacity
+                        style={Styles.emptyProfileAddButton}
+                        onPress={() => navigation.navigate('CategorySelectionScreen', { fromAddFlow: true })}
+                        activeOpacity={0.85}
+                    >
+                        <Text style={Styles.emptyProfileAddPlus}>+</Text>
+                    </TouchableOpacity>
+                    <Text style={Styles.emptyProfileTitle}>{t('No profiles yet')}</Text>
+                    <Text style={Styles.emptyProfileSubtitle}>{t('Tap plus to create your first profile')}</Text>
+                </View>
+            </View>
+        );
+    }
+
     return (
         <View style={Styles.mainContainer}>
             <SizeBox height={insets.top} />
 
             {/* Header */}
             <View style={Styles.header}>
-                <TouchableOpacity style={Styles.headerButton} onPress={() => navigation.goBack()}>
-                    <ArrowLeft2 size={24} color={colors.primaryColor} variant="Linear" />
-                </TouchableOpacity>
+                {showBackButton ? (
+                    <TouchableOpacity style={Styles.headerButton} onPress={() => navigation.goBack()}>
+                        <Icons.BackArrow width={20} height={20} />
+                    </TouchableOpacity>
+                ) : (
+                    <View style={Styles.headerSpacer} />
+                )}
                 <Text style={Styles.headerTitle}>{t('Profile')}</Text>
                 <TouchableOpacity style={Styles.headerButton} onPress={openProfileMenu}>
                     <User size={24} color={colors.primaryColor} variant="Linear" />
@@ -857,11 +1017,15 @@ const UserProfileScreen = ({ navigation }: any) => {
                                     <Text style={Styles.statValue}>{formatCount(profileSummary?.followers_count ?? 0)}</Text>
                                     <Text style={Styles.statLabel}>{t('Followers')}</Text>
                                 </View>
-                                <View style={Styles.statDivider} />
-                                <View style={Styles.statItem}>
-                                    <Icons.TrackFieldLogo width={28} height={24} />
-                                    <Text style={Styles.statLabel}>{profileCategoryLabel}</Text>
-                                </View>
+                                {profileCategoryLabel.length > 0 ? (
+                                    <>
+                                        <View style={Styles.statDivider} />
+                                        <View style={Styles.statItem}>
+                                            <Icons.TrackFieldLogo width={28} height={24} />
+                                            <Text style={Styles.statLabel}>{profileCategoryLabel}</Text>
+                                        </View>
+                                    </>
+                                ) : null}
                             </View>
                         </View>
                     </View>
@@ -896,22 +1060,48 @@ const UserProfileScreen = ({ navigation }: any) => {
                         </Text>
                         <View style={Styles.bioDivider} />
                     </View>
-                    {(currentChestNumber.length > 0 || athleticsClub.length > 0) && (
+                    {profileMetaTokens.length > 0 && (
                         <View style={Styles.athleteMetaSection}>
-                            {currentChestNumber.length > 0 && (
-                                <View style={Styles.athleteMetaRow}>
-                                    <Text style={Styles.athleteMetaLabel}>{t('chestNumber')}</Text>
-                                    <Text style={Styles.athleteMetaValue}>{currentChestNumber}</Text>
-                                </View>
-                            )}
-                            {athleticsClub.length > 0 && (
-                                <View style={Styles.athleteMetaRow}>
-                                    <Text style={Styles.athleteMetaLabel}>{t('Athletics club')}</Text>
-                                    <Text style={Styles.athleteMetaValue}>{athleticsClub}</Text>
-                                </View>
-                            )}
+                            <View style={Styles.athleteMetaInlineBox}>
+                                <Text style={Styles.athleteMetaInlineText} numberOfLines={1} ellipsizeMode="tail">
+                                    {profileMetaTokens.join('  •  ')}
+                                </Text>
+                            </View>
                         </View>
                     )}
+                    {profileWebsite.length > 0 ? (
+                        <View style={Styles.athleteMetaSection}>
+                            <View style={Styles.websiteInlineRow}>
+                                <TouchableOpacity style={Styles.websiteInlineLinkWrap} activeOpacity={0.8} onPress={openProfileWebsite}>
+                                    <Text
+                                        style={Styles.websiteInlineLinkText}
+                                        numberOfLines={1}
+                                        ellipsizeMode="tail"
+                                    >
+                                        {profileWebsite}
+                                    </Text>
+                                </TouchableOpacity>
+                                <TouchableOpacity style={Styles.websiteInlineEditButton} onPress={openWebsiteEditor}>
+                                    <Edit2 size={15} color={colors.primaryColor} variant="Linear" />
+                                </TouchableOpacity>
+                            </View>
+                        </View>
+                    ) : null}
+                    {profileWebsite.length === 0 ? (
+                        <View style={Styles.athleteMetaSection}>
+                            <TouchableOpacity style={Styles.websiteInlineAddButton} onPress={openWebsiteEditor}>
+                                <Text
+                                    style={[
+                                        Styles.websiteInlineLinkText,
+                                        { textDecorationLine: 'none' },
+                                    ]}
+                                    numberOfLines={1}
+                                >
+                                    {t('Add website')}
+                                </Text>
+                            </TouchableOpacity>
+                        </View>
+                    ) : null}
 
                     <SizeBox height={10} />
 
@@ -1189,90 +1379,97 @@ const UserProfileScreen = ({ navigation }: any) => {
                 <SizeBox height={insets.bottom > 0 ? insets.bottom + 20 : 40} />
             </ScrollView>
 
-            {Platform.OS !== 'ios' && (
-                <Modal
-                    visible={showProfileMenuModal}
-                    transparent
-                    animationType="fade"
-                    onRequestClose={() => setShowProfileMenuModal(false)}
+            <Modal
+                visible={showProfileSwitcherModal}
+                transparent
+                animationType="fade"
+                onRequestClose={() => setShowProfileSwitcherModal(false)}
+            >
+                <TouchableOpacity
+                    style={Styles.profileSwitcherBackdrop}
+                    activeOpacity={1}
+                    onPress={() => setShowProfileSwitcherModal(false)}
                 >
                     <TouchableOpacity
-                        style={Styles.categoryModalBackdrop}
                         activeOpacity={1}
-                        onPress={() => setShowProfileMenuModal(false)}
+                        style={Styles.profileSwitcherSheet}
+                        onPress={() => {}}
                     >
-                        <TouchableOpacity
-                            activeOpacity={1}
-                            style={Styles.categoryModalCard}
-                            onPress={() => {}}
-                        >
-                            <Text style={Styles.categoryModalTitle}>{t('Profile options')}</Text>
-                            <SizeBox height={12} />
+                        <View style={Styles.profileSwitcherHandle} />
+                        <Text style={Styles.profileSwitcherTitle}>{t('Switch profile')}</Text>
+                        <SizeBox height={8} />
+
+                        {hasTrackFieldProfile ? (
                             <TouchableOpacity
-                                style={Styles.categoryOption}
+                                style={Styles.profileSwitcherRow}
                                 onPress={() => {
                                     setCategory('Track&Field');
-                                    setShowProfileMenuModal(false);
+                                    setShowProfileSwitcherModal(false);
                                 }}
                             >
-                                <Text style={Styles.categoryOptionText}>{`${t('Switch to')} ${t('trackAndField')}`}</Text>
+                                <View style={Styles.profileSwitcherAvatar}>
+                                    <Icons.TrackFieldLogo width={20} height={20} />
+                                </View>
+                                <Text style={Styles.profileSwitcherLabel}>{t('trackAndField')}</Text>
+                                <Text style={Styles.profileSwitcherCheck}>{profileCategory === 'Track&Field' ? '✓' : ''}</Text>
                             </TouchableOpacity>
-                            <View style={Styles.categoryOptionDivider} />
+                        ) : null}
+
+                        {hasRoadTrailProfile ? (
                             <TouchableOpacity
-                                style={Styles.categoryOption}
+                                style={Styles.profileSwitcherRow}
                                 onPress={() => {
                                     setCategory('Road&Trail');
-                                    setShowProfileMenuModal(false);
+                                    setShowProfileSwitcherModal(false);
                                 }}
                             >
-                                <Text style={Styles.categoryOptionText}>{`${t('Switch to')} ${t('roadAndTrail')}`}</Text>
+                                <View style={Styles.profileSwitcherAvatar}>
+                                    <Icons.PersonRunningColorful width={20} height={20} />
+                                </View>
+                                <Text style={Styles.profileSwitcherLabel}>{t('roadAndTrail')}</Text>
+                                <Text style={Styles.profileSwitcherCheck}>{profileCategory === 'Road&Trail' ? '✓' : ''}</Text>
                             </TouchableOpacity>
-                            <View style={Styles.categoryOptionDivider} />
-                            <TouchableOpacity
-                                style={Styles.categoryOption}
-                                onPress={() => {
-                                    setShowProfileMenuModal(false);
-                                    navigation.navigate('SelectCategoryScreen');
-                                }}
-                            >
-                                <Text style={Styles.categoryOptionText}>{t('Add profile')}</Text>
-                            </TouchableOpacity>
-                            <View style={Styles.categoryOptionDivider} />
-                            <TouchableOpacity
-                                style={Styles.categoryOption}
-                                onPress={() => {
-                                    setShowProfileMenuModal(false);
-                                    navigation.navigate('CreateGroupProfileScreen');
-                                }}
-                            >
-                                <Text style={Styles.categoryOptionText}>{t('Add group')}</Text>
-                            </TouchableOpacity>
-                            {myGroups
-                                .map((group) => ({
-                                    id: String(group?.group_id ?? '').trim(),
-                                    name: String(group?.name ?? '').trim(),
-                                }))
-                                .filter((group) => group.id.length > 0)
-                                .map((group) => (
-                                    <React.Fragment key={group.id}>
-                                        <View style={Styles.categoryOptionDivider} />
-                                        <TouchableOpacity
-                                            style={Styles.categoryOption}
-                                            onPress={() => {
-                                                setShowProfileMenuModal(false);
-                                                navigation.navigate('GroupProfileScreen', { groupId: group.id });
-                                            }}
-                                        >
-                                            <Text style={Styles.categoryOptionText}>
-                                                {`${t('Switch to')} ${group.name || t('Group')}`}
-                                            </Text>
-                                        </TouchableOpacity>
-                                    </React.Fragment>
-                                ))}
+                        ) : null}
+
+                        {myGroups
+                            .map((group) => ({
+                                id: String(group?.group_id ?? '').trim(),
+                                name: String(group?.name ?? '').trim(),
+                            }))
+                            .filter((group) => group.id.length > 0)
+                            .map((group) => (
+                                <TouchableOpacity
+                                    key={group.id}
+                                    style={Styles.profileSwitcherRow}
+                                    onPress={() => {
+                                        setShowProfileSwitcherModal(false);
+                                        navigation.navigate('GroupProfileScreen', { groupId: group.id });
+                                    }}
+                                >
+                                    <View style={Styles.profileSwitcherAvatar}>
+                                        <Icons.GroupColorful width={18} height={18} />
+                                    </View>
+                                    <Text style={Styles.profileSwitcherLabel}>{group.name || t('Group')}</Text>
+                                    <Text style={Styles.profileSwitcherCheck} />
+                                </TouchableOpacity>
+                            ))}
+
+                        <TouchableOpacity
+                            style={[Styles.profileSwitcherRow, Styles.profileSwitcherAddRow]}
+                            onPress={() => {
+                                setShowProfileSwitcherModal(false);
+                                navigation.navigate('CategorySelectionScreen', { fromAddFlow: true });
+                            }}
+                        >
+                            <View style={Styles.profileSwitcherAvatarAdd}>
+                                <Text style={Styles.profileSwitcherPlus}>+</Text>
+                            </View>
+                            <Text style={Styles.profileSwitcherAddLabel}>{t('Add')}</Text>
+                            <Text style={Styles.profileSwitcherCheck} />
                         </TouchableOpacity>
                     </TouchableOpacity>
-                </Modal>
-            )}
+                </TouchableOpacity>
+            </Modal>
 
             <Modal
                 visible={Boolean(pendingDeleteBlog)}
@@ -1342,9 +1539,95 @@ const UserProfileScreen = ({ navigation }: any) => {
                 </TouchableOpacity>
             </Modal>
 
+            <Modal
+                visible={websiteEditVisible}
+                transparent
+                animationType="fade"
+                onRequestClose={() => {
+                    if (!websiteSaveBusy) setWebsiteEditVisible(false);
+                }}
+            >
+                <TouchableOpacity
+                    style={Styles.categoryModalBackdrop}
+                    activeOpacity={1}
+                    onPress={() => {
+                        if (!websiteSaveBusy) setWebsiteEditVisible(false);
+                    }}
+                >
+                    <TouchableOpacity
+                        activeOpacity={1}
+                        style={[
+                            Styles.categoryModalCard,
+                            {
+                                backgroundColor: colors.modalBackground,
+                                borderWidth: 0.5,
+                                borderColor: colors.lightGrayColor,
+                                borderRadius: 16,
+                                padding: 16,
+                            },
+                        ]}
+                        onPress={() => {}}
+                    >
+                        <Text style={Styles.categoryModalTitle}>{t('Website')}</Text>
+                        <SizeBox height={10} />
+                        <View
+                            style={{
+                                borderWidth: 1,
+                                borderColor: colors.lightGrayColor,
+                                borderRadius: 10,
+                                backgroundColor: colors.secondaryColor,
+                                paddingHorizontal: 12,
+                                minHeight: 46,
+                                justifyContent: 'center',
+                            }}
+                        >
+                            <TextInput
+                                style={{ color: colors.mainTextColor, fontSize: 14, paddingVertical: 10 }}
+                                value={websiteDraft}
+                                onChangeText={setWebsiteDraft}
+                                placeholder={t('Enter website link (optional)')}
+                                placeholderTextColor={colors.grayColor}
+                                autoCapitalize="none"
+                                autoCorrect={false}
+                                keyboardType="url"
+                            />
+                        </View>
+                        <SizeBox height={12} />
+                        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+                            <TouchableOpacity
+                                style={[Styles.categoryOption, { flex: 1, borderRadius: 10 }]}
+                                disabled={websiteSaveBusy}
+                                onPress={() => setWebsiteEditVisible(false)}
+                            >
+                                <Text style={Styles.categoryOptionText}>{t('cancel')}</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                                style={{
+                                    minWidth: 110,
+                                    minHeight: 44,
+                                    borderRadius: 12,
+                                    backgroundColor: colors.primaryColor,
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    paddingHorizontal: 16,
+                                    paddingVertical: 10,
+                                }}
+                                disabled={websiteSaveBusy}
+                                onPress={saveWebsiteOnly}
+                            >
+                                {websiteSaveBusy ? (
+                                    <ActivityIndicator size="small" color="#FFFFFF" />
+                                ) : (
+                                    <Text style={[Styles.categoryOptionText, { color: '#FFFFFF' }]}>{t('save')}</Text>
+                                )}
+                            </TouchableOpacity>
+                        </View>
+                    </TouchableOpacity>
+                </TouchableOpacity>
+            </Modal>
+
         </View>
     );
 };
 
 export default UserProfileScreen;
-

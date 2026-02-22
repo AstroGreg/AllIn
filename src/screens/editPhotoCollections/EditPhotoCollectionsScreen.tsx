@@ -1,4 +1,4 @@
-import { View, Text, TouchableOpacity, ScrollView, Dimensions } from 'react-native'
+import { View, Text, TouchableOpacity, ScrollView, Dimensions, TextInput, Alert } from 'react-native'
 import React, { useCallback, useMemo, useState } from 'react'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import FastImage from 'react-native-fast-image'
@@ -8,7 +8,7 @@ import { createStyles } from './EditPhotoCollectionsStyles'
 import { useTheme } from '../../context/ThemeContext'
 import { useAuth } from '../../context/AuthContext'
 import { useFocusEffect } from '@react-navigation/native'
-import { addProfileCollectionItems, getProfileCollectionByType, removeProfileCollectionItems, setProfileCollectionFeatured, uploadMediaBatch, type ProfileCollectionItem } from '../../services/apiGateway'
+import { addProfileCollectionItems, getProfileCollectionByType, removeProfileCollectionItems, setProfileCollectionFeatured, updateProfileCollectionByType, uploadMediaBatch, type ProfileCollectionItem } from '../../services/apiGateway'
 import { getApiBaseUrl } from '../../constants/RuntimeConfig'
 import { useTranslation } from 'react-i18next'
 import { launchImageLibrary } from 'react-native-image-picker'
@@ -28,6 +28,8 @@ const EditPhotoCollectionsScreen = ({ navigation }: any) => {
     const [selectedPhotoIds, setSelectedPhotoIds] = useState<string[]>([]);
     const [collectionPhotos, setCollectionPhotos] = useState<ProfileCollectionItem[]>([]);
     const [isUploading, setIsUploading] = useState(false);
+    const [collectionName, setCollectionName] = useState('');
+    const [isSavingName, setIsSavingName] = useState(false);
 
     const isSignedUrl = useCallback((value?: string | null) => {
         if (!value) return false;
@@ -75,10 +77,12 @@ const EditPhotoCollectionsScreen = ({ navigation }: any) => {
         try {
             const collection = await getProfileCollectionByType(apiAccessToken, 'image');
             setCollectionPhotos(Array.isArray(collection?.items) ? collection.items : []);
+            setCollectionName(String(collection?.collection?.name ?? t('My Photo Collections')));
         } catch {
             setCollectionPhotos([]);
+            setCollectionName(t('My Photo Collections'));
         }
-    }, [apiAccessToken]);
+    }, [apiAccessToken, t]);
 
     useFocusEffect(
         useCallback(() => {
@@ -170,6 +174,24 @@ const EditPhotoCollectionsScreen = ({ navigation }: any) => {
         setSelectedPhotoIds([]);
     };
 
+    const handleSaveCollectionName = useCallback(async () => {
+        if (!apiAccessToken || isSavingName) return;
+        const nextName = String(collectionName || '').trim();
+        if (!nextName) {
+            Alert.alert(t('Missing info'), t('Please enter a collection name.'));
+            return;
+        }
+        setIsSavingName(true);
+        try {
+            await updateProfileCollectionByType(apiAccessToken, { type: 'image', name: nextName });
+            await loadData();
+        } catch (e: any) {
+            Alert.alert(t('Save failed'), String(e?.message ?? e ?? t('Please try again')));
+        } finally {
+            setIsSavingName(false);
+        }
+    }, [apiAccessToken, collectionName, isSavingName, loadData, t]);
+
     const getSelectionNumber = (photoId: string): number | null => {
         const index = selectedPhotoIds.indexOf(photoId);
         return index !== -1 ? index + 1 : null;
@@ -181,8 +203,6 @@ const EditPhotoCollectionsScreen = ({ navigation }: any) => {
                 return t('Select Top 4 Picks');
             case 'delete':
                 return t('Select Photos to Delete');
-            case 'add':
-                return t('Select Photos to Add');
             default:
                 return t('My Photo Collections');
         }
@@ -224,6 +244,25 @@ const EditPhotoCollectionsScreen = ({ navigation }: any) => {
                         </TouchableOpacity>
                     )}
                 </View>
+
+                {!isInSelectionMode && (
+                    <View style={styles.renameRow}>
+                        <TextInput
+                            style={styles.renameInput}
+                            value={collectionName}
+                            onChangeText={setCollectionName}
+                            placeholder={t('Collection name')}
+                            placeholderTextColor={colors.subTextColor}
+                        />
+                        <TouchableOpacity
+                            style={[styles.renameSaveButton, isSavingName && styles.renameSaveButtonDisabled]}
+                            onPress={handleSaveCollectionName}
+                            disabled={isSavingName}
+                        >
+                            <Text style={styles.renameSaveText}>{isSavingName ? t('Saving...') : t('Save')}</Text>
+                        </TouchableOpacity>
+                    </View>
+                )}
 
                 {!isInSelectionMode && (
                     <>

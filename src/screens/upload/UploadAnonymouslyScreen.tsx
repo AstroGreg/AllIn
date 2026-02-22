@@ -33,7 +33,7 @@ const UploadAnonymouslyScreen = ({ navigation }: any) => {
                     <Icons.LightbulbColorful width={90} height={90} />
                     <SizeBox height={14} />
                     <Text style={Styles.infoText}>
-                        You'll upload anonymously, while we keep an internal record so you still receive 100% of the profits from your video.
+                        You'll upload anonymously. Author identity is not stored on the media record.
                     </Text>
                 </View>
             </View>

@@ -140,6 +140,25 @@ export const createStyles = (colors: ThemeColors) =>
       borderColor: colors.lightGrayColor,
       backgroundColor: colors.cardBackground,
     },
+    profitTopRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 12,
+    },
+    profitThumb: {
+      width: 64,
+      height: 64,
+      borderRadius: 10,
+    },
+    profitThumbPlaceholder: {
+      width: 64,
+      height: 64,
+      borderRadius: 10,
+      backgroundColor: colors.btnBackgroundColor,
+    },
+    profitInfo: {
+      flex: 1,
+    },
     profitTitle: {
       ...Fonts.medium14,
       color: colors.mainTextColor,

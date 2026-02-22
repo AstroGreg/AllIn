@@ -1,4 +1,4 @@
-import {ActivityIndicator, ScrollView, Text, TouchableOpacity, View, Share, Alert, useWindowDimensions, Modal, Pressable, RefreshControl} from 'react-native'
+import {ActivityIndicator, ScrollView, Text, TouchableOpacity, View, Share, Alert, useWindowDimensions, Modal, Pressable, RefreshControl, TextInput} from 'react-native'
 import React, {useCallback, useMemo, useRef, useState, useEffect} from 'react'
 import { createStyles } from './HomeStyles'
 import Header from './components/Header'
@@ -11,6 +11,7 @@ import { useAuth } from '../../context/AuthContext'
 import { useTranslation } from 'react-i18next'
 import {
     ApiError,
+    createMediaIssueRequest,
     getAllPhotos,
     getAllVideos,
     getHomeOverview,
@@ -37,6 +38,7 @@ import ShimmerEffect from '../../components/shimmerEffect/ShimmerEffect'
 import NativeShare from 'react-native-share'
 import RNFS from 'react-native-fs'
 import CameraRoll from '@react-native-camera-roll/camera-roll'
+import { translateText } from '../../i18n'
 
 const HOME_CACHE_TTL_MS = 2 * 60 * 1000;
 const HOME_FEED_PAGE_SIZE = 8;
@@ -61,7 +63,7 @@ const homeCache: {
 const HomeScreen = ({ navigation }: any) => {
     const insets = useSafeAreaInsets();
     const { colors } = useTheme();
-    const { t } = useTranslation();
+    const { t, i18n } = useTranslation();
     const Styles = createStyles(colors);
     const { height: windowHeight, width: windowWidth } = useWindowDimensions();
     const { user, userProfile, apiAccessToken } = useAuth();
@@ -100,6 +102,8 @@ const HomeScreen = ({ navigation }: any) => {
     const [uploaderMap, setUploaderMap] = useState<Record<string, { name: string; avatarUrl?: string | null }>>({});
     const [feedVisibleCount, setFeedVisibleCount] = useState(HOME_FEED_PAGE_SIZE);
     const feedLayoutsRef = useRef<Record<number, { x: number; y: number; width: number; height: number }>>({});
+    const feedCardLayoutsRef = useRef<Record<string, { y: number; height: number }>>({});
+    const sectionOverviewYRef = useRef(0);
     const scrollViewLayoutRef = useRef({ x: 0, y: 0 });
     const videoContainerOffsetRef = useRef<{ x: number; y: number; width: number; height: number } | null>(null);
     const sharedVideoRectRef = useRef<{ x: number; y: number; width: number; height: number } | null>(null);
@@ -126,7 +130,7 @@ const HomeScreen = ({ navigation }: any) => {
     const downloadInFlightRef = useRef(false);
     const [downloadVisible, setDownloadVisible] = useState(false);
     const [downloadProgress, setDownloadProgress] = useState<number | null>(null);
-    const [showAiSearchIntro, setShowAiSearchIntro] = useState(true);
+    const [showAiSearchIntro, setShowAiSearchIntro] = useState(false);
     const [unreadNotificationsCount, setUnreadNotificationsCount] = useState(0);
     const [feedMenuVisible, setFeedMenuVisible] = useState(false);
     const [feedMenuTitle, setFeedMenuTitle] = useState('');
@@ -134,9 +138,14 @@ const HomeScreen = ({ navigation }: any) => {
     const [reportIssueVisible, setReportIssueVisible] = useState(false);
     const [reportStep, setReportStep] = useState<'reason' | 'confirm'>('reason');
     const [selectedReportReason, setSelectedReportReason] = useState('');
+    const [customReportReason, setCustomReportReason] = useState('');
+    const [reportTargetMedia, setReportTargetMedia] = useState<HomeOverviewMedia | MediaViewAllItem | null>(null);
+    const [isSubmittingReport, setIsSubmittingReport] = useState(false);
     const [infoPopupVisible, setInfoPopupVisible] = useState(false);
     const [infoPopupTitle, setInfoPopupTitle] = useState('');
     const [infoPopupMessage, setInfoPopupMessage] = useState('');
+    const [translatedBlogsById, setTranslatedBlogsById] = useState<Record<string, boolean>>({});
+    const [activeMediaCards, setActiveMediaCards] = useState<Record<string, boolean>>({});
     const aiSearchButtonRef = useRef<View>(null);
     const [aiSearchButtonRect, setAiSearchButtonRect] = useState<{ x: number; y: number; width: number; height: number } | null>(null);
     const loadDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -169,17 +178,17 @@ const HomeScreen = ({ navigation }: any) => {
 
     const reportReasons = useMemo(
         () => [
-            t('Spam or misleading'),
-            t('Harassment or hate'),
-            t('Violence or unsafe content'),
-            t('Copyright or privacy issue'),
-            t('Other'),
+            t('Wrong competition'),
+            t('Wrong heat'),
+            t('Custom'),
         ],
         [t],
     );
 
-    const openReportIssuePopup = useCallback(() => {
+    const openReportIssuePopup = useCallback((media?: HomeOverviewMedia | MediaViewAllItem | null) => {
+        setReportTargetMedia(media ?? null);
         setSelectedReportReason('');
+        setCustomReportReason('');
         setReportStep('reason');
         setReportIssueVisible(true);
     }, []);
@@ -455,6 +464,12 @@ const HomeScreen = ({ navigation }: any) => {
         const count = Number.isFinite(raw) && raw > 0 ? raw : 0;
         return `${count.toLocaleString()} ${t('likes')}`;
     }, [t]);
+    const formatViewsLabel = useCallback((media?: HomeOverviewMedia | MediaViewAllItem | null) => {
+        if (!media) return '';
+        const raw = Number((media as any).views_count ?? (media as any).viewsCount ?? 0);
+        const count = Number.isFinite(raw) && raw > 0 ? raw : 0;
+        return count.toLocaleString();
+    }, []);
 
     const handleToggleLike = useCallback(async (mediaId?: string | null) => {
         const id = String(mediaId || '').trim();
@@ -678,7 +693,7 @@ const HomeScreen = ({ navigation }: any) => {
                 { label: t('Share to Instagram Story'), onPress: () => handleShareMedia(safeMedia) },
                 {
                     label: t('Report an issue with this video/photo'),
-                    onPress: openReportIssuePopup,
+                    onPress: () => openReportIssuePopup(safeMedia),
                 },
                 {
                     label: t('Go to author profile'),
@@ -908,6 +923,35 @@ const HomeScreen = ({ navigation }: any) => {
         [feedVisibleCount, infiniteFeedItems],
     );
 
+    const recomputeVisibleMediaCards = useCallback(() => {
+        const scrollY = scrollYRef.current;
+        const viewportBottom = scrollY + windowHeight;
+        const next: Record<string, boolean> = {};
+        visibleFeedItems.forEach((entry, idx) => {
+            if (entry.kind !== 'media') return;
+            const mediaId = String(entry.media?.media_id || '').trim();
+            if (!mediaId) return;
+            const key = `feed-media-${mediaId}`;
+            const layout = feedCardLayoutsRef.current[key];
+            if (!layout) {
+                next[key] = idx === 0;
+                return;
+            }
+            const top = layout.y;
+            const bottom = layout.y + layout.height;
+            const visibleTop = Math.max(top, scrollY);
+            const visibleBottom = Math.min(bottom, viewportBottom);
+            const visibleHeight = Math.max(0, visibleBottom - visibleTop);
+            const ratio = layout.height > 0 ? visibleHeight / layout.height : 0;
+            next[key] = ratio >= 0.2;
+        });
+        setActiveMediaCards(next);
+    }, [visibleFeedItems, windowHeight]);
+
+    useEffect(() => {
+        recomputeVisibleMediaCards();
+    }, [recomputeVisibleMediaCards, visibleFeedItems.length]);
+
     const hasMoreFeedItems = feedVisibleCount < infiniteFeedItems.length;
 
     const loadMoreFeedItems = useCallback(() => {
@@ -954,15 +998,16 @@ const HomeScreen = ({ navigation }: any) => {
     const getMediaThumb = useCallback((item?: HomeOverviewMedia | null) => {
         if (!item) return null;
         const candidate =
-            item.thumbnail_url ||
             item.preview_url ||
-            item.original_url ||
+            item.thumbnail_url ||
             item.full_url ||
             item.raw_url ||
             null;
         if (!candidate) return null;
-        return {uri: toAbsoluteUrl(candidate) as string};
-    }, [toAbsoluteUrl]);
+        const absolute = toAbsoluteUrl(candidate);
+        const resolved = withAccessToken(absolute || '') || absolute;
+        return resolved ? { uri: resolved } : null;
+    }, [toAbsoluteUrl, withAccessToken]);
 
     const blogPrimaryMedia = useMemo(() => {
         return (
@@ -1200,7 +1245,7 @@ const HomeScreen = ({ navigation }: any) => {
                                         });
                                     });
                                 }}
-                                onPress={() => navigation.navigate('Search', { screen: 'AISearchScreen', params: { origin: 'home' } })}
+                                onPress={() => navigation.push('AISearchScreen', { origin: 'home' })}
                             >
                                 <Text style={Styles.quickActionText} numberOfLines={1}>{t('aiSearch')}</Text>
                             </TouchableOpacity>
@@ -1210,7 +1255,7 @@ const HomeScreen = ({ navigation }: any) => {
                         <View style={Styles.quickActionsRow}>
                             <TouchableOpacity
                                 style={[Styles.quickActionCard, Styles.quickActionCardFull]}
-                                onPress={() => navigation.navigate('AvailableEventsScreen')}
+                                onPress={() => navigation.push('AvailableEventsScreen')}
                             >
                                 <Text style={Styles.quickActionText} numberOfLines={1}>{t('subscribeCompetition')}</Text>
                             </TouchableOpacity>
@@ -1219,79 +1264,103 @@ const HomeScreen = ({ navigation }: any) => {
                 </View>
 
                 {visibleFeedItems.length > 0 && (
-                    <View style={Styles.sectionOverview}>
+                    <View
+                        style={Styles.sectionOverview}
+                        onLayout={(event) => {
+                            sectionOverviewYRef.current = event.nativeEvent.layout.y;
+                            recomputeVisibleMediaCards();
+                        }}
+                    >
                         {visibleFeedItems.map((item) => {
                             if (item.kind === 'post') {
                                 const post = item.post;
+                                const postKey = `feed-post-${post.id}`;
+                                const translated = Boolean(translatedBlogsById[String(post.id)]);
+                                const postDescriptionRaw = String(post.summary ?? post.description ?? '');
+                                const postDescription = translated ? translateText(postDescriptionRaw, i18n.language) : postDescriptionRaw;
                                 return (
-                                    <NewsFeedCard
-                                        key={`feed-post-${post.id}`}
-                                        title={post.title ?? t('Latest blog')}
-                                        images={['__text__']}
-                                        textSlide={{
-                                            title: post.title ?? t('Latest blog'),
-                                            description: post.summary ?? post.description ?? '',
+                                    <View
+                                        key={postKey}
+                                        onLayout={(event) => {
+                                            const { y, height } = event.nativeEvent.layout;
+                                            feedCardLayoutsRef.current[postKey] = { y: sectionOverviewYRef.current + y, height };
                                         }}
-                                        user={{
-                                            name: post.author?.display_name ?? userName,
-                                            avatar: post.author?.avatar_url
-                                                ? { uri: toAbsoluteUrl(post.author.avatar_url) as string }
-                                                : (profilePic ? { uri: profilePic } : Images.profile1),
-                                            date: formatPostTime(post.created_at),
-                                        }}
-                                        onPressUser={() => openProfileFromId(post.author?.profile_id)}
-                                        headerSeparated
-                                        hideBelowText
-                                        likesLabel={`${Number(post?.likes_count ?? 0).toLocaleString()} ${t('likes')}`}
-                                        liked={Boolean(post?.liked_by_me)}
-                                        onToggleLike={() => handleTogglePostLike(post.id)}
-                                        likeDisabled={!String(post?.id ?? '').trim()}
-                                        showActions
-                                        onShare={async () => {
-                                            try {
-                                                await NativeShare.open({
-                                                    message: post?.title
-                                                        ? String(post.title)
-                                                        : String(post?.description ?? post?.summary ?? t('Latest blog')),
-                                                    subject: post?.title ? String(post.title) : undefined,
-                                                });
-                                            } catch {
-                                                // ignore
+                                    >
+                                        <NewsFeedCard
+                                            title={post.title ?? t('Latest blog')}
+                                            images={['__text__']}
+                                            textSlide={{
+                                                title: post.title ?? t('Latest blog'),
+                                                description: postDescription,
+                                            }}
+                                            user={{
+                                                name: post.author?.display_name ?? userName,
+                                                avatar: post.author?.avatar_url
+                                                    ? { uri: toAbsoluteUrl(post.author.avatar_url) as string }
+                                                    : (profilePic ? { uri: profilePic } : Images.profile1),
+                                                date: formatPostTime(post.created_at),
+                                            }}
+                                            onPressUser={() => openProfileFromId(post.author?.profile_id)}
+                                            headerSeparated
+                                            hideBelowText
+                                            likesLabel={`${Number(post?.likes_count ?? 0).toLocaleString()} ${t('likes')}`}
+                                            liked={Boolean(post?.liked_by_me)}
+                                            onToggleLike={() => handleTogglePostLike(post.id)}
+                                            likeDisabled={!String(post?.id ?? '').trim()}
+                                            showActions
+                                            onTranslate={() =>
+                                                setTranslatedBlogsById((prev) => ({
+                                                    ...prev,
+                                                    [String(post.id)]: !prev[String(post.id)],
+                                                }))
                                             }
-                                        }}
-                                        onPress={() => {
-                                            navigation.navigate('ViewUserBlogDetailsScreen', {
-                                                postId: post.id,
-                                                post: {
-                                                    id: post.id,
-                                                    title: post.title ?? t('Latest blog'),
-                                                    date: post.created_at
-                                                        ? new Date(post.created_at).toLocaleDateString()
-                                                        : '',
-                                                    image: Images.photo3,
-                                                    gallery: [],
-                                                    galleryItems: [],
-                                                    readCount: post.reading_time_minutes
-                                                        ? `${post.reading_time_minutes} min`
-                                                        : '1 min',
-                                                    author: {
-                                                        profile_id: post.author?.profile_id ?? null,
-                                                        display_name: post.author?.display_name ?? userName,
-                                                        avatar_url: post.author?.avatar_url ?? null,
+                                            onShare={async () => {
+                                                try {
+                                                    await NativeShare.open({
+                                                        message: post?.title
+                                                            ? String(post.title)
+                                                            : String(post?.description ?? post?.summary ?? t('Latest blog')),
+                                                        subject: post?.title ? String(post.title) : undefined,
+                                                    });
+                                                } catch {
+                                                    // ignore
+                                                }
+                                            }}
+                                            onPress={() => {
+                                                navigation.navigate('ViewUserBlogDetailsScreen', {
+                                                    postId: post.id,
+                                                    post: {
+                                                        id: post.id,
+                                                        title: post.title ?? t('Latest blog'),
+                                                        date: post.created_at
+                                                            ? new Date(post.created_at).toLocaleDateString()
+                                                            : '',
+                                                        image: Images.photo3,
+                                                        gallery: [],
+                                                        galleryItems: [],
+                                                        readCount: post.reading_time_minutes
+                                                            ? `${post.reading_time_minutes} min`
+                                                            : '1 min',
+                                                        author: {
+                                                            profile_id: post.author?.profile_id ?? null,
+                                                            display_name: post.author?.display_name ?? userName,
+                                                            avatar_url: post.author?.avatar_url ?? null,
+                                                        },
+                                                        writer: post.author?.display_name ?? userName,
+                                                        writerImage: post.author?.avatar_url
+                                                            ? { uri: toAbsoluteUrl(post.author.avatar_url) as string }
+                                                            : (profilePic ? { uri: profilePic } : Images.profile1),
+                                                        description: post.description ?? post.summary ?? '',
                                                     },
-                                                    writer: post.author?.display_name ?? userName,
-                                                    writerImage: post.author?.avatar_url
-                                                        ? { uri: toAbsoluteUrl(post.author.avatar_url) as string }
-                                                        : (profilePic ? { uri: profilePic } : Images.profile1),
-                                                    description: post.description ?? post.summary ?? '',
-                                                },
-                                            });
-                                        }}
-                                    />
+                                                });
+                                            }}
+                                        />
+                                    </View>
                                 );
                             }
 
                             const media = item.media;
+                            const mediaKey = `feed-media-${media.media_id}`;
                             const isVideoItem = String(media.type || '').toLowerCase() === 'video';
                             const thumb = getMediaThumb(media as any) || Images.photo1;
                             const playableVideoUrl = isVideoItem
@@ -1300,42 +1369,52 @@ const HomeScreen = ({ navigation }: any) => {
                             const titleText = isVideoItem ? t('Video') : t('Photo');
                             const uploader = getMediaUploaderInfo(media);
                             return (
-                                <NewsFeedCard
-                                    key={`feed-media-${media.media_id}`}
-                                    title={titleText}
-                                    description=""
-                                    images={[thumb]}
-                                    isVideo={isVideoItem}
-                                    videoUri={playableVideoUrl}
-                                    showPlayOverlay={isVideoItem}
-                                    videoIndexes={isVideoItem ? [0] : []}
-                                    toggleVideoOnPress={isVideoItem}
-                                    user={{
-                                        name: uploader.name,
-                                        avatar: uploader.avatar,
-                                        date: formatPostTime(media.created_at),
+                                <View
+                                    key={mediaKey}
+                                    onLayout={(event) => {
+                                        const { y, height } = event.nativeEvent.layout;
+                                        feedCardLayoutsRef.current[mediaKey] = { y: sectionOverviewYRef.current + y, height };
+                                        recomputeVisibleMediaCards();
                                     }}
-                                    onPressUser={() =>
-                                        openProfileFromId(
-                                            uploader.profileId || overview?.profile_id
-                                        )
-                                    }
-                                    headerSeparated
-                                    likesLabel={formatLikesLabel(media)}
-                                    liked={Boolean(media?.liked_by_me)}
-                                    onToggleLike={() => handleToggleLike(media.media_id)}
-                                    likeDisabled={!String(media?.media_id ?? '').trim()}
-                                    showActions
-                                    onShare={() => handleShareMedia(media)}
-                                    onDownload={() => handleDownloadMedia(media)}
-                                    onPressMore={() =>
-                                        openFeedMenu(media, {
-                                            isVideo: isVideoItem,
-                                            title: isVideoItem ? t('Video') : t('Photo'),
-                                        })
-                                    }
-                                    onPress={() => buildMediaCardPress(media)}
-                                />
+                                >
+                                    <NewsFeedCard
+                                        title={titleText}
+                                        description=""
+                                        images={[thumb]}
+                                        isVideo={isVideoItem}
+                                        videoUri={playableVideoUrl}
+                                        showPlayOverlay={isVideoItem}
+                                        videoIndexes={isVideoItem ? [0] : []}
+                                        toggleVideoOnPress={isVideoItem}
+                                        isActive={Boolean(activeMediaCards[mediaKey]) && isFocused && !overlayVisible}
+                                        user={{
+                                            name: uploader.name,
+                                            avatar: uploader.avatar,
+                                            date: formatPostTime(media.created_at),
+                                        }}
+                                        onPressUser={() =>
+                                            openProfileFromId(
+                                                uploader.profileId || overview?.profile_id
+                                            )
+                                        }
+                                        headerSeparated
+                                        viewsLabel={formatViewsLabel(media)}
+                                        likesLabel={formatLikesLabel(media)}
+                                        liked={Boolean(media?.liked_by_me)}
+                                        onToggleLike={() => handleToggleLike(media.media_id)}
+                                        likeDisabled={!String(media?.media_id ?? '').trim()}
+                                        showActions
+                                        onShare={() => handleShareMedia(media)}
+                                        onDownload={() => handleDownloadMedia(media)}
+                                        onPressMore={() =>
+                                            openFeedMenu(media, {
+                                                isVideo: isVideoItem,
+                                                title: isVideoItem ? t('Video') : t('Photo'),
+                                            })
+                                        }
+                                        onPress={() => buildMediaCardPress(media)}
+                                    />
+                                </View>
                             );
                         })}
                         {hasMoreFeedItems && (
@@ -1382,6 +1461,7 @@ const HomeScreen = ({ navigation }: any) => {
             formatPostTime,
             pickDescription,
             formatLikesLabel,
+            formatViewsLabel,
             extractProfileIdFromMedia,
             isSignedUrl,
             withAccessToken,
@@ -1408,6 +1488,10 @@ const HomeScreen = ({ navigation }: any) => {
             navigation,
             windowWidth,
             showAiSearchIntro,
+            translatedBlogsById,
+            i18n.language,
+            activeMediaCards,
+            recomputeVisibleMediaCards,
         ],
     );
 
@@ -1418,7 +1502,7 @@ const HomeScreen = ({ navigation }: any) => {
                 userName={userName}
                 profilePic={profilePic}
                 notificationCount={unreadNotificationsCount}
-                onPressFeed={() => navigation.navigate('HubScreen')}
+                onPressFeed={() => navigation.push('HubScreen')}
                 onPressNotifications={() => navigation.navigate('NotificationsScreen')}
                 onPressProfile={() => navigation.navigate('BottomTabBar', { screen: 'Profile' })}
             />
@@ -1442,11 +1526,13 @@ const HomeScreen = ({ navigation }: any) => {
                     };
                     updateVisibility();
                     updateSharedVideoRect();
+                    recomputeVisibleMediaCards();
                 }}
                 onScroll={(event) => {
                     scrollYRef.current = event.nativeEvent.contentOffset.y;
                     updateVisibility();
                     updateSharedVideoRect();
+                    recomputeVisibleMediaCards();
                     const { contentOffset, layoutMeasurement, contentSize } = event.nativeEvent;
                     const distanceFromBottom =
                         Number(contentSize?.height || 0) - (Number(contentOffset?.y || 0) + Number(layoutMeasurement?.height || 0));
@@ -1578,9 +1664,8 @@ const HomeScreen = ({ navigation }: any) => {
                                 activeOpacity={0.85}
                                 onPress={() => setOverlayMuted((prev) => !prev)}
                             >
-                                <Text style={Styles.videoMuteButtonText}>
-                                    {overlayMuted ? t('Unmute') : t('Mute')}
-                                </Text>
+                                <Icons.Volume width={18} height={18} />
+                                {overlayMuted ? <View style={Styles.videoMuteSlash} /> : null}
                             </TouchableOpacity>
                         )}
                     </View>
@@ -1703,6 +1788,7 @@ const HomeScreen = ({ navigation }: any) => {
                 </View>
             )}
 
+
             <Modal
                 visible={feedMenuVisible}
                 transparent
@@ -1758,25 +1844,31 @@ const HomeScreen = ({ navigation }: any) => {
                 transparent
                 animationType="fade"
                 onRequestClose={() => {
+                    if (isSubmittingReport) return;
                     setReportIssueVisible(false);
                     setReportStep('reason');
                     setSelectedReportReason('');
+                    setCustomReportReason('');
+                    setReportTargetMedia(null);
                 }}
             >
                 <View style={Styles.feedMenuOverlay}>
                     <Pressable
                         style={Styles.feedMenuBackdrop}
                         onPress={() => {
+                            if (isSubmittingReport) return;
                             setReportIssueVisible(false);
                             setReportStep('reason');
                             setSelectedReportReason('');
+                            setCustomReportReason('');
+                            setReportTargetMedia(null);
                         }}
                     />
                     <View style={Styles.feedMenuContainer}>
                         <Text style={Styles.feedMenuTitle}>
                             {reportStep === 'reason'
-                                ? t('Why are you reporting this post?')
-                                : t("Your're about to submit a report")}
+                                ? t('Report an issue with this photo/video')
+                                : t('Confirm request')}
                         </Text>
                         <View style={Styles.feedMenuDivider} />
                         {reportStep === 'reason' ? (
@@ -1788,12 +1880,36 @@ const HomeScreen = ({ navigation }: any) => {
                                         activeOpacity={0.85}
                                         onPress={() => {
                                             setSelectedReportReason(reason);
+                                            if (reason === t('Custom')) {
+                                                return;
+                                            }
                                             setReportStep('confirm');
                                         }}
                                     >
                                         <Text style={Styles.feedMenuActionText}>{reason}</Text>
                                     </TouchableOpacity>
                                 ))}
+                                {selectedReportReason === t('Custom') ? (
+                                    <View style={[Styles.feedMenuAction, { borderBottomWidth: 0 }]}>
+                                        <TextInput
+                                            style={[Styles.feedMenuActionText, { borderWidth: 1, borderColor: colors.borderColor, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 10 }]}
+                                            value={customReportReason}
+                                            onChangeText={setCustomReportReason}
+                                            placeholder={t('Type your request')}
+                                            placeholderTextColor={colors.subTextColor}
+                                        />
+                                        <TouchableOpacity
+                                            style={[Styles.feedInfoModalButton, { alignSelf: 'stretch', alignItems: 'center', marginTop: 10 }]}
+                                            activeOpacity={0.85}
+                                            onPress={() => {
+                                                if (!customReportReason.trim()) return;
+                                                setReportStep('confirm');
+                                            }}
+                                        >
+                                            <Text style={Styles.feedInfoModalButtonText}>{t('Next')}</Text>
+                                        </TouchableOpacity>
+                                    </View>
+                                ) : null}
                                 <TouchableOpacity
                                     style={Styles.feedMenuCancel}
                                     activeOpacity={0.85}
@@ -1801,6 +1917,8 @@ const HomeScreen = ({ navigation }: any) => {
                                         setReportIssueVisible(false);
                                         setReportStep('reason');
                                         setSelectedReportReason('');
+                                        setCustomReportReason('');
+                                        setReportTargetMedia(null);
                                     }}
                                 >
                                     <Text style={Styles.feedMenuCancelText}>{t('Cancel')}</Text>
@@ -1810,22 +1928,52 @@ const HomeScreen = ({ navigation }: any) => {
                             <>
                                 <View style={Styles.feedMenuAction}>
                                     <Text style={Styles.feedMenuActionText}>
-                                        {`${t('Reason')}: ${selectedReportReason}`}
+                                        {`${t('Reason')}: ${selectedReportReason}${selectedReportReason === t('Custom') ? ` - ${customReportReason.trim()}` : ''}`}
                                     </Text>
                                 </View>
                                 <TouchableOpacity
                                     style={[Styles.feedInfoModalButton, { alignSelf: 'stretch', alignItems: 'center', marginTop: 8 }]}
                                     activeOpacity={0.85}
-                                    onPress={() => {
+                                    disabled={isSubmittingReport}
+                                    onPress={async () => {
+                                        const mediaId = String((reportTargetMedia as any)?.media_id || (reportTargetMedia as any)?.id || '').trim();
+                                        if (!apiAccessToken || !mediaId) {
+                                            showInfoPopup(t('Request failed'), t('No media selected for this request.'));
+                                            return;
+                                        }
+                                        const issue_type = selectedReportReason === t('Wrong competition')
+                                            ? 'wrong_competition'
+                                            : selectedReportReason === t('Wrong heat')
+                                                ? 'wrong_heat'
+                                                : 'custom';
+                                        setIsSubmittingReport(true);
+                                        try {
+                                            await createMediaIssueRequest(apiAccessToken, {
+                                                media_id: mediaId,
+                                                event_id: reportTargetMedia?.event_id ? String(reportTargetMedia.event_id) : undefined,
+                                                issue_type,
+                                                custom_text: issue_type === 'custom' ? customReportReason.trim() : undefined,
+                                            });
+                                        } catch (e: any) {
+                                            const msg = String(e?.message || t('Could not submit request'));
+                                            showInfoPopup(t('Request failed'), msg);
+                                            setIsSubmittingReport(false);
+                                            return;
+                                        }
                                         setReportIssueVisible(false);
                                         setReportStep('reason');
                                         setSelectedReportReason('');
+                                        setCustomReportReason('');
+                                        setReportTargetMedia(null);
+                                        setIsSubmittingReport(false);
                                         setTimeout(() => {
-                                            showInfoPopup(t('Request sent'), t('We received your issue report.'));
+                                            showInfoPopup(t('Request sent'), t('Your edit request is now pending.'));
                                         }, 120);
                                     }}
                                 >
-                                    <Text style={Styles.feedInfoModalButtonText}>{t('Submit')}</Text>
+                                    <Text style={Styles.feedInfoModalButtonText}>
+                                        {isSubmittingReport ? t('Submitting...') : t('Submit')}
+                                    </Text>
                                 </TouchableOpacity>
                             </>
                         )}

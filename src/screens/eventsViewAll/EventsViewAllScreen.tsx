@@ -168,7 +168,7 @@ const EventsViewAllScreen = ({ navigation }: any) => {
 
                             <TouchableOpacity style={styles.modalAddButton} onPress={() => {
                                 setModalVisible(false);
-                                navigation.navigate('SelectCategoryScreen');
+                                navigation.navigate('CategorySelectionScreen', { fromAddFlow: true });
                             }}>
                                 <Text style={styles.modalAddButtonText}>{t('Add New')}</Text>
                                 <Add size={20} color={colors.pureWhite} variant="Linear" />

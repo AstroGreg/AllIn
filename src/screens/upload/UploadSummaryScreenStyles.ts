@@ -106,6 +106,28 @@ export const createStyles = (colors: ThemeColors) => StyleSheet.create({
         ...Fonts.medium14,
         color: colors.mainTextColor,
     },
+    priceInputRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        borderWidth: 1,
+        borderColor: colors.borderColor,
+        borderRadius: 8,
+        paddingHorizontal: 8,
+        height: 34,
+        minWidth: 88,
+        backgroundColor: colors.backgroundColor,
+    },
+    priceEuro: {
+        ...Fonts.medium14,
+        color: colors.mainTextColor,
+        marginRight: 4,
+    },
+    priceInput: {
+        ...Fonts.medium14,
+        color: colors.mainTextColor,
+        minWidth: 48,
+        paddingVertical: 0,
+    },
     resolutionText: {
         ...Fonts.regular12,
         color: colors.grayColor,

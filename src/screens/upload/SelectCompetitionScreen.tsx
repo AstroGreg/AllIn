@@ -210,6 +210,10 @@ const SelectCompetitionScreen = ({ navigation, route }: any) => {
     };
 
     const activeValue = filterValues[activeFilter];
+    const hasTypedQuery = useMemo(
+        () => filterValues.Competition.trim().length > 0 || filterValues.Location.trim().length > 0,
+        [filterValues.Competition, filterValues.Location],
+    );
     const handleSearchChange = (text: string) => {
         setFilterValues((prev) => ({ ...prev, [activeFilter]: text }));
     };
@@ -267,6 +271,12 @@ const SelectCompetitionScreen = ({ navigation, route }: any) => {
     }, [apiAccessToken]);
 
     const loadCompetitions = useCallback(async (query: string) => {
+        if (!query.trim()) {
+            setRawEvents([]);
+            setErrorText(null);
+            setIsLoading(false);
+            return;
+        }
         if (!apiAccessToken) {
             setRawEvents([]);
             setErrorText('Log in to load competitions.');
@@ -344,6 +354,7 @@ const SelectCompetitionScreen = ({ navigation, route }: any) => {
     }, [parseEventDate]);
 
     const filteredCompetitions = useMemo(() => {
+        if (!hasTypedQuery) return [];
         const cFilter = filterValues.Competition.trim().toLowerCase();
         const lFilter = filterValues.Location.trim().toLowerCase();
         return competitions.filter((competition) => {
@@ -361,7 +372,7 @@ const SelectCompetitionScreen = ({ navigation, route }: any) => {
                     : true;
             return matchesCompetition && matchesLocation && typeOk && inRange;
         });
-    }, [competitions, eventTypeFilter, filterValues.Competition, filterValues.Location, parseEventDate, timeRange.end, timeRange.start]);
+    }, [competitions, eventTypeFilter, filterValues.Competition, filterValues.Location, hasTypedQuery, parseEventDate, timeRange.end, timeRange.start]);
 
     const continueToCompetition = useCallback((competition: Competition) => {
         navigation.navigate('CompetitionDetailsScreen', {
@@ -563,26 +574,30 @@ const SelectCompetitionScreen = ({ navigation, route }: any) => {
                     <Text style={Styles.resultsTitle}>{t('availableCompetitions')}</Text>
                     <View style={Styles.resultsCountBadge}>
                         <Text style={Styles.resultsCountText}>
-                            {isLoading ? '...' : `${filteredCompetitions.length} ${t('competitions')}`}
+                            {!hasTypedQuery ? t('Type to search') : (isLoading ? '...' : `${filteredCompetitions.length} ${t('competitions')}`)}
                         </Text>
                     </View>
                 </View>
 
                 <SizeBox height={16} />
 
-                {isLoading && filteredCompetitions.length === 0 && (
+                {hasTypedQuery && isLoading && filteredCompetitions.length === 0 && (
                     <View style={Styles.loadingRow}>
                         <ActivityIndicator color={colors.primaryColor} />
                         <Text style={Styles.loadingText}>{t('loadingCompetitions')}</Text>
                     </View>
                 )}
 
-                {!isLoading && errorText && (
+                {hasTypedQuery && !isLoading && errorText && (
                     <Text style={Styles.errorText}>{errorText}</Text>
                 )}
 
                 {/* Competition Cards */}
-                {filteredCompetitions.map(renderCompetitionCard)}
+                {!hasTypedQuery ? (
+                    <Text style={Styles.loadingText}>{t('Type competition or location to search')}</Text>
+                ) : (
+                    filteredCompetitions.map(renderCompetitionCard)
+                )}
 
                 <SizeBox height={insets.bottom > 0 ? insets.bottom + 20 : 40} />
             </ScrollView>

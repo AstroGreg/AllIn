@@ -91,7 +91,7 @@ const HubScreen = ({ navigation }: any) => {
                         title: item.event_name || t('competition'),
                         found: `${Number(item.photos_count ?? 0)} ${t('photos')} | ${Number(item.videos_count ?? 0)} ${t('videos')}`,
                         location: item.event_location ?? '-',
-                        date: item.event_date ?? '-',
+                        date: formatDateOnly(item.event_date ?? '-'),
                         thumbnail: item.thumbnail_url ? { uri: item.thumbnail_url } : null,
                         matchTypes: item.match_types ?? [],
                         cardType: 'appearance',
@@ -151,13 +151,14 @@ const HubScreen = ({ navigation }: any) => {
                         eventId: item.event_id ?? null,
                         title: item.event_name || t('upload'),
                         location: item.event_location ?? '-',
-                        date: item.event_date ?? '-',
+                        date: formatDateOnly(item.event_date ?? '-'),
                         likes: Number(item.likes_count ?? 0),
                         views: Number(item.views_count ?? 0),
                         labelsYes: Number(item.labels_yes ?? 0),
                         labelsNo: Number(item.labels_no ?? 0),
                         labelsTotal: Number(item.labels_total ?? 0),
                         type: String(item.type || 'image'),
+                        postId: (item as any).post_id ? String((item as any).post_id) : null,
                         thumbnail: item.thumbnail_url ? { uri: item.thumbnail_url } : null,
                         previewUrl: item.preview_url,
                         originalUrl: item.original_url,
@@ -289,6 +290,8 @@ const HubScreen = ({ navigation }: any) => {
             mediaId,
             video: {
                 media_id: mediaId,
+                post_id: card.postId ?? null,
+                type: card.type,
                 title: card.title,
                 location: card.location,
                 date: formatDateOnly(card.date),
@@ -373,7 +376,7 @@ const HubScreen = ({ navigation }: any) => {
                                 </Text>
                                 <View style={Styles.detailDot} />
                                 <Calendar size={14} color={colors.grayColor} variant="Linear" />
-                                <Text style={Styles.detailText}>{card.date}</Text>
+                                <Text style={Styles.detailText} numberOfLines={1} ellipsizeMode="tail">{formatDateOnly(card.date)}</Text>
                             </View>
                             {card.matchTypes?.length ? (
                                 <View style={Styles.matchBadge}>

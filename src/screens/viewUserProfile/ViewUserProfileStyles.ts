@@ -416,14 +416,20 @@ export const createStyles = (colors: ThemeColors) => StyleSheet.create({
         borderRadius: 999,
     },
     activityBadgeBlog: {
-        backgroundColor: '#EAF1FF',
+        backgroundColor: colors.primaryColor,
     },
     activityBadgeEvent: {
-        backgroundColor: '#EAF7EF',
+        backgroundColor: colors.secondaryBlueColor,
+        borderWidth: 1,
+        borderColor: colors.primaryColor,
     },
     activityBadgeText: {
         ...Fonts.regular12,
-        color: colors.mainTextColor,
+        color: colors.primaryColor,
+    },
+    activityBadgeTextBlog: {
+        ...Fonts.regular12,
+        color: colors.pureWhite,
     },
     activityMeta: {
         ...Fonts.regular12,

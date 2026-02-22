@@ -115,6 +115,7 @@ const ProfileNewsSection = ({
     const renderCard = (item: ProfileNewsItem) => {
         const isBlog = (item.kind ?? 'blog') === 'blog';
         const badgeLabel = isBlog ? blogLabel : (eventLabel || 'Event');
+        const descriptionText = String(item.description || '');
         return (
         <TouchableOpacity
             key={`news-${item.id}`}
@@ -141,7 +142,7 @@ const ProfileNewsSection = ({
                     </View>
                     <Text style={styles.activityMeta}>{item.date || ''}</Text>
                     <Text style={styles.activityDescription} numberOfLines={2}>
-                        {item.description || ''}
+                        {descriptionText}
                     </Text>
                 </View>
             </View>

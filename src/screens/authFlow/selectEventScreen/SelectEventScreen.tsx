@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, Image, Alert, ActivityIndicator } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import FastImage from 'react-native-fast-image';
@@ -30,18 +30,22 @@ const SelectEventScreen = ({ navigation, route }: any) => {
     const { colors } = useTheme();
     const Styles = createStyles(colors);
     const insets = useSafeAreaInsets();
-    const { updateUserProfile } = useAuth();
+    const { updateUserProfile, userProfile } = useAuth();
     const [selectedEvents, setSelectedEvents] = useState<string[]>(['track-field']);
     const [isLoading, setIsLoading] = useState(false);
     const selectedCategory = route?.params?.selectedCategory;
+    const fromAddFlow = Boolean(route?.params?.fromAddFlow);
+    const existingSelectedEvents = useMemo(() => {
+        const raw = userProfile?.selectedEvents;
+        return Array.isArray(raw) ? raw.map((entry) => String(entry || '').trim()).filter(Boolean) : [];
+    }, [userProfile?.selectedEvents]);
 
     const toggleEvent = (eventId: string) => {
         setSelectedEvents(prev => {
             if (prev.includes(eventId)) {
                 return prev.filter(id => id !== eventId);
-            } else {
-                return [...prev, eventId];
             }
+            return [...prev, eventId];
         });
     };
 
@@ -57,12 +61,19 @@ const SelectEventScreen = ({ navigation, route }: any) => {
 
         setIsLoading(true);
         try {
-            await updateUserProfile({ selectedEvents });
+            const nextSelectedEvents = fromAddFlow
+                ? Array.from(new Set([...existingSelectedEvents, ...selectedEvents]))
+                : selectedEvents;
+            await updateUserProfile({ selectedEvents: nextSelectedEvents });
 
             if (selectedCategory === 'find') {
-                navigation.navigate('CompleteAthleteDetailsScreen');
+                navigation.navigate('CompleteAthleteDetailsScreen', { selectedEvents });
             } else if (selectedCategory === 'manage') {
-                navigation.navigate('CreateGroupProfileScreen');
+                navigation.navigate('CreateGroupProfileScreen', {
+                    selectedFocuses: selectedEvents,
+                    selectedEvents,
+                    focusLocked: true,
+                });
             } else if (selectedCategory === 'sell') {
                 navigation.navigate('CreatePhotographerProfileScreen');
             } else {
@@ -96,10 +107,12 @@ const SelectEventScreen = ({ navigation, route }: any) => {
 
                 <View style={Styles.contentContainer}>
                     <Text style={Styles.headingText}>
-                        Which kinds of events are you interested in?
+                        {t('Choose your sport focus')}
                     </Text>
                     <SizeBox height={8} />
-                    <Text style={Styles.subHeadingText}>{t('Choose Your Interest')}</Text>
+                    <Text style={Styles.subHeadingText}>
+                        {t('Select one or more disciplines')}
+                    </Text>
 
                     <SizeBox height={24} />
 

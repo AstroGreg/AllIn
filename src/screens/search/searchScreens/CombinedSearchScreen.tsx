@@ -53,6 +53,7 @@ const CombinedSearchScreen = ({navigation}: any) => {
   const {apiAccessToken, userProfile} = useAuth();
   const route = useRoute<any>();
   const origin = route?.params?.origin;
+  const tutorialMode = Boolean(route?.params?.tutorialMode);
   const preselectedEventsParam = useMemo(
     () => (Array.isArray(route?.params?.preselectedEvents) ? route?.params?.preselectedEvents : []),
     [route?.params?.preselectedEvents],
@@ -83,6 +84,7 @@ const CombinedSearchScreen = ({navigation}: any) => {
   const [pendingAutoRun, setPendingAutoRun] = useState(false);
   const [profileChestByYear, setProfileChestByYear] = useState<Record<string, string>>({});
   const [competitionRequiredError, setCompetitionRequiredError] = useState(false);
+  const [tutorialDemoRan, setTutorialDemoRan] = useState(false);
 
   const normalizeChestByYear = useCallback((raw: any): Record<string, string> => {
     if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return {};
@@ -253,14 +255,6 @@ const CombinedSearchScreen = ({navigation}: any) => {
       setShowAutoCompareModal(true);
     }
   }, [autoCompare]);
-
-  useEffect(() => {
-    if (!pendingAutoRun) return;
-    if (!hasCompetition) return;
-    if (!bib.trim() && !contextText.trim() && !includeFace) return;
-    setPendingAutoRun(false);
-    runCombinedSearch();
-  }, [bib, contextText, hasCompetition, includeFace, pendingAutoRun, runCombinedSearch]);
 
   useEffect(() => {
     if (selectedEvents.length === 0) return;
@@ -511,6 +505,14 @@ const CombinedSearchScreen = ({navigation}: any) => {
     selectedEventIds,
   ]);
 
+  useEffect(() => {
+    if (!pendingAutoRun) return;
+    if (!hasCompetition) return;
+    if (!bib.trim() && !contextText.trim() && !includeFace) return;
+    setPendingAutoRun(false);
+    runCombinedSearch();
+  }, [bib, contextText, hasCompetition, includeFace, pendingAutoRun, runCombinedSearch]);
+
   const handleGrantConsent = useCallback(async () => {
     if (!apiAccessToken) return;
     setErrorText(null);
@@ -532,21 +534,51 @@ const CombinedSearchScreen = ({navigation}: any) => {
   }, [navigation, origin]);
 
   const handleBack = useCallback(() => {
-    const parent = navigation.getParent?.();
-    if (origin === 'home' && parent) {
-      parent.navigate('Home');
-      return;
-    }
     if (navigation.canGoBack()) {
       navigation.goBack();
       return;
     }
-    if (parent) {
-      parent.navigate('Search');
-      return;
-    }
     navigation.navigate('SearchScreen');
-  }, [navigation, origin]);
+  }, [navigation]);
+
+  const runTutorialDemoSearch = useCallback(() => {
+    const fakeResults = [
+      {
+        media_id: 'tutorial-face-1',
+        event_id: 'tutorial-event',
+        event_name: 'Tutorial Event',
+        type: 'image',
+        thumbnail_url: 'https://images.unsplash.com/photo-1461896836934-ffe607ba8211?q=80&w=1200&auto=format&fit=crop',
+        preview_url: 'https://images.unsplash.com/photo-1461896836934-ffe607ba8211?q=80&w=1200&auto=format&fit=crop',
+        match_type: 'face',
+      },
+      {
+        media_id: 'tutorial-context-1',
+        event_id: 'tutorial-event',
+        event_name: 'Tutorial Event',
+        type: 'image',
+        thumbnail_url: 'https://images.unsplash.com/photo-1552674605-db6ffd4facb5?q=80&w=1200&auto=format&fit=crop',
+        preview_url: 'https://images.unsplash.com/photo-1552674605-db6ffd4facb5?q=80&w=1200&auto=format&fit=crop',
+        match_type: 'context',
+      },
+      {
+        media_id: 'tutorial-bib-1',
+        event_id: 'tutorial-event',
+        event_name: 'Tutorial Event',
+        type: 'image',
+        bib_number: '4455',
+        thumbnail_url: 'https://images.unsplash.com/photo-1517836357463-d25dfeac3438?q=80&w=1200&auto=format&fit=crop',
+        preview_url: 'https://images.unsplash.com/photo-1517836357463-d25dfeac3438?q=80&w=1200&auto=format&fit=crop',
+        match_type: 'bib',
+      },
+    ];
+    setTutorialDemoRan(true);
+    navigation.navigate('AISearchResultsScreen', {
+      matchedCount: fakeResults.length,
+      results: fakeResults,
+      matchType: 'combined',
+    });
+  }, [navigation]);
 
   return (
     <View style={styles.mainContainer}>
@@ -565,6 +597,61 @@ const CombinedSearchScreen = ({navigation}: any) => {
           <SizeBox height={18} />
           <Text style={styles.title}>{t('Search by chest, face, and context')}</Text>
           <SizeBox height={6} />
+          {tutorialMode && (
+            <View
+              style={{
+                borderWidth: 1,
+                borderColor: colors.lightGrayColor,
+                borderRadius: 12,
+                backgroundColor: colors.cardBackground,
+                padding: 12,
+                marginTop: 8,
+                marginBottom: 10,
+                gap: 8,
+              }}
+            >
+              <Text style={{ fontWeight: '700', color: colors.mainTextColor, fontSize: 15 }}>
+                {t('Tutorial: AI Search')}
+              </Text>
+              <Text style={{ color: colors.subTextColor, fontSize: 13, lineHeight: 18 }}>
+                {t('Input 1: competitions. Input 2: chest number. Input 3: context text. Toggle face search to include face matching. Run the demo search to see face/context/chest matches.')}
+              </Text>
+              <TouchableOpacity
+                style={{
+                  height: 40,
+                  borderRadius: 10,
+                  backgroundColor: colors.primaryColor,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+                onPress={runTutorialDemoSearch}
+              >
+                <Text style={{ color: '#fff', fontWeight: '700' }}>{t('Run tutorial search')}</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={{
+                  height: 40,
+                  borderRadius: 10,
+                  borderWidth: 1,
+                  borderColor: colors.lightGrayColor,
+                  backgroundColor: tutorialDemoRan ? colors.primaryColor : colors.btnBackgroundColor,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+                disabled={!tutorialDemoRan}
+                onPress={() =>
+                  navigation.navigate('AvailableEventsScreen', {
+                    tutorialMode: true,
+                    tutorialStep: 'subscribe-flow',
+                  })
+                }
+              >
+                <Text style={{ color: tutorialDemoRan ? '#fff' : colors.subTextColor, fontWeight: '700' }}>
+                  {t('Continue to subscribe tutorial')}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          )}
 
           <View style={styles.competitionSection}>
             <Text style={styles.sectionTitle}>{t('Competitions')}</Text>

@@ -26,6 +26,10 @@ export const createStyles = (colors: ThemeColors) => StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'center',
     },
+    headerSpacer: {
+        width: 44,
+        height: 44,
+    },
     headerTitle: {
         ...Fonts.medium18,
         color: colors.mainTextColor,
@@ -33,6 +37,38 @@ export const createStyles = (colors: ThemeColors) => StyleSheet.create({
     scrollContent: {
         paddingHorizontal: 20,
         paddingTop: 24,
+    },
+    emptyProfileContainer: {
+        flex: 1,
+        alignItems: 'center',
+        justifyContent: 'center',
+        paddingHorizontal: 32,
+    },
+    emptyProfileAddButton: {
+        width: 86,
+        height: 86,
+        borderRadius: 43,
+        borderWidth: 1,
+        borderColor: colors.primaryColor,
+        backgroundColor: colors.secondaryBlueColor,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    emptyProfileAddPlus: {
+        ...Fonts.bold36,
+        color: colors.primaryColor,
+        lineHeight: 44,
+    },
+    emptyProfileTitle: {
+        ...Fonts.medium18,
+        color: colors.mainTextColor,
+        marginTop: 16,
+    },
+    emptyProfileSubtitle: {
+        ...Fonts.regular12,
+        color: colors.subTextColor,
+        marginTop: 8,
+        textAlign: 'center',
     },
 
     // Profile Card
@@ -299,6 +335,62 @@ export const createStyles = (colors: ThemeColors) => StyleSheet.create({
     athleteMetaSection: {
         marginTop: 14,
         gap: 8,
+        width: '100%',
+    },
+    athleteMetaInlineBox: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        width: '100%',
+        minHeight: 48,
+        backgroundColor: colors.btnBackgroundColor,
+        borderWidth: 0.5,
+        borderColor: colors.lightGrayColor,
+        borderRadius: 12,
+        paddingHorizontal: 14,
+        paddingVertical: 12,
+    },
+    athleteMetaInlineText: {
+        ...Fonts.medium14,
+        color: colors.mainTextColor,
+        textAlign: 'center',
+        width: '100%',
+    },
+    websiteInlineRow: {
+        width: '100%',
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+    },
+    websiteInlineLinkWrap: {
+        flex: 1,
+        minWidth: 0,
+    },
+    websiteInlineLinkText: {
+        ...Fonts.medium13,
+        color: colors.primaryColor,
+        textDecorationLine: 'underline',
+        textAlign: 'left',
+    },
+    websiteInlineEditButton: {
+        width: 28,
+        height: 28,
+        borderRadius: 14,
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginLeft: 10,
+    },
+    websiteInlineAddButton: {
+        alignSelf: 'flex-start',
+        paddingVertical: 2,
+    },
+    athleteMetaInlineValue: {
+        ...Fonts.medium13,
+        color: colors.mainTextColor,
+    },
+    athleteMetaInlineDot: {
+        ...Fonts.regular12,
+        color: colors.subTextColor,
     },
     athleteMetaRow: {
         flexDirection: 'row',
@@ -570,11 +662,13 @@ export const createStyles = (colors: ThemeColors) => StyleSheet.create({
         backgroundColor: colors.primaryColor,
     },
     activityBadgeEvent: {
-        backgroundColor: '#EAF7EF',
+        backgroundColor: colors.secondaryBlueColor,
+        borderWidth: 1,
+        borderColor: colors.primaryColor,
     },
     activityBadgeText: {
         ...Fonts.regular12,
-        color: colors.mainTextColor,
+        color: colors.primaryColor,
     },
     activityBadgeTextBlog: {
         ...Fonts.regular12,
@@ -654,6 +748,11 @@ export const createStyles = (colors: ThemeColors) => StyleSheet.create({
         justifyContent: 'center',
     },
     emptyStateText: {
+        ...Fonts.regular12,
+        color: colors.grayColor,
+        textAlign: 'center',
+    },
+    emptyText: {
         ...Fonts.regular12,
         color: colors.grayColor,
         textAlign: 'center',
@@ -1216,6 +1315,92 @@ export const createStyles = (colors: ThemeColors) => StyleSheet.create({
     categoryOptionDivider: {
         height: 1,
         backgroundColor: colors.lightGrayColor,
+    },
+    profileSwitcherBackdrop: {
+        flex: 1,
+        backgroundColor: 'rgba(0,0,0,0.45)',
+        justifyContent: 'flex-end',
+    },
+    profileSwitcherSheet: {
+        backgroundColor: colors.whiteColor,
+        borderTopLeftRadius: 26,
+        borderTopRightRadius: 26,
+        paddingHorizontal: 16,
+        paddingTop: 12,
+        paddingBottom: 24,
+        borderWidth: 0.5,
+        borderColor: colors.lightGrayColor,
+    },
+    profileSwitcherHandle: {
+        width: 48,
+        height: 5,
+        borderRadius: 999,
+        backgroundColor: colors.lightGrayColor,
+        alignSelf: 'center',
+        marginBottom: 12,
+    },
+    profileSwitcherTitle: {
+        ...Fonts.medium16,
+        color: colors.mainTextColor,
+        textAlign: 'center',
+    },
+    profileSwitcherRow: {
+        minHeight: 58,
+        borderRadius: 14,
+        borderWidth: 0.5,
+        borderColor: colors.lightGrayColor,
+        backgroundColor: colors.btnBackgroundColor,
+        paddingHorizontal: 12,
+        marginTop: 10,
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
+    profileSwitcherAvatar: {
+        width: 38,
+        height: 38,
+        borderRadius: 19,
+        backgroundColor: colors.secondaryBlueColor,
+        alignItems: 'center',
+        justifyContent: 'center',
+        borderWidth: 0.5,
+        borderColor: colors.lightGrayColor,
+    },
+    profileSwitcherLabel: {
+        ...Fonts.medium16,
+        color: colors.mainTextColor,
+        flex: 1,
+        marginLeft: 12,
+    },
+    profileSwitcherCheck: {
+        ...Fonts.medium20,
+        color: colors.primaryColor,
+        minWidth: 20,
+        textAlign: 'right',
+    },
+    profileSwitcherAddRow: {
+        backgroundColor: colors.secondaryBlueColor,
+        borderColor: colors.primaryColor,
+    },
+    profileSwitcherAvatarAdd: {
+        width: 38,
+        height: 38,
+        borderRadius: 19,
+        backgroundColor: colors.whiteColor,
+        alignItems: 'center',
+        justifyContent: 'center',
+        borderWidth: 1,
+        borderColor: colors.primaryColor,
+    },
+    profileSwitcherPlus: {
+        ...Fonts.medium20,
+        color: colors.primaryColor,
+        lineHeight: 24,
+    },
+    profileSwitcherAddLabel: {
+        ...Fonts.medium16,
+        color: colors.primaryColor,
+        flex: 1,
+        marginLeft: 12,
     },
     chestYearList: {
         maxHeight: 320,

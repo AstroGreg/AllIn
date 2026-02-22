@@ -75,12 +75,14 @@ type UploadItem = {
   type?: string | null;
   fileName?: string | null;
   category?: string | null;
+  price_cents?: number;
+  price_currency?: string;
   status: 'pending' | 'uploading' | 'uploaded' | 'failed';
   media_id?: string | null;
   error?: string | null;
 };
 
-const BATCH_SIZE = 5;
+const BATCH_SIZE = 1;
 const STATUS_POLL_MS = 5000;
 const UPLOAD_FLOW_RESET_KEY = '@upload_flow_reset_required';
 
@@ -172,6 +174,8 @@ const UploadProgressScreen = ({navigation, route}: any) => {
             type: asset?.type ?? null,
             fileName: asset?.fileName ?? null,
             category: String(category),
+            price_cents: Number(asset?.price_cents ?? 0) || 0,
+            price_currency: String(asset?.price_currency || 'EUR'),
             status: 'pending',
             media_id: null,
             error: null,
@@ -251,8 +255,16 @@ const UploadProgressScreen = ({navigation, route}: any) => {
               watermark_text: watermarkText,
               event_id,
               is_anonymous: anonymous,
+              price_cents: Number(batch[0]?.price_cents ?? 0) || 0,
+              price_currency: String(batch[0]?.price_currency || 'EUR'),
             })
-          : await uploadMediaBatch(apiAccessToken, {files, event_id, is_anonymous: anonymous});
+          : await uploadMediaBatch(apiAccessToken, {
+              files,
+              event_id,
+              is_anonymous: anonymous,
+              price_cents: Number(batch[0]?.price_cents ?? 0) || 0,
+              price_currency: String(batch[0]?.price_currency || 'EUR'),
+            });
 
         const results = Array.isArray(resp?.results) ? resp.results : [];
         for (let j = 0; j < batch.length; j += 1) {

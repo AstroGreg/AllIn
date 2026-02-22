@@ -112,7 +112,8 @@ const SelectEventInterestScreen = ({ navigation, route }: any) => {
                             navigation.navigate('CreateGroupProfileScreen');
                         } else {
                             // Individual - go to complete athlete details
-                            navigation.navigate('CompleteAthleteDetailsScreen');
+                            const selected = selectedEvent === 1 ? ['track-field'] : [];
+                            navigation.navigate('CompleteAthleteDetailsScreen', { selectedEvents: selected });
                         }
                     }}
                 >

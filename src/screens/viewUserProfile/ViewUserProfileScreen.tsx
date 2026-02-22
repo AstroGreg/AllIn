@@ -1,4 +1,4 @@
-import { View, Text, TouchableOpacity, ScrollView, ActivityIndicator, StyleSheet, Dimensions } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, ActivityIndicator, StyleSheet, Dimensions, Linking, Alert } from 'react-native';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import SizeBox from '../../constants/SizeBox';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -245,6 +245,87 @@ const ViewUserProfileScreen = ({ navigation, route }: any) => {
         return raw;
     }, [displayHandle, summary?.profile?.bio, t]);
 
+    const selectedEventProfilesNormalized = useMemo(() => {
+        const raw = (summary?.profile as any)?.selected_events;
+        const events = Array.isArray(raw) ? raw : [];
+        return events
+            .map((entry: any) =>
+                String(
+                    typeof entry === 'string'
+                        ? entry
+                        : entry?.id ?? entry?.value ?? entry?.event_id ?? entry?.name ?? '',
+                )
+                    .trim()
+                    .toLowerCase(),
+            )
+            .filter(Boolean);
+    }, [summary?.profile]);
+    const hasTrackFieldProfile = selectedEventProfilesNormalized.some((entry) =>
+        entry === 'track-field' || entry === 'track&field' || entry === 'track_field' || entry.includes('track'),
+    );
+    const hasRoadTrailProfile = selectedEventProfilesNormalized.some((entry) =>
+        entry === 'road-events' || entry === 'road&trail' || entry === 'road_trail' || entry.includes('road') || entry.includes('trail'),
+    );
+    const isTrackProfileView = !hasRoadTrailProfile || hasTrackFieldProfile;
+    const profileCategoryLabel = isTrackProfileView ? t('trackAndField') : t('roadAndTrail');
+    const currentYear = useMemo(() => String(new Date().getFullYear()), []);
+    const currentChestNumber = useMemo(() => {
+        const raw = (summary?.profile as any)?.chest_numbers_by_year;
+        if (!raw || typeof raw !== 'object') return '';
+        const byYear = raw as Record<string, unknown>;
+        const thisYear = String(byYear[currentYear] ?? '').trim();
+        if (thisYear) return thisYear;
+        const latestYear = Object.keys(byYear)
+            .filter((year) => /^\d{4}$/.test(String(year)))
+            .sort((a, b) => Number(b) - Number(a))
+            .find((year) => String(byYear[year] ?? '').trim().length > 0);
+        if (!latestYear) return '';
+        return String(byYear[latestYear] ?? '').trim();
+    }, [currentYear, summary?.profile]);
+    const athleticsClub = useMemo(() => {
+        return String(
+            (summary?.profile as any)?.track_field_club ??
+            (summary?.profile as any)?.athletics_club ??
+            (summary?.profile as any)?.running_club ??
+            (summary?.profile as any)?.running_club_name ??
+            '',
+        ).trim();
+    }, [summary?.profile]);
+    const trackFieldMainEvent = useMemo(
+        () => String((summary?.profile as any)?.track_field_main_event ?? '').trim(),
+        [summary?.profile],
+    );
+    const roadTrailMainEvent = useMemo(
+        () => String((summary?.profile as any)?.road_trail_main_event ?? '').trim(),
+        [summary?.profile],
+    );
+    const nationality = useMemo(
+        () => String((summary?.profile as any)?.nationality ?? '').trim(),
+        [summary?.profile],
+    );
+    const website = useMemo(
+        () => String((summary?.profile as any)?.website ?? '').trim(),
+        [summary?.profile],
+    );
+    const profileMetaTokens = useMemo(() => {
+        const trackEventWithClub = [trackFieldMainEvent, athleticsClub].map((entry) => String(entry || '').trim()).filter(Boolean).join(' · ');
+        const roadEventWithClub = [roadTrailMainEvent, athleticsClub].map((entry) => String(entry || '').trim()).filter(Boolean).join(' · ');
+        if (isTrackProfileView) {
+            return [nationality, currentChestNumber, trackEventWithClub].map((entry) => String(entry || '').trim()).filter(Boolean);
+        }
+        return [nationality, roadEventWithClub].map((entry) => String(entry || '').trim()).filter(Boolean);
+    }, [athleticsClub, currentChestNumber, isTrackProfileView, nationality, roadTrailMainEvent, trackFieldMainEvent]);
+    const openProfileWebsite = useCallback(async () => {
+        const raw = String(website || '').trim();
+        if (!raw) return;
+        const normalized = /^https?:\/\//i.test(raw) ? raw : `https://${raw}`;
+        try {
+            await Linking.openURL(normalized);
+        } catch {
+            Alert.alert(t('Error'), t('Could not open website.'));
+        }
+    }, [t, website]);
+
     const photoCollections = useMemo(
         () => collections.filter((c) => String(c.collection_type || '').toLowerCase() === 'image'),
         [collections],
@@ -268,6 +349,21 @@ const ViewUserProfileScreen = ({ navigation, route }: any) => {
             coverImage: entry.coverImage ? String(entry.coverImage) : null,
         }));
     }, [posts]);
+
+    const hasTimeline = timelineItems.length > 0;
+    const hasCollections = collections.length > 0;
+    const availableTabs = useMemo(() => {
+        const tabs: Array<'timeline' | 'activity' | 'collections'> = ['activity'];
+        if (hasTimeline) tabs.unshift('timeline');
+        if (hasCollections) tabs.push('collections');
+        return tabs;
+    }, [hasCollections, hasTimeline]);
+
+    useEffect(() => {
+        if (!availableTabs.includes(profileTab)) {
+            setProfileTab(availableTabs[0] || 'activity');
+        }
+    }, [availableTabs, profileTab]);
 
     const localStyles = useMemo(
         () =>
@@ -324,7 +420,7 @@ const ViewUserProfileScreen = ({ navigation, route }: any) => {
                         </View>
                         <View style={Styles.profileCategoryOnly}>
                             <Icons.TrackFieldLogo width={28} height={24} />
-                            <Text style={Styles.profileCategoryText}>{t('trackAndField')}</Text>
+                            <Text style={Styles.profileCategoryText}>{profileCategoryLabel}</Text>
                         </View>
                     </View>
 
@@ -364,16 +460,41 @@ const ViewUserProfileScreen = ({ navigation, route }: any) => {
                         <Text style={Styles.bioText}>{bioText}</Text>
                         <View style={Styles.bioDivider} />
                     </View>
+                    {profileMetaTokens.length > 0 && (
+                        <View style={Styles.athleteMetaSection}>
+                            <View style={Styles.athleteMetaInlineBox}>
+                                {profileMetaTokens.map((token, index) => (
+                                    <React.Fragment key={`meta-${token}-${index}`}>
+                                        <Text style={Styles.athleteMetaInlineValue}>{token}</Text>
+                                        {index < profileMetaTokens.length - 1 ? (
+                                            <Text style={Styles.athleteMetaInlineDot}>•</Text>
+                                        ) : null}
+                                    </React.Fragment>
+                                ))}
+                            </View>
+                        </View>
+                    )}
+                    {website.length > 0 ? (
+                        <View style={Styles.athleteMetaSection}>
+                            <TouchableOpacity activeOpacity={0.8} onPress={openProfileWebsite}>
+                                <Text style={[Styles.athleteMetaInlineValue, { color: colors.primaryColor, textDecorationLine: 'underline' }]}>
+                                    {website}
+                                </Text>
+                            </TouchableOpacity>
+                        </View>
+                    ) : null}
                 </View>
 
                 <View style={Styles.profileTabs}>
-                    <TouchableOpacity
-                        style={[Styles.profileTab, profileTab === 'timeline' && Styles.profileTabActive]}
-                        onPress={() => setProfileTab('timeline')}
-                    >
-                        <Clock size={18} color={profileTab === 'timeline' ? colors.primaryColor : colors.grayColor} variant="Linear" />
-                        <Text style={[Styles.profileTabText, profileTab === 'timeline' && Styles.profileTabTextActive]}>{t('Timeline')}</Text>
-                    </TouchableOpacity>
+                    {hasTimeline && (
+                        <TouchableOpacity
+                            style={[Styles.profileTab, profileTab === 'timeline' && Styles.profileTabActive]}
+                            onPress={() => setProfileTab('timeline')}
+                        >
+                            <Clock size={18} color={profileTab === 'timeline' ? colors.primaryColor : colors.grayColor} variant="Linear" />
+                            <Text style={[Styles.profileTabText, profileTab === 'timeline' && Styles.profileTabTextActive]}>{t('Timeline')}</Text>
+                        </TouchableOpacity>
+                    )}
                     <TouchableOpacity
                         style={[Styles.profileTab, profileTab === 'activity' && Styles.profileTabActive]}
                         onPress={() => setProfileTab('activity')}
@@ -381,13 +502,15 @@ const ViewUserProfileScreen = ({ navigation, route }: any) => {
                         <DocumentText size={18} color={profileTab === 'activity' ? colors.primaryColor : colors.grayColor} variant="Linear" />
                         <Text style={[Styles.profileTabText, profileTab === 'activity' && Styles.profileTabTextActive]}>{t('News')}</Text>
                     </TouchableOpacity>
-                    <TouchableOpacity
-                        style={[Styles.profileTab, profileTab === 'collections' && Styles.profileTabActive]}
-                        onPress={() => setProfileTab('collections')}
-                    >
-                        <Gallery size={18} color={profileTab === 'collections' ? colors.primaryColor : colors.grayColor} variant="Linear" />
-                        <Text style={[Styles.profileTabText, profileTab === 'collections' && Styles.profileTabTextActive]}>{t('Collections')}</Text>
-                    </TouchableOpacity>
+                    {hasCollections && (
+                        <TouchableOpacity
+                            style={[Styles.profileTab, profileTab === 'collections' && Styles.profileTabActive]}
+                            onPress={() => setProfileTab('collections')}
+                        >
+                            <Gallery size={18} color={profileTab === 'collections' ? colors.primaryColor : colors.grayColor} variant="Linear" />
+                            <Text style={[Styles.profileTabText, profileTab === 'collections' && Styles.profileTabTextActive]}>{t('Collections')}</Text>
+                        </TouchableOpacity>
+                    )}
                 </View>
 
                 {profileTab === 'timeline' && (

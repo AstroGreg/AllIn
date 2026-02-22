@@ -216,7 +216,7 @@ export const createStyles = (colors: ThemeColors) =>
     },
     modalOverlay: {
       flex: 1,
-      backgroundColor: 'rgba(0,0,0,0.45)',
+      backgroundColor: 'transparent',
       justifyContent: 'center',
       paddingHorizontal: 20,
     },
@@ -244,7 +244,7 @@ export const createStyles = (colors: ThemeColors) =>
       borderRadius: 17,
       alignItems: 'center',
       justifyContent: 'center',
-      backgroundColor: colors.btnBackgroundColor,
+      backgroundColor: 'transparent',
     },
     modalSearchRow: {
       flexDirection: 'row',

@@ -20,9 +20,52 @@ export const createStyles = (colors: ThemeColors) => StyleSheet.create({
         width: 44,
         height: 44,
         borderRadius: 22,
-        backgroundColor: '#F5F5F5',
+        backgroundColor: colors.btnBackgroundColor,
+        borderWidth: 1,
+        borderColor: colors.borderColor,
         alignItems: 'center',
         justifyContent: 'center',
+    },
+    headerEditButton: {
+        minWidth: 74,
+        height: 40,
+        borderRadius: 20,
+        backgroundColor: colors.secondaryBlueColor,
+        borderWidth: 1,
+        borderColor: colors.primaryColor,
+        alignItems: 'center',
+        justifyContent: 'center',
+        paddingHorizontal: 14,
+    },
+    headerEditButtonText: {
+        ...Fonts.medium14,
+        color: colors.primaryColor,
+    },
+    headerManageButton: {
+        minWidth: 84,
+        height: 40,
+        borderRadius: 20,
+        backgroundColor: colors.secondaryBlueColor,
+        borderWidth: 1,
+        borderColor: colors.primaryColor,
+        alignItems: 'center',
+        justifyContent: 'center',
+        paddingHorizontal: 14,
+    },
+    headerManageButtonText: {
+        ...Fonts.medium14,
+        color: colors.primaryColor,
+    },
+    headerActionsRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 8,
+    },
+    headerFollowAltButton: {
+        backgroundColor: colors.btnBackgroundColor,
+    },
+    headerFollowAltButtonText: {
+        color: colors.primaryColor,
     },
     headerTitle: {
         ...Fonts.medium18,
@@ -40,6 +83,27 @@ export const createStyles = (colors: ThemeColors) => StyleSheet.create({
         borderWidth: 0.5,
         borderColor: '#DEDEDE',
         padding: 16,
+        overflow: 'hidden',
+    },
+    profileCardHeaderRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        marginBottom: 8,
+    },
+    profileCardHeaderTitle: {
+        ...Fonts.medium22,
+        color: colors.mainTextColor,
+        flex: 1,
+    },
+    profileCardBackground: {
+        ...StyleSheet.absoluteFillObject,
+        opacity: 0.22,
+    },
+    profileCardOverlay: {
+        ...StyleSheet.absoluteFillObject,
+        backgroundColor: colors.backgroundColor,
+        opacity: 0.55,
     },
 
     // Share Button
@@ -184,6 +248,29 @@ export const createStyles = (colors: ThemeColors) => StyleSheet.create({
         backgroundColor: '#DEDEDE',
         marginTop: 8,
     },
+    groupFocusSection: {
+        marginTop: 12,
+    },
+    groupFocusInlineBox: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        gap: 8,
+    },
+    groupFocusChip: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 7,
+        borderWidth: 1,
+        borderColor: colors.primaryColor,
+        backgroundColor: colors.secondaryBlueColor,
+        borderRadius: 999,
+        paddingHorizontal: 12,
+        paddingVertical: 7,
+    },
+    groupFocusChipText: {
+        ...Fonts.medium12,
+        color: colors.primaryColor,
+    },
 
     // Website Container
     websiteContainer: {
@@ -240,6 +327,25 @@ export const createStyles = (colors: ThemeColors) => StyleSheet.create({
     toggleTabTextActive: {
         ...Fonts.regular12,
         color: colors.mainTextColor,
+    },
+    manageShortcutRow: {
+        flexDirection: 'row',
+        justifyContent: 'flex-end',
+        marginTop: 10,
+    },
+    manageShortcutButton: {
+        height: 34,
+        borderRadius: 17,
+        borderWidth: 1,
+        borderColor: colors.primaryColor,
+        backgroundColor: colors.secondaryBlueColor,
+        paddingHorizontal: 14,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    manageShortcutText: {
+        ...Fonts.medium12,
+        color: colors.primaryColor,
     },
 
     // Club Athletes Section
@@ -588,6 +694,95 @@ export const createStyles = (colors: ThemeColors) => StyleSheet.create({
     emailModalSaveButtonText: {
         ...Fonts.medium14,
         color: colors.whiteColor,
+    },
+    profileSwitcherBackdrop: {
+        flex: 1,
+        backgroundColor: 'rgba(0,0,0,0.45)',
+        justifyContent: 'flex-end',
+    },
+    profileSwitcherSheet: {
+        backgroundColor: colors.whiteColor,
+        borderTopLeftRadius: 26,
+        borderTopRightRadius: 26,
+        paddingHorizontal: 16,
+        paddingTop: 12,
+        paddingBottom: 24,
+        borderWidth: 0.5,
+        borderColor: colors.lightGrayColor,
+    },
+    profileSwitcherHandle: {
+        width: 48,
+        height: 5,
+        borderRadius: 999,
+        backgroundColor: colors.lightGrayColor,
+        alignSelf: 'center',
+        marginBottom: 12,
+    },
+    profileSwitcherTitle: {
+        ...Fonts.medium16,
+        color: colors.mainTextColor,
+        textAlign: 'center',
+    },
+    profileSwitcherRow: {
+        minHeight: 58,
+        borderRadius: 14,
+        borderWidth: 0.5,
+        borderColor: colors.lightGrayColor,
+        backgroundColor: colors.btnBackgroundColor,
+        paddingHorizontal: 12,
+        marginTop: 10,
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
+    profileSwitcherRowActive: {
+        borderColor: colors.primaryColor,
+    },
+    profileSwitcherAvatar: {
+        width: 38,
+        height: 38,
+        borderRadius: 19,
+        backgroundColor: colors.secondaryBlueColor,
+        alignItems: 'center',
+        justifyContent: 'center',
+        borderWidth: 0.5,
+        borderColor: colors.lightGrayColor,
+    },
+    profileSwitcherLabel: {
+        ...Fonts.medium16,
+        color: colors.mainTextColor,
+        flex: 1,
+        marginLeft: 12,
+    },
+    profileSwitcherCheck: {
+        ...Fonts.medium20,
+        color: colors.primaryColor,
+        minWidth: 20,
+        textAlign: 'right',
+    },
+    profileSwitcherAddRow: {
+        backgroundColor: colors.secondaryBlueColor,
+        borderColor: colors.primaryColor,
+    },
+    profileSwitcherAvatarAdd: {
+        width: 38,
+        height: 38,
+        borderRadius: 19,
+        backgroundColor: colors.whiteColor,
+        alignItems: 'center',
+        justifyContent: 'center',
+        borderWidth: 1,
+        borderColor: colors.primaryColor,
+    },
+    profileSwitcherPlus: {
+        ...Fonts.medium20,
+        color: colors.primaryColor,
+        lineHeight: 24,
+    },
+    profileSwitcherAddLabel: {
+        ...Fonts.medium16,
+        color: colors.primaryColor,
+        flex: 1,
+        marginLeft: 12,
     },
 
     // Coach Details Modal Styles

@@ -6,6 +6,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useTheme } from '../../../context/ThemeContext'
 import { ArrowLeft2, Lock, User, Card, Calendar, ArrowRight2, Scan } from 'iconsax-react-nativejs'
 import { useTranslation } from 'react-i18next'
+import { useAuth } from '../../../context/AuthContext'
 
 interface SettingsItem {
     icon: React.ReactNode;
@@ -15,11 +16,34 @@ interface SettingsItem {
 
 const ProfileSettings = ({ navigation }: any) => {
     const { t } = useTranslation();
+    const { userProfile } = useAuth();
     const insets = useSafeAreaInsets();
     const { colors } = useTheme();
     const Styles = createStyles(colors);
 
+    const selectedEventsRaw = userProfile?.selectedEvents;
+    const selectedEventsNormalized: string[] = Array.isArray(selectedEventsRaw)
+        ? selectedEventsRaw
+            .map((entry: any) => String(
+                typeof entry === 'string'
+                    ? entry
+                    : entry?.id ?? entry?.value ?? entry?.event_id ?? entry?.name ?? '',
+            ).trim().toLowerCase())
+            .filter(Boolean)
+        : [];
+    const hasTrackFieldProfile = selectedEventsNormalized.some((entry) =>
+        entry === 'track-field' || entry === 'track&field' || entry === 'track_field' || entry.includes('track'),
+    );
+    const hasRoadTrailProfile = selectedEventsNormalized.some((entry) =>
+        entry === 'road-events' || entry === 'road&trail' || entry === 'road_trail' || entry.includes('road') || entry.includes('trail'),
+    );
+
     const settingsItems: SettingsItem[] = [
+        {
+            icon: <User size={20} color={colors.primaryColor} variant="Linear" />,
+            title: t('Name'),
+            onPress: () => navigation.navigate('NameSettings'),
+        },
         {
             icon: <Lock size={20} color={colors.primaryColor} variant="Linear" />,
             title: 'Change Password',
@@ -40,15 +64,25 @@ const ProfileSettings = ({ navigation }: any) => {
             title: 'Date of Birth',
             onPress: () => navigation.navigate('DateOfBirth'),
         },
-        {
+        ...(hasTrackFieldProfile ? [{
             icon: <Card size={20} color={colors.primaryColor} variant="Linear" />,
-            title: 'Chest number by year',
-            onPress: () => navigation.navigate('ChestNumberSettings'),
-        },
+            title: t('trackAndField'),
+            onPress: () => navigation.navigate('TrackFieldSettings'),
+        }] : []),
+        ...(hasRoadTrailProfile ? [{
+            icon: <Card size={20} color={colors.primaryColor} variant="Linear" />,
+            title: t('roadAndTrail'),
+            onPress: () => navigation.navigate('RoadTrailSettings'),
+        }] : []),
         {
             icon: <Scan size={20} color={colors.primaryColor} variant="Linear" />,
             title: 'Facial Recognition',
             onPress: () => navigation.navigate('FacialRecognitionSettings'),
+        },
+        {
+            icon: <User size={20} color={colors.primaryColor} variant="Linear" />,
+            title: t('Manage profiles'),
+            onPress: () => navigation.navigate('ManageProfiles'),
         },
     ];
 
