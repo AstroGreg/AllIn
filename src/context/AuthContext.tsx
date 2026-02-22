@@ -149,6 +149,21 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         checkStoredCredentials();
     }, []);
 
+    useEffect(() => {
+        if (!__DEV__) return;
+        if (accessToken) {
+            console.log('[Auth] API access token:', accessToken);
+            return;
+        }
+        console.log('[Auth] API access token: <none>');
+    }, [accessToken]);
+
+    useEffect(() => {
+        if (!__DEV__) return;
+        if (!error) return;
+        console.log('[Auth] Error:', error);
+    }, [error]);
+
     const checkStoredCredentials = async () => {
         console.log('[Auth] Checking stored credentials...');
         try {
@@ -304,6 +319,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
             if (credentials && credentials.accessToken) {
                 console.log('[Auth] Access token received');
+                console.log('[Auth] Access token value:', credentials.accessToken);
                 console.log('[Auth] ID token exists:', !!credentials.idToken);
 
                 let userInfo: User | null = null;
@@ -404,6 +420,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
             if (credentials && credentials.accessToken) {
                 console.log('[Auth] Access token received');
+                console.log('[Auth] Access token value:', credentials.accessToken);
                 console.log('[Auth] ID token exists:', !!credentials.idToken);
 
                 let userInfo: User | null = null;

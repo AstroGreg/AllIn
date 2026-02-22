@@ -27,7 +27,7 @@ export const getApiBaseUrl = () => {
         return 'http://192.168.0.150:3000';
     }
 
-    return 'https://myjourney.coffee';
+    return 'https://spotme.ai/';
 };
 
 export const getHlsBaseUrl = () => {

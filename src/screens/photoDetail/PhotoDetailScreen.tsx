@@ -591,7 +591,7 @@ const PhotoDetailScreen = ({navigation, route}: any) => {
                     stickerImage: bannerUri,
                     backgroundTopColor: '#0D0F12',
                     backgroundBottomColor: '#0D0F12',
-                    attributionURL: 'https://myjourney.coffee',
+                    attributionURL: 'https://spotme.ai/',
                 });
                 return;
             } catch (e: any) {

@@ -1,5 +1,5 @@
 #include? "../Pods/Target Support Files/Pods-AllIn/Pods-AllIn.release.xcconfig"
 #include? "../Pods/Target Support Files/react-native-config/ReactNativeConfig.xcconfig"
 
-API_GATEWAY_URL = https://myjourney.coffee
-HLS_BASE_URL = https://myjourney.coffee
+API_GATEWAY_URL = https://spotme.ai/
+HLS_BASE_URL = https://spotme.ai/
