@@ -7,7 +7,7 @@ import { getApiBaseUrl } from '../constants/RuntimeConfig';
 // Auth0 credentials
 const AUTH0_DOMAIN = (AppConfig.AUTH0_DOMAIN || 'auth.spot-me.ai').trim();
 const AUTH0_CLIENT_ID = (AppConfig.AUTH0_CLIENT_ID || '9hoAMRZsk87vtZi3rA2HPP9W5wMlPNGp').trim();
-const AUTH0_AUDIENCE = (AppConfig.AUTH0_AUDIENCE || '').trim();
+const AUTH0_AUDIENCE = (AppConfig.AUTH0_AUDIENCE || 'https://spotme.ai/').trim();
 const ANDROID_APP_ID = 'com.spotme';
 const IOS_BUNDLE_ID = 'com.spotme';
 const AUTH0_REDIRECT_URI = Platform.select({
@@ -300,8 +300,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
                 setError('Auth0 native module not available. Please reinstall pods and rebuild.');
                 return;
             }
-            console.log('[Auth] Calling auth0.webAuth.authorize...');
-            const credentials = await auth0.webAuth.authorize({
+            const authorizeParams = {
                 // If AUTH0_AUDIENCE is set, request an API access token with the permissions needed by the gateway.
                 scope: AUTH0_AUDIENCE
                   ? 'openid profile email read:users access:ai search:media list:media read:media'
@@ -313,7 +312,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
                 additionalParameters: {
                     prompt: 'login',
                 },
-            });
+            };
+            console.log('[Auth] Authorize endpoint:', `https://${AUTH0_DOMAIN}/authorize`);
+            console.log('[Auth] Authorize params:', JSON.stringify(authorizeParams));
+            console.log('[Auth] Calling auth0.webAuth.authorize...');
+            const credentials = await auth0.webAuth.authorize(authorizeParams);
             console.log('[Auth] Credentials received:', credentials ? 'Yes' : 'No');
             console.log('[Auth] Access token exists:', !!credentials?.accessToken);
 
@@ -402,8 +405,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
                 setError('Auth0 native module not available. Please reinstall pods and rebuild.');
                 return;
             }
-            console.log('[Auth] Calling auth0.webAuth.authorize for signup...');
-            const credentials = await auth0.webAuth.authorize({
+            const authorizeParams = {
                 scope: AUTH0_AUDIENCE
                   ? 'openid profile email read:users access:ai search:media list:media read:media'
                   : 'openid profile email',
@@ -414,7 +416,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
                     screen_hint: 'signup',
                     prompt: 'login',
                 },
-            });
+            };
+            console.log('[Auth] Authorize endpoint:', `https://${AUTH0_DOMAIN}/authorize`);
+            console.log('[Auth] Authorize params (signup):', JSON.stringify(authorizeParams));
+            console.log('[Auth] Calling auth0.webAuth.authorize for signup...');
+            const credentials = await auth0.webAuth.authorize(authorizeParams);
             console.log('[Auth] Signup credentials received:', credentials ? 'Yes' : 'No');
             console.log('[Auth] Access token exists:', !!credentials?.accessToken);
 
