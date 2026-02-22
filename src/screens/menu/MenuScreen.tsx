@@ -106,16 +106,6 @@ const MenuScreen = ({ navigation }: any) => {
                     title={t('paymentMethod')}
                     onPress={() => navigation.navigate('PaymentMethod')}
                 />
-                {__DEV__ && (
-                  <>
-                    <SizeBox height={12} />
-                    <MenuContainers
-                      icon={<SecurityUser size={20} color={colors.primaryColor} variant="Linear" />}
-                      title={t('Dev API Token')}
-                      onPress={() => navigation.navigate('DevApiTokenScreen')}
-                    />
-                  </>
-                )}
                 <SizeBox height={12} />
                 <MenuContainers
                     icon={<Money3 size={20} color={colors.primaryColor} variant="Linear" />}
@@ -222,9 +212,14 @@ const MenuScreen = ({ navigation }: any) => {
                             </TouchableOpacity>
                             <TouchableOpacity
                                 style={{ flex: 1, alignItems: 'center', justifyContent: 'center', paddingVertical: 12 }}
-                                onPress={() => {
+                                onPress={async () => {
                                     setShowLogoutModal(false);
-                                    logout();
+                                    await logout();
+                                    const rootNav = navigation?.getParent?.()?.getParent?.() ?? navigation?.getParent?.() ?? navigation;
+                                    rootNav.reset({
+                                        index: 0,
+                                        routes: [{ name: 'LoginScreen' }],
+                                    });
                                 }}
                             >
                                 <Text style={[Styles.noText, { color: colors.errorColor || '#D32F2F' }]}>{t('Log out')}</Text>

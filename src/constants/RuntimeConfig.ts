@@ -1,42 +1,24 @@
-import { NativeModules } from 'react-native';
 import { AppConfig } from './AppConfig';
-
-const resolveDevHost = () => {
-    const scriptURL = NativeModules?.SourceCode?.scriptURL ?? '';
-    if (typeof scriptURL !== 'string' || !scriptURL.startsWith('http')) return null;
-    const match = scriptURL.match(/^https?:\/\/([^/:]+)(?::\d+)?\//i);
-    return match?.[1] ?? null;
-};
-
-export const getDevScriptURL = () => {
-    const scriptURL = NativeModules?.SourceCode?.scriptURL ?? '';
-    return typeof scriptURL === 'string' ? scriptURL : '';
+const requireEnv = (key: string, value: any): string => {
+    const out = String(value ?? process.env[key] ?? '').trim();
+    if (!out) {
+        throw new Error(`[Config] Missing required env var: ${key}. Check react-native-config/.env loading.`);
+    }
+    return out;
 };
 
 export const getApiBaseUrl = () => {
-    const raw = (AppConfig.API_GATEWAY_URL ?? process.env.API_GATEWAY_URL ?? '').trim();
-    if (raw) return raw;
-
-    if (__DEV__) {
-        const host = resolveDevHost();
-        if (host && host !== 'localhost' && host !== '127.0.0.1') {
-            return `http://${host}:3000`;
-        }
-        const devOverride = (AppConfig.DEV_API_GATEWAY_URL ?? '').trim();
-        if (devOverride) return devOverride;
-        return 'http://192.168.15.100:3000';
-    }
-
-    return 'https://myjourney.coffee';
+    return requireEnv('API_GATEWAY_URL', AppConfig.API_GATEWAY_URL);
 };
 
 export const getHlsBaseUrl = () => {
-    const raw = (
+    const raw = String(
         AppConfig.HLS_BASE_URL ??
         AppConfig.MEDIA_BASE_URL ??
         process.env.HLS_BASE_URL ??
-        ''
+        '',
     ).trim();
     if (raw) return raw;
+    // Explicit fallback to API is allowed, but API itself must be configured.
     return getApiBaseUrl();
 };

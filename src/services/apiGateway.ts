@@ -144,6 +144,60 @@ export async function getAuthMe(accessToken: string): Promise<AuthMeResponse> {
   return apiRequest<AuthMeResponse>('/auth/me', {method: 'GET', accessToken});
 }
 
+export interface UserMe {
+  user_id: string | null;
+  email?: string | null;
+  username?: string | null;
+  first_name?: string | null;
+  last_name?: string | null;
+  nationality?: string | null;
+  birthdate?: string | null;
+  preferred_language?: string | null;
+  theme_preference?: string | null;
+  is_guest?: boolean;
+  full_name?: string | null;
+}
+
+export interface UserMeResponse {
+  ok: boolean;
+  user: UserMe;
+}
+
+export interface AuthBootstrapResponse {
+  ok: boolean;
+  sub: string;
+  profile_id: string;
+  user: UserMe;
+  profiles_count: number;
+  has_profiles: boolean;
+  needs_user_onboarding: boolean;
+  missing_user_fields: string[];
+}
+
+export interface UpdateUserMeInput {
+  username?: string | null;
+  first_name?: string | null;
+  last_name?: string | null;
+  email?: string | null;
+  nationality?: string | null;
+  birthdate?: string | null;
+  preferred_language?: string | null;
+  theme_preference?: string | null;
+  is_guest?: boolean;
+}
+
+export async function getAuthBootstrap(accessToken: string): Promise<AuthBootstrapResponse> {
+  return apiRequest<AuthBootstrapResponse>('/auth/bootstrap', {method: 'GET', accessToken});
+}
+
+export async function getUserMe(accessToken: string): Promise<UserMeResponse> {
+  return apiRequest<UserMeResponse>('/users/me', {method: 'GET', accessToken});
+}
+
+export async function updateUserMe(accessToken: string, body: UpdateUserMeInput): Promise<UserMeResponse> {
+  return apiRequest<UserMeResponse>('/users/me', {method: 'PUT', accessToken, body});
+}
+
 export interface ProfileSummary {
   ok: boolean;
   profile_id: string;

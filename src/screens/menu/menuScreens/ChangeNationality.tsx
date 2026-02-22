@@ -7,6 +7,7 @@ import { useTheme } from '../../../context/ThemeContext'
 import { ArrowLeft2, Card, ArrowDown2 } from 'iconsax-react-nativejs'
 import { useAuth } from '../../../context/AuthContext'
 import { useTranslation } from 'react-i18next'
+import { getNationalityOptions } from '../../../constants/Nationalities'
 
 const ChangeNationality = ({ navigation }: any) => {
     const { t } = useTranslation();
@@ -19,23 +20,7 @@ const ChangeNationality = ({ navigation }: any) => {
     const [showModal, setShowModal] = useState(false);
     const currentNationality = userProfile?.nationality || 'Not set';
 
-    const nationalityOptions = useMemo(() => ([
-        'Belgian',
-        'Dutch',
-        'French',
-        'German',
-        'Spanish',
-        'Italian',
-        'Portuguese',
-        'British',
-        'American',
-        'Canadian',
-        'Australian',
-        'Swiss',
-        'Swedish',
-        'Norwegian',
-        'Danish',
-    ]), []);
+    const nationalityOptions = useMemo(() => getNationalityOptions(), []);
 
     return (
         <View style={Styles.mainContainer}>

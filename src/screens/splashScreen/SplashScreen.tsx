@@ -6,7 +6,7 @@ import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
 
 const SplashScreen = ({ navigation }: any) => {
-    const { isAuthenticated, isLoading } = useAuth();
+    const { isAuthenticated, isLoading, authBootstrap, refreshAuthBootstrap } = useAuth();
     const { colors } = useTheme();
     const styles = createStyles(colors);
 
@@ -14,13 +14,15 @@ const SplashScreen = ({ navigation }: any) => {
         // Wait for auth check to complete
         if (isLoading) return;
 
-        const timer = setTimeout(() => {
+        const timer = setTimeout(async () => {
             if (isAuthenticated) {
+                const bootstrap = authBootstrap ?? (await refreshAuthBootstrap());
+                const target = bootstrap?.needs_user_onboarding ? 'CreateProfileScreen' : 'BottomTabBar';
                 // User is already logged in, go directly to main app
-                console.log('[SplashScreen] User authenticated, navigating to BottomTabBar');
+                console.log('[SplashScreen] User authenticated, navigating to', target);
                 navigation.reset({
                     index: 0,
-                    routes: [{ name: 'BottomTabBar' }],
+                    routes: [{ name: target }],
                 });
             } else {
                 // User not logged in, show onboarding/login flow
@@ -30,7 +32,7 @@ const SplashScreen = ({ navigation }: any) => {
         }, 2000);
 
         return () => clearTimeout(timer);
-    }, [navigation, isAuthenticated, isLoading]);
+    }, [navigation, isAuthenticated, isLoading, authBootstrap, refreshAuthBootstrap]);
 
     return (
         <View style={styles.mainContainer}>

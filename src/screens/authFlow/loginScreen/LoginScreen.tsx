@@ -18,7 +18,20 @@ const LoginScreen = ({ navigation }: any) => {
     const { colors } = useTheme();
     const Styles = createStyles(colors);
     const insets = useSafeAreaInsets();
-    const { login, signup, isLoading, isAuthenticated } = useAuth();
+    const { login, signup, isLoading, isAuthenticated, refreshAuthBootstrap } = useAuth();
+
+    const navigatePostAuth = async () => {
+        const bootstrap = await refreshAuthBootstrap();
+        console.log('[LoginScreen] auth/bootstrap result:', bootstrap ? {
+            needs_user_onboarding: bootstrap.needs_user_onboarding,
+            missing_user_fields: bootstrap.missing_user_fields,
+        } : null);
+        const target = !bootstrap || bootstrap.needs_user_onboarding ? 'CreateProfileScreen' : 'CategorySelectionScreen';
+        navigation.reset({
+            index: 0,
+            routes: [{ name: target }],
+        });
+    };
 
     // Debug: Clear all stored auth data
     const handleClearAuth = async () => {
@@ -34,11 +47,8 @@ const LoginScreen = ({ navigation }: any) => {
         console.log('[LoginScreen] Sign In button pressed');
         try {
             await login();
-            console.log('[LoginScreen] Login successful, navigating to CategorySelectionScreen');
-            navigation.reset({
-                index: 0,
-                routes: [{ name: 'CategorySelectionScreen' }],
-            });
+            console.log('[LoginScreen] Login successful, resolving onboarding route');
+            await navigatePostAuth();
         } catch (err: any) {
             console.log('[LoginScreen] Login error:', err.message);
             if (err.message !== 'User cancelled the Auth') {
@@ -50,10 +60,7 @@ const LoginScreen = ({ navigation }: any) => {
     const handleGoogleLogin = async () => {
         try {
             await login('google-oauth2');
-            navigation.reset({
-                index: 0,
-                routes: [{ name: 'CategorySelectionScreen' }],
-            });
+            await navigatePostAuth();
         } catch (err: any) {
             if (err.message !== 'User cancelled the Auth') {
                 Alert.alert(t('Login Failed'), err.message || t('Google login failed'));
@@ -64,10 +71,7 @@ const LoginScreen = ({ navigation }: any) => {
     const handleAppleLogin = async () => {
         try {
             await login('apple');
-            navigation.reset({
-                index: 0,
-                routes: [{ name: 'CategorySelectionScreen' }],
-            });
+            await navigatePostAuth();
         } catch (err: any) {
             if (err.message !== 'User cancelled the Auth') {
                 Alert.alert(t('Login Failed'), err.message || t('Apple login failed'));
@@ -78,10 +82,7 @@ const LoginScreen = ({ navigation }: any) => {
     const handleSignup = async () => {
         try {
             await signup();
-            navigation.reset({
-                index: 0,
-                routes: [{ name: 'CategorySelectionScreen' }],
-            });
+            await navigatePostAuth();
         } catch (err: any) {
             if (err.message !== 'User cancelled the Auth') {
                 Alert.alert(t('Signup Failed'), err.message || t('Please try again'));

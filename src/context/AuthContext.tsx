@@ -1,14 +1,23 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { AppConfig } from '../constants/AppConfig';
-import { getApiBaseUrl } from '../constants/RuntimeConfig';
+import { getAuthBootstrap, updateUserMe, type AuthBootstrapResponse, type UpdateUserMeInput } from '../services/apiGateway';
 
 // Auth0 credentials
-const AUTH0_DOMAIN = (AppConfig.AUTH0_DOMAIN || 'dev-lfzk0n81zjp0c3x3.us.auth0.com').trim();
-const AUTH0_CLIENT_ID = (AppConfig.AUTH0_CLIENT_ID || 'czlUtPo1WSw72XpcqHKSzO5MsuUzTV5P').trim();
-const AUTH0_AUDIENCE = (AppConfig.AUTH0_AUDIENCE || '').trim();
-// Custom redirect URI with lowercase package name (required for Android)
-const AUTH0_REDIRECT_URI = 'com.allin.auth0://dev-lfzk0n81zjp0c3x3.us.auth0.com/android/com.allin/callback';
+const requireConfig = (key: string, value: any) => {
+    const out = String(value ?? '').trim();
+    if (!out) {
+        throw new Error(`[Config] Missing required env var: ${key}. Check react-native-config/.env loading.`);
+    }
+    return out;
+};
+
+const AUTH0_DOMAIN = requireConfig('AUTH0_DOMAIN', AppConfig.AUTH0_DOMAIN);
+const AUTH0_CLIENT_ID = requireConfig('AUTH0_CLIENT_ID', AppConfig.AUTH0_CLIENT_ID);
+const AUTH0_AUDIENCE = requireConfig('AUTH0_AUDIENCE', AppConfig.AUTH0_AUDIENCE);
+const AUTH0_REDIRECT_URI = requireConfig('AUTH0_REDIRECT_URI', AppConfig.AUTH0_REDIRECT_URI);
+
+
 
 type User = {
     sub?: string;
@@ -98,15 +107,15 @@ interface AuthContextType {
     isLoading: boolean;
     user: User | null;
     userProfile: UserProfile | null;
+    authBootstrap: AuthBootstrapResponse | null;
     accessToken: string | null;
     apiAccessToken: string | null;
-    devApiToken: string | null;
     login: (connection?: string) => Promise<void>;
     signup: (connection?: string) => Promise<void>;
     logout: () => Promise<void>;
-    setDevApiToken: (token: string) => Promise<void>;
-    clearDevApiToken: () => Promise<void>;
     updateUserProfile: (profileData: Partial<UserProfile>) => Promise<void>;
+    updateUserAccount: (input: UpdateUserMeInput) => Promise<AuthBootstrapResponse | null>;
+    refreshAuthBootstrap: () => Promise<AuthBootstrapResponse | null>;
     getUserProfile: () => Promise<UserProfile | null>;
     error: string | null;
     clearError: () => void;
@@ -116,26 +125,15 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 const AUTH_STORAGE_KEY = '@auth_credentials';
 const PROFILE_STORAGE_KEY = '@user_profile';
-const DEV_API_TOKEN_KEY = '@dev_api_token';
-const LEGACY_AUTO_DEV_TOKEN_SUFFIX = 'IzuyV2A';
 
-const triggerProfileProvisioning = async (accessToken: string) => {
+const triggerAuthBootstrap = async (accessToken: string): Promise<AuthBootstrapResponse | null> => {
     try {
-        const url = `${getApiBaseUrl()}/auth/me`;
-        const res = await fetch(url, {
-            method: 'GET',
-            headers: {
-                Authorization: `Bearer ${accessToken}`,
-            },
-        });
-        if (!res.ok) {
-            const body = await res.text().catch(() => '');
-            console.log('[Auth] Provisioning ping returned non-OK:', res.status, body);
-            return;
-        }
-        console.log('[Auth] Provisioning ping succeeded.');
+        const payload = await getAuthBootstrap(accessToken);
+        console.log('[Auth] Bootstrap succeeded:', payload?.needs_user_onboarding ? 'needs_onboarding' : 'ready');
+        return payload;
     } catch (err: any) {
-        console.log('[Auth] Provisioning ping failed:', err?.message ?? err);
+        console.log('[Auth] Bootstrap failed:', err?.message ?? err);
+        return null;
     }
 };
 
@@ -144,8 +142,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const [isLoading, setIsLoading] = useState(true);
     const [user, setUser] = useState<User | null>(null);
     const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
+    const [authBootstrap, setAuthBootstrap] = useState<AuthBootstrapResponse | null>(null);
     const [accessToken, setAccessToken] = useState<string | null>(null);
-    const [devApiToken, setDevApiTokenState] = useState<string | null>(null);
     const [error, setError] = useState<string | null>(null);
 
     // Check for stored credentials on app start
@@ -158,22 +156,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         try {
             const storedCredentials = await AsyncStorage.getItem(AUTH_STORAGE_KEY);
             const storedProfile = await AsyncStorage.getItem(PROFILE_STORAGE_KEY);
-            const storedDevToken = await AsyncStorage.getItem(DEV_API_TOKEN_KEY);
-
             if (storedProfile) {
                 console.log('[Auth] Found stored profile');
                 setUserProfile(JSON.parse(storedProfile));
-            }
-
-            if (storedDevToken) {
-                const sanitizedDevToken = String(storedDevToken).trim();
-                if (sanitizedDevToken.endsWith(LEGACY_AUTO_DEV_TOKEN_SUFFIX)) {
-                    await AsyncStorage.removeItem(DEV_API_TOKEN_KEY);
-                    setDevApiTokenState(null);
-                    console.log('[Auth] Removed legacy auto dev token override');
-                } else {
-                    setDevApiTokenState(sanitizedDevToken);
-                }
             }
 
             if (storedCredentials) {
@@ -217,6 +202,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
                         setUser(userInfo);
                         setAccessToken(credentials.accessToken);
                         setIsAuthenticated(true);
+                        const bootstrap = await triggerAuthBootstrap(credentials.accessToken);
+                        setAuthBootstrap(bootstrap);
                     } else {
                         throw new Error('Could not validate session');
                     }
@@ -231,17 +218,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         } finally {
             setIsLoading(false);
         }
-    };
-
-    const setDevApiToken = async (token: string) => {
-        const t = String(token || '').trim();
-        await AsyncStorage.setItem(DEV_API_TOKEN_KEY, t);
-        setDevApiTokenState(t);
-    };
-
-    const clearDevApiToken = async () => {
-        await AsyncStorage.removeItem(DEV_API_TOKEN_KEY);
-        setDevApiTokenState(null);
     };
 
     const storeCredentials = async (credentials: Credentials) => {
@@ -315,10 +291,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             console.log('[Auth] Calling auth0.webAuth.authorize...');
             const credentials = await auth0.webAuth.authorize({
                 // If AUTH0_AUDIENCE is set, request an API access token with the permissions needed by the gateway.
-                scope: AUTH0_AUDIENCE
-                  ? 'openid profile email read:users access:ai search:media list:media read:media'
-                  : 'openid profile email',
-                ...(AUTH0_AUDIENCE ? { audience: AUTH0_AUDIENCE } : {}),
+                scope: 'openid profile email read:users access:ai search:media list:media read:media',
+                audience: AUTH0_AUDIENCE,
                 redirectUrl: AUTH0_REDIRECT_URI,
                 ...(connection && { connection }),
                 // Force fresh login by adding prompt parameter
@@ -375,7 +349,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
                 setAccessToken(credentials.accessToken);
                 setIsAuthenticated(true);
                 await storeCredentials(credentials);
-                await triggerProfileProvisioning(credentials.accessToken);
+                const bootstrap = await triggerAuthBootstrap(credentials.accessToken);
+                setAuthBootstrap(bootstrap);
                 console.log('[Auth] Login successful!');
             } else {
                 console.log('[Auth] No access token in credentials, login may have been cancelled');
@@ -415,10 +390,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             }
             console.log('[Auth] Calling auth0.webAuth.authorize for signup...');
             const credentials = await auth0.webAuth.authorize({
-                scope: AUTH0_AUDIENCE
-                  ? 'openid profile email read:users access:ai search:media list:media read:media'
-                  : 'openid profile email',
-                ...(AUTH0_AUDIENCE ? { audience: AUTH0_AUDIENCE } : {}),
+                scope: 'openid profile email read:users access:ai search:media list:media read:media',
+                audience: AUTH0_AUDIENCE,
                 redirectUrl: AUTH0_REDIRECT_URI,
                 ...(connection && { connection }),
                 additionalParameters: {
@@ -473,7 +446,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
                 setAccessToken(credentials.accessToken);
                 setIsAuthenticated(true);
                 await storeCredentials(credentials);
-                await triggerProfileProvisioning(credentials.accessToken);
+                const bootstrap = await triggerAuthBootstrap(credentials.accessToken);
+                setAuthBootstrap(bootstrap);
                 console.log('[Auth] Signup successful!');
             } else {
                 console.log('[Auth] No access token in credentials, signup may have been cancelled');
@@ -504,16 +478,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const logout = async () => {
         setIsLoading(true);
         try {
-            const auth0 = getAuth0();
-            if (!auth0) {
-                setError('Auth0 native module not available. Please reinstall pods and rebuild.');
-                return;
-            }
-            await auth0.webAuth.clearSession();
             await AsyncStorage.removeItem(AUTH_STORAGE_KEY);
             await AsyncStorage.removeItem(PROFILE_STORAGE_KEY);
+            await AsyncStorage.removeItem('@dev_api_token');
             setUser(null);
             setUserProfile(null);
+            setAuthBootstrap(null);
             setAccessToken(null);
             setIsAuthenticated(false);
         } catch (err: any) {
@@ -523,7 +493,34 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         }
     };
 
-    const apiAccessToken = devApiToken || accessToken;
+    const apiAccessToken = accessToken;
+
+    const refreshAuthBootstrap = async (): Promise<AuthBootstrapResponse | null> => {
+        let token = accessToken;
+        if (!token) {
+            try {
+                const storedCredentials = await AsyncStorage.getItem(AUTH_STORAGE_KEY);
+                if (storedCredentials) {
+                    const parsed = JSON.parse(storedCredentials);
+                    token = parsed?.accessToken ?? null;
+                }
+            } catch (err: any) {
+                console.log('[Auth] refreshAuthBootstrap could not read stored credentials:', err?.message ?? err);
+            }
+        }
+        if (!token) return null;
+        const payload = await triggerAuthBootstrap(token);
+        setAuthBootstrap(payload);
+        return payload;
+    };
+
+    const updateUserAccount = async (input: UpdateUserMeInput): Promise<AuthBootstrapResponse | null> => {
+        if (!accessToken) {
+            throw new Error('Not authenticated');
+        }
+        await updateUserMe(accessToken, input);
+        return refreshAuthBootstrap();
+    };
 
     const clearError = () => {
         setError(null);
@@ -536,15 +533,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
                 isLoading,
                 user,
                 userProfile,
+                authBootstrap,
                 accessToken,
                 apiAccessToken,
-                devApiToken,
                 login,
                 signup,
                 logout,
-                setDevApiToken,
-                clearDevApiToken,
                 updateUserProfile,
+                updateUserAccount,
+                refreshAuthBootstrap,
                 getUserProfile,
                 error,
                 clearError,

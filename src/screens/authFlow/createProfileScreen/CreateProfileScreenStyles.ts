@@ -31,6 +31,20 @@ export const createStyles = (colors: ThemeColors) => StyleSheet.create({
         color: colors.grayColor,
         textAlign: 'center',
     },
+    label: {
+        ...Fonts.medium14,
+        color: colors.mainTextColor,
+    },
+    inputContainer: {
+        minHeight: 58,
+        borderRadius: 14,
+        borderWidth: 1,
+        borderColor: colors.lightGrayColor,
+        backgroundColor: (colors as any).inputBackgroundColor ?? (colors as any).cardBackground ?? colors.backgroundColor,
+        paddingHorizontal: 16,
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
 });
 
 // Backward compatibility

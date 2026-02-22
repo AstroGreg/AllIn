@@ -17,15 +17,25 @@ const SignupScreen = ({ navigation }: any) => {
     const { colors } = useTheme();
     const Styles = createStyles(colors);
     const insets = useSafeAreaInsets();
-    const { signup, isLoading } = useAuth();
+    const { signup, isLoading, refreshAuthBootstrap } = useAuth();
+
+    const navigatePostAuth = async () => {
+        const bootstrap = await refreshAuthBootstrap();
+        console.log('[SignupScreen] auth/bootstrap result:', bootstrap ? {
+            needs_user_onboarding: bootstrap.needs_user_onboarding,
+            missing_user_fields: bootstrap.missing_user_fields,
+        } : null);
+        const target = !bootstrap || bootstrap.needs_user_onboarding ? 'CreateProfileScreen' : 'CategorySelectionScreen';
+        navigation.reset({
+            index: 0,
+            routes: [{ name: target }],
+        });
+    };
 
     const handleSignup = async () => {
         try {
             await signup();
-            navigation.reset({
-                index: 0,
-                routes: [{ name: 'CategorySelectionScreen' }],
-            });
+            await navigatePostAuth();
         } catch (err: any) {
             if (err.message !== 'User cancelled the Auth') {
                 Alert.alert(t('Signup Failed'), err.message || t('Please try again'));
@@ -36,10 +46,7 @@ const SignupScreen = ({ navigation }: any) => {
     const handleGoogleSignup = async () => {
         try {
             await signup('google-oauth2');
-            navigation.reset({
-                index: 0,
-                routes: [{ name: 'CategorySelectionScreen' }],
-            });
+            await navigatePostAuth();
         } catch (err: any) {
             if (err.message !== 'User cancelled the Auth') {
                 Alert.alert(t('Signup Failed'), err.message || t('Google signup failed'));
@@ -50,10 +57,7 @@ const SignupScreen = ({ navigation }: any) => {
     const handleAppleSignup = async () => {
         try {
             await signup('apple');
-            navigation.reset({
-                index: 0,
-                routes: [{ name: 'CategorySelectionScreen' }],
-            });
+            await navigatePostAuth();
         } catch (err: any) {
             if (err.message !== 'User cancelled the Auth') {
                 Alert.alert(t('Signup Failed'), err.message || t('Apple signup failed'));
