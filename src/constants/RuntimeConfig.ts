@@ -24,10 +24,10 @@ export const getApiBaseUrl = () => {
         }
         const devOverride = (AppConfig.DEV_API_GATEWAY_URL ?? '').trim();
         if (devOverride) return devOverride;
-        return 'http://192.168.0.150:3000';
+        return 'http://10.226.209.82:3000';
     }
 
-    return 'https://spotme.ai/';
+    return 'https://myjourney.coffee';
 };
 
 export const getHlsBaseUrl = () => {

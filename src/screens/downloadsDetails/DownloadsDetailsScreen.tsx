@@ -46,6 +46,11 @@ const DownloadsDetailsScreen = ({ navigation, route }: any) => {
             const data = await getDownloads(apiAccessToken, {limit: 200});
             setDownloads(Array.isArray(data) ? data : []);
         } catch (e: any) {
+            if (e instanceof ApiError) {
+                console.log('[Downloads] loadDownloads ApiError:', e.status, e.message, JSON.stringify(e.body ?? null));
+            } else {
+                console.log('[Downloads] loadDownloads error:', e?.message ?? String(e));
+            }
             const msg = e instanceof ApiError ? e.message : String(e?.message ?? e);
             setErrorText(msg);
         } finally {
@@ -63,7 +68,12 @@ const DownloadsDetailsScreen = ({ navigation, route }: any) => {
             const items = Array.isArray(resp?.items) ? resp.items : [];
             items.sort((a, b) => (Number(b.downloads_count ?? 0) - Number(a.downloads_count ?? 0)) || (Number(b.views_count ?? 0) - Number(a.views_count ?? 0)));
             setProfitItems(items);
-        } catch {
+        } catch (e: any) {
+            if (e instanceof ApiError) {
+                console.log('[Downloads] loadProfit ApiError:', e.status, e.message, JSON.stringify(e.body ?? null));
+            } else {
+                console.log('[Downloads] loadProfit error:', e?.message ?? String(e));
+            }
             setProfitItems([]);
         }
     }, [apiAccessToken]);
@@ -77,7 +87,12 @@ const DownloadsDetailsScreen = ({ navigation, route }: any) => {
             const resp = await getUploadedCompetitions(apiAccessToken, {limit: 200});
             const items = Array.isArray(resp?.competitions) ? resp.competitions : [];
             setCompetitions(items);
-        } catch {
+        } catch (e: any) {
+            if (e instanceof ApiError) {
+                console.log('[Downloads] loadCompetitions ApiError:', e.status, e.message, JSON.stringify(e.body ?? null));
+            } else {
+                console.log('[Downloads] loadCompetitions error:', e?.message ?? String(e));
+            }
             setCompetitions([]);
         }
     }, [apiAccessToken]);
@@ -90,7 +105,12 @@ const DownloadsDetailsScreen = ({ navigation, route }: any) => {
         try {
             const resp = await getCompetitionMedia(apiAccessToken, String(eventId), {limit: 500});
             setCompetitionMediaItems(Array.isArray(resp?.items) ? resp.items : []);
-        } catch {
+        } catch (e: any) {
+            if (e instanceof ApiError) {
+                console.log('[Downloads] loadCompetitionMedia ApiError:', e.status, e.message, JSON.stringify(e.body ?? null));
+            } else {
+                console.log('[Downloads] loadCompetitionMedia error:', e?.message ?? String(e));
+            }
             setCompetitionMediaItems([]);
         }
     }, [apiAccessToken]);

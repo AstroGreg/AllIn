@@ -257,18 +257,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             await AsyncStorage.setItem(PROFILE_STORAGE_KEY, JSON.stringify(updatedProfile));
             setUserProfile(updatedProfile);
 
-            // If authenticated, also update Auth0 user metadata
-            const auth0 = getAuth0();
-            if (accessToken && auth0) {
-                try {
-                    await auth0.auth.userInfo({ token: accessToken });
-                    // Note: To update user_metadata in Auth0, you typically need to use the Management API
-                    // which requires a separate access token. For simplicity, we're storing locally.
-                    // In production, you'd call your backend to update Auth0 user_metadata.
-                } catch (err) {
-                    console.log('Could not sync profile to Auth0:', err);
-                }
-            }
+            // Keep profile updates local; do not call Auth0 userInfo with API access tokens.
         } catch (err) {
             console.error('Error updating user profile:', err);
             throw err;
@@ -348,17 +337,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
                         }
                     } catch (decodeError) {
                         console.log('[Auth] Failed to decode ID token:', decodeError);
-                    }
-                }
-
-                // Fallback to userInfo API if ID token decode failed
-                if (!userInfo) {
-                    try {
-                        console.log('[Auth] Fetching user info from API...');
-                        userInfo = await auth0.auth.userInfo({ token: credentials.accessToken });
-                    } catch (userInfoError: any) {
-                        console.log('[Auth] userInfo API failed:', userInfoError.message);
-                        // Continue without user info - we still have a valid session
                     }
                 }
 
@@ -451,16 +429,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
                         }
                     } catch (decodeError) {
                         console.log('[Auth] Failed to decode ID token:', decodeError);
-                    }
-                }
-
-                // Fallback to userInfo API if ID token decode failed
-                if (!userInfo) {
-                    try {
-                        console.log('[Auth] Fetching user info from API...');
-                        userInfo = await auth0.auth.userInfo({ token: credentials.accessToken });
-                    } catch (userInfoError: any) {
-                        console.log('[Auth] userInfo API failed:', userInfoError.message);
                     }
                 }
 
