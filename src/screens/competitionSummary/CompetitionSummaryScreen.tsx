@@ -5,7 +5,7 @@ import {
     ArrowLeft2,
     ArrowRight,
 } from 'iconsax-react-nativejs';
-import { createStyles } from './EventSummaryScreenStyles';
+import { createStyles } from './CompetitionSummaryScreenStyles';
 import SizeBox from '../../constants/SizeBox';
 import { useTheme } from '../../context/ThemeContext';
 import { useTranslation } from 'react-i18next';

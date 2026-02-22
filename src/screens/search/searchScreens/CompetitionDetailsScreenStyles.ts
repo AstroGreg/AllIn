@@ -217,10 +217,10 @@ export const createStyles = (colors: ThemeColors) => StyleSheet.create({
     courseCard: {
         width: '48%',
         borderWidth: 0.5,
-        borderColor: '#DEDEDE',
+        borderColor: colors.lightGrayColor,
         borderRadius: 12,
         padding: 14,
-        backgroundColor: '#FFFFFF',
+        backgroundColor: colors.cardBackground,
     },
     courseCardActive: {
         borderColor: colors.primaryColor,
@@ -235,7 +235,7 @@ export const createStyles = (colors: ThemeColors) => StyleSheet.create({
     },
     courseDescription: {
         ...Fonts.regular12,
-        color: '#9B9F9F',
+        color: colors.subTextColor,
         marginTop: 6,
     },
     courseDescriptionActive: {
@@ -243,10 +243,10 @@ export const createStyles = (colors: ThemeColors) => StyleSheet.create({
     },
     mapCard: {
         borderWidth: 0.5,
-        borderColor: '#DEDEDE',
+        borderColor: colors.lightGrayColor,
         borderRadius: 14,
         overflow: 'hidden',
-        backgroundColor: '#FFFFFF',
+        backgroundColor: colors.cardBackground,
     },
     mapImage: {
         width: '100%',
@@ -257,8 +257,8 @@ export const createStyles = (colors: ThemeColors) => StyleSheet.create({
         paddingVertical: 10,
         borderRadius: 20,
         borderWidth: 0.5,
-        borderColor: '#DEDEDE',
-        backgroundColor: '#FFFFFF',
+        borderColor: colors.lightGrayColor,
+        backgroundColor: colors.cardBackground,
         marginRight: 10,
     },
     checkpointChipText: {
@@ -267,7 +267,7 @@ export const createStyles = (colors: ThemeColors) => StyleSheet.create({
     },
     helperText: {
         ...Fonts.regular12,
-        color: '#9B9F9F',
+        color: colors.subTextColor,
     },
     modalOverlay: {
         flex: 1,
@@ -276,7 +276,7 @@ export const createStyles = (colors: ThemeColors) => StyleSheet.create({
         paddingHorizontal: 20,
     },
     checkpointModal: {
-        backgroundColor: '#FFFFFF',
+        backgroundColor: colors.cardBackground,
         borderRadius: 16,
         padding: 20,
     },
@@ -292,12 +292,12 @@ export const createStyles = (colors: ThemeColors) => StyleSheet.create({
     },
     modalInputRow: {
         borderWidth: 1,
-        borderColor: '#E5E7EB',
+        borderColor: colors.lightGrayColor,
         borderRadius: 10,
         paddingHorizontal: 12,
         height: 46,
         justifyContent: 'center',
-        backgroundColor: '#FFFFFF',
+        backgroundColor: colors.cardBackground,
     },
     modalInput: {
         ...Fonts.regular14,
@@ -333,7 +333,7 @@ export const createStyles = (colors: ThemeColors) => StyleSheet.create({
         borderRadius: 10,
         borderWidth: 1,
         borderColor: colors.primaryColor,
-        backgroundColor: '#FFFFFF',
+        backgroundColor: colors.cardBackground,
         gap: 8,
     },
     modalSecondaryButtonText: {
@@ -347,8 +347,8 @@ export const createStyles = (colors: ThemeColors) => StyleSheet.create({
         height: 48,
         borderRadius: 10,
         borderWidth: 1,
-        borderColor: '#DEDEDE',
-        backgroundColor: '#FFFFFF',
+        borderColor: colors.lightGrayColor,
+        backgroundColor: colors.cardBackground,
         gap: 8,
     },
     modalTertiaryButtonText: {

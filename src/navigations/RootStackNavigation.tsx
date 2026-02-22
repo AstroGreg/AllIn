@@ -19,7 +19,7 @@ import PhotographyName from '../screens/authFlow/setUpTalent/creater/Photography
 import ViewPhotographProfile from '../screens/authFlow/setUpTalent/creater/ViewPhotographProfile';
 import EventsScreen from '../screens/Events/EventsScreen';
 import ParticipantScreen from '../screens/participant/ParticipantScreen';
-import ChooseEventScreen from '../screens/chooseEvent/ChooseEventScreen';
+import ChooseEventScreen from '../screens/chooseCompetition/ChooseCompetitionScreen';
 import CongratulationsScreen from '../screens/congratulations/CongratulationsScreen';
 import Language from '../screens/menu/menuScreens/Language';
 import DeleteAndPause from '../screens/menu/menuScreens/DeleteAndPause';
@@ -36,9 +36,9 @@ import UploadedImagesScreen from '../screens/upload/uploadScreens/UploadedImages
 import CreateCompetition from '../screens/upload/uploadScreens/CreateCompetition';
 import SelectCategory from '../screens/upload/uploadScreens/SelectCategory';
 import Videography from '../screens/search/searchScreens/Videography';
-import VideosForEvent from '../screens/search/searchScreens/VideosForEvent';
-import AllPhotosOfEvents from '../screens/search/searchScreens/AllPhotosOfEvents';
-import AllVideosOfEvents from '../screens/search/searchScreens/AllVideosOfEvents';
+import VideosForEvent from '../screens/search/searchScreens/VideosForCompetition';
+import AllPhotosOfEvents from '../screens/search/searchScreens/AllPhotosOfCompetitions';
+import AllVideosOfEvents from '../screens/search/searchScreens/AllVideosOfCompetitions';
 import FrontFaceCaptureScreen from '../screens/search/searchScreens/FrontFaceCaptureScreen';
 import SearchFaceCaptureScreen from '../screens/search/searchScreens/SearchFaceCaptureScreen';
 import LeftSideCaptureScreen from '../screens/search/searchScreens/LeftSideCaptureScreen';

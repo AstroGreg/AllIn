@@ -70,7 +70,11 @@ const AllPhotosOfEvents = ({ navigation, route }: any) => {
                 }
                 if (!mounted) return;
                 const filtered = list.filter((item) => {
-                    if (eventId && String(item.event_id ?? '') !== String(eventId)) return false;
+                    if (eventId) {
+                        const matchesLegacyEventId = String(item.event_id ?? '') === String(eventId);
+                        const matchesCompetitionId = String((item as any).competition_id ?? '') === String(eventId);
+                        if (!matchesLegacyEventId && !matchesCompetitionId) return false;
+                    }
                     return String(item.type).toLowerCase() !== 'video';
                 });
                 setItems(filtered);

@@ -12,7 +12,7 @@ import {
     SearchNormal1,
     User,
 } from 'iconsax-react-nativejs';
-import { createStyles } from './AvailableEventsScreenStyles';
+import { createStyles } from './AvailableCompetitionsScreenStyles';
 import SizeBox from '../../constants/SizeBox';
 import Images from '../../constants/Images';
 import { useTheme } from '../../context/ThemeContext';

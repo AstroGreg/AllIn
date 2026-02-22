@@ -8,7 +8,7 @@ import {
     Location,
     VideoSquare,
 } from 'iconsax-react-nativejs';
-import { createStyles } from './MyAllEventsScreenStyles';
+import { createStyles } from './MyAllCompetitionsScreenStyles';
 import SizeBox from '../../constants/SizeBox';
 import Images from '../../constants/Images';
 import Icons from '../../constants/Icons';

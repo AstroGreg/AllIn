@@ -79,7 +79,16 @@ const CreateGroupProfileScreen = ({ navigation, route }: any) => {
                 const resp = await getGroup(apiAccessToken, editGroupId);
                 if (!mounted) return;
                 setGroupName(String(resp?.group?.name ?? ''));
-                setGroupDescription(String(resp?.group?.bio ?? resp?.group?.description ?? ''));
+                setGroupDescription(
+                    String(
+                        (resp?.group as any)?.location ??
+                        (resp?.group as any)?.base_location ??
+                        (resp?.group as any)?.city ??
+                        resp?.group?.bio ??
+                        resp?.group?.description ??
+                        '',
+                    ),
+                );
                 setGroupWebsite(String((resp?.group as any)?.website ?? ''));
                 const serverCoachNames = Array.isArray(resp?.group?.coaches)
                     ? resp.group.coaches.map((entry) => String(entry || '').trim()).filter(Boolean)
@@ -362,6 +371,10 @@ const CreateGroupProfileScreen = ({ navigation, route }: any) => {
             Alert.alert(t('Error'), t('Please enter a group name'));
             return;
         }
+        if (!groupDescription.trim()) {
+            Alert.alert(t('Error'), t('Please enter where the group is based'));
+            return;
+        }
         if (!apiAccessToken) {
             Alert.alert(t('Error'), t('You must be logged in'));
             return;
@@ -385,12 +398,16 @@ const CreateGroupProfileScreen = ({ navigation, route }: any) => {
                 ),
             );
             const focusPayload = Array.from(new Set(selectedFocuses));
+            const groupLocation = groupDescription.trim();
 
             if (mode === 'edit' && editGroupId) {
                 const updated = await updateGroup(apiAccessToken, editGroupId, {
                     name: groupName.trim(),
-                    description: groupDescription.trim() || undefined,
-                    bio: groupDescription.trim() || undefined,
+                    description: groupLocation || undefined,
+                    bio: groupLocation || undefined,
+                    location: groupLocation || undefined,
+                    city: groupLocation || undefined,
+                    base_location: groupLocation || undefined,
                     website: String(groupWebsite || '').trim() || undefined,
                     coaches: coachNames,
                     focuses: focusPayload,
@@ -402,8 +419,11 @@ const CreateGroupProfileScreen = ({ navigation, route }: any) => {
             } else {
                 const created = await createGroup(apiAccessToken, {
                     name: groupName.trim(),
-                    description: groupDescription.trim() || undefined,
-                    bio: groupDescription.trim() || undefined,
+                    description: groupLocation || undefined,
+                    bio: groupLocation || undefined,
+                    location: groupLocation || undefined,
+                    city: groupLocation || undefined,
+                    base_location: groupLocation || undefined,
                     website: String(groupWebsite || '').trim() || undefined,
                     coaches: coachNames,
                     focuses: focusPayload,
@@ -502,12 +522,12 @@ const CreateGroupProfileScreen = ({ navigation, route }: any) => {
                     </View>
 
                     <View style={styles.inputGroup}>
-                        <Text style={styles.inputLabel}>{t('Description')}</Text>
+                        <Text style={styles.inputLabel}>{t('Based in (required)')}</Text>
                         <View style={styles.inputContainer}>
                             <Edit2 size={22} color={colors.primaryColor} variant="Linear" />
                             <TextInput
                                 style={styles.textInput}
-                                placeholder={t('Optional description')}
+                                placeholder={t('Leuven')}
                                 placeholderTextColor={colors.grayColor}
                                 value={groupDescription}
                                 onChangeText={setGroupDescription}

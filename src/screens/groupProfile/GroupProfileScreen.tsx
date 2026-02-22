@@ -225,7 +225,14 @@ const GroupProfileScreen = ({ navigation, route }: any) => {
     }, [apiAccessToken, canOpenGroupSwitcher]);
 
     const groupName = group?.name || t('Group');
-    const groupDescription = (group?.bio || group?.description || '').trim() || t('No description added yet.');
+    const groupDescription = String(
+        (group as any)?.location ||
+        (group as any)?.base_location ||
+        (group as any)?.city ||
+        group?.bio ||
+        group?.description ||
+        '',
+    ).trim() || t('No description added yet.');
     const groupWebsite = String((group as any)?.website ?? '').trim();
     useEffect(() => {
         let mounted = true;
@@ -915,7 +922,15 @@ const GroupProfileScreen = ({ navigation, route }: any) => {
                             ) : (
                                 groupCompetitions.map((event) => {
                                     const eventName = String(event.event_name || t('Competition'));
-                                    const eventMetaParts = [event.event_location, event.event_date].filter(Boolean);
+                                    const formattedEventDate = event.event_date
+                                        ? (() => {
+                                            const dt = new Date(String(event.event_date));
+                                            return Number.isNaN(dt.getTime())
+                                                ? String(event.event_date).split('T')[0]
+                                                : dt.toLocaleDateString();
+                                        })()
+                                        : null;
+                                    const eventMetaParts = [event.event_location, formattedEventDate].filter(Boolean);
                                     return (
                                         <TouchableOpacity
                                             key={String(event.event_id)}

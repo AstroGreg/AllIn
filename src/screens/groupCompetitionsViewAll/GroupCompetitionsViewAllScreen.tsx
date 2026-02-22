@@ -4,7 +4,7 @@ import SizeBox from '../../constants/SizeBox';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import FastImage from 'react-native-fast-image';
 import Images from '../../constants/Images';
-import { createStyles } from './GroupEventsViewAllStyles';
+import { createStyles } from './GroupCompetitionsViewAllStyles';
 import { ArrowLeft2, SearchNormal1, Setting4, Location, Calendar, Add, CloseCircle, ArrowRight } from 'iconsax-react-nativejs';
 import Icons from '../../constants/Icons';
 import { useTheme } from '../../context/ThemeContext';

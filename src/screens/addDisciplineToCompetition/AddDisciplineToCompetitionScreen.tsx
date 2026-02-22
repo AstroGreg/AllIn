@@ -8,7 +8,7 @@ import {
     TickSquare,
     User,
 } from 'iconsax-react-nativejs';
-import { createStyles } from './AddToEventScreenStyles';
+import { createStyles } from './AddDisciplineToCompetitionScreenStyles';
 import SizeBox from '../../constants/SizeBox';
 import Icons from '../../constants/Icons';
 import { useTheme } from '../../context/ThemeContext';

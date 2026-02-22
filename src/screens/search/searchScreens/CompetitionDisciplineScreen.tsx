@@ -4,7 +4,7 @@ import SizeBox from '../../../constants/SizeBox';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import {useTheme} from '../../../context/ThemeContext';
 import {ArrowLeft2} from 'iconsax-react-nativejs';
-import {createStyles} from './EventDivisionScreenStyles';
+import {createStyles} from './CompetitionDisciplineScreenStyles';
 import { useTranslation } from 'react-i18next'
 
 const AGE_GROUPS = [

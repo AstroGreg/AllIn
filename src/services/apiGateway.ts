@@ -36,6 +36,15 @@ function toQueryString(params: Record<string, any>): string {
   return s ? `?${s}` : '';
 }
 
+function normalizeCompetitionType(raw: any): 'track' | 'road' | null {
+  const value = String(raw ?? '').trim().toLowerCase();
+  if (!value) return null;
+  if (value.includes('road') || value.includes('trail') || value.includes('marathon') || value.includes('veldloop') || value.includes('veldlopen') || value === 'cross') {
+    return 'road';
+  }
+  return 'track';
+}
+
 async function parseJsonSafely(res: Response): Promise<any | null> {
   const text = await res.text();
   if (!text) return null;
@@ -61,20 +70,53 @@ export async function apiRequest<T>(
   },
 ): Promise<T> {
   const url = `${resolveApiBaseUrl()}${path.startsWith('/') ? path : `/${path}`}`;
+  const requestHeaders: Record<string, string> = {
+    ...(body instanceof FormData ? {} : {'Content-Type': 'application/json'}),
+    Authorization: `Bearer ${accessToken}`,
+    ...(headers ?? {}),
+  };
 
-  const res = await fetch(url, {
-    method,
-    headers: {
-      ...(body instanceof FormData ? {} : {'Content-Type': 'application/json'}),
-      Authorization: `Bearer ${accessToken}`,
-      ...(headers ?? {}),
-    },
-    body: body == null ? undefined : body instanceof FormData ? body : JSON.stringify(body),
-  });
+  let res: Response;
+  try {
+    res = await fetch(url, {
+      method,
+      headers: requestHeaders,
+      body: body == null ? undefined : body instanceof FormData ? body : JSON.stringify(body),
+    });
+  } catch (e: any) {
+    console.error('[apiRequest] Network error', {
+      method,
+      path,
+      url,
+      hasAccessToken: Boolean(accessToken),
+      error: e?.message ?? String(e),
+    });
+    throw e;
+  }
 
   const data = await parseJsonSafely(res);
 
   if (!res.ok) {
+    if (res.status === 401 || res.status === 403) {
+      console.error('[apiRequest] Auth error', {
+        method,
+        path,
+        url,
+        status: res.status,
+        statusText: res.statusText,
+        hasAccessToken: Boolean(accessToken),
+        responseBody: data,
+      });
+    } else {
+      console.error('[apiRequest] HTTP error', {
+        method,
+        path,
+        url,
+        status: res.status,
+        statusText: res.statusText,
+        responseBody: data,
+      });
+    }
     const message =
       (data && (data.error || data.message || data.details)) ||
       `Request failed (${res.status})`;
@@ -251,9 +293,13 @@ export interface GroupMembersResponse {
 
 export interface GroupAssignedEvent {
   event_id: string;
+  competition_id?: string;
   event_name?: string | null;
   event_location?: string | null;
   event_date?: string | null;
+  competition_name?: string | null;
+  competition_location?: string | null;
+  competition_date?: string | null;
   assigned_athletes_count?: number;
 }
 
@@ -269,6 +315,9 @@ export async function createGroup(
     name: string;
     description?: string | null;
     bio?: string | null;
+    location?: string | null;
+    city?: string | null;
+    base_location?: string | null;
     website?: string | null;
     coaches?: string[] | null;
     focuses?: string[] | null;
@@ -291,6 +340,9 @@ export async function updateGroup(
     name?: string | null;
     description?: string | null;
     bio?: string | null;
+    location?: string | null;
+    city?: string | null;
+    base_location?: string | null;
     website?: string | null;
     coaches?: string[] | null;
     focuses?: string[] | null;
@@ -495,10 +547,23 @@ export async function getGroupAssignedEvents(
   if (!safeId) {
     throw new ApiError({status: 400, message: 'Missing group_id'});
   }
-  return apiRequest<GroupAssignedEventsResponse>(`/groups/${encodeURIComponent(safeId)}/events`, {
+  const res = await apiRequest<any>(`/groups/${encodeURIComponent(safeId)}/competitions`, {
     method: 'GET',
     accessToken,
   });
+  const competitions = Array.isArray(res?.competitions) ? res.competitions : [];
+  const events = competitions.map((row: any) => ({
+    event_id: String(row?.competition_id || row?.id || ''),
+    competition_id: row?.competition_id ? String(row.competition_id) : undefined,
+    event_name: row?.competition_name ?? null,
+    event_location: row?.competition_location ?? null,
+    event_date: row?.competition_date ?? null,
+    competition_name: row?.competition_name ?? null,
+    competition_location: row?.competition_location ?? null,
+    competition_date: row?.competition_date ?? null,
+    assigned_athletes_count: row?.assigned_athletes_count ?? 0,
+  }));
+  return {ok: Boolean(res?.ok), count: Number(res?.count ?? events.length), events};
 }
 
 export async function assignGroupMembersToEvent(
@@ -512,22 +577,34 @@ export async function assignGroupMembersToEvent(
   if (!safeGroupId || !safeEventId) {
     throw new ApiError({status: 400, message: 'Missing group_id or event_id'});
   }
-  return apiRequest<{ok: boolean; group_id: string; event_id: string; requested_count: number; inserted_count: number}>(
-    `/groups/${encodeURIComponent(safeGroupId)}/events/${encodeURIComponent(safeEventId)}/assign`,
+  const res = await apiRequest<any>(
+    `/groups/${encodeURIComponent(safeGroupId)}/competitions/${encodeURIComponent(safeEventId)}/assign`,
     {
       method: 'POST',
       accessToken,
       body: payload,
     },
   );
+  return {
+    ok: Boolean(res?.ok),
+    group_id: String(res?.group_id || safeGroupId),
+    event_id: String(res?.competition_id || safeEventId),
+    requested_count: Number(res?.requested_count ?? 0),
+    inserted_count: Number(res?.inserted_count ?? 0),
+  };
 }
 
 export interface SubscribedEvent {
   event_id: string;
+  competition_id?: string;
   event_name?: string | null;
   event_title?: string | null;
   event_location?: string | null;
   event_date?: string | null;
+  competition_name?: string | null;
+  competition_location?: string | null;
+  competition_date?: string | null;
+  competition_type?: string | null;
 }
 
 export interface SubscribedEventsResponse {
@@ -537,7 +614,21 @@ export interface SubscribedEventsResponse {
 }
 
 export async function getSubscribedEvents(accessToken: string): Promise<SubscribedEventsResponse> {
-  return apiRequest<SubscribedEventsResponse>('/events/subscribed', {method: 'GET', accessToken});
+  const res = await apiRequest<any>('/competitions/subscribed', {method: 'GET', accessToken});
+  const competitions = Array.isArray(res?.competitions) ? res.competitions : [];
+  const events = competitions.map((row: any) => ({
+    event_id: String(row?.competition_id || row?.id || ''),
+    competition_id: row?.competition_id ? String(row.competition_id) : undefined,
+    event_name: row?.competition_name ?? null,
+    event_title: row?.competition_name ?? null,
+    event_location: row?.competition_location ?? null,
+    event_date: row?.competition_date ?? null,
+    competition_name: row?.competition_name ?? null,
+    competition_location: row?.competition_location ?? null,
+    competition_date: row?.competition_date ?? null,
+    competition_type: normalizeCompetitionType(row?.competition_type),
+  }));
+  return {ok: Boolean(res?.ok), count: Number(res?.count ?? events.length), events};
 }
 
 export interface HubAppearanceSummary {
@@ -761,7 +852,21 @@ export async function searchEvents(
     limit: params.limit ?? undefined,
     offset: params.offset ?? undefined,
   });
-  return apiRequest<EventSearchResponse>(`/events/search${qs}`, {method: 'GET', accessToken});
+  const res = await apiRequest<any>(`/competitions/search${qs}`, {method: 'GET', accessToken});
+  const competitions = Array.isArray(res?.competitions) ? res.competitions : [];
+  const events = competitions.map((row: any) => ({
+    event_id: String(row?.competition_id || row?.id || ''),
+    competition_id: row?.competition_id ? String(row.competition_id) : undefined,
+    event_name: row?.competition_name ?? null,
+    event_title: row?.competition_name ?? null,
+    event_location: row?.competition_location ?? null,
+    event_date: row?.competition_date ?? null,
+    competition_name: row?.competition_name ?? null,
+    competition_location: row?.competition_location ?? null,
+    competition_date: row?.competition_date ?? null,
+    competition_type: normalizeCompetitionType(row?.competition_type),
+  }));
+  return {ok: Boolean(res?.ok), count: Number(res?.count ?? events.length), events};
 }
 
 export async function getEventCompetitions(
@@ -772,10 +877,19 @@ export async function getEventCompetitions(
   if (!safeId) {
     throw new ApiError({status: 400, message: 'Missing event_id'});
   }
-  return apiRequest<EventCompetitionsResponse>(`/events/${encodeURIComponent(safeId)}/competitions`, {
+  const res = await apiRequest<any>(`/competitions/${encodeURIComponent(safeId)}/disciplines`, {
     method: 'GET',
     accessToken,
   });
+  const disciplines = Array.isArray(res?.disciplines) ? res.disciplines : [];
+  const competitions = disciplines.map((row: any) => ({
+    id: String(row?.id || ''),
+    event_id: String(row?.competition_id || safeId),
+    competition_name: row?.discipline_name ?? null,
+    competition_name_normalized: row?.discipline_name_normalized ?? null,
+    competition_type: row?.discipline_type ?? null,
+  }));
+  return {ok: Boolean(res?.ok), count: Number(res?.count ?? competitions.length), competitions};
 }
 
 export async function grantFaceRecognitionConsent(accessToken: string): Promise<{ok: boolean; message?: string}> {
@@ -1122,7 +1236,12 @@ export async function subscribeToEvent(accessToken: string, eventId: string): Pr
   if (!safeId) {
     throw new ApiError({status: 400, message: 'Missing event_id'});
   }
-  return apiRequest(`/events/${encodeURIComponent(safeId)}/subscribe`, {method: 'POST', accessToken, body: {}});
+  const res = await apiRequest<any>(`/competitions/${encodeURIComponent(safeId)}/subscribe`, {method: 'POST', accessToken, body: {}});
+  return {
+    success: Boolean(res?.success),
+    event_id: String(res?.competition_id || safeId),
+    profile_id: String(res?.profile_id || ''),
+  };
 }
 
 export async function unsubscribeToEvent(accessToken: string, eventId: string): Promise<{success: boolean; event_id: string; profile_id: string}> {
@@ -1130,7 +1249,12 @@ export async function unsubscribeToEvent(accessToken: string, eventId: string): 
   if (!safeId) {
     throw new ApiError({status: 400, message: 'Missing event_id'});
   }
-  return apiRequest(`/events/${encodeURIComponent(safeId)}/subscribe`, {method: 'DELETE', accessToken});
+  const res = await apiRequest<any>(`/competitions/${encodeURIComponent(safeId)}/subscribe`, {method: 'DELETE', accessToken});
+  return {
+    success: Boolean(res?.success),
+    event_id: String(res?.competition_id || safeId),
+    profile_id: String(res?.profile_id || ''),
+  };
 }
 
 export interface MediaAsset {
@@ -1152,6 +1276,7 @@ export interface MediaViewAllItem {
   type: 'image' | 'video';
   uploader_profile_id?: string;
   event_id?: string | null;
+  competition_id?: string | null;
   created_at?: string;
   likes_count?: number;
   views_count?: number;

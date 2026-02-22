@@ -12,7 +12,7 @@ import {
     Refresh,
     People,
 } from 'iconsax-react-nativejs';
-import { createStyles } from './EventDetailsScreenStyles';
+import { createStyles } from './CompetitionEventDetailsScreenStyles';
 import SizeBox from '../../constants/SizeBox';
 import Images from '../../constants/Images';
 import Icons from '../../constants/Icons';

@@ -108,7 +108,7 @@ const CompetitionsScreen = ({ navigation }: any) => {
 
     const resolveCompetitionType = useCallback((event: SubscribedEvent) => {
         const name = getEventTypeToken(event);
-        if (/marathon|trail|road/.test(name)) return 'marathon';
+        if (/marathon|trail|road|veldlopen|veldloop|cross|5k|10k|half/.test(name)) return 'marathon';
         return 'track';
     }, [getEventTypeToken]);
 
