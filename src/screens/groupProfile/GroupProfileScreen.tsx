@@ -130,9 +130,22 @@ const GroupProfileScreen = ({ navigation, route }: any) => {
     const withAccessToken = useCallback((value?: string | null) => {
         if (!value) return null;
         if (!apiAccessToken) return value;
-        if (String(value).includes('access_token=')) return value;
-        const sep = String(value).includes('?') ? '&' : '?';
-        return `${value}${sep}access_token=${encodeURIComponent(apiAccessToken)}`;
+        const raw = String(value);
+        const lower = raw.toLowerCase();
+        if (
+            lower.includes('access_token=') ||
+            lower.includes('x-amz-signature') ||
+            lower.includes('x-amz-credential') ||
+            lower.includes('x-amz-security-token') ||
+            lower.includes('signature=') ||
+            lower.includes('sig=') ||
+            lower.includes('expires=') ||
+            lower.includes('sv=') ||
+            lower.includes('se=') ||
+            lower.includes('sp=')
+        ) return value;
+        const sep = raw.includes('?') ? '&' : '?';
+        return `${raw}${sep}access_token=${encodeURIComponent(apiAccessToken)}`;
     }, [apiAccessToken]);
 
     useEffect(() => {

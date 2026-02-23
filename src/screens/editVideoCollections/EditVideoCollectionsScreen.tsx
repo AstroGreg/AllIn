@@ -40,8 +40,12 @@ const EditVideoCollectionsScreen = ({ navigation }: any) => {
             lower.includes('x-amz-credential') ||
             lower.includes('x-amz-security-token') ||
             lower.includes('signature=') ||
+            lower.includes('sig=') ||
             lower.includes('token=') ||
-            lower.includes('expires=')
+            lower.includes('expires=') ||
+            lower.includes('sv=') ||
+            lower.includes('se=') ||
+            lower.includes('sp=')
         );
     }, []);
 

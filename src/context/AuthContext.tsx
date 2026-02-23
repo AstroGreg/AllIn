@@ -320,7 +320,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             console.log('[Auth] Calling auth0.webAuth.authorize...');
             const credentials = await auth0.webAuth.authorize({
                 // If AUTH0_AUDIENCE is set, request an API access token with the permissions needed by the gateway.
-                scope: 'openid profile email read:users access:ai search:media list:media read:media',
+                scope: 'openid profile email read:users write:media access:ai search:media list:media read:media',
                 audience: AUTH0_AUDIENCE,
                 redirectUrl: AUTH0_REDIRECT_URI,
                 ...(connection && { connection }),
@@ -420,7 +420,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             }
             console.log('[Auth] Calling auth0.webAuth.authorize for signup...');
             const credentials = await auth0.webAuth.authorize({
-                scope: 'openid profile email read:users access:ai search:media list:media read:media',
+                scope: 'openid profile email read:users write:media access:ai search:media list:media read:media',
                 audience: AUTH0_AUDIENCE,
                 redirectUrl: AUTH0_REDIRECT_URI,
                 ...(connection && { connection }),
