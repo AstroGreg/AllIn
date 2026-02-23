@@ -21,7 +21,7 @@ const CreateProfileScreen = ({ navigation }: any) => {
     const { colors } = useTheme();
     const Styles = createStyles(colors);
     const insets = useSafeAreaInsets();
-    const { updateUserProfile, updateUserAccount, authBootstrap, refreshAuthBootstrap } = useAuth();
+    const { updateUserAccount, authBootstrap, refreshAuthBootstrap } = useAuth();
 
     const [username, setUsername] = useState('');
     const [firstName, setFirstName] = useState('');
@@ -133,13 +133,6 @@ const CreateProfileScreen = ({ navigation }: any) => {
                 email,
                 nationality,
                 birthdate: birthDate,
-            });
-            await updateUserProfile({
-                username,
-                firstName,
-                lastName,
-                birthDate,
-                nationality,
             });
             navigation.navigate('CategorySelectionScreen');
         } catch (err: any) {
@@ -322,4 +315,3 @@ const CreateProfileScreen = ({ navigation }: any) => {
 };
 
 export default CreateProfileScreen;
-

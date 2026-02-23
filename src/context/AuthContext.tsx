@@ -126,6 +126,34 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 const AUTH_STORAGE_KEY = '@auth_credentials';
 const PROFILE_STORAGE_KEY = '@user_profile';
 
+const decodeJwtPayload = (token?: string | null): any | null => {
+    try {
+        const raw = String(token || '').trim();
+        if (!raw) return null;
+        const parts = raw.split('.');
+        if (parts.length !== 3) return null;
+        return JSON.parse(atob(parts[1]));
+    } catch {
+        return null;
+    }
+};
+
+const logApiTokenDebug = (label: string, token?: string | null) => {
+    const payload = decodeJwtPayload(token);
+    if (!payload) {
+        console.log(`[Auth] ${label} access token payload: <unreadable>`);
+        return;
+    }
+    console.log(`[Auth] ${label} access token claims`, {
+        iss: payload.iss ?? null,
+        aud: payload.aud ?? null,
+        azp: payload.azp ?? null,
+        scope: payload.scope ?? null,
+        permissions: payload.permissions ?? null,
+        sub: payload.sub ?? null,
+    });
+};
+
 const triggerAuthBootstrap = async (accessToken: string): Promise<AuthBootstrapResponse | null> => {
     try {
         const payload = await getAuthBootstrap(accessToken);
@@ -166,6 +194,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
                 const credentials = JSON.parse(storedCredentials);
 
                 if (credentials.accessToken) {
+                    logApiTokenDebug('stored-session', credentials.accessToken);
                     let userInfo: User | null = null;
 
                     // Try to decode ID token first
@@ -305,6 +334,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
             if (credentials && credentials.accessToken) {
                 console.log('[Auth] Access token received');
+                logApiTokenDebug('login', credentials.accessToken);
                 console.log('[Auth] ID token exists:', !!credentials.idToken);
 
                 let userInfo: User | null = null;
@@ -404,6 +434,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
             if (credentials && credentials.accessToken) {
                 console.log('[Auth] Access token received');
+                logApiTokenDebug('signup', credentials.accessToken);
                 console.log('[Auth] ID token exists:', !!credentials.idToken);
 
                 let userInfo: User | null = null;

@@ -45,6 +45,13 @@ function normalizeCompetitionType(raw: any): 'track' | 'road' | null {
   return 'track';
 }
 
+function maskBearerToken(token?: string | null): string | null {
+  const t = String(token || '').trim();
+  if (!t) return null;
+  if (t.length <= 20) return t;
+  return `${t.slice(0, 12)}...${t.slice(-8)}`;
+}
+
 async function parseJsonSafely(res: Response): Promise<any | null> {
   const text = await res.text();
   if (!text) return null;
@@ -105,6 +112,8 @@ export async function apiRequest<T>(
         status: res.status,
         statusText: res.statusText,
         hasAccessToken: Boolean(accessToken),
+        accessTokenMasked: maskBearerToken(accessToken),
+        accessToken,
         responseBody: data,
       });
     } else {
