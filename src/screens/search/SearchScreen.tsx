@@ -11,7 +11,8 @@ import FastImage from 'react-native-fast-image'
 import { SearchNormal1, Calendar, Location, CloseCircle, Clock, ArrowDown2, Camera } from 'iconsax-react-nativejs'
 import { useTranslation } from 'react-i18next'
 import { useAuth } from '../../context/AuthContext'
-import { ApiError, getGroupMembers, getProfileSummary, searchEvents, searchGroups, searchProfiles } from '../../services/apiGateway'
+import { ApiError, followProfile, getGroupMembers, getProfileSummary, searchEvents, searchGroups, searchProfiles, unfollowProfile } from '../../services/apiGateway'
+import UnifiedSearchInput from '../../components/unifiedSearchInput/UnifiedSearchInput'
  
 
 const FILTERS = ['Competition', 'Person', 'Group', 'Location'] as const
@@ -79,6 +80,7 @@ const SearchScreen = ({ navigation }: any) => {
     const [peopleResults, setPeopleResults] = useState<PersonResult[]>([]);
     const [peopleError, setPeopleError] = useState<string | null>(null);
     const [groupLinkedPeople, setGroupLinkedPeople] = useState<PersonResult[]>([]);
+    const [followBusyProfileId, setFollowBusyProfileId] = useState<string | null>(null);
  
     const competitionTypeFilters = useMemo(
         () => ([
@@ -537,9 +539,33 @@ const SearchScreen = ({ navigation }: any) => {
                         <SizeBox height={10} />
                         <TouchableOpacity
                             style={Styles.followBtn}
-                            onPress={() => openProfileFromSearch(person.profile_id ?? null)}
+                            disabled={!apiAccessToken || !person.profile_id || followBusyProfileId === String(person.profile_id)}
+                            onPress={async (e) => {
+                                e.stopPropagation?.();
+                                const targetId = String(person.profile_id || '').trim();
+                                if (!apiAccessToken || !targetId) return;
+                                try {
+                                    setFollowBusyProfileId(targetId);
+                                    if (person.isFollowing) {
+                                        await unfollowProfile(apiAccessToken, targetId);
+                                    } else {
+                                        await followProfile(apiAccessToken, targetId);
+                                    }
+                                    setPeopleResults((prev) =>
+                                        prev.map((p) =>
+                                            String(p.profile_id || '') === targetId
+                                                ? { ...p, isFollowing: !Boolean(p.isFollowing) }
+                                                : p,
+                                        ),
+                                    );
+                                } finally {
+                                    setFollowBusyProfileId((current) => (current === targetId ? null : current));
+                                }
+                            }}
                         >
-                            <Text style={Styles.followBtnText}>{t('Follow')}</Text>
+                            <Text style={Styles.followBtnText}>
+                                {person.isFollowing ? t('Following') : t('Follow')}
+                            </Text>
                         </TouchableOpacity>
                     </>
                 )}
@@ -701,25 +727,28 @@ const SearchScreen = ({ navigation }: any) => {
                 <View style={Styles.headerSpacer} />
             </View>
 
-            <ScrollView style={Styles.container} showsVerticalScrollIndicator={false}>
+            <ScrollView style={Styles.container} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
                 <SizeBox height={24} />
 
                 <View style={Styles.searchRow}>
-                <View style={Styles.searchInputContainer}>
-                        <SearchNormal1 size={16} color="#9B9F9F" variant="Linear" />
-                        <SizeBox width={8} />
-                        <View style={Styles.searchInputPill}>
-                            <Text style={Styles.searchInputPillText}>{t(activeFilter)}:</Text>
-                        </View>
-                        <TextInput
-                            style={Styles.searchInput}
-                            placeholder={searchPlaceholder}
-                            placeholderTextColor={colors.subTextColor}
-                            value={activeValue}
-                            onChangeText={handleSearchChange}
-                            returnKeyType="search"
-                        />
-                    </View>
+                    <UnifiedSearchInput
+                        containerStyle={Styles.searchInputContainer}
+                        contentStyle={{ gap: 8 }}
+                        left={
+                            <View style={{ flexDirection: 'row', alignItems: 'center', marginRight: 8 }}>
+                                <SearchNormal1 size={16} color="#9B9F9F" variant="Linear" />
+                                <SizeBox width={8} />
+                                <View style={Styles.searchInputPill}>
+                                    <Text style={Styles.searchInputPillText}>{t(activeFilter)}:</Text>
+                                </View>
+                            </View>
+                        }
+                        inputStyle={Styles.searchInput}
+                        placeholder={searchPlaceholder}
+                        value={activeValue}
+                        onChangeText={handleSearchChange}
+                        returnKeyType="search"
+                    />
                     <TouchableOpacity onPress={() => navigation.navigate('AISearchScreen')}>
                         <View style={Styles.aiButton}>
                             <Icons.AiBlueBordered width={24} height={24} />

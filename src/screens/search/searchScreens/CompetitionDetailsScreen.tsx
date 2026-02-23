@@ -10,6 +10,7 @@ import { useAuth } from '../../../context/AuthContext'
 import { ApiError, CompetitionMapCheckpoint, CompetitionMapSummary, getCompetitionMapById, getCompetitionMaps, getEventCompetitions, getProfileSummary, searchEvents, searchFaceByEnrollment, searchMediaByBib, grantFaceRecognitionConsent, subscribeToEvent, unsubscribeToEvent } from '../../../services/apiGateway'
 import { useTheme } from '../../../context/ThemeContext'
 import { useTranslation } from 'react-i18next'
+import UnifiedSearchInput from '../../../components/unifiedSearchInput/UnifiedSearchInput';
 import { useEvents } from '../../../context/EventsContext'
 
 interface EventCategory {
@@ -763,16 +764,15 @@ const CompetitionDetailsScreen = ({ navigation, route }: any) => {
                         </Text>
                         <SizeBox height={16} />
                         <Text style={styles.modalLabel}>{t('Chest number')}</Text>
-                        <View style={styles.modalInputRow}>
-                            <TextInput
-                                style={styles.modalInput}
-                                placeholder={t('e.g. 1234')}
-                                placeholderTextColor="#9B9F9F"
-                                keyboardType="number-pad"
-                                value={quickChestNumber}
-                                onChangeText={setQuickChestNumber}
-                            />
-                        </View>
+                        <UnifiedSearchInput
+                            containerStyle={styles.modalInputRow}
+                            inputStyle={styles.modalInput}
+                            placeholder={t('e.g. 1234')}
+                            placeholderTextColor="#9B9F9F"
+                            keyboardType="number-pad"
+                            value={quickChestNumber}
+                            onChangeText={setQuickChestNumber}
+                        />
                         <SizeBox height={12} />
                         <Text style={styles.modalLabel}>{t('Face ID')}</Text>
                         <View style={styles.toggleRow}>

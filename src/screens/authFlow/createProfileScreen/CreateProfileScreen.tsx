@@ -2,11 +2,11 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { View, Text, ScrollView, Alert, ActivityIndicator, TouchableOpacity, Modal, Pressable } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import FastImage from 'react-native-fast-image';
-import { CalendarList } from 'react-native-calendars';
 import { createStyles } from './CreateProfileScreenStyles';
 import SizeBox from '../../../constants/SizeBox';
 import CustomTextInput from '../../../components/customTextInput/CustomTextInput';
 import CustomButton from '../../../components/customButton/CustomButton';
+import BirthDatePickerModal from '../../../components/birthDatePickerModal/BirthDatePickerModal';
 import Icons from '../../../constants/Icons';
 import Images from '../../../constants/Images';
 import { useTheme } from '../../../context/ThemeContext';
@@ -14,7 +14,7 @@ import { useAuth } from '../../../context/AuthContext';
 import { ApiError } from '../../../services/apiGateway';
 import { ArrowDown2, Calendar as CalendarIcon, Card } from 'iconsax-react-nativejs';
 import { getNationalityOptions } from '../../../constants/Nationalities';
-import { useTranslation } from 'react-i18next'
+import { useTranslation } from 'react-i18next';
 
 const CreateProfileScreen = ({ navigation }: any) => {
     const { t } = useTranslation();
@@ -34,8 +34,6 @@ const CreateProfileScreen = ({ navigation }: any) => {
     const [isBootstrapping, setIsBootstrapping] = useState(false);
     const [showNationalityModal, setShowNationalityModal] = useState(false);
     const [showBirthdateModal, setShowBirthdateModal] = useState(false);
-    const [calendarFocusDate, setCalendarFocusDate] = useState<string | null>(null);
-    const [showYearModal, setShowYearModal] = useState(false);
 
     useEffect(() => {
         let mounted = true;
@@ -53,7 +51,7 @@ const CreateProfileScreen = ({ navigation }: any) => {
         return () => {
             mounted = false;
         };
-    }, [authBootstrap]);
+    }, [authBootstrap, refreshAuthBootstrap]);
 
     useEffect(() => {
         const user = authBootstrap?.user;
@@ -68,6 +66,7 @@ const CreateProfileScreen = ({ navigation }: any) => {
             const v = String(value || '').trim();
             return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v) && !v.endsWith('.auth@allin.local');
         };
+
         const rawUsername = asText(user.username);
         const rawFirstName = asText(user.first_name);
         const rawLastName = asText(user.last_name);
@@ -95,55 +94,12 @@ const CreateProfileScreen = ({ navigation }: any) => {
         [nationality, birthDate]
     );
     const nationalityOptions = useMemo(() => getNationalityOptions(), []);
-    const toDateString = (date: Date) => {
-        const yyyy = date.getFullYear();
-        const mm = String(date.getMonth() + 1).padStart(2, '0');
-        const dd = String(date.getDate()).padStart(2, '0');
-        return `${yyyy}-${mm}-${dd}`;
-    };
+
     const formatDateDisplay = (value?: string | null) => {
         if (!value) return t('Select date');
         const [year, month, day] = String(value).split('-').map(Number);
         if (!year || !month || !day) return String(value);
         return `${String(day).padStart(2, '0')}/${String(month).padStart(2, '0')}/${year}`;
-    };
-    const markedDates = useMemo(() => {
-        if (!birthDate) return {};
-        return {
-            [birthDate]: {
-                selected: true,
-                selectedColor: colors.primaryColor,
-                selectedTextColor: colors.pureWhite,
-            },
-        };
-    }, [birthDate, colors.primaryColor, colors.pureWhite]);
-    const selectedYear = useMemo(() => {
-        if (calendarFocusDate) {
-            const parsed = new Date(calendarFocusDate);
-            if (!Number.isNaN(parsed.getTime())) return parsed.getFullYear();
-        }
-        if (birthDate) {
-            const parsed = new Date(birthDate);
-            if (!Number.isNaN(parsed.getTime())) return parsed.getFullYear();
-        }
-        return new Date().getFullYear();
-    }, [calendarFocusDate, birthDate]);
-    const birthYearOptions = useMemo(() => {
-        const currentYear = new Date().getFullYear();
-        const years: number[] = [];
-        for (let y = currentYear; y >= 1900; y -= 1) years.push(y);
-        return years;
-    }, []);
-    const jumpToYear = (year: number) => {
-        const baseDate = birthDate ? new Date(birthDate) : (calendarFocusDate ? new Date(calendarFocusDate) : new Date());
-        const month = baseDate.getMonth();
-        const day = baseDate.getDate();
-        const maxDay = new Date(year, month + 1, 0).getDate();
-        const nextDate = new Date(year, month, Math.min(day, maxDay));
-        const nextString = toDateString(nextDate);
-        setCalendarFocusDate(nextString);
-        if (birthDate) setBirthDate(nextString);
-        setShowYearModal(false);
     };
 
     const handleContinue = async () => {
@@ -225,9 +181,7 @@ const CreateProfileScreen = ({ navigation }: any) => {
                 <View style={Styles.contentContainer}>
                     <Text style={Styles.headingText}>{t('Complete your account')}</Text>
                     <SizeBox height={8} />
-                    <Text style={Styles.subHeadingText}>
-                        {t('Add your user details before creating profiles.')}
-                    </Text>
+                    <Text style={Styles.subHeadingText}>{t('Add your user details before creating profiles.')}</Text>
                     <SizeBox height={8} />
                     <Text style={Styles.subHeadingText}>{t(`Step ${step} of 3`)}</Text>
 
@@ -242,9 +196,7 @@ const CreateProfileScreen = ({ navigation }: any) => {
                                 value={firstName}
                                 onChangeText={setFirstName}
                             />
-
                             <SizeBox height={24} />
-
                             <CustomTextInput
                                 label={t('Last Name')}
                                 placeholder={t('Enter Last Name')}
@@ -265,9 +217,7 @@ const CreateProfileScreen = ({ navigation }: any) => {
                                 onChangeText={setUsername}
                                 autoCapitalize="none"
                             />
-
                             <SizeBox height={24} />
-
                             <CustomTextInput
                                 label={t('Email')}
                                 placeholder={t('Enter Email')}
@@ -301,11 +251,7 @@ const CreateProfileScreen = ({ navigation }: any) => {
                             <Text style={Styles.label}>{t('Your Birth Date')}</Text>
                             <TouchableOpacity
                                 style={[Styles.inputContainer, { marginTop: 8 }]}
-                                onPress={() => {
-                                    setCalendarFocusDate(birthDate || toDateString(new Date()));
-                                    setShowYearModal(false);
-                                    setShowBirthdateModal(true);
-                                }}
+                                onPress={() => setShowBirthdateModal(true)}
                                 activeOpacity={0.8}
                             >
                                 <CalendarIcon size={16} color={colors.primaryColor} variant="Linear" />
@@ -361,90 +307,19 @@ const CreateProfileScreen = ({ navigation }: any) => {
                 </Pressable>
             </Modal>
 
-            <Modal visible={showBirthdateModal} transparent animationType="fade" onRequestClose={() => setShowBirthdateModal(false)}>
-                <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'center', padding: 16 }}>
-                    <Pressable
-                        style={{ position: 'absolute', top: 0, bottom: 0, left: 0, right: 0 }}
-                        onPress={() => {
-                            setShowYearModal(false);
-                            setShowBirthdateModal(false);
-                        }}
-                    />
-                    <View style={{ borderRadius: 16, backgroundColor: colors.modalBackground, borderWidth: 0.5, borderColor: colors.lightGrayColor, padding: 16, maxHeight: '72%' }}>
-                        <Text style={{ color: colors.mainTextColor, fontSize: 18, fontWeight: '700' }}>{t('Select date of birth')}</Text>
-                        <SizeBox height={12} />
-                        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
-                            <Text style={{ color: colors.subTextColor, fontSize: 14, fontWeight: '600' }}>{t('Year')}</Text>
-                            <TouchableOpacity
-                                style={{ flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 12, paddingVertical: 8, borderRadius: 10, borderWidth: 1, borderColor: colors.lightGrayColor }}
-                                onPress={() => setShowYearModal((prev) => !prev)}
-                            >
-                                <Text style={{ color: colors.mainTextColor, fontSize: 15, fontWeight: '600' }}>{selectedYear}</Text>
-                                <ArrowDown2 size={16} color={colors.grayColor} variant="Linear" />
-                            </TouchableOpacity>
-                        </View>
-                        {showYearModal && (
-                            <>
-                                <View style={{ borderRadius: 12, borderWidth: 1, borderColor: colors.lightGrayColor, backgroundColor: colors.modalBackground, marginBottom: 10 }}>
-                                    <ScrollView style={{ maxHeight: 180 }} nestedScrollEnabled showsVerticalScrollIndicator={false}>
-                                        {birthYearOptions.map((year) => (
-                                            <TouchableOpacity
-                                                key={`inline-birth-year-${year}`}
-                                                style={{ paddingVertical: 12, paddingHorizontal: 14, borderBottomWidth: 0.5, borderBottomColor: colors.lightGrayColor }}
-                                                onPress={() => jumpToYear(year)}
-                                            >
-                                                <Text style={{ color: year === selectedYear ? colors.primaryColor : colors.mainTextColor, fontSize: 15, fontWeight: year === selectedYear ? '700' : '500' }}>
-                                                    {year}
-                                                </Text>
-                                            </TouchableOpacity>
-                                        ))}
-                                    </ScrollView>
-                                </View>
-                            </>
-                        )}
-                        <CalendarList
-                            style={{ maxHeight: 300 }}
-                            current={calendarFocusDate ?? birthDate ?? toDateString(new Date())}
-                            initialDate={calendarFocusDate ?? birthDate ?? toDateString(new Date())}
-                            firstDay={1}
-                            maxDate={toDateString(new Date())}
-                            onDayPress={(day) => {
-                                setBirthDate(day.dateString);
-                                setCalendarFocusDate(day.dateString);
-                            }}
-                            markedDates={markedDates}
-                            theme={{
-                                calendarBackground: colors.modalBackground,
-                                backgroundColor: colors.modalBackground,
-                                dayTextColor: colors.mainTextColor,
-                                monthTextColor: colors.mainTextColor,
-                                textSectionTitleColor: colors.subTextColor,
-                                selectedDayBackgroundColor: colors.primaryColor,
-                                selectedDayTextColor: colors.pureWhite,
-                                todayTextColor: colors.primaryColor,
-                                weekVerticalMargin: 0,
-                                textDayHeaderFontSize: 11,
-                                textDayFontSize: 14,
-                            }}
-                            pastScrollRange={120}
-                            futureScrollRange={0}
-                            scrollEnabled
-                            showScrollIndicator
-                        />
-                        <SizeBox height={12} />
-                        <View style={{ flexDirection: 'row', gap: 12 }}>
-                            <TouchableOpacity style={{ flex: 1, minHeight: 46, borderRadius: 12, borderWidth: 1, borderColor: colors.lightGrayColor, alignItems: 'center', justifyContent: 'center' }} onPress={() => { setShowYearModal(false); setShowBirthdateModal(false); }}>
-                                <Text style={{ color: colors.mainTextColor, fontWeight: '600' }}>{t('Cancel')}</Text>
-                            </TouchableOpacity>
-                            <TouchableOpacity style={{ flex: 1, minHeight: 46, borderRadius: 12, backgroundColor: colors.primaryColor, alignItems: 'center', justifyContent: 'center' }} onPress={() => { setShowYearModal(false); setShowBirthdateModal(false); }}>
-                                <Text style={{ color: colors.pureWhite, fontWeight: '700' }}>{t('Apply')}</Text>
-                            </TouchableOpacity>
-                        </View>
-                    </View>
-                </View>
-            </Modal>
+            <BirthDatePickerModal
+                visible={showBirthdateModal}
+                value={birthDate || null}
+                onClose={() => setShowBirthdateModal(false)}
+                onApply={(date) => {
+                    if (date) setBirthDate(date);
+                    setShowBirthdateModal(false);
+                }}
+                title={t('Select date of birth')}
+            />
         </View>
     );
 };
 
 export default CreateProfileScreen;
+

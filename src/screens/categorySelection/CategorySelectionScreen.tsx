@@ -33,7 +33,7 @@ const CategorySelectionScreen = ({ navigation, route }: any) => {
             id: 'find',
             title: 'Single User',
             subtitle: 'Individual',
-            description: 'Access all your content from event to matches in one place.',
+            description: 'Set up a personal profile to manage your sports focus, results, and media.',
             icon: <Gallery size={24} color={colors.grayColor} />,
             iconSelected: <Gallery size={24} color={colors.primaryColor} />,
         },
@@ -41,7 +41,7 @@ const CategorySelectionScreen = ({ navigation, route }: any) => {
             id: 'manage',
             title: 'Manage a club/event',
             subtitle: 'Club/ Admin',
-            description: 'Manage photos, team members, and event content',
+            description: 'Set up a group profile to manage members, competitions, blogs, and collections.',
             icon: <Profile2User size={24} color={colors.grayColor} />,
             iconSelected: <Profile2User size={24} color={colors.primaryColor} />,
         },
@@ -74,10 +74,10 @@ const CategorySelectionScreen = ({ navigation, route }: any) => {
 
                 <View style={Styles.headerContainer}>
                     <Text style={Styles.headingText}>
-                        {fromAddFlow ? t('What would you like to add?') : t('How will you use AllIn?')}
+                        {fromAddFlow ? t('What would you like to add?') : t('Do you want to set up your profile?')}
                     </Text>
                     <Text style={Styles.subHeadingText}>
-                        {fromAddFlow ? t('Choose profile type to continue.') : t('Choose profile type to continue.')}
+                        {fromAddFlow ? t('Choose profile type to continue.') : t('Choose what you want to set up first.')}
                     </Text>
                 </View>
 
@@ -134,7 +134,7 @@ const CategorySelectionScreen = ({ navigation, route }: any) => {
                         activeOpacity={0.7}
                         onPress={handleGuestLogin}
                     >
-                        <Text style={Styles.guestButtonText}>{t('Login as a guest')}</Text>
+                        <Text style={Styles.guestButtonText}>{t('Continue as guest (set up later)')}</Text>
                     </TouchableOpacity>
                 )}
 {isLoading ? (

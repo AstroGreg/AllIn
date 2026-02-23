@@ -196,7 +196,7 @@ const HomeScreen = ({ navigation }: any) => {
     const performLoadOverview = useCallback(async (force = false) => {
         if (!apiAccessToken) {
             setOverview(null);
-            setOverviewError(t('Log in (or set a Dev API token) to load overview.'));
+            setOverviewError(t('Log in to load overview.'));
             return;
         }
         const now = Date.now();
@@ -215,22 +215,33 @@ const HomeScreen = ({ navigation }: any) => {
         setIsLoadingOverview(true);
         setOverviewError(null);
         try {
-            const [data, videos, photos, postsResp] = await Promise.all([
-                getHomeOverview(apiAccessToken, 'me'),
+            const data = await getHomeOverview(apiAccessToken, 'me');
+            setOverview(data);
+            homeCache.overview = data;
+            homeCache.fetchedAt = Date.now();
+
+            // Load heavier lists in background so Home stays responsive and navigation is not blocked.
+            void Promise.allSettled([
                 getAllVideos(apiAccessToken),
                 getAllPhotos(apiAccessToken),
                 getPosts(apiAccessToken, { limit: 500 }),
-            ]);
-            const posts = Array.isArray(postsResp?.posts) ? postsResp.posts : [];
-            setOverview(data);
-            setAllVideos(videos);
-            setAllPhotos(photos);
-            setAllPosts(posts);
-            homeCache.overview = data;
-            homeCache.videos = videos;
-            homeCache.photos = photos;
-            homeCache.posts = posts;
-            homeCache.fetchedAt = Date.now();
+            ]).then((results) => {
+                const [videosRes, photosRes, postsRes] = results;
+                if (videosRes.status === 'fulfilled') {
+                    setAllVideos(videosRes.value);
+                    homeCache.videos = videosRes.value;
+                }
+                if (photosRes.status === 'fulfilled') {
+                    setAllPhotos(photosRes.value);
+                    homeCache.photos = photosRes.value;
+                }
+                if (postsRes.status === 'fulfilled') {
+                    const posts = Array.isArray(postsRes.value?.posts) ? postsRes.value.posts : [];
+                    setAllPosts(posts);
+                    homeCache.posts = posts;
+                }
+                homeCache.fetchedAt = Date.now();
+            });
         } catch (e: any) {
             const msg = e instanceof ApiError ? e.message : String(e?.message ?? e);
             setOverviewError(msg);
@@ -242,7 +253,7 @@ const HomeScreen = ({ navigation }: any) => {
     const loadOverview = useCallback((force = false) => {
         if (!apiAccessToken) {
             setOverview(null);
-            setOverviewError(t('Log in (or set a Dev API token) to load overview.'));
+            setOverviewError(t('Log in to load overview.'));
             return Promise.resolve();
         }
 
@@ -882,6 +893,20 @@ const HomeScreen = ({ navigation }: any) => {
     const infiniteFeedItems = useMemo<HomeFeedItem[]>(() => {
         const uniqueMedia: MediaViewAllItem[] = [];
         const seen = new Set<string>();
+
+        const overviewMediaCandidates: Array<HomeOverviewMedia | null | undefined> = [
+            overview?.overview?.video,
+            overview?.overview?.photo,
+            overview?.overview?.blog?.media,
+        ];
+        overviewMediaCandidates.forEach((item) => {
+            if (!item) return;
+            const id = String((item as any).media_id || '').trim();
+            if (!id || seen.has(id)) return;
+            seen.add(id);
+            uniqueMedia.push(item as unknown as MediaViewAllItem);
+        });
+
         sortByNewest([...topVideos, ...topPhotos]).forEach((item) => {
             const id = String(item.media_id || '').trim();
             if (!id) return;
@@ -894,6 +919,33 @@ const HomeScreen = ({ navigation }: any) => {
             created_at: media.created_at ?? null,
             media,
         }));
+
+        const seededBlogEntry: HomeFeedItem[] =
+            overview?.overview?.blog?.post && !allPosts.some((p) => String(p?.id || '') === String(overview.overview.blog?.post?.id || ''))
+                ? [{
+                    kind: 'post',
+                    created_at: overview.overview.blog.post.created_at ?? null,
+                    post: {
+                        id: overview.overview.blog.post.id,
+                        title: overview.overview.blog.post.title ?? '',
+                        summary: overview.overview.blog.post.summary ?? undefined,
+                        description: overview.overview.blog.post.description ?? undefined,
+                        created_at: overview.overview.blog.post.created_at ?? undefined,
+                        likes_count: overview.overview.blog.post.likes_count ?? 0,
+                        liked_by_me: overview.overview.blog.post.liked_by_me ?? false,
+                        reading_time_minutes: overview.overview.blog.post.reading_time_minutes ?? undefined,
+                        views_count: overview.overview.blog.post.views_count ?? 0,
+                        author: overview.overview.blog.author
+                            ? {
+                                  profile_id: overview.overview.blog.author.profile_id ?? '',
+                                  display_name: overview.overview.blog.author.display_name ?? undefined,
+                                  avatar_url: overview.overview.blog.author.avatar_url ?? undefined,
+                              }
+                            : undefined,
+                    } as PostSummary,
+                }]
+                : [];
+
         const textOnlyPosts: HomeFeedItem[] = allPosts
             .filter((post) => !post?.cover_media)
             .map((post) => ({
@@ -901,14 +953,14 @@ const HomeScreen = ({ navigation }: any) => {
                 created_at: post?.created_at ?? null,
                 post,
             }));
-        return [...mediaEntries, ...textOnlyPosts].sort((a, b) => {
+        return [...seededBlogEntry, ...mediaEntries, ...textOnlyPosts].sort((a, b) => {
             const aTs = new Date(String(a.created_at || '')).getTime();
             const bTs = new Date(String(b.created_at || '')).getTime();
             const safeA = Number.isFinite(aTs) ? aTs : 0;
             const safeB = Number.isFinite(bTs) ? bTs : 0;
             return safeB - safeA;
         });
-    }, [allPosts, sortByNewest, topPhotos, topVideos]);
+    }, [allPosts, overview, sortByNewest, topPhotos, topVideos]);
 
     useEffect(() => {
         setFeedVisibleCount((prev) => {

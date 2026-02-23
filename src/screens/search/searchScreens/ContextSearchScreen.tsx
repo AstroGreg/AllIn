@@ -8,6 +8,7 @@ import { useEvents } from '../../../context/EventsContext';
 import { AI_GROUPS, AI_PEOPLE } from '../../../constants/AiFilterOptions';
 import SizeBox from '../../../constants/SizeBox';
 import { createStyles } from './ContextSearchScreenStyles';
+import UnifiedSearchInput from '../../../components/unifiedSearchInput/UnifiedSearchInput';
 import { useRoute } from '@react-navigation/native';
 import { useTranslation } from 'react-i18next'
 
@@ -153,7 +154,7 @@ const ContextSearchScreen = ({ navigation }: any) => {
                 <View style={{ width: 40 }} />
             </View>
 
-            <ScrollView style={Styles.content} showsVerticalScrollIndicator={false}>
+            <ScrollView style={Styles.content} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
                 <Text style={Styles.title}>{t('Describe Context')}</Text>
                 <Text style={Styles.subtitle}>
                     Enter keywords or describe what you're looking for
@@ -161,20 +162,17 @@ const ContextSearchScreen = ({ navigation }: any) => {
                 <SizeBox height={24} />
 
                 {/* Context Search Input */}
-                <View style={Styles.inputContainer}>
-                    <SearchNormal1 size={20} color={colors.grayColor} variant="Linear" />
-                    <SizeBox width={10} />
-                    <TextInput
-                        ref={contextInputRef}
-                        style={Styles.input}
-                        placeholder={t('For example podium, finish line, medal...')}
-                        placeholderTextColor={colors.grayColor}
-                        value={contextSearchText}
-                        onChangeText={setContextSearchText}
-                        returnKeyType="next"
-                        multiline={false}
-                    />
-                </View>
+                <UnifiedSearchInput
+                    ref={contextInputRef}
+                    containerStyle={Styles.inputContainer}
+                    left={<SearchNormal1 size={20} color={colors.grayColor} variant="Linear" />}
+                    inputStyle={Styles.input}
+                    placeholder={t('For example podium, finish line, medal...')}
+                    value={contextSearchText}
+                    onChangeText={setContextSearchText}
+                    returnKeyType="next"
+                    multiline={false}
+                />
 
                 <SizeBox height={24} />
 

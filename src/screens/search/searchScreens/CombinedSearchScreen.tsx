@@ -29,6 +29,7 @@ import {
 import {createStyles} from './CombinedSearchScreenStyles';
 import {useFocusEffect, useRoute} from '@react-navigation/native';
 import { useTranslation } from 'react-i18next'
+import UnifiedSearchInput from '../../../components/unifiedSearchInput/UnifiedSearchInput';
 
 interface EventOption {
   id: string;
@@ -711,20 +712,19 @@ const CombinedSearchScreen = ({navigation}: any) => {
                   </TouchableOpacity>
                 </View>
 
-                <View style={styles.modalSearchRow}>
-                  <SearchNormal1 size={18} color={colors.subTextColor} variant="Linear" />
-                  <TextInput
-                    style={styles.modalSearchInput}
-                    placeholder={t('Search competitions')}
-                    placeholderTextColor={colors.subTextColor}
-                    value={competitionQuery}
-                    onChangeText={setCompetitionQuery}
-                  />
-                </View>
+                <UnifiedSearchInput
+                  containerStyle={styles.modalSearchRow}
+                  left={<SearchNormal1 size={18} color={colors.subTextColor} variant="Linear" />}
+                  inputStyle={styles.modalSearchInput}
+                  placeholder={t('Search competitions')}
+                  placeholderTextColor={colors.subTextColor}
+                  value={competitionQuery}
+                  onChangeText={setCompetitionQuery}
+                />
 
                 {eventsError && <Text style={styles.modalErrorText}>{eventsError}</Text>}
 
-                <ScrollView style={styles.modalList} contentContainerStyle={styles.modalListContent}>
+                <ScrollView style={styles.modalList} contentContainerStyle={styles.modalListContent} keyboardShouldPersistTaps="handled">
                   {isLoadingEvents ? (
                     <View style={styles.modalLoadingRow}>
                       <ActivityIndicator color={colors.primaryColor} />
@@ -832,34 +832,28 @@ const CombinedSearchScreen = ({navigation}: any) => {
 
           <SizeBox height={20} />
           <Text style={styles.sectionTitle}>{t('Chest number')}</Text>
-          <View style={styles.inputContainer}>
-            <SearchNormal1 size={20} color={colors.grayColor} variant="Linear" />
-            <SizeBox width={10} />
-            <TextInput
-              style={styles.input}
-              placeholder={t('e.g. 1234')}
-              placeholderTextColor={colors.grayColor}
-              value={bib}
-              onChangeText={setBib}
-              keyboardType="number-pad"
-              returnKeyType="next"
-            />
-          </View>
+          <UnifiedSearchInput
+            containerStyle={styles.inputContainer}
+            left={<SearchNormal1 size={20} color={colors.grayColor} variant="Linear" />}
+            inputStyle={styles.input}
+            placeholder={t('e.g. 1234')}
+            value={bib}
+            onChangeText={setBib}
+            keyboardType="number-pad"
+            returnKeyType="next"
+          />
 
           <SizeBox height={20} />
           <Text style={styles.sectionTitle}>{t('Context')}</Text>
-          <View style={styles.inputContainer}>
-            <SearchNormal1 size={20} color={colors.grayColor} variant="Linear" />
-            <SizeBox width={10} />
-            <TextInput
-              style={styles.input}
-              placeholder={t('e.g. finish line, podium, medal')}
-              placeholderTextColor={colors.grayColor}
-              value={contextText}
-              onChangeText={setContextText}
-              returnKeyType="done"
-            />
-          </View>
+          <UnifiedSearchInput
+            containerStyle={styles.inputContainer}
+            left={<SearchNormal1 size={20} color={colors.grayColor} variant="Linear" />}
+            inputStyle={styles.input}
+            placeholder={t('e.g. finish line, podium, medal')}
+            value={contextText}
+            onChangeText={setContextText}
+            returnKeyType="done"
+          />
 
           {errorText && <Text style={styles.errorText}>{errorText}</Text>}
 

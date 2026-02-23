@@ -20,13 +20,22 @@ const LoginScreen = ({ navigation }: any) => {
     const insets = useSafeAreaInsets();
     const { login, signup, isLoading, isAuthenticated, refreshAuthBootstrap } = useAuth();
 
+    const shouldForceAccountCompletion = (bootstrap: any) => {
+        if (!bootstrap) return true;
+        const needs = Boolean(bootstrap.needs_user_onboarding);
+        const hasProfiles = Boolean(bootstrap.has_profiles);
+        const isGuest = Boolean(bootstrap?.user?.is_guest);
+        return needs && !hasProfiles && !isGuest;
+    };
+
     const navigatePostAuth = async () => {
         const bootstrap = await refreshAuthBootstrap();
         console.log('[LoginScreen] auth/bootstrap result:', bootstrap ? {
             needs_user_onboarding: bootstrap.needs_user_onboarding,
             missing_user_fields: bootstrap.missing_user_fields,
+            has_profiles: bootstrap.has_profiles,
         } : null);
-        const target = !bootstrap || bootstrap.needs_user_onboarding ? 'CreateProfileScreen' : 'CategorySelectionScreen';
+        const target = shouldForceAccountCompletion(bootstrap) ? 'CreateProfileScreen' : 'CategorySelectionScreen';
         navigation.reset({
             index: 0,
             routes: [{ name: target }],

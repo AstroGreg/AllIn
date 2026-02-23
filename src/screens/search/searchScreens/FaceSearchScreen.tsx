@@ -17,6 +17,7 @@ import {
 import {useEvents} from '../../../context/EventsContext';
 import {AI_GROUPS, AI_PEOPLE} from '../../../constants/AiFilterOptions';
 import { useTranslation } from 'react-i18next'
+import UnifiedSearchInput from '../../../components/unifiedSearchInput/UnifiedSearchInput';
 
 type AiFilterState = {
   competition?: string;
@@ -337,7 +338,7 @@ const FaceSearchScreen = ({navigation, route}: any) => {
                 <View style={{width: 44, height: 44}} />
             </View>
 
-            <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+            <ScrollView style={styles.container} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
                 <SizeBox height={24} />
 
                 {/* Top row */}
@@ -450,17 +451,14 @@ const FaceSearchScreen = ({navigation, route}: any) => {
                 </View>
 
                 {/* Search filter input (for competition list) */}
-                <View style={styles.searchInputContainer}>
-                    <SearchNormal1 size={24} color={colors.grayColor} variant="Linear" />
-                    <SizeBox width={6} />
-                    <TextInput
-                        style={styles.searchInput}
-                        placeholder={t('Filter competitions')}
-                        placeholderTextColor={colors.grayColor}
-                        value={searchText}
-                        onChangeText={setSearchText}
-                    />
-                </View>
+                <UnifiedSearchInput
+                    containerStyle={styles.searchInputContainer}
+                    left={<SearchNormal1 size={24} color={colors.grayColor} variant="Linear" />}
+                    inputStyle={styles.searchInput}
+                    placeholder={t('Filter competitions')}
+                    value={searchText}
+                    onChangeText={setSearchText}
+                />
 
                 <SizeBox height={24} />
 
@@ -488,17 +486,15 @@ const FaceSearchScreen = ({navigation, route}: any) => {
                             {t('Your profile has no competition subscriptions yet. If you know an event UUID, paste it below to subscribe (advanced).')}
                         </Text>
                         <SizeBox height={12} />
-                        <View style={styles.searchInputContainer}>
-                            <TextInput
-                                style={styles.searchInput}
-                                placeholder={t('Event UUID')}
-                                placeholderTextColor={colors.grayColor}
-                                value={eventIdInput}
-                                onChangeText={setEventIdInput}
-                                autoCapitalize="none"
-                                autoCorrect={false}
-                            />
-                        </View>
+                        <UnifiedSearchInput
+                            containerStyle={styles.searchInputContainer}
+                            inputStyle={styles.searchInput}
+                            placeholder={t('Event UUID')}
+                            value={eventIdInput}
+                            onChangeText={setEventIdInput}
+                            autoCapitalize="none"
+                            autoCorrect={false}
+                        />
                         <SizeBox height={12} />
                         <TouchableOpacity
                             style={[styles.selectButton, {alignSelf: 'flex-start'}]}

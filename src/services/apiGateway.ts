@@ -1353,6 +1353,29 @@ export async function getMediaViewAll(accessToken: string): Promise<MediaViewAll
   return apiRequest<MediaViewAllItem[]>('/media/view_all', {method: 'GET', accessToken});
 }
 
+export async function getCompetitionPublicMedia(
+  accessToken: string,
+  competitionId: string,
+  params?: {type?: 'image' | 'video'; limit?: number; offset?: number},
+): Promise<MediaViewAllItem[]> {
+  const safeId = String(competitionId || '').trim();
+  if (!safeId) {
+    throw new ApiError({status: 400, message: 'Missing competition_id'});
+  }
+  const qs = toQueryString({
+    type: params?.type,
+    limit: params?.limit,
+    offset: params?.offset,
+  });
+  const res = await apiRequest<any>(`/competitions/${encodeURIComponent(safeId)}/media${qs}`, {
+    method: 'GET',
+    accessToken,
+  });
+  if (Array.isArray(res)) return res as MediaViewAllItem[];
+  if (Array.isArray(res?.items)) return res.items as MediaViewAllItem[];
+  return [];
+}
+
 export async function getAllVideos(accessToken: string): Promise<MediaViewAllItem[]> {
   const items = await getMediaViewAll(accessToken);
   return items.filter((item) => String(item.type).toLowerCase() === 'video');

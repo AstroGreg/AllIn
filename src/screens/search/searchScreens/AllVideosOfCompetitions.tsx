@@ -6,7 +6,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import CustomHeader from '../../../components/customHeader/CustomHeader'
 import Icons from '../../../constants/Icons'
 import { useAuth } from '../../../context/AuthContext'
-import { getHubAppearanceMedia, getMediaViewAll, type MediaViewAllItem } from '../../../services/apiGateway'
+import { getCompetitionPublicMedia, getHubAppearanceMedia, type MediaViewAllItem } from '../../../services/apiGateway'
 import { getHlsBaseUrl } from '../../../constants/RuntimeConfig'
 import Images from '../../../constants/Images'
 import { useTheme } from '../../../context/ThemeContext'
@@ -90,13 +90,19 @@ const AllVideosOfEvents = ({ navigation, route }: any) => {
                 if (appearanceOnly && eventId) {
                     const res = await getHubAppearanceMedia(apiAccessToken, String(eventId));
                     list = Array.isArray(res?.results) ? res.results : [];
-                } else {
-                    const res = await getMediaViewAll(apiAccessToken);
+                } else if (eventId) {
+                    const res = await getCompetitionPublicMedia(apiAccessToken, String(eventId), {type: 'video', limit: 500});
                     list = Array.isArray(res) ? res : [];
+                } else {
+                    list = [];
                 }
                 if (!mounted) return;
                 const filtered = list.filter((item) => {
-                    if (eventId && String(item.event_id ?? '') !== String(eventId)) return false;
+                    if (eventId) {
+                        const matchesLegacyEventId = String(item.event_id ?? '') === String(eventId);
+                        const matchesCompetitionId = String((item as any).competition_id ?? '') === String(eventId);
+                        if (!matchesLegacyEventId && !matchesCompetitionId) return false;
+                    }
                     return String(item.type).toLowerCase() === 'video';
                 });
                 setItems(filtered);

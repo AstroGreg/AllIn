@@ -12,6 +12,7 @@ import {useEvents} from '../../../context/EventsContext';
 import {useRoute} from '@react-navigation/native';
 import {AI_GROUPS, AI_PEOPLE} from '../../../constants/AiFilterOptions';
 import { useTranslation } from 'react-i18next'
+import UnifiedSearchInput from '../../../components/unifiedSearchInput/UnifiedSearchInput';
 
 type AiFilterState = {
   competition?: string;
@@ -323,19 +324,16 @@ const BibSearchScreen = ({navigation}: any) => {
           <SizeBox height={22} />
 
           <Text style={styles.inputLabel}>{t('Chest number')}</Text>
-          <View style={styles.inputContainer}>
-            <SearchNormal1 size={20} color={colors.grayColor} variant="Linear" />
-            <SizeBox width={10} />
-            <TextInput
-              style={styles.input}
-              placeholder={t('e.g. 1234')}
-              placeholderTextColor={colors.grayColor}
-              value={bib}
-              onChangeText={setBib}
-              keyboardType="number-pad"
-              returnKeyType="next"
-            />
-          </View>
+          <UnifiedSearchInput
+            containerStyle={styles.inputContainer}
+            left={<SearchNormal1 size={20} color={colors.grayColor} variant="Linear" />}
+            inputStyle={styles.input}
+            placeholder={t('e.g. 1234')}
+            value={bib}
+            onChangeText={setBib}
+            keyboardType="number-pad"
+            returnKeyType="next"
+          />
 
           <SizeBox height={18} />
 
