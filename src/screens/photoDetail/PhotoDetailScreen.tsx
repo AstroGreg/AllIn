@@ -12,12 +12,14 @@ import {ApiError, createMediaIssueRequest, getAiFeedbackLabel, getMediaById, pos
 import Video from 'react-native-video';
 import ShimmerEffect from '../../components/shimmerEffect/ShimmerEffect';
 import {getApiBaseUrl, getHlsBaseUrl} from '../../constants/RuntimeConfig';
+import {AppConfig} from '../../constants/AppConfig';
 import Slider from '@react-native-community/slider';
 import {CameraRoll, iosRequestAddOnlyGalleryPermission} from '@react-native-camera-roll/camera-roll';
 import Icons from '../../constants/Icons';
 import { useTranslation } from 'react-i18next'
 
 type FeedbackChoice = 'yes' | 'no' | null;
+const INSTAGRAM_APP_ID = String(AppConfig.INSTAGRAM_APP_ID ?? '').trim();
 
 const PhotoDetailScreen = ({navigation, route}: any) => {
     const { t } = useTranslation();
@@ -599,6 +601,10 @@ const PhotoDetailScreen = ({navigation, route}: any) => {
         if (shareModule?.default?.shareSingle) {
             const ShareLib = shareModule.default;
             try {
+                if (!INSTAGRAM_APP_ID) {
+                    Alert.alert(t('Instagram Story failed'), t('INSTAGRAM_APP_ID is missing.'));
+                    return;
+                }
                 const localAsset = shareUrl
                     ? await ensureLocalFile(shareUrl, extensionFromUrl(shareUrl))
                     : null;
@@ -608,6 +614,7 @@ const PhotoDetailScreen = ({navigation, route}: any) => {
                 }
                 await ShareLib.shareSingle({
                     social: ShareLib.Social.INSTAGRAM_STORIES,
+                    appId: INSTAGRAM_APP_ID,
                     backgroundImage: localAsset && !localAsset.includes('.mp4') ? localAsset : bannerUri,
                     backgroundVideo: localAsset && localAsset.includes('.mp4') ? localAsset : undefined,
                     stickerImage: bannerUri,

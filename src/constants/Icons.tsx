@@ -43,6 +43,7 @@ import location from '../assets/icons/location.svg';
 import calendarGrey from '../assets/icons/calendarGrey.svg';
 import calendarWhite from '../assets/icons/calendarWhite.svg';
 import rightBtnIconGrey from '../assets/icons/arrowRightGrey.svg';
+import rightBtnIconBlue from '../assets/icons/arrowRightBlue.svg';
 import play from '../assets/icons/posh.svg';
 import downloads from '../assets/icons/downloads.svg';
 import receiptEdit from '../assets/icons/receiptEdit.svg';
@@ -215,6 +216,7 @@ const Icons = {
     Downloads: downloads,
     Play: play,
     RightBtnIconGrey: rightBtnIconGrey,
+    RightBtnIconBlue: rightBtnIconBlue,
     CalendarGrey: calendarGrey,
     CalendarWhite: calendarWhite,
     Location: location,

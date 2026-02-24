@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { View, Text, ScrollView, Alert, ActivityIndicator, TouchableOpacity, Modal, Pressable } from 'react-native';
+import { View, Text, ScrollView, Alert, ActivityIndicator, TouchableOpacity, Modal, Pressable, TextInput } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import FastImage from 'react-native-fast-image';
 import { createStyles } from './CreateProfileScreenStyles';
@@ -34,6 +34,7 @@ const CreateProfileScreen = ({ navigation }: any) => {
     const [isBootstrapping, setIsBootstrapping] = useState(false);
     const [showNationalityModal, setShowNationalityModal] = useState(false);
     const [showBirthdateModal, setShowBirthdateModal] = useState(false);
+    const [nationalitySearch, setNationalitySearch] = useState('');
 
     useEffect(() => {
         let mounted = true;
@@ -177,6 +178,21 @@ const CreateProfileScreen = ({ navigation }: any) => {
         [nationality, birthDate]
     );
     const nationalityOptions = useMemo(() => getNationalityOptions(), []);
+    const filteredNationalityOptions = useMemo(() => {
+        const query = nationalitySearch.trim().toLowerCase();
+        if (!query) return nationalityOptions;
+        return nationalityOptions.filter((option) => option.toLowerCase().includes(query));
+    }, [nationalityOptions, nationalitySearch]);
+
+    const openNationalityModal = () => {
+        setNationalitySearch('');
+        setShowNationalityModal(true);
+    };
+
+    const closeNationalityModal = () => {
+        setShowNationalityModal(false);
+        setNationalitySearch('');
+    };
 
     const formatDateDisplay = (value?: string | null) => {
         if (!value) return t('Select date');
@@ -311,7 +327,7 @@ const CreateProfileScreen = ({ navigation }: any) => {
                             <Text style={Styles.label}>{t('Nationality')}</Text>
                             <TouchableOpacity
                                 style={[Styles.inputContainer, { marginTop: 8 }]}
-                                onPress={() => setShowNationalityModal(true)}
+                                onPress={openNationalityModal}
                                 activeOpacity={0.8}
                             >
                                 <Card size={16} color={colors.primaryColor} variant="Linear" />
@@ -348,7 +364,11 @@ const CreateProfileScreen = ({ navigation }: any) => {
                         <>
                             {step > 1 && (
                                 <>
-                                    <CustomButton title={t('Back')} onPress={() => setStep((s) => Math.max(1, s - 1))} />
+                                    <CustomButton
+                                        title={t('Back')}
+                                        onPress={() => setStep((s) => Math.max(1, s - 1))}
+                                        isBack
+                                    />
                                     <SizeBox height={12} />
                                 </>
                             )}
@@ -360,24 +380,48 @@ const CreateProfileScreen = ({ navigation }: any) => {
                 <SizeBox height={40} />
             </ScrollView>
 
-            <Modal visible={showNationalityModal} transparent animationType="fade" onRequestClose={() => setShowNationalityModal(false)}>
-                <Pressable style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'center', padding: 20 }} onPress={() => setShowNationalityModal(false)}>
+            <Modal visible={showNationalityModal} transparent animationType="fade" onRequestClose={closeNationalityModal}>
+                <Pressable style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'center', padding: 20 }} onPress={closeNationalityModal}>
                     <Pressable style={{ maxHeight: '70%', borderRadius: 16, backgroundColor: colors.modalBackground, borderWidth: 0.5, borderColor: colors.lightGrayColor, padding: 16 }} onPress={() => {}}>
                         <Text style={{ color: colors.mainTextColor, fontSize: 18, fontWeight: '700' }}>{t('Select nationality')}</Text>
                         <SizeBox height={12} />
+                        <TextInput
+                            value={nationalitySearch}
+                            onChangeText={setNationalitySearch}
+                            placeholder={t('Search nationality')}
+                            placeholderTextColor={colors.grayColor}
+                            autoCapitalize="none"
+                            autoCorrect={false}
+                            style={{
+                                minHeight: 44,
+                                borderRadius: 10,
+                                borderWidth: 1,
+                                borderColor: colors.lightGrayColor,
+                                backgroundColor: colors.backgroundColor,
+                                color: colors.mainTextColor,
+                                paddingHorizontal: 12,
+                                marginBottom: 12,
+                            }}
+                        />
                         <ScrollView showsVerticalScrollIndicator={false}>
-                            {nationalityOptions.map((option) => (
-                                <TouchableOpacity
-                                    key={option}
-                                    style={{ paddingVertical: 14, borderBottomWidth: 0.5, borderBottomColor: colors.lightGrayColor }}
-                                    onPress={() => {
-                                        setNationality(option);
-                                        setShowNationalityModal(false);
-                                    }}
-                                >
-                                    <Text style={{ color: colors.mainTextColor, fontSize: 16 }}>{option}</Text>
-                                </TouchableOpacity>
-                            ))}
+                            {filteredNationalityOptions.length === 0 ? (
+                                <Text style={{ color: colors.grayColor, fontSize: 14, paddingVertical: 8 }}>
+                                    {t('No nationality found')}
+                                </Text>
+                            ) : (
+                                filteredNationalityOptions.map((option) => (
+                                    <TouchableOpacity
+                                        key={option}
+                                        style={{ paddingVertical: 14, borderBottomWidth: 0.5, borderBottomColor: colors.lightGrayColor }}
+                                        onPress={() => {
+                                            setNationality(option);
+                                            closeNationalityModal();
+                                        }}
+                                    >
+                                        <Text style={{ color: colors.mainTextColor, fontSize: 16 }}>{option}</Text>
+                                    </TouchableOpacity>
+                                ))
+                            )}
                         </ScrollView>
                     </Pressable>
                 </Pressable>

@@ -10,22 +10,51 @@ interface CustomButtonProps {
     onPress: any;
     isSmall?: boolean;
     isAdd?: boolean;
+    isBack?: boolean;
+    isSecondary?: boolean;
 }
 
 const CustomButton = ({
     title,
     onPress,
     isSmall = false,
-    isAdd = false
+    isAdd = false,
+    isBack = false,
+    isSecondary = false,
 }: CustomButtonProps) => {
     const { colors } = useTheme();
     const Styles = createStyles(colors);
+    const useSecondaryStyle = isBack || isSecondary;
     return (
-        <TouchableOpacity style={[Styles.buttonContainer, isSmall && { height: 48 }]} activeOpacity={0.7} onPress={onPress}>
-            <Text style={Styles.btnText}>{title}</Text>
-            <SizeBox width={8} />
-            {isAdd ? <Icons.AddWhite height={20} width={20} />
-                : <Icons.RightBtnIcon height={20} width={20} />}
+        <TouchableOpacity
+            style={[
+                Styles.buttonContainer,
+                useSecondaryStyle && Styles.secondaryButtonContainer,
+                isSmall && { height: 48 },
+            ]}
+            activeOpacity={0.7}
+            onPress={onPress}
+        >
+            {isBack ? (
+                <>
+                    <View style={Styles.backIconRotate}>
+                        {useSecondaryStyle ? (
+                            <Icons.RightBtnIconBlue height={20} width={20} />
+                        ) : (
+                            <Icons.RightBtnIcon height={20} width={20} />
+                        )}
+                    </View>
+                    <SizeBox width={8} />
+                    <Text style={[Styles.btnText, useSecondaryStyle && Styles.secondaryBtnText]}>{title}</Text>
+                </>
+            ) : (
+                <>
+                    <Text style={[Styles.btnText, useSecondaryStyle && Styles.secondaryBtnText]}>{title}</Text>
+                    <SizeBox width={8} />
+                    {isAdd ? <Icons.AddWhite height={20} width={20} />
+                        : <Icons.RightBtnIcon height={20} width={20} />}
+                </>
+            )}
         </TouchableOpacity>
     )
 }

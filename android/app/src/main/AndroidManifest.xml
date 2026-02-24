@@ -37,9 +37,9 @@
           <category android:name="android.intent.category.DEFAULT" />
           <category android:name="android.intent.category.BROWSABLE" />
           <data
-            android:host="dev-lfzk0n81zjp0c3x3.us.auth0.com"
-            android:pathPrefix="/android/com.allin/callback"
-            android:scheme="com.allin.auth0" />
+            android:host="${auth0Domain}"
+            android:pathPrefix="${auth0PathPrefix}"
+            android:scheme="${auth0Scheme}" />
         </intent-filter>
       </activity>
 
