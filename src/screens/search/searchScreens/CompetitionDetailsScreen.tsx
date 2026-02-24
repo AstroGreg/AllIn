@@ -14,7 +14,7 @@ import UnifiedSearchInput from '../../../components/unifiedSearchInput/UnifiedSe
 import { useEvents } from '../../../context/EventsContext'
 
 interface EventCategory {
-    id: number;
+    id: string | number;
     name: string;
     badges?: string[];
     hasArrow?: boolean;
@@ -43,6 +43,8 @@ const CompetitionDetailsScreen = ({ navigation, route }: any) => {
     const [checkpointModalVisible, setCheckpointModalVisible] = useState(false);
     const [selectedCheckpoint, setSelectedCheckpoint] = useState<{ id: string; label: string } | null>(null);
     const [courseOptions, setCourseOptions] = useState<Course[]>([]);
+    const [trackEvents, setTrackEvents] = useState<EventCategory[]>([]);
+    const [fieldEvents, setFieldEvents] = useState<EventCategory[]>([]);
     const [mapError, setMapError] = useState<string | null>(null);
     const [aiCompareModalVisible, setAiCompareModalVisible] = useState(false);
     const [quickChestNumber, setQuickChestNumber] = useState('');
@@ -124,9 +126,6 @@ const CompetitionDetailsScreen = ({ navigation, route }: any) => {
         if (chest) setQuickChestNumber(chest);
     }, [defaultChestNumber]);
 
-    const trackEvents: EventCategory[] = [];
-    const fieldEvents: EventCategory[] = [];
-
     const currentEvents = selectedTab === 'track' ? trackEvents : fieldEvents;
 
     const visibleCourses = courseOptions.length > 0 ? courseOptions : FALLBACK_COURSES;
@@ -151,8 +150,8 @@ const CompetitionDetailsScreen = ({ navigation, route }: any) => {
             setMapError(null);
             try {
                 const res = await getCompetitionMaps(apiAccessToken, {
-                    event_id: eventId,
-                    competition_id: competitionId,
+                    event_id: resolvedEventId || undefined,
+                    competition_id: competitionType === 'marathon' ? undefined : competitionId,
                     include_checkpoints: true,
                 });
                 if (!isActive) return;
@@ -171,9 +170,9 @@ const CompetitionDetailsScreen = ({ navigation, route }: any) => {
                     setSelectedCourseId((prev) =>
                         normalized.some((course) => course.id === prev) ? prev : normalized[0].id
                     );
-                } else if (eventId) {
+                } else if (resolvedEventId) {
                     try {
-                        const comps = await getEventCompetitions(apiAccessToken, String(eventId));
+                        const comps = await getEventCompetitions(apiAccessToken, String(resolvedEventId));
                         if (!isActive) return;
                         const fallbackCourses = (comps.competitions || []).map((comp) => ({
                             id: String(comp.id),
@@ -198,9 +197,9 @@ const CompetitionDetailsScreen = ({ navigation, route }: any) => {
                 if (!isActive) return;
                 const message = e instanceof ApiError ? e.message : String(e?.message ?? e);
                 setMapError(message);
-                if (eventId) {
+                if (resolvedEventId) {
                     try {
-                        const comps = await getEventCompetitions(apiAccessToken, String(eventId));
+                        const comps = await getEventCompetitions(apiAccessToken, String(resolvedEventId));
                         if (!isActive) return;
                         const fallbackCourses = (comps.competitions || []).map((comp) => ({
                             id: String(comp.id),
@@ -228,7 +227,57 @@ const CompetitionDetailsScreen = ({ navigation, route }: any) => {
         return () => {
             isActive = false;
         };
-    }, [apiAccessToken, competitionId, competitionType, courseOptions.length, eventId, t]);
+    }, [apiAccessToken, competitionId, competitionType, courseOptions.length, eventId, resolvedEventId, t]);
+
+    useEffect(() => {
+        if (!apiAccessToken || !resolvedEventId || competitionType === 'marathon') {
+            setTrackEvents([]);
+            setFieldEvents([]);
+            return;
+        }
+
+        let isActive = true;
+        const loadDisciplines = async () => {
+            try {
+                const comps = await getEventCompetitions(apiAccessToken, String(resolvedEventId));
+                if (!isActive) return;
+
+                const seen = new Set<string>();
+                const mapped = (comps.competitions || [])
+                    .filter((comp) => {
+                        const id = String(comp.id || '').trim();
+                        if (!id || seen.has(id)) return false;
+                        seen.add(id);
+                        return true;
+                    })
+                    .map((comp, idx) => {
+                        const name = String(comp.competition_name || comp.competition_name_normalized || t('Event'));
+                        const type = String(comp.competition_type || '').toLowerCase();
+                        return {
+                            id: String(comp.id),
+                            name,
+                            hasArrow: true,
+                            badges: type ? [type] : undefined,
+                            thumbnail: undefined,
+                            _kind: type.includes('field') ? 'field' : 'track',
+                            _idx: idx,
+                        } as EventCategory & {_kind: 'track' | 'field'; _idx: number};
+                    });
+
+                setTrackEvents(mapped.filter((e) => e._kind === 'track').map(({ _kind, _idx, ...rest }) => rest));
+                setFieldEvents(mapped.filter((e) => e._kind === 'field').map(({ _kind, _idx, ...rest }) => rest));
+            } catch {
+                if (!isActive) return;
+                setTrackEvents([]);
+                setFieldEvents([]);
+            }
+        };
+
+        loadDisciplines();
+        return () => {
+            isActive = false;
+        };
+    }, [apiAccessToken, competitionType, resolvedEventId, t]);
 
     useEffect(() => {
         if (!apiAccessToken) return;
@@ -654,6 +703,7 @@ const CompetitionDetailsScreen = ({ navigation, route }: any) => {
                             onPress={() => navigation.navigate('AllVideosOfEvents', {
                                 eventName: competitionName,
                                 eventId: eventId ?? competitionId,
+                                competitionId: competitionId ?? eventId,
                             })}
                         >
                             <Text style={styles.showAllButtonText}>{t('Show All Videos')}</Text>
@@ -673,6 +723,7 @@ const CompetitionDetailsScreen = ({ navigation, route }: any) => {
                             onPress={() => navigation.navigate('AllPhotosOfEvents', {
                                 eventName: competitionName,
                                 eventId: eventId ?? competitionId,
+                                competitionId: competitionId ?? eventId,
                             })}
                         >
                             <Text style={styles.showAllPhotosButtonText}>{t('Show All Photos')}</Text>
@@ -705,6 +756,7 @@ const CompetitionDetailsScreen = ({ navigation, route }: any) => {
                                 navigation.navigate('AllPhotosOfEvents', {
                                     checkpoint: selectedCheckpoint,
                                     eventId: eventId ?? competitionId,
+                                    competitionId: competitionId ?? eventId,
                                     eventName: competitionName,
                                 });
                             }}
@@ -720,6 +772,7 @@ const CompetitionDetailsScreen = ({ navigation, route }: any) => {
                                 navigation.navigate('VideosForEvent', {
                                     eventName: competitionName,
                                     eventId: eventId ?? competitionId,
+                                    competitionId: competitionId ?? eventId,
                                     checkpoint: selectedCheckpoint,
                                 });
                             }}

@@ -31,6 +31,85 @@ export const createStyles = (colors: ThemeColors) => StyleSheet.create({
     },
     languageListContainer: {
         width: '100%',
+        zIndex: 2,
+    },
+    preferenceSectionTitle: {
+        ...Fonts.medium16,
+        color: colors.mainTextColor,
+    },
+    dropdownTrigger: {
+        minHeight: 60,
+        borderWidth: 0.5,
+        borderColor: colors.lightGrayColor,
+        borderRadius: 10,
+        backgroundColor: colors.cardBackground,
+        paddingHorizontal: 14,
+        paddingVertical: 12,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+    },
+    dropdownSelectedContent: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 12,
+        flex: 1,
+    },
+    dropdownSelectedText: {
+        ...Fonts.medium16,
+        color: colors.mainTextColor,
+    },
+    dropdownChevron: {
+        ...Fonts.medium16,
+        color: colors.grayColor,
+        marginLeft: 12,
+    },
+    dropdownMenu: {
+        borderWidth: 0.5,
+        borderColor: colors.lightGrayColor,
+        borderRadius: 10,
+        backgroundColor: colors.cardBackground,
+        overflow: 'hidden',
+    },
+    dropdownBackdrop: {
+        ...StyleSheet.absoluteFillObject,
+        backgroundColor: 'transparent',
+    },
+    dropdownMenuFloating: {
+        position: 'absolute',
+        maxHeight: 320,
+        borderWidth: 0.5,
+        borderColor: colors.lightGrayColor,
+        borderRadius: 12,
+        backgroundColor: colors.cardBackground,
+        overflow: 'hidden',
+        shadowColor: '#000',
+        shadowOpacity: 0.12,
+        shadowRadius: 12,
+        shadowOffset: { width: 0, height: 8 },
+        elevation: 8,
+    },
+    dropdownMenuScroll: {
+        maxHeight: 320,
+    },
+    dropdownItem: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        paddingHorizontal: 14,
+        paddingVertical: 12,
+        borderBottomWidth: 0.5,
+        borderBottomColor: colors.lightGrayColor,
+    },
+    dropdownItemSelected: {
+        backgroundColor: colors.backgroundColor,
+    },
+    dropdownItemLast: {
+        borderBottomWidth: 0,
+    },
+    dropdownItemText: {
+        ...Fonts.medium14,
+        color: colors.mainTextColor,
     },
     languageItem: {
         flexDirection: 'row',
@@ -57,6 +136,12 @@ export const createStyles = (colors: ThemeColors) => StyleSheet.create({
         width: '100%',
         height: '100%',
         resizeMode: 'cover',
+    },
+    flagContainerSmall: {
+        width: 28,
+        height: 28,
+        borderRadius: 6,
+        overflow: 'hidden',
     },
     languageName: {
         ...Fonts.medium18,

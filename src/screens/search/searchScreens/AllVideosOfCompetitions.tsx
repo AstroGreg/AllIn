@@ -16,6 +16,7 @@ const AllVideosOfEvents = ({ navigation, route }: any) => {
     const insets = useSafeAreaInsets();
     const eventName = route?.params?.eventName || 'Event';
     const eventId = route?.params?.eventId;
+    const competitionId = route?.params?.competitionId;
     const appearanceOnly = Boolean(route?.params?.appearanceOnly);
     const division = route?.params?.division;
     const gender = route?.params?.gender;
@@ -24,6 +25,7 @@ const AllVideosOfEvents = ({ navigation, route }: any) => {
     const { t } = useTranslation();
     const styles = createStyles(colors);
     const [items, setItems] = useState<MediaViewAllItem[]>([]);
+    const targetCompetitionId = competitionId ?? eventId;
 
     const isSignedUrl = useCallback((value?: string | null) => {
         if (!value) return false;
@@ -91,22 +93,17 @@ const AllVideosOfEvents = ({ navigation, route }: any) => {
         const load = async () => {
             try {
                 let list: MediaViewAllItem[] = [];
-                if (appearanceOnly && eventId) {
-                    const res = await getHubAppearanceMedia(apiAccessToken, String(eventId));
+                if (appearanceOnly && (eventId || competitionId)) {
+                    const res = await getHubAppearanceMedia(apiAccessToken, String(eventId ?? competitionId));
                     list = Array.isArray(res?.results) ? res.results : [];
-                } else if (eventId) {
-                    const res = await getCompetitionPublicMedia(apiAccessToken, String(eventId), {type: 'video', limit: 500});
+                } else if (targetCompetitionId) {
+                    const res = await getCompetitionPublicMedia(apiAccessToken, String(targetCompetitionId), {type: 'video', limit: 500});
                     list = Array.isArray(res) ? res : [];
                 } else {
                     list = [];
                 }
                 if (!mounted) return;
                 const filtered = list.filter((item) => {
-                    if (eventId) {
-                        const matchesLegacyEventId = String(item.event_id ?? '') === String(eventId);
-                        const matchesCompetitionId = String((item as any).competition_id ?? '') === String(eventId);
-                        if (!matchesLegacyEventId && !matchesCompetitionId) return false;
-                    }
                     return String(item.type).toLowerCase() === 'video';
                 });
                 setItems(filtered);
@@ -119,7 +116,7 @@ const AllVideosOfEvents = ({ navigation, route }: any) => {
         return () => {
             mounted = false;
         };
-    }, [apiAccessToken, appearanceOnly, eventId]);
+    }, [apiAccessToken, appearanceOnly, competitionId, eventId, targetCompetitionId]);
 
     const data = useMemo(() => {
         return items.map((item) => {

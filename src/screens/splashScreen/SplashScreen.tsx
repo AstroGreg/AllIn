@@ -10,27 +10,20 @@ const SplashScreen = ({ navigation }: any) => {
     const { colors } = useTheme();
     const styles = createStyles(colors);
 
-    const shouldForceAccountCompletion = (bootstrap: any) => {
-        if (!bootstrap) return true;
-        const needs = Boolean(bootstrap.needs_user_onboarding);
-        const hasProfiles = Boolean(bootstrap.has_profiles);
-        const isGuest = Boolean(bootstrap?.user?.is_guest);
-        return needs && !hasProfiles && !isGuest;
-    };
-
     useEffect(() => {
         // Wait for auth check to complete
         if (isLoading) return;
 
         const timer = setTimeout(async () => {
             if (isAuthenticated) {
-                const bootstrap = authBootstrap ?? (await refreshAuthBootstrap());
-                const target = shouldForceAccountCompletion(bootstrap) ? 'CreateProfileScreen' : 'BottomTabBar';
-                // User is already logged in, go directly to main app
-                console.log('[SplashScreen] User authenticated, navigating to', target);
+                // On cold reopen, go straight to Home. Profile completion is handled immediately after login/signup.
+                if (!authBootstrap) {
+                    void refreshAuthBootstrap().catch(() => {});
+                }
+                console.log('[SplashScreen] User authenticated, navigating to BottomTabBar');
                 navigation.reset({
                     index: 0,
-                    routes: [{ name: target }],
+                    routes: [{ name: 'BottomTabBar' }],
                 });
             } else {
                 // User not logged in, show onboarding/login flow

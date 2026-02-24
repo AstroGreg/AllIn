@@ -1,5 +1,5 @@
 import React, { useMemo, useState, useRef, useEffect, useCallback } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Alert, Linking, Dimensions } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Alert, Linking, Dimensions, ActivityIndicator } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import FastImage from 'react-native-fast-image';
 import { ArrowRight, ArrowLeft } from 'iconsax-react-nativejs';
@@ -15,12 +15,16 @@ import SizeBox from '../../../constants/SizeBox';
 import { useTheme } from '../../../context/ThemeContext';
 import Fonts from '../../../constants/Fonts';
 import {useAuth} from '../../../context/AuthContext';
-import {ApiError, enrollFace, FaceAngleClass, verifyFaceAngle, startFaceLivenessChallenge, submitFaceLivenessStep} from '../../../services/apiGateway';
+import {ApiError, enrollFace, FaceAngleClass, verifyFaceAngle, startFaceLivenessChallenge, submitFaceLivenessStep, grantFaceRecognitionConsent} from '../../../services/apiGateway';
 import { useTranslation } from 'react-i18next'
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const CAMERA_WIDTH = SCREEN_WIDTH - 54;
 const CAMERA_HEIGHT = CAMERA_WIDTH * 1.27;
+const AUTO_COUNTDOWN_SECONDS_SAVE = 3;
+const AUTO_COUNTDOWN_SECONDS_ENROLL = 2;
+const AUTO_CAPTURE_STABLE_FRAMES_SAVE = 3;
+const AUTO_CAPTURE_STABLE_FRAMES_ENROLL = 6;
 
 interface CaptureAngle {
     id: string;
@@ -41,18 +45,18 @@ interface AngleVerifyState {
 
 // Only 3 angles for search face capture
 const SAVE_FACE_CAPTURE_ANGLES: CaptureAngle[] = [
-    { id: 'front', title: 'Front', instruction: 'Look straight at the camera and hold still', yawMin: -10, yawMax: 10, pitchMin: -10, pitchMax: 10 },
-    { id: 'left', title: 'Left Side', instruction: 'Turn your head to the left and hold still', yawMin: 15, yawMax: 45, pitchMin: -15, pitchMax: 15 },
-    { id: 'right', title: 'Right Side', instruction: 'Turn your head to the right and hold still', yawMin: -45, yawMax: -15, pitchMin: -15, pitchMax: 15 },
+    { id: 'front', title: 'Front', instruction: 'Look straight at the camera and hold still', yawMin: -15, yawMax: 15, pitchMin: -15, pitchMax: 15 },
+    { id: 'left', title: 'Left Side', instruction: 'Turn your head to the left and hold still', yawMin: 10, yawMax: 55, pitchMin: -20, pitchMax: 20 },
+    { id: 'right', title: 'Right Side', instruction: 'Turn your head to the right and hold still', yawMin: -55, yawMax: -10, pitchMin: -20, pitchMax: 20 },
 ];
 
 // 5 angles for backend enrollment (/ai/faces/enroll)
 const ENROLL_FACE_CAPTURE_ANGLES: CaptureAngle[] = [
-    { id: 'frontal', title: 'Front', instruction: 'Look straight at the camera and hold still', yawMin: -20, yawMax: 20, pitchMin: -20, pitchMax: 20 },
-    { id: 'left_profile', title: 'Left Profile', instruction: 'Turn your head to the left and hold still', yawMin: 10, yawMax: 70, pitchMin: -20, pitchMax: 20 },
-    { id: 'right_profile', title: 'Right Profile', instruction: 'Turn your head to the right and hold still', yawMin: -70, yawMax: -10, pitchMin: -20, pitchMax: 20 },
-    { id: 'upward', title: 'Upward', instruction: 'Tilt your head up and hold still', yawMin: -20, yawMax: 20, pitchMin: 5, pitchMax: 45 },
-    { id: 'downward', title: 'Downward', instruction: 'Tilt your head down and hold still', yawMin: -20, yawMax: 20, pitchMin: -45, pitchMax: -5 },
+    { id: 'frontal', title: 'Front', instruction: 'Look straight at the camera and hold still', yawMin: -25, yawMax: 25, pitchMin: -25, pitchMax: 25 },
+    { id: 'left_profile', title: 'Left Profile', instruction: 'Turn your head to the left and hold still', yawMin: 5, yawMax: 75, pitchMin: -25, pitchMax: 25 },
+    { id: 'right_profile', title: 'Right Profile', instruction: 'Turn your head to the right and hold still', yawMin: -75, yawMax: -5, pitchMin: -25, pitchMax: 25 },
+    { id: 'upward', title: 'Upward', instruction: 'Tilt your head up and hold still', yawMin: -25, yawMax: 25, pitchMin: 0, pitchMax: 50 },
+    { id: 'downward', title: 'Downward', instruction: 'Tilt your head down and hold still', yawMin: -25, yawMax: 25, pitchMin: -50, pitchMax: 0 },
 ];
 
 const ENROLL_DISTANCE_STEPS = [
@@ -122,8 +126,12 @@ const SearchFaceCaptureScreen = ({ navigation, route }: any) => {
     const mode: 'saveFace' | 'enrolFace' = route?.params?.mode === 'enrolFace' ? 'enrolFace' : 'saveFace';
     const useLiveness: boolean = mode === 'enrolFace' && route?.params?.useLiveness === true;
     const enrollReplace: boolean = mode === 'enrolFace' ? (route?.params?.replace !== false) : true;
+    const guidedAutoCapture: boolean = mode === 'enrolFace' ? (route?.params?.guidedAutoCapture !== false) : true;
+    const requireConsentBeforeEnroll: boolean = mode === 'enrolFace' ? (route?.params?.requireConsentBeforeEnroll !== false) : false;
     const templatesPerAngle: number = mode === 'enrolFace' ? (useLiveness ? 1 : 3) : 1;
     const afterEnroll = route?.params?.afterEnroll ?? null;
+    const [isGrantingConsent, setIsGrantingConsent] = useState(false);
+    const [hasPreEnrollConsent, setHasPreEnrollConsent] = useState(mode !== 'enrolFace' || !requireConsentBeforeEnroll);
 
     const [livenessChallengeId, setLivenessChallengeId] = useState<string | null>(null);
     const [enrollOrder, setEnrollOrder] = useState<string[] | null>(null);
@@ -177,6 +185,7 @@ const SearchFaceCaptureScreen = ({ navigation, route }: any) => {
     const countdownRef = useRef<NodeJS.Timeout | null>(null);
     const isMountedRef = useRef(true);
     const distanceStepIdRef = useRef<string | null>(null);
+    const stableMatchFramesRef = useRef(0);
 
     useEffect(() => {
         currentAngleIndexRef.current = currentAngleIndex;
@@ -208,6 +217,7 @@ const SearchFaceCaptureScreen = ({ navigation, route }: any) => {
     const completedCount = mode === 'enrolFace' ? verifiedCount : Object.values(capturedImages).filter(v => (v?.length ?? 0) > 0).length;
     const allCaptured = completedCount === captureAngles.length;
     const progress = captureAngles.length > 0 ? completedCount / captureAngles.length : 0;
+    const consentGateSatisfied = mode !== 'enrolFace' || hasPreEnrollConsent;
 
     const handleRequestPermission = useCallback(async () => {
         try {
@@ -228,10 +238,11 @@ const SearchFaceCaptureScreen = ({ navigation, route }: any) => {
     }, [t]);
 
     useEffect(() => {
+        if (!consentGateSatisfied) return;
         if (!hasPermission) {
             handleRequestPermission();
         }
-    }, [hasPermission, handleRequestPermission]);
+    }, [consentGateSatisfied, hasPermission, handleRequestPermission]);
 
 
     const startLiveness = useCallback(async () => {
@@ -244,6 +255,7 @@ const SearchFaceCaptureScreen = ({ navigation, route }: any) => {
             setEnrollOrder((started.steps as any) ?? null);
             setCurrentAngleIndex(0);
             setAngleMatched(false);
+            stableMatchFramesRef.current = 0;
             setCountdown(null);
             countdownActiveRef.current = false;
         } catch (e: any) {
@@ -253,8 +265,33 @@ const SearchFaceCaptureScreen = ({ navigation, route }: any) => {
     }, [apiAccessToken, useLiveness, t]);
 
     useEffect(() => {
+        if (!consentGateSatisfied) return;
         startLiveness();
-    }, [startLiveness]);
+    }, [consentGateSatisfied, startLiveness]);
+
+    const handleGrantConsentBeforeEnroll = useCallback(async () => {
+        if (mode !== 'enrolFace') {
+            setHasPreEnrollConsent(true);
+            return;
+        }
+        if (!apiAccessToken) {
+            Alert.alert(t('Missing API token'), t('Log in or set a Dev API token to enroll your face.'));
+            return;
+        }
+        setIsGrantingConsent(true);
+        try {
+            await grantFaceRecognitionConsent(apiAccessToken);
+            if (!isMountedRef.current) return;
+            setHasPreEnrollConsent(true);
+        } catch (e: any) {
+            const msg = e instanceof ApiError ? e.message : String(e?.message ?? e);
+            Alert.alert(t('Consent failed'), msg);
+        } finally {
+            if (isMountedRef.current) {
+                setIsGrantingConsent(false);
+            }
+        }
+    }, [apiAccessToken, mode, t]);
 
     useEffect(() => {
         isMountedRef.current = true;
@@ -292,9 +329,10 @@ const SearchFaceCaptureScreen = ({ navigation, route }: any) => {
         if (!stepId) return true;
         if (!Number.isFinite(ratio) || ratio <= 0) return false;
         const ranges: Record<string, { min: number; max: number }> = {
-            close: { min: 0.50, max: 0.8 },
-            mid: { min: 0.40, max: 0.6 },
-            far: { min: 0.25, max: 0.4 },
+            // Wider overlap to improve capture acceptance across devices/camera FOVs.
+            close: { min: 0.42, max: 0.9 },
+            mid: { min: 0.28, max: 0.7 },
+            far: { min: 0.15, max: 0.55 },
         };
         const range = ranges[stepId];
         if (!range) return true;
@@ -368,12 +406,49 @@ const SearchFaceCaptureScreen = ({ navigation, route }: any) => {
                             }
                         }
                     } else {
-                        // Manual approval for each photo (non-liveness).
-                        setPendingPhotoUri(photoUri);
-                        setPendingAngleId(capturedAngle.id);
-                        setCountdown(null);
-                        countdownActiveRef.current = false;
-                        return;
+                        if (guidedAutoCapture) {
+                            setAngleVerification(prev => ({
+                                ...prev,
+                                [capturedAngle.id]: {status: 'verifying'},
+                            }));
+                            const verified = await verifyFaceAngle(apiAccessToken, {
+                                angle: capturedAngle.id as FaceAngleClass,
+                                uri: photoUri,
+                            });
+                            if (!isMountedRef.current) return;
+
+                            canProceed = !!verified?.accepted;
+                            if (canProceed) {
+                                const nextCount = beforeCount + 1;
+                                setCapturedImages(prev => {
+                                    const cur = prev[capturedAngle.id] ?? [];
+                                    return {
+                                        ...prev,
+                                        [capturedAngle.id]: [...cur, photoUri],
+                                    };
+                                });
+                                setAngleVerification(prev => ({
+                                    ...prev,
+                                    [capturedAngle.id]: nextCount < requiredCount ? {status: 'partial'} : {status: 'accepted'},
+                                }));
+                            } else {
+                                const reason = String(verified?.reason ?? 'angle_mismatch');
+                                setAngleVerification(prev => ({
+                                    ...prev,
+                                    [capturedAngle.id]: {status: 'rejected', reason},
+                                }));
+                                if (reason === 'no_face_detected_or_too_small') {
+                                    Alert.alert(t('No face detected'), t('Move closer and hold still. We will try again.'));
+                                }
+                            }
+                        } else {
+                            // Manual approval for each photo (non-liveness).
+                            setPendingPhotoUri(photoUri);
+                            setPendingAngleId(capturedAngle.id);
+                            setCountdown(null);
+                            countdownActiveRef.current = false;
+                            return;
+                        }
                     }
                 } catch (e: any) {
                     canProceed = false;
@@ -399,6 +474,7 @@ const SearchFaceCaptureScreen = ({ navigation, route }: any) => {
 
             if (mode === 'enrolFace' && canProceed && !shouldAdvance) {
                 // Allow the frame processor to restart the countdown for the next template.
+                stableMatchFramesRef.current = 0;
                 setCountdown(null);
                 countdownActiveRef.current = false;
                 return;
@@ -413,6 +489,7 @@ const SearchFaceCaptureScreen = ({ navigation, route }: any) => {
 
                     setCurrentAngleIndex(capturedAngleIndex + 1);
                     setAngleMatched(false);
+                    stableMatchFramesRef.current = 0;
                     setCountdown(null);
                     countdownActiveRef.current = false;
 
@@ -427,11 +504,12 @@ const SearchFaceCaptureScreen = ({ navigation, route }: any) => {
             console.log('Capture error:', error);
         } finally {
             isCapturingRef.current = false;
+            stableMatchFramesRef.current = 0;
             if (isMountedRef.current) {
                 setIsCapturing(false);
             }
         }
-    }, [apiAccessToken, captureAngles, capturedImages, livenessChallengeId, mode, templatesPerAngle, useLiveness, t]);
+    }, [apiAccessToken, captureAngles, capturedImages, guidedAutoCapture, livenessChallengeId, mode, templatesPerAngle, useLiveness, t]);
 
     const clearCountdown = useCallback(() => {
         if (countdownRef.current) {
@@ -457,6 +535,7 @@ const SearchFaceCaptureScreen = ({ navigation, route }: any) => {
                             clearCountdown();
                             countdownActiveRef.current = false;
                             setAngleMatched(false);
+                            stableMatchFramesRef.current = 0;
                             setCurrentAngleIndex(0);
                             setCapturedImages({});
                             setAngleVerification(() => {
@@ -479,6 +558,7 @@ const SearchFaceCaptureScreen = ({ navigation, route }: any) => {
         clearCountdown();
         countdownActiveRef.current = false;
         setAngleMatched(false);
+        stableMatchFramesRef.current = 0;
         setCapturedImages(prev => ({
             ...prev,
             [angleId]: [],
@@ -499,6 +579,7 @@ const SearchFaceCaptureScreen = ({ navigation, route }: any) => {
             if (!isMountedRef.current) return;
             setCurrentAngleIndex(fromIndex + 1);
             setAngleMatched(false);
+            stableMatchFramesRef.current = 0;
             setCountdown(null);
             countdownActiveRef.current = false;
             setTimeout(() => {
@@ -607,6 +688,7 @@ const SearchFaceCaptureScreen = ({ navigation, route }: any) => {
     const handleRejectPhoto = useCallback(() => {
         setPendingPhotoUri(null);
         setPendingAngleId(null);
+        stableMatchFramesRef.current = 0;
     }, []);
 
     const startCountdown = useCallback(() => {
@@ -614,9 +696,10 @@ const SearchFaceCaptureScreen = ({ navigation, route }: any) => {
             return;
         }
 
+        const initialCount = mode === 'enrolFace' ? AUTO_COUNTDOWN_SECONDS_ENROLL : AUTO_COUNTDOWN_SECONDS_SAVE;
         countdownActiveRef.current = true;
-        setCountdown(3);
-        let count = 3;
+        setCountdown(initialCount);
+        let count = initialCount;
 
         countdownRef.current = setInterval(() => {
             if (!isMountedRef.current) {
@@ -632,7 +715,7 @@ const SearchFaceCaptureScreen = ({ navigation, route }: any) => {
                 capturePhoto();
             }
         }, 1000);
-    }, [capturePhoto, clearCountdown]);
+    }, [capturePhoto, clearCountdown, mode]);
 
     const handleFaceDetected = Worklets.createRunOnJS((
         detected: boolean,
@@ -656,15 +739,20 @@ const SearchFaceCaptureScreen = ({ navigation, route }: any) => {
             setDistanceMatched(distanceOk);
 
             if (matched && distanceOk) {
-                if (mode !== 'enrolFace' && !countdownActiveRef.current) {
+                stableMatchFramesRef.current += 1;
+                const requiredStableFrames =
+                    mode === 'enrolFace' ? AUTO_CAPTURE_STABLE_FRAMES_ENROLL : AUTO_CAPTURE_STABLE_FRAMES_SAVE;
+                if (!countdownActiveRef.current && stableMatchFramesRef.current >= requiredStableFrames) {
                     startCountdown();
                 }
             } else {
+                stableMatchFramesRef.current = 0;
                 clearCountdown();
             }
         } else {
             setAngleMatched(false);
             setDistanceMatched(false);
+            stableMatchFramesRef.current = 0;
             clearCountdown();
         }
     });
@@ -793,7 +881,9 @@ const SearchFaceCaptureScreen = ({ navigation, route }: any) => {
             return t(distanceStep.instruction);
         }
         if (angleMatched && distanceMatched) {
-            return mode === 'enrolFace' ? t('Ready. Tap Capture.') : t('Perfect! Hold still...');
+            return mode === 'enrolFace'
+                ? t('Perfect! Hold still for auto capture.')
+                : t('Perfect! Hold still...');
         }
         if (faceDetected) {
             if (distanceStep) {
@@ -806,6 +896,46 @@ const SearchFaceCaptureScreen = ({ navigation, route }: any) => {
     };
 
     // Permission screen
+    if (mode === 'enrolFace' && !consentGateSatisfied) {
+        return (
+            <View style={[styles.mainContainer, { backgroundColor: colors.backgroundColor, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 20 }]}>
+                <Text style={[styles.titleText, { color: colors.mainTextColor }]}>{t('Face recognition consent')}</Text>
+                <SizeBox height={8} />
+                <Text style={[styles.descriptionText, { color: colors.grayColor, textAlign: 'center' }]}>
+                    {t('Before starting face setup, please confirm consent for face recognition.')}
+                </Text>
+                <SizeBox height={6} />
+                <Text style={[styles.descriptionText, { color: colors.grayColor, textAlign: 'center' }]}>
+                    {t('This avoids collecting photos first and only asking consent at the end.')}
+                </Text>
+                <SizeBox height={24} />
+                <View style={{ width: '100%', gap: 12 }}>
+                    <TouchableOpacity
+                        style={[styles.primaryButton, { backgroundColor: colors.primaryColor }, isGrantingConsent && styles.primaryButtonDisabled]}
+                        onPress={handleGrantConsentBeforeEnroll}
+                        disabled={isGrantingConsent}
+                    >
+                        {isGrantingConsent ? (
+                            <ActivityIndicator color={colors.pureWhite} />
+                        ) : (
+                            <>
+                                <Text style={[styles.primaryButtonText, { color: colors.pureWhite }]}>{t('Agree and continue')}</Text>
+                                <ArrowRight size={24} color={colors.pureWhite} />
+                            </>
+                        )}
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                        style={[styles.secondaryButton, { backgroundColor: colors.backgroundColor, borderColor: colors.lightGrayColor }]}
+                        onPress={handleCancel}
+                        disabled={isGrantingConsent}
+                    >
+                        <Text style={[styles.secondaryButtonText, { color: colors.grayColor }]}>{t('Not now')}</Text>
+                    </TouchableOpacity>
+                </View>
+            </View>
+        );
+    }
+
     if (!hasPermission) {
         return (
             <View style={[styles.mainContainer, { backgroundColor: colors.backgroundColor, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 20 }]}>
@@ -841,7 +971,7 @@ const SearchFaceCaptureScreen = ({ navigation, route }: any) => {
 
     const requiredForAngle = mode === 'enrolFace' ? templatesPerAngle : 1;
     const hasEnoughForAngle = currentImages.length >= requiredForAngle;
-    const showCameraPreview = !hasEnoughForAngle && !isReviewing;
+    const showCameraPreview = consentGateSatisfied && !hasEnoughForAngle && !isReviewing;
     const showCapturedPreview = (isReviewing && !!pendingPhotoUri) || (hasEnoughForAngle && !!currentImage);
     const currentVerify = mode === 'enrolFace' ? angleVerification[currentAngle?.id] : null;
     const canCaptureNow =
@@ -849,6 +979,7 @@ const SearchFaceCaptureScreen = ({ navigation, route }: any) => {
         !isSubmitting &&
         !isApproving &&
         !isCapturing &&
+        countdown === null &&
         !isTransitioning &&
         faceDetected &&
         angleMatched &&
@@ -940,7 +1071,7 @@ const SearchFaceCaptureScreen = ({ navigation, route }: any) => {
                                 ref={cameraRef}
                                 style={StyleSheet.absoluteFill}
                                 device={device}
-                                isActive={true}
+                                isActive={consentGateSatisfied}
                                 photo={true}
                                 frameProcessor={showCameraPreview ? frameProcessor : undefined}
                             />

@@ -12,6 +12,7 @@ import { useTheme } from '../../../context/ThemeContext'
 import { useAuth } from '../../../context/AuthContext'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import { useTranslation } from 'react-i18next'
+import { shouldForceAccountCompletion } from '../../../utils/accountCompletion'
 
 const LoginScreen = ({ navigation }: any) => {
     const { t } = useTranslation();
@@ -19,14 +20,6 @@ const LoginScreen = ({ navigation }: any) => {
     const Styles = createStyles(colors);
     const insets = useSafeAreaInsets();
     const { login, signup, isLoading, isAuthenticated, refreshAuthBootstrap } = useAuth();
-
-    const shouldForceAccountCompletion = (bootstrap: any) => {
-        if (!bootstrap) return true;
-        const needs = Boolean(bootstrap.needs_user_onboarding);
-        const hasProfiles = Boolean(bootstrap.has_profiles);
-        const isGuest = Boolean(bootstrap?.user?.is_guest);
-        return needs && !hasProfiles && !isGuest;
-    };
 
     const navigatePostAuth = async () => {
         const bootstrap = await refreshAuthBootstrap();

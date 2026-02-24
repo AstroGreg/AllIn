@@ -21,7 +21,7 @@ const CreateProfileScreen = ({ navigation }: any) => {
     const { colors } = useTheme();
     const Styles = createStyles(colors);
     const insets = useSafeAreaInsets();
-    const { updateUserAccount, authBootstrap, refreshAuthBootstrap } = useAuth();
+    const { updateUserAccount, authBootstrap, refreshAuthBootstrap, user: authUser } = useAuth();
 
     const [username, setUsername] = useState('');
     const [firstName, setFirstName] = useState('');
@@ -55,31 +55,114 @@ const CreateProfileScreen = ({ navigation }: any) => {
 
     useEffect(() => {
         const user = authBootstrap?.user;
-        if (!user) return;
+        if (!user && !authUser) return;
         const asText = (v: any) => (v == null ? '' : String(v));
         const looksLikeAuthSubject = (value: string) => {
             const v = String(value || '').trim().toLowerCase();
             if (!v) return false;
             return v.includes('|') || v.startsWith('google-oauth2') || v.startsWith('auth0') || v.startsWith('apple');
         };
+        const normalizeSpaces = (value: string) => String(value || '').replace(/\s+/g, ' ').trim();
+        const isPlaceholderName = (value: string) => {
+            const v = normalizeSpaces(value).toLowerCase();
+            if (!v) return true;
+            if (looksLikeAuthSubject(v)) return true;
+            if (v.includes('@')) return true;
+            // Avoid opaque machine-ish identifiers (long ids / mostly symbols+digits)
+            const compact = v.replace(/[^a-z0-9]/g, '');
+            if (!compact) return true;
+            if (compact.length >= 12 && /^[a-z0-9]+$/.test(compact) && !/[aeiou]/.test(compact)) return true;
+            return false;
+        };
         const looksLikeRealEmail = (value: string) => {
             const v = String(value || '').trim();
             return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v) && !v.endsWith('.auth@allin.local');
         };
+        const cleanUsernameCandidate = (value: string) => {
+            const v = normalizeSpaces(value);
+            if (!v || looksLikeAuthSubject(v) || v.includes('@')) return '';
+            const sanitized = v
+                .toLowerCase()
+                .replace(/[^a-z0-9._-]+/g, '_')
+                .replace(/_+/g, '_')
+                .replace(/^[_\-.]+|[_\-.]+$/g, '');
+            if (!sanitized || looksLikeAuthSubject(sanitized)) return '';
+            return sanitized;
+        };
+        const splitName = (fullName: string): { first: string; last: string } => {
+            const clean = normalizeSpaces(fullName);
+            if (!clean || isPlaceholderName(clean)) return { first: '', last: '' };
+            const parts = clean.split(' ').filter(Boolean);
+            if (parts.length === 0) return { first: '', last: '' };
+            if (parts.length === 1) return { first: parts[0] ?? '', last: '' };
+            return {
+                first: parts[0] ?? '',
+                last: parts.slice(1).join(' '),
+            };
+        };
 
-        const rawUsername = asText(user.username);
-        const rawFirstName = asText(user.first_name);
-        const rawLastName = asText(user.last_name);
-        const rawEmail = asText(user.email);
-        const rawNationality = asText(user.nationality);
+        const bootstrapUser = user ?? {};
+        const rawUsername = asText((bootstrapUser as any).username);
+        const rawFirstName = asText((bootstrapUser as any).first_name);
+        const rawLastName = asText((bootstrapUser as any).last_name);
+        const rawEmail = asText((bootstrapUser as any).email);
+        const rawNationality = asText((bootstrapUser as any).nationality);
 
-        setUsername((prev) => prev || (looksLikeAuthSubject(rawUsername) ? '' : rawUsername));
-        setFirstName((prev) => prev || rawFirstName);
-        setLastName((prev) => prev || rawLastName);
-        setEmail((prev) => prev || (looksLikeRealEmail(rawEmail) ? rawEmail : ''));
+        const authGiven = normalizeSpaces(asText(authUser?.givenName));
+        const authFamily = normalizeSpaces(asText(authUser?.familyName));
+        const authFull = normalizeSpaces(asText(authUser?.name));
+        const authNick = normalizeSpaces(asText(authUser?.nickname));
+        const authEmail = normalizeSpaces(asText(authUser?.email));
+
+        const splitFromFull = splitName(authFull);
+        const firstCandidate = !isPlaceholderName(rawFirstName)
+            ? normalizeSpaces(rawFirstName)
+            : !isPlaceholderName(authGiven)
+                ? authGiven
+                : splitFromFull.first;
+        const lastCandidate = !isPlaceholderName(rawLastName)
+            ? normalizeSpaces(rawLastName)
+            : !isPlaceholderName(authFamily)
+                ? authFamily
+                : splitFromFull.last;
+
+        const usernameCandidate =
+            cleanUsernameCandidate(rawUsername) ||
+            cleanUsernameCandidate(authNick) ||
+            cleanUsernameCandidate(authGiven && authFamily ? `${authGiven}_${authFamily}` : '') ||
+            cleanUsernameCandidate(splitFromFull.first && splitFromFull.last ? `${splitFromFull.first}_${splitFromFull.last}` : '') ||
+            (looksLikeRealEmail(authEmail)
+                ? cleanUsernameCandidate(String(authEmail).split('@')[0] || '')
+                : '');
+
+        const emailCandidate =
+            looksLikeRealEmail(rawEmail)
+                ? rawEmail
+                : (looksLikeRealEmail(authEmail) ? authEmail : '');
+
+        setUsername((prev) => {
+            const current = String(prev || '').trim();
+            if (current && !looksLikeAuthSubject(current)) return prev;
+            return usernameCandidate;
+        });
+        setFirstName((prev) => {
+            const current = String(prev || '').trim();
+            if (current && !isPlaceholderName(current)) return prev;
+            return firstCandidate;
+        });
+        setLastName((prev) => {
+            const current = String(prev || '').trim();
+            if (current && !isPlaceholderName(current)) return prev;
+            return lastCandidate;
+        });
+        setEmail((prev) => {
+            const current = String(prev || '').trim();
+            if (current && looksLikeRealEmail(current)) return prev;
+            return emailCandidate;
+        });
         setNationality((prev) => prev || rawNationality);
-        setBirthDate((prev) => prev || (user.birthdate ? String(user.birthdate).slice(0, 10) : ''));
-    }, [authBootstrap]);
+        setBirthDate((prev) => prev || ((bootstrapUser as any).birthdate ? String((bootstrapUser as any).birthdate).slice(0, 10) : ''));
+    }, [authBootstrap, authUser]);
 
     const canContinueStep1 = useMemo(
         () => firstName.trim().length > 0 && lastName.trim().length > 0,

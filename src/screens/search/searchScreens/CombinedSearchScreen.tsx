@@ -18,7 +18,6 @@ import CustomSwitch from '../../../components/customSwitch/CustomSwitch';
 import {useAuth} from '../../../context/AuthContext';
 import {
   ApiError,
-  getAuthMe,
   getProfileSummary,
   grantFaceRecognitionConsent,
   searchFaceByEnrollment,
@@ -46,6 +45,9 @@ interface ResumeCombinedSearchPayload {
   autoRun?: boolean;
 }
 
+const COMPETITION_AUTOLOAD_LIMIT = 3;
+const COMPETITION_SEARCH_LIMIT = 60;
+
 const CombinedSearchScreen = ({navigation}: any) => {
     const { t } = useTranslation();
   const insets = useSafeAreaInsets();
@@ -67,7 +69,7 @@ const CombinedSearchScreen = ({navigation}: any) => {
 
   const [bib, setBib] = useState('');
   const [contextText, setContextText] = useState('');
-  const [includeFace, setIncludeFace] = useState(true);
+  const [includeFace, setIncludeFace] = useState(false);
 
   const [selectedEvents, setSelectedEvents] = useState<EventOption[]>([]);
   const [showCompetitionModal, setShowCompetitionModal] = useState(false);
@@ -80,7 +82,8 @@ const CombinedSearchScreen = ({navigation}: any) => {
   const [errorText, setErrorText] = useState<string | null>(null);
   const [needsConsent, setNeedsConsent] = useState(false);
   const [missingAngles, setMissingAngles] = useState<string[] | null>(null);
-  const [authMe, setAuthMe] = useState<any | null>(null);
+  const [faceEnrollmentStatus, setFaceEnrollmentStatus] = useState<'unknown' | 'ready' | 'missing'>('unknown');
+  const [isCheckingFaceSetup, setIsCheckingFaceSetup] = useState(false);
   const [showAutoCompareModal, setShowAutoCompareModal] = useState(false);
   const [pendingAutoRun, setPendingAutoRun] = useState(false);
   const [profileChestByYear, setProfileChestByYear] = useState<Record<string, string>>({});
@@ -148,17 +151,10 @@ const CombinedSearchScreen = ({navigation}: any) => {
   const refreshMe = useCallback(async () => {
     if (!apiAccessToken) return;
     try {
-      const me = await getAuthMe(apiAccessToken);
-      setAuthMe(me);
-      try {
-        const summary = await getProfileSummary(apiAccessToken);
-        setProfileChestByYear(normalizeChestByYear(summary?.profile?.chest_numbers_by_year ?? {}));
-      } catch {
-        // keep local fallback from userProfile
-      }
-    } catch (e: any) {
-      const msg = e instanceof ApiError ? e.message : String(e?.message ?? e);
-      setErrorText(msg);
+      const summary = await getProfileSummary(apiAccessToken);
+      setProfileChestByYear(normalizeChestByYear(summary?.profile?.chest_numbers_by_year ?? {}));
+    } catch {
+      // keep local fallback from userProfile
     }
   }, [apiAccessToken, normalizeChestByYear]);
 
@@ -174,18 +170,25 @@ const CombinedSearchScreen = ({navigation}: any) => {
         setEventsError('Missing API token.');
         return;
       }
+      const trimmedQuery = query.trim();
+      const isAutoload = trimmedQuery.length === 0;
       setIsLoadingEvents(true);
       setEventsError(null);
       try {
-        const res = await searchEvents(apiAccessToken, {q: query, limit: 60});
+        const res = await searchEvents(apiAccessToken, {
+          q: trimmedQuery,
+          limit: isAutoload ? COMPETITION_AUTOLOAD_LIMIT : COMPETITION_SEARCH_LIMIT,
+        });
         const list = Array.isArray(res?.events) ? res.events : [];
         setEventOptions(
-          list.map((event) => ({
-            id: String(event.event_id),
-            name: String(event.event_name || event.event_title || 'Competition'),
-            location: event.event_location ?? null,
-            date: event.event_date ?? null,
-          })),
+          list
+            .slice(0, isAutoload ? COMPETITION_AUTOLOAD_LIMIT : undefined)
+            .map((event) => ({
+              id: String(event.event_id),
+              name: String(event.event_name || event.event_title || 'Competition'),
+              location: event.event_location ?? null,
+              date: event.event_date ?? null,
+            })),
         );
       } catch (e: any) {
         const msg = e instanceof ApiError ? e.message : String(e?.message ?? e);
@@ -243,6 +246,9 @@ const CombinedSearchScreen = ({navigation}: any) => {
     }
     if (typeof resumeCombinedSearch.includeFace === 'boolean') {
       setIncludeFace(resumeCombinedSearch.includeFace);
+      if (resumeCombinedSearch.includeFace) {
+        setFaceEnrollmentStatus('ready');
+      }
     }
     if (resumeCombinedSearch.autoRun) {
       setPendingAutoRun(true);
@@ -431,31 +437,22 @@ const CombinedSearchScreen = ({navigation}: any) => {
 
       if (wantsFace) {
         try {
-          const me = authMe ?? (await getAuthMe(apiAccessToken));
-          setAuthMe(me);
-          const subscribedIds = new Set(
-            Array.isArray(me?.event_ids) ? me.event_ids.map((v: any) => String(v)) : [],
+          const res = await searchFaceByEnrollment(apiAccessToken, {
+            event_ids: selectedEventIds,
+            label: 'default',
+            limit: 600,
+            top: 100,
+            save: true,
+          });
+          setFaceEnrollmentStatus('ready');
+          const results = Array.isArray(res?.results) ? res.results : [];
+          addResults(
+            results.map((r: any) => ({
+              ...r,
+              event_name: r.event_name ?? eventNameLookup.get(String(r.event_id ?? '').trim()),
+            })),
+            'face',
           );
-          const faceEventIds = selectedEventIds.filter((id) => subscribedIds.has(id));
-          if (faceEventIds.length === 0) {
-            errors.push('Face: subscribe to the selected competitions to enable face search.');
-          } else {
-            const res = await searchFaceByEnrollment(apiAccessToken, {
-              event_ids: faceEventIds,
-              label: 'default',
-              limit: 600,
-              top: 100,
-              save: true,
-            });
-            const results = Array.isArray(res?.results) ? res.results : [];
-            addResults(
-              results.map((r: any) => ({
-                ...r,
-                event_name: r.event_name ?? eventNameLookup.get(String(r.event_id ?? '').trim()),
-              })),
-              'face',
-            );
-          }
         } catch (e: any) {
           if (e instanceof ApiError) {
             const body = e.body ?? {};
@@ -464,6 +461,8 @@ const CombinedSearchScreen = ({navigation}: any) => {
               errors.push('Face: consent required.');
             } else if (e.status === 400 && Array.isArray(body?.missing_angles)) {
               setMissingAngles(body.missing_angles.map(String));
+              setFaceEnrollmentStatus('missing');
+              setIncludeFace(false);
               errors.push('Face: enrollment required.');
               startFaceRegistrationGovIdFlow();
               return;
@@ -495,7 +494,6 @@ const CombinedSearchScreen = ({navigation}: any) => {
     }
   }, [
     apiAccessToken,
-    authMe,
     bib,
     contextText,
     includeFace,
@@ -528,11 +526,105 @@ const CombinedSearchScreen = ({navigation}: any) => {
   }, [apiAccessToken, refreshMe]);
 
   const handleEnroll = useCallback(() => {
+    setIncludeFace(false);
+    setFaceEnrollmentStatus('unknown');
     navigation.navigate('SearchFaceCaptureScreen', {
       mode: 'enrolFace',
       afterEnroll: {screen: 'AISearchScreen', params: origin ? {origin} : undefined},
     });
   }, [navigation, origin]);
+
+  const handleToggleFaceSearch = useCallback(async () => {
+    if (includeFace) {
+      setIncludeFace(false);
+      return;
+    }
+
+    if (!apiAccessToken) {
+      Alert.alert(t('Missing API token'), t('Log in or set a Dev API token to use AI Search.'));
+      return;
+    }
+
+    if (faceEnrollmentStatus === 'ready') {
+      setIncludeFace(true);
+      return;
+    }
+
+    if (faceEnrollmentStatus === 'missing') {
+      Alert.alert(
+        t('Face setup required'),
+        t('Please enroll your face before enabling face search.'),
+        [
+          {text: t('Not now'), style: 'cancel'},
+          {text: t('Set up face'), onPress: handleEnroll},
+        ],
+      );
+      return;
+    }
+
+    if (selectedEventIds.length === 0) {
+      setCompetitionRequiredError(true);
+      Alert.alert(
+        t('Select competitions'),
+        t('Select at least one competition first, then enable face search.'),
+        [
+          {text: t('Cancel'), style: 'cancel'},
+          {text: t('Select competitions'), onPress: () => setShowCompetitionModal(true)},
+        ],
+      );
+      return;
+    }
+
+    setIsCheckingFaceSetup(true);
+    setErrorText(null);
+    setNeedsConsent(false);
+    setMissingAngles(null);
+    try {
+      await searchFaceByEnrollment(apiAccessToken, {
+        event_ids: [selectedEventIds[0]],
+        label: 'default',
+        limit: 1,
+        top: 1,
+        save: false,
+      });
+      setFaceEnrollmentStatus('ready');
+      setIncludeFace(true);
+    } catch (e: any) {
+      if (e instanceof ApiError) {
+        const body = e.body ?? {};
+        if (e.status === 403 && String(e.message).toLowerCase().includes('consent')) {
+          setNeedsConsent(true);
+          setIncludeFace(true);
+          return;
+        }
+        if (e.status === 400 && Array.isArray(body?.missing_angles)) {
+          setMissingAngles(body.missing_angles.map(String));
+          setFaceEnrollmentStatus('missing');
+          setIncludeFace(false);
+          Alert.alert(
+            t('Face setup required'),
+            t('Please enroll your face before enabling face search.'),
+            [
+              {text: t('Not now'), style: 'cancel'},
+              {text: t('Set up face'), onPress: handleEnroll},
+            ],
+          );
+          return;
+        }
+      }
+      const message = e instanceof ApiError ? e.message : String(e?.message ?? e);
+      setErrorText(message);
+    } finally {
+      setIsCheckingFaceSetup(false);
+    }
+  }, [
+    apiAccessToken,
+    faceEnrollmentStatus,
+    handleEnroll,
+    includeFace,
+    selectedEventIds,
+    t,
+  ]);
 
   const handleBack = useCallback(() => {
     if (navigation.canGoBack()) {
@@ -807,14 +899,16 @@ const CombinedSearchScreen = ({navigation}: any) => {
           <View style={styles.toggleRow}>
             <View style={styles.toggleInfo}>
               <Text style={styles.faceSectionTitle}>{t('Face search')}</Text>
-              <Text style={styles.helperText}>{t('Use your enrolled face to match photos.')}</Text>
+              <Text style={styles.helperText}>
+                {isCheckingFaceSetup ? t('Checking face setup…') : t('Use your enrolled face to match photos.')}
+              </Text>
             </View>
             <View style={styles.faceActions}>
               <TouchableOpacity style={styles.redoFaceButton} onPress={handleEnroll}>
                 <AddCircle size={20} color={colors.primaryColor} variant="Bold" />
                 <Text style={styles.redoFaceText}>{t('Redo face')}</Text>
               </TouchableOpacity>
-              <CustomSwitch isEnabled={includeFace} toggleSwitch={() => setIncludeFace((prev) => !prev)} />
+              <CustomSwitch isEnabled={includeFace} toggleSwitch={handleToggleFaceSearch} />
             </View>
           </View>
 

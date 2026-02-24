@@ -876,6 +876,28 @@ const HomeScreen = ({ navigation }: any) => {
         });
     }, []);
 
+    const mediaDedupFingerprint = useCallback((media?: Partial<MediaViewAllItem> | null) => {
+        if (!media) return '';
+        const stripQuery = (value?: string | null) => String(value || '').trim().split('?')[0] || '';
+        const assetKeys = Array.isArray(media.assets)
+            ? media.assets
+                  .map((a) => String(a?.storage_key || '').trim())
+                  .filter(Boolean)
+                  .sort()
+                  .join('|')
+            : '';
+        const urlKey = [
+            stripQuery(media.thumbnail_url),
+            stripQuery(media.preview_url),
+            stripQuery(media.original_url),
+            stripQuery(media.full_url),
+            stripQuery(media.raw_url),
+        ]
+            .filter(Boolean)
+            .join('|');
+        return assetKeys || urlKey || '';
+    }, []);
+
     const topVideos = useMemo(() => {
         const unique: MediaViewAllItem[] = [];
         sortByNewest(allVideos).forEach((item) => {
@@ -896,7 +918,8 @@ const HomeScreen = ({ navigation }: any) => {
 
     const infiniteFeedItems = useMemo<HomeFeedItem[]>(() => {
         const uniqueMedia: MediaViewAllItem[] = [];
-        const seen = new Set<string>();
+        const seenIds = new Set<string>();
+        const seenFingerprints = new Set<string>();
 
         const overviewMediaCandidates: Array<HomeOverviewMedia | null | undefined> = [
             overview?.overview?.video,
@@ -906,16 +929,20 @@ const HomeScreen = ({ navigation }: any) => {
         overviewMediaCandidates.forEach((item) => {
             if (!item) return;
             const id = String((item as any).media_id || '').trim();
-            if (!id || seen.has(id)) return;
-            seen.add(id);
+            const fingerprint = mediaDedupFingerprint(item as unknown as MediaViewAllItem);
+            if ((id && seenIds.has(id)) || (fingerprint && seenFingerprints.has(fingerprint))) return;
+            if (id) seenIds.add(id);
+            if (fingerprint) seenFingerprints.add(fingerprint);
             uniqueMedia.push(item as unknown as MediaViewAllItem);
         });
 
         sortByNewest([...topVideos, ...topPhotos]).forEach((item) => {
             const id = String(item.media_id || '').trim();
-            if (!id) return;
-            if (seen.has(id)) return;
-            seen.add(id);
+            const fingerprint = mediaDedupFingerprint(item);
+            if (!id && !fingerprint) return;
+            if ((id && seenIds.has(id)) || (fingerprint && seenFingerprints.has(fingerprint))) return;
+            if (id) seenIds.add(id);
+            if (fingerprint) seenFingerprints.add(fingerprint);
             uniqueMedia.push(item);
         });
         const mediaEntries: HomeFeedItem[] = uniqueMedia.map((media) => ({
@@ -950,21 +977,43 @@ const HomeScreen = ({ navigation }: any) => {
                 }]
                 : [];
 
+        const seenPostKeys = new Set<string>();
         const textOnlyPosts: HomeFeedItem[] = allPosts
             .filter((post) => !post?.cover_media)
+            .filter((post) => {
+                const id = String(post?.id || '').trim();
+                const key = id || [
+                    String(post?.created_at || '').trim(),
+                    String(post?.title || '').trim().toLowerCase(),
+                    String(post?.summary || post?.description || '').trim().slice(0, 120).toLowerCase(),
+                ].join('|');
+                if (!key || seenPostKeys.has(key)) return false;
+                seenPostKeys.add(key);
+                return true;
+            })
             .map((post) => ({
                 kind: 'post',
                 created_at: post?.created_at ?? null,
                 post,
             }));
-        return [...seededBlogEntry, ...mediaEntries, ...textOnlyPosts].sort((a, b) => {
+        const sorted = [...seededBlogEntry, ...mediaEntries, ...textOnlyPosts].sort((a, b) => {
             const aTs = new Date(String(a.created_at || '')).getTime();
             const bTs = new Date(String(b.created_at || '')).getTime();
             const safeA = Number.isFinite(aTs) ? aTs : 0;
             const safeB = Number.isFinite(bTs) ? bTs : 0;
             return safeB - safeA;
         });
-    }, [allPosts, overview, sortByNewest, topPhotos, topVideos]);
+        const seenFeedKeys = new Set<string>();
+        return sorted.filter((entry) => {
+            const key =
+                entry.kind === 'media'
+                    ? `media:${String(entry.media?.media_id || '').trim() || mediaDedupFingerprint(entry.media)}`
+                    : `post:${String(entry.post?.id || '').trim() || `${String(entry.post?.created_at || '')}|${String(entry.post?.title || '')}`}`;
+            if (!key || seenFeedKeys.has(key)) return false;
+            seenFeedKeys.add(key);
+            return true;
+        });
+    }, [allPosts, mediaDedupFingerprint, overview, sortByNewest, topPhotos, topVideos]);
 
     useEffect(() => {
         setFeedVisibleCount((prev) => {
@@ -1001,7 +1050,21 @@ const HomeScreen = ({ navigation }: any) => {
             const ratio = layout.height > 0 ? visibleHeight / layout.height : 0;
             next[key] = ratio >= 0.2;
         });
-        setActiveMediaCards(next);
+        setActiveMediaCards((prev) => {
+            const prevKeys = Object.keys(prev);
+            const nextKeys = Object.keys(next);
+            if (prevKeys.length === nextKeys.length) {
+                let same = true;
+                for (const key of nextKeys) {
+                    if (prev[key] !== next[key]) {
+                        same = false;
+                        break;
+                    }
+                }
+                if (same) return prev;
+            }
+            return next;
+        });
     }, [visibleFeedItems, windowHeight]);
 
     useEffect(() => {
