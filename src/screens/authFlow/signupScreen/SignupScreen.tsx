@@ -11,26 +11,28 @@ import FastImage from 'react-native-fast-image'
 import { useTheme } from '../../../context/ThemeContext'
 import { useAuth } from '../../../context/AuthContext'
 import { useTranslation } from 'react-i18next'
-import { shouldForceAccountCompletion } from '../../../utils/accountCompletion'
+import { resolvePostAuthRoute } from '../../../utils/onboardingRoute'
 
 const SignupScreen = ({ navigation }: any) => {
     const { t } = useTranslation();
     const { colors } = useTheme();
     const Styles = createStyles(colors);
     const insets = useSafeAreaInsets();
-    const { signup, isLoading, refreshAuthBootstrap } = useAuth();
+    const { signup, isLoading, refreshAuthBootstrap, userProfile, getUserProfile } = useAuth();
 
     const navigatePostAuth = async () => {
         const bootstrap = await refreshAuthBootstrap();
+        const resolvedProfile = userProfile ?? (await getUserProfile().catch(() => null));
         console.log('[SignupScreen] auth/bootstrap result:', bootstrap ? {
             needs_user_onboarding: bootstrap.needs_user_onboarding,
             missing_user_fields: bootstrap.missing_user_fields,
             has_profiles: bootstrap.has_profiles,
         } : null);
-        const target = shouldForceAccountCompletion(bootstrap) ? 'CreateProfileScreen' : 'CategorySelectionScreen';
+        const target = resolvePostAuthRoute(bootstrap, resolvedProfile);
+        console.log('[SignupScreen] Resolved post-auth route:', target.name, target.params ?? {});
         navigation.reset({
             index: 0,
-            routes: [{ name: target }],
+            routes: [target],
         });
     };
 

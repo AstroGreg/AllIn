@@ -254,6 +254,18 @@ const CreateProfileScreen = ({ navigation }: any) => {
         }
     };
 
+    const handleBack = () => {
+        if (step <= 1) {
+            if (navigation.canGoBack?.()) {
+                navigation.goBack();
+            } else {
+                navigation.navigate('LoginScreen');
+            }
+            return;
+        }
+        setStep((s) => Math.max(1, s - 1));
+    };
+
     return (
         <View style={Styles.mainContainer}>
             <SizeBox height={insets.top} />
@@ -362,16 +374,12 @@ const CreateProfileScreen = ({ navigation }: any) => {
                         <ActivityIndicator size="large" color={colors.primaryColor} />
                     ) : (
                         <>
-                            {step > 1 && (
-                                <>
-                                    <CustomButton
-                                        title={t('Back')}
-                                        onPress={() => setStep((s) => Math.max(1, s - 1))}
-                                        isBack
-                                    />
-                                    <SizeBox height={12} />
-                                </>
-                            )}
+                            <CustomButton
+                                title={t('Back')}
+                                onPress={handleBack}
+                                isBack
+                            />
+                            <SizeBox height={12} />
                             <CustomButton title={step < 3 ? t('Continue') : t('Save and continue')} onPress={handleContinue} />
                         </>
                     )}

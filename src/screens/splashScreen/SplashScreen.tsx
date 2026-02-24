@@ -4,9 +4,10 @@ import Images from '../../constants/Images';
 import { useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
+import { resolvePostAuthRoute } from '../../utils/onboardingRoute';
 
 const SplashScreen = ({ navigation }: any) => {
-    const { isAuthenticated, isLoading, authBootstrap, refreshAuthBootstrap } = useAuth();
+    const { isAuthenticated, isLoading, authBootstrap, refreshAuthBootstrap, userProfile, getUserProfile } = useAuth();
     const { colors } = useTheme();
     const styles = createStyles(colors);
 
@@ -16,14 +17,25 @@ const SplashScreen = ({ navigation }: any) => {
 
         const timer = setTimeout(async () => {
             if (isAuthenticated) {
-                // On cold reopen, go straight to Home. Profile completion is handled immediately after login/signup.
-                if (!authBootstrap) {
-                    void refreshAuthBootstrap().catch(() => {});
+                let bootstrap = authBootstrap;
+                if (!bootstrap) {
+                    bootstrap = await refreshAuthBootstrap().catch(() => null);
                 }
-                console.log('[SplashScreen] User authenticated, navigating to BottomTabBar');
+                const resolvedProfile = userProfile ?? (await getUserProfile().catch(() => null));
+                const target = resolvePostAuthRoute(bootstrap, resolvedProfile);
+                const usedBootstrap = Boolean(bootstrap);
+                console.log('[SplashScreen] Post-auth route resolved', {
+                    source: usedBootstrap ? 'bootstrap' : 'local_fallback',
+                    target: target.name,
+                    params: target.params ?? null,
+                    has_profiles: bootstrap?.has_profiles ?? null,
+                    needs_user_onboarding: bootstrap?.needs_user_onboarding ?? null,
+                    has_local_category: Boolean(String(resolvedProfile?.category ?? '').trim()),
+                    has_local_selected_events: Array.isArray(resolvedProfile?.selectedEvents) && resolvedProfile.selectedEvents.length > 0,
+                });
                 navigation.reset({
                     index: 0,
-                    routes: [{ name: 'BottomTabBar' }],
+                    routes: [target],
                 });
             } else {
                 // User not logged in, show onboarding/login flow
@@ -33,7 +45,7 @@ const SplashScreen = ({ navigation }: any) => {
         }, 2000);
 
         return () => clearTimeout(timer);
-    }, [navigation, isAuthenticated, isLoading, authBootstrap, refreshAuthBootstrap]);
+    }, [navigation, isAuthenticated, isLoading, authBootstrap, refreshAuthBootstrap, userProfile, getUserProfile]);
 
     return (
         <View style={styles.mainContainer}>
