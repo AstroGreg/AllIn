@@ -2,11 +2,11 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { View, Text, ScrollView, Alert, ActivityIndicator, TouchableOpacity, Modal, Pressable, TextInput } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import FastImage from 'react-native-fast-image';
+import { Calendar } from 'react-native-calendars';
 import { createStyles } from './CreateProfileScreenStyles';
 import SizeBox from '../../../constants/SizeBox';
 import CustomTextInput from '../../../components/customTextInput/CustomTextInput';
 import CustomButton from '../../../components/customButton/CustomButton';
-import BirthDatePickerModal from '../../../components/birthDatePickerModal/BirthDatePickerModal';
 import Icons from '../../../constants/Icons';
 import Images from '../../../constants/Images';
 import { useTheme } from '../../../context/ThemeContext';
@@ -35,6 +35,9 @@ const CreateProfileScreen = ({ navigation }: any) => {
     const [showNationalityModal, setShowNationalityModal] = useState(false);
     const [showBirthdateModal, setShowBirthdateModal] = useState(false);
     const [nationalitySearch, setNationalitySearch] = useState('');
+    const [calendarDate, setCalendarDate] = useState<string | null>(null);
+    const [calendarViewDate, setCalendarViewDate] = useState<string | null>(null);
+    const [showBirthYearDropdown, setShowBirthYearDropdown] = useState(false);
 
     useEffect(() => {
         let mounted = true;
@@ -201,6 +204,64 @@ const CreateProfileScreen = ({ navigation }: any) => {
         return `${String(day).padStart(2, '0')}/${String(month).padStart(2, '0')}/${year}`;
     };
 
+    const toDateString = (date: Date) => {
+        const yyyy = date.getFullYear();
+        const mm = String(date.getMonth() + 1).padStart(2, '0');
+        const dd = String(date.getDate()).padStart(2, '0');
+        return `${yyyy}-${mm}-${dd}`;
+    };
+
+    const yearOptions = useMemo(() => {
+        const currentYear = new Date().getFullYear();
+        const years: number[] = [];
+        for (let year = currentYear; year >= 1930; year -= 1) {
+            years.push(year);
+        }
+        return years;
+    }, []);
+
+    const selectedCalendarYear = useMemo(() => {
+        const source = calendarViewDate || calendarDate;
+        const parsed = Number(String(source || '').split('-')[0]);
+        return Number.isFinite(parsed) ? parsed : new Date().getFullYear();
+    }, [calendarDate, calendarViewDate]);
+
+    const calendarRenderKey = useMemo(() => {
+        const source = String(calendarViewDate || calendarDate || '');
+        const [year, month] = source.split('-');
+        if (year && month) return `birth-cal-${year}-${month}`;
+        return 'birth-cal-default';
+    }, [calendarDate, calendarViewDate]);
+
+    const openBirthdateModal = () => {
+        const seedDate = birthDate ? new Date(`${birthDate}T00:00:00`) : new Date();
+        const safe = Number.isNaN(seedDate.getTime()) ? new Date() : seedDate;
+        const seed = toDateString(safe);
+        setCalendarDate(seed);
+        setCalendarViewDate(seed);
+        setShowBirthYearDropdown(false);
+        setShowBirthdateModal(true);
+    };
+
+    const applyBirthdateModal = () => {
+        if (calendarDate) setBirthDate(calendarDate);
+        setShowBirthYearDropdown(false);
+        setShowBirthdateModal(false);
+    };
+
+    const handleSelectBirthYear = (year: number) => {
+        const source = String(calendarViewDate || calendarDate || toDateString(new Date()));
+        const [_, monthRaw, dayRaw] = source.split('-').map(Number);
+        const month = Number.isFinite(monthRaw) && monthRaw >= 1 && monthRaw <= 12 ? monthRaw : 1;
+        const day = Number.isFinite(dayRaw) && dayRaw >= 1 ? dayRaw : 1;
+        const daysInMonth = new Date(year, month, 0).getDate();
+        const safeDay = Math.min(day, daysInMonth);
+        const nextDate = `${year}-${String(month).padStart(2, '0')}-${String(safeDay).padStart(2, '0')}`;
+        setCalendarViewDate(nextDate);
+        setCalendarDate(nextDate);
+        setShowBirthYearDropdown(false);
+    };
+
     const handleContinue = async () => {
         if (step === 1) {
             if (!canContinueStep1) {
@@ -354,16 +415,14 @@ const CreateProfileScreen = ({ navigation }: any) => {
 
                             <Text style={Styles.label}>{t('Your Birth Date')}</Text>
                             <TouchableOpacity
-                                style={[Styles.inputContainer, { marginTop: 8 }]}
-                                onPress={() => setShowBirthdateModal(true)}
+                                style={[Styles.dateButton, { marginTop: 8 }]}
+                                onPress={openBirthdateModal}
                                 activeOpacity={0.8}
                             >
                                 <CalendarIcon size={16} color={colors.primaryColor} variant="Linear" />
-                                <SizeBox width={10} />
-                                <Text style={{ flex: 1, color: birthDate ? colors.mainTextColor : colors.grayColor, fontSize: 14 }}>
+                                <Text style={[Styles.dateText, { flex: 1, color: birthDate ? colors.mainTextColor : colors.grayColor }]}>
                                     {birthDate ? formatDateDisplay(birthDate) : t('Select date of birth')}
                                 </Text>
-                                <ArrowDown2 size={18} color={colors.grayColor} variant="Linear" />
                             </TouchableOpacity>
                         </>
                     )}
@@ -435,16 +494,86 @@ const CreateProfileScreen = ({ navigation }: any) => {
                 </Pressable>
             </Modal>
 
-            <BirthDatePickerModal
+            <Modal
                 visible={showBirthdateModal}
-                value={birthDate || null}
-                onClose={() => setShowBirthdateModal(false)}
-                onApply={(date) => {
-                    if (date) setBirthDate(date);
+                transparent
+                animationType="fade"
+                onRequestClose={() => {
+                    setShowBirthYearDropdown(false);
                     setShowBirthdateModal(false);
                 }}
-                title={t('Select date of birth')}
-            />
+            >
+                <View style={Styles.modalOverlay}>
+                    <Pressable
+                        style={Styles.modalBackdrop}
+                        onPress={() => {
+                            setShowBirthYearDropdown(false);
+                            setShowBirthdateModal(false);
+                        }}
+                    />
+                    <View style={Styles.dateModalContainer}>
+                        <View style={Styles.dateModalHeaderRow}>
+                            <Text style={Styles.dateModalTitle}>{t('Select date of birth')}</Text>
+                            <TouchableOpacity
+                                style={Styles.yearDropdownButton}
+                                activeOpacity={0.85}
+                                onPress={() => setShowBirthYearDropdown((prev) => !prev)}
+                            >
+                                <Text style={Styles.yearDropdownText}>{selectedCalendarYear}</Text>
+                                <ArrowDown2 size={16} color={colors.subTextColor} variant="Linear" />
+                            </TouchableOpacity>
+                        </View>
+                        {showBirthYearDropdown ? (
+                            <View style={Styles.yearDropdownMenu}>
+                                <ScrollView showsVerticalScrollIndicator={false} nestedScrollEnabled>
+                                    {yearOptions.map((year) => {
+                                        const active = year === selectedCalendarYear;
+                                        return (
+                                            <TouchableOpacity
+                                                key={`birth-year-${year}`}
+                                                style={[Styles.yearDropdownItem, active && Styles.yearDropdownItemActive]}
+                                                onPress={() => handleSelectBirthYear(year)}
+                                            >
+                                                <Text style={[Styles.yearDropdownItemText, active && Styles.yearDropdownItemTextActive]}>
+                                                    {year}
+                                                </Text>
+                                            </TouchableOpacity>
+                                        );
+                                    })}
+                                </ScrollView>
+                            </View>
+                        ) : null}
+                        <SizeBox height={10} />
+                        <Calendar
+                            key={calendarRenderKey}
+                            current={(calendarViewDate || calendarDate) ?? undefined}
+                            markedDates={calendarDate ? { [calendarDate]: { selected: true, selectedColor: colors.primaryColor } } : undefined}
+                            onDayPress={(day) => {
+                                setCalendarDate(day.dateString);
+                                setCalendarViewDate(day.dateString);
+                            }}
+                            onMonthChange={(month) => {
+                                if (month?.dateString) setCalendarViewDate(month.dateString);
+                            }}
+                            enableSwipeMonths
+                            theme={{
+                                calendarBackground: colors.cardBackground,
+                                textSectionTitleColor: colors.grayColor,
+                                dayTextColor: colors.mainTextColor,
+                                monthTextColor: colors.mainTextColor,
+                                arrowColor: colors.primaryColor,
+                                selectedDayBackgroundColor: colors.primaryColor,
+                                selectedDayTextColor: colors.pureWhite,
+                                todayTextColor: colors.primaryColor,
+                            }}
+                            style={{ borderRadius: 12 }}
+                        />
+                        <TouchableOpacity style={Styles.modalDoneButton} onPress={applyBirthdateModal}>
+                            <Text style={Styles.modalDoneButtonText}>{t('Done')}</Text>
+                        </TouchableOpacity>
+                    </View>
+                </View>
+            </Modal>
         </View>
     );
 };
