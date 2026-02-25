@@ -29,6 +29,12 @@ export const createStyles = (colors: ThemeColors) =>
             ...Fonts.medium18,
             color: colors.mainTextColor,
         },
+        headerTitleRow: {
+            flex: 1,
+            alignItems: 'center',
+            justifyContent: 'center',
+            paddingHorizontal: 12,
+        },
         scrollContent: {
             paddingHorizontal: 20,
             paddingTop: 24,
@@ -38,15 +44,38 @@ export const createStyles = (colors: ThemeColors) =>
         },
         stepHeaderRow: {
             marginBottom: 18,
+            gap: 4,
+        },
+        stepTopRow: {
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'space-between',
         },
         stepCounter: {
             ...Fonts.regular12,
             color: colors.primaryColor,
-            marginBottom: 4,
         },
         stepTitle: {
             ...Fonts.semibold16,
             color: colors.mainTextColor,
+        },
+        stepPreviewButton: {
+            minWidth: 86,
+            borderWidth: 1,
+            borderColor: colors.primaryColor,
+            borderRadius: 10,
+            alignItems: 'center',
+            justifyContent: 'center',
+            paddingHorizontal: 10,
+            paddingVertical: 6,
+            backgroundColor: colors.cardBackground,
+        },
+        stepPreviewButtonDisabled: {
+            opacity: 0.45,
+        },
+        stepPreviewText: {
+            ...Fonts.medium13,
+            color: colors.primaryColor,
         },
         skipRow: {
             flexDirection: 'row',
@@ -166,41 +195,14 @@ export const createStyles = (colors: ThemeColors) =>
             gap: 12,
             marginTop: 8,
         },
-        previewShortcutButton: {
-            minWidth: 94,
-            borderWidth: 1,
-            borderColor: colors.primaryColor,
-            borderRadius: 12,
-            alignItems: 'center',
-            justifyContent: 'center',
-            paddingVertical: 12,
-            paddingHorizontal: 12,
-            backgroundColor: colors.cardBackground,
-        },
-        previewShortcutText: {
-            ...Fonts.medium13,
-            color: colors.primaryColor,
-        },
-        cancelButton: {
-            flex: 1,
-            borderWidth: 1,
-            borderColor: colors.lightGrayColor,
-            borderRadius: 12,
-            alignItems: 'center',
-            justifyContent: 'center',
-            paddingVertical: 12,
-        },
-        cancelText: {
-            ...Fonts.medium14,
-            color: colors.subTextColor,
-        },
         saveButton: {
             flex: 1,
             backgroundColor: colors.primaryColor,
-            borderRadius: 12,
+            borderRadius: 14,
             alignItems: 'center',
             justifyContent: 'center',
-            paddingVertical: 12,
+            minHeight: 56,
+            paddingVertical: 14,
         },
         saveButtonDisabled: {
             opacity: 0.45,
@@ -208,6 +210,20 @@ export const createStyles = (colors: ThemeColors) =>
         saveText: {
             ...Fonts.medium14,
             color: colors.pureWhite,
+        },
+        skipSecondaryButton: {
+            marginTop: 10,
+            borderWidth: 1,
+            borderColor: colors.lightGrayColor,
+            borderRadius: 12,
+            alignItems: 'center',
+            justifyContent: 'center',
+            paddingVertical: 12,
+            backgroundColor: colors.cardBackground,
+        },
+        skipSecondaryText: {
+            ...Fonts.medium14,
+            color: colors.subTextColor,
         },
         deleteButton: {
             marginTop: 16,

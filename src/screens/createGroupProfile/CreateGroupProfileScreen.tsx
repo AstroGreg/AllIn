@@ -56,6 +56,10 @@ const CreateGroupProfileScreen = ({ navigation, route }: any) => {
     const [groupName, setGroupName] = useState('');
     const [groupDescription, setGroupDescription] = useState('');
     const [groupWebsite, setGroupWebsite] = useState('');
+    const [missingRequiredFields, setMissingRequiredFields] = useState<{ groupName: boolean; groupDescription: boolean }>({
+        groupName: false,
+        groupDescription: false,
+    });
     const [roleMode, setRoleMode] = useState<'athlete' | 'coach'>('athlete');
     const [query, setQuery] = useState('');
     const [searching, setSearching] = useState(false);
@@ -267,6 +271,10 @@ const CreateGroupProfileScreen = ({ navigation, route }: any) => {
                     color: colors.primaryColor,
                     fontSize: 12,
                 },
+                requiredErrorBorder: {
+                    borderColor: colors.errorColor || '#D32F2F',
+                    borderWidth: 1.5,
+                },
             }),
         [colors],
     );
@@ -367,12 +375,13 @@ const CreateGroupProfileScreen = ({ navigation, route }: any) => {
     };
 
     const handleCreateGroup = async () => {
-        if (!groupName.trim()) {
-            Alert.alert(t('Error'), t('Please enter a group name'));
-            return;
-        }
-        if (!groupDescription.trim()) {
-            Alert.alert(t('Error'), t('Please enter where the group is based'));
+        const nextMissingRequiredFields = {
+            groupName: !groupName.trim(),
+            groupDescription: !groupDescription.trim(),
+        };
+        setMissingRequiredFields(nextMissingRequiredFields);
+
+        if (nextMissingRequiredFields.groupName || nextMissingRequiredFields.groupDescription) {
             return;
         }
         if (!apiAccessToken) {
@@ -509,28 +518,38 @@ const CreateGroupProfileScreen = ({ navigation, route }: any) => {
 
                     <View style={styles.inputGroup}>
                         <Text style={styles.inputLabel}>{t('Group Name')}</Text>
-                        <View style={styles.inputContainer}>
+                        <View style={[styles.inputContainer, missingRequiredFields.groupName && localStyles.requiredErrorBorder]}>
                             <People size={22} color={colors.primaryColor} variant="Linear" />
                             <TextInput
                                 style={styles.textInput}
                                 placeholder={t('Enter group name')}
                                 placeholderTextColor={colors.grayColor}
                                 value={groupName}
-                                onChangeText={setGroupName}
+                                onChangeText={(value) => {
+                                    setGroupName(value);
+                                    if (missingRequiredFields.groupName && value.trim()) {
+                                        setMissingRequiredFields((prev) => ({ ...prev, groupName: false }));
+                                    }
+                                }}
                             />
                         </View>
                     </View>
 
                     <View style={styles.inputGroup}>
                         <Text style={styles.inputLabel}>{t('Based in (required)')}</Text>
-                        <View style={styles.inputContainer}>
+                        <View style={[styles.inputContainer, missingRequiredFields.groupDescription && localStyles.requiredErrorBorder]}>
                             <Edit2 size={22} color={colors.primaryColor} variant="Linear" />
                             <TextInput
                                 style={styles.textInput}
-                                placeholder={t('Leuven')}
+                                placeholder={t('City')}
                                 placeholderTextColor={colors.grayColor}
                                 value={groupDescription}
-                                onChangeText={setGroupDescription}
+                                onChangeText={(value) => {
+                                    setGroupDescription(value);
+                                    if (missingRequiredFields.groupDescription && value.trim()) {
+                                        setMissingRequiredFields((prev) => ({ ...prev, groupDescription: false }));
+                                    }
+                                }}
                             />
                         </View>
                     </View>
