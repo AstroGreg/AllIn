@@ -767,7 +767,11 @@ const GroupProfileScreen = ({ navigation, route }: any) => {
                                 style={[styles.toggleTab, activeTab === tab && styles.toggleTabActive]}
                                 onPress={() => setActiveTab(tab)}
                             >
-                                <Text style={activeTab === tab ? styles.toggleTabTextActive : styles.toggleTabText}>
+                                <Text
+                                    style={activeTab === tab ? styles.toggleTabTextActive : styles.toggleTabText}
+                                    numberOfLines={1}
+                                    ellipsizeMode="tail"
+                                >
                                     {tab === 'news'
                                         ? t('News')
                                         : tab === 'members'

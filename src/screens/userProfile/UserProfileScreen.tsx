@@ -68,6 +68,7 @@ const UserProfileScreen = ({ navigation, route }: any) => {
     const [videoCollectionItems, setVideoCollectionItems] = useState<ProfileCollectionItem[]>([]);
     const [uploadedCompetitions, setUploadedCompetitions] = useState<UploadedCompetition[]>([]);
     const [myGroups, setMyGroups] = useState<GroupSummary[]>([]);
+    const [didLoadProfileData, setDidLoadProfileData] = useState(false);
     const [websiteEditVisible, setWebsiteEditVisible] = useState(false);
     const [websiteDraft, setWebsiteDraft] = useState('');
     const [websiteSaveBusy, setWebsiteSaveBusy] = useState(false);
@@ -101,7 +102,8 @@ const UserProfileScreen = ({ navigation, route }: any) => {
     const hasRoadTrailProfile = selectedEventProfilesNormalized.some((entry) =>
         entry === 'road-events' || entry === 'road&trail' || entry === 'road_trail' || entry.includes('road') || entry.includes('trail'),
     );
-    const hasAnyLinkedProfiles = hasTrackFieldProfile || hasRoadTrailProfile || myGroups.length > 0;
+    const hasServerProfile = Boolean(profileSummary?.profile_id) || Boolean(profileSummary?.profile);
+    const hasAnyLinkedProfiles = hasTrackFieldProfile || hasRoadTrailProfile || myGroups.length > 0 || hasServerProfile;
 
     const normalizeChestByYear = useCallback((raw: any): Record<string, string> => {
         if (!raw || typeof raw !== 'object') return {};
@@ -428,6 +430,7 @@ const UserProfileScreen = ({ navigation, route }: any) => {
             setUploadedCompetitions([]);
             setMyGroups([]);
         }
+        setDidLoadProfileData(true);
     }, [
         apiAccessToken,
         categoryStorageKey,
@@ -940,7 +943,7 @@ const UserProfileScreen = ({ navigation, route }: any) => {
     }, [apiAccessToken, navigation, t]);
 
 
-    if (!hasAnyLinkedProfiles) {
+    if (didLoadProfileData && !hasAnyLinkedProfiles) {
         return (
             <View style={Styles.mainContainer}>
                 <SizeBox height={insets.top} />

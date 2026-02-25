@@ -308,11 +308,13 @@ export const createStyles = (colors: ThemeColors) => StyleSheet.create({
         borderWidth: 0.5,
         borderColor: '#DEDEDE',
         padding: 8,
+        gap: 6,
         marginTop: 24,
     },
     toggleTab: {
         flex: 1,
         height: 39,
+        minWidth: 0,
         alignItems: 'center',
         justifyContent: 'center',
         borderRadius: 8,
@@ -321,12 +323,14 @@ export const createStyles = (colors: ThemeColors) => StyleSheet.create({
         backgroundColor: 'rgba(60, 130, 246, 0.3)',
     },
     toggleTabText: {
-        ...Fonts.regular12,
+        ...Fonts.regular11,
         color: '#9B9F9F',
+        textAlign: 'center',
     },
     toggleTabTextActive: {
-        ...Fonts.regular12,
+        ...Fonts.regular11,
         color: colors.mainTextColor,
+        textAlign: 'center',
     },
     manageShortcutRow: {
         flexDirection: 'row',
