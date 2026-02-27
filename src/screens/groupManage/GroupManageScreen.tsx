@@ -245,7 +245,7 @@ const GroupManageScreen = ({ navigation, route }: any) => {
         profile_id: profileId,
         role: roleToInvite,
       });
-      const nextRoles = invitePublicRoles.length > 0 ? invitePublicRoles : ['athlete'];
+      const nextRoles: PublicMemberRole[] = invitePublicRoles.length > 0 ? invitePublicRoles : ['athlete'];
       const nextTags = { ...memberRoleTags, [profileId]: Array.from(new Set(nextRoles)) };
       setMemberRoleTags(nextTags);
       await persistRoleTags(nextTags);

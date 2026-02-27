@@ -128,6 +128,13 @@ export const createStyles = (colors: ThemeColors) => StyleSheet.create({
         alignItems: 'center',
         marginTop: 8,
     },
+    profileAvatarWrap: {
+        width: 100,
+        height: 100,
+        borderRadius: 50,
+        overflow: 'visible',
+        position: 'relative',
+    },
     profileAvatar: {
         width: 100,
         height: 100,
@@ -136,6 +143,24 @@ export const createStyles = (colors: ThemeColors) => StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'center',
         backgroundColor: colors.btnBackgroundColor,
+    },
+    profileAvatarEditButton: {
+        position: 'absolute',
+        right: -2,
+        bottom: -2,
+        width: 26,
+        height: 26,
+        borderRadius: 13,
+        backgroundColor: colors.primaryColor,
+        alignItems: 'center',
+        justifyContent: 'center',
+        borderWidth: 2,
+        borderColor: colors.whiteColor,
+        zIndex: 10,
+        elevation: 6,
+    },
+    profileAvatarEditButtonDisabled: {
+        opacity: 0.7,
     },
     profileNameRow: {
         flexDirection: 'row',

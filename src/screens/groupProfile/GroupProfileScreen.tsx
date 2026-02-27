@@ -1,11 +1,12 @@
 import { View, Text, TouchableOpacity, ScrollView, ActivityIndicator, StyleSheet, Linking, Alert, Modal } from 'react-native';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { launchImageLibrary } from 'react-native-image-picker';
 import SizeBox from '../../constants/SizeBox';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import FastImage from 'react-native-fast-image';
 import { createStyles } from './GroupProfileStyles';
-import { Location, Profile2User, User } from 'iconsax-react-nativejs';
+import { Location, Profile2User, User, Edit2 } from 'iconsax-react-nativejs';
 import Icons from '../../constants/Icons';
 import { useTheme } from '../../context/ThemeContext';
 import { useTranslation } from 'react-i18next';
@@ -21,6 +22,8 @@ import {
     getMyGroups,
     getPosts,
     getProfileSummary,
+    updateGroup,
+    uploadMediaBatch,
     unfollowProfile,
     type GroupAssignedEvent,
     type GroupCollection,
@@ -51,6 +54,7 @@ const GroupProfileScreen = ({ navigation, route }: any) => {
     const [followBusyByProfile, setFollowBusyByProfile] = useState<Record<string, boolean>>({});
     const [deletingPostById, setDeletingPostById] = useState<Record<string, boolean>>({});
     const [groupIconUrl, setGroupIconUrl] = useState<string | null>(null);
+    const [isUpdatingGroupAvatar, setIsUpdatingGroupAvatar] = useState(false);
     const [storedFocuses, setStoredFocuses] = useState<string[]>([]);
     const [showProfileSwitcherModal, setShowProfileSwitcherModal] = useState(false);
     const [myGroups, setMyGroups] = useState<Array<{ id: string; name: string }>>([]);
@@ -180,6 +184,13 @@ const GroupProfileScreen = ({ navigation, route }: any) => {
         const role = String(group?.my_role || '').toLowerCase();
         return role === 'owner' || role === 'admin';
     }, [group?.my_role]);
+    const isGroupOwner = useMemo(() => {
+        const role = String(group?.my_role || '').toLowerCase();
+        if (role === 'owner') return true;
+        const ownerProfileId = String((group as any)?.owner_profile_id || '').trim();
+        const viewerId = String(viewerProfileId || '').trim();
+        return ownerProfileId.length > 0 && viewerId.length > 0 && ownerProfileId === viewerId;
+    }, [group, viewerProfileId]);
     const hasGroupRelationship = useMemo(() => String(group?.my_role || '').trim().length > 0, [group?.my_role]);
     const canOpenGroupSwitcher = hasGroupRelationship;
 
@@ -357,6 +368,11 @@ const GroupProfileScreen = ({ navigation, route }: any) => {
         }),
         [members],
     );
+    const displayedMemberCount = useMemo(() => {
+        const loadedCount = Array.isArray(members) ? members.length : 0;
+        if (loadedCount > 0) return loadedCount;
+        return Number(group?.member_count ?? 0);
+    }, [group?.member_count, members]);
     const manualCoachNames = useMemo(() => {
         const source = Array.isArray(group?.coaches) ? (group?.coaches ?? []) : [];
         return source.map((entry) => String(entry || '').trim()).filter(Boolean);
@@ -464,6 +480,56 @@ const GroupProfileScreen = ({ navigation, route }: any) => {
             setDeletingPostById((prev) => ({ ...prev, [safePostId]: false }));
         }
     }, [apiAccessToken, deletingPostById]);
+
+    const handleChangeGroupPicture = useCallback(async () => {
+        const safeGroupId = String(group?.group_id || '').trim();
+        if (!apiAccessToken || !safeGroupId || !isGroupOwner || isUpdatingGroupAvatar) return;
+        const result = await launchImageLibrary({
+            mediaType: 'photo',
+            selectionLimit: 1,
+        });
+        const asset = result?.assets?.[0];
+        if (!asset?.uri) return;
+
+        setIsUpdatingGroupAvatar(true);
+        try {
+            const uploadResp = await uploadMediaBatch(apiAccessToken, {
+                files: [
+                    {
+                        uri: asset.uri,
+                        type: asset.type ?? 'image/jpeg',
+                        name: asset.fileName ?? `group-avatar-${Date.now()}.jpg`,
+                    },
+                ],
+            });
+            const firstResult = Array.isArray(uploadResp?.results) ? uploadResp.results.find((entry: any) => entry?.media_id) : null;
+            const mediaId = firstResult?.media_id ? String(firstResult.media_id) : '';
+            if (!mediaId) {
+                throw new Error('Upload did not return media id');
+            }
+
+            const updated = await updateGroup(apiAccessToken, safeGroupId, { avatar_media_id: mediaId });
+            setGroup((prev) => {
+                if (!prev) return updated?.group ?? prev;
+                return updated?.group ? { ...prev, ...updated.group } : prev;
+            });
+
+            try {
+                const iconMedia = await getMediaById(apiAccessToken, mediaId);
+                const iconRaw = iconMedia?.thumbnail_url || iconMedia?.preview_url || iconMedia?.full_url || iconMedia?.raw_url || iconMedia?.original_url || null;
+                const iconAbsolute = toAbsoluteUrl(iconRaw ? String(iconRaw) : null);
+                const icon = withAccessToken(iconAbsolute || null);
+                setGroupIconUrl(icon || null);
+            } catch {
+                // ignore follow-up preview refresh failure
+            }
+        } catch {
+            Alert.alert(t('Error'), t('Could not update group picture.'));
+        } finally {
+            setIsUpdatingGroupAvatar(false);
+        }
+    }, [apiAccessToken, group?.group_id, isGroupOwner, isUpdatingGroupAvatar, t, toAbsoluteUrl, withAccessToken]);
+
     const openGroupWebsite = useCallback(async () => {
         const raw = String(groupWebsite || '').trim();
         if (!raw) return;
@@ -695,18 +761,36 @@ const GroupProfileScreen = ({ navigation, route }: any) => {
                             ) : null}
                         </View>
                         <View style={styles.profileInfoContainer}>
-                            {groupIconUrl ? (
-                                <FastImage source={{ uri: groupIconUrl }} style={styles.profileAvatar} />
-                            ) : (
-                                <View style={styles.profileAvatar}>
-                                    <Profile2User size={40} color={colors.primaryColor} variant="Linear" />
-                                </View>
-                            )}
+                            <View style={styles.profileAvatarWrap}>
+                                {groupIconUrl ? (
+                                    <FastImage source={{ uri: groupIconUrl }} style={styles.profileAvatar} />
+                                ) : (
+                                    <View style={styles.profileAvatar}>
+                                        <Profile2User size={40} color={colors.primaryColor} variant="Linear" />
+                                    </View>
+                                )}
+                                {isGroupOwner ? (
+                                    <TouchableOpacity
+                                        style={[
+                                            styles.profileAvatarEditButton,
+                                            isUpdatingGroupAvatar ? styles.profileAvatarEditButtonDisabled : null,
+                                        ]}
+                                        onPress={handleChangeGroupPicture}
+                                        disabled={isUpdatingGroupAvatar}
+                                    >
+                                        {isUpdatingGroupAvatar ? (
+                                            <ActivityIndicator size="small" color={colors.whiteColor} />
+                                        ) : (
+                                            <Edit2 size={14} color="#FFFFFF" variant="Linear" />
+                                        )}
+                                    </TouchableOpacity>
+                                ) : null}
+                            </View>
                         </View>
 
                         <View style={styles.statsRow}>
                             <View style={styles.statItem}>
-                                <Text style={styles.statValue}>{group?.member_count ?? members.length}</Text>
+                                <Text style={styles.statValue}>{displayedMemberCount}</Text>
                                 <Text style={styles.statLabel}>{t('Members')}</Text>
                             </View>
                             <View style={styles.statDivider} />
