@@ -1,8 +1,9 @@
-import React, { useEffect, useMemo, useState } from 'react';
-import { View, Text, ScrollView, Alert, ActivityIndicator, TouchableOpacity, Modal, Pressable, TextInput } from 'react-native';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { View, Text, ScrollView, Alert, ActivityIndicator, TouchableOpacity, Modal, Pressable, TextInput, BackHandler } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import FastImage from 'react-native-fast-image';
 import { Calendar } from 'react-native-calendars';
+import { useFocusEffect } from '@react-navigation/native';
 import { createStyles } from './CreateProfileScreenStyles';
 import SizeBox from '../../../constants/SizeBox';
 import CustomTextInput from '../../../components/customTextInput/CustomTextInput';
@@ -315,7 +316,7 @@ const CreateProfileScreen = ({ navigation }: any) => {
         }
     };
 
-    const handleBack = () => {
+    const handleBack = useCallback(() => {
         if (step <= 1) {
             if (navigation.canGoBack?.()) {
                 navigation.goBack();
@@ -325,7 +326,20 @@ const CreateProfileScreen = ({ navigation }: any) => {
             return;
         }
         setStep((s) => Math.max(1, s - 1));
-    };
+    }, [navigation, step]);
+
+    useFocusEffect(
+        useCallback(() => {
+            const onHardwareBackPress = () => {
+                handleBack();
+                return true;
+            };
+            const subscription = BackHandler.addEventListener('hardwareBackPress', onHardwareBackPress);
+            return () => {
+                subscription.remove();
+            };
+        }, [handleBack]),
+    );
 
     return (
         <View style={Styles.mainContainer}>
