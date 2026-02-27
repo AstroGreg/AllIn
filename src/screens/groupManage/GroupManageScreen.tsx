@@ -45,6 +45,7 @@ const GroupManageScreen = ({ navigation, route }: any) => {
   const [pendingInviteByProfile, setPendingInviteByProfile] = useState<Record<string, string>>({});
   const [addBusyByProfile, setAddBusyByProfile] = useState<Record<string, boolean>>({});
   const [roleBusyByProfile, setRoleBusyByProfile] = useState<Record<string, boolean>>({});
+  const [removeBusyByProfile, setRemoveBusyByProfile] = useState<Record<string, boolean>>({});
 
   const [selectedInviteProfile, setSelectedInviteProfile] = useState<ProfileSearchResult | null>(null);
   const [invitePublicRoles, setInvitePublicRoles] = useState<PublicMemberRole[]>(['athlete']);
@@ -261,15 +262,37 @@ const GroupManageScreen = ({ navigation, route }: any) => {
     }
   };
 
-  const handleRemoveMember = async (member: GroupMember) => {
+  const handleRemoveMember = useCallback(async (member: GroupMember) => {
     if (!apiAccessToken || !groupId || !canManageGroup) return;
+    const targetProfileId = String(member?.profile_id || '').trim();
+    if (!targetProfileId) return;
+    if (removeBusyByProfile[targetProfileId]) return;
+    setRemoveBusyByProfile((prev) => ({ ...prev, [targetProfileId]: true }));
     try {
-      await removeGroupMember(apiAccessToken, groupId, String(member.profile_id));
+      await removeGroupMember(apiAccessToken, groupId, targetProfileId);
+
+      setMembers((prev) => prev.filter((entry) => String(entry?.profile_id || '').trim() !== targetProfileId));
+      setPendingInviteByProfile((prev) => {
+        if (!Object.prototype.hasOwnProperty.call(prev, targetProfileId)) return prev;
+        const next = { ...prev };
+        delete next[targetProfileId];
+        return next;
+      });
+
+      if (Object.prototype.hasOwnProperty.call(memberRoleTags, targetProfileId)) {
+        const nextTags = { ...memberRoleTags };
+        delete nextTags[targetProfileId];
+        setMemberRoleTags(nextTags);
+        await persistRoleTags(nextTags);
+      }
+
       await loadData();
     } catch {
       // ignore
+    } finally {
+      setRemoveBusyByProfile((prev) => ({ ...prev, [targetProfileId]: false }));
     }
-  };
+  }, [apiAccessToken, canManageGroup, groupId, loadData, memberRoleTags, persistRoleTags, removeBusyByProfile]);
 
   const handleChangeMemberPermission = useCallback(async (member: GroupMember, nextPermission: 'member' | 'admin') => {
     if (!apiAccessToken || !groupId || !canManageGroup) return;
@@ -460,6 +483,7 @@ const GroupManageScreen = ({ navigation, route }: any) => {
       paddingVertical: 7,
     },
     neutralButtonText: { fontSize: 12, color: colors.errorColor || '#E14B4B' },
+    iconButtonDisabled: { opacity: 0.6 },
     memberRow: {
       flexDirection: 'row',
       alignItems: 'center',
@@ -628,6 +652,7 @@ const GroupManageScreen = ({ navigation, route }: any) => {
                 const avatarUrl = member.avatar_url ? toAbsoluteUrl(String(member.avatar_url)) : null;
                 const role = String(member.role || '').toLowerCase();
                 const canEditRole = role !== 'owner' && !(isAdmin && role === 'admin');
+                const isRemovingMember = Boolean(removeBusyByProfile[String(member.profile_id)]);
                 const permissionOptions = isOwner ? (['member', 'admin'] as const) : (['member'] as const);
                 const selectedPermission: 'member' | 'admin' = role === 'admin' ? 'admin' : 'member';
                 const publicRoles = getDisplayRoles(member);
@@ -681,8 +706,16 @@ const GroupManageScreen = ({ navigation, route }: any) => {
                       </View>
                     </View>
                     {canEditRole ? (
-                      <TouchableOpacity onPress={() => handleRemoveMember(member)}>
-                        <Trash size={18} color={colors.errorColor || '#E14B4B'} variant="Linear" />
+                      <TouchableOpacity
+                        onPress={() => handleRemoveMember(member)}
+                        disabled={isRemovingMember}
+                        style={isRemovingMember ? styles.iconButtonDisabled : undefined}
+                      >
+                        {isRemovingMember ? (
+                          <ActivityIndicator size="small" color={colors.errorColor || '#E14B4B'} />
+                        ) : (
+                          <Trash size={18} color={colors.errorColor || '#E14B4B'} variant="Linear" />
+                        )}
                       </TouchableOpacity>
                     ) : null}
                   </View>
