@@ -1,41 +1,23 @@
-import { View, Text, TouchableOpacity, ScrollView, Modal, Pressable, Alert } from 'react-native'
-import React, { useCallback, useMemo, useState } from 'react'
+import { View, Text, TouchableOpacity, ScrollView, Modal, Pressable, Alert, ActivityIndicator } from 'react-native'
+import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { ArrowLeft2, Ghost, Trash } from 'iconsax-react-nativejs'
 import { createStyles } from './CompetitionDetailsStyles'
 import SizeBox from '../../constants/SizeBox'
 import { useTheme } from '../../context/ThemeContext'
+import { useAuth } from '../../context/AuthContext'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import { useFocusEffect } from '@react-navigation/native'
 import { useTranslation } from 'react-i18next'
 import Images from '../../constants/Images'
 import FastImage from 'react-native-fast-image'
+import { ApiError, getEventCompetitions } from '../../services/apiGateway'
 
 interface EventCategory {
-    id: number;
+    id: string;
     name: string;
+    kind: 'track' | 'field' | 'road';
 }
-
-const TRACK_EVENTS: EventCategory[] = [
-    { id: 1, name: '200 Meters' },
-    { id: 2, name: '400 Meters' },
-    { id: 3, name: '800 Meters' },
-    { id: 4, name: '5000 Meters' },
-];
-
-const FIELD_EVENTS: EventCategory[] = [
-    { id: 5, name: 'Long Jump' },
-    { id: 6, name: 'High Jump' },
-    { id: 7, name: 'Shot Put' },
-    { id: 8, name: 'Discus Throw' },
-];
-
-const ROAD_COURSES: EventCategory[] = [
-    { id: 9, name: '5 km checkpoint' },
-    { id: 10, name: '10 km checkpoint' },
-    { id: 11, name: '15 km checkpoint' },
-    { id: 12, name: 'Finish line' },
-];
 
 const DIVISIONS = [
     'Pupil',
@@ -48,10 +30,22 @@ const DIVISIONS = [
     'Masters',
 ];
 
+const FIELD_DISCIPLINE_PATTERN = /jump|throw|put|vault|discus|javelin|hammer/i;
+const ROAD_DISCIPLINE_PATTERN = /road|trail|cross|veldloop|checkpoint|finish|start|\b\d+\s?km\b/i;
+const GENERIC_DISCIPLINE_NAMES = new Set([
+    'track field',
+    'track&field',
+    'road trail',
+    'road&trail',
+    'event',
+    'competition',
+]);
+
 const CompetitionDetailsScreen = ({ navigation, route }: any) => {
     const { t } = useTranslation();
     const insets = useSafeAreaInsets();
     const { colors } = useTheme();
+    const { apiAccessToken } = useAuth();
     const Styles = createStyles(colors);
     const competition = route?.params?.competition;
     const account = route?.params?.account;
@@ -64,6 +58,16 @@ const CompetitionDetailsScreen = ({ navigation, route }: any) => {
     const [selectedGender, setSelectedGender] = useState<'Men' | 'Women' | null>(null);
     const [selectedDivision, setSelectedDivision] = useState<string | null>(null);
     const [uploadCounts, setUploadCounts] = useState<Record<string, { photos: number; videos: number }>>({});
+    const [trackEvents, setTrackEvents] = useState<EventCategory[]>([]);
+    const [fieldEvents, setFieldEvents] = useState<EventCategory[]>([]);
+    const [roadEvents, setRoadEvents] = useState<EventCategory[]>([]);
+    const [isLoadingDisciplines, setIsLoadingDisciplines] = useState(false);
+    const [disciplinesError, setDisciplinesError] = useState<string | null>(null);
+
+    const competitionId = useMemo(
+        () => String(competition?.id || competition?.event_id || competition?.eventId || '').trim(),
+        [competition?.event_id, competition?.eventId, competition?.id],
+    );
 
     const formatDate = useCallback((value?: string) => {
         if (!value) return '';
@@ -95,17 +99,106 @@ const CompetitionDetailsScreen = ({ navigation, route }: any) => {
         [competition?.organizingClub, competition?.organizing_club],
     );
 
-    const activeEvents = useMemo(() => {
-        if (competitionType === 'road') return ROAD_COURSES;
-        return activeTab === 'track' ? TRACK_EVENTS : FIELD_EVENTS;
-    }, [activeTab, competitionType]);
+    const classifyDiscipline = useCallback((name: string, typeToken: string): EventCategory['kind'] => {
+        const normalizedName = name.toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
+        const normalizedType = String(typeToken || '').toLowerCase();
+        if (
+            ROAD_DISCIPLINE_PATTERN.test(normalizedType)
+            || ROAD_DISCIPLINE_PATTERN.test(normalizedName)
+            || competitionType === 'road'
+        ) {
+            return 'road';
+        }
+        if (/field/.test(normalizedType) || FIELD_DISCIPLINE_PATTERN.test(normalizedName)) {
+            return 'field';
+        }
+        return 'track';
+    }, [competitionType]);
 
-    const competitionId = useMemo(
-        () => String(competition?.id || competition?.event_id || competition?.eventId || 'competition'),
-        [competition?.event_id, competition?.eventId, competition?.id],
-    );
+    useEffect(() => {
+        if (!apiAccessToken || !competitionId) {
+            setTrackEvents([]);
+            setFieldEvents([]);
+            setRoadEvents([]);
+            setIsLoadingDisciplines(false);
+            setDisciplinesError(null);
+            return;
+        }
+
+        let isActive = true;
+        const loadDisciplines = async () => {
+            setIsLoadingDisciplines(true);
+            setDisciplinesError(null);
+            try {
+                const res = await getEventCompetitions(apiAccessToken, competitionId);
+                if (!isActive) return;
+                const rows = Array.isArray(res?.competitions) ? res.competitions : [];
+                const seenIds = new Set<string>();
+                const seenNames = new Set<string>();
+                const normalizedRows: EventCategory[] = [];
+
+                for (const row of rows) {
+                    const id = String(row?.id || '').trim();
+                    const rawName = String(row?.competition_name || row?.competition_name_normalized || '').trim();
+                    const typeToken = String(row?.competition_type || '').trim();
+                    if (!id || !rawName || seenIds.has(id)) continue;
+                    seenIds.add(id);
+                    const normalizedName = rawName.toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
+                    if (seenNames.has(normalizedName)) continue;
+                    seenNames.add(normalizedName);
+                    normalizedRows.push({
+                        id,
+                        name: rawName,
+                        kind: classifyDiscipline(rawName, typeToken),
+                    });
+                }
+
+                const withoutGeneric = normalizedRows.filter((item) => {
+                    const normalizedName = item.name.toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
+                    return !GENERIC_DISCIPLINE_NAMES.has(normalizedName);
+                });
+                const events = withoutGeneric.length > 0 ? withoutGeneric : normalizedRows;
+
+                if (competitionType === 'road') {
+                    const roadOnly = events.filter((item) => item.kind === 'road');
+                    setRoadEvents(roadOnly.length > 0 ? roadOnly : events);
+                    setTrackEvents([]);
+                    setFieldEvents([]);
+                } else {
+                    const field = events.filter((item) => item.kind === 'field');
+                    const track = events.filter((item) => item.kind !== 'field');
+                    setTrackEvents(track);
+                    setFieldEvents(field);
+                    setRoadEvents([]);
+                }
+            } catch (error: any) {
+                if (!isActive) return;
+                const message = error instanceof ApiError ? error.message : String(error?.message || error);
+                setDisciplinesError(message);
+                setTrackEvents([]);
+                setFieldEvents([]);
+                setRoadEvents([]);
+            } finally {
+                if (isActive) setIsLoadingDisciplines(false);
+            }
+        };
+
+        loadDisciplines();
+        return () => {
+            isActive = false;
+        };
+    }, [apiAccessToken, classifyDiscipline, competitionId, competitionType]);
+
+    const activeEvents = useMemo(() => {
+        if (competitionType === 'road') return roadEvents;
+        return activeTab === 'track' ? trackEvents : fieldEvents;
+    }, [activeTab, competitionType, fieldEvents, roadEvents, trackEvents]);
 
     const loadCounts = useCallback(async () => {
+        if (!competitionId) {
+            setUploadCounts({});
+            return;
+        }
         try {
             // Use the current upload draft (assets selected) instead of persisting "uploaded counts" forever.
             const assetsRaw = await AsyncStorage.getItem(`@upload_assets_${competitionId}`);
@@ -117,8 +210,8 @@ const CompetitionDetailsScreen = ({ navigation, route }: any) => {
                     let photos = 0;
                     let videos = 0;
                     for (const asset of arr as any[]) {
-                        const t = String((asset as any)?.type || '').toLowerCase();
-                        if (t.includes('video')) videos += 1;
+                        const mediaType = String((asset as any)?.type || '').toLowerCase();
+                        if (mediaType.includes('video')) videos += 1;
                         else photos += 1;
                     }
                     if (photos + videos > 0) {
@@ -170,17 +263,17 @@ const CompetitionDetailsScreen = ({ navigation, route }: any) => {
         const countLabel = total > 0 ? `Selected: ${parts.join(' • ')}` : 'No files selected';
         const hasUploads = total > 0;
         return (
-        <TouchableOpacity
-            key={category.id}
-            style={[Styles.eventCard, hasUploads && Styles.eventCardActive]}
-            activeOpacity={0.85}
-            onPress={() => openCategoryModal(category)}
-        >
-            <View style={Styles.eventText}>
-                <Text style={Styles.eventName}>{category.name}</Text>
-                <Text style={[Styles.eventMeta, hasUploads && Styles.eventMetaActive]}>{countLabel}</Text>
-            </View>
-        </TouchableOpacity>
+            <TouchableOpacity
+                key={category.id}
+                style={[Styles.eventCard, hasUploads && Styles.eventCardActive]}
+                activeOpacity={0.85}
+                onPress={() => openCategoryModal(category)}
+            >
+                <View style={Styles.eventText}>
+                    <Text style={Styles.eventName}>{category.name}</Text>
+                    <Text style={[Styles.eventMeta, hasUploads && Styles.eventMetaActive]}>{countLabel}</Text>
+                </View>
+            </TouchableOpacity>
         );
     };
 
@@ -188,7 +281,6 @@ const CompetitionDetailsScreen = ({ navigation, route }: any) => {
         <View style={Styles.mainContainer}>
             <SizeBox height={insets.top} />
 
-            {/* Header */}
             <View style={Styles.header}>
                 <TouchableOpacity style={Styles.headerButton} onPress={() => navigation.goBack()}>
                     <ArrowLeft2 size={24} color={colors.primaryColor} variant="Linear" />
@@ -197,6 +289,7 @@ const CompetitionDetailsScreen = ({ navigation, route }: any) => {
                 <TouchableOpacity
                     style={Styles.headerButton}
                     onPress={() => {
+                        if (!competitionId) return;
                         Alert.alert(
                             'Reset upload draft?',
                             'This will clear selected files for this competition on this device.',
@@ -260,7 +353,7 @@ const CompetitionDetailsScreen = ({ navigation, route }: any) => {
                                 onPress={() => setActiveTab('track')}
                             >
                                 <Text style={[Styles.toggleTabText, activeTab === 'track' && Styles.toggleTabTextActive]}>
-                                    Track Events
+                                    {t('Track events')}
                                 </Text>
                             </TouchableOpacity>
                             <TouchableOpacity
@@ -268,7 +361,7 @@ const CompetitionDetailsScreen = ({ navigation, route }: any) => {
                                 onPress={() => setActiveTab('field')}
                             >
                                 <Text style={[Styles.toggleTabText, activeTab === 'field' && Styles.toggleTabTextActive]}>
-                                    Field Events
+                                    {t('Field events')}
                                 </Text>
                             </TouchableOpacity>
                         </View>
@@ -277,11 +370,29 @@ const CompetitionDetailsScreen = ({ navigation, route }: any) => {
                 )}
 
                 <Text style={Styles.sectionTitle}>
-                    {competitionType === 'road' ? 'Choose a checkpoint' : 'Events'}
+                    {competitionType === 'road' ? t('Choose a checkpoint') : t('Events')}
                 </Text>
                 <SizeBox height={16} />
 
-                {activeEvents.map(renderEventCard)}
+                {isLoadingDisciplines ? (
+                    <View style={Styles.disciplineLoadingState}>
+                        <ActivityIndicator color={colors.primaryColor} />
+                        <SizeBox height={8} />
+                        <Text style={Styles.disciplineLoadingText}>{t('Loading disciplines...')}</Text>
+                    </View>
+                ) : activeEvents.length > 0 ? (
+                    activeEvents.map(renderEventCard)
+                ) : (
+                    <View style={Styles.disciplineEmptyState}>
+                        <Text style={Styles.disciplineEmptyTitle}>{t('No disciplines configured for this competition yet.')}</Text>
+                        {disciplinesError ? (
+                            <>
+                                <SizeBox height={6} />
+                                <Text style={Styles.disciplineEmptySubtitle}>{disciplinesError}</Text>
+                            </>
+                        ) : null}
+                    </View>
+                )}
 
                 <SizeBox height={insets.bottom > 0 ? insets.bottom + 20 : 40} />
             </ScrollView>

@@ -15,6 +15,7 @@ import { useFocusEffect } from '@react-navigation/native'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 
 const UPLOAD_FLOW_RESET_KEY = '@upload_flow_reset_required';
+const UPLOAD_DEFAULT_INITIAL_LIMIT = 10;
 const UPLOAD_SEARCH_INITIAL_LIMIT = 20;
 const SCROLL_LOAD_THRESHOLD_PX = 220;
 
@@ -69,7 +70,7 @@ const SelectCompetitionScreen = ({ navigation, route }: any) => {
     const [subscribePromptVisible, setSubscribePromptVisible] = useState(false);
     const [pendingCompetition, setPendingCompetition] = useState<Competition | null>(null);
     const [isSubscribing, setIsSubscribing] = useState(false);
-    const [visibleCompetitionCount, setVisibleCompetitionCount] = useState(UPLOAD_SEARCH_INITIAL_LIMIT);
+    const [visibleCompetitionCount, setVisibleCompetitionCount] = useState(UPLOAD_DEFAULT_INITIAL_LIMIT);
     const loadMoreLockedRef = useRef(false);
 
     const resetFilters = useCallback(() => {
@@ -279,6 +280,7 @@ const SelectCompetitionScreen = ({ navigation, route }: any) => {
         () => filterValues.Competition.trim().length > 0 || filterValues.Location.trim().length > 0,
         [filterValues.Competition, filterValues.Location],
     );
+    const pageSize = hasTypedQuery ? UPLOAD_SEARCH_INITIAL_LIMIT : UPLOAD_DEFAULT_INITIAL_LIMIT;
     const handleSearchChange = (text: string) => {
         setFilterValues((prev) => ({ ...prev, [activeFilter]: text }));
     };
@@ -336,12 +338,6 @@ const SelectCompetitionScreen = ({ navigation, route }: any) => {
     }, [apiAccessToken]);
 
     const loadCompetitions = useCallback(async (query: string) => {
-        if (!query.trim()) {
-            setRawEvents([]);
-            setErrorText(null);
-            setIsLoading(false);
-            return;
-        }
         if (!apiAccessToken) {
             setRawEvents([]);
             setErrorText('Log in to load competitions.');
@@ -350,7 +346,8 @@ const SelectCompetitionScreen = ({ navigation, route }: any) => {
         setIsLoading(true);
         setErrorText(null);
         try {
-            const res = await searchEvents(apiAccessToken, { q: query || undefined, limit: 100, offset: 0 });
+            const trimmedQuery = String(query || '').trim();
+            const res = await searchEvents(apiAccessToken, { q: trimmedQuery || undefined, limit: 200, offset: 0 });
             setRawEvents(Array.isArray(res?.events) ? res.events : []);
         } catch (e: any) {
             const message = e instanceof ApiError ? e.message : String(e?.message ?? e);
@@ -426,7 +423,6 @@ const SelectCompetitionScreen = ({ navigation, route }: any) => {
     }, [parseEventDate]);
 
     const filteredCompetitions = useMemo(() => {
-        if (!hasTypedQuery) return [];
         const cFilter = filterValues.Competition.trim().toLowerCase();
         const lFilter = filterValues.Location.trim().toLowerCase();
         const rankMatch = (value: string, query: string) => {
@@ -473,7 +469,7 @@ const SelectCompetitionScreen = ({ navigation, route }: any) => {
             const bDate = parseEventDate(b.date)?.getTime() ?? 0;
             return bDate - aDate;
         });
-    }, [activeFilter, competitions, eventTypeFilter, filterValues, hasTypedQuery, parseEventDate, timeRange.end, timeRange.start]);
+    }, [activeFilter, competitions, eventTypeFilter, filterValues, parseEventDate, timeRange.end, timeRange.start]);
     const visibleCompetitions = useMemo(
         () => filteredCompetitions.slice(0, visibleCompetitionCount),
         [filteredCompetitions, visibleCompetitionCount],
@@ -482,8 +478,9 @@ const SelectCompetitionScreen = ({ navigation, route }: any) => {
 
     useEffect(() => {
         loadMoreLockedRef.current = false;
-        setVisibleCompetitionCount(UPLOAD_SEARCH_INITIAL_LIMIT);
+        setVisibleCompetitionCount(pageSize);
     }, [
+        pageSize,
         activeFilter,
         hasTypedQuery,
         filterValues.Competition,
@@ -502,10 +499,10 @@ const SelectCompetitionScreen = ({ navigation, route }: any) => {
             loadMoreLockedRef.current = false;
             return;
         }
-        if (loadMoreLockedRef.current || !hasTypedQuery || !hasMoreCompetitions) return;
+        if (loadMoreLockedRef.current || !hasMoreCompetitions) return;
         loadMoreLockedRef.current = true;
-        setVisibleCompetitionCount((prev) => Math.min(prev + UPLOAD_SEARCH_INITIAL_LIMIT, filteredCompetitions.length));
-    }, [filteredCompetitions.length, hasMoreCompetitions, hasTypedQuery]);
+        setVisibleCompetitionCount((prev) => Math.min(prev + pageSize, filteredCompetitions.length));
+    }, [filteredCompetitions.length, hasMoreCompetitions, pageSize]);
 
     const continueToCompetition = useCallback((competition: Competition) => {
         navigation.navigate('CompetitionDetailsScreen', {
@@ -547,6 +544,15 @@ const SelectCompetitionScreen = ({ navigation, route }: any) => {
             setIsSubscribing(false);
         }
     }, [apiAccessToken, continueToCompetition, pendingCompetition, t]);
+
+    const handleSkipSubscribe = useCallback(() => {
+        if (!pendingCompetition) {
+            setSubscribePromptVisible(false);
+            return;
+        }
+        setSubscribePromptVisible(false);
+        continueToCompetition(pendingCompetition);
+    }, [continueToCompetition, pendingCompetition]);
 
     const renderCompetitionCard = (competition: Competition) => (
         <TouchableOpacity
@@ -719,29 +725,33 @@ const SelectCompetitionScreen = ({ navigation, route }: any) => {
                     <Text style={Styles.resultsTitle}>{t('availableCompetitions')}</Text>
                     <View style={Styles.resultsCountBadge}>
                         <Text style={Styles.resultsCountText}>
-                            {!hasTypedQuery ? t('Type to search') : (isLoading ? '...' : `${filteredCompetitions.length} ${t('competitions')}`)}
+                            {isLoading ? '...' : `${filteredCompetitions.length} ${t('competitions')}`}
                         </Text>
                     </View>
                 </View>
 
                 <SizeBox height={16} />
 
-                {hasTypedQuery && isLoading && filteredCompetitions.length === 0 && (
+                {isLoading && filteredCompetitions.length === 0 && (
                     <View style={Styles.loadingRow}>
                         <ActivityIndicator color={colors.primaryColor} />
                         <Text style={Styles.loadingText}>{t('loadingCompetitions')}</Text>
                     </View>
                 )}
 
-                {hasTypedQuery && !isLoading && errorText && (
+                {!isLoading && errorText && (
                     <Text style={Styles.errorText}>{errorText}</Text>
                 )}
 
                 {/* Competition Cards */}
-                {!hasTypedQuery ? (
-                    <Text style={Styles.loadingText}>{t('Type competition or location to search')}</Text>
-                ) : (
+                {visibleCompetitions.length > 0 ? (
                     visibleCompetitions.map(renderCompetitionCard)
+                ) : !isLoading ? (
+                    <Text style={Styles.loadingText}>
+                        {hasTypedQuery ? t('No competitions found') : t('No competitions available yet.')}
+                    </Text>
+                ) : (
+                    <></>
                 )}
 
                 <SizeBox height={insets.bottom > 0 ? insets.bottom + 20 : 40} />
@@ -772,7 +782,7 @@ const SelectCompetitionScreen = ({ navigation, route }: any) => {
                             <TouchableOpacity
                                 style={Styles.subscribeNoButton}
                                 disabled={isSubscribing}
-                                onPress={() => setSubscribePromptVisible(false)}
+                                onPress={handleSkipSubscribe}
                             >
                                 <Text style={Styles.subscribeNoText}>{t('No')}</Text>
                             </TouchableOpacity>
