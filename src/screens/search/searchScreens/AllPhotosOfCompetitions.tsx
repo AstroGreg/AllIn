@@ -1,4 +1,4 @@
-import { View, Text, FlatList, TouchableOpacity, Image } from 'react-native'
+import { View, Text, FlatList, TouchableOpacity, Image, ActivityIndicator, StyleSheet, useWindowDimensions } from 'react-native'
 import React, { useEffect, useState, useCallback, useMemo } from 'react'
 import SizeBox from '../../../constants/SizeBox'
 import { createStyles } from '../SearchStyles';
@@ -11,18 +11,97 @@ import { useTranslation } from 'react-i18next';
 
 const AllPhotosOfEvents = ({ navigation, route }: any) => {
     const insets = useSafeAreaInsets();
+    const { width } = useWindowDimensions();
     const eventName = route?.params?.eventName || 'Event';
     const eventId = route?.params?.eventId;
     const competitionId = route?.params?.competitionId;
     const appearanceOnly = Boolean(route?.params?.appearanceOnly);
+    const disciplineId = route?.params?.disciplineId;
+    const checkpointId = route?.params?.checkpointId ?? route?.params?.checkpoint?.id;
     const division = route?.params?.division;
     const gender = route?.params?.gender;
     const { apiAccessToken } = useAuth();
     const { colors } = useTheme();
     const { t } = useTranslation();
     const styles = createStyles(colors);
+    const localStyles = useMemo(() => StyleSheet.create({
+        gridWrap: {
+            paddingHorizontal: 20,
+            paddingTop: 16,
+            paddingBottom: 20,
+        },
+        columnWrap: {
+            justifyContent: 'space-between',
+            marginBottom: 12,
+        },
+        mediaTile: {
+            borderRadius: 14,
+            overflow: 'hidden',
+            borderWidth: 1,
+            borderColor: colors.borderColor,
+            backgroundColor: colors.cardBackground,
+        },
+        mediaImage: {
+            width: '100%',
+        },
+        mediaFallback: {
+            width: '100%',
+            backgroundColor: colors.secondaryColor,
+        },
+        mediaMeta: {
+            paddingHorizontal: 10,
+            paddingVertical: 10,
+            borderTopWidth: 1,
+            borderTopColor: colors.lightGrayColor,
+        },
+        mediaMetaPrimary: {
+            ...styles.subText,
+            color: colors.mainTextColor,
+        },
+        mediaMetaSecondary: {
+            ...styles.subText,
+            color: colors.subTextColor,
+            marginTop: 4,
+        },
+        headerWrap: {
+            marginBottom: 16,
+        },
+        subtitle: {
+            ...styles.filterText,
+            marginTop: 6,
+        },
+        helper: {
+            ...styles.subText,
+            marginTop: 6,
+            color: colors.subTextColor,
+        },
+        emptyBox: {
+            borderRadius: 12,
+            borderWidth: 0.5,
+            borderColor: colors.lightGrayColor,
+            backgroundColor: colors.cardBackground,
+            paddingVertical: 24,
+            paddingHorizontal: 16,
+            alignItems: 'center',
+            justifyContent: 'center',
+        },
+    }), [colors, styles.filterText, styles.subText]);
+
     const [items, setItems] = useState<MediaViewAllItem[]>([]);
+    const [isLoading, setIsLoading] = useState(false);
     const targetCompetitionId = competitionId ?? eventId;
+    const tileWidth = useMemo(() => Math.max(140, Math.floor((width - 52) / 2)), [width]);
+    const tileHeight = useMemo(() => Math.round(tileWidth * 1.15), [tileWidth]);
+    const helperCopy = useMemo(() => {
+        if (checkpointId) return t('Shows photos tagged to this checkpoint.');
+        if (disciplineId) return t('Shows photos tagged to this discipline.');
+        return t('Includes all competition photos, including untagged uploads.');
+    }, [checkpointId, disciplineId, t]);
+    const emptyCopy = useMemo(() => {
+        if (checkpointId) return t('No photos found for this checkpoint yet.');
+        if (disciplineId) return t('No photos found for this discipline yet.');
+        return t('No photos found for this competition yet.');
+    }, [checkpointId, disciplineId, t]);
 
     const isSignedUrl = useCallback((value?: string | null) => {
         if (!value) return false;
@@ -50,6 +129,20 @@ const AllPhotosOfEvents = ({ navigation, route }: any) => {
         return `${value}${sep}access_token=${encodeURIComponent(apiAccessToken)}`;
     }, [apiAccessToken, isSignedUrl]);
 
+    const isVideoMedia = useCallback((item: MediaViewAllItem) => {
+        const mediaType = String(item?.type ?? '').toLowerCase();
+        if (mediaType === 'video') return true;
+        if (mediaType === 'image' || mediaType === 'photo') return false;
+        if (item?.hls_manifest_path) return true;
+        const hasVideoMime = Array.isArray(item?.assets)
+            && item.assets.some((asset) => String(asset?.mime_type ?? '').toLowerCase().startsWith('video/'));
+        if (hasVideoMime) return true;
+        const candidates = [item?.full_url, item?.original_url, item?.raw_url, item?.preview_url]
+            .filter(Boolean)
+            .map((value) => String(value));
+        return candidates.some((value) => /\.(mp4|mov|m4v|webm|m3u8)(\?|$)/i.test(value));
+    }, []);
+
     const formatDate = (value?: string) => {
         if (!value) return '—';
         const parsed = new Date(value);
@@ -65,32 +158,38 @@ const AllPhotosOfEvents = ({ navigation, route }: any) => {
         let mounted = true;
         if (!apiAccessToken) return () => {};
         const load = async () => {
+            setIsLoading(true);
             try {
                 let list: MediaViewAllItem[] = [];
                 if (appearanceOnly && (eventId || competitionId)) {
                     const res = await getHubAppearanceMedia(apiAccessToken, String(eventId ?? competitionId));
                     list = Array.isArray(res?.results) ? res.results : [];
                 } else if (targetCompetitionId) {
-                    const res = await getCompetitionPublicMedia(apiAccessToken, String(targetCompetitionId), {type: 'image', limit: 500});
+                    const res = await getCompetitionPublicMedia(apiAccessToken, String(targetCompetitionId), {
+                        type: 'image',
+                        discipline_id: disciplineId ? String(disciplineId) : undefined,
+                        checkpoint_id: checkpointId ? String(checkpointId) : undefined,
+                        limit: 500,
+                    });
                     list = Array.isArray(res) ? res : [];
                 } else {
                     list = [];
                 }
                 if (!mounted) return;
-                const filtered = list.filter((item) => {
-                    return String(item.type).toLowerCase() !== 'video';
-                });
+                const filtered = list.filter((item) => !isVideoMedia(item));
                 setItems(filtered);
             } catch {
                 if (!mounted) return;
                 setItems([]);
+            } finally {
+                if (mounted) setIsLoading(false);
             }
         };
         load();
         return () => {
             mounted = false;
         };
-    }, [apiAccessToken, appearanceOnly, competitionId, eventId, targetCompetitionId, withAccessToken]);
+    }, [apiAccessToken, appearanceOnly, checkpointId, competitionId, disciplineId, eventId, isVideoMedia, targetCompetitionId]);
 
     const data = useMemo(() => {
         return items.map((item) => {
@@ -99,8 +198,8 @@ const AllPhotosOfEvents = ({ navigation, route }: any) => {
                 id: item.media_id,
                 photoUrl: withAccessToken(candidate) || candidate || '',
                 uploadedAt: item.created_at ?? '',
-                likes: item.likes_count ?? 0,
-                views: item.views_count ?? 0,
+                likes: Number(item.likes_count ?? 0),
+                views: Number(item.views_count ?? 0),
                 media: item,
             };
         });
@@ -109,23 +208,23 @@ const AllPhotosOfEvents = ({ navigation, route }: any) => {
     return (
         <View style={styles.mainContainer}>
             <SizeBox height={insets.top} />
-            <CustomHeader title={t('All Photograph')} onBackPress={() => navigation.goBack()} />
+            <CustomHeader title={t('All Photos')} onBackPress={() => navigation.goBack()} isSetting={false} />
 
             <FlatList
                 data={data}
+                numColumns={2}
+                keyExtractor={(item) => String(item.id)}
+                columnWrapperStyle={localStyles.columnWrap}
+                contentContainerStyle={[
+                    localStyles.gridWrap,
+                    { paddingBottom: insets.bottom > 0 ? insets.bottom + 30 : 30 },
+                ]}
+                showsVerticalScrollIndicator={false}
                 renderItem={({ item }) => (
                     <TouchableOpacity
                         activeOpacity={0.9}
-                        style={{
-                            marginHorizontal: 20,
-                            marginBottom: 16,
-                            borderRadius: 14,
-                            overflow: 'hidden',
-                            backgroundColor: colors.cardBackground,
-                            borderWidth: 1,
-                            borderColor: colors.borderColor,
-                        }}
-                            onPress={() => navigation.navigate('PhotoDetailScreen', {
+                        style={[localStyles.mediaTile, { width: tileWidth }]}
+                        onPress={() => navigation.navigate('PhotoDetailScreen', {
                             eventTitle: eventName,
                             media: {
                                 id: item.media.media_id,
@@ -141,47 +240,42 @@ const AllPhotosOfEvents = ({ navigation, route }: any) => {
                         })}
                     >
                         {item.photoUrl ? (
-                            <Image
-                                source={{ uri: item.photoUrl }}
-                                style={{ width: '100%', height: 180 }}
-                                resizeMode="cover"
-                            />
+                            <Image source={{ uri: item.photoUrl }} style={[localStyles.mediaImage, { height: tileHeight }]} resizeMode="cover" />
                         ) : (
-                            <View style={{ width: '100%', height: 180, backgroundColor: colors.secondaryColor }} />
+                            <View style={[localStyles.mediaFallback, { height: tileHeight }]} />
                         )}
-                        <View style={{ paddingHorizontal: 14, paddingVertical: 12 }}>
-                            <Text style={[styles.titleText, { fontSize: 16 }]} numberOfLines={1}>{eventName}</Text>
-                            <SizeBox height={6} />
-                            <Text style={styles.subText} numberOfLines={1}>
+                        <View style={localStyles.mediaMeta}>
+                            <Text style={localStyles.mediaMetaPrimary} numberOfLines={1}>
                                 {item.likes} {t('likes')} • {item.views} {t('views')}
                             </Text>
-                            <SizeBox height={4} />
-                            <Text style={styles.subText} numberOfLines={1}>
+                            <Text style={localStyles.mediaMetaSecondary} numberOfLines={1}>
                                 {t('Uploaded')} {formatDate(item.uploadedAt)}
                             </Text>
                         </View>
                     </TouchableOpacity>
                 )}
-                showsVerticalScrollIndicator={false}
-                keyExtractor={(item, index) => index.toString()}
-                contentContainerStyle={{
-                    paddingTop: 20,
-                    paddingBottom: 10,
-                }}
                 ListHeaderComponent={
-                    <View style={{ marginLeft: 20 }}>
+                    <View style={localStyles.headerWrap}>
                         <Text style={styles.titleText}>{eventName}</Text>
                         {(division || gender) && (
-                            <>
-                                <SizeBox height={6} />
-                                <Text style={styles.filterText}>{[division, gender].filter(Boolean).join(' • ')}</Text>
-                            </>
+                            <Text style={localStyles.subtitle}>{[division, gender].filter(Boolean).join(' • ')}</Text>
                         )}
-                        <SizeBox height={16} />
+                        <Text style={localStyles.helper}>{helperCopy}</Text>
                     </View>
                 }
-                style={{ flex: 1 }}
-                ListFooterComponent={<SizeBox height={30} />}
+                ListEmptyComponent={
+                    <View style={localStyles.emptyBox}>
+                        {isLoading ? (
+                            <>
+                                <ActivityIndicator color={colors.primaryColor} />
+                                <SizeBox height={10} />
+                                <Text style={styles.subText}>{t('Loading photos...')}</Text>
+                            </>
+                        ) : (
+                            <Text style={styles.subText}>{emptyCopy}</Text>
+                        )}
+                    </View>
+                }
             />
         </View>
     )

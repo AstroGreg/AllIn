@@ -162,7 +162,9 @@ const CompetitionsScreen = ({ navigation }: any) => {
                 navigation.navigate('CompetitionDetailsScreen', {
                     eventId: item.eventId,
                     name: item.name,
-                    description: item.description,
+                    location: item.location,
+                    date: item.date,
+                    organizingClub: item.organizingClub,
                     competitionType: item.competitionType,
                 });
             }}
@@ -293,12 +295,13 @@ const CompetitionsScreen = ({ navigation }: any) => {
                             if (subscribedIds.has(eventId)) badges.push('Subscribed');
                             const location = event.event_location ? String(event.event_location) : '';
                             const date = event.event_date ? new Date(event.event_date).toLocaleDateString() : '';
-                            const description = [location, date].filter(Boolean).join(' • ');
                             return renderEventCard({
                                 id: eventId,
                                 eventId,
                                 name: event.event_name || event.event_title || t('Competition'),
-                                description,
+                                location,
+                                date,
+                                organizingClub: String((event as any)?.organizing_club || '').trim(),
                                 badges,
                                 competitionType: resolveCompetitionType(event),
                             });

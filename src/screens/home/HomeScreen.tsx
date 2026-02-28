@@ -741,12 +741,27 @@ const HomeScreen = ({ navigation }: any) => {
                 },
                 {
                     label: t('Go to event'),
-                    onPress: () =>
+                    onPress: () => {
+                        const location = String((safeMedia as any)?.event_location || '').trim();
+                        const organizer = String(
+                            (safeMedia as any)?.organizing_club
+                            || (safeMedia as any)?.organizer_club
+                            || '',
+                        ).trim();
+                        const eventDate = String((safeMedia as any)?.event_date || '').trim();
+                        const typeToken = `${(safeMedia as any)?.competition_type || ''} ${label} ${location}`.toLowerCase();
+                        const competitionType = /road|trail|marathon|veldloop|veldlopen|cross|5k|10k|half|ultra|city\s*run/.test(typeToken)
+                            ? 'road'
+                            : 'track';
                         navigation.navigate('CompetitionDetailsScreen', {
+                            eventId: safeMedia?.event_id ? String(safeMedia.event_id) : undefined,
                             name: label,
-                            description: `${t('Competition held in')} ${label}`,
-                            competitionType: 'track',
-                        }),
+                            location,
+                            date: eventDate,
+                            organizingClub: organizer,
+                            competitionType,
+                        });
+                    },
                 },
                 {
                     label: t('Mark as inappropriate content'),

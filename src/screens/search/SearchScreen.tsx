@@ -1,12 +1,11 @@
-import { View, Text, ScrollView, TouchableOpacity, Image, Modal, Pressable, TextInput, useWindowDimensions } from 'react-native'
+import { View, Text, ScrollView, TouchableOpacity, Modal, Pressable, TextInput, Platform, ActivityIndicator } from 'react-native'
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { CalendarList } from 'react-native-calendars'
+import DateTimePicker from '@react-native-community/datetimepicker'
 import { createStyles } from './SearchStyles'
 import SizeBox from '../../constants/SizeBox'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useTheme } from '../../context/ThemeContext'
 import Icons from '../../constants/Icons'
-import Images from '../../constants/Images'
 import FastImage from 'react-native-fast-image'
 import { SearchNormal1, Calendar, Location, CloseCircle, Clock, ArrowDown2, Camera } from 'iconsax-react-nativejs'
 import { useTranslation } from 'react-i18next'
@@ -18,8 +17,11 @@ import UnifiedSearchInput from '../../components/unifiedSearchInput/UnifiedSearc
 const FILTERS = ['Competition', 'Person', 'Group', 'Location'] as const
 type FilterKey = typeof FILTERS[number]
 type ResultSectionKey = 'events' | 'people' | 'groups'
+const DEFAULT_COMPETITIONS_INITIAL_LIMIT = 10;
+const SEARCH_RESULTS_INITIAL_LIMIT = 20;
+const SCROLL_LOAD_THRESHOLD_PX = 220;
 
-type CompetitionType = 'track' | 'marathon'
+type CompetitionType = 'track' | 'road'
 type CompetitionTypeFilter = 'all' | CompetitionType
 
 interface EventResult {
@@ -28,6 +30,7 @@ interface EventResult {
     date: string;
     location: string;
     competitionType: CompetitionType;
+    organizingClub?: string;
 }
 
 interface PersonResult {
@@ -38,6 +41,7 @@ interface PersonResult {
     role: 'Athlete' | 'Photographer';
     activity: string;
     location: string;
+    runningClub?: string;
     isFollowing?: boolean;
     events?: string[];
 }
@@ -51,13 +55,28 @@ interface GroupResult {
     images: string[];
 }
 
+const filterToSection = (filter: FilterKey): ResultSectionKey => {
+    if (filter === 'Group') return 'groups'
+    if (filter === 'Person') return 'people'
+    return 'events'
+}
+
 const SearchScreen = ({ navigation }: any) => {
     const insets = useSafeAreaInsets();
     const { colors } = useTheme();
     const { t } = useTranslation();
     const { apiAccessToken } = useAuth();
-    const { width: windowWidth } = useWindowDimensions();
     const Styles = createStyles(colors);
+    const isLightTheme = String(colors.backgroundColor || '').toLowerCase() === '#ffffff';
+    const pickerVisualProps = useMemo<any>(() => (
+        Platform.OS === 'ios'
+            ? {
+                themeVariant: isLightTheme ? 'light' : 'dark',
+                textColor: isLightTheme ? '#0B1220' : '#F8FAFC',
+                accentColor: colors.primaryColor,
+            }
+            : {}
+    ), [colors.primaryColor, isLightTheme]);
     const [ownProfileId, setOwnProfileId] = useState<string | null>(null);
     const searchInputRef = useRef<TextInput>(null);
 
@@ -77,20 +96,27 @@ const SearchScreen = ({ navigation }: any) => {
     const [showIosPicker, setShowIosPicker] = useState(false);
     const [calendarStart, setCalendarStart] = useState<string | null>(null);
     const [calendarEnd, setCalendarEnd] = useState<string | null>(null);
+    const [nativePickerVisible, setNativePickerVisible] = useState(false);
+    const [nativePickerDate, setNativePickerDate] = useState<Date>(new Date());
+    const [activeDateField, setActiveDateField] = useState<'start' | 'end' | null>(null);
     const [eventResults, setEventResults] = useState<EventResult[]>([]);
     const [eventsError, setEventsError] = useState<string | null>(null);
+    const [isLoadingEvents, setIsLoadingEvents] = useState(false);
     const [groupResults, setGroupResults] = useState<GroupResult[]>([]);
     const [groupsError, setGroupsError] = useState<string | null>(null);
     const [peopleResults, setPeopleResults] = useState<PersonResult[]>([]);
     const [peopleError, setPeopleError] = useState<string | null>(null);
     const [groupLinkedPeople, setGroupLinkedPeople] = useState<PersonResult[]>([]);
     const [followBusyProfileId, setFollowBusyProfileId] = useState<string | null>(null);
+    const [defaultVisibleCount, setDefaultVisibleCount] = useState(DEFAULT_COMPETITIONS_INITIAL_LIMIT);
+    const [searchVisibleCount, setSearchVisibleCount] = useState(SEARCH_RESULTS_INITIAL_LIMIT);
+    const loadMoreLockedRef = useRef(false);
  
     const competitionTypeFilters = useMemo(
         () => ([
             { key: 'all' as const, label: 'all' },
             { key: 'track' as const, label: 'trackAndField' },
-            { key: 'marathon' as const, label: 'roadAndTrail' },
+            { key: 'road' as const, label: 'roadAndTrail' },
         ]),
         [],
     );
@@ -105,9 +131,15 @@ const SearchScreen = ({ navigation }: any) => {
         const year = d.getFullYear();
         return `${day}/${month}/${year}`;
     }, []);
-    const resolveCompetitionType = useCallback((name?: string | null) => {
-        const token = String(name || '').toLowerCase();
-        if (/marathon|trail|road|run|5k|10k|half/.test(token)) return 'marathon' as const;
+    const resolveCompetitionType = useCallback((params?: {
+        type?: string | null;
+        name?: string | null;
+        location?: string | null;
+    }) => {
+        const token = `${params?.type || ''} ${params?.name || ''} ${params?.location || ''}`.toLowerCase();
+        if (/road|trail|marathon|veldloop|veldlopen|cross|5k|10k|half|ultra|city\s*run/.test(token)) {
+            return 'road' as const;
+        }
         return 'track' as const;
     }, []);
 
@@ -116,9 +148,11 @@ const SearchScreen = ({ navigation }: any) => {
         if (!apiAccessToken) {
             setEventResults([]);
             setEventsError(null);
+            setIsLoadingEvents(false);
             return () => {};
         }
         setEventsError(null);
+        setIsLoadingEvents(true);
         searchEvents(apiAccessToken, { q: '', limit: 200 })
             .then((res) => {
                 if (!mounted) return;
@@ -129,15 +163,28 @@ const SearchScreen = ({ navigation }: any) => {
                         name: String(event.event_name || event.event_title || t('Competition')),
                         date: formatEventDate(event.event_date),
                         location: String(event.event_location || ''),
-                        competitionType: resolveCompetitionType(event.event_name || event.event_title),
+                        competitionType: resolveCompetitionType({
+                            type: event.competition_type,
+                            name: event.event_name || event.event_title,
+                            location: event.event_location,
+                        }),
+                        organizingClub: String(
+                            event.organizing_club
+                            || event.organizer_club
+                            || event.competition_organizing_club
+                            || event.competition_organizer_name
+                            || '',
+                        ).trim(),
                     })),
                 );
+                setIsLoadingEvents(false);
             })
             .catch((e: any) => {
                 if (!mounted) return;
                 const msg = e instanceof ApiError ? e.message : String(e?.message ?? e);
                 setEventsError(msg);
                 setEventResults([]);
+                setIsLoadingEvents(false);
             });
         return () => {
             mounted = false;
@@ -205,8 +252,6 @@ const SearchScreen = ({ navigation }: any) => {
     }, [filterOrder, filterValues]);
 
     const matchValue = (value: string, q: string) => (q ? value.toLowerCase().includes(q) : true);
-    const matchAny = (values: string[] | undefined, q: string) =>
-        q ? (values ?? []).some((value) => value.toLowerCase().includes(q)) : true;
 
     const shouldShowPeople = hasTypedQuery && (personQuery.length > 0 || locationQuery.length > 0 || groupQuery.length > 0);
     const shouldShowGroups = hasTypedQuery && groupQuery.length > 0;
@@ -225,20 +270,25 @@ const SearchScreen = ({ navigation }: any) => {
             .then((res) => {
                 if (!mounted) return;
                 const rows = Array.isArray(res?.groups) ? res.groups : [];
-                const placeholderImages = [
-                    'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100',
-                    'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=100',
-                    'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=100',
-                    'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100',
-                ];
                 setGroupResults(
                     rows.map((group) => ({
                         id: String(group.group_id),
                         group_id: String(group.group_id),
                         name: String(group.name || t('Group')),
                         activity: `${Number(group.member_count ?? 0)} ${t('Members')}`,
-                        location: String(group.description || ''),
-                        images: placeholderImages,
+                        location: (function () {
+                            const candidates = [
+                                String((group as any)?.city || '').trim(),
+                                String((group as any)?.base_location || '').trim(),
+                                String((group as any)?.location || '').trim(),
+                            ].filter(Boolean);
+                            return candidates.find((value) => value.length <= 48 && !/[.!?]/.test(value))
+                                || candidates[0]
+                                || '';
+                        })(),
+                        images: [
+                            String((group as any).avatar_url || (group as any).group_avatar_url || group.owner_avatar_url || '').trim(),
+                        ].filter(Boolean),
                     })),
                 );
             })
@@ -279,7 +329,13 @@ const SearchScreen = ({ navigation }: any) => {
                         avatar_url: profile.avatar_url ?? null,
                         role: 'Athlete',
                         activity: t('Profile'),
-                        location: '',
+                        location: String((profile as any)?.location || '').trim(),
+                        runningClub: String(
+                            (profile as any)?.track_field_club ||
+                            (profile as any)?.running_club ||
+                            (profile as any)?.athletics_club ||
+                            '',
+                        ).trim(),
                     })),
                 );
             })
@@ -350,12 +406,12 @@ const SearchScreen = ({ navigation }: any) => {
         return new Date(year, month - 1, day, 12, 0, 0, 0);
     };
 
-    const toDateString = (date: Date) => {
+    const toDateString = useCallback((date: Date) => {
         const yyyy = date.getFullYear();
         const mm = String(date.getMonth() + 1).padStart(2, '0');
         const dd = String(date.getDate()).padStart(2, '0');
         return `${yyyy}-${mm}-${dd}`;
-    };
+    }, []);
 
     const fromDateString = (value: string, isEnd: boolean) => {
         const [year, month, day] = value.split('-').map(Number);
@@ -376,7 +432,17 @@ const SearchScreen = ({ navigation }: any) => {
         return true;
     }, [timeRange.end, timeRange.start]);
 
+    const shouldShowEvents = useMemo(() => {
+        if (!hasTypedQuery) return true;
+        const activeFilterValue = String(filterValues[activeFilter] ?? '').trim();
+        if (!activeFilterValue) return false;
+        if (activeFilter === 'Competition' || activeFilter === 'Location') return true;
+        if (competitionQuery.length > 0 || locationQuery.length > 0) return true;
+        return false;
+    }, [activeFilter, competitionQuery, filterValues, hasTypedQuery, locationQuery]);
+
     const filteredEvents = useMemo(() => {
+        if (hasTypedQuery && !shouldShowEvents) return [];
         return eventResults.filter((event) => {
             const eventDate = parseEventDate(event.date);
             const rangeOk = timeRange.start || timeRange.end ? isWithinRange(eventDate) : true;
@@ -388,13 +454,10 @@ const SearchScreen = ({ navigation }: any) => {
                 typeOk
             );
         });
-    }, [competitionQuery, competitionTypeFilter, eventResults, isWithinRange, locationQuery, timeRange.end, timeRange.start]);
+    }, [competitionQuery, competitionTypeFilter, eventResults, hasTypedQuery, isWithinRange, locationQuery, shouldShowEvents, timeRange.end, timeRange.start]);
 
     const filteredPeople = useMemo(() => {
         if (!hasTypedQuery || !shouldShowPeople) return [];
-        const competitionFilter = personQuery.length > 0 ? competitionQuery : '';
-        const eventFilteredNames = new Set(filteredEvents.map((event) => event.name.toLowerCase()));
-        const shouldApplyEventFilters = Boolean(timeRange.start || timeRange.end || competitionTypeFilter !== 'all');
         const mergedPeople = [...peopleResults, ...groupLinkedPeople];
         const seenProfiles = new Set<string>();
         return mergedPeople.filter((person) => {
@@ -403,29 +466,18 @@ const SearchScreen = ({ navigation }: any) => {
                 if (seenProfiles.has(pid)) return false;
                 seenProfiles.add(pid);
             }
-            const hasEventMatch = matchAny(person.events, competitionFilter);
-            const withinEventFilters = !shouldApplyEventFilters
-                ? true
-                : (person.events ?? []).some((eventName) => eventFilteredNames.has(eventName.toLowerCase()));
             return (
                 matchValue(person.name, personQuery) &&
-                matchValue(person.location, locationQuery) &&
-                hasEventMatch &&
-                withinEventFilters
+                matchValue(person.location, locationQuery)
             );
         });
     }, [
-        competitionQuery,
         hasTypedQuery,
-        competitionTypeFilter,
-        filteredEvents,
         groupLinkedPeople,
         locationQuery,
         personQuery,
         peopleResults,
         shouldShowPeople,
-        timeRange.end,
-        timeRange.start,
     ]);
 
     const filteredGroups = useMemo(() => {
@@ -479,29 +531,108 @@ const SearchScreen = ({ navigation }: any) => {
         setFilterOrder((prev) => prev.filter((entry) => entry !== filter));
     };
 
+    const preferredSection = useMemo(() => filterToSection(activeFilter), [activeFilter])
+
     const orderedResultSections = useMemo(() => {
-        const mapped = activeFilters
-            .map((filter): ResultSectionKey | null => {
-                if (filter === 'Competition') return 'events';
-                if (filter === 'Person') return 'people';
-                if (filter === 'Group') return 'groups';
-                return null;
-            })
-            .filter(Boolean) as ResultSectionKey[];
-
-        const uniqueInOrder = Array.from(new Set(mapped));
-        const defaultOrder: ResultSectionKey[] = ['events', 'people', 'groups'];
-        const merged = [...uniqueInOrder, ...defaultOrder.filter((key) => !uniqueInOrder.includes(key))];
-
+        const defaultOrder: ResultSectionKey[] = ['events', 'people', 'groups']
+        const merged = [
+            preferredSection,
+            ...defaultOrder.filter((key) => key !== preferredSection),
+        ]
         return merged.filter((key) => {
-            if (key === 'events') return filteredEvents.length > 0;
-            if (key === 'people') return filteredPeople.length > 0;
-            return filteredGroups.length > 0;
-        });
-    }, [activeFilters, filteredEvents.length, filteredGroups.length, filteredPeople.length]);
+            if (key === 'events') return filteredEvents.length > 0
+            if (key === 'people') return filteredPeople.length > 0
+            return filteredGroups.length > 0
+        })
+    }, [filteredEvents.length, filteredGroups.length, filteredPeople.length, preferredSection])
+
+    const latestCompetitions = useMemo(() => {
+        const sorted = [...filteredEvents].sort((a, b) => {
+            const ad = parseEventDate(a.date)
+            const bd = parseEventDate(b.date)
+            if (ad && bd) return bd.getTime() - ad.getTime()
+            if (bd) return 1
+            if (ad) return -1
+            return String(a.name).localeCompare(String(b.name))
+        })
+        return sorted
+    }, [filteredEvents])
+
+    const visibleLatestCompetitions = useMemo(
+        () => latestCompetitions.slice(0, defaultVisibleCount),
+        [defaultVisibleCount, latestCompetitions],
+    );
+    const visibleFilteredEvents = useMemo(
+        () => filteredEvents.slice(0, searchVisibleCount),
+        [filteredEvents, searchVisibleCount],
+    );
+    const visibleFilteredPeople = useMemo(
+        () => filteredPeople.slice(0, searchVisibleCount),
+        [filteredPeople, searchVisibleCount],
+    );
+    const visibleFilteredGroups = useMemo(
+        () => filteredGroups.slice(0, searchVisibleCount),
+        [filteredGroups, searchVisibleCount],
+    );
+    const maxSearchSectionLength = useMemo(
+        () => Math.max(filteredEvents.length, filteredPeople.length, filteredGroups.length),
+        [filteredEvents.length, filteredGroups.length, filteredPeople.length],
+    );
+    const hasMoreDefaultCompetitions = visibleLatestCompetitions.length < latestCompetitions.length;
+    const hasMoreSearchResults = searchVisibleCount < maxSearchSectionLength;
+
+    useEffect(() => {
+        loadMoreLockedRef.current = false;
+        if (!hasTypedQuery) {
+            setDefaultVisibleCount(DEFAULT_COMPETITIONS_INITIAL_LIMIT);
+            return;
+        }
+        setSearchVisibleCount(SEARCH_RESULTS_INITIAL_LIMIT);
+    }, [
+        hasTypedQuery,
+        activeFilter,
+        competitionQuery,
+        groupQuery,
+        locationQuery,
+        personQuery,
+        competitionTypeFilter,
+        timeRange.start,
+        timeRange.end,
+    ]);
+
+    const handleMainScroll = useCallback((event: any) => {
+        const native = event?.nativeEvent;
+        if (!native) return;
+        const { contentOffset, contentSize, layoutMeasurement } = native;
+        const distanceToBottom = contentSize.height - (contentOffset.y + layoutMeasurement.height);
+        if (distanceToBottom > SCROLL_LOAD_THRESHOLD_PX) {
+            loadMoreLockedRef.current = false;
+            return;
+        }
+        if (loadMoreLockedRef.current) return;
+        if (!hasTypedQuery && !hasMoreDefaultCompetitions) return;
+        if (hasTypedQuery && (!hasActiveFilters || !hasMoreSearchResults)) return;
+        loadMoreLockedRef.current = true;
+        if (!hasTypedQuery) {
+            setDefaultVisibleCount((prev) =>
+                Math.min(prev + DEFAULT_COMPETITIONS_INITIAL_LIMIT, latestCompetitions.length),
+            );
+            return;
+        }
+        setSearchVisibleCount((prev) =>
+            Math.min(prev + SEARCH_RESULTS_INITIAL_LIMIT, maxSearchSectionLength),
+        );
+    }, [
+        hasTypedQuery,
+        hasMoreDefaultCompetitions,
+        hasActiveFilters,
+        hasMoreSearchResults,
+        latestCompetitions.length,
+        maxSearchSectionLength,
+    ]);
 
     const getCompetitionTypeLabel = (type: CompetitionType) => {
-        if (type === 'marathon') return t('roadAndTrail');
+        if (type === 'road') return t('roadAndTrail');
         return t('trackAndField');
     };
 
@@ -512,8 +643,10 @@ const SearchScreen = ({ navigation }: any) => {
             onPress={() => navigation.navigate('CompetitionDetailsScreen', {
                 eventId: event.id,
                 name: event.name,
-                description: `${t('Competition held in')} ${event.location}`,
+                location: event.location,
+                date: event.date,
                 competitionType: event.competitionType,
+                organizingClub: event.organizingClub,
             })}
         >
             <View style={Styles.eventIconContainer}>
@@ -529,17 +662,29 @@ const SearchScreen = ({ navigation }: any) => {
                 </View>
                 <SizeBox height={4} />
                 <View style={Styles.eventDetails}>
-                    <View style={Styles.eventDetailItem}>
-                        <Calendar size={14} color="#9B9F9F" variant="Linear" />
-                        <SizeBox width={4} />
-                        <Text style={Styles.eventDetailText}>{event.date}</Text>
-                    </View>
-                    <View style={Styles.eventDetailItem}>
-                        <Location size={14} color="#9B9F9F" variant="Linear" />
-                        <SizeBox width={4} />
-                        <Text style={Styles.eventDetailText}>{event.location}</Text>
-                    </View>
+                    {event.date ? (
+                        <View style={Styles.eventDetailItem}>
+                            <Calendar size={14} color="#9B9F9F" variant="Linear" />
+                            <SizeBox width={4} />
+                            <Text style={Styles.eventDetailText}>{event.date}</Text>
+                        </View>
+                    ) : null}
+                    {event.location ? (
+                        <View style={Styles.eventDetailItem}>
+                            <Location size={14} color="#9B9F9F" variant="Linear" />
+                            <SizeBox width={4} />
+                            <Text style={Styles.eventDetailText}>{event.location}</Text>
+                        </View>
+                    ) : null}
                 </View>
+                {event.organizingClub ? (
+                    <>
+                        <SizeBox height={4} />
+                        <Text style={Styles.eventMetaText} numberOfLines={1}>
+                            {event.organizingClub}
+                        </Text>
+                    </>
+                ) : null}
             </View>
         </TouchableOpacity>
     );
@@ -552,11 +697,19 @@ const SearchScreen = ({ navigation }: any) => {
         >
             <View style={Styles.userCardContent}>
                 <View style={Styles.userHeader}>
-                    <FastImage
-                        source={person.avatar_url ? { uri: person.avatar_url } : Images.profilePic}
-                        style={Styles.userAvatar}
-                        resizeMode="cover"
-                    />
+                    {person.avatar_url ? (
+                        <FastImage
+                            source={{ uri: person.avatar_url }}
+                            style={Styles.userAvatar}
+                            resizeMode="cover"
+                        />
+                    ) : (
+                        <View style={Styles.userAvatarPlaceholder}>
+                            <Text style={Styles.userAvatarPlaceholderText}>
+                                {String(person.name || '').trim().charAt(0).toUpperCase() || '?'}
+                            </Text>
+                        </View>
+                    )}
                     <SizeBox width={8} />
                     <View style={Styles.userInfo}>
                         <View style={Styles.userNameRow}>
@@ -575,11 +728,13 @@ const SearchScreen = ({ navigation }: any) => {
                                 <SizeBox width={4} />
                                 <Text style={Styles.userDetailText}>{person.activity}</Text>
                             </View>
-                            <View style={Styles.userDetailItem}>
-                                <Location size={16} color="#9B9F9F" variant="Linear" />
-                                <SizeBox width={4} />
-                                <Text style={Styles.userDetailText}>{person.location}</Text>
-                            </View>
+                            {(person.runningClub || person.location) ? (
+                                <View style={Styles.userDetailItem}>
+                                    <Text style={Styles.userDetailText}>
+                                        {person.runningClub || person.location}
+                                    </Text>
+                                </View>
+                            ) : null}
                         </View>
                     </View>
                 </View>
@@ -622,6 +777,18 @@ const SearchScreen = ({ navigation }: any) => {
         </TouchableOpacity>
     );
 
+    const renderGroupAvatarCell = (uri: string | undefined, style: any) => (
+        uri ? (
+            <FastImage
+                source={{ uri }}
+                style={style}
+                resizeMode="cover"
+            />
+        ) : (
+            <View style={[style, Styles.groupAvatarPlaceholder]} />
+        )
+    );
+
     const renderGroupCard = (group: GroupResult) => (
         <TouchableOpacity
             key={group.id}
@@ -632,24 +799,12 @@ const SearchScreen = ({ navigation }: any) => {
                 <View style={Styles.userHeader}>
                     <View style={Styles.groupAvatarGrid}>
                         <View style={Styles.groupAvatarRow}>
-                            <FastImage
-                                source={{ uri: group.images[0] }}
-                                style={Styles.groupAvatarTopLeft}
-                            />
-                            <FastImage
-                                source={{ uri: group.images[1] }}
-                                style={Styles.groupAvatarTopRight}
-                            />
+                            {renderGroupAvatarCell(group.images[0], Styles.groupAvatarTopLeft)}
+                            {renderGroupAvatarCell(group.images[1], Styles.groupAvatarTopRight)}
                         </View>
                         <View style={Styles.groupAvatarRow}>
-                            <FastImage
-                                source={{ uri: group.images[2] }}
-                                style={Styles.groupAvatarBottomLeft}
-                            />
-                            <FastImage
-                                source={{ uri: group.images[3] }}
-                                style={Styles.groupAvatarBottomRight}
-                            />
+                            {renderGroupAvatarCell(group.images[2], Styles.groupAvatarBottomLeft)}
+                            {renderGroupAvatarCell(group.images[3], Styles.groupAvatarBottomRight)}
                         </View>
                     </View>
                     <SizeBox width={8} />
@@ -666,11 +821,13 @@ const SearchScreen = ({ navigation }: any) => {
                                 <SizeBox width={4} />
                                 <Text style={Styles.userDetailText}>{group.activity}</Text>
                             </View>
-                            <View style={Styles.userDetailItem}>
-                                <Location size={16} color="#9B9F9F" variant="Linear" />
-                                <SizeBox width={4} />
-                                <Text style={Styles.userDetailText}>{group.location}</Text>
-                            </View>
+                            {group.location ? (
+                                <View style={Styles.userDetailItem}>
+                                    <Location size={16} color="#9B9F9F" variant="Linear" />
+                                    <SizeBox width={4} />
+                                    <Text style={Styles.userDetailText}>{group.location}</Text>
+                                </View>
+                            ) : null}
                         </View>
                     </View>
                 </View>
@@ -680,13 +837,13 @@ const SearchScreen = ({ navigation }: any) => {
 
     const renderNoResults = (label: string) => (
         <View style={Styles.noResultsContainer}>
-            <Image
-                source={Images.noResult}
-                style={Styles.noResultsImage}
-                resizeMode="cover"
-            />
-            <SizeBox height={14} />
             <Text style={Styles.noResultsText}>{label}</Text>
+        </View>
+    );
+
+    const renderLoadingSpinner = () => (
+        <View style={Styles.loadingSpinnerWrap}>
+            <ActivityIndicator size="small" color={colors.primaryColor} />
         </View>
     );
 
@@ -696,11 +853,10 @@ const SearchScreen = ({ navigation }: any) => {
         const endSeed = timeRange.end ? toDateString(timeRange.end) : null;
         setCalendarStart(startSeed);
         setCalendarEnd(endSeed);
+        setNativePickerVisible(false);
+        setActiveDateField(null);
         setShowIosPicker(true);
     };
-
-    const modalWidth = Math.min(windowWidth * 0.9, 420);
-    const calendarWidth = Math.max(0, modalWidth - 40);
 
     const setQuickRange = (preset: 'week' | 'month' | 'year') => {
         const today = new Date();
@@ -753,6 +909,61 @@ const SearchScreen = ({ navigation }: any) => {
         return `${startText} → ${endText}`;
     };
 
+    const closeNativePicker = useCallback(() => {
+        setActiveDateField(null);
+        setNativePickerVisible(false);
+    }, []);
+
+    const openRangeFieldPicker = useCallback((field: 'start' | 'end') => {
+        const fallback = toDateString(new Date());
+        const seedValue = field === 'start'
+            ? (calendarStart ?? calendarEnd ?? fallback)
+            : (calendarEnd ?? calendarStart ?? fallback);
+        const seed = fromDateString(seedValue, field === 'end') ?? new Date();
+        setActiveDateField(field);
+        setNativePickerDate(seed);
+        setNativePickerVisible(true);
+    }, [calendarEnd, calendarStart, toDateString]);
+
+    const applyPickedDateToField = useCallback((pickedDate: Date, field: 'start' | 'end') => {
+        const selectedDay = toDateString(pickedDate);
+        if (field === 'start') {
+            setCalendarStart(selectedDay);
+            if (calendarEnd && selectedDay > calendarEnd) {
+                setCalendarEnd(selectedDay);
+            }
+            return;
+        }
+        if (!calendarStart || selectedDay < calendarStart) {
+            setCalendarStart(selectedDay);
+            setCalendarEnd(selectedDay);
+            return;
+        }
+        setCalendarEnd(selectedDay);
+    }, [calendarEnd, calendarStart, toDateString]);
+
+    const onNativePickerChange = useCallback((event: any, selectedDate?: Date) => {
+        if (event?.type === 'dismissed') {
+            closeNativePicker();
+            return;
+        }
+        const pickedDate = selectedDate ?? nativePickerDate;
+        setNativePickerDate(pickedDate);
+        if (Platform.OS === 'android' && activeDateField) {
+            applyPickedDateToField(pickedDate, activeDateField);
+            closeNativePicker();
+        }
+    }, [activeDateField, applyPickedDateToField, closeNativePicker, nativePickerDate]);
+
+    const applyNativePickerSelection = useCallback(() => {
+        if (!activeDateField) {
+            closeNativePicker();
+            return;
+        }
+        applyPickedDateToField(nativePickerDate, activeDateField);
+        closeNativePicker();
+    }, [activeDateField, applyPickedDateToField, closeNativePicker, nativePickerDate]);
+
     const searchPlaceholder = (() => {
         if (activeFilter === 'Competition') return t('Type competition name');
         if (activeFilter === 'Person') return t('Type person name');
@@ -770,7 +981,13 @@ const SearchScreen = ({ navigation }: any) => {
                 <View style={Styles.headerSpacer} />
             </View>
 
-            <ScrollView style={Styles.container} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="always">
+            <ScrollView
+                style={Styles.container}
+                showsVerticalScrollIndicator={false}
+                keyboardShouldPersistTaps="always"
+                onScroll={handleMainScroll}
+                scrollEventThrottle={16}
+            >
                 <SizeBox height={24} />
 
                 <View style={Styles.searchRow}>
@@ -888,6 +1105,27 @@ const SearchScreen = ({ navigation }: any) => {
 
                 <SizeBox height={24} />
 
+                {!hasTypedQuery && (
+                    <>
+                        <View style={Styles.resultsHeader}>
+                            <Text style={Styles.resultsTitle}>{t('Latest competitions')}</Text>
+                            <View style={Styles.resultsBadge}>
+                                <Text style={Styles.resultsBadgeText}>{latestCompetitions.length} {t('competitions')}</Text>
+                            </View>
+                        </View>
+                        <SizeBox height={16} />
+                        {eventsError ? (
+                            <Text style={Styles.noResultsText}>{eventsError}</Text>
+                        ) : isLoadingEvents ? (
+                            renderLoadingSpinner()
+                        ) : latestCompetitions.length > 0 ? (
+                            visibleLatestCompetitions.map(renderEventCard)
+                        ) : (
+                            renderNoResults(t('No competitions found'))
+                        )}
+                    </>
+                )}
+
                 {hasTypedQuery && hasActiveFilters && (
                     <>
                         <View style={Styles.resultsHeader}>
@@ -928,7 +1166,7 @@ const SearchScreen = ({ navigation }: any) => {
                                             <React.Fragment key="results-events">
                                                 <Text style={Styles.sectionTitle}>{t('Competitions')}</Text>
                                                 <SizeBox height={10} />
-                                                {filteredEvents.map(renderEventCard)}
+                                                {visibleFilteredEvents.map(renderEventCard)}
                                                 {!isLast ? <SizeBox height={20} /> : null}
                                             </React.Fragment>
                                         );
@@ -938,7 +1176,7 @@ const SearchScreen = ({ navigation }: any) => {
                                             <React.Fragment key="results-people">
                                                 <Text style={Styles.sectionTitle}>{t('People')}</Text>
                                                 <SizeBox height={10} />
-                                                {filteredPeople.map(renderPersonCard)}
+                                                {visibleFilteredPeople.map(renderPersonCard)}
                                                 {!isLast ? <SizeBox height={20} /> : null}
                                             </React.Fragment>
                                         );
@@ -947,7 +1185,7 @@ const SearchScreen = ({ navigation }: any) => {
                                         <React.Fragment key="results-groups">
                                             <Text style={Styles.sectionTitle}>{t('Groups')}</Text>
                                             <SizeBox height={10} />
-                                            {filteredGroups.map(renderGroupCard)}
+                                            {visibleFilteredGroups.map(renderGroupCard)}
                                             {!isLast ? <SizeBox height={20} /> : null}
                                         </React.Fragment>
                                     );
@@ -964,12 +1202,18 @@ const SearchScreen = ({ navigation }: any) => {
                 visible={showIosPicker}
                 transparent
                 animationType="fade"
-                onRequestClose={() => setShowIosPicker(false)}
+                onRequestClose={() => {
+                    setShowIosPicker(false);
+                    closeNativePicker();
+                }}
             >
                 <View style={Styles.modalOverlay}>
                     <Pressable
                         style={{ position: 'absolute', top: 0, bottom: 0, left: 0, right: 0 }}
-                        onPress={() => setShowIosPicker(false)}
+                        onPress={() => {
+                            setShowIosPicker(false);
+                            closeNativePicker();
+                        }}
                     />
                     <View style={Styles.dateModalContainer}>
                         <Text style={Styles.dateModalTitle}>{t('selectDateRange')}</Text>
@@ -996,97 +1240,77 @@ const SearchScreen = ({ navigation }: any) => {
                         </View>
                         <SizeBox height={8} />
                         <View style={Styles.rangeHeaderRow}>
-                            <View style={Styles.rangePill}>
+                            <TouchableOpacity
+                                style={Styles.rangePill}
+                                onPress={() => openRangeFieldPicker('start')}
+                                activeOpacity={0.8}
+                            >
                                 <Text style={Styles.rangePillLabel}>{t('start')}</Text>
                                 <Text style={Styles.rangePillValue}>{calendarStart ?? t('selectDate')}</Text>
-                            </View>
-                            <View style={Styles.rangePill}>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                                style={Styles.rangePill}
+                                onPress={() => openRangeFieldPicker('end')}
+                                activeOpacity={0.8}
+                            >
                                 <Text style={Styles.rangePillLabel}>{t('end')}</Text>
                                 <Text style={Styles.rangePillValue}>{calendarEnd ?? t('selectDate')}</Text>
-                            </View>
+                            </TouchableOpacity>
                         </View>
-                        <SizeBox height={12} />
-                        <CalendarList
-                            style={Styles.calendarContainer}
-                            current={calendarStart ?? toDateString(new Date())}
-                            initialDate={calendarStart ?? toDateString(new Date())}
-                            firstDay={1}
-                            calendarWidth={calendarWidth}
-                            onDayPress={(day) => {
-                                const selected = day.dateString;
-                                if (!calendarStart || (calendarStart && calendarEnd)) {
-                                    setCalendarStart(selected);
-                                    setCalendarEnd(null);
-                                    return;
-                                }
-                                if (calendarStart && !calendarEnd) {
-                                    if (selected < calendarStart) {
-                                        setCalendarStart(selected);
-                                        setCalendarEnd(null);
-                                    } else {
-                                        setCalendarEnd(selected);
-                                    }
-                                }
-                            }}
-                            markingType="period"
-                            markedDates={(() => {
-                                if (!calendarStart) return {};
-                                const start = calendarStart;
-                                const end = calendarEnd ?? calendarStart;
-                                const marks: Record<string, any> = {};
-                                let current = new Date(start);
-                                const endDate = new Date(end);
-                                while (current <= endDate) {
-                                    const key = toDateString(current);
-                                    const isStart = key === start;
-                                    const isEnd = key === end;
-                                    marks[key] = {
-                                        startingDay: isStart,
-                                        endingDay: isEnd,
-                                        color: isStart || isEnd ? colors.primaryColor : colors.secondaryBlueColor,
-                                        textColor: isStart || isEnd ? colors.pureWhite : colors.mainTextColor,
-                                    };
-                                    current.setDate(current.getDate() + 1);
-                                }
-                                return marks;
-                            })()}
-                            theme={{
-                                calendarBackground: colors.modalBackground,
-                                backgroundColor: colors.modalBackground,
-                                dayTextColor: colors.mainTextColor,
-                                monthTextColor: colors.mainTextColor,
-                                textSectionTitleColor: colors.subTextColor,
-                                selectedDayBackgroundColor: colors.primaryColor,
-                                selectedDayTextColor: colors.pureWhite,
-                                todayTextColor: colors.primaryColor,
-                                weekVerticalMargin: 0,
-                                textDayHeaderFontSize: 11,
-                                textDayFontSize: 14,
-                            }}
-                            pastScrollRange={12}
-                            futureScrollRange={12}
-                            scrollEnabled
-                            showScrollIndicator
-                        />
                         <SizeBox height={12} />
                         <View style={Styles.modalButtonRow}>
                             <TouchableOpacity
                                 style={Styles.modalCancelButton}
-                                onPress={() => setShowIosPicker(false)}
+                                onPress={() => {
+                                    setShowIosPicker(false);
+                                    closeNativePicker();
+                                }}
                             >
-                                <Text style={Styles.modalCancelText}>{t('Cancel')}</Text>
+                                <Text style={Styles.modalCancelText}>{t('cancel')}</Text>
                             </TouchableOpacity>
                             <TouchableOpacity
                                 style={[Styles.modalSubmitButton, !calendarStart && Styles.modalSubmitButtonDisabled]}
                                 onPress={applyIosDateTime}
                                 disabled={!calendarStart}
                             >
-                                <Text style={Styles.modalSubmitText}>{t('Apply')}</Text>
+                                <Text style={Styles.modalSubmitText}>{t('apply')}</Text>
                             </TouchableOpacity>
                         </View>
                     </View>
+                    {Platform.OS === 'ios' && nativePickerVisible && activeDateField ? (
+                        <View style={Styles.nativePickerOverlay}>
+                            <Pressable style={Styles.nativePickerBackdrop} onPress={closeNativePicker} />
+                            <View style={Styles.nativePickerSheet}>
+                                <View style={Styles.nativePickerToolbar}>
+                                    <TouchableOpacity style={Styles.nativePickerAction} onPress={closeNativePicker}>
+                                        <Text style={Styles.nativePickerActionText}>{t('cancel')}</Text>
+                                    </TouchableOpacity>
+                                    <TouchableOpacity style={Styles.nativePickerAction} onPress={applyNativePickerSelection}>
+                                        <Text style={Styles.nativePickerActionText}>{t('apply')}</Text>
+                                    </TouchableOpacity>
+                                </View>
+                                <DateTimePicker
+                                    {...pickerVisualProps}
+                                    value={nativePickerDate}
+                                    mode="date"
+                                    display="spinner"
+                                    onChange={onNativePickerChange}
+                                />
+                            </View>
+                        </View>
+                    ) : null}
                 </View>
             </Modal>
+
+            {nativePickerVisible && activeDateField && Platform.OS === 'android' ? (
+                <DateTimePicker
+                    {...pickerVisualProps}
+                    value={nativePickerDate}
+                    mode="date"
+                    display="default"
+                    onChange={onNativePickerChange}
+                />
+            ) : null}
 
         </View>
     )

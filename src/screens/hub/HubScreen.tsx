@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState, useCallback } from 'react';
+import React, { useEffect, useMemo, useState, useCallback, useRef } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, Modal, TextInput } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import FastImage from 'react-native-fast-image';
@@ -19,6 +19,10 @@ import { getHubAppearances, getHubUploads, getMediaViewAll } from '../../service
 import { getApiBaseUrl } from '../../constants/RuntimeConfig';
 import { useTranslation } from 'react-i18next';
 
+const HUB_DEFAULT_INITIAL_LIMIT = 10;
+const HUB_SEARCH_INITIAL_LIMIT = 20;
+const SCROLL_LOAD_THRESHOLD_PX = 220;
+
 const HubScreen = ({ navigation }: any) => {
     const { t } = useTranslation();
     const insets = useSafeAreaInsets();
@@ -28,16 +32,35 @@ const HubScreen = ({ navigation }: any) => {
     const { events } = useEvents();
 
     const [filterType, setFilterType] = useState<'all' | 'appearance' | 'subscription' | 'upload'>('all');
+    const [lastAppliedFilterType, setLastAppliedFilterType] = useState<'appearance' | 'subscription' | 'upload'>('appearance');
     const [page, setPage] = useState(1);
     const [query, setQuery] = useState('');
     const [hiddenCardInfo, setHiddenCardInfo] = useState<Record<string, boolean>>({});
     const [infoModalVisible, setInfoModalVisible] = useState(false);
     const [infoCard, setInfoCard] = useState<any | null>(null);
     const [neverShowAgain, setNeverShowAgain] = useState(false);
+    const loadMoreLockedRef = useRef(false);
 
     const [appearanceCardsData, setAppearanceCardsData] = useState<any[]>([]);
     const [uploadCardsData, setUploadCardsData] = useState<any[]>([]);
     const [mediaByEvent, setMediaByEvent] = useState<Record<string, { thumbUrl?: string; videoCount: number }>>({});
+
+    const resolveCompetitionType = useCallback((params?: {
+        type?: string | null;
+        name?: string | null;
+        location?: string | null;
+    }) => {
+        const token = `${params?.type || ''} ${params?.name || ''} ${params?.location || ''}`.toLowerCase();
+        if (/road|trail|marathon|veldloop|veldlopen|cross|5k|10k|half|ultra|city\s*run/.test(token)) {
+            return 'road' as const;
+        }
+        return 'track' as const;
+    }, []);
+
+    const getCompetitionTypeLabel = useCallback((type?: 'track' | 'road' | string | null) => {
+        if (String(type || '').toLowerCase() === 'road') return t('roadAndTrail');
+        return t('trackAndField');
+    }, [t]);
 
     const isSignedUrl = useCallback((value?: string | null) => {
         if (!value) return false;
@@ -98,6 +121,17 @@ const HubScreen = ({ navigation }: any) => {
                         date: formatDateOnly(item.event_date ?? '-'),
                         thumbnail: item.thumbnail_url ? { uri: item.thumbnail_url } : null,
                         matchTypes: item.match_types ?? [],
+                        competitionType: resolveCompetitionType({
+                            type: (item as any)?.competition_type,
+                            name: item.event_name,
+                            location: item.event_location,
+                        }),
+                        organizingClub: String(
+                            (item as any)?.organizing_club
+                            || (item as any)?.organizer_club
+                            || (item as any)?.competition_organizer_name
+                            || '',
+                        ).trim(),
                         cardType: 'appearance',
                     })),
                 );
@@ -110,7 +144,7 @@ const HubScreen = ({ navigation }: any) => {
         return () => {
             mounted = false;
         };
-    }, [apiAccessToken, t]);
+    }, [apiAccessToken, resolveCompetitionType, t]);
 
     useEffect(() => {
         let mounted = true;
@@ -200,7 +234,7 @@ const HubScreen = ({ navigation }: any) => {
             const eventId = String(event.event_id);
             const mediaInfo = mediaByEvent[eventId];
             const title = event.event_name || event.event_title || t('competition');
-            const location = event.event_location || '-';
+            const location = String(event.event_location || '').trim();
             const date = formatDateOnly(event.event_date || '-');
             const videoCount = mediaInfo?.videoCount ?? 0;
             return {
@@ -212,11 +246,16 @@ const HubScreen = ({ navigation }: any) => {
                 location,
                 date,
                 thumbnail: mediaInfo?.thumbUrl ? { uri: mediaInfo.thumbUrl } : null,
-                competitionType: 'track',
+                competitionType: resolveCompetitionType({
+                    type: (event as any)?.competition_type,
+                    name: event.event_name || event.event_title,
+                    location: event.event_location,
+                }),
+                organizingClub: String((event as any)?.organizing_club || '').trim(),
                 cardType: 'subscription',
             };
         });
-    }, [events, mediaByEvent, t]);
+    }, [events, mediaByEvent, resolveCompetitionType, t]);
 
     const hubCards = useMemo(() => {
         return [...appearanceCardsData, ...myCompetitions, ...uploadCardsData];
@@ -224,9 +263,21 @@ const HubScreen = ({ navigation }: any) => {
 
     const filteredCards = useMemo(() => {
         const normalizedQuery = query.trim().toLowerCase();
-        const baseList = filterType === 'all'
-            ? hubCards
+        let baseList = filterType === 'all'
+            ? [...hubCards]
             : hubCards.filter((card) => card.cardType === filterType);
+        if (filterType === 'all') {
+            const priority: Array<'appearance' | 'subscription' | 'upload'> = [
+                lastAppliedFilterType,
+                ...(['appearance', 'subscription', 'upload'] as Array<'appearance' | 'subscription' | 'upload'>)
+                    .filter((entry) => entry !== lastAppliedFilterType),
+            ];
+            baseList = baseList.sort((a, b) => {
+                const ai = priority.indexOf(a.cardType as 'appearance' | 'subscription' | 'upload');
+                const bi = priority.indexOf(b.cardType as 'appearance' | 'subscription' | 'upload');
+                return ai - bi;
+            });
+        }
         if (!normalizedQuery) return baseList;
         const matchesQuery = (value?: string | number | null) =>
             String(value ?? '').toLowerCase().includes(normalizedQuery);
@@ -257,15 +308,31 @@ const HubScreen = ({ navigation }: any) => {
                 matchesQuery(card.date)
             );
         });
-    }, [filterType, hubCards, query]);
+    }, [filterType, hubCards, lastAppliedFilterType, query]);
 
-    const pageSize = 5;
+    const isSearchActive = query.trim().length > 0;
+    const pageSize = isSearchActive ? HUB_SEARCH_INITIAL_LIMIT : HUB_DEFAULT_INITIAL_LIMIT;
     const visibleCards = filteredCards.slice(0, page * pageSize);
     const canLoadMore = visibleCards.length < filteredCards.length;
 
     useEffect(() => {
+        loadMoreLockedRef.current = false;
         setPage(1);
-    }, [filterType, query]);
+    }, [filterType, query, pageSize]);
+
+    const handleMainScroll = useCallback((event: any) => {
+        const native = event?.nativeEvent;
+        if (!native) return;
+        const { contentOffset, contentSize, layoutMeasurement } = native;
+        const distanceToBottom = contentSize.height - (contentOffset.y + layoutMeasurement.height);
+        if (distanceToBottom > SCROLL_LOAD_THRESHOLD_PX) {
+            loadMoreLockedRef.current = false;
+            return;
+        }
+        if (loadMoreLockedRef.current || !canLoadMore) return;
+        loadMoreLockedRef.current = true;
+        setPage((prev) => prev + 1);
+    }, [canLoadMore]);
 
     useEffect(() => {
         const loadHidden = async () => {
@@ -317,7 +384,9 @@ const HubScreen = ({ navigation }: any) => {
         if (card.cardType === 'subscription') {
             navigation.navigate('CompetitionDetailsScreen', {
                 name: card.title,
-                description: `${t('Competition held in')} ${card.location}`,
+                location: card.location,
+                date: card.date,
+                organizingClub: card.organizingClub,
                 competitionType: card.competitionType ?? 'track',
                 eventId: card.eventId ?? card.id,
             });
@@ -413,21 +482,29 @@ const HubScreen = ({ navigation }: any) => {
                         <View style={Styles.cardInfo}>
                             <View style={Styles.cardHeaderRow}>
                                 <Text style={Styles.cardTitle} numberOfLines={2}>{card.title}</Text>
-                                <View style={[Styles.statusBadge, card.status === 'Completed' ? Styles.statusDone : Styles.statusActive]}>
+                            <View style={[Styles.statusBadge, card.status === 'Completed' ? Styles.statusDone : Styles.statusActive]}>
                                     <Text style={[Styles.statusText, card.status !== 'Completed' && Styles.statusTextActive]}>
                                         {t(card.status)}
                                     </Text>
                                 </View>
                             </View>
-                            <Text style={Styles.cardSubtitle}>{t('Subscribed competition')}</Text>
+                            <Text style={Styles.cardSubtitle} numberOfLines={2}>
+                                {[getCompetitionTypeLabel(card.competitionType), card.location, card.organizingClub]
+                                    .filter((part) => String(part || '').trim().length > 0 && part !== '-')
+                                    .join(' • ') || t('Subscribed competition')}
+                            </Text>
                             <View style={Styles.detailValue}>
                                 <VideoSquare size={14} color={colors.grayColor} variant="Linear" />
                                 <Text style={Styles.detailText}>{card.media}</Text>
-                                <View style={Styles.detailDot} />
-                                <Location size={14} color={colors.grayColor} variant="Linear" />
-                                <Text style={[Styles.detailText, Styles.detailTextTruncate]} numberOfLines={1} ellipsizeMode="tail">
-                                    {card.location}
-                                </Text>
+                                {card.location && card.location !== '-' ? (
+                                    <>
+                                        <View style={Styles.detailDot} />
+                                        <Location size={14} color={colors.grayColor} variant="Linear" />
+                                        <Text style={[Styles.detailText, Styles.detailTextTruncate]} numberOfLines={1} ellipsizeMode="tail">
+                                            {card.location}
+                                        </Text>
+                                    </>
+                                ) : null}
                             </View>
                             <Text style={Styles.detailText}>{formatDateOnly(card.date)}</Text>
                         </View>
@@ -482,7 +559,12 @@ const HubScreen = ({ navigation }: any) => {
                 <View style={{ width: 44, height: 44 }} />
             </View>
 
-            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={Styles.scrollContent}>
+            <ScrollView
+                showsVerticalScrollIndicator={false}
+                contentContainerStyle={Styles.scrollContent}
+                onScroll={handleMainScroll}
+                scrollEventThrottle={16}
+            >
                 <View style={Styles.sectionBlock}>
                     <Text style={Styles.sectionTitle}>{t('Competitions')}</Text>
                     <Text style={Styles.sectionSubtitle}>{t('Appearances, subscriptions, and your uploads.')}</Text>
@@ -501,7 +583,13 @@ const HubScreen = ({ navigation }: any) => {
                                 Styles.filterChip,
                                 filterType === option.key && Styles.filterChipActive,
                             ]}
-                            onPress={() => setFilterType(option.key as any)}
+                            onPress={() => {
+                                const next = option.key as 'all' | 'appearance' | 'subscription' | 'upload'
+                                setFilterType(next)
+                                if (next !== 'all') {
+                                    setLastAppliedFilterType(next)
+                                }
+                            }}
                         >
                             <Text
                                 style={[
@@ -540,12 +628,6 @@ const HubScreen = ({ navigation }: any) => {
                 </TouchableOpacity>
 
                 {visibleCards.map(renderHubCard)}
-
-                {canLoadMore && (
-                    <TouchableOpacity style={Styles.loadMoreButton} onPress={() => setPage((prev) => prev + 1)}>
-                        <Text style={Styles.loadMoreText}>{t('Load more')}</Text>
-                    </TouchableOpacity>
-                )}
 
                 <View style={Styles.sectionBlock}>
                     <Text style={Styles.sectionTitle}>{t('Downloads')}</Text>

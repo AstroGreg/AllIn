@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { View, Text, TouchableOpacity, TextInput, ScrollView, Image, Modal, Pressable, Alert, ActivityIndicator } from 'react-native';
+import { View, Text, TouchableOpacity, TextInput, ScrollView, Image, Modal, Pressable, Alert, ActivityIndicator, Platform } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Calendar } from 'react-native-calendars';
+import DateTimePicker from '@react-native-community/datetimepicker';
 import { ArrowLeft2, Trash, Calendar as CalendarIcon, CloseCircle, SearchNormal1, TickCircle } from 'iconsax-react-nativejs';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { launchImageLibrary } from 'react-native-image-picker';
@@ -20,6 +20,16 @@ const ProfileTimelineEditScreen = ({ navigation, route }: any) => {
     const insets = useSafeAreaInsets();
     const { colors } = useTheme();
     const Styles = createStyles(colors);
+    const isLightTheme = String(colors.backgroundColor || '').toLowerCase() === '#ffffff';
+    const pickerVisualProps = useMemo<any>(() => (
+        Platform.OS === 'ios'
+            ? {
+                themeVariant: isLightTheme ? 'light' : 'dark',
+                textColor: isLightTheme ? '#0B1220' : '#F8FAFC',
+                accentColor: colors.primaryColor,
+            }
+            : {}
+    ), [colors.primaryColor, isLightTheme]);
     const mode: 'add' | 'edit' = route?.params?.mode ?? 'add';
     const storageKey: string = route?.params?.storageKey ?? '@profile_timeline_self';
     const item: TimelineEntry | null = route?.params?.item ?? null;
@@ -36,7 +46,7 @@ const ProfileTimelineEditScreen = ({ navigation, route }: any) => {
     });
     const [eventDate, setEventDate] = useState<Date>(new Date());
     const [showDateModal, setShowDateModal] = useState(false);
-    const [calendarDate, setCalendarDate] = useState<string | null>(null);
+    const [nativePickerDate, setNativePickerDate] = useState<Date>(new Date());
     const [mediaItems, setMediaItems] = useState<MediaViewAllItem[]>([]);
     const [coverMedia, setCoverMedia] = useState<MediaViewAllItem | null>(null);
     const [linkedBlogIds, setLinkedBlogIds] = useState<string[]>([]);
@@ -107,13 +117,6 @@ const ProfileTimelineEditScreen = ({ navigation, route }: any) => {
         return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(v);
     }, []);
 
-    const toDateString = useCallback((date: Date) => {
-        const yyyy = date.getFullYear();
-        const mm = String(date.getMonth() + 1).padStart(2, '0');
-        const dd = String(date.getDate()).padStart(2, '0');
-        return `${yyyy}-${mm}-${dd}`;
-    }, []);
-
     const parseDateValue = useCallback((value?: string | null) => {
         if (!value) return null;
         const raw = String(value).trim();
@@ -163,22 +166,31 @@ const ProfileTimelineEditScreen = ({ navigation, route }: any) => {
 
     const openDateModal = useCallback(() => {
         const seedDate = mode === 'edit' ? (eventDate || new Date()) : new Date();
-        const seed = toDateString(seedDate);
-        setCalendarDate(seed);
+        setNativePickerDate(seedDate);
         setShowDateModal(true);
-    }, [eventDate, mode, toDateString]);
+    }, [eventDate, mode]);
 
     const applyDateModal = useCallback(() => {
-        if (calendarDate) {
-            const [year, month, day] = calendarDate.split('-').map(Number);
-            if (year && month && day) {
-                const next = new Date(eventDate);
-                next.setFullYear(year, month - 1, day);
-                setEventDate(next);
-            }
-        }
+        const next = new Date(eventDate);
+        next.setFullYear(nativePickerDate.getFullYear(), nativePickerDate.getMonth(), nativePickerDate.getDate());
+        setEventDate(next);
         setShowDateModal(false);
-    }, [calendarDate, eventDate]);
+    }, [eventDate, nativePickerDate]);
+
+    const onNativeDateChange = useCallback((event: any, selectedDate?: Date) => {
+        if (event?.type === 'dismissed') {
+            setShowDateModal(false);
+            return;
+        }
+        const pickedDate = selectedDate ?? nativePickerDate;
+        setNativePickerDate(pickedDate);
+        if (Platform.OS === 'android') {
+            const next = new Date(eventDate);
+            next.setFullYear(pickedDate.getFullYear(), pickedDate.getMonth(), pickedDate.getDate());
+            setEventDate(next);
+            setShowDateModal(false);
+        }
+    }, [eventDate, nativePickerDate]);
 
     useEffect(() => {
         if (!item) return;
@@ -810,40 +822,42 @@ const ProfileTimelineEditScreen = ({ navigation, route }: any) => {
                 <SizeBox height={insets.bottom > 0 ? insets.bottom + 16 : 32} />
             </ScrollView>
 
-            <Modal
-                visible={showDateModal}
-                transparent
-                animationType="fade"
-                onRequestClose={() => setShowDateModal(false)}
-            >
-                <View style={Styles.modalOverlay}>
-                    <Pressable style={Styles.modalBackdrop} onPress={() => setShowDateModal(false)} />
-                    <View style={Styles.dateModalContainer}>
-                        <Text style={Styles.dateModalTitle}>{t('Select date')}</Text>
-                        <SizeBox height={10} />
-                        <Calendar
-                            current={calendarDate ?? undefined}
-                            markedDates={calendarDate ? { [calendarDate]: { selected: true, selectedColor: colors.primaryColor } } : undefined}
-                            onDayPress={(day) => setCalendarDate(day.dateString)}
-                            enableSwipeMonths
-                            theme={{
-                                calendarBackground: colors.cardBackground,
-                                textSectionTitleColor: colors.subTextColor,
-                                dayTextColor: colors.mainTextColor,
-                                monthTextColor: colors.mainTextColor,
-                                arrowColor: colors.primaryColor,
-                                selectedDayBackgroundColor: colors.primaryColor,
-                                selectedDayTextColor: colors.pureWhite,
-                                todayTextColor: colors.primaryColor,
-                            }}
-                            style={{ borderRadius: 12 }}
-                        />
-                        <TouchableOpacity style={Styles.modalDoneButton} onPress={applyDateModal}>
-                            <Text style={Styles.modalDoneButtonText}>{t('Done')}</Text>
-                        </TouchableOpacity>
+            {Platform.OS === 'ios' ? (
+                <Modal
+                    visible={showDateModal}
+                    transparent
+                    animationType="fade"
+                    onRequestClose={() => setShowDateModal(false)}
+                >
+                    <View style={Styles.modalOverlay}>
+                        <Pressable style={Styles.modalBackdrop} onPress={() => setShowDateModal(false)} />
+                        <View style={Styles.dateModalContainer}>
+                            <Text style={Styles.dateModalTitle}>{t('Select date')}</Text>
+                            <SizeBox height={10} />
+                            <DateTimePicker
+                                {...pickerVisualProps}
+                                value={nativePickerDate}
+                                mode="date"
+                                display="spinner"
+                                onChange={onNativeDateChange}
+                            />
+                            <TouchableOpacity style={Styles.modalDoneButton} onPress={applyDateModal}>
+                                <Text style={Styles.modalDoneButtonText}>{t('Done')}</Text>
+                            </TouchableOpacity>
+                        </View>
                     </View>
-                </View>
-            </Modal>
+                </Modal>
+            ) : null}
+
+            {Platform.OS === 'android' && showDateModal ? (
+                <DateTimePicker
+                    {...pickerVisualProps}
+                    value={nativePickerDate}
+                    mode="date"
+                    display="default"
+                    onChange={onNativeDateChange}
+                />
+            ) : null}
 
             <Modal
                 visible={showBlogModal}

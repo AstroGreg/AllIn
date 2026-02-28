@@ -68,8 +68,13 @@ export const createStyles = (colors: ThemeColors) => StyleSheet.create({
         marginBottom: 6,
     },
     infoSub: {
+        ...Fonts.medium14,
+        color: colors.grayColor,
+    },
+    infoMeta: {
         ...Fonts.regular12,
         color: colors.grayColor,
+        marginTop: 6,
     },
     mapCard: {
         borderRadius: 12,

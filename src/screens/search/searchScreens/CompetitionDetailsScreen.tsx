@@ -1,13 +1,12 @@
-import { View, Text, TouchableOpacity, ScrollView, Switch, Modal, Image, TextInput, ActivityIndicator, Alert } from 'react-native'
+import { View, Text, TouchableOpacity, ScrollView, Switch, Modal, Image, ActivityIndicator, Alert } from 'react-native'
 import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import SizeBox from '../../../constants/SizeBox'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { ArrowLeft2, ArrowRight } from 'iconsax-react-nativejs'
 import Icons from '../../../constants/Icons'
-import Images from '../../../constants/Images'
 import { createStyles } from './CompetitionDetailsScreenStyles'
 import { useAuth } from '../../../context/AuthContext'
-import { ApiError, CompetitionMapCheckpoint, CompetitionMapSummary, getCompetitionMapById, getCompetitionMaps, getEventCompetitions, getProfileSummary, searchEvents, searchFaceByEnrollment, searchMediaByBib, grantFaceRecognitionConsent, subscribeToEvent, unsubscribeToEvent } from '../../../services/apiGateway'
+import { ApiError, CompetitionMapCheckpoint, CompetitionMapSummary, MediaViewAllItem, getCompetitionMapById, getCompetitionMaps, getCompetitionPublicMedia, getEventCompetitions, getProfileSummary, searchEvents, searchFaceByEnrollment, searchMediaByBib, grantFaceRecognitionConsent, subscribeToEvent, unsubscribeToEvent } from '../../../services/apiGateway'
 import { useTheme } from '../../../context/ThemeContext'
 import { useTranslation } from 'react-i18next'
 import UnifiedSearchInput from '../../../components/unifiedSearchInput/UnifiedSearchInput';
@@ -18,7 +17,7 @@ interface EventCategory {
     name: string;
     badges?: string[];
     hasArrow?: boolean;
-    thumbnail?: any;
+    thumbnailUrl: string | null;
 }
 
 interface Course {
@@ -26,6 +25,7 @@ interface Course {
     label: string;
     description: string;
     imageUrl?: string;
+    disciplineId?: string | null;
     checkpoints: Array<{ id: string; label: string }>;
 }
 
@@ -45,7 +45,12 @@ const CompetitionDetailsScreen = ({ navigation, route }: any) => {
     const [courseOptions, setCourseOptions] = useState<Course[]>([]);
     const [trackEvents, setTrackEvents] = useState<EventCategory[]>([]);
     const [fieldEvents, setFieldEvents] = useState<EventCategory[]>([]);
+    const [isDisciplinesLoading, setIsDisciplinesLoading] = useState(false);
+    const [hasLoadedDisciplines, setHasLoadedDisciplines] = useState(false);
+    const [isMapLoading, setIsMapLoading] = useState(false);
+    const [hasLoadedMaps, setHasLoadedMaps] = useState(false);
     const [mapError, setMapError] = useState<string | null>(null);
+    const [mapLoadFailed, setMapLoadFailed] = useState(false);
     const [aiCompareModalVisible, setAiCompareModalVisible] = useState(false);
     const [quickChestNumber, setQuickChestNumber] = useState('');
     const [quickSearchError, setQuickSearchError] = useState<string | null>(null);
@@ -57,10 +62,52 @@ const CompetitionDetailsScreen = ({ navigation, route }: any) => {
     const [profileChestByYear, setProfileChestByYear] = useState<Record<string, string>>({});
 
     const competitionName = route?.params?.name || route?.params?.eventName || t('Competition');
-    const competitionDescription = route?.params?.description
-        || [route?.params?.location, route?.params?.date].filter(Boolean).join(' • ')
-        || t('Competition details');
+    const legacyDescription = String(route?.params?.description ?? '').trim();
+    const legacyLocation = legacyDescription.replace(/^competition held in\s*/i, '').trim();
+    const competitionLocation = String(route?.params?.location ?? '').trim() || (legacyLocation && legacyLocation !== legacyDescription ? legacyLocation : '');
+    const rawCompetitionDate = String(route?.params?.date ?? '').trim();
+    const competitionDate = useMemo(() => {
+        if (!rawCompetitionDate) return '';
+        const parsed = new Date(rawCompetitionDate);
+        if (!Number.isNaN(parsed.getTime())) {
+            const day = String(parsed.getDate()).padStart(2, '0');
+            const month = String(parsed.getMonth() + 1).padStart(2, '0');
+            const year = parsed.getFullYear();
+            return `${day}/${month}/${year}`;
+        }
+        const slashParts = rawCompetitionDate.split('/').map((part) => Number(part));
+        if (slashParts.length === 3) {
+            const [day, month, year] = slashParts;
+            if (day > 0 && month > 0 && year > 0) {
+                return `${String(day).padStart(2, '0')}/${String(month).padStart(2, '0')}/${year}`;
+            }
+        }
+        return rawCompetitionDate;
+    }, [rawCompetitionDate]);
+    const organizingClub = String(
+        route?.params?.organizingClub
+        ?? route?.params?.organizing_club
+        ?? route?.params?.organizer_club
+        ?? '',
+    ).trim();
     const competitionType: 'track' | 'marathon' = route?.params?.competitionType || 'track';
+    const normalizedCompetitionType = String(competitionType || '').toLowerCase();
+    const isRoadTrailCompetition = normalizedCompetitionType === 'marathon' || normalizedCompetitionType === 'road' || normalizedCompetitionType === 'trail' || normalizedCompetitionType === 'roadtrail' || normalizedCompetitionType === 'road&trail';
+    const competitionTypeLabel = useMemo(
+        () => (isRoadTrailCompetition ? t('roadAndTrail') : t('trackAndField')),
+        [isRoadTrailCompetition, t],
+    );
+    const competitionMetaLine = useMemo(() => {
+        const parts = [
+            competitionTypeLabel,
+            competitionLocation,
+            competitionDate,
+        ].filter((part) => {
+            const value = String(part || '').trim();
+            return value.length > 0 && value !== '-' && value !== '—';
+        });
+        return parts.join(' • ');
+    }, [competitionDate, competitionLocation, competitionTypeLabel]);
     const eventId = route?.params?.eventId as string | undefined;
     const competitionId = route?.params?.competitionId as string | undefined;
     const resolvedEventId = useMemo(() => String(eventId ?? competitionId ?? '').trim(), [competitionId, eventId]);
@@ -129,29 +176,81 @@ const CompetitionDetailsScreen = ({ navigation, route }: any) => {
     const currentEvents = selectedTab === 'track' ? trackEvents : fieldEvents;
 
     const visibleCourses = courseOptions.length > 0 ? courseOptions : FALLBACK_COURSES;
-    const showCoursesSection = competitionType === 'marathon' || visibleCourses.length > 0;
+    const showCoursesSection = isRoadTrailCompetition;
 
     const selectedCourse = useMemo(() => {
         if (visibleCourses.length === 0) return null;
         return visibleCourses.find((course) => course.id === selectedCourseId) ?? visibleCourses[0];
     }, [selectedCourseId, visibleCourses]);
+    const hasSelectedCourseMap = Boolean(selectedCourse?.imageUrl) && !mapLoadFailed;
 
     useEffect(() => {
-        if (!apiAccessToken || (!eventId && !competitionId)) {
-            if (courseOptions.length === 0) {
-                setCourseOptions([]);
-                setSelectedCourseId('');
-            }
+        setMapLoadFailed(false);
+    }, [selectedCourse?.id, selectedCourse?.imageUrl]);
+
+    const isSignedUrl = useCallback((value?: string | null) => {
+        if (!value) return false;
+        const lower = String(value).toLowerCase();
+        return (
+            lower.includes('x-amz-signature') ||
+            lower.includes('x-amz-credential') ||
+            lower.includes('x-amz-security-token') ||
+            lower.includes('signature=') ||
+            lower.includes('sig=') ||
+            lower.includes('token=') ||
+            lower.includes('expires=') ||
+            lower.includes('sv=') ||
+            lower.includes('se=') ||
+            lower.includes('sp=')
+        );
+    }, []);
+
+    const withAccessToken = useCallback((value?: string | null) => {
+        if (!value) return null;
+        if (!apiAccessToken) return String(value);
+        if (isSignedUrl(value)) return String(value);
+        if (String(value).includes('access_token=')) return String(value);
+        const sep = String(value).includes('?') ? '&' : '?';
+        return `${String(value)}${sep}access_token=${encodeURIComponent(apiAccessToken)}`;
+    }, [apiAccessToken, isSignedUrl]);
+
+    const isVideoMedia = useCallback((item: MediaViewAllItem) => {
+        const mediaType = String(item?.type ?? '').toLowerCase();
+        if (mediaType === 'video') return true;
+        if (mediaType === 'image' || mediaType === 'photo') return false;
+        if (item?.hls_manifest_path) return true;
+        const hasVideoMime = Array.isArray(item?.assets)
+            && item.assets.some((asset) => String(asset?.mime_type ?? '').toLowerCase().startsWith('video/'));
+        if (hasVideoMime) return true;
+        const candidates = [item?.full_url, item?.original_url, item?.raw_url, item?.preview_url]
+            .filter(Boolean)
+            .map((value) => String(value));
+        return candidates.some((value) => /\.(mp4|mov|m4v|webm|m3u8)(\?|$)/i.test(value));
+    }, []);
+
+    const getPreferredMediaUrl = useCallback((item: MediaViewAllItem) => {
+        const candidate = item.thumbnail_url || item.preview_url || item.full_url || item.raw_url || item.original_url || null;
+        return withAccessToken(candidate);
+    }, [withAccessToken]);
+
+    useEffect(() => {
+        if (!isRoadTrailCompetition || !apiAccessToken || !resolvedEventId) {
+            setMapError(null);
+            setCourseOptions([]);
+            setSelectedCourseId('');
+            setIsMapLoading(false);
+            setHasLoadedMaps(false);
             return;
         }
 
         let isActive = true;
         const loadMaps = async () => {
+            setIsMapLoading(true);
+            setHasLoadedMaps(false);
             setMapError(null);
             try {
                 const res = await getCompetitionMaps(apiAccessToken, {
                     event_id: resolvedEventId || undefined,
-                    competition_id: competitionType === 'marathon' ? undefined : competitionId,
                     include_checkpoints: true,
                 });
                 if (!isActive) return;
@@ -160,65 +259,26 @@ const CompetitionDetailsScreen = ({ navigation, route }: any) => {
                     label: map.name ?? t('Course'),
                     description: map.name ? t('Course map') : t('Course map'),
                     imageUrl: map.image_url ?? undefined,
+                    disciplineId: map.competition_id ? String(map.competition_id) : null,
                     checkpoints: (map.checkpoints ?? []).map((cp: CompetitionMapCheckpoint) => ({
                         id: cp.id,
                         label: cp.label ?? `Checkpoint ${cp.checkpoint_index}`,
                     })),
                 }));
-                if (normalized.length > 0) {
-                    setCourseOptions(normalized);
-                    setSelectedCourseId((prev) =>
-                        normalized.some((course) => course.id === prev) ? prev : normalized[0].id
-                    );
-                } else if (resolvedEventId) {
-                    try {
-                        const comps = await getEventCompetitions(apiAccessToken, String(resolvedEventId));
-                        if (!isActive) return;
-                        const fallbackCourses = (comps.competitions || []).map((comp) => ({
-                            id: String(comp.id),
-                            label: String(comp.competition_name || comp.competition_name_normalized || t('Course')),
-                            description: t('Course'),
-                            imageUrl: undefined,
-                            checkpoints: [],
-                        }));
-                        setCourseOptions(fallbackCourses);
-                        setSelectedCourseId((prev) =>
-                            fallbackCourses.some((course) => course.id === prev) ? prev : (fallbackCourses[0]?.id || '')
-                        );
-                    } catch {
-                        if (courseOptions.length === 0) {
-                            setCourseOptions([]);
-                        }
-                    }
-                } else if (courseOptions.length === 0) {
-                    setCourseOptions([]);
-                }
+                setCourseOptions(normalized);
+                setSelectedCourseId((prev) =>
+                    normalized.some((course) => course.id === prev) ? prev : (normalized[0]?.id || '')
+                );
             } catch (e: any) {
                 if (!isActive) return;
                 const message = e instanceof ApiError ? e.message : String(e?.message ?? e);
                 setMapError(message);
-                if (resolvedEventId) {
-                    try {
-                        const comps = await getEventCompetitions(apiAccessToken, String(resolvedEventId));
-                        if (!isActive) return;
-                        const fallbackCourses = (comps.competitions || []).map((comp) => ({
-                            id: String(comp.id),
-                            label: String(comp.competition_name || comp.competition_name_normalized || t('Course')),
-                            description: t('Course'),
-                            imageUrl: undefined,
-                            checkpoints: [],
-                        }));
-                        setCourseOptions(fallbackCourses);
-                        setSelectedCourseId((prev) =>
-                            fallbackCourses.some((course) => course.id === prev) ? prev : (fallbackCourses[0]?.id || '')
-                        );
-                    } catch {
-                        if (courseOptions.length === 0) {
-                            setCourseOptions([]);
-                        }
-                    }
-                } else if (courseOptions.length === 0) {
-                    setCourseOptions([]);
+                setCourseOptions([]);
+                setSelectedCourseId('');
+            } finally {
+                if (isActive) {
+                    setIsMapLoading(false);
+                    setHasLoadedMaps(true);
                 }
             }
         };
@@ -227,17 +287,21 @@ const CompetitionDetailsScreen = ({ navigation, route }: any) => {
         return () => {
             isActive = false;
         };
-    }, [apiAccessToken, competitionId, competitionType, courseOptions.length, eventId, resolvedEventId, t]);
+    }, [apiAccessToken, isRoadTrailCompetition, resolvedEventId, t]);
 
     useEffect(() => {
-        if (!apiAccessToken || !resolvedEventId || competitionType === 'marathon') {
+        if (!apiAccessToken || !resolvedEventId || isRoadTrailCompetition) {
             setTrackEvents([]);
             setFieldEvents([]);
+            setIsDisciplinesLoading(false);
+            setHasLoadedDisciplines(true);
             return;
         }
 
         let isActive = true;
         const loadDisciplines = async () => {
+            setHasLoadedDisciplines(false);
+            setIsDisciplinesLoading(true);
             try {
                 const comps = await getEventCompetitions(apiAccessToken, String(resolvedEventId));
                 if (!isActive) return;
@@ -250,7 +314,7 @@ const CompetitionDetailsScreen = ({ navigation, route }: any) => {
                         seen.add(id);
                         return true;
                     })
-                    .map((comp, idx) => {
+                    .map((comp) => {
                         const name = String(comp.competition_name || comp.competition_name_normalized || t('Event'));
                         const type = String(comp.competition_type || '').toLowerCase();
                         return {
@@ -258,18 +322,51 @@ const CompetitionDetailsScreen = ({ navigation, route }: any) => {
                             name,
                             hasArrow: true,
                             badges: type ? [type] : undefined,
-                            thumbnail: undefined,
+                            thumbnailUrl: null,
                             _kind: type.includes('field') ? 'field' : 'track',
-                            _idx: idx,
-                        } as EventCategory & {_kind: 'track' | 'field'; _idx: number};
+                        } as EventCategory & {_kind: 'track' | 'field'};
                     });
 
-                setTrackEvents(mapped.filter((e) => e._kind === 'track').map(({ _kind, _idx, ...rest }) => rest));
-                setFieldEvents(mapped.filter((e) => e._kind === 'field').map(({ _kind, _idx, ...rest }) => rest));
+                const enriched = await Promise.all(
+                    mapped.map(async (discipline) => {
+                        try {
+                            const media = await getCompetitionPublicMedia(apiAccessToken, String(resolvedEventId), {
+                                discipline_id: String(discipline.id),
+                                limit: 300,
+                            });
+                            const mediaItems = Array.isArray(media) ? media : [];
+                            const hasVideo = mediaItems.some((item) => isVideoMedia(item));
+                            if (!hasVideo) return null;
+                            const photos = mediaItems.filter((item) => !isVideoMedia(item));
+                            const topPhoto = photos.reduce<MediaViewAllItem | null>((best, current) => {
+                                if (!best) return current;
+                                return Number(current.views_count ?? 0) > Number(best.views_count ?? 0) ? current : best;
+                            }, null);
+                            return {
+                                ...discipline,
+                                thumbnailUrl: topPhoto ? getPreferredMediaUrl(topPhoto) : null,
+                            };
+                        } catch {
+                            return null;
+                        }
+                    }),
+                );
+
+                const availableDisciplines = enriched.filter(
+                    (item): item is (EventCategory & { _kind: 'track' | 'field' }) => item !== null,
+                );
+
+                setTrackEvents(availableDisciplines.filter((e) => e._kind === 'track').map(({ _kind, ...rest }) => rest));
+                setFieldEvents(availableDisciplines.filter((e) => e._kind === 'field').map(({ _kind, ...rest }) => rest));
             } catch {
                 if (!isActive) return;
                 setTrackEvents([]);
                 setFieldEvents([]);
+            } finally {
+                if (isActive) {
+                    setIsDisciplinesLoading(false);
+                    setHasLoadedDisciplines(true);
+                }
             }
         };
 
@@ -277,9 +374,10 @@ const CompetitionDetailsScreen = ({ navigation, route }: any) => {
         return () => {
             isActive = false;
         };
-    }, [apiAccessToken, competitionType, resolvedEventId, t]);
+    }, [apiAccessToken, getPreferredMediaUrl, isRoadTrailCompetition, isVideoMedia, resolvedEventId, t]);
 
     useEffect(() => {
+        if (!isRoadTrailCompetition) return;
         if (!apiAccessToken) return;
         if (courseOptions.length === 0) return;
 
@@ -314,7 +412,7 @@ const CompetitionDetailsScreen = ({ navigation, route }: any) => {
         return () => {
             isActive = false;
         };
-    }, [apiAccessToken, courseOptions, selectedCourseId]);
+    }, [apiAccessToken, courseOptions, isRoadTrailCompetition, selectedCourseId]);
 
     const renderEventCard = (event: EventCategory) => (
         <TouchableOpacity
@@ -324,10 +422,16 @@ const CompetitionDetailsScreen = ({ navigation, route }: any) => {
                 eventName: event.name,
                 competitionName,
                 eventId: eventId ?? competitionId,
+                competitionId: competitionId ?? eventId,
+                disciplineId: String(event.id),
             })}
         >
             <View style={styles.eventCardLeft}>
-                <Image source={event.thumbnail ?? Images.photo1} style={styles.eventThumbnail} />
+                {event.thumbnailUrl ? (
+                    <Image source={{ uri: event.thumbnailUrl }} style={styles.eventThumbnail} />
+                ) : (
+                    <View style={[styles.eventThumbnail, styles.eventThumbnailFallback]} />
+                )}
                 <Text style={styles.eventCardName}>{event.name}</Text>
             </View>
             <View style={styles.eventCardRight}>
@@ -534,21 +638,27 @@ const CompetitionDetailsScreen = ({ navigation, route }: any) => {
                 <TouchableOpacity style={styles.headerButton} onPress={() => navigation.goBack()}>
                     <ArrowLeft2 size={24} color={colors.primaryColor} variant="Linear" />
                 </TouchableOpacity>
-                <Text style={styles.headerTitle}>{t('Competitions')}</Text>
+                <Text style={styles.headerTitle} numberOfLines={1}>{competitionName}</Text>
                 <View style={{ width: 44, height: 44 }} />
             </View>
 
             <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
                 {/* Competition Info */}
-                <Text style={styles.competitionName}>{competitionName}</Text>
-                <SizeBox height={4} />
-                <Text style={styles.competitionDescription}>{competitionDescription}</Text>
+                <View style={styles.competitionMetaCard}>
+                    <Text style={styles.competitionDescription}>
+                        {competitionMetaLine || t('Competition details')}
+                    </Text>
+                    {organizingClub ? (
+                        <Text style={styles.competitionMetaText} numberOfLines={1}>{organizingClub}</Text>
+                    ) : null}
+                </View>
                 {canSubscribe ? (
                     <>
                         <SizeBox height={12} />
                         <TouchableOpacity
                             style={[
                                 styles.subscribeButton,
+                                isSubscribed && styles.subscribeButtonActive,
                                 isSubscriptionLoading && styles.subscribeButtonDisabled,
                             ]}
                             onPress={handleSubscriptionToggle}
@@ -557,9 +667,21 @@ const CompetitionDetailsScreen = ({ navigation, route }: any) => {
                             {isSubscriptionLoading ? (
                                 <ActivityIndicator color={colors.pureWhite} />
                             ) : (
-                                <Text style={styles.subscribeButtonText}>
-                                    {isSubscribed ? t('Unsubscribe') : t('subscribeToEvent')}
-                                </Text>
+                                <>
+                                    <View style={styles.subscribeButtonContent}>
+                                        <Text style={styles.subscribeButtonText}>
+                                            {isSubscribed ? t('Unsubscribe') : t('subscribeToEvent')}
+                                        </Text>
+                                        <Text style={styles.subscribeButtonHint}>
+                                            {isSubscribed
+                                                ? t('You are subscribed to this competition.')
+                                                : t('Get updates when new media is uploaded.')}
+                                        </Text>
+                                    </View>
+                                    <View style={styles.subscribeChevronWrap}>
+                                        <ArrowRight size={18} color={colors.pureWhite} variant="Linear" />
+                                    </View>
+                                </>
                             )}
                         </TouchableOpacity>
                     </>
@@ -571,7 +693,13 @@ const CompetitionDetailsScreen = ({ navigation, route }: any) => {
                     <>
                         <Text style={styles.sectionTitle}>{t('Courses')}</Text>
                         <SizeBox height={12} />
-                        {visibleCourses.length === 0 ? (
+                        {isMapLoading || !hasLoadedMaps ? (
+                            <View style={styles.emptyState}>
+                                <ActivityIndicator color={colors.primaryColor} />
+                                <SizeBox height={8} />
+                                <Text style={styles.emptyStateText}>{t('Loading course maps...')}</Text>
+                            </View>
+                        ) : visibleCourses.length === 0 ? (
                             <View style={styles.emptyState}>
                                 <Text style={styles.emptyStateText}>{t('No courses available yet.')}</Text>
                             </View>
@@ -598,16 +726,24 @@ const CompetitionDetailsScreen = ({ navigation, route }: any) => {
                                 <Text style={styles.sectionTitle}>{t('Course map')}</Text>
                                 <SizeBox height={12} />
                                 <View style={styles.mapCard}>
-                                    <Image
-                                        source={selectedCourse?.imageUrl ? { uri: selectedCourse.imageUrl } : Images.map}
-                                        style={styles.mapImage}
-                                        resizeMode="cover"
-                                    />
+                                    {hasSelectedCourseMap ? (
+                                        <Image
+                                            source={{ uri: String(selectedCourse?.imageUrl) }}
+                                            style={styles.mapImage}
+                                            resizeMode="cover"
+                                            onError={() => setMapLoadFailed(true)}
+                                        />
+                                    ) : (
+                                        <View style={styles.mapEmptyState}>
+                                            <Text style={styles.mapEmptyTitle}>{t('No map uploaded for this course yet.')}</Text>
+                                            <Text style={styles.mapEmptySubtitle}>{t('Upload a course map to display it here.')}</Text>
+                                        </View>
+                                    )}
                                 </View>
                                 {mapError && (
                                     <>
                                         <SizeBox height={8} />
-                                        <Text style={styles.helperText}>{t('Map data unavailable. Showing placeholder map.')}</Text>
+                                        <Text style={styles.helperText}>{t('Map data unavailable for this competition.')}</Text>
                                     </>
                                 )}
 
@@ -668,12 +804,11 @@ const CompetitionDetailsScreen = ({ navigation, route }: any) => {
 
                         <SizeBox height={20} />
 
-                        {/* Videos Section */}
+                        {/* Disciplines Section */}
                         <View style={styles.sectionHeader}>
-                            <Text style={styles.sectionTitle}>{t('Videos')}</Text>
-                            <View style={styles.sectionIcons}>
+                            <Text style={styles.sectionTitle}>{t('Disciplines')}</Text>
                             <TouchableOpacity
-                                style={styles.sectionIconButton}
+                                style={styles.aiActionButton}
                                 onPress={() => {
                                     setQuickSearchError(null);
                                     setQuickNeedsConsent(false);
@@ -681,54 +816,75 @@ const CompetitionDetailsScreen = ({ navigation, route }: any) => {
                                     setAiCompareModalVisible(true);
                                 }}
                             >
-                                <Icons.AiWhiteBordered width={20} height={20} />
+                                <Icons.AiWhiteBordered width={18} height={18} />
+                                <Text style={styles.aiActionButtonText}>{t('AI Search')}</Text>
                             </TouchableOpacity>
-                            </View>
                         </View>
-
                         <SizeBox height={16} />
-
-                        {/* Event Categories */}
-                        {currentEvents.length > 0 ? currentEvents.map(renderEventCard) : (
+                        {!hasLoadedDisciplines || isDisciplinesLoading ? (
+                            <View style={styles.emptyState}>
+                                <ActivityIndicator color={colors.primaryColor} />
+                                <SizeBox height={8} />
+                                <Text style={styles.emptyStateText}>{t('Loading events...')}</Text>
+                            </View>
+                        ) : currentEvents.length > 0 ? currentEvents.map(renderEventCard) : (
                             <View style={styles.emptyState}>
                                 <Text style={styles.emptyStateText}>{t('No events available yet.')}</Text>
                             </View>
                         )}
 
-                        <SizeBox height={16} />
-
-                        {/* Show All Videos Button */}
-                        <TouchableOpacity
-                            style={styles.showAllButton}
-                            onPress={() => navigation.navigate('AllVideosOfEvents', {
-                                eventName: competitionName,
-                                eventId: eventId ?? competitionId,
-                                competitionId: competitionId ?? eventId,
-                            })}
-                        >
-                            <Text style={styles.showAllButtonText}>{t('Show All Videos')}</Text>
-                            <ArrowRight size={18} color={colors.pureWhite} variant="Linear" />
-                        </TouchableOpacity>
-
                         <SizeBox height={24} />
 
+                        <Text style={styles.sectionTitle}>{t('Media')}</Text>
+                        <SizeBox height={12} />
+                        <View style={styles.mediaShowcaseCard}>
+                            <View style={styles.mediaShowcaseHead}>
+                                <Text style={styles.mediaShowcaseTitle}>{t('All Videos')}</Text>
+                                <View style={styles.mediaShowcaseTag}>
+                                    <Text style={styles.mediaShowcaseTagText}>{t('Untagged included')}</Text>
+                                </View>
+                            </View>
+                            <Text style={styles.mediaShowcaseDescription}>
+                                {t('Shows every uploaded video for this competition, even if not tagged to a discipline.')}
+                            </Text>
+                            <TouchableOpacity
+                                style={styles.showAllButton}
+                                onPress={() => navigation.navigate('AllVideosOfEvents', {
+                                    eventName: competitionName,
+                                    eventId: eventId ?? competitionId,
+                                    competitionId: competitionId ?? eventId,
+                                })}
+                            >
+                                <Text style={styles.showAllButtonText}>{t('Show All Videos')}</Text>
+                                <ArrowRight size={18} color={colors.pureWhite} variant="Linear" />
+                            </TouchableOpacity>
+                        </View>
+
+                        <SizeBox height={18} />
+
                         {/* Photos Section */}
-                        <Text style={styles.sectionTitle}>{t('Photos')}</Text>
-
-                        <SizeBox height={16} />
-
-                        {/* Show All Photos Button */}
-                        <TouchableOpacity
-                            style={styles.showAllPhotosButton}
-                            onPress={() => navigation.navigate('AllPhotosOfEvents', {
-                                eventName: competitionName,
-                                eventId: eventId ?? competitionId,
-                                competitionId: competitionId ?? eventId,
-                            })}
-                        >
-                            <Text style={styles.showAllPhotosButtonText}>{t('Show All Photos')}</Text>
-                            <ArrowRight size={18} color={colors.primaryColor} variant="Linear" />
-                        </TouchableOpacity>
+                        <View style={styles.mediaShowcaseCard}>
+                            <View style={styles.mediaShowcaseHead}>
+                                <Text style={styles.mediaShowcaseTitle}>{t('All Photos')}</Text>
+                                <View style={styles.mediaShowcaseTag}>
+                                    <Text style={styles.mediaShowcaseTagText}>{t('Untagged included')}</Text>
+                                </View>
+                            </View>
+                            <Text style={styles.mediaShowcaseDescription}>
+                                {t('Shows every uploaded photo for this competition, including untagged uploads.')}
+                            </Text>
+                            <TouchableOpacity
+                                style={styles.showAllPhotosButton}
+                                onPress={() => navigation.navigate('AllPhotosOfEvents', {
+                                    eventName: competitionName,
+                                    eventId: eventId ?? competitionId,
+                                    competitionId: competitionId ?? eventId,
+                                })}
+                            >
+                                <Text style={styles.showAllPhotosButtonText}>{t('Show All Photos')}</Text>
+                                <ArrowRight size={18} color={colors.primaryColor} variant="Linear" />
+                            </TouchableOpacity>
+                        </View>
 
                         <SizeBox height={insets.bottom > 0 ? insets.bottom + 100 : 120} />
                     </>
@@ -755,6 +911,8 @@ const CompetitionDetailsScreen = ({ navigation, route }: any) => {
                                 setCheckpointModalVisible(false);
                                 navigation.navigate('AllPhotosOfEvents', {
                                     checkpoint: selectedCheckpoint,
+                                    checkpointId: selectedCheckpoint?.id,
+                                    disciplineId: selectedCourse?.disciplineId ?? selectedCourse?.id,
                                     eventId: eventId ?? competitionId,
                                     competitionId: competitionId ?? eventId,
                                     eventName: competitionName,
@@ -774,6 +932,8 @@ const CompetitionDetailsScreen = ({ navigation, route }: any) => {
                                     eventId: eventId ?? competitionId,
                                     competitionId: competitionId ?? eventId,
                                     checkpoint: selectedCheckpoint,
+                                    checkpointId: selectedCheckpoint?.id,
+                                    disciplineId: selectedCourse?.disciplineId ?? selectedCourse?.id,
                                 });
                             }}
                         >

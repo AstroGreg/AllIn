@@ -16,6 +16,38 @@ interface EventCategory {
     name: string;
 }
 
+const TRACK_EVENTS: EventCategory[] = [
+    { id: 1, name: '200 Meters' },
+    { id: 2, name: '400 Meters' },
+    { id: 3, name: '800 Meters' },
+    { id: 4, name: '5000 Meters' },
+];
+
+const FIELD_EVENTS: EventCategory[] = [
+    { id: 5, name: 'Long Jump' },
+    { id: 6, name: 'High Jump' },
+    { id: 7, name: 'Shot Put' },
+    { id: 8, name: 'Discus Throw' },
+];
+
+const ROAD_COURSES: EventCategory[] = [
+    { id: 9, name: '5 km checkpoint' },
+    { id: 10, name: '10 km checkpoint' },
+    { id: 11, name: '15 km checkpoint' },
+    { id: 12, name: 'Finish line' },
+];
+
+const DIVISIONS = [
+    'Pupil',
+    'Miniem',
+    'Cadet',
+    'Scholier',
+    'Junior',
+    'Beloften',
+    'Seniors',
+    'Masters',
+];
+
 const CompetitionDetailsScreen = ({ navigation, route }: any) => {
     const { t } = useTranslation();
     const insets = useSafeAreaInsets();
@@ -33,45 +65,8 @@ const CompetitionDetailsScreen = ({ navigation, route }: any) => {
     const [selectedDivision, setSelectedDivision] = useState<string | null>(null);
     const [uploadCounts, setUploadCounts] = useState<Record<string, { photos: number; videos: number }>>({});
 
-    const trackEvents: EventCategory[] = [
-        { id: 1, name: '200 Meters' },
-        { id: 2, name: '400 Meters' },
-        { id: 3, name: '800 Meters' },
-        { id: 4, name: '5000 Meters' },
-    ];
-
-    const fieldEvents: EventCategory[] = [
-        { id: 5, name: 'Long Jump' },
-        { id: 6, name: 'High Jump' },
-        { id: 7, name: 'Shot Put' },
-        { id: 8, name: 'Discus Throw' },
-    ];
-
-    const roadCourses: EventCategory[] = [
-        { id: 9, name: '5 km checkpoint' },
-        { id: 10, name: '10 km checkpoint' },
-        { id: 11, name: '15 km checkpoint' },
-        { id: 12, name: 'Finish line' },
-    ];
-
-    const divisions = [
-        'Pupil',
-        'Miniem',
-        'Cadet',
-        'Scholier',
-        'Junior',
-        'Beloften',
-        'Seniors',
-        'Masters',
-    ];
-
-    const activeEvents = useMemo(() => {
-        if (competitionType === 'road') return roadCourses;
-        return activeTab === 'track' ? trackEvents : fieldEvents;
-    }, [activeTab, competitionType, fieldEvents, roadCourses, trackEvents]);
-
     const formatDate = useCallback((value?: string) => {
-        if (!value) return 'Date';
+        if (!value) return '';
         const parsed = new Date(value);
         if (Number.isNaN(parsed.getTime())) return value;
         const day = String(parsed.getDate()).padStart(2, '0');
@@ -79,6 +74,31 @@ const CompetitionDetailsScreen = ({ navigation, route }: any) => {
         const year = parsed.getFullYear();
         return `${day}/${month}/${year}`;
     }, []);
+
+    const competitionTypeLabel = useMemo(
+        () => (competitionType === 'road' ? t('roadAndTrail') : t('trackAndField')),
+        [competitionType, t],
+    );
+    const competitionMetaLine = useMemo(() => {
+        const parts = [
+            competitionTypeLabel,
+            String(competition?.location || '').trim(),
+            formatDate(competition?.date),
+        ].filter((part) => {
+            const value = String(part || '').trim();
+            return value.length > 0 && value !== '-' && value !== '—';
+        });
+        return parts.join(' • ');
+    }, [competition?.date, competition?.location, competitionTypeLabel, formatDate]);
+    const organizingClub = useMemo(
+        () => String(competition?.organizingClub || competition?.organizing_club || '').trim(),
+        [competition?.organizingClub, competition?.organizing_club],
+    );
+
+    const activeEvents = useMemo(() => {
+        if (competitionType === 'road') return ROAD_COURSES;
+        return activeTab === 'track' ? TRACK_EVENTS : FIELD_EVENTS;
+    }, [activeTab, competitionType]);
 
     const competitionId = useMemo(
         () => String(competition?.id || competition?.event_id || competition?.eventId || 'competition'),
@@ -212,10 +232,10 @@ const CompetitionDetailsScreen = ({ navigation, route }: any) => {
 
             <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={Styles.scrollContent}>
                 <View style={Styles.infoCard}>
-                    <Text style={Styles.infoTitle}>{competition?.name || t('Competition')}</Text>
-                    <Text style={Styles.infoSub}>
-                        {competition?.location || 'Location'} • {formatDate(competition?.date)}
-                    </Text>
+                    <Text style={Styles.infoSub}>{competitionMetaLine || competitionTypeLabel}</Text>
+                    {organizingClub ? (
+                        <Text style={Styles.infoMeta} numberOfLines={1}>{organizingClub}</Text>
+                    ) : null}
                 </View>
 
                 {competitionType === 'road' ? (
@@ -293,7 +313,7 @@ const CompetitionDetailsScreen = ({ navigation, route }: any) => {
                         <View style={Styles.modalSection}>
                             <Text style={Styles.modalLabel}>{t('Division')}</Text>
                             <View style={Styles.choiceRow}>
-                                {divisions.map((division) => {
+                                {DIVISIONS.map((division) => {
                                     const active = selectedDivision === division;
                                     return (
                                         <TouchableOpacity
