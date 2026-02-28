@@ -1,4 +1,4 @@
-import {ActivityIndicator, FlatList, Text, TouchableOpacity, View, Share, Alert, useWindowDimensions, Modal, Pressable, RefreshControl, TextInput, type ListRenderItemInfo, type ViewToken} from 'react-native'
+import {ActivityIndicator, FlatList, Text, TouchableOpacity, View, Share, Alert, Image, useWindowDimensions, Modal, Pressable, RefreshControl, TextInput, type ListRenderItemInfo, type ViewToken} from 'react-native'
 import React, {useCallback, useMemo, useRef, useState, useEffect} from 'react'
 import { createStyles } from './HomeStyles'
 import Header from './components/Header'
@@ -31,6 +31,7 @@ import {useFocusEffect, useIsFocused} from '@react-navigation/native'
 import FastImage from 'react-native-fast-image'
 import NewsFeedCard from './components/NewsFeedCard'
 import Images from '../../constants/Images'
+import { AppConfig } from '../../constants/AppConfig'
 import { getApiBaseUrl, getHlsBaseUrl } from '../../constants/RuntimeConfig'
 import Video from 'react-native-video'
 import Slider from '@react-native-community/slider'
@@ -42,6 +43,7 @@ import { translateText } from '../../i18n'
 
 const HOME_CACHE_TTL_MS = 2 * 60 * 1000;
 const HOME_FEED_PAGE_SIZE = 8;
+const INSTAGRAM_APP_ID = String(AppConfig.INSTAGRAM_APP_ID ?? '').trim();
 type HomeFeedItem =
     | { kind: 'media'; created_at?: string | null; media: MediaViewAllItem }
     | { kind: 'post'; created_at?: string | null; post: PostSummary };
@@ -658,6 +660,90 @@ const HomeScreen = ({ navigation }: any) => {
         }
     }, [getMediaShareUrl, t]);
 
+    const handleShareMediaInstagram = useCallback(async (media?: HomeOverviewMedia | MediaViewAllItem | null) => {
+        if (!media?.media_id) {
+            Alert.alert(t('Share unavailable'), t('No media available yet.'));
+            return;
+        }
+        if (!INSTAGRAM_APP_ID) {
+            Alert.alert(t('Instagram Story failed'), t('INSTAGRAM_APP_ID is missing.'));
+            return;
+        }
+        if (downloadInFlightRef.current) {
+            return;
+        }
+        const sourceUrl = pickDownloadUrl(media);
+        if (!sourceUrl) {
+            Alert.alert(t('Share unavailable'), t('This media is not ready to share.'));
+            return;
+        }
+        if (sourceUrl.toLowerCase().includes('.m3u8')) {
+            Alert.alert(t('Share unavailable'), t('This video is streaming-only right now. Try again later.'));
+            return;
+        }
+
+        try {
+            const pkg = await NativeShare.isPackageInstalled('com.instagram.android');
+            if (!pkg?.isInstalled) {
+                Alert.alert(t('Instagram unavailable'), t('Install Instagram to share to Stories.'));
+                return;
+            }
+        } catch {
+            Alert.alert(t('Instagram unavailable'), t('Could not verify Instagram installation.'));
+            return;
+        }
+
+        downloadInFlightRef.current = true;
+        setDownloadProgress(null);
+        setDownloadVisible(true);
+        const localPath = buildDownloadPath(media, sourceUrl);
+        try {
+            const download = RNFS.downloadFile({
+                fromUrl: sourceUrl,
+                toFile: localPath,
+                background: true,
+                progressDivider: 5,
+                progress: (res) => {
+                    if (!res || !res.bytesExpected) {
+                        setDownloadProgress(null);
+                        return;
+                    }
+                    const ratio = Math.min(1, Math.max(0, res.bytesWritten / res.bytesExpected));
+                    setDownloadProgress(ratio);
+                },
+            }).promise;
+            await download;
+
+            const exists = await RNFS.exists(localPath);
+            if (!exists) {
+                throw new Error('Download failed');
+            }
+
+            const fileUrl = `file://${localPath}`;
+            const bannerUri = Image.resolveAssetSource(Images.advertisement).uri;
+            await NativeShare.shareSingle({
+                social: NativeShare.Social.INSTAGRAM_STORIES,
+                appId: INSTAGRAM_APP_ID,
+                backgroundImage: media.type === 'video' ? bannerUri : fileUrl,
+                backgroundVideo: media.type === 'video' ? fileUrl : undefined,
+                stickerImage: bannerUri,
+                backgroundTopColor: '#0D0F12',
+                backgroundBottomColor: '#0D0F12',
+                attributionURL: 'https://spot-me.ai',
+                failOnCancel: false,
+            });
+        } catch (e: any) {
+            const msg = String(e?.message ?? t('Instagram Story failed'));
+            if (!/cancel/i.test(msg)) {
+                Alert.alert(t('Instagram Story failed'), msg);
+            }
+        } finally {
+            setDownloadVisible(false);
+            setDownloadProgress(null);
+            downloadInFlightRef.current = false;
+        }
+    }, [buildDownloadPath, pickDownloadUrl, t]);
+
     const handleDownloadMedia = useCallback(async (media?: HomeOverviewMedia | MediaViewAllItem | null) => {
         if (!media?.media_id) {
             Alert.alert(t('Download unavailable'), t('No media available yet.'));
@@ -730,7 +816,7 @@ const HomeScreen = ({ navigation }: any) => {
             const actions = [
                 { label: t('Download'), onPress: () => handleDownloadMedia(safeMedia) },
                 { label: t('Share'), onPress: () => handleShareMedia(safeMedia) },
-                { label: t('Share to Instagram Story'), onPress: () => handleShareMedia(safeMedia) },
+                { label: t('Share to Instagram Story'), onPress: () => handleShareMediaInstagram(safeMedia) },
                 {
                     label: t('Report an issue with this video/photo'),
                     onPress: () => openReportIssuePopup(safeMedia),
@@ -776,7 +862,7 @@ const HomeScreen = ({ navigation }: any) => {
             setFeedMenuActions(actions);
             setFeedMenuVisible(true);
         },
-        [eventNameById, getMediaThumb, handleDownloadMedia, handleShareMedia, navigation, openReportIssuePopup, pickPlayableVideoUrl, showInfoPopup, t],
+        [eventNameById, getMediaThumb, handleDownloadMedia, handleShareMedia, handleShareMediaInstagram, navigation, openReportIssuePopup, pickPlayableVideoUrl, showInfoPopup, t],
     );
 
     const pickPlayableVideoUrl = useCallback((media?: HomeOverviewMedia | MediaViewAllItem | null) => {

@@ -605,6 +605,11 @@ const PhotoDetailScreen = ({navigation, route}: any) => {
                     Alert.alert(t('Instagram Story failed'), t('INSTAGRAM_APP_ID is missing.'));
                     return;
                 }
+                const pkg = await ShareLib.isPackageInstalled?.('com.instagram.android');
+                if (pkg && !pkg.isInstalled) {
+                    Alert.alert(t('Instagram unavailable'), t('Install Instagram to share to Stories.'));
+                    return;
+                }
                 const localAsset = shareUrl
                     ? await ensureLocalFile(shareUrl, extensionFromUrl(shareUrl))
                     : null;
@@ -620,7 +625,7 @@ const PhotoDetailScreen = ({navigation, route}: any) => {
                     stickerImage: bannerUri,
                     backgroundTopColor: '#0D0F12',
                     backgroundBottomColor: '#0D0F12',
-                    attributionURL: 'https://myjourney.coffee',
+                    attributionURL: 'https://spot-me.ai',
                 });
                 return;
             } catch (e: any) {
