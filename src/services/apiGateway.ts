@@ -1067,6 +1067,7 @@ export async function searchMediaByBib(
 
 export interface HomeOverviewMedia {
   media_id: string;
+  uploader_profile_id?: string | null;
   likes_count?: number;
   views_count?: number;
   liked_by_me?: boolean;
