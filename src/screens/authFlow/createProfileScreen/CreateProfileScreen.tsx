@@ -13,7 +13,7 @@ import Images from '../../../constants/Images';
 import { useTheme } from '../../../context/ThemeContext';
 import { useAuth } from '../../../context/AuthContext';
 import { ApiError } from '../../../services/apiGateway';
-import { ArrowDown2, Calendar as CalendarIcon, Card } from 'iconsax-react-nativejs';
+import { ArrowDown2, ArrowLeft2, ArrowRight2, Calendar as CalendarIcon, Card } from 'iconsax-react-nativejs';
 import { getNationalityOptions } from '../../../constants/Nationalities';
 import { useTranslation } from 'react-i18next';
 
@@ -262,6 +262,27 @@ const CreateProfileScreen = ({ navigation }: any) => {
         setCalendarDate(nextDate);
         setShowBirthYearDropdown(false);
     };
+
+    const displayedCalendarMonthLabel = useMemo(() => {
+        const source = String(calendarViewDate || calendarDate || toDateString(new Date()));
+        const [yearRaw, monthRaw] = source.split('-').map(Number);
+        const year = Number.isFinite(yearRaw) ? yearRaw : new Date().getFullYear();
+        const month = Number.isFinite(monthRaw) && monthRaw >= 1 && monthRaw <= 12 ? monthRaw : 1;
+        return new Date(year, month - 1, 1).toLocaleDateString(undefined, {
+            month: 'long',
+            year: 'numeric',
+        });
+    }, [calendarDate, calendarViewDate]);
+
+    const shiftBirthCalendarMonth = useCallback((delta: number) => {
+        const source = String(calendarViewDate || calendarDate || toDateString(new Date()));
+        const [yearRaw, monthRaw] = source.split('-').map(Number);
+        const year = Number.isFinite(yearRaw) ? yearRaw : new Date().getFullYear();
+        const month = Number.isFinite(monthRaw) && monthRaw >= 1 && monthRaw <= 12 ? monthRaw : 1;
+        const nextMonth = new Date(year, month - 1 + delta, 1);
+        setCalendarViewDate(toDateString(nextMonth));
+        setShowBirthYearDropdown(false);
+    }, [calendarDate, calendarViewDate]);
 
     const handleContinue = async () => {
         if (step === 1) {
@@ -561,6 +582,26 @@ const CreateProfileScreen = ({ navigation }: any) => {
                         <Calendar
                             key={calendarRenderKey}
                             current={(calendarViewDate || calendarDate) ?? undefined}
+                            hideArrows
+                            customHeaderTitle={
+                                <View style={Styles.calendarMonthNav}>
+                                    <TouchableOpacity
+                                        style={Styles.calendarMonthArrowButton}
+                                        onPress={() => shiftBirthCalendarMonth(-1)}
+                                        activeOpacity={0.8}
+                                    >
+                                        <ArrowLeft2 size={18} color={colors.mainTextColor} variant="Linear" />
+                                    </TouchableOpacity>
+                                    <Text style={Styles.calendarMonthLabel}>{displayedCalendarMonthLabel}</Text>
+                                    <TouchableOpacity
+                                        style={Styles.calendarMonthArrowButton}
+                                        onPress={() => shiftBirthCalendarMonth(1)}
+                                        activeOpacity={0.8}
+                                    >
+                                        <ArrowRight2 size={18} color={colors.mainTextColor} variant="Linear" />
+                                    </TouchableOpacity>
+                                </View>
+                            }
                             markedDates={calendarDate ? { [calendarDate]: { selected: true, selectedColor: colors.primaryColor } } : undefined}
                             onDayPress={(day) => {
                                 setCalendarDate(day.dateString);

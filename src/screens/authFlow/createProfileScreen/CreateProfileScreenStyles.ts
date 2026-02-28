@@ -135,6 +135,25 @@ export const createStyles = (colors: ThemeColors) => StyleSheet.create({
         ...Fonts.medium13,
         color: colors.primaryColor,
     },
+    calendarMonthNav: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 8,
+    },
+    calendarMonthArrowButton: {
+        width: 28,
+        height: 28,
+        borderRadius: 14,
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: colors.btnBackgroundColor,
+    },
+    calendarMonthLabel: {
+        ...Fonts.semibold15,
+        color: colors.mainTextColor,
+        textTransform: 'capitalize',
+    },
     modalDoneButton: {
         marginTop: 12,
         borderRadius: 12,
