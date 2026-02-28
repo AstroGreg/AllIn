@@ -40,6 +40,7 @@ import NativeShare from 'react-native-share'
 import RNFS from 'react-native-fs'
 import CameraRoll from '@react-native-camera-roll/camera-roll'
 import { translateText } from '../../i18n'
+import { useInstagramStoryImageComposer } from '../../components/share/InstagramStoryComposer'
 
 const HOME_CACHE_TTL_MS = 2 * 60 * 1000;
 const HOME_FEED_PAGE_SIZE = 8;
@@ -154,6 +155,7 @@ const HomeScreen = ({ navigation }: any) => {
     const lastLoadRequestRef = useRef(0);
     const feedLoadThrottleRef = useRef(0);
     const uploaderFetchInFlightRef = useRef<Set<string>>(new Set());
+    const {composeInstagramStoryImage, composerElement} = useInstagramStoryImageComposer();
     const onFeedViewableItemsChanged = useRef(({ viewableItems }: { viewableItems: Array<ViewToken> }) => {
         const next: Record<string, boolean> = {};
         viewableItems.forEach((token) => {
@@ -660,7 +662,7 @@ const HomeScreen = ({ navigation }: any) => {
         }
     }, [getMediaShareUrl, t]);
 
-    const handleShareMediaInstagram = useCallback(async (media?: HomeOverviewMedia | MediaViewAllItem | null) => {
+    const handleShareMediaInstagram = useCallback(async (media?: HomeOverviewMedia | MediaViewAllItem | null, storyTitle?: string | null) => {
         if (!media?.media_id) {
             Alert.alert(t('Share unavailable'), t('No media available yet.'));
             return;
@@ -721,12 +723,20 @@ const HomeScreen = ({ navigation }: any) => {
 
             const fileUrl = `file://${localPath}`;
             const bannerUri = Image.resolveAssetSource(Images.advertisement).uri;
+            const composedImageUri =
+                media.type === 'video'
+                    ? null
+                    : await composeInstagramStoryImage(
+                        fileUrl,
+                        String((media as any)?.title || storyTitle || '').trim() || 'SpotMe',
+                        'SpotMe',
+                    );
             await NativeShare.shareSingle({
                 social: NativeShare.Social.INSTAGRAM_STORIES,
                 appId: INSTAGRAM_APP_ID,
-                backgroundImage: media.type === 'video' ? bannerUri : fileUrl,
+                backgroundImage: media.type === 'video' ? bannerUri : composedImageUri,
                 backgroundVideo: media.type === 'video' ? fileUrl : undefined,
-                stickerImage: bannerUri,
+                stickerImage: media.type === 'video' ? bannerUri : undefined,
                 backgroundTopColor: '#0D0F12',
                 backgroundBottomColor: '#0D0F12',
                 attributionURL: 'https://spot-me.ai',
@@ -742,7 +752,7 @@ const HomeScreen = ({ navigation }: any) => {
             setDownloadProgress(null);
             downloadInFlightRef.current = false;
         }
-    }, [buildDownloadPath, pickDownloadUrl, t]);
+    }, [buildDownloadPath, composeInstagramStoryImage, pickDownloadUrl, t]);
 
     const handleDownloadMedia = useCallback(async (media?: HomeOverviewMedia | MediaViewAllItem | null) => {
         if (!media?.media_id) {
@@ -816,7 +826,7 @@ const HomeScreen = ({ navigation }: any) => {
             const actions = [
                 { label: t('Download'), onPress: () => handleDownloadMedia(safeMedia) },
                 { label: t('Share'), onPress: () => handleShareMedia(safeMedia) },
-                { label: t('Share to Instagram Story'), onPress: () => handleShareMediaInstagram(safeMedia) },
+                { label: t('Share to Instagram Story'), onPress: () => handleShareMediaInstagram(safeMedia, label) },
                 {
                     label: t('Report an issue with this video/photo'),
                     onPress: () => openReportIssuePopup(safeMedia),
@@ -2184,6 +2194,7 @@ const HomeScreen = ({ navigation }: any) => {
                     </View>
                 </View>
             )}
+            {composerElement}
         </View>
     )
 }
