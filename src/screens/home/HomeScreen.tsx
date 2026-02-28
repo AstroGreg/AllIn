@@ -1314,6 +1314,21 @@ const HomeScreen = ({ navigation }: any) => {
         });
     }, [eventNameById, navigation]);
 
+    const getMediaAspectRatios = useCallback((media?: MediaViewAllItem | null) => {
+        if (!media) return undefined;
+        const assets = Array.isArray(media.assets) ? media.assets : [];
+        const preferredVariants = ['raw', 'full', 'preview_watermark', 'thumbnail'];
+        for (const variant of preferredVariants) {
+            const asset = assets.find((entry) => String(entry?.variant ?? '').toLowerCase() === variant);
+            const width = Number(asset?.width ?? 0);
+            const height = Number(asset?.height ?? 0);
+            if (width > 0 && height > 0) {
+                return { 0: width / height };
+            }
+        }
+        return undefined;
+    }, []);
+
     const keyExtractor = useCallback((item: HomeFeedItem) => {
         if (item.kind === 'post') {
             return `post:${String(item.post?.id || '').trim() || `${String(item.post?.created_at || '')}|${String(item.post?.title || '')}`}`;
@@ -1410,6 +1425,7 @@ const HomeScreen = ({ navigation }: any) => {
                 : undefined;
             const titleText = isVideoItem ? t('Video') : t('Photo');
             const uploader = getMediaUploaderInfo(media);
+            const mediaAspectRatios = getMediaAspectRatios(media);
             return (
                 <NewsFeedCard
                     title={titleText}
@@ -1421,6 +1437,7 @@ const HomeScreen = ({ navigation }: any) => {
                     videoIndexes={isVideoItem ? [0] : []}
                     toggleVideoOnPress={isVideoItem}
                     isActive={Boolean(activeMediaCards[mediaKey]) && isFocused && !overlayVisible}
+                    mediaAspectRatios={mediaAspectRatios}
                     user={{
                         name: uploader.name,
                         avatar: uploader.avatar,
@@ -1457,6 +1474,7 @@ const HomeScreen = ({ navigation }: any) => {
             formatPostTime,
             formatViewsLabel,
             getMediaThumb,
+            getMediaAspectRatios,
             getMediaUploaderInfo,
             handleDownloadMedia,
             handleShareMedia,

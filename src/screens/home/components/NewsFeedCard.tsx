@@ -8,7 +8,7 @@ import Icons from '../../../constants/Icons';
 import { useTheme } from '../../../context/ThemeContext';
 import { Heart, Import, Eye } from 'iconsax-react-nativejs';
 
-const { width: screenWidth } = Dimensions.get('window');
+const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
 interface NewsFeedCardProps {
     title: string;
@@ -54,6 +54,45 @@ interface NewsFeedCardProps {
     headerSeparated?: boolean;
     toggleVideoOnPress?: boolean;
     hideAvatar?: boolean;
+    mediaAspectRatios?: Record<number, number>;
+}
+
+function computeContainFrame(
+    container: { width: number; height: number },
+    aspectRatio: number,
+) {
+    const containerWidth = Number(container?.width ?? 0);
+    const containerHeight = Number(container?.height ?? 0);
+    if (containerWidth <= 0 || containerHeight <= 0) {
+        return { width: 0, height: 0 };
+    }
+    const safeAspectRatio = Number.isFinite(aspectRatio) && aspectRatio > 0 ? aspectRatio : 1;
+    const containerRatio = containerWidth / containerHeight;
+    if (safeAspectRatio > containerRatio) {
+        return { width: containerWidth, height: containerWidth / safeAspectRatio };
+    }
+    return { width: containerHeight * safeAspectRatio, height: containerHeight };
+}
+
+function resolveVideoAspectRatio(event: any) {
+    const naturalWidth = Number(event?.naturalSize?.width ?? 0);
+    const naturalHeight = Number(event?.naturalSize?.height ?? 0);
+    if (naturalWidth <= 0 || naturalHeight <= 0) return null;
+
+    const orientation = String(event?.naturalSize?.orientation ?? '').toLowerCase();
+    let displayWidth = naturalWidth;
+    let displayHeight = naturalHeight;
+
+    if (orientation.includes('portrait') && naturalWidth > naturalHeight) {
+        displayWidth = naturalHeight;
+        displayHeight = naturalWidth;
+    } else if (orientation.includes('landscape') && naturalHeight > naturalWidth) {
+        displayWidth = naturalHeight;
+        displayHeight = naturalWidth;
+    }
+
+    const ratio = displayWidth / displayHeight;
+    return Number.isFinite(ratio) && ratio > 0 ? ratio : null;
 }
 
 const NewsFeedCard = ({
@@ -91,7 +130,8 @@ const NewsFeedCard = ({
     hideUserDate = false,
     headerSeparated = false,
     toggleVideoOnPress = false,
-    hideAvatar = false
+    hideAvatar = false,
+    mediaAspectRatios,
 }: NewsFeedCardProps) => {
     const { colors } = useTheme();
     const Styles = createStyles(colors);
@@ -131,11 +171,35 @@ const NewsFeedCard = ({
 
     const currentInlineVideoUri = useMemo(() => getInlineVideoUri(currentIndex), [currentIndex, getInlineVideoUri]);
     const isCurrentSlideVideo = Boolean(currentInlineVideoUri);
-    const currentAspectRatio = aspectRatiosByIndex[currentIndex] || (isCurrentSlideVideo ? 16 / 9 : 4 / 5);
+    const currentAspectRatio =
+        aspectRatiosByIndex[currentIndex] ||
+        mediaAspectRatios?.[currentIndex] ||
+        (isCurrentSlideVideo ? 16 / 9 : 4 / 5);
     const unclampedHeight = imageWidth / currentAspectRatio;
     const minHeight = imageWidth * 0.56;
     const maxHeight = imageWidth * 1.25;
     const imageHeight = Math.round(Math.max(minHeight, Math.min(maxHeight, unclampedHeight)));
+    const portraitVideoContainer = useMemo(
+        () => ({
+            width: imageWidth * 0.88,
+            height: screenHeight * 0.72,
+        }),
+        [imageWidth],
+    );
+    const portraitVideoFrame = useMemo(
+        () => computeContainFrame(portraitVideoContainer, currentAspectRatio),
+        [currentAspectRatio, portraitVideoContainer],
+    );
+    const mediaFrameWidth = Math.round(
+        isCurrentSlideVideo && currentAspectRatio < 1
+            ? Math.max(1, portraitVideoFrame.width || portraitVideoContainer.width)
+            : imageWidth,
+    );
+    const mediaFrameHeight = Math.round(
+        isCurrentSlideVideo && currentAspectRatio < 1
+            ? Math.max(minHeight, portraitVideoFrame.height || portraitVideoContainer.height)
+            : imageHeight,
+    );
 
     const attemptAutoplay = useCallback(() => {
         if (!currentInlineVideoUri) return;
@@ -200,10 +264,10 @@ const NewsFeedCard = ({
     }).current;
 
     const getItemLayout = useCallback((_: any, index: number) => ({
-        length: imageWidth,
-        offset: imageWidth * index,
+        length: mediaFrameWidth,
+        offset: mediaFrameWidth * index,
         index,
-    }), [imageWidth]);
+    }), [mediaFrameWidth]);
 
     const triggerLikePulse = useCallback(() => {
         likeOpacity.setValue(1);
@@ -295,7 +359,7 @@ const NewsFeedCard = ({
                 <TouchableOpacity
                     activeOpacity={0.9}
                     onPress={() => handlePressWithDoubleTap(index)}
-                    style={[Styles.newsFeedImageContainer, Styles.textSlideContainer, { width: imageWidth, height: imageHeight }]}
+                    style={[Styles.newsFeedImageContainer, Styles.textSlideContainer, { width: mediaFrameWidth, height: mediaFrameHeight }]}
                 >
                     <View style={Styles.textSlideContent}>
                         <Text style={Styles.textSlideTitle} numberOfLines={3}>{textSlide.title}</Text>
@@ -321,7 +385,7 @@ const NewsFeedCard = ({
                         const { x, y, width, height } = event.nativeEvent.layout;
                         onVideoLayout({ x, y, width, height });
                     }}
-                    style={[Styles.newsFeedImageContainer, { width: imageWidth, height: imageHeight }]}
+                    style={[Styles.newsFeedImageContainer, { width: mediaFrameWidth, height: mediaFrameHeight }]}
                 >
                     {(videoLoading || videoFailed || useSharedPlayer) && (
                         <View style={Styles.newsFeedSkeleton}>
@@ -337,7 +401,7 @@ const NewsFeedCard = ({
                                     type: isHls ? 'm3u8' : undefined,
                                 }}
                                 style={Styles.newsFeedImage}
-                                resizeMode="cover"
+                                resizeMode="contain"
                                 paused={!(isPlaying && isCurrent && isActive)}
                                 controls={false}
                                 muted={isMuted}
@@ -359,7 +423,16 @@ const NewsFeedCard = ({
                                         }
                                     }
                                 }}
-                                onLoad={() => {
+                                onLoad={(event: any) => {
+                                    if (!mediaAspectRatios?.[index]) {
+                                        const ratio = resolveVideoAspectRatio(event);
+                                        if (ratio) {
+                                            setAspectRatiosByIndex((prev) => {
+                                                if (Math.abs((prev[index] || 0) - ratio) < 0.01) return prev;
+                                                return { ...prev, [index]: ratio };
+                                            });
+                                        }
+                                    }
                                     setVideoLoading(false);
                                     Animated.timing(videoOpacity, {
                                         toValue: 1,
@@ -395,7 +468,7 @@ const NewsFeedCard = ({
             <TouchableOpacity
                 activeOpacity={0.9}
                 onPress={() => handlePressWithDoubleTap(index)}
-                style={[Styles.newsFeedImageContainer, { width: imageWidth, height: imageHeight }]}
+                style={[Styles.newsFeedImageContainer, { width: mediaFrameWidth, height: mediaFrameHeight }]}
             >
                 <FastImage
                     source={item}
@@ -543,7 +616,7 @@ const NewsFeedCard = ({
             ) : (
                 <>
                     <View
-                        style={Styles.mediaWrapper}
+                        style={Styles.mediaViewport}
                         onLayout={(event) => {
                             const width = event.nativeEvent.layout.width;
                             if (width && Math.abs(width - mediaWidth) > 1) {
@@ -551,41 +624,43 @@ const NewsFeedCard = ({
                             }
                         }}
                     >
-                        <FlatList
-                            ref={flatListRef}
-                            data={images}
-                            renderItem={renderImage}
-                            keyExtractor={(_, index) => `image-${index}`}
-                            horizontal
-                            showsHorizontalScrollIndicator={false}
-                            snapToInterval={imageWidth}
-                            snapToAlignment="start"
-                            decelerationRate="fast"
-                            bounces={false}
-                            getItemLayout={getItemLayout}
-                            onViewableItemsChanged={onViewableItemsChanged}
-                            viewabilityConfig={viewabilityConfig}
-                            scrollEnabled={true}
-                            style={{ width: imageWidth, height: imageHeight }}
-                            contentContainerStyle={{ width: imageWidth, height: imageHeight }}
-                        />
-                        <Animated.View
-                            pointerEvents="none"
-                            style={[
-                                Styles.likePulse,
-                                {
-                                    opacity: likeOpacity,
-                                    transform: [{ scale: likeScale }],
-                                },
-                            ]}
-                        >
-                            <Heart size={78} color={colors.pureWhite} variant="Bold" />
-                        </Animated.View>
-                        {images.length > 1 && (
-                            <View style={Styles.paginationBadge}>
-                                <Text style={Styles.paginationText}>{currentIndex + 1}/{images.length}</Text>
-                            </View>
-                        )}
+                        <View style={[Styles.mediaWrapper, { width: mediaFrameWidth, height: mediaFrameHeight }]}>
+                            <FlatList
+                                ref={flatListRef}
+                                data={images}
+                                renderItem={renderImage}
+                                keyExtractor={(_, index) => `image-${index}`}
+                                horizontal
+                                showsHorizontalScrollIndicator={false}
+                                snapToInterval={mediaFrameWidth}
+                                snapToAlignment="start"
+                                decelerationRate="fast"
+                                bounces={false}
+                                getItemLayout={getItemLayout}
+                                onViewableItemsChanged={onViewableItemsChanged}
+                                viewabilityConfig={viewabilityConfig}
+                                scrollEnabled={true}
+                                style={{ width: mediaFrameWidth, height: mediaFrameHeight }}
+                                contentContainerStyle={{ width: mediaFrameWidth * images.length, height: mediaFrameHeight }}
+                            />
+                            <Animated.View
+                                pointerEvents="none"
+                                style={[
+                                    Styles.likePulse,
+                                    {
+                                        opacity: likeOpacity,
+                                        transform: [{ scale: likeScale }],
+                                    },
+                                ]}
+                            >
+                                <Heart size={78} color={colors.pureWhite} variant="Bold" />
+                            </Animated.View>
+                            {images.length > 1 && (
+                                <View style={Styles.paginationBadge}>
+                                    <Text style={Styles.paginationText}>{currentIndex + 1}/{images.length}</Text>
+                                </View>
+                            )}
+                        </View>
                     </View>
 
                     {images.length > 1 && renderPaginationDots()}
