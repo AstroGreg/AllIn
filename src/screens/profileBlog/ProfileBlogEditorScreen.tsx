@@ -1,9 +1,10 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { View, Text, TouchableOpacity, TextInput, ScrollView, Image, ActivityIndicator, Modal, Pressable } from 'react-native';
+import { View, Text, TouchableOpacity, TextInput, ScrollView, Image, ActivityIndicator, Modal, Pressable, BackHandler } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Calendar } from 'react-native-calendars';
 import { ArrowLeft2, Add, Trash, Calendar as CalendarIcon, CloseCircle } from 'iconsax-react-nativejs';
 import { launchImageLibrary } from 'react-native-image-picker';
+import { useFocusEffect } from '@react-navigation/native';
 import { useTheme } from '../../context/ThemeContext';
 import SizeBox from '../../constants/SizeBox';
 import { createStyles } from './ProfileBlogEditorStyles';
@@ -433,6 +434,30 @@ const ProfileBlogEditorScreen = ({ navigation, route }: any) => {
         if (currentStep === 6) return skipPeople || linkedPeople.length > 0;
         return true;
     }, [currentStep, description, existingPreview.length, highlight, linkedPeople.length, media.length, postDate, selectedEventId, skipEvent, skipHighlight, skipMedia, skipPeople, title]);
+
+    useFocusEffect(
+        useCallback(() => {
+            const onHardwareBackPress = () => {
+                if (showEventModal) {
+                    setShowEventModal(false);
+                    return true;
+                }
+                if (showDateModal) {
+                    setShowDateModal(false);
+                    return true;
+                }
+                if (currentStep > 1) {
+                    setCurrentStep((prev) => Math.max(1, prev - 1));
+                    return true;
+                }
+                return true;
+            };
+            const subscription = BackHandler.addEventListener('hardwareBackPress', onHardwareBackPress);
+            return () => {
+                subscription.remove();
+            };
+        }, [currentStep, showDateModal, showEventModal]),
+    );
 
     return (
         <View style={Styles.mainContainer}>
