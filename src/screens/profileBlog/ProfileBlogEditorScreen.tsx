@@ -1,16 +1,16 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { View, Text, TouchableOpacity, TextInput, ScrollView, Image, ActivityIndicator, Modal, Pressable } from 'react-native';
+import { View, Text, TouchableOpacity, TextInput, ScrollView, Image, ActivityIndicator, Modal, Pressable, BackHandler } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Calendar } from 'react-native-calendars';
-import { ArrowLeft2, Add, Trash, Calendar as CalendarIcon } from 'iconsax-react-nativejs';
+import { ArrowLeft2, Add, Trash, Calendar as CalendarIcon, CloseCircle } from 'iconsax-react-nativejs';
 import { launchImageLibrary } from 'react-native-image-picker';
+import { useFocusEffect } from '@react-navigation/native';
 import { useTheme } from '../../context/ThemeContext';
 import SizeBox from '../../constants/SizeBox';
 import { createStyles } from './ProfileBlogEditorStyles';
 import { useAuth } from '../../context/AuthContext';
 import { useEvents } from '../../context/EventsContext';
 import { createPost, deletePost, getPostById, searchProfiles, updatePost, uploadMediaBatch, type MediaViewAllItem } from '../../services/apiGateway';
-import CheckBox from '../../components/checkbox/CheckBox';
 import { getApiBaseUrl } from '../../constants/RuntimeConfig';
 import { useTranslation } from 'react-i18next'
 
@@ -250,6 +250,7 @@ const ProfileBlogEditorScreen = ({ navigation, route }: any) => {
                     mimeType: asset.type ?? undefined,
                 }));
             if (mapped.length > 0) {
+                setSkipMedia(false);
                 setMedia((prev) => [...prev, ...mapped].slice(0, 12));
             }
         } finally {
@@ -321,6 +322,7 @@ const ProfileBlogEditorScreen = ({ navigation, route }: any) => {
     const addPerson = useCallback((name: string) => {
         const safe = String(name || '').trim();
         if (!safe) return;
+        setSkipPeople(false);
         setLinkedPeople((prev) => (prev.includes(safe) ? prev : [...prev, safe]));
         setPeopleQuery('');
         setPeopleResults([]);
@@ -398,6 +400,31 @@ const ProfileBlogEditorScreen = ({ navigation, route }: any) => {
         }
     }, [currentStep, TOTAL_STEPS]);
 
+    const skipHighlightStep = useCallback(() => {
+        if (currentStep !== 3) return;
+        setSkipHighlight(true);
+        setHighlight('');
+        setCurrentStep((prev) => (prev < TOTAL_STEPS ? prev + 1 : prev));
+    }, [currentStep, TOTAL_STEPS]);
+
+    const skipMediaStep = useCallback(() => {
+        if (currentStep !== 4) return;
+        setSkipMedia(true);
+        setCurrentStep((prev) => (prev < TOTAL_STEPS ? prev + 1 : prev));
+    }, [currentStep, TOTAL_STEPS]);
+
+    const skipEventStep = useCallback(() => {
+        if (currentStep !== 5) return;
+        setSkipEvent(true);
+        setCurrentStep((prev) => (prev < TOTAL_STEPS ? prev + 1 : prev));
+    }, [currentStep, TOTAL_STEPS]);
+
+    const skipPeopleStep = useCallback(() => {
+        if (currentStep !== 6) return;
+        setSkipPeople(true);
+        setCurrentStep((prev) => (prev < TOTAL_STEPS ? prev + 1 : prev));
+    }, [currentStep, TOTAL_STEPS]);
+
     const canGoNext = useMemo(() => {
         if (currentStep === 1) return !!postDate && !Number.isNaN(new Date(postDate).getTime());
         if (currentStep === 2) return title.trim().length > 0 && description.trim().length > 0;
@@ -408,20 +435,60 @@ const ProfileBlogEditorScreen = ({ navigation, route }: any) => {
         return true;
     }, [currentStep, description, existingPreview.length, highlight, linkedPeople.length, media.length, postDate, selectedEventId, skipEvent, skipHighlight, skipMedia, skipPeople, title]);
 
+    useFocusEffect(
+        useCallback(() => {
+            const onHardwareBackPress = () => {
+                if (showEventModal) {
+                    setShowEventModal(false);
+                    return true;
+                }
+                if (showDateModal) {
+                    setShowDateModal(false);
+                    return true;
+                }
+                if (currentStep > 1) {
+                    setCurrentStep((prev) => Math.max(1, prev - 1));
+                    return true;
+                }
+                return true;
+            };
+            const subscription = BackHandler.addEventListener('hardwareBackPress', onHardwareBackPress);
+            return () => {
+                subscription.remove();
+            };
+        }, [currentStep, showDateModal, showEventModal]),
+    );
+
     return (
         <View style={Styles.mainContainer}>
             <SizeBox height={insets.top} />
             <View style={Styles.header}>
-                <TouchableOpacity style={Styles.headerButton} onPress={() => navigation.goBack()}>
+                <TouchableOpacity
+                    style={Styles.headerButton}
+                    onPress={currentStep > 1 ? goPrevStep : () => navigation.goBack()}
+                >
                     <ArrowLeft2 size={24} color={colors.primaryColor} variant="Linear" />
                 </TouchableOpacity>
-                <Text style={Styles.headerTitle}>{mode === 'edit' ? t('Edit blog') : t('New blog')}</Text>
-                <View style={{ width: 44, height: 44 }} />
+                <View style={Styles.headerTitleRow}>
+                    <Text style={Styles.headerTitle}>{mode === 'edit' ? t('Edit blog') : t('New blog')}</Text>
+                </View>
+                <TouchableOpacity style={Styles.headerButton} onPress={() => navigation.goBack()}>
+                    <CloseCircle size={22} color={colors.subTextColor} variant="Linear" />
+                </TouchableOpacity>
             </View>
 
             <ScrollView contentContainerStyle={Styles.scrollContent} showsVerticalScrollIndicator={false}>
                 <View style={Styles.stepHeaderRow}>
-                    <Text style={Styles.stepCounter}>{t('Step')} {currentStep}/{TOTAL_STEPS}</Text>
+                    <View style={Styles.stepTopRow}>
+                        <Text style={Styles.stepCounter}>{t('Step')} {currentStep}/{TOTAL_STEPS}</Text>
+                        <TouchableOpacity
+                            style={[Styles.stepPreviewButton, currentStep === TOTAL_STEPS && Styles.stepPreviewButtonDisabled]}
+                            onPress={goPreviewStep}
+                            disabled={currentStep === TOTAL_STEPS}
+                        >
+                            <Text style={Styles.stepPreviewText}>{t('Preview')}</Text>
+                        </TouchableOpacity>
+                    </View>
                     <Text style={Styles.stepTitle}>
                         {currentStep === 1 ? t('Date') :
                             currentStep === 2 ? t('Description') :
@@ -470,29 +537,21 @@ const ProfileBlogEditorScreen = ({ navigation, route }: any) => {
 
                 {currentStep === 3 && (
                     <View style={Styles.fieldBlock}>
-                        <View style={Styles.skipRow}>
-                            <CheckBox isChecked={skipHighlight} onPressCheckBox={(checked) => setSkipHighlight(Boolean(checked))} />
-                            <Text style={Styles.skipLabel}>{t('Skip highlight')}</Text>
-                        </View>
-                        {!skipHighlight && (
-                            <TextInput
-                                style={Styles.fieldInput}
-                                placeholder={t('Race winning move, comeback, PR...')}
-                                placeholderTextColor="#9B9F9F"
-                                value={highlight}
-                                onChangeText={setHighlight}
-                            />
-                        )}
+                        <TextInput
+                            style={Styles.fieldInput}
+                            placeholder={t('Race winning move, comeback, PR...')}
+                            placeholderTextColor="#9B9F9F"
+                            value={highlight}
+                            onChangeText={(value) => {
+                                setHighlight(value);
+                                if (skipHighlight) setSkipHighlight(false);
+                            }}
+                        />
                     </View>
                 )}
 
                 {currentStep === 4 && (
                     <>
-                        <View style={Styles.skipRow}>
-                            <CheckBox isChecked={skipMedia} onPressCheckBox={(checked) => setSkipMedia(Boolean(checked))} />
-                            <Text style={Styles.skipLabel}>{t('Skip media')}</Text>
-                        </View>
-                        <SizeBox height={8} />
                         <View style={Styles.mediaHeader}>
                             <Text style={Styles.fieldLabel}>{t('Media')}</Text>
                             <TouchableOpacity style={Styles.mediaAddButton} onPress={pickMedia}>
@@ -530,11 +589,6 @@ const ProfileBlogEditorScreen = ({ navigation, route }: any) => {
 
                 {currentStep === 5 && (
                     <View style={Styles.fieldBlock}>
-                        <View style={Styles.skipRow}>
-                            <CheckBox isChecked={skipEvent} onPressCheckBox={(checked) => setSkipEvent(Boolean(checked))} />
-                            <Text style={Styles.skipLabel}>{t('Skip event')}</Text>
-                        </View>
-                        <SizeBox height={8} />
                         <Text style={Styles.fieldLabel}>{t('Event')}</Text>
                         <TouchableOpacity style={Styles.dateButton} onPress={() => setShowEventModal(true)}>
                             <Text style={Styles.dateText} numberOfLines={1}>{selectedEventLabel}</Text>
@@ -544,11 +598,6 @@ const ProfileBlogEditorScreen = ({ navigation, route }: any) => {
 
                 {currentStep === 6 && (
                     <View style={Styles.fieldBlock}>
-                        <View style={Styles.skipRow}>
-                            <CheckBox isChecked={skipPeople} onPressCheckBox={(checked) => setSkipPeople(Boolean(checked))} />
-                            <Text style={Styles.skipLabel}>{t('Skip people')}</Text>
-                        </View>
-                        <SizeBox height={8} />
                         <Text style={Styles.fieldLabel}>{t('People')}</Text>
                         <View style={Styles.dateButton}>
                             <TextInput
@@ -605,14 +654,6 @@ const ProfileBlogEditorScreen = ({ navigation, route }: any) => {
 
                 <View style={Styles.actionRow}>
                     {currentStep < TOTAL_STEPS ? (
-                        <TouchableOpacity style={Styles.previewShortcutButton} onPress={goPreviewStep}>
-                            <Text style={Styles.previewShortcutText}>{t('Preview')}</Text>
-                        </TouchableOpacity>
-                    ) : null}
-                    <TouchableOpacity style={Styles.cancelButton} onPress={currentStep === 1 ? () => navigation.goBack() : goPrevStep}>
-                        <Text style={Styles.cancelText}>{currentStep === 1 ? t('Cancel') : t('Back')}</Text>
-                    </TouchableOpacity>
-                    {currentStep < TOTAL_STEPS ? (
                         <TouchableOpacity
                             style={[Styles.saveButton, !canGoNext && Styles.saveButtonDisabled]}
                             onPress={goNextStep}
@@ -626,6 +667,23 @@ const ProfileBlogEditorScreen = ({ navigation, route }: any) => {
                         </TouchableOpacity>
                     )}
                 </View>
+                {currentStep === 3 ? (
+                    <TouchableOpacity style={Styles.skipSecondaryButton} onPress={skipHighlightStep}>
+                        <Text style={Styles.skipSecondaryText}>{t('Skip')}</Text>
+                    </TouchableOpacity>
+                ) : currentStep === 4 ? (
+                    <TouchableOpacity style={Styles.skipSecondaryButton} onPress={skipMediaStep}>
+                        <Text style={Styles.skipSecondaryText}>{t('Skip')}</Text>
+                    </TouchableOpacity>
+                ) : currentStep === 5 ? (
+                    <TouchableOpacity style={Styles.skipSecondaryButton} onPress={skipEventStep}>
+                        <Text style={Styles.skipSecondaryText}>{t('Skip')}</Text>
+                    </TouchableOpacity>
+                ) : currentStep === 6 ? (
+                    <TouchableOpacity style={Styles.skipSecondaryButton} onPress={skipPeopleStep}>
+                        <Text style={Styles.skipSecondaryText}>{t('Skip')}</Text>
+                    </TouchableOpacity>
+                ) : null}
 
                 {mode === 'edit' && postId ? (
                     <TouchableOpacity style={Styles.deleteButton} onPress={deleteEntry}>
@@ -664,6 +722,7 @@ const ProfileBlogEditorScreen = ({ navigation, route }: any) => {
                                 style={[Styles.eventRow, !selectedEventId && Styles.eventRowActive]}
                                 onPress={() => {
                                     setSelectedEventId(null);
+                                    setSkipEvent(false);
                                     setShowEventModal(false);
                                 }}
                             >
@@ -681,6 +740,7 @@ const ProfileBlogEditorScreen = ({ navigation, route }: any) => {
                                         style={[Styles.eventRow, active && Styles.eventRowActive]}
                                         onPress={() => {
                                             setSelectedEventId(eventId);
+                                            setSkipEvent(false);
                                             const eventDate = parseEventDate(event.event_date ?? null);
                                             if (eventDate) {
                                                 setPostDate(eventDate);

@@ -1,4 +1,4 @@
-import {ActivityIndicator, ScrollView, Text, TouchableOpacity, View, Share, Alert, useWindowDimensions, Modal, Pressable, RefreshControl, TextInput} from 'react-native'
+import {ActivityIndicator, FlatList, Text, TouchableOpacity, View, Share, Alert, useWindowDimensions, Modal, Pressable, RefreshControl, TextInput, type ListRenderItemInfo, type ViewToken} from 'react-native'
 import React, {useCallback, useMemo, useRef, useState, useEffect} from 'react'
 import { createStyles } from './HomeStyles'
 import Header from './components/Header'
@@ -102,8 +102,6 @@ const HomeScreen = ({ navigation }: any) => {
     const [uploaderMap, setUploaderMap] = useState<Record<string, { name: string; avatarUrl?: string | null }>>({});
     const [feedVisibleCount, setFeedVisibleCount] = useState(HOME_FEED_PAGE_SIZE);
     const feedLayoutsRef = useRef<Record<number, { x: number; y: number; width: number; height: number }>>({});
-    const feedCardLayoutsRef = useRef<Record<string, { y: number; height: number }>>({});
-    const sectionOverviewYRef = useRef(0);
     const scrollViewLayoutRef = useRef({ x: 0, y: 0 });
     const videoContainerOffsetRef = useRef<{ x: number; y: number; width: number; height: number } | null>(null);
     const sharedVideoRectRef = useRef<{ x: number; y: number; width: number; height: number } | null>(null);
@@ -146,6 +144,7 @@ const HomeScreen = ({ navigation }: any) => {
     const [infoPopupMessage, setInfoPopupMessage] = useState('');
     const [translatedBlogsById, setTranslatedBlogsById] = useState<Record<string, boolean>>({});
     const [activeMediaCards, setActiveMediaCards] = useState<Record<string, boolean>>({});
+    const feedViewabilityConfig = useRef({ itemVisiblePercentThreshold: 20 }).current;
     const aiSearchButtonRef = useRef<View>(null);
     const [aiSearchButtonRect, setAiSearchButtonRect] = useState<{ x: number; y: number; width: number; height: number } | null>(null);
     const loadDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -153,6 +152,32 @@ const HomeScreen = ({ navigation }: any) => {
     const lastLoadRequestRef = useRef(0);
     const feedLoadThrottleRef = useRef(0);
     const uploaderFetchInFlightRef = useRef<Set<string>>(new Set());
+    const onFeedViewableItemsChanged = useRef(({ viewableItems }: { viewableItems: Array<ViewToken> }) => {
+        const next: Record<string, boolean> = {};
+        viewableItems.forEach((token) => {
+            if (!token.isViewable) return;
+            const entry = token.item as HomeFeedItem | undefined;
+            if (!entry || entry.kind !== 'media') return;
+            const mediaId = String(entry.media?.media_id || '').trim();
+            if (!mediaId) return;
+            next[`feed-media-${mediaId}`] = true;
+        });
+        setActiveMediaCards((prev) => {
+            const prevKeys = Object.keys(prev);
+            const nextKeys = Object.keys(next);
+            if (prevKeys.length === nextKeys.length) {
+                let same = true;
+                for (const key of nextKeys) {
+                    if (prev[key] !== next[key]) {
+                        same = false;
+                        break;
+                    }
+                }
+                if (same) return prev;
+            }
+            return next;
+        });
+    }).current;
     const enableSharedOverlay = false;
     const useSharedPlayerInFeed = Boolean(
         enableSharedOverlay &&
@@ -1028,49 +1053,6 @@ const HomeScreen = ({ navigation }: any) => {
         [feedVisibleCount, infiniteFeedItems],
     );
 
-    const recomputeVisibleMediaCards = useCallback(() => {
-        const scrollY = scrollYRef.current;
-        const viewportBottom = scrollY + windowHeight;
-        const next: Record<string, boolean> = {};
-        visibleFeedItems.forEach((entry, idx) => {
-            if (entry.kind !== 'media') return;
-            const mediaId = String(entry.media?.media_id || '').trim();
-            if (!mediaId) return;
-            const key = `feed-media-${mediaId}`;
-            const layout = feedCardLayoutsRef.current[key];
-            if (!layout) {
-                next[key] = idx === 0;
-                return;
-            }
-            const top = layout.y;
-            const bottom = layout.y + layout.height;
-            const visibleTop = Math.max(top, scrollY);
-            const visibleBottom = Math.min(bottom, viewportBottom);
-            const visibleHeight = Math.max(0, visibleBottom - visibleTop);
-            const ratio = layout.height > 0 ? visibleHeight / layout.height : 0;
-            next[key] = ratio >= 0.2;
-        });
-        setActiveMediaCards((prev) => {
-            const prevKeys = Object.keys(prev);
-            const nextKeys = Object.keys(next);
-            if (prevKeys.length === nextKeys.length) {
-                let same = true;
-                for (const key of nextKeys) {
-                    if (prev[key] !== next[key]) {
-                        same = false;
-                        break;
-                    }
-                }
-                if (same) return prev;
-            }
-            return next;
-        });
-    }, [visibleFeedItems, windowHeight]);
-
-    useEffect(() => {
-        recomputeVisibleMediaCards();
-    }, [recomputeVisibleMediaCards, visibleFeedItems.length]);
-
     const hasMoreFeedItems = feedVisibleCount < infiniteFeedItems.length;
 
     const loadMoreFeedItems = useCallback(() => {
@@ -1332,6 +1314,212 @@ const HomeScreen = ({ navigation }: any) => {
         });
     }, [eventNameById, navigation]);
 
+    const getMediaAspectRatios = useCallback((media?: MediaViewAllItem | null) => {
+        if (!media) return undefined;
+        const assets = Array.isArray(media.assets) ? media.assets : [];
+        const preferredVariants = ['raw', 'full', 'preview_watermark', 'thumbnail'];
+        for (const variant of preferredVariants) {
+            const asset = assets.find((entry) => String(entry?.variant ?? '').toLowerCase() === variant);
+            const width = Number(asset?.width ?? 0);
+            const height = Number(asset?.height ?? 0);
+            if (width > 0 && height > 0) {
+                return { 0: width / height };
+            }
+        }
+        return undefined;
+    }, []);
+
+    const keyExtractor = useCallback((item: HomeFeedItem) => {
+        if (item.kind === 'post') {
+            return `post:${String(item.post?.id || '').trim() || `${String(item.post?.created_at || '')}|${String(item.post?.title || '')}`}`;
+        }
+        return `media:${String(item.media?.media_id || '').trim() || mediaDedupFingerprint(item.media)}`;
+    }, [mediaDedupFingerprint]);
+
+    const renderFeedItem = useCallback(
+        ({ item }: ListRenderItemInfo<HomeFeedItem>) => {
+            if (item.kind === 'post') {
+                const post = item.post;
+                const translated = Boolean(translatedBlogsById[String(post.id)]);
+                const postDescriptionRaw = String(post.summary ?? post.description ?? '');
+                const postDescription = translated ? translateText(postDescriptionRaw, i18n.language) : postDescriptionRaw;
+                return (
+                    <NewsFeedCard
+                        title={post.title ?? t('Latest blog')}
+                        images={['__text__']}
+                        textSlide={{
+                            title: post.title ?? t('Latest blog'),
+                            description: postDescription,
+                        }}
+                        user={{
+                            name: post.author?.display_name ?? userName,
+                            avatar: post.author?.avatar_url
+                                ? { uri: toAbsoluteUrl(post.author.avatar_url) as string }
+                                : (profilePic ? { uri: profilePic } : Images.profile1),
+                            date: formatPostTime(post.created_at),
+                        }}
+                        onPressUser={() => openProfileFromId(post.author?.profile_id)}
+                        headerSeparated
+                        hideBelowText
+                        likesLabel={`${Number(post?.likes_count ?? 0).toLocaleString()} ${t('likes')}`}
+                        liked={Boolean(post?.liked_by_me)}
+                        onToggleLike={() => handleTogglePostLike(post.id)}
+                        likeDisabled={!String(post?.id ?? '').trim()}
+                        showActions
+                        onTranslate={() =>
+                            setTranslatedBlogsById((prev) => ({
+                                ...prev,
+                                [String(post.id)]: !prev[String(post.id)],
+                            }))
+                        }
+                        onShare={async () => {
+                            try {
+                                await NativeShare.open({
+                                    message: post?.title
+                                        ? String(post.title)
+                                        : String(post?.description ?? post?.summary ?? t('Latest blog')),
+                                    subject: post?.title ? String(post.title) : undefined,
+                                });
+                            } catch {
+                                // ignore
+                            }
+                        }}
+                        onPress={() => {
+                            navigation.navigate('ViewUserBlogDetailsScreen', {
+                                postId: post.id,
+                                post: {
+                                    id: post.id,
+                                    title: post.title ?? t('Latest blog'),
+                                    date: post.created_at
+                                        ? new Date(post.created_at).toLocaleDateString()
+                                        : '',
+                                    image: Images.photo3,
+                                    gallery: [],
+                                    galleryItems: [],
+                                    readCount: post.reading_time_minutes
+                                        ? `${post.reading_time_minutes} min`
+                                        : '1 min',
+                                    author: {
+                                        profile_id: post.author?.profile_id ?? null,
+                                        display_name: post.author?.display_name ?? userName,
+                                        avatar_url: post.author?.avatar_url ?? null,
+                                    },
+                                    writer: post.author?.display_name ?? userName,
+                                    writerImage: post.author?.avatar_url
+                                        ? { uri: toAbsoluteUrl(post.author.avatar_url) as string }
+                                        : (profilePic ? { uri: profilePic } : Images.profile1),
+                                    description: post.description ?? post.summary ?? '',
+                                },
+                            });
+                        }}
+                    />
+                );
+            }
+
+            const media = item.media;
+            const mediaKey = `feed-media-${media.media_id}`;
+            const isVideoItem = String(media.type || '').toLowerCase() === 'video';
+            const thumb = getMediaThumb(media as any) || Images.photo1;
+            const playableVideoUrl = isVideoItem
+                ? (withAccessToken(pickPlayableVideoUrl(media) || '') || undefined)
+                : undefined;
+            const titleText = isVideoItem ? t('Video') : t('Photo');
+            const uploader = getMediaUploaderInfo(media);
+            const mediaAspectRatios = getMediaAspectRatios(media);
+            return (
+                <NewsFeedCard
+                    title={titleText}
+                    description=""
+                    images={[thumb]}
+                    isVideo={isVideoItem}
+                    videoUri={playableVideoUrl}
+                    showPlayOverlay={isVideoItem}
+                    videoIndexes={isVideoItem ? [0] : []}
+                    toggleVideoOnPress={isVideoItem}
+                    isActive={Boolean(activeMediaCards[mediaKey]) && isFocused && !overlayVisible}
+                    mediaAspectRatios={mediaAspectRatios}
+                    user={{
+                        name: uploader.name,
+                        avatar: uploader.avatar,
+                        date: formatPostTime(media.created_at),
+                    }}
+                    onPressUser={() =>
+                        openProfileFromId(
+                            uploader.profileId || overview?.profile_id
+                        )
+                    }
+                    headerSeparated
+                    viewsLabel={formatViewsLabel(media)}
+                    likesLabel={formatLikesLabel(media)}
+                    liked={Boolean(media?.liked_by_me)}
+                    onToggleLike={() => handleToggleLike(media.media_id)}
+                    likeDisabled={!String(media?.media_id ?? '').trim()}
+                    showActions
+                    onShare={() => handleShareMedia(media)}
+                    onDownload={() => handleDownloadMedia(media)}
+                    onPressMore={() =>
+                        openFeedMenu(media, {
+                            isVideo: isVideoItem,
+                            title: isVideoItem ? t('Video') : t('Photo'),
+                        })
+                    }
+                    onPress={() => buildMediaCardPress(media)}
+                />
+            );
+        },
+        [
+            activeMediaCards,
+            buildMediaCardPress,
+            formatLikesLabel,
+            formatPostTime,
+            formatViewsLabel,
+            getMediaThumb,
+            getMediaAspectRatios,
+            getMediaUploaderInfo,
+            handleDownloadMedia,
+            handleShareMedia,
+            handleToggleLike,
+            handleTogglePostLike,
+            i18n.language,
+            isFocused,
+            navigation,
+            openFeedMenu,
+            openProfileFromId,
+            overlayVisible,
+            overview?.profile_id,
+            pickPlayableVideoUrl,
+            profilePic,
+            t,
+            toAbsoluteUrl,
+            translatedBlogsById,
+            userName,
+            withAccessToken,
+        ],
+    );
+
+    const feedListExtraData = useMemo(
+        () => ({
+            activeMediaCards,
+            isFocused,
+            language: i18n.language,
+            overlayVisible,
+            overviewProfileId: overview?.profile_id,
+            profilePic,
+            translatedBlogsById,
+            uploaderMap,
+        }),
+        [
+            activeMediaCards,
+            i18n.language,
+            isFocused,
+            overlayVisible,
+            overview?.profile_id,
+            profilePic,
+            translatedBlogsById,
+            uploaderMap,
+        ],
+    );
+
     const ListHeader = useMemo(
         () => (
             <View style={Styles.scrollContent}>
@@ -1381,236 +1569,22 @@ const HomeScreen = ({ navigation }: any) => {
                         </View>
                     </View>
                 </View>
-
-                {visibleFeedItems.length > 0 && (
-                    <View
-                        style={Styles.sectionOverview}
-                        onLayout={(event) => {
-                            sectionOverviewYRef.current = event.nativeEvent.layout.y;
-                            recomputeVisibleMediaCards();
-                        }}
-                    >
-                        {visibleFeedItems.map((item) => {
-                            if (item.kind === 'post') {
-                                const post = item.post;
-                                const postKey = `feed-post-${post.id}`;
-                                const translated = Boolean(translatedBlogsById[String(post.id)]);
-                                const postDescriptionRaw = String(post.summary ?? post.description ?? '');
-                                const postDescription = translated ? translateText(postDescriptionRaw, i18n.language) : postDescriptionRaw;
-                                return (
-                                    <View
-                                        key={postKey}
-                                        onLayout={(event) => {
-                                            const { y, height } = event.nativeEvent.layout;
-                                            feedCardLayoutsRef.current[postKey] = { y: sectionOverviewYRef.current + y, height };
-                                        }}
-                                    >
-                                        <NewsFeedCard
-                                            title={post.title ?? t('Latest blog')}
-                                            images={['__text__']}
-                                            textSlide={{
-                                                title: post.title ?? t('Latest blog'),
-                                                description: postDescription,
-                                            }}
-                                            user={{
-                                                name: post.author?.display_name ?? userName,
-                                                avatar: post.author?.avatar_url
-                                                    ? { uri: toAbsoluteUrl(post.author.avatar_url) as string }
-                                                    : (profilePic ? { uri: profilePic } : Images.profile1),
-                                                date: formatPostTime(post.created_at),
-                                            }}
-                                            onPressUser={() => openProfileFromId(post.author?.profile_id)}
-                                            headerSeparated
-                                            hideBelowText
-                                            likesLabel={`${Number(post?.likes_count ?? 0).toLocaleString()} ${t('likes')}`}
-                                            liked={Boolean(post?.liked_by_me)}
-                                            onToggleLike={() => handleTogglePostLike(post.id)}
-                                            likeDisabled={!String(post?.id ?? '').trim()}
-                                            showActions
-                                            onTranslate={() =>
-                                                setTranslatedBlogsById((prev) => ({
-                                                    ...prev,
-                                                    [String(post.id)]: !prev[String(post.id)],
-                                                }))
-                                            }
-                                            onShare={async () => {
-                                                try {
-                                                    await NativeShare.open({
-                                                        message: post?.title
-                                                            ? String(post.title)
-                                                            : String(post?.description ?? post?.summary ?? t('Latest blog')),
-                                                        subject: post?.title ? String(post.title) : undefined,
-                                                    });
-                                                } catch {
-                                                    // ignore
-                                                }
-                                            }}
-                                            onPress={() => {
-                                                navigation.navigate('ViewUserBlogDetailsScreen', {
-                                                    postId: post.id,
-                                                    post: {
-                                                        id: post.id,
-                                                        title: post.title ?? t('Latest blog'),
-                                                        date: post.created_at
-                                                            ? new Date(post.created_at).toLocaleDateString()
-                                                            : '',
-                                                        image: Images.photo3,
-                                                        gallery: [],
-                                                        galleryItems: [],
-                                                        readCount: post.reading_time_minutes
-                                                            ? `${post.reading_time_minutes} min`
-                                                            : '1 min',
-                                                        author: {
-                                                            profile_id: post.author?.profile_id ?? null,
-                                                            display_name: post.author?.display_name ?? userName,
-                                                            avatar_url: post.author?.avatar_url ?? null,
-                                                        },
-                                                        writer: post.author?.display_name ?? userName,
-                                                        writerImage: post.author?.avatar_url
-                                                            ? { uri: toAbsoluteUrl(post.author.avatar_url) as string }
-                                                            : (profilePic ? { uri: profilePic } : Images.profile1),
-                                                        description: post.description ?? post.summary ?? '',
-                                                    },
-                                                });
-                                            }}
-                                        />
-                                    </View>
-                                );
-                            }
-
-                            const media = item.media;
-                            const mediaKey = `feed-media-${media.media_id}`;
-                            const isVideoItem = String(media.type || '').toLowerCase() === 'video';
-                            const thumb = getMediaThumb(media as any) || Images.photo1;
-                            const playableVideoUrl = isVideoItem
-                                ? (withAccessToken(pickPlayableVideoUrl(media) || '') || undefined)
-                                : undefined;
-                            const titleText = isVideoItem ? t('Video') : t('Photo');
-                            const uploader = getMediaUploaderInfo(media);
-                            return (
-                                <View
-                                    key={mediaKey}
-                                    onLayout={(event) => {
-                                        const { y, height } = event.nativeEvent.layout;
-                                        feedCardLayoutsRef.current[mediaKey] = { y: sectionOverviewYRef.current + y, height };
-                                        recomputeVisibleMediaCards();
-                                    }}
-                                >
-                                    <NewsFeedCard
-                                        title={titleText}
-                                        description=""
-                                        images={[thumb]}
-                                        isVideo={isVideoItem}
-                                        videoUri={playableVideoUrl}
-                                        showPlayOverlay={isVideoItem}
-                                        videoIndexes={isVideoItem ? [0] : []}
-                                        toggleVideoOnPress={isVideoItem}
-                                        isActive={Boolean(activeMediaCards[mediaKey]) && isFocused && !overlayVisible}
-                                        user={{
-                                            name: uploader.name,
-                                            avatar: uploader.avatar,
-                                            date: formatPostTime(media.created_at),
-                                        }}
-                                        onPressUser={() =>
-                                            openProfileFromId(
-                                                uploader.profileId || overview?.profile_id
-                                            )
-                                        }
-                                        headerSeparated
-                                        viewsLabel={formatViewsLabel(media)}
-                                        likesLabel={formatLikesLabel(media)}
-                                        liked={Boolean(media?.liked_by_me)}
-                                        onToggleLike={() => handleToggleLike(media.media_id)}
-                                        likeDisabled={!String(media?.media_id ?? '').trim()}
-                                        showActions
-                                        onShare={() => handleShareMedia(media)}
-                                        onDownload={() => handleDownloadMedia(media)}
-                                        onPressMore={() =>
-                                            openFeedMenu(media, {
-                                                isVideo: isVideoItem,
-                                                title: isVideoItem ? t('Video') : t('Photo'),
-                                            })
-                                        }
-                                        onPress={() => buildMediaCardPress(media)}
-                                    />
-                                </View>
-                            );
-                        })}
-                        {hasMoreFeedItems && (
-                            <View style={{ paddingVertical: 12 }}>
-                                <ActivityIndicator color={colors.primaryColor} />
-                            </View>
-                        )}
-                    </View>
-                )}
-
             </View>
         ),
         [
-            Styles.gradientButtonSmall,
-            Styles.gradientButtonTextSmall,
             Styles.quickActionCard,
+            Styles.quickActionCardFull,
             Styles.quickActionText,
             Styles.quickActionsGrid,
             Styles.quickActionsRow,
             Styles.scrollContent,
-            Styles.sectionContainer,
             Styles.sectionHeader,
+            Styles.sectionQuickActions,
             Styles.sectionTitle,
             Styles.aiSearchFocusCard,
-            colors.primaryColor,
-            colors.grayColor,
-            isLoadingOverview,
-            overviewError,
-            overviewVideo?.media_id,
-            overviewPhoto?.media_id,
-            overviewBlog?.post?.id,
-            overview?.profile_id,
-            isVideoVisible,
-            isBlogVisible,
-            isFocused,
-            resumeVideoAt,
-            overlayVisible,
-            useSharedPlayerInFeed,
-            overviewInlineVideoUrl,
-            overlayCurrentTime,
-            toAbsoluteUrl,
-            toHlsUrl,
-            formatUploadDate,
-            formatPostTime,
-            pickDescription,
-            formatLikesLabel,
-            formatViewsLabel,
-            extractProfileIdFromMedia,
-            isSignedUrl,
-            withAccessToken,
-            getMediaShareUrl,
-            handleShareMedia,
-            handleDownloadMedia,
-            openFeedMenu,
-            prewarmVideo,
-            buildMediaCardPress,
-            openProfileFromId,
-            updateVisibility,
-            loadMoreFeedItems,
-            openOverlayPlayer,
-            blogPrimaryImage,
-            blogExtraVideos,
-            blogGalleryImages,
-            blogGalleryItems,
-            getMediaThumb,
-            getMediaUploaderInfo,
-            visibleFeedItems,
-            hasMoreFeedItems,
-            topVideos,
-            topPhotos,
             navigation,
-            windowWidth,
             showAiSearchIntro,
-            translatedBlogsById,
-            i18n.language,
-            activeMediaCards,
-            recomputeVisibleMediaCards,
+            t,
         ],
     );
 
@@ -1625,7 +1599,21 @@ const HomeScreen = ({ navigation }: any) => {
                 onPressNotifications={() => navigation.navigate('NotificationsScreen')}
                 onPressProfile={() => navigation.navigate('BottomTabBar', { screen: 'Profile' })}
             />
-            <ScrollView
+            <FlatList
+                data={visibleFeedItems}
+                extraData={feedListExtraData}
+                renderItem={renderFeedItem}
+                keyExtractor={keyExtractor}
+                ListHeaderComponent={ListHeader}
+                ListFooterComponent={
+                    hasMoreFeedItems ? (
+                        <View style={{ paddingVertical: 12 }}>
+                            <ActivityIndicator color={colors.primaryColor} />
+                        </View>
+                    ) : null
+                }
+                onViewableItemsChanged={onFeedViewableItemsChanged}
+                viewabilityConfig={feedViewabilityConfig}
                 showsVerticalScrollIndicator={false}
                 contentContainerStyle={{paddingBottom: insets.bottom > 0 ? insets.bottom + 20 : 40}}
                 refreshControl={
@@ -1635,7 +1623,10 @@ const HomeScreen = ({ navigation }: any) => {
                         tintColor={colors.primaryColor}
                     />
                 }
-                scrollEventThrottle={16}
+                initialNumToRender={HOME_FEED_PAGE_SIZE}
+                maxToRenderPerBatch={6}
+                windowSize={7}
+                removeClippedSubviews
                 scrollEnabled={!overlayVisible}
                 onLayout={(event) => {
                     scrollYRef.current = 0;
@@ -1643,25 +1634,13 @@ const HomeScreen = ({ navigation }: any) => {
                         x: event.nativeEvent.layout.x,
                         y: event.nativeEvent.layout.y,
                     };
-                    updateVisibility();
-                    updateSharedVideoRect();
-                    recomputeVisibleMediaCards();
                 }}
                 onScroll={(event) => {
                     scrollYRef.current = event.nativeEvent.contentOffset.y;
-                    updateVisibility();
-                    updateSharedVideoRect();
-                    recomputeVisibleMediaCards();
-                    const { contentOffset, layoutMeasurement, contentSize } = event.nativeEvent;
-                    const distanceFromBottom =
-                        Number(contentSize?.height || 0) - (Number(contentOffset?.y || 0) + Number(layoutMeasurement?.height || 0));
-                    if (distanceFromBottom < 260) {
-                        loadMoreFeedItems();
-                    }
                 }}
-            >
-            {ListHeader}
-        </ScrollView>
+                onEndReached={loadMoreFeedItems}
+                onEndReachedThreshold={0.35}
+            />
 
             {enableSharedOverlay && overlayVideoUrl && sharedVideoRect && sharedVideoRect.width > 0 && sharedVideoRect.height > 0 && (
                 <View

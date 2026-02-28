@@ -494,11 +494,13 @@ export const createStyles = (colors: ThemeColors) => StyleSheet.create({
         backgroundColor: colors.cardBackground,
     },
     mediaWrapper: {
-        width: '100%',
-        alignSelf: 'center',
         backgroundColor: 'transparent',
         overflow: 'hidden',
         position: 'relative',
+    },
+    mediaViewport: {
+        width: '100%',
+        alignItems: 'center',
     },
     textSlideContainer: {
         backgroundColor: '#0F172A',

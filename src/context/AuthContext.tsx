@@ -318,7 +318,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
                 return;
             }
             console.log('[Auth] Calling auth0.webAuth.authorize...');
-            const credentials = await auth0.webAuth.authorize({
+            const authorizeParams: Record<string, any> = {
                 // If AUTH0_AUDIENCE is set, request an API access token with the permissions needed by the gateway.
                 scope: 'openid profile email read:users write:media access:ai search:media list:media read:media',
                 audience: AUTH0_AUDIENCE,
@@ -328,7 +328,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
                 additionalParameters: {
                     prompt: 'login',
                 },
-            });
+            };
+            const credentials = await auth0.webAuth.authorize(authorizeParams);
             console.log('[Auth] Credentials received:', credentials ? 'Yes' : 'No');
             console.log('[Auth] Access token exists:', !!credentials?.accessToken);
 
@@ -419,7 +420,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
                 return;
             }
             console.log('[Auth] Calling auth0.webAuth.authorize for signup...');
-            const credentials = await auth0.webAuth.authorize({
+            const authorizeParams: Record<string, any> = {
                 scope: 'openid profile email read:users write:media access:ai search:media list:media read:media',
                 audience: AUTH0_AUDIENCE,
                 redirectUrl: AUTH0_REDIRECT_URI,
@@ -428,7 +429,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
                     screen_hint: 'signup',
                     prompt: 'login',
                 },
-            });
+            };
+            const credentials = await auth0.webAuth.authorize(authorizeParams);
             console.log('[Auth] Signup credentials received:', credentials ? 'Yes' : 'No');
             console.log('[Auth] Access token exists:', !!credentials?.accessToken);
 

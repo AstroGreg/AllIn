@@ -1,5 +1,5 @@
-import { View, Text, ScrollView, TouchableOpacity, TextInput, Image, Modal, Pressable, useWindowDimensions } from 'react-native'
-import React, { useCallback, useEffect, useMemo, useState } from 'react'
+import { View, Text, ScrollView, TouchableOpacity, Image, Modal, Pressable, TextInput, useWindowDimensions } from 'react-native'
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { CalendarList } from 'react-native-calendars'
 import { createStyles } from './SearchStyles'
 import SizeBox from '../../constants/SizeBox'
@@ -17,6 +17,7 @@ import UnifiedSearchInput from '../../components/unifiedSearchInput/UnifiedSearc
 
 const FILTERS = ['Competition', 'Person', 'Group', 'Location'] as const
 type FilterKey = typeof FILTERS[number]
+type ResultSectionKey = 'events' | 'people' | 'groups'
 
 type CompetitionType = 'track' | 'marathon'
 type CompetitionTypeFilter = 'all' | CompetitionType
@@ -33,6 +34,7 @@ interface PersonResult {
     id: number;
     name: string;
     profile_id?: string;
+    avatar_url?: string | null;
     role: 'Athlete' | 'Photographer';
     activity: string;
     location: string;
@@ -57,8 +59,10 @@ const SearchScreen = ({ navigation }: any) => {
     const { width: windowWidth } = useWindowDimensions();
     const Styles = createStyles(colors);
     const [ownProfileId, setOwnProfileId] = useState<string | null>(null);
+    const searchInputRef = useRef<TextInput>(null);
 
     const [activeFilter, setActiveFilter] = useState<FilterKey>('Competition');
+    const [filterOrder, setFilterOrder] = useState<FilterKey[]>([]);
     const [filterValues, setFilterValues] = useState<Record<FilterKey, string>>({
         Competition: '',
         Person: '',
@@ -192,7 +196,13 @@ const SearchScreen = ({ navigation }: any) => {
         !!timeRange.start ||
         !!timeRange.end ||
         competitionTypeFilter !== 'all';
-    const activeFilters = FILTERS.filter((filter) => filterValues[filter].trim().length > 0);
+    const activeFilters = useMemo(() => {
+        const ordered = filterOrder.filter((filter) => filterValues[filter].trim().length > 0);
+        const missing = FILTERS.filter(
+            (filter) => filterValues[filter].trim().length > 0 && !ordered.includes(filter),
+        );
+        return [...ordered, ...missing];
+    }, [filterOrder, filterValues]);
 
     const matchValue = (value: string, q: string) => (q ? value.toLowerCase().includes(q) : true);
     const matchAny = (values: string[] | undefined, q: string) =>
@@ -266,6 +276,7 @@ const SearchScreen = ({ navigation }: any) => {
                         id: idx + 1,
                         profile_id: String(profile.profile_id || ''),
                         name: String(profile.display_name || t('User')),
+                        avatar_url: profile.avatar_url ?? null,
                         role: 'Athlete',
                         activity: t('Profile'),
                         location: '',
@@ -314,6 +325,7 @@ const SearchScreen = ({ navigation }: any) => {
                             id: members.length + 1,
                             profile_id: profileId,
                             name: String(member.display_name || t('User')),
+                            avatar_url: member.avatar_url ?? null,
                             role: 'Athlete',
                             activity: t('Group member'),
                             location: '',
@@ -354,7 +366,7 @@ const SearchScreen = ({ navigation }: any) => {
         return new Date(year, month - 1, day, 0, 0, 0, 0);
     };
 
-    const isWithinRange = (date: Date | null) => {
+    const isWithinRange = useCallback((date: Date | null) => {
         if (!date) return false;
         const start = timeRange.start;
         const end = timeRange.end;
@@ -362,7 +374,7 @@ const SearchScreen = ({ navigation }: any) => {
         if (start) return date >= start;
         if (end) return date <= end;
         return true;
-    };
+    }, [timeRange.end, timeRange.start]);
 
     const filteredEvents = useMemo(() => {
         return eventResults.filter((event) => {
@@ -376,7 +388,7 @@ const SearchScreen = ({ navigation }: any) => {
                 typeOk
             );
         });
-    }, [competitionQuery, competitionTypeFilter, locationQuery, timeRange.end, timeRange.start]);
+    }, [competitionQuery, competitionTypeFilter, eventResults, isWithinRange, locationQuery, timeRange.end, timeRange.start]);
 
     const filteredPeople = useMemo(() => {
         if (!hasTypedQuery || !shouldShowPeople) return [];
@@ -439,18 +451,54 @@ const SearchScreen = ({ navigation }: any) => {
 
     const handleFilterPress = (filter: FilterKey) => {
         setActiveFilter(filter);
+        requestAnimationFrame(() => {
+            searchInputRef.current?.focus();
+        });
     };
 
     const handleSearchChange = (text: string) => {
+        const trimmedNext = text.trim();
         setFilterValues(prev => ({
             ...prev,
             [activeFilter]: text,
         }));
+        setFilterOrder((prev) => {
+            const currentValue = String(filterValues[activeFilter] ?? '').trim();
+            if (!currentValue && trimmedNext) {
+                return prev.includes(activeFilter) ? prev : [...prev, activeFilter];
+            }
+            if (currentValue && !trimmedNext) {
+                return prev.filter((filter) => filter !== activeFilter);
+            }
+            return prev;
+        });
     };
 
     const clearFilterValue = (filter: FilterKey) => {
         setFilterValues(prev => ({ ...prev, [filter]: '' }));
+        setFilterOrder((prev) => prev.filter((entry) => entry !== filter));
     };
+
+    const orderedResultSections = useMemo(() => {
+        const mapped = activeFilters
+            .map((filter): ResultSectionKey | null => {
+                if (filter === 'Competition') return 'events';
+                if (filter === 'Person') return 'people';
+                if (filter === 'Group') return 'groups';
+                return null;
+            })
+            .filter(Boolean) as ResultSectionKey[];
+
+        const uniqueInOrder = Array.from(new Set(mapped));
+        const defaultOrder: ResultSectionKey[] = ['events', 'people', 'groups'];
+        const merged = [...uniqueInOrder, ...defaultOrder.filter((key) => !uniqueInOrder.includes(key))];
+
+        return merged.filter((key) => {
+            if (key === 'events') return filteredEvents.length > 0;
+            if (key === 'people') return filteredPeople.length > 0;
+            return filteredGroups.length > 0;
+        });
+    }, [activeFilters, filteredEvents.length, filteredGroups.length, filteredPeople.length]);
 
     const getCompetitionTypeLabel = (type: CompetitionType) => {
         if (type === 'marathon') return t('roadAndTrail');
@@ -498,15 +546,16 @@ const SearchScreen = ({ navigation }: any) => {
 
     const renderPersonCard = (person: PersonResult) => (
         <TouchableOpacity
-            key={person.id}
+            key={person.profile_id ?? String(person.id)}
             style={Styles.userCard}
             onPress={() => openProfileFromSearch(person.profile_id ?? null)}
         >
             <View style={Styles.userCardContent}>
                 <View style={Styles.userHeader}>
                     <FastImage
-                        source={{ uri: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150' }}
+                        source={person.avatar_url ? { uri: person.avatar_url } : Images.profilePic}
                         style={Styles.userAvatar}
+                        resizeMode="cover"
                     />
                     <SizeBox width={8} />
                     <View style={Styles.userInfo}>
@@ -704,12 +753,6 @@ const SearchScreen = ({ navigation }: any) => {
         return `${startText} → ${endText}`;
     };
 
-    const timeRangeLabel = timeRange.start && timeRange.end
-        ? formatDateRange(timeRange.start, timeRange.end)
-        : '';
-
- 
-
     const searchPlaceholder = (() => {
         if (activeFilter === 'Competition') return t('Type competition name');
         if (activeFilter === 'Person') return t('Type person name');
@@ -727,11 +770,12 @@ const SearchScreen = ({ navigation }: any) => {
                 <View style={Styles.headerSpacer} />
             </View>
 
-            <ScrollView style={Styles.container} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+            <ScrollView style={Styles.container} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="always">
                 <SizeBox height={24} />
 
                 <View style={Styles.searchRow}>
                     <UnifiedSearchInput
+                        ref={searchInputRef}
                         containerStyle={Styles.searchInputContainer}
                         contentStyle={{ gap: 8 }}
                         left={
@@ -759,7 +803,7 @@ const SearchScreen = ({ navigation }: any) => {
                 <SizeBox height={16} />
 
                 <View style={Styles.filterTabsContainer}>
-                    <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                    <ScrollView horizontal showsHorizontalScrollIndicator={false} keyboardShouldPersistTaps="always">
                         {FILTERS.map((filter) => (
                             <TouchableOpacity
                                 key={filter}
@@ -877,31 +921,37 @@ const SearchScreen = ({ navigation }: any) => {
                                         <SizeBox height={10} />
                                     </>
                                 ) : null}
-                                {filteredEvents.length > 0 && (
-                                    <>
-                                        <Text style={Styles.sectionTitle}>{t('Competitions')}</Text>
-                                        <SizeBox height={10} />
-                                        {filteredEvents.map(renderEventCard)}
-                                        <SizeBox height={20} />
-                                    </>
-                                )}
-
-                                {filteredPeople.length > 0 && (
-                                    <>
-                                        <Text style={Styles.sectionTitle}>{t('People')}</Text>
-                                        <SizeBox height={10} />
-                                        {filteredPeople.map(renderPersonCard)}
-                                        <SizeBox height={20} />
-                                    </>
-                                )}
-
-                                {filteredGroups.length > 0 && (
-                                    <>
-                                        <Text style={Styles.sectionTitle}>{t('Groups')}</Text>
-                                        <SizeBox height={10} />
-                                        {filteredGroups.map(renderGroupCard)}
-                                    </>
-                                )}
+                                {orderedResultSections.map((sectionKey, index) => {
+                                    const isLast = index === orderedResultSections.length - 1;
+                                    if (sectionKey === 'events') {
+                                        return (
+                                            <React.Fragment key="results-events">
+                                                <Text style={Styles.sectionTitle}>{t('Competitions')}</Text>
+                                                <SizeBox height={10} />
+                                                {filteredEvents.map(renderEventCard)}
+                                                {!isLast ? <SizeBox height={20} /> : null}
+                                            </React.Fragment>
+                                        );
+                                    }
+                                    if (sectionKey === 'people') {
+                                        return (
+                                            <React.Fragment key="results-people">
+                                                <Text style={Styles.sectionTitle}>{t('People')}</Text>
+                                                <SizeBox height={10} />
+                                                {filteredPeople.map(renderPersonCard)}
+                                                {!isLast ? <SizeBox height={20} /> : null}
+                                            </React.Fragment>
+                                        );
+                                    }
+                                    return (
+                                        <React.Fragment key="results-groups">
+                                            <Text style={Styles.sectionTitle}>{t('Groups')}</Text>
+                                            <SizeBox height={10} />
+                                            {filteredGroups.map(renderGroupCard)}
+                                            {!isLast ? <SizeBox height={20} /> : null}
+                                        </React.Fragment>
+                                    );
+                                })}
                             </>
                         )}
                     </>

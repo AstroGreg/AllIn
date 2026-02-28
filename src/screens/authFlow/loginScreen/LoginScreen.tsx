@@ -12,26 +12,28 @@ import { useTheme } from '../../../context/ThemeContext'
 import { useAuth } from '../../../context/AuthContext'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import { useTranslation } from 'react-i18next'
-import { shouldForceAccountCompletion } from '../../../utils/accountCompletion'
+import { resolvePostAuthRoute } from '../../../utils/onboardingRoute'
 
 const LoginScreen = ({ navigation }: any) => {
     const { t } = useTranslation();
     const { colors } = useTheme();
     const Styles = createStyles(colors);
     const insets = useSafeAreaInsets();
-    const { login, signup, isLoading, isAuthenticated, refreshAuthBootstrap } = useAuth();
+    const { login, signup, isLoading, isAuthenticated, refreshAuthBootstrap, userProfile, getUserProfile } = useAuth();
 
     const navigatePostAuth = async () => {
         const bootstrap = await refreshAuthBootstrap();
+        const resolvedProfile = userProfile ?? (await getUserProfile().catch(() => null));
         console.log('[LoginScreen] auth/bootstrap result:', bootstrap ? {
             needs_user_onboarding: bootstrap.needs_user_onboarding,
             missing_user_fields: bootstrap.missing_user_fields,
             has_profiles: bootstrap.has_profiles,
         } : null);
-        const target = shouldForceAccountCompletion(bootstrap) ? 'CreateProfileScreen' : 'CategorySelectionScreen';
+        const target = resolvePostAuthRoute(bootstrap, resolvedProfile);
+        console.log('[LoginScreen] Resolved post-auth route:', target.name, target.params ?? {});
         navigation.reset({
             index: 0,
-            routes: [{ name: target }],
+            routes: [target],
         });
     };
 

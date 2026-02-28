@@ -12,9 +12,20 @@ export const createStyles = (colors: ThemeColors) => StyleSheet.create({
         flexDirection: 'row',
         width: '100%'
     },
+    secondaryButtonContainer: {
+        backgroundColor: colors.backgroundColor,
+        borderWidth: 1,
+        borderColor: colors.primaryColor,
+    },
     btnText: {
         ...Fonts.regular16,
         color: colors.pureWhite,
         fontWeight: '500',
-    }
+    },
+    secondaryBtnText: {
+        color: colors.primaryColor,
+    },
+    backIconRotate: {
+        transform: [{ rotate: '180deg' }],
+    },
 });

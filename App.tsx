@@ -1,6 +1,6 @@
-import React from 'react'
-import { DarkTheme, DefaultTheme, NavigationContainer, type Theme } from '@react-navigation/native'
-import { LogBox } from 'react-native'
+import React, { useEffect } from 'react'
+import { DarkTheme, DefaultTheme, NavigationContainer, useNavigationContainerRef, type Theme } from '@react-navigation/native'
+import { BackHandler, LogBox, Platform } from 'react-native'
 import RootStackNavigation from './src/navigations/RootStackNavigation'
 import { ThemeProvider, useTheme } from './src/context/ThemeContext'
 import { AuthProvider } from './src/context/AuthContext'
@@ -9,6 +9,23 @@ import './src/i18n'
 
 const AppNavigation = () => {
   const { colors, isDark } = useTheme();
+  const navigationRef = useNavigationContainerRef();
+
+  useEffect(() => {
+    if (Platform.OS !== 'android') return;
+    const onHardwareBackPress = () => {
+      if (!navigationRef.isReady()) return false;
+      if (navigationRef.canGoBack()) {
+        navigationRef.goBack();
+        return true;
+      }
+      return false;
+    };
+    const subscription = BackHandler.addEventListener('hardwareBackPress', onHardwareBackPress);
+    return () => {
+      subscription.remove();
+    };
+  }, [navigationRef]);
 
   const navTheme: Theme = {
     ...(isDark ? DarkTheme : DefaultTheme),
@@ -25,7 +42,7 @@ const AppNavigation = () => {
   };
 
   return (
-    <NavigationContainer theme={navTheme}>
+    <NavigationContainer ref={navigationRef} theme={navTheme}>
       <RootStackNavigation />
     </NavigationContainer>
   );

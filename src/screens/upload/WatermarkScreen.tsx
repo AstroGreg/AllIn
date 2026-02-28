@@ -1,4 +1,4 @@
-import { View, Text, TouchableOpacity, ScrollView, TextInput, Modal, Pressable, Image, FlatList } from 'react-native'
+import { View, Text, TouchableOpacity, ScrollView, Modal, Pressable, Image, FlatList } from 'react-native'
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { ArrowLeft2, ArrowRight, Ghost } from 'iconsax-react-nativejs'
@@ -41,7 +41,6 @@ const WatermarkScreen = ({ navigation, route }: any) => {
     const anonymous = route?.params?.anonymous;
     const competitionType = route?.params?.competitionType ?? competition?.competitionType;
 
-    const [watermarkText, setWatermarkText] = useState(DEFAULT_WATERMARK_TEXT);
     const [previewAssets, setPreviewAssets] = useState<PreviewAsset[]>([]);
     const [previewIndex, setPreviewIndex] = useState(0);
     const [previewSizeByUri, setPreviewSizeByUri] = useState<Record<string, { width: number; height: number }>>({});
@@ -54,7 +53,7 @@ const WatermarkScreen = ({ navigation, route }: any) => {
     const previewCardPageHeight = Math.max(1, Number(previewCardSize.height || 0));
     const previewModalPageWidth = Math.max(1, Number(previewModalSize.width || 0));
     const previewModalPageHeight = Math.max(1, Number(previewModalSize.height || 0));
-    const watermarkLabel = (watermarkText || DEFAULT_WATERMARK_TEXT).trim();
+    const watermarkLabel = DEFAULT_WATERMARK_TEXT;
     const watermarkRows = useMemo(() => Array.from({ length: 7 }, (_, i) => i), []);
 
     const competitionId = useMemo(
@@ -79,7 +78,7 @@ const WatermarkScreen = ({ navigation, route }: any) => {
             }))
             .filter((asset: PreviewAsset) => Boolean(asset.uri));
     }, []);
-    const applyPreviewAssets = useCallback((assets: PreviewAsset[], resetWatermarkOnEmpty = false) => {
+    const applyPreviewAssets = useCallback((assets: PreviewAsset[]) => {
         setPreviewAssets(assets);
         setPreviewIndex((prev) => {
             if (assets.length === 0) return 0;
@@ -101,9 +100,6 @@ const WatermarkScreen = ({ navigation, route }: any) => {
             });
             return changed ? next : prev;
         });
-        if (resetWatermarkOnEmpty && assets.length === 0) {
-            setWatermarkText(DEFAULT_WATERMARK_TEXT);
-        }
     }, [getAssetSize]);
     const getSizeForAsset = useCallback((asset: PreviewAsset | null | undefined) => {
         if (!asset) return null;
@@ -151,11 +147,11 @@ const WatermarkScreen = ({ navigation, route }: any) => {
                     const parsed = assetsRaw ? JSON.parse(assetsRaw) : {};
                     const assets = mapPreviewAssets(parsed);
                     if (mounted) {
-                        applyPreviewAssets(assets, true);
+                        applyPreviewAssets(assets);
                     }
                 } catch {
                     if (mounted) {
-                        applyPreviewAssets([], true);
+                        applyPreviewAssets([]);
                     }
                 }
             };
@@ -233,7 +229,7 @@ const WatermarkScreen = ({ navigation, route }: any) => {
             account,
             anonymous,
             competitionType,
-            watermarkText: watermarkText.trim() || DEFAULT_WATERMARK_TEXT,
+            watermarkText: DEFAULT_WATERMARK_TEXT,
         });
     };
 
@@ -420,15 +416,6 @@ const WatermarkScreen = ({ navigation, route }: any) => {
 
                 <SizeBox height={12} />
 
-                <TextInput
-                    style={Styles.textInput}
-                    placeholder={t('Type your watermark')}
-                    placeholderTextColor="#9B9F9F"
-                    value={watermarkText}
-                    onChangeText={setWatermarkText}
-                />
-
-                <SizeBox height={20} />
                 <SizeBox height={20} />
 
                 <View style={Styles.previewCard}>
