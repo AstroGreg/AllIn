@@ -33,7 +33,7 @@ const SelectEventScreen = ({ navigation, route }: any) => {
     const { updateUserProfile, userProfile } = useAuth();
     const [selectedEvents, setSelectedEvents] = useState<string[]>(['track-field']);
     const [isLoading, setIsLoading] = useState(false);
-    const selectedCategory = route?.params?.selectedCategory;
+    const selectedCategory = String(route?.params?.selectedCategory || '').trim().toLowerCase();
     const fromAddFlow = Boolean(route?.params?.fromAddFlow);
     const existingSelectedEvents = useMemo(() => {
         const raw = userProfile?.selectedEvents;
@@ -54,7 +54,8 @@ const SelectEventScreen = ({ navigation, route }: any) => {
     };
 
     const handleNext = async () => {
-        if (selectedEvents.length === 0) {
+        const requireSelection = selectedCategory !== 'support';
+        if (requireSelection && selectedEvents.length === 0) {
             Alert.alert(t('Error'), t('Please select at least one event'));
             return;
         }
@@ -74,6 +75,8 @@ const SelectEventScreen = ({ navigation, route }: any) => {
                     selectedEvents,
                     focusLocked: true,
                 });
+            } else if (selectedCategory === 'support') {
+                navigation.navigate('CompleteSupportDetailsScreen', { selectedEvents });
             } else if (selectedCategory === 'sell') {
                 navigation.navigate('CreatePhotographerProfileScreen');
             } else {
@@ -107,11 +110,19 @@ const SelectEventScreen = ({ navigation, route }: any) => {
 
                 <View style={Styles.contentContainer}>
                     <Text style={Styles.headingText}>
-                        {t('Choose your sport focus')}
+                        {selectedCategory === 'find'
+                            ? t('Choose your sport focus (Athlete)')
+                            : selectedCategory === 'manage'
+                                ? t('Choose your sport focus (Group/Admin)')
+                                : selectedCategory === 'support'
+                                    ? t('Choose sports you follow (Support)')
+                                    : t('Choose your sport focus')}
                     </Text>
                     <SizeBox height={8} />
                     <Text style={Styles.subHeadingText}>
-                        {t('Select one or more disciplines')}
+                        {selectedCategory === 'support'
+                            ? t('Optional: helps personalize your feed')
+                            : t('Select one or more disciplines')}
                     </Text>
 
                     <SizeBox height={24} />

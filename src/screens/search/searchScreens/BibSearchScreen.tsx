@@ -6,7 +6,7 @@ import {useTheme} from '../../../context/ThemeContext';
 import {ArrowLeft2, ArrowRight, CloseCircle, SearchNormal1} from 'iconsax-react-nativejs';
 import KeyboardAvoidingContainer from '../../../components/KeyboardAvoidingContainer';
 import {useAuth} from '../../../context/AuthContext';
-import {ApiError, searchMediaByBib} from '../../../services/apiGateway';
+import {ApiError, getProfileSummary, searchMediaByBib} from '../../../services/apiGateway';
 import {createStyles} from './BibSearchScreenStyles';
 import {useEvents} from '../../../context/EventsContext';
 import {useRoute} from '@react-navigation/native';
@@ -28,7 +28,7 @@ const BibSearchScreen = ({navigation}: any) => {
   const insets = useSafeAreaInsets();
   const {colors} = useTheme();
   const styles = createStyles(colors);
-  const {apiAccessToken} = useAuth();
+  const {apiAccessToken, userProfile} = useAuth();
   const {events, isLoading: isLoadingEvents, error: eventsError} = useEvents();
   const route = useRoute<any>();
   const origin = route?.params?.origin;
@@ -38,9 +38,81 @@ const BibSearchScreen = ({navigation}: any) => {
   const [modalFilterKey, setModalFilterKey] = useState<keyof AiFilterState | null>(null);
 
   const [bib, setBib] = useState('');
+  const [profileChestByYear, setProfileChestByYear] = useState<Record<string, string>>({});
   const [selectedEventId, setSelectedEventId] = useState('');
   const [isSearching, setIsSearching] = useState(false);
   const [errorText, setErrorText] = useState<string | null>(null);
+
+  const normalizeChestByYear = useCallback((raw: any): Record<string, string> => {
+    if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return {};
+    const out: Record<string, string> = {};
+    for (const [year, chest] of Object.entries(raw as Record<string, unknown>)) {
+      const safeYear = String(year ?? '').trim();
+      if (!/^\d{4}$/.test(safeYear)) continue;
+      const safeChest = String(chest ?? '').trim();
+      if (!/^\d+$/.test(safeChest)) continue;
+      out[safeYear] = safeChest;
+    }
+    return out;
+  }, []);
+
+  const getYearFromDateLike = useCallback((value?: string | null) => {
+    const raw = String(value ?? '').trim();
+    if (!raw) return null;
+    const dt = new Date(raw);
+    if (!Number.isNaN(dt.getTime())) return String(dt.getFullYear());
+    const m = raw.match(/\b(19|20)\d{2}\b/);
+    return m ? m[0] : null;
+  }, []);
+
+  const resolveDefaultBib = useCallback(
+    (eventLike?: {event_date?: string | null; event_name?: string | null; event_location?: string | null} | null) => {
+      const byYear = {
+        ...normalizeChestByYear(userProfile?.chestNumbersByYear ?? {}),
+        ...profileChestByYear,
+      };
+
+      const eventYear =
+        getYearFromDateLike(eventLike?.event_date ?? null) ||
+        getYearFromDateLike(eventLike?.event_name ?? null) ||
+        getYearFromDateLike(eventLike?.event_location ?? null);
+      if (eventYear && byYear[eventYear] != null && String(byYear[eventYear]).trim().length > 0) {
+        return String(byYear[eventYear]).trim();
+      }
+
+      const currentYear = String(new Date().getFullYear());
+      if (byYear[currentYear] != null && String(byYear[currentYear]).trim().length > 0) {
+        return String(byYear[currentYear]).trim();
+      }
+
+      const latestYear = Object.keys(byYear)
+        .filter((year) => /^\d{4}$/.test(year) && String(byYear[year]).trim().length > 0)
+        .sort((a, b) => Number(b) - Number(a))[0];
+      if (latestYear) {
+        return String(byYear[latestYear]).trim();
+      }
+
+      return '';
+    },
+    [getYearFromDateLike, normalizeChestByYear, profileChestByYear, userProfile?.chestNumbersByYear],
+  );
+
+  useEffect(() => {
+    if (!apiAccessToken) return;
+    let active = true;
+    (async () => {
+      try {
+        const summary = await getProfileSummary(apiAccessToken);
+        if (!active) return;
+        setProfileChestByYear(normalizeChestByYear(summary?.profile?.chest_numbers_by_year ?? {}));
+      } catch {
+        // local profile fallback is handled by resolver
+      }
+    })();
+    return () => {
+      active = false;
+    };
+  }, [apiAccessToken, normalizeChestByYear]);
 
   useEffect(() => {
     if (!selectedEventId && events.length === 1) {
@@ -64,6 +136,14 @@ const BibSearchScreen = ({navigation}: any) => {
     () => events.find((event) => String(event.event_id) === String(selectedEventId)),
     [events, selectedEventId],
   );
+
+  useEffect(() => {
+    if (bib.trim().length > 0) return;
+    const resolved = resolveDefaultBib(selectedEvent ?? null);
+    if (resolved) {
+      setBib(resolved);
+    }
+  }, [bib, resolveDefaultBib, selectedEvent]);
 
   const filteredEvents = useMemo(() => {
     const query = String(localFilters?.competition ?? '').trim().toLowerCase();

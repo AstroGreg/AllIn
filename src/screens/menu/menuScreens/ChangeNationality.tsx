@@ -14,11 +14,12 @@ const ChangeNationality = ({ navigation }: any) => {
     const insets = useSafeAreaInsets();
     const { colors } = useTheme();
     const Styles = createStyles(colors);
-    const { userProfile, updateUserProfile } = useAuth();
+    const { userProfile, authBootstrap, updateUserProfile, updateUserAccount } = useAuth();
     const [newNationality, setNewNationality] = useState('');
     const [isEditing, setIsEditing] = useState(false);
     const [showModal, setShowModal] = useState(false);
-    const currentNationality = userProfile?.nationality || 'Not set';
+    const bootstrapNationality = String(authBootstrap?.user?.nationality ?? '').trim();
+    const currentNationality = String(userProfile?.nationality ?? '').trim() || bootstrapNationality || 'Not set';
 
     const nationalityOptions = useMemo(() => getNationalityOptions(), []);
 
@@ -84,7 +85,9 @@ const ChangeNationality = ({ navigation }: any) => {
                                 style={Styles.saveButton}
                                 onPress={async () => {
                                     if (!newNationality.trim()) return;
-                                    await updateUserProfile({ nationality: newNationality.trim() });
+                                    const nextNationality = newNationality.trim();
+                                    await updateUserAccount({ nationality: nextNationality });
+                                    await updateUserProfile({ nationality: nextNationality });
                                     setIsEditing(false);
                                 }}
                             >

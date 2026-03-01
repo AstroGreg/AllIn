@@ -2,7 +2,10 @@ import { StyleSheet } from 'react-native';
 import Fonts from '../../../constants/Fonts';
 import { ThemeColors } from '../../../constants/Theme';
 
-export const createStyles = (colors: ThemeColors) => StyleSheet.create({
+export const createStyles = (colors: ThemeColors) => {
+    const isLightTheme = String(colors.backgroundColor || '').toLowerCase() === '#ffffff';
+
+    return StyleSheet.create({
     mainContainer: {
         flex: 1,
         backgroundColor: colors.backgroundColor,
@@ -37,30 +40,67 @@ export const createStyles = (colors: ThemeColors) => StyleSheet.create({
         ...Fonts.medium18,
         color: colors.mainTextColor,
     },
+    competitionMetaCard: {
+        borderWidth: 0.5,
+        borderColor: colors.lightGrayColor,
+        borderRadius: 12,
+        backgroundColor: colors.cardBackground,
+        paddingHorizontal: 14,
+        paddingVertical: 12,
+    },
     competitionDescription: {
         ...Fonts.regular14,
-        color: colors.subTextColor,
+        color: isLightTheme ? '#5A6472' : colors.subTextColor,
+    },
+    competitionMetaText: {
+        ...Fonts.regular13,
+        color: isLightTheme ? '#4D5562' : colors.subTextColor,
+        marginTop: 6,
     },
     subscribeButton: {
-        height: 44,
-        width: '25%',
-        alignSelf: 'flex-end',
-        borderRadius: 10,
+        minHeight: 62,
+        width: '100%',
+        paddingHorizontal: 16,
+        paddingVertical: 12,
+        borderRadius: 14,
         backgroundColor: colors.primaryColor,
         alignItems: 'center',
-        justifyContent: 'center',
+        justifyContent: 'space-between',
+        flexDirection: 'row',
+        borderWidth: 1,
+        borderColor: 'rgba(255,255,255,0.16)',
+    },
+    subscribeButtonActive: {
+        backgroundColor: '#2F63CC',
     },
     subscribeButtonDisabled: {
         opacity: 0.7,
     },
+    subscribeButtonContent: {
+        flex: 1,
+        paddingRight: 10,
+    },
     subscribeButtonText: {
-        ...Fonts.medium14,
+        ...Fonts.medium16,
         color: colors.pureWhite,
+    },
+    subscribeButtonHint: {
+        ...Fonts.regular12,
+        color: 'rgba(255,255,255,0.88)',
+        marginTop: 4,
+    },
+    subscribeChevronWrap: {
+        width: 34,
+        height: 34,
+        borderRadius: 17,
+        backgroundColor: 'rgba(255,255,255,0.15)',
+        alignItems: 'center',
+        justifyContent: 'center',
     },
     tabsContainer: {
         flexDirection: 'row',
         borderWidth: 0.5,
-        borderColor: colors.lightGrayColor,
+        borderColor: isLightTheme ? '#C9D4E6' : colors.lightGrayColor,
         borderRadius: 10,
         padding: 8,
         gap: 8,
@@ -81,7 +121,7 @@ export const createStyles = (colors: ThemeColors) => StyleSheet.create({
     },
     tabText: {
         ...Fonts.regular14,
-        color: colors.subTextColor,
+        color: isLightTheme ? '#5A6472' : colors.subTextColor,
     },
     tabTextActive: {
         color: colors.mainTextColor,
@@ -106,6 +146,22 @@ export const createStyles = (colors: ThemeColors) => StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'center',
     },
+    aiActionButton: {
+        height: 36,
+        borderRadius: 18,
+        paddingHorizontal: 12,
+        backgroundColor: isLightTheme ? '#F4F8FF' : colors.secondaryBlueColor,
+        borderWidth: 1,
+        borderColor: colors.primaryColor,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 8,
+    },
+    aiActionButtonText: {
+        ...Fonts.medium12,
+        color: isLightTheme ? '#1B5DCF' : colors.primaryColor,
+    },
     eventCard: {
         flexDirection: 'row',
         alignItems: 'center',
@@ -129,6 +185,10 @@ export const createStyles = (colors: ThemeColors) => StyleSheet.create({
         borderRadius: 10,
         backgroundColor: colors.btnBackgroundColor,
     },
+    eventThumbnailFallback: {
+        borderWidth: 1,
+        borderColor: colors.lightGrayColor,
+    },
     eventCardName: {
         ...Fonts.medium14,
         color: colors.mainTextColor,
@@ -147,14 +207,14 @@ export const createStyles = (colors: ThemeColors) => StyleSheet.create({
     },
     badgeText: {
         ...Fonts.regular12,
-        color: colors.subTextColor,
+        color: isLightTheme ? '#4D5562' : colors.subTextColor,
     },
     showAllButton: {
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',
-        height: 54,
-        borderRadius: 10,
+        height: 52,
+        borderRadius: 12,
         backgroundColor: colors.primaryColor,
         gap: 8,
     },
@@ -166,8 +226,8 @@ export const createStyles = (colors: ThemeColors) => StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',
-        height: 54,
-        borderRadius: 10,
+        height: 52,
+        borderRadius: 12,
         borderWidth: 1,
         borderColor: colors.primaryColor,
         backgroundColor: colors.cardBackground,
@@ -207,7 +267,42 @@ export const createStyles = (colors: ThemeColors) => StyleSheet.create({
     },
     emptyStateText: {
         ...Fonts.regular14,
-        color: colors.subTextColor,
+        color: isLightTheme ? '#4D5562' : colors.subTextColor,
+        textAlign: 'center',
+    },
+    mediaShowcaseCard: {
+        borderWidth: 0.5,
+        borderColor: colors.lightGrayColor,
+        borderRadius: 14,
+        padding: 14,
+        backgroundColor: colors.cardBackground,
+    },
+    mediaShowcaseHead: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+    },
+    mediaShowcaseTitle: {
+        ...Fonts.medium16,
+        color: colors.mainTextColor,
+    },
+    mediaShowcaseTag: {
+        paddingHorizontal: 10,
+        paddingVertical: 4,
+        borderRadius: 999,
+        backgroundColor: isLightTheme ? '#EDF4FF' : colors.secondaryBlueColor,
+        borderWidth: 0.5,
+        borderColor: colors.primaryColor,
+    },
+    mediaShowcaseTagText: {
+        ...Fonts.medium10,
+        color: isLightTheme ? '#1B5DCF' : colors.primaryColor,
+    },
+    mediaShowcaseDescription: {
+        ...Fonts.regular12,
+        color: isLightTheme ? '#4D5562' : colors.subTextColor,
+        marginTop: 10,
+        marginBottom: 12,
     },
     courseList: {
         flexDirection: 'row',
@@ -252,6 +347,24 @@ export const createStyles = (colors: ThemeColors) => StyleSheet.create({
         width: '100%',
         height: 220,
     },
+    mapEmptyState: {
+        height: 220,
+        alignItems: 'center',
+        justifyContent: 'center',
+        paddingHorizontal: 20,
+        backgroundColor: colors.btnBackgroundColor,
+    },
+    mapEmptyTitle: {
+        ...Fonts.medium14,
+        color: colors.mainTextColor,
+        textAlign: 'center',
+    },
+    mapEmptySubtitle: {
+        ...Fonts.regular12,
+        color: isLightTheme ? '#4D5562' : colors.subTextColor,
+        textAlign: 'center',
+        marginTop: 8,
+    },
     checkpointChip: {
         paddingHorizontal: 14,
         paddingVertical: 10,
@@ -267,7 +380,7 @@ export const createStyles = (colors: ThemeColors) => StyleSheet.create({
     },
     helperText: {
         ...Fonts.regular12,
-        color: colors.subTextColor,
+        color: isLightTheme ? '#4D5562' : colors.subTextColor,
     },
     modalOverlay: {
         flex: 1,
@@ -355,4 +468,5 @@ export const createStyles = (colors: ThemeColors) => StyleSheet.create({
         ...Fonts.medium14,
         color: colors.mainTextColor,
     },
-});
+    });
+};

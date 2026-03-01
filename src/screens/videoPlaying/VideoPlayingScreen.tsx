@@ -30,11 +30,13 @@ const VideoPlayingScreen = ({ navigation, route }: any) => {
     const { apiAccessToken } = useAuth();
     const showBuyModalOnLoad = route?.params?.showBuyModal || false;
     const videoPrice = route?.params?.video?.price || '€0,20';
-    const fallbackVideo = route?.params?.video || {
-        title: t('PK 800m 2023 indoor'),
-        thumbnail: Images.photo1,
-        uri: '',
-    };
+    const fallbackVideo = useMemo(() => (
+        route?.params?.video || {
+            title: t('PK 800m 2023 indoor'),
+            thumbnail: Images.photo1,
+            uri: '',
+        }
+    ), [route?.params?.video, t]);
     const routeMediaId =
         route?.params?.video?.media_id ||
         route?.params?.video?.id ||
@@ -161,7 +163,7 @@ const VideoPlayingScreen = ({ navigation, route }: any) => {
                 setVideoUrl(withAccessToken(resolvedVideo || '') || resolvedVideo || null);
                 setPosterUrl(withAccessToken(resolvedPoster || '') || resolvedPoster || null);
             })
-            .catch((err: any) => {
+            .catch((_err: any) => {
                 if (!mounted) return;
                 // ignore fetch errors for now; keep fallback values
             });
@@ -226,25 +228,32 @@ const VideoPlayingScreen = ({ navigation, route }: any) => {
         setReportIssueVisible(true);
     }, []);
 
-    const handleGoToProfile = () => {
+    const handleGoToProfile = useCallback(() => {
         navigation.navigate('BottomTabBar', { screen: 'Profile' });
-    };
+    }, [navigation]);
 
-    const handleGoToEvent = () => {
+    const handleGoToEvent = useCallback(() => {
+        const location = String((fallbackVideo as any)?.location || '').trim();
+        const eventDate = String((fallbackVideo as any)?.date || '').trim();
+        const typeToken = `${videoTitle} ${location}`.toLowerCase();
         navigation.navigate('CompetitionDetailsScreen', {
+            eventId: String((fallbackVideo as any)?.eventId || (fallbackVideo as any)?.event_id || '').trim() || undefined,
             name: videoTitle,
-            description: `${t('Competition held in')} ${videoTitle}`,
-            competitionType: 'track',
+            location,
+            date: eventDate,
+            competitionType: /road|trail|marathon|veldloop|veldlopen|cross|5k|10k|half|ultra|city\s*run/.test(typeToken)
+                ? 'road'
+                : 'track',
         });
-    };
+    }, [fallbackVideo, navigation, videoTitle]);
 
-    const handleMarkInappropriate = () => {
+    const handleMarkInappropriate = useCallback(() => {
         Alert.alert(t('Thanks'), t('We will review this content.'));
-    };
+    }, [t]);
 
-    const handleRequestRemoval = () => {
+    const handleRequestRemoval = useCallback(() => {
         Alert.alert(t('Request sent'), t('We will review the removal request.'));
-    };
+    }, [t]);
 
     const openMoreMenu = useCallback(() => {
         const actions = [

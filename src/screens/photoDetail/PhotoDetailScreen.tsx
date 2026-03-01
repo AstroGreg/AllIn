@@ -1,5 +1,5 @@
 import React, {useCallback, useMemo, useState, useEffect, useRef} from 'react';
-import {ActivityIndicator, Alert, Image, Modal, Platform, Pressable, Share, Text, TouchableOpacity, View, TextInput} from 'react-native';
+import {ActivityIndicator, Alert, Image, Modal, Pressable, Share, Text, TouchableOpacity, View, TextInput} from 'react-native';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 // useFocusEffect not available in some runtime bundles; use navigation listeners instead.
 import FastImage from 'react-native-fast-image';
@@ -14,7 +14,6 @@ import ShimmerEffect from '../../components/shimmerEffect/ShimmerEffect';
 import {getApiBaseUrl, getHlsBaseUrl} from '../../constants/RuntimeConfig';
 import {AppConfig} from '../../constants/AppConfig';
 import Slider from '@react-native-community/slider';
-import {CameraRoll, iosRequestAddOnlyGalleryPermission} from '@react-native-camera-roll/camera-roll';
 import Icons from '../../constants/Icons';
 import { useTranslation } from 'react-i18next'
 
@@ -37,34 +36,140 @@ const PhotoDetailScreen = ({navigation, route}: any) => {
     const startAt = Number(route?.params?.startAt ?? 0);
     const preferredVideoUrl = route?.params?.preferredVideoUrl ?? null;
 
-    const mediaId: string | null = media?.id ? String(media.id) : null;
-    const eventId: string | null = media?.eventId ? String(media.eventId) : null;
-    const matchType: string | null = media?.matchType ? String(media.matchType) : null;
-    const photoFallbackIds = useMemo(
-        () => [
-            '87873d40-addf-4289-aa82-7cd300acdd94',
-            '4ac31817-e954-4d22-934d-27f82ddf5163',
-            '4fed0d64-9fd4-42c4-bf24-875aad683c6d',
-        ],
-        [],
-    );
-    const isPhotoView = useMemo(() => {
-        const t = String(media?.type ?? legacyPhoto?.type ?? 'image').toLowerCase();
-        return t !== 'video';
-    }, [legacyPhoto?.type, media?.type]);
-    const effectiveMediaId = useMemo(() => {
-        if (!isPhotoView) return mediaId;
-        if (mediaId) return mediaId;
-        const seed = `${eventTitle}-${startAt}`;
-        let hash = 0;
-        for (let i = 0; i < seed.length; i += 1) {
-            hash = (hash << 5) - hash + seed.charCodeAt(i);
-            hash |= 0;
+    const pickString = useCallback((...values: any[]) => {
+        for (const value of values) {
+            if (value === null || value === undefined) continue;
+            const str = String(value).trim();
+            if (str) return str;
         }
-        const index = Math.abs(hash) % photoFallbackIds.length;
-        return photoFallbackIds[index];
-    }, [eventTitle, isPhotoView, mediaId, photoFallbackIds, startAt]);
-    const resolvedMediaId = effectiveMediaId ?? mediaId;
+        return null;
+    }, []);
+    const routeMedia = useMemo(() => {
+        const routeMediaId = pickString(
+            media?.id,
+            media?.mediaId,
+            media?.media_id,
+            legacyPhoto?.id,
+            legacyPhoto?.mediaId,
+            legacyPhoto?.media_id,
+            route?.params?.mediaId,
+            route?.params?.media_id,
+        );
+        const routeEventId = pickString(
+            media?.eventId,
+            media?.event_id,
+            media?.competition_id,
+            legacyPhoto?.eventId,
+            legacyPhoto?.event_id,
+            route?.params?.eventId,
+            route?.params?.event_id,
+        );
+        const typeToken = String(
+            pickString(
+                media?.type,
+                media?.mediaType,
+                media?.media_type,
+                legacyPhoto?.type,
+                legacyPhoto?.mediaType,
+                legacyPhoto?.media_type,
+                route?.params?.type,
+                'image',
+            ) ?? 'image',
+        ).toLowerCase();
+        const normalizedType = typeToken === 'video' ? 'video' : 'image';
+        const thumbnailUrl = pickString(
+            media?.thumbnailUrl,
+            media?.thumbnail_url,
+            legacyPhoto?.thumbnailUrl,
+            legacyPhoto?.thumbnail_url,
+            legacyPhoto?.thumbnail,
+            legacyPhoto?.photo,
+        );
+        const previewUrl = pickString(
+            media?.previewUrl,
+            media?.preview_url,
+            legacyPhoto?.previewUrl,
+            legacyPhoto?.preview_url,
+            legacyPhoto?.thumbnail,
+            legacyPhoto?.photo,
+        );
+        const originalUrl = pickString(
+            media?.originalUrl,
+            media?.original_url,
+            legacyPhoto?.originalUrl,
+            legacyPhoto?.original_url,
+            legacyPhoto?.thumbnail,
+            legacyPhoto?.photo,
+        );
+        const fullUrl = pickString(
+            media?.fullUrl,
+            media?.full_url,
+            legacyPhoto?.fullUrl,
+            legacyPhoto?.full_url,
+        );
+        const rawUrl = pickString(
+            media?.rawUrl,
+            media?.raw_url,
+            legacyPhoto?.rawUrl,
+            legacyPhoto?.raw_url,
+        );
+        const vp9Url = pickString(media?.vp9Url, media?.vp9_url, legacyPhoto?.vp9Url, legacyPhoto?.vp9_url);
+        const av1Url = pickString(media?.av1Url, media?.av1_url, legacyPhoto?.av1Url, legacyPhoto?.av1_url);
+        const hlsManifestPath = pickString(
+            media?.hlsManifestPath,
+            media?.hls_manifest_path,
+            legacyPhoto?.hlsManifestPath,
+            legacyPhoto?.hls_manifest_path,
+        );
+        const matchTypeValue = pickString(
+            media?.matchType,
+            media?.match_type,
+            legacyPhoto?.matchType,
+            legacyPhoto?.match_type,
+            route?.params?.matchType,
+            route?.params?.match_type,
+        );
+        const assets = Array.isArray(media?.assets)
+            ? media.assets
+            : Array.isArray(legacyPhoto?.assets)
+                ? legacyPhoto.assets
+                : [];
+        return {
+            id: routeMediaId,
+            mediaId: routeMediaId,
+            media_id: routeMediaId,
+            eventId: routeEventId,
+            event_id: routeEventId,
+            type: normalizedType,
+            thumbnailUrl,
+            thumbnail_url: thumbnailUrl,
+            previewUrl,
+            preview_url: previewUrl,
+            originalUrl,
+            original_url: originalUrl,
+            fullUrl,
+            full_url: fullUrl,
+            rawUrl,
+            raw_url: rawUrl,
+            vp9Url,
+            vp9_url: vp9Url,
+            av1Url,
+            av1_url: av1Url,
+            hlsManifestPath,
+            hls_manifest_path: hlsManifestPath,
+            matchType: matchTypeValue,
+            match_type: matchTypeValue,
+            matchPercent: Number(media?.matchPercent ?? media?.match_percent ?? legacyPhoto?.matchPercent ?? legacyPhoto?.match_percent),
+            views_count: Number(media?.views_count ?? media?.views ?? legacyPhoto?.views_count ?? legacyPhoto?.views ?? 0),
+            assets,
+            title: pickString(media?.title, legacyPhoto?.title),
+        };
+    }, [legacyPhoto, media, pickString, route?.params?.eventId, route?.params?.event_id, route?.params?.matchType, route?.params?.match_type, route?.params?.mediaId, route?.params?.media_id, route?.params?.type]);
+    const mediaId: string | null = routeMedia.id;
+    const eventId: string | null = routeMedia.eventId;
+    const matchType: string | null = routeMedia.matchType;
+    const effectiveMediaId = mediaId;
+    const resolvedMediaId = mediaId;
 
     useEffect(() => {
         if (!apiAccessToken) return;
@@ -85,24 +190,38 @@ const PhotoDetailScreen = ({navigation, route}: any) => {
 
     const normalizeMedia = useCallback((item: MediaViewAllItem) => ({
         id: item.media_id,
+        mediaId: item.media_id,
+        media_id: item.media_id,
         eventId: item.event_id,
+        event_id: item.event_id,
         thumbnailUrl: item.thumbnail_url,
+        thumbnail_url: item.thumbnail_url,
         previewUrl: item.preview_url,
+        preview_url: item.preview_url,
         originalUrl: item.original_url,
+        original_url: item.original_url,
         fullUrl: item.full_url,
+        full_url: item.full_url,
         rawUrl: item.raw_url,
+        raw_url: item.raw_url,
         vp9Url: item.vp9_url,
+        vp9_url: item.vp9_url,
         av1Url: item.av1_url,
+        av1_url: item.av1_url,
         hlsManifestPath: item.hls_manifest_path,
+        hls_manifest_path: item.hls_manifest_path,
         type: item.type,
         assets: item.assets ?? [],
         title: (item as any).title ?? null,
+        views_count: Number((item as any).views_count ?? 0),
     }), []);
 
     const [resolvedMedia, setResolvedMedia] = useState<ReturnType<typeof normalizeMedia> | null>(null);
-    const activeMedia = isPhotoView ? resolvedMedia : (resolvedMedia ?? media);
-    const matchPercent = typeof media?.matchPercent === 'number' ? media.matchPercent : null;
-    const mediaViews = Number((activeMedia as any)?.views_count ?? (media as any)?.views_count ?? 0);
+    const activeMedia = resolvedMedia ?? routeMedia;
+    const matchPercent = Number.isFinite(Number((activeMedia as any)?.matchPercent ?? (activeMedia as any)?.match_percent))
+        ? Number((activeMedia as any)?.matchPercent ?? (activeMedia as any)?.match_percent)
+        : null;
+    const mediaViews = Number((activeMedia as any)?.views_count ?? (routeMedia as any)?.views_count ?? 0);
     const mediaViewsLabel = Number.isFinite(mediaViews) ? mediaViews.toLocaleString() : '0';
     const normalizeHeaderLabel = useCallback((value?: string | null) => {
         const raw = String(value ?? '').trim();
@@ -123,24 +242,25 @@ const PhotoDetailScreen = ({navigation, route}: any) => {
 
     const shouldFetchMedia = useMemo(() => {
         if (!apiAccessToken || !effectiveMediaId) return false;
-        if (isPhotoView) return true;
-        if (!media) return true;
         const hasUrls =
-            Boolean(media.previewUrl || media.preview_url) ||
-            Boolean(media.originalUrl || media.original_url) ||
-            Boolean(media.fullUrl || media.full_url) ||
-            Boolean(media.rawUrl || media.raw_url) ||
-            Boolean(media.hlsManifestPath || media.hls_manifest_path);
-        const hasAssets = Array.isArray((media as any).assets) && (media as any).assets.length > 0;
+            Boolean(routeMedia.previewUrl || routeMedia.preview_url) ||
+            Boolean(routeMedia.originalUrl || routeMedia.original_url) ||
+            Boolean(routeMedia.fullUrl || routeMedia.full_url) ||
+            Boolean(routeMedia.rawUrl || routeMedia.raw_url) ||
+            Boolean(routeMedia.thumbnailUrl || routeMedia.thumbnail_url) ||
+            Boolean(routeMedia.hlsManifestPath || routeMedia.hls_manifest_path);
+        const hasAssets = Array.isArray((routeMedia as any).assets) && (routeMedia as any).assets.length > 0;
         return !(hasUrls || hasAssets);
-    }, [apiAccessToken, effectiveMediaId, isPhotoView, media]);
+    }, [apiAccessToken, effectiveMediaId, routeMedia]);
 
     useEffect(() => {
         let isMounted = true;
         const loadMedia = async () => {
             if (!shouldFetchMedia) return;
+            const safeMediaId = String(effectiveMediaId || '').trim();
+            if (!safeMediaId || !apiAccessToken) return;
             try {
-                const fresh = await getMediaById(apiAccessToken, effectiveMediaId);
+                const fresh = await getMediaById(apiAccessToken, safeMediaId);
                 if (isMounted) setResolvedMedia(normalizeMedia(fresh));
             } catch {
                 // ignore fetch errors; fall back to route data
@@ -178,6 +298,15 @@ const PhotoDetailScreen = ({navigation, route}: any) => {
         );
     }, []);
 
+    const withAccessToken = useCallback((value?: string | null) => {
+        if (!value) return null;
+        const resolved = toAbsoluteUrl(value);
+        if (!resolved) return null;
+        if (!apiAccessToken || isSignedUrl(resolved) || resolved.includes('access_token=')) return resolved;
+        const sep = resolved.includes('?') ? '&' : '?';
+        return `${resolved}${sep}access_token=${encodeURIComponent(apiAccessToken)}`;
+    }, [apiAccessToken, isSignedUrl, toAbsoluteUrl]);
+
     const hlsUrlWithToken = useMemo(() => {
         if (!hlsUrl) return null;
         if (!apiAccessToken) return hlsUrl;
@@ -187,10 +316,34 @@ const PhotoDetailScreen = ({navigation, route}: any) => {
     }, [apiAccessToken, hlsUrl, isSignedUrl]);
 
     const bestImageUrl = useMemo(() => {
-        const candidates = [activeMedia?.previewUrl, activeMedia?.originalUrl, activeMedia?.thumbnailUrl].filter(Boolean);
-        if (candidates.length > 0) return toAbsoluteUrl(String(candidates[0]));
+        const candidates = [
+            activeMedia?.previewUrl,
+            activeMedia?.preview_url,
+            activeMedia?.originalUrl,
+            activeMedia?.original_url,
+            activeMedia?.fullUrl,
+            activeMedia?.full_url,
+            activeMedia?.rawUrl,
+            activeMedia?.raw_url,
+            activeMedia?.thumbnailUrl,
+            activeMedia?.thumbnail_url,
+        ].filter(Boolean);
+        if (candidates.length > 0) return withAccessToken(String(candidates[0])) || toAbsoluteUrl(String(candidates[0]));
         return null;
-    }, [activeMedia?.originalUrl, activeMedia?.previewUrl, activeMedia?.thumbnailUrl, toAbsoluteUrl]);
+    }, [
+        activeMedia?.fullUrl,
+        activeMedia?.full_url,
+        activeMedia?.originalUrl,
+        activeMedia?.original_url,
+        activeMedia?.previewUrl,
+        activeMedia?.preview_url,
+        activeMedia?.rawUrl,
+        activeMedia?.raw_url,
+        activeMedia?.thumbnailUrl,
+        activeMedia?.thumbnail_url,
+        toAbsoluteUrl,
+        withAccessToken,
+    ]);
 
     const assetMp4Url = useMemo(() => {
         const assets = activeMedia?.assets ?? [];
@@ -253,9 +406,13 @@ const PhotoDetailScreen = ({navigation, route}: any) => {
             preferredVideoUrl,
             assetMp4Url,
             activeMedia?.fullUrl,
+            activeMedia?.full_url,
             activeMedia?.rawUrl,
+            activeMedia?.raw_url,
             activeMedia?.originalUrl,
+            activeMedia?.original_url,
             activeMedia?.previewUrl,
+            activeMedia?.preview_url,
             assetHlsUrl,
             hlsUrlWithToken,
         ]
@@ -266,7 +423,7 @@ const PhotoDetailScreen = ({navigation, route}: any) => {
             .map((value) => {
                 if (value.startsWith('http://') || value.startsWith('https://')) return value;
                 if (value.toLowerCase().includes('.m3u8')) return null;
-                return toAbsoluteUrl(value);
+                return withAccessToken(value) || toAbsoluteUrl(value);
             })
             .filter((value): value is string => !!value);
 
@@ -278,7 +435,24 @@ const PhotoDetailScreen = ({navigation, route}: any) => {
             if (!unique.includes(value)) unique.push(value);
         });
         return unique;
-    }, [activeMedia?.fullUrl, activeMedia?.originalUrl, activeMedia?.previewUrl, activeMedia?.rawUrl, activeMedia?.type, assetHlsUrl, assetMp4Url, hlsUrlWithToken, isVideoFile, preferredVideoUrl, toAbsoluteUrl]);
+    }, [
+        activeMedia?.fullUrl,
+        activeMedia?.full_url,
+        activeMedia?.originalUrl,
+        activeMedia?.original_url,
+        activeMedia?.previewUrl,
+        activeMedia?.preview_url,
+        activeMedia?.rawUrl,
+        activeMedia?.raw_url,
+        activeMedia?.type,
+        assetHlsUrl,
+        assetMp4Url,
+        hlsUrlWithToken,
+        isVideoFile,
+        preferredVideoUrl,
+        toAbsoluteUrl,
+        withAccessToken,
+    ]);
 
     const bestVideoUrl = useMemo(() => videoCandidates[0] ?? null, [videoCandidates]);
     const [videoSourceIndex, setVideoSourceIndex] = useState(0);
@@ -410,16 +584,6 @@ const PhotoDetailScreen = ({navigation, route}: any) => {
         }
     }, []);
 
-    const requestPhotoPermission = useCallback(async () => {
-        if (Platform.OS !== 'ios') return true;
-        try {
-            const status = await iosRequestAddOnlyGalleryPermission();
-            return status === 'granted' || status === 'limited';
-        } catch {
-            return true;
-        }
-    }, []);
-
     const isHlsUrl = useCallback((value?: string | null) => {
         if (!value) return false;
         return String(value).toLowerCase().includes('.m3u8');
@@ -437,12 +601,16 @@ const PhotoDetailScreen = ({navigation, route}: any) => {
         const candidates = [
             assetMp4Url,
             activeMedia?.originalUrl,
+            activeMedia?.original_url,
             activeMedia?.fullUrl,
+            activeMedia?.full_url,
             activeMedia?.rawUrl,
+            activeMedia?.raw_url,
             activeMedia?.previewUrl,
+            activeMedia?.preview_url,
         ]
             .filter(Boolean)
-            .map((value) => toAbsoluteUrl(String(value)))
+            .map((value) => withAccessToken(String(value)) || toAbsoluteUrl(String(value)))
             .filter(Boolean) as string[];
 
         const direct = candidates.find((value) => !isHlsUrl(value));
@@ -459,7 +627,7 @@ const PhotoDetailScreen = ({navigation, route}: any) => {
                     fresh.thumbnail_url,
                 ]
                     .filter(Boolean)
-                    .map((value) => toAbsoluteUrl(String(value)))
+                    .map((value) => withAccessToken(String(value)) || toAbsoluteUrl(String(value)))
                     .filter(Boolean) as string[];
 
                 const freshDirect = freshCandidates.find((value) => !isHlsUrl(value));
@@ -470,7 +638,23 @@ const PhotoDetailScreen = ({navigation, route}: any) => {
         }
 
         return bestVideoUrl ?? null;
-    }, [activeMedia?.fullUrl, activeMedia?.originalUrl, activeMedia?.previewUrl, activeMedia?.rawUrl, apiAccessToken, assetMp4Url, bestVideoUrl, isHlsUrl, resolvedMediaId, toAbsoluteUrl]);
+    }, [
+        activeMedia?.fullUrl,
+        activeMedia?.full_url,
+        activeMedia?.originalUrl,
+        activeMedia?.original_url,
+        activeMedia?.previewUrl,
+        activeMedia?.preview_url,
+        activeMedia?.rawUrl,
+        activeMedia?.raw_url,
+        apiAccessToken,
+        assetMp4Url,
+        bestVideoUrl,
+        isHlsUrl,
+        resolvedMediaId,
+        toAbsoluteUrl,
+        withAccessToken,
+    ]);
 
     const resolveShareUrl = useCallback(async () => {
         const candidate = await resolveDownloadUrl();
@@ -572,7 +756,7 @@ const PhotoDetailScreen = ({navigation, route}: any) => {
             setDownloadProgress(null);
             downloadInFlightRef.current = false;
         }
-    }, [apiAccessToken, ensureLocalFile, eventId, extensionFromUrl, getShareModule, resolveDownloadUrl, resolvedMediaId]);
+    }, [apiAccessToken, ensureLocalFile, eventId, extensionFromUrl, getShareModule, resolveDownloadUrl, resolvedMediaId, t]);
 
     const handleShareNative = useCallback(async () => {
         const shareUrl = await resolveShareUrl();
@@ -591,7 +775,7 @@ const PhotoDetailScreen = ({navigation, route}: any) => {
             const msg = String(e?.message ?? e);
             Alert.alert(t('Share failed'), msg);
         }
-    }, [ensureLocalFile, extensionFromUrl, resolveShareUrl]);
+    }, [ensureLocalFile, extensionFromUrl, resolveShareUrl, t]);
 
     const handleShareInstagram = useCallback(async () => {
         const shareModule = getShareModule();
@@ -635,7 +819,7 @@ const PhotoDetailScreen = ({navigation, route}: any) => {
             return;
         }
         await handleShareNative();
-    }, [ensureLocalFile, extensionFromUrl, getShareModule, handleShareNative, resolveShareUrl]);
+    }, [ensureLocalFile, extensionFromUrl, getShareModule, handleShareNative, resolveShareUrl, t]);
 
     const openMoreMenu = useCallback(() => {
         const actions = [
@@ -651,10 +835,13 @@ const PhotoDetailScreen = ({navigation, route}: any) => {
                 label: t('Go to event'),
                 onPress: () => {
                     const eventName = headerLabel || t('Competition');
+                    const typeToken = String(eventName || '').toLowerCase();
                     navigation.navigate('CompetitionDetailsScreen', {
+                        eventId: eventId || undefined,
                         name: eventName,
-                        description: `${t('Competition held in')} ${eventName}`,
-                        competitionType: 'track',
+                        competitionType: /road|trail|marathon|veldloop|veldlopen|cross|5k|10k|half|ultra|city\s*run/.test(typeToken)
+                            ? 'road'
+                            : 'track',
                     });
                 },
             },
@@ -669,7 +856,7 @@ const PhotoDetailScreen = ({navigation, route}: any) => {
         ];
         setMoreMenuActions(actions);
         setMoreMenuVisible(true);
-    }, [handleDownload, handleShareInstagram, handleShareNative, headerLabel, navigation, openReportIssuePopup, t]);
+    }, [eventId, handleDownload, handleShareInstagram, handleShareNative, headerLabel, navigation, openReportIssuePopup, t]);
 
     useEffect(() => {
         const parent = navigation.getParent?.();
@@ -754,7 +941,7 @@ const PhotoDetailScreen = ({navigation, route}: any) => {
                 setIsSavingFeedback(false);
             }
         },
-        [apiAccessToken, eventId, resolvedMediaId],
+        [apiAccessToken, eventId, resolvedMediaId, t],
     );
 
     return (

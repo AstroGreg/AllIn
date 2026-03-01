@@ -1,0 +1,72 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="900" viewBox="0 0 1600 900">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#e6f0db"/>
+      <stop offset="100%" stop-color="#d7e5d1"/>
+    </linearGradient>
+    <filter id="shadow" x="-50%" y="-50%" width="200%" height="200%">
+      <feDropShadow dx="0" dy="2" stdDeviation="4" flood-color="#00000066"/>
+    </filter>
+  </defs>
+
+  <rect width="1600" height="900" fill="url(#bg)"/>
+
+  <path d="M -50 80 C 180 45, 420 115, 680 80 C 940 45, 1220 115, 1650 70" stroke="#94a3b822" stroke-width="2" fill="none"/><path d="M -50 145 C 180 110, 420 180, 680 145 C 940 110, 1220 180, 1650 135" stroke="#94a3b822" stroke-width="2" fill="none"/><path d="M -50 210 C 180 175, 420 245, 680 210 C 940 175, 1220 245, 1650 200" stroke="#94a3b822" stroke-width="2" fill="none"/><path d="M -50 275 C 180 240, 420 310, 680 275 C 940 240, 1220 310, 1650 265" stroke="#94a3b822" stroke-width="2" fill="none"/><path d="M -50 340 C 180 305, 420 375, 680 340 C 940 305, 1220 375, 1650 330" stroke="#94a3b822" stroke-width="2" fill="none"/><path d="M -50 405 C 180 370, 420 440, 680 405 C 940 370, 1220 440, 1650 395" stroke="#94a3b822" stroke-width="2" fill="none"/><path d="M -50 470 C 180 435, 420 505, 680 470 C 940 435, 1220 505, 1650 460" stroke="#94a3b822" stroke-width="2" fill="none"/><path d="M -50 535 C 180 500, 420 570, 680 535 C 940 500, 1220 570, 1650 525" stroke="#94a3b822" stroke-width="2" fill="none"/><path d="M -50 600 C 180 565, 420 635, 680 600 C 940 565, 1220 635, 1650 590" stroke="#94a3b822" stroke-width="2" fill="none"/><path d="M -50 665 C 180 630, 420 700, 680 665 C 940 630, 1220 700, 1650 655" stroke="#94a3b822" stroke-width="2" fill="none"/><path d="M -50 730 C 180 695, 420 765, 680 730 C 940 695, 1220 765, 1650 720" stroke="#94a3b822" stroke-width="2" fill="none"/><path d="M -50 795 C 180 760, 420 830, 680 795 C 940 760, 1220 830, 1650 785" stroke="#94a3b822" stroke-width="2" fill="none"/>
+
+  <rect x="220" y="180" width="280" height="160" rx="40" fill="#a7c89f" opacity="0.55"/><rect x="1170" y="120" width="300" height="180" rx="40" fill="#a7c89f" opacity="0.55"/><rect x="180" y="560" width="340" height="220" rx="40" fill="#a7c89f" opacity="0.55"/><rect x="980" y="510" width="420" height="280" rx="40" fill="#a7c89f" opacity="0.55"/>
+  <rect x="620" y="260" width="210" height="110" rx="28" fill="#9ac8e3" opacity="0.65"/><rect x="540" y="620" width="260" height="130" rx="28" fill="#9ac8e3" opacity="0.65"/>
+
+  <path d="M 130 120 L 1480 190" stroke="#9ca3af" stroke-width="16" stroke-linecap="round" opacity="0.55"/><path d="M 90 360 L 1540 500" stroke="#9ca3af" stroke-width="16" stroke-linecap="round" opacity="0.55"/><path d="M 180 760 L 1450 680" stroke="#9ca3af" stroke-width="16" stroke-linecap="round" opacity="0.55"/><path d="M 350 90 L 260 840" stroke="#9ca3af" stroke-width="16" stroke-linecap="round" opacity="0.55"/><path d="M 890 70 L 830 850" stroke="#9ca3af" stroke-width="16" stroke-linecap="round" opacity="0.55"/><path d="M 1280 120 L 1200 820" stroke="#9ca3af" stroke-width="16" stroke-linecap="round" opacity="0.55"/>
+  <path d="M 130 120 L 1480 190" stroke="#f8fafc" stroke-width="3" stroke-dasharray="10 12" stroke-linecap="round" opacity="0.7"/><path d="M 90 360 L 1540 500" stroke="#f8fafc" stroke-width="3" stroke-dasharray="10 12" stroke-linecap="round" opacity="0.7"/><path d="M 180 760 L 1450 680" stroke="#f8fafc" stroke-width="3" stroke-dasharray="10 12" stroke-linecap="round" opacity="0.7"/><path d="M 350 90 L 260 840" stroke="#f8fafc" stroke-width="3" stroke-dasharray="10 12" stroke-linecap="round" opacity="0.7"/><path d="M 890 70 L 830 850" stroke="#f8fafc" stroke-width="3" stroke-dasharray="10 12" stroke-linecap="round" opacity="0.7"/><path d="M 1280 120 L 1200 820" stroke="#f8fafc" stroke-width="3" stroke-dasharray="10 12" stroke-linecap="round" opacity="0.7"/>
+
+  <polyline points="230,650 320,540 410,470 540,430 680,410 840,420 980,460 1100,530 1210,650 1250,760 1160,810 990,820 800,790 630,740 500,660 430,560 470,470 620,390 790,350 980,340 1120,360 1220,430 1270,530" fill="none" stroke="#0f172a" stroke-width="24" stroke-linejoin="round" stroke-linecap="round" opacity="0.95"/>
+  <polyline points="230,650 320,540 410,470 540,430 680,410 840,420 980,460 1100,530 1210,650 1250,760 1160,810 990,820 800,790 630,740 500,660 430,560 470,470 620,390 790,350 980,340 1120,360 1220,430 1270,530" fill="none" stroke="#f97316" stroke-width="14" stroke-linejoin="round" stroke-linecap="round"/>
+  <polyline points="230,650 320,540 410,470 540,430 680,410 840,420 980,460 1100,530 1210,650 1250,760 1160,810 990,820 800,790 630,740 500,660 430,560 470,470 620,390 790,350 980,340 1120,360 1220,430 1270,530" fill="none" stroke="#fb923c" stroke-width="6" stroke-linejoin="round" stroke-linecap="round" stroke-dasharray="18 14" opacity="0.95"/>
+
+  
+        <circle cx="230.0" cy="650.0" r="12" fill="#0b1220" stroke="#f8fafc" stroke-width="4" />
+        <circle cx="230.0" cy="650.0" r="5" fill="#38bdf8" />
+        <rect x="242.0" y="606.0" rx="10" ry="10" width="190" height="34" fill="#0f172acc" stroke="#334155" stroke-width="1.5" />
+        <text x="256.0" y="628.0" font-size="20" fill="#e2e8f0" font-family="Arial, sans-serif" text-anchor="start" font-weight="700">Start line</text>
+        
+        <circle cx="469.5" cy="451.7" r="12" fill="#0b1220" stroke="#f8fafc" stroke-width="4" />
+        <circle cx="469.5" cy="451.7" r="5" fill="#38bdf8" />
+        <rect x="481.5" y="407.7" rx="10" ry="10" width="190" height="34" fill="#0f172acc" stroke="#334155" stroke-width="1.5" />
+        <text x="495.5" y="429.7" font-size="20" fill="#e2e8f0" font-family="Arial, sans-serif" text-anchor="start" font-weight="700">1km</text>
+        
+        <circle cx="1080.1" cy="518.4" r="12" fill="#0b1220" stroke="#f8fafc" stroke-width="4" />
+        <circle cx="1080.1" cy="518.4" r="5" fill="#38bdf8" />
+        <rect x="1092.1" y="474.4" rx="10" ry="10" width="190" height="34" fill="#0f172acc" stroke="#334155" stroke-width="1.5" />
+        <text x="1106.1" y="496.4" font-size="20" fill="#e2e8f0" font-family="Arial, sans-serif" text-anchor="start" font-weight="700">3km</text>
+        
+        <circle cx="867.1" cy="800.6" r="12" fill="#0b1220" stroke="#f8fafc" stroke-width="4" />
+        <circle cx="867.1" cy="800.6" r="5" fill="#38bdf8" />
+        <rect x="879.1" y="756.6" rx="10" ry="10" width="190" height="34" fill="#0f172acc" stroke="#334155" stroke-width="1.5" />
+        <text x="893.1" y="778.6" font-size="20" fill="#e2e8f0" font-family="Arial, sans-serif" text-anchor="start" font-weight="700">5km</text>
+        
+        <circle cx="1099.3" cy="357.0" r="12" fill="#0b1220" stroke="#f8fafc" stroke-width="4" />
+        <circle cx="1099.3" cy="357.0" r="5" fill="#38bdf8" />
+        <rect x="1111.3" y="313.0" rx="10" ry="10" width="190" height="34" fill="#0f172acc" stroke="#334155" stroke-width="1.5" />
+        <text x="1125.3" y="335.0" font-size="20" fill="#e2e8f0" font-family="Arial, sans-serif" text-anchor="start" font-weight="700">10km</text>
+        
+        <circle cx="1270.0" cy="530.0" r="12" fill="#0b1220" stroke="#f8fafc" stroke-width="4" />
+        <circle cx="1270.0" cy="530.0" r="5" fill="#38bdf8" />
+        <rect x="1282.0" y="514.0" rx="10" ry="10" width="190" height="34" fill="#0f172acc" stroke="#334155" stroke-width="1.5" />
+        <text x="1296.0" y="536.0" font-size="20" fill="#e2e8f0" font-family="Arial, sans-serif" text-anchor="start" font-weight="700">Finish line</text>
+        
+
+  <g filter="url(#shadow)">
+    <rect x="48" y="36" width="460" height="120" rx="20" fill="#0b1220d9" stroke="#334155" stroke-width="2"/>
+  </g>
+  <text x="74" y="92" font-size="40" fill="#f8fafc" font-family="Arial, sans-serif" font-weight="800">Trail Run 10K Course</text>
+  <text x="74" y="130" font-size="24" fill="#cbd5e1" font-family="Arial, sans-serif">Checkpoint tags: Start line, 1km, 3km, 5km, 10km, Finish line</text>
+
+  <g>
+    <rect x="1260" y="50" width="292" height="138" rx="16" fill="#0b1220cf" stroke="#334155" stroke-width="2"/>
+    <text x="1290" y="92" font-size="24" fill="#e2e8f0" font-family="Arial, sans-serif" font-weight="700">Legend</text>
+    <circle cx="1300" cy="126" r="10" fill="#0b1220" stroke="#f8fafc" stroke-width="3"/>
+    <text x="1320" y="133" font-size="20" fill="#e2e8f0" font-family="Arial, sans-serif">Checkpoint</text>
+    <line x1="1290" y1="156" x2="1380" y2="156" stroke="#f97316" stroke-width="8"/>
+    <text x="1394" y="163" font-size="20" fill="#e2e8f0" font-family="Arial, sans-serif">Course route</text>
+  </g>
+</svg>

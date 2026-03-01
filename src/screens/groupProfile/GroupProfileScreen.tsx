@@ -1037,12 +1037,18 @@ const GroupProfileScreen = ({ navigation, route }: any) => {
                                             key={String(event.event_id)}
                                             style={localStyles.eventListCard}
                                             onPress={() => {
+                                                const typeToken = `${eventName} ${String(event.event_location || '')}`.toLowerCase();
                                                 navigation.navigate('CompetitionDetailsScreen', {
                                                     id: String(event.event_id),
                                                     event_id: String(event.event_id),
+                                                    eventId: String(event.event_id),
                                                     name: eventName,
                                                     location: event.event_location,
                                                     date: event.event_date,
+                                                    organizingClub: (event as any)?.organizing_club,
+                                                    competitionType: /road|trail|marathon|veldloop|veldlopen|cross|5k|10k|half|ultra|city\s*run/.test(typeToken)
+                                                        ? 'road'
+                                                        : 'track',
                                                 });
                                             }}
                                         >

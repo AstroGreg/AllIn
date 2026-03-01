@@ -29,8 +29,8 @@ const EventDivisionScreen = ({navigation, route}: any) => {
   const eventName = route?.params?.eventName || 'Event';
   const competitionName = route?.params?.competitionName || '';
   const eventId = route?.params?.eventId;
-  const defaultMode = route?.params?.mode || 'video';
-
+  const competitionId = route?.params?.competitionId;
+  const disciplineId = route?.params?.disciplineId;
   const [selectedAge, setSelectedAge] = useState(AGE_GROUPS[0]);
   const [selectedGender, setSelectedGender] = useState(GENDERS[0]);
 
@@ -43,6 +43,8 @@ const EventDivisionScreen = ({navigation, route}: any) => {
     navigation.navigate('VideosForEvent', {
       eventName,
       eventId,
+      competitionId: competitionId ?? eventId,
+      disciplineId,
       division: selectedAge,
       gender: selectedGender,
     });
@@ -52,6 +54,8 @@ const EventDivisionScreen = ({navigation, route}: any) => {
     navigation.navigate('AllPhotosOfEvents', {
       eventName,
       eventId,
+      competitionId: competitionId ?? eventId,
+      disciplineId,
       division: selectedAge,
       gender: selectedGender,
     });

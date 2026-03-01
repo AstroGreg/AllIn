@@ -68,8 +68,13 @@ export const createStyles = (colors: ThemeColors) => StyleSheet.create({
         marginBottom: 6,
     },
     infoSub: {
+        ...Fonts.medium14,
+        color: colors.grayColor,
+    },
+    infoMeta: {
         ...Fonts.regular12,
         color: colors.grayColor,
+        marginTop: 6,
     },
     mapCard: {
         borderRadius: 12,
@@ -154,6 +159,31 @@ export const createStyles = (colors: ThemeColors) => StyleSheet.create({
     },
     eventMetaActive: {
         color: colors.primaryColor,
+    },
+    disciplineLoadingState: {
+        alignItems: 'center',
+        justifyContent: 'center',
+        paddingVertical: 18,
+    },
+    disciplineLoadingText: {
+        ...Fonts.regular12,
+        color: colors.grayColor,
+    },
+    disciplineEmptyState: {
+        backgroundColor: colors.cardBackground,
+        borderRadius: 10,
+        borderWidth: 0.5,
+        borderColor: colors.lightGrayColor,
+        paddingHorizontal: 16,
+        paddingVertical: 14,
+    },
+    disciplineEmptyTitle: {
+        ...Fonts.medium14,
+        color: colors.mainTextColor,
+    },
+    disciplineEmptySubtitle: {
+        ...Fonts.regular12,
+        color: colors.grayColor,
     },
     modalBackdrop: {
         flex: 1,

@@ -6,7 +6,7 @@ import SizeBox from '../../../constants/SizeBox'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import Icons from '../../../constants/Icons'
 import { useAuth } from '../../../context/AuthContext'
-import { getHubAppearanceMedia, getMediaViewAll, type MediaViewAllItem } from '../../../services/apiGateway'
+import { getCompetitionPublicMedia, getHubAppearanceMedia, type MediaViewAllItem } from '../../../services/apiGateway'
 import { getHlsBaseUrl } from '../../../constants/RuntimeConfig'
 import Images from '../../../constants/Images'
 import { useTheme } from '../../../context/ThemeContext'
@@ -16,7 +16,10 @@ const VideosForEvent = ({ navigation, route }: any) => {
     const insets = useSafeAreaInsets();
     const eventName = route?.params?.eventName || 'Event';
     const eventId = route?.params?.eventId;
+    const competitionId = route?.params?.competitionId;
     const appearanceOnly = Boolean(route?.params?.appearanceOnly);
+    const disciplineId = route?.params?.disciplineId;
+    const checkpointId = route?.params?.checkpointId ?? route?.params?.checkpoint?.id;
     const division = route?.params?.division;
     const gender = route?.params?.gender;
     const { apiAccessToken } = useAuth();
@@ -24,6 +27,7 @@ const VideosForEvent = ({ navigation, route }: any) => {
     const { t } = useTranslation();
     const styles = createStyles(colors);
     const [items, setItems] = useState<MediaViewAllItem[]>([]);
+    const targetCompetitionId = competitionId ?? eventId;
 
     const isSignedUrl = useCallback((value?: string | null) => {
         if (!value) return false;
@@ -60,6 +64,20 @@ const VideosForEvent = ({ navigation, route }: any) => {
         return `${base.replace(/\/$/, '')}/${raw.replace(/^\//, '')}`;
     }, []);
 
+    const isVideoMedia = useCallback((item: MediaViewAllItem) => {
+        const mediaType = String(item?.type ?? '').toLowerCase();
+        if (mediaType === 'video') return true;
+        if (mediaType === 'image' || mediaType === 'photo') return false;
+        if (item?.hls_manifest_path) return true;
+        const hasVideoMime = Array.isArray(item?.assets)
+            && item.assets.some((asset) => String(asset?.mime_type ?? '').toLowerCase().startsWith('video/'));
+        if (hasVideoMime) return true;
+        const candidates = [item?.full_url, item?.original_url, item?.raw_url, item?.preview_url]
+            .filter(Boolean)
+            .map((value) => String(value));
+        return candidates.some((value) => /\.(mp4|mov|m4v|webm|m3u8)(\?|$)/i.test(value));
+    }, []);
+
     const formatDuration = (value?: string) => {
         const totalSeconds = Number.parseInt(String(value ?? '0'), 10);
         if (!Number.isFinite(totalSeconds) || totalSeconds <= 0) return '—';
@@ -80,18 +98,22 @@ const VideosForEvent = ({ navigation, route }: any) => {
         const load = async () => {
             try {
                 let list: MediaViewAllItem[] = [];
-                if (appearanceOnly && eventId) {
-                    const res = await getHubAppearanceMedia(apiAccessToken, String(eventId));
+                if (appearanceOnly && targetCompetitionId) {
+                    const res = await getHubAppearanceMedia(apiAccessToken, String(targetCompetitionId));
                     list = Array.isArray(res?.results) ? res.results : [];
-                } else {
-                    const res = await getMediaViewAll(apiAccessToken);
+                } else if (targetCompetitionId) {
+                    const res = await getCompetitionPublicMedia(apiAccessToken, String(targetCompetitionId), {
+                        type: 'video',
+                        discipline_id: disciplineId ? String(disciplineId) : undefined,
+                        checkpoint_id: checkpointId ? String(checkpointId) : undefined,
+                        limit: 500,
+                    });
                     list = Array.isArray(res) ? res : [];
+                } else {
+                    list = [];
                 }
                 if (!mounted) return;
-                const filtered = list.filter((item) => {
-                    if (eventId && String(item.event_id ?? '') !== String(eventId)) return false;
-                    return String(item.type).toLowerCase() === 'video';
-                });
+                const filtered = list.filter((item) => isVideoMedia(item));
                 setItems(filtered);
             } catch {
                 if (!mounted) return;
@@ -102,7 +124,7 @@ const VideosForEvent = ({ navigation, route }: any) => {
         return () => {
             mounted = false;
         };
-    }, [apiAccessToken, appearanceOnly, eventId]);
+    }, [apiAccessToken, appearanceOnly, checkpointId, disciplineId, isVideoMedia, targetCompetitionId]);
 
     const data = useMemo(() => {
         return items.map((item) => {

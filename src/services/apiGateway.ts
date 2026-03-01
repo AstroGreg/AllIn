@@ -45,6 +45,22 @@ function normalizeCompetitionType(raw: any): 'track' | 'road' | null {
   return 'track';
 }
 
+function normalizeOrganizerClub(row: any): string | null {
+  if (!row || typeof row !== 'object') return null;
+  const candidate = String(
+    row?.organizing_club
+      ?? row?.organizer_club
+      ?? row?.organizer_name
+      ?? row?.competition_organizing_club
+      ?? row?.competition_organizer_club
+      ?? row?.competition_organizer_name
+      ?? row?.club_name
+      ?? row?.club
+      ?? '',
+  ).trim();
+  return candidate.length > 0 ? candidate : null;
+}
+
 function maskBearerToken(token?: string | null): string | null {
   const t = String(token || '').trim();
   if (!t) return null;
@@ -217,9 +233,13 @@ export interface ProfileSummary {
     website?: string | null;
     chest_numbers_by_year?: Record<string, number> | null;
     nationality?: string | null;
+    track_field_club?: string | null;
+    track_field_main_event?: string | null;
+    road_trail_main_event?: string | null;
     avatar_url?: string | null;
     avatar_media_id?: string | null;
     avatar_media?: any;
+    groups?: ProfileGroupMembership[] | null;
   };
   posts_count?: number;
   followers_count?: number;
@@ -313,6 +333,7 @@ export interface GroupSummary {
   name: string;
   description?: string | null;
   bio?: string | null;
+  location?: string | null;
   website?: string | null;
   coaches?: string[] | null;
   focuses?: string[] | null;
@@ -327,6 +348,19 @@ export interface GroupSummary {
   likes_count?: number;
   followers_count?: number;
   is_following?: boolean;
+  is_official_club?: boolean;
+  official_club_code?: string | null;
+}
+
+export interface ProfileGroupMembership {
+  group_id: string;
+  name?: string | null;
+  bio?: string | null;
+  location?: string | null;
+  role?: string | null;
+  avatar_media_id?: string | null;
+  is_official_club?: boolean;
+  official_club_code?: string | null;
 }
 
 export interface GroupResponse {
@@ -363,6 +397,7 @@ export interface GroupAssignedEvent {
   competition_name?: string | null;
   competition_location?: string | null;
   competition_date?: string | null;
+  organizing_club?: string | null;
   assigned_athletes_count?: number;
 }
 
@@ -624,6 +659,7 @@ export async function getGroupAssignedEvents(
     competition_name: row?.competition_name ?? null,
     competition_location: row?.competition_location ?? null,
     competition_date: row?.competition_date ?? null,
+    organizing_club: normalizeOrganizerClub(row),
     assigned_athletes_count: row?.assigned_athletes_count ?? 0,
   }));
   return {ok: Boolean(res?.ok), count: Number(res?.count ?? events.length), events};
@@ -668,6 +704,8 @@ export interface SubscribedEvent {
   competition_location?: string | null;
   competition_date?: string | null;
   competition_type?: string | null;
+  organizing_club?: string | null;
+  thumbnail_url?: string | null;
 }
 
 export interface SubscribedEventsResponse {
@@ -690,6 +728,8 @@ export async function getSubscribedEvents(accessToken: string): Promise<Subscrib
     competition_location: row?.competition_location ?? null,
     competition_date: row?.competition_date ?? null,
     competition_type: normalizeCompetitionType(row?.competition_type),
+    organizing_club: normalizeOrganizerClub(row),
+    thumbnail_url: row?.thumbnail_url ?? null,
   }));
   return {ok: Boolean(res?.ok), count: Number(res?.count ?? events.length), events};
 }
@@ -928,6 +968,8 @@ export async function searchEvents(
     competition_location: row?.competition_location ?? null,
     competition_date: row?.competition_date ?? null,
     competition_type: normalizeCompetitionType(row?.competition_type),
+    organizing_club: normalizeOrganizerClub(row),
+    thumbnail_url: row?.thumbnail_url ?? null,
   }));
   return {ok: Boolean(res?.ok), count: Number(res?.count ?? events.length), events};
 }
@@ -1009,15 +1051,25 @@ export interface ObjectSearchResult {
 
 export async function searchObject(
   accessToken: string,
-  params: {q: string; event_id?: string | null; top?: number},
+  params: {
+    q: string;
+    event_id?: string | null;
+    competition_id?: string | null;
+    discipline_id?: string | null;
+    checkpoint_id?: string | null;
+    top?: number;
+  },
 ): Promise<ObjectSearchResult[]> {
   const q = String(params.q || '').trim();
   if (!q) {
     throw new ApiError({status: 400, message: 'Missing query'});
   }
+  const competitionId = String(params.competition_id ?? params.event_id ?? '').trim();
   const qs = toQueryString({
     q,
-    event_id: params.event_id ?? undefined,
+    competition_id: competitionId || undefined,
+    discipline_id: params.discipline_id ?? undefined,
+    checkpoint_id: params.checkpoint_id ?? undefined,
     top: params.top ?? undefined,
   });
   const res = await apiRequest<any>(`/ai/search/object${qs}`, {method: 'GET', accessToken});
@@ -1027,6 +1079,31 @@ export async function searchObject(
   if (Array.isArray(res?.results)) {
     return res.results as ObjectSearchResult[];
   }
+  return [];
+}
+
+export async function searchCompetitionAi(
+  accessToken: string,
+  competitionId: string,
+  params: {q: string; discipline_id?: string | null; checkpoint_id?: string | null; top?: number},
+): Promise<ObjectSearchResult[]> {
+  const safeId = String(competitionId || '').trim();
+  const q = String(params.q || '').trim();
+  if (!safeId) {
+    throw new ApiError({status: 400, message: 'Missing competition_id'});
+  }
+  if (!q) {
+    throw new ApiError({status: 400, message: 'Missing query'});
+  }
+  const qs = toQueryString({
+    q,
+    discipline_id: params.discipline_id ?? undefined,
+    checkpoint_id: params.checkpoint_id ?? undefined,
+    top: params.top ?? undefined,
+  });
+  const res = await apiRequest<any>(`/competitions/${encodeURIComponent(safeId)}/ai/search${qs}`, {method: 'GET', accessToken});
+  if (Array.isArray(res)) return res as ObjectSearchResult[];
+  if (Array.isArray(res?.results)) return res.results as ObjectSearchResult[];
   return [];
 }
 
@@ -1366,7 +1443,13 @@ export async function getMediaViewAll(accessToken: string): Promise<MediaViewAll
 export async function getCompetitionPublicMedia(
   accessToken: string,
   competitionId: string,
-  params?: {type?: 'image' | 'video'; limit?: number; offset?: number},
+  params?: {
+    type?: 'image' | 'video';
+    discipline_id?: string;
+    checkpoint_id?: string;
+    limit?: number;
+    offset?: number;
+  },
 ): Promise<MediaViewAllItem[]> {
   const safeId = String(competitionId || '').trim();
   if (!safeId) {
@@ -1374,6 +1457,8 @@ export async function getCompetitionPublicMedia(
   }
   const qs = toQueryString({
     type: params?.type,
+    discipline_id: params?.discipline_id,
+    checkpoint_id: params?.checkpoint_id,
     limit: params?.limit,
     offset: params?.offset,
   });
@@ -1865,6 +1950,7 @@ export interface ProfileSummaryResponse {
     avatar_url?: string | null;
     avatar_media_id?: string | null;
     avatar_media?: MediaViewAllItem | null;
+    groups?: ProfileGroupMembership[] | null;
   };
   posts_count: number;
   followers_count: number;
