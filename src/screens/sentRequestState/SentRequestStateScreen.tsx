@@ -24,6 +24,14 @@ const SentRequestStateScreen = ({ navigation }: any) => {
     const { colors } = useTheme();
     const Styles = createStyles(colors);
     const { t } = useTranslation();
+    const isLightTheme = String(colors.backgroundColor || '').toLowerCase() === '#ffffff';
+    const pickerVisualProps: any = Platform.OS === 'ios'
+        ? {
+            themeVariant: isLightTheme ? 'light' : 'dark',
+            textColor: isLightTheme ? '#0B1220' : '#F8FAFC',
+            accentColor: colors.primaryColor,
+        }
+        : {};
     const [eventName, setEventName] = useState('');
     const [location, setLocation] = useState('');
     const [date, setDate] = useState<Date | null>(null);
@@ -147,6 +155,7 @@ const SentRequestStateScreen = ({ navigation }: any) => {
 
                 {showDatePicker && (
                     <DateTimePicker
+                        {...pickerVisualProps}
                         value={date || new Date()}
                         mode="date"
                         display={Platform.OS === 'ios' ? 'spinner' : 'default'}

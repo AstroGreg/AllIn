@@ -14,14 +14,16 @@ const DateOfBirth = ({ navigation }: any) => {
     const { colors } = useTheme();
     const { t } = useTranslation();
     const Styles = createStyles(colors);
-    const { userProfile, updateUserProfile } = useAuth();
+    const { userProfile, authBootstrap, updateUserProfile, updateUserAccount } = useAuth();
     const [selectedDate, setSelectedDate] = useState<string | null>(null);
     const [isEditing, setIsEditing] = useState(false);
     const [showCalendar, setShowCalendar] = useState(false);
     const [showYearPicker, setShowYearPicker] = useState(false);
     const [calendarFocusDate, setCalendarFocusDate] = useState<string | null>(null);
 
-    const currentDob = userProfile?.birthDate || 'Not set';
+    const bootstrapDob = String(authBootstrap?.user?.birthdate ?? '').trim();
+    const resolvedDob = String(userProfile?.birthDate ?? '').trim() || (bootstrapDob ? bootstrapDob.slice(0, 10) : '');
+    const currentDob = resolvedDob || 'Not set';
 
     const toDateString = (date: Date) => {
         const yyyy = date.getFullYear();
@@ -145,6 +147,7 @@ const DateOfBirth = ({ navigation }: any) => {
                                 style={Styles.saveButton}
                                 onPress={async () => {
                                     if (!selectedDate) return;
+                                    await updateUserAccount({ birthdate: selectedDate });
                                     await updateUserProfile({ birthDate: selectedDate });
                                     setIsEditing(false);
                                 }}

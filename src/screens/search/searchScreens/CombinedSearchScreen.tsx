@@ -96,9 +96,9 @@ const CombinedSearchScreen = ({navigation}: any) => {
     for (const [year, chest] of Object.entries(raw as Record<string, unknown>)) {
       const safeYear = String(year ?? '').trim();
       if (!/^\d{4}$/.test(safeYear)) continue;
-      const parsed = Number(chest);
-      if (!Number.isInteger(parsed) || parsed < 0) continue;
-      out[safeYear] = String(parsed);
+      const safeChest = String(chest ?? '').trim();
+      if (!/^\d+$/.test(safeChest)) continue;
+      out[safeYear] = safeChest;
     }
     return out;
   }, []);
@@ -137,12 +137,26 @@ const CombinedSearchScreen = ({navigation}: any) => {
         ...normalizeChestByYear(userProfile?.chestNumbersByYear ?? {}),
         ...profileChestByYear,
       };
+
+      const currentYear = String(new Date().getFullYear());
       for (const event of events) {
         const year = getYearFromEvent(event);
         if (year && byYear[year] != null && String(byYear[year]).trim().length > 0) {
           return String(byYear[year]).trim();
         }
       }
+
+      if (byYear[currentYear] != null && String(byYear[currentYear]).trim().length > 0) {
+        return String(byYear[currentYear]).trim();
+      }
+
+      const latestYear = Object.keys(byYear)
+        .filter((year) => /^\d{4}$/.test(year) && String(byYear[year]).trim().length > 0)
+        .sort((a, b) => Number(b) - Number(a))[0];
+      if (latestYear) {
+        return String(byYear[latestYear]).trim();
+      }
+
       return '';
     },
     [getYearFromEvent, normalizeChestByYear, profileChestByYear, userProfile?.chestNumbersByYear],

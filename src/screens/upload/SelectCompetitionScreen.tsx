@@ -1,5 +1,5 @@
-import { View, Text, TouchableOpacity, ScrollView, TextInput, ActivityIndicator, Modal, Pressable, Alert } from 'react-native'
-import React, { useCallback, useEffect, useMemo, useState } from 'react'
+import { View, Text, TouchableOpacity, ScrollView, TextInput, ActivityIndicator, Modal, Pressable, Alert, Platform } from 'react-native'
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import FastImage from 'react-native-fast-image'
 import { ArrowLeft2, SearchNormal1, Location, Calendar, VideoSquare, Ghost } from 'iconsax-react-nativejs'
@@ -9,12 +9,15 @@ import { useTheme } from '../../context/ThemeContext'
 import { useAuth } from '../../context/AuthContext'
 import { ApiError, getMediaViewAll, getSubscribedEvents, searchEvents, subscribeToEvent, type MediaViewAllItem, type SubscribedEvent } from '../../services/apiGateway'
 import { getApiBaseUrl } from '../../constants/RuntimeConfig'
-import { CalendarList } from 'react-native-calendars'
+import DateTimePicker from '@react-native-community/datetimepicker'
 import { useTranslation } from 'react-i18next'
 import { useFocusEffect } from '@react-navigation/native'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 
 const UPLOAD_FLOW_RESET_KEY = '@upload_flow_reset_required';
+const UPLOAD_DEFAULT_INITIAL_LIMIT = 10;
+const UPLOAD_SEARCH_INITIAL_LIMIT = 20;
+const SCROLL_LOAD_THRESHOLD_PX = 220;
 
 interface Competition {
     id: string;
@@ -24,6 +27,7 @@ interface Competition {
     date: string;
     thumbnailUrl?: string | null;
     competitionType: 'track' | 'road';
+    organizingClub?: string;
 }
 
 const SelectCompetitionScreen = ({ navigation, route }: any) => {
@@ -31,6 +35,16 @@ const SelectCompetitionScreen = ({ navigation, route }: any) => {
     const { colors } = useTheme();
     const { t } = useTranslation();
     const Styles = createStyles(colors);
+    const isLightTheme = String(colors.backgroundColor || '').toLowerCase() === '#ffffff';
+    const pickerVisualProps = useMemo<any>(() => (
+        Platform.OS === 'ios'
+            ? {
+                themeVariant: isLightTheme ? 'light' : 'dark',
+                textColor: isLightTheme ? '#0B1220' : '#F8FAFC',
+                accentColor: colors.primaryColor,
+            }
+            : {}
+    ), [colors.primaryColor, isLightTheme]);
     const { apiAccessToken } = useAuth();
     const anonymous = route?.params?.anonymous;
     const isAnonymous = !!anonymous;
@@ -45,6 +59,9 @@ const SelectCompetitionScreen = ({ navigation, route }: any) => {
     const [showCalendar, setShowCalendar] = useState(false);
     const [calendarStart, setCalendarStart] = useState<string | null>(null);
     const [calendarEnd, setCalendarEnd] = useState<string | null>(null);
+    const [nativePickerVisible, setNativePickerVisible] = useState(false);
+    const [nativePickerDate, setNativePickerDate] = useState<Date>(new Date());
+    const [activeDateField, setActiveDateField] = useState<'start' | 'end' | null>(null);
     const [rawEvents, setRawEvents] = useState<SubscribedEvent[]>([]);
     const [subscribedEventIds, setSubscribedEventIds] = useState<Set<string>>(new Set());
     const [mediaByEvent, setMediaByEvent] = useState<Record<string, { thumbUrl?: string; videoCount: number }>>({});
@@ -53,6 +70,8 @@ const SelectCompetitionScreen = ({ navigation, route }: any) => {
     const [subscribePromptVisible, setSubscribePromptVisible] = useState(false);
     const [pendingCompetition, setPendingCompetition] = useState<Competition | null>(null);
     const [isSubscribing, setIsSubscribing] = useState(false);
+    const [visibleCompetitionCount, setVisibleCompetitionCount] = useState(UPLOAD_DEFAULT_INITIAL_LIMIT);
+    const loadMoreLockedRef = useRef(false);
 
     const resetFilters = useCallback(() => {
         setActiveFilter('Competition');
@@ -141,6 +160,8 @@ const SelectCompetitionScreen = ({ navigation, route }: any) => {
         const endSeed = timeRange.end ? toDateString(timeRange.end) : null;
         setCalendarStart(startSeed);
         setCalendarEnd(endSeed);
+        setNativePickerVisible(false);
+        setActiveDateField(null);
         setShowCalendar(true);
     };
 
@@ -199,25 +220,67 @@ const SelectCompetitionScreen = ({ navigation, route }: any) => {
         ? formatDateRange(timeRange.start, timeRange.end)
         : '';
 
-    const handleDayPress = (day: any) => {
-        if (!calendarStart || (calendarStart && calendarEnd)) {
-            setCalendarStart(day.dateString);
-            setCalendarEnd(null);
+    const closeNativePicker = useCallback(() => {
+        setActiveDateField(null);
+        setNativePickerVisible(false);
+    }, []);
+
+    const openRangeFieldPicker = useCallback((field: 'start' | 'end') => {
+        const fallback = toDateString(new Date());
+        const seedValue = field === 'start'
+            ? (calendarStart ?? calendarEnd ?? fallback)
+            : (calendarEnd ?? calendarStart ?? fallback);
+        const seed = fromDateString(seedValue, field === 'end') ?? new Date();
+        setActiveDateField(field);
+        setNativePickerDate(seed);
+        setNativePickerVisible(true);
+    }, [calendarEnd, calendarStart]);
+
+    const applyPickedDateToField = useCallback((pickedDate: Date, field: 'start' | 'end') => {
+        const selectedDay = toDateString(pickedDate);
+        if (field === 'start') {
+            setCalendarStart(selectedDay);
+            if (calendarEnd && selectedDay > calendarEnd) {
+                setCalendarEnd(selectedDay);
+            }
             return;
         }
-        if (day.dateString < calendarStart) {
-            setCalendarEnd(calendarStart);
-            setCalendarStart(day.dateString);
-        } else {
-            setCalendarEnd(day.dateString);
+        if (!calendarStart || selectedDay < calendarStart) {
+            setCalendarStart(selectedDay);
+            setCalendarEnd(selectedDay);
+            return;
         }
-    };
+        setCalendarEnd(selectedDay);
+    }, [calendarEnd, calendarStart]);
+
+    const onNativePickerChange = useCallback((event: any, selectedDate?: Date) => {
+        if (event?.type === 'dismissed') {
+            closeNativePicker();
+            return;
+        }
+        const pickedDate = selectedDate ?? nativePickerDate;
+        setNativePickerDate(pickedDate);
+        if (Platform.OS === 'android' && activeDateField) {
+            applyPickedDateToField(pickedDate, activeDateField);
+            closeNativePicker();
+        }
+    }, [activeDateField, applyPickedDateToField, closeNativePicker, nativePickerDate]);
+
+    const applyNativePickerSelection = useCallback(() => {
+        if (!activeDateField) {
+            closeNativePicker();
+            return;
+        }
+        applyPickedDateToField(nativePickerDate, activeDateField);
+        closeNativePicker();
+    }, [activeDateField, applyPickedDateToField, closeNativePicker, nativePickerDate]);
 
     const activeValue = filterValues[activeFilter];
     const hasTypedQuery = useMemo(
         () => filterValues.Competition.trim().length > 0 || filterValues.Location.trim().length > 0,
         [filterValues.Competition, filterValues.Location],
     );
+    const pageSize = hasTypedQuery ? UPLOAD_SEARCH_INITIAL_LIMIT : UPLOAD_DEFAULT_INITIAL_LIMIT;
     const handleSearchChange = (text: string) => {
         setFilterValues((prev) => ({ ...prev, [activeFilter]: text }));
     };
@@ -275,12 +338,6 @@ const SelectCompetitionScreen = ({ navigation, route }: any) => {
     }, [apiAccessToken]);
 
     const loadCompetitions = useCallback(async (query: string) => {
-        if (!query.trim()) {
-            setRawEvents([]);
-            setErrorText(null);
-            setIsLoading(false);
-            return;
-        }
         if (!apiAccessToken) {
             setRawEvents([]);
             setErrorText('Log in to load competitions.');
@@ -289,7 +346,8 @@ const SelectCompetitionScreen = ({ navigation, route }: any) => {
         setIsLoading(true);
         setErrorText(null);
         try {
-            const res = await searchEvents(apiAccessToken, { q: query || undefined, limit: 100, offset: 0 });
+            const trimmedQuery = String(query || '').trim();
+            const res = await searchEvents(apiAccessToken, { q: trimmedQuery || undefined, limit: 200, offset: 0 });
             setRawEvents(Array.isArray(res?.events) ? res.events : []);
         } catch (e: any) {
             const message = e instanceof ApiError ? e.message : String(e?.message ?? e);
@@ -331,6 +389,10 @@ const SelectCompetitionScreen = ({ navigation, route }: any) => {
         return rawEvents.map((event) => {
             const eventId = String(event.event_id);
             const mediaInfo = mediaByEvent[eventId];
+            const rawEventThumb = String((event as any)?.thumbnail_url || '').trim();
+            const eventThumb = rawEventThumb
+                ? (withAccessToken(toAbsoluteUrl(rawEventThumb)) || toAbsoluteUrl(rawEventThumb))
+                : null;
             const rawType = String((event as any).event_type || (event as any).competition_type || (event as any).event_category || '');
             const nameSource = event.event_name || event.event_title || '';
             const typeGuess = rawType || nameSource;
@@ -338,14 +400,21 @@ const SelectCompetitionScreen = ({ navigation, route }: any) => {
             return {
                 id: eventId,
                 name: nameSource || 'Competition',
-                location: event.event_location || '—',
-                date: event.event_date || '—',
+                location: event.event_location || '',
+                date: event.event_date || '',
                 videoCount: mediaInfo?.videoCount ?? 0,
-                thumbnailUrl: mediaInfo?.thumbUrl ?? null,
+                thumbnailUrl: eventThumb ?? mediaInfo?.thumbUrl ?? null,
                 competitionType: isRoad ? 'road' : 'track',
+                organizingClub: String(
+                    (event as any).organizing_club
+                    || (event as any).organizer_club
+                    || (event as any).competition_organizing_club
+                    || (event as any).competition_organizer_name
+                    || '',
+                ).trim(),
             };
         });
-    }, [mediaByEvent, rawEvents]);
+    }, [mediaByEvent, rawEvents, toAbsoluteUrl, withAccessToken]);
 
     const formatDisplayDate = useCallback((value: string) => {
         if (!value) return '—';
@@ -358,10 +427,17 @@ const SelectCompetitionScreen = ({ navigation, route }: any) => {
     }, [parseEventDate]);
 
     const filteredCompetitions = useMemo(() => {
-        if (!hasTypedQuery) return [];
         const cFilter = filterValues.Competition.trim().toLowerCase();
         const lFilter = filterValues.Location.trim().toLowerCase();
-        return competitions.filter((competition) => {
+        const rankMatch = (value: string, query: string) => {
+            if (!query) return 1;
+            const safeValue = String(value || '').toLowerCase();
+            const idx = safeValue.indexOf(query);
+            if (idx === 0) return 0;
+            if (idx > 0) return 1;
+            return 2;
+        };
+        const filtered = competitions.filter((competition) => {
             const typeOk = eventTypeFilter === 'all' ? true : competition.competitionType === eventTypeFilter;
             const name = competition.name.toLowerCase();
             const location = competition.location.toLowerCase();
@@ -376,7 +452,61 @@ const SelectCompetitionScreen = ({ navigation, route }: any) => {
                     : true;
             return matchesCompetition && matchesLocation && typeOk && inRange;
         });
-    }, [competitions, eventTypeFilter, filterValues.Competition, filterValues.Location, hasTypedQuery, parseEventDate, timeRange.end, timeRange.start]);
+        return filtered.sort((a, b) => {
+            const primaryQuery = String(filterValues[activeFilter] || '').trim().toLowerCase();
+            const secondaryQuery = activeFilter === 'Competition' ? lFilter : cFilter;
+            const aPrimary = activeFilter === 'Competition'
+                ? rankMatch(a.name, primaryQuery)
+                : rankMatch(a.location, primaryQuery);
+            const bPrimary = activeFilter === 'Competition'
+                ? rankMatch(b.name, primaryQuery)
+                : rankMatch(b.location, primaryQuery);
+            if (aPrimary !== bPrimary) return aPrimary - bPrimary;
+            const aSecondary = activeFilter === 'Competition'
+                ? rankMatch(a.location, secondaryQuery)
+                : rankMatch(a.name, secondaryQuery);
+            const bSecondary = activeFilter === 'Competition'
+                ? rankMatch(b.location, secondaryQuery)
+                : rankMatch(b.name, secondaryQuery);
+            if (aSecondary !== bSecondary) return aSecondary - bSecondary;
+            const aDate = parseEventDate(a.date)?.getTime() ?? 0;
+            const bDate = parseEventDate(b.date)?.getTime() ?? 0;
+            return bDate - aDate;
+        });
+    }, [activeFilter, competitions, eventTypeFilter, filterValues, parseEventDate, timeRange.end, timeRange.start]);
+    const visibleCompetitions = useMemo(
+        () => filteredCompetitions.slice(0, visibleCompetitionCount),
+        [filteredCompetitions, visibleCompetitionCount],
+    );
+    const hasMoreCompetitions = visibleCompetitions.length < filteredCompetitions.length;
+
+    useEffect(() => {
+        loadMoreLockedRef.current = false;
+        setVisibleCompetitionCount(pageSize);
+    }, [
+        pageSize,
+        activeFilter,
+        hasTypedQuery,
+        filterValues.Competition,
+        filterValues.Location,
+        eventTypeFilter,
+        timeRange.start,
+        timeRange.end,
+    ]);
+
+    const handleMainScroll = useCallback((event: any) => {
+        const native = event?.nativeEvent;
+        if (!native) return;
+        const { contentOffset, contentSize, layoutMeasurement } = native;
+        const distanceToBottom = contentSize.height - (contentOffset.y + layoutMeasurement.height);
+        if (distanceToBottom > SCROLL_LOAD_THRESHOLD_PX) {
+            loadMoreLockedRef.current = false;
+            return;
+        }
+        if (loadMoreLockedRef.current || !hasMoreCompetitions) return;
+        loadMoreLockedRef.current = true;
+        setVisibleCompetitionCount((prev) => Math.min(prev + pageSize, filteredCompetitions.length));
+    }, [filteredCompetitions.length, hasMoreCompetitions, pageSize]);
 
     const continueToCompetition = useCallback((competition: Competition) => {
         navigation.navigate('CompetitionDetailsScreen', {
@@ -419,6 +549,15 @@ const SelectCompetitionScreen = ({ navigation, route }: any) => {
         }
     }, [apiAccessToken, continueToCompetition, pendingCompetition, t]);
 
+    const handleSkipSubscribe = useCallback(() => {
+        if (!pendingCompetition) {
+            setSubscribePromptVisible(false);
+            return;
+        }
+        setSubscribePromptVisible(false);
+        continueToCompetition(pendingCompetition);
+    }, [continueToCompetition, pendingCompetition]);
+
     const renderCompetitionCard = (competition: Competition) => (
         <TouchableOpacity
             key={competition.id}
@@ -444,21 +583,28 @@ const SelectCompetitionScreen = ({ navigation, route }: any) => {
                         </View>
                     </View>
                     <View style={Styles.metaRow}>
-                        <View style={Styles.infoValueRow}>
-                            <Location size={14} color={colors.grayColor} variant="Linear" />
-                            <Text style={Styles.infoValue} numberOfLines={1}>{competition.location}</Text>
-                        </View>
-                        <View style={Styles.infoValueRow}>
-                            <Calendar size={14} color={colors.grayColor} variant="Linear" />
-                            <Text style={Styles.infoValue} numberOfLines={1}>
-                                {formatDisplayDate(competition.date)}
-                            </Text>
-                        </View>
+                        {competition.location ? (
+                            <View style={Styles.infoValueRow}>
+                                <Location size={14} color={colors.grayColor} variant="Linear" />
+                                <Text style={Styles.infoValue} numberOfLines={1}>{competition.location}</Text>
+                            </View>
+                        ) : null}
+                        {competition.date ? (
+                            <View style={Styles.infoValueRow}>
+                                <Calendar size={14} color={colors.grayColor} variant="Linear" />
+                                <Text style={Styles.infoValue} numberOfLines={1}>
+                                    {formatDisplayDate(competition.date)}
+                                </Text>
+                            </View>
+                        ) : null}
                     </View>
                     <View style={Styles.videoCountRow}>
                         <VideoSquare size={14} color={colors.grayColor} variant="Linear" />
                         <Text style={Styles.videoCountText}>{competition.videoCount} media</Text>
                     </View>
+                    {competition.organizingClub ? (
+                        <Text style={Styles.infoValue} numberOfLines={1}>{competition.organizingClub}</Text>
+                    ) : null}
                 </View>
             </View>
         </TouchableOpacity>
@@ -483,7 +629,12 @@ const SelectCompetitionScreen = ({ navigation, route }: any) => {
                 )}
             </View>
 
-            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={Styles.scrollContent}>
+            <ScrollView
+                showsVerticalScrollIndicator={false}
+                contentContainerStyle={Styles.scrollContent}
+                onScroll={handleMainScroll}
+                scrollEventThrottle={16}
+            >
                 <View style={Styles.uploadModeBanner}>
                     <Text style={Styles.uploadModeText}>
                         {isAnonymous ? t('anonymousUpload') : t('uploadToCompetition')}
@@ -578,29 +729,33 @@ const SelectCompetitionScreen = ({ navigation, route }: any) => {
                     <Text style={Styles.resultsTitle}>{t('availableCompetitions')}</Text>
                     <View style={Styles.resultsCountBadge}>
                         <Text style={Styles.resultsCountText}>
-                            {!hasTypedQuery ? t('Type to search') : (isLoading ? '...' : `${filteredCompetitions.length} ${t('competitions')}`)}
+                            {isLoading ? '...' : `${filteredCompetitions.length} ${t('competitions')}`}
                         </Text>
                     </View>
                 </View>
 
                 <SizeBox height={16} />
 
-                {hasTypedQuery && isLoading && filteredCompetitions.length === 0 && (
+                {isLoading && filteredCompetitions.length === 0 && (
                     <View style={Styles.loadingRow}>
                         <ActivityIndicator color={colors.primaryColor} />
                         <Text style={Styles.loadingText}>{t('loadingCompetitions')}</Text>
                     </View>
                 )}
 
-                {hasTypedQuery && !isLoading && errorText && (
+                {!isLoading && errorText && (
                     <Text style={Styles.errorText}>{errorText}</Text>
                 )}
 
                 {/* Competition Cards */}
-                {!hasTypedQuery ? (
-                    <Text style={Styles.loadingText}>{t('Type competition or location to search')}</Text>
+                {visibleCompetitions.length > 0 ? (
+                    visibleCompetitions.map(renderCompetitionCard)
+                ) : !isLoading ? (
+                    <Text style={Styles.loadingText}>
+                        {hasTypedQuery ? t('No competitions found') : t('No competitions available yet.')}
+                    </Text>
                 ) : (
-                    filteredCompetitions.map(renderCompetitionCard)
+                    <></>
                 )}
 
                 <SizeBox height={insets.bottom > 0 ? insets.bottom + 20 : 40} />
@@ -631,7 +786,7 @@ const SelectCompetitionScreen = ({ navigation, route }: any) => {
                             <TouchableOpacity
                                 style={Styles.subscribeNoButton}
                                 disabled={isSubscribing}
-                                onPress={() => setSubscribePromptVisible(false)}
+                                onPress={handleSkipSubscribe}
                             >
                                 <Text style={Styles.subscribeNoText}>{t('No')}</Text>
                             </TouchableOpacity>
@@ -647,11 +802,17 @@ const SelectCompetitionScreen = ({ navigation, route }: any) => {
                 </View>
             </Modal>
 
-            <Modal visible={showCalendar} transparent animationType="fade" onRequestClose={() => setShowCalendar(false)}>
+            <Modal visible={showCalendar} transparent animationType="fade" onRequestClose={() => {
+                setShowCalendar(false);
+                closeNativePicker();
+            }}>
                 <View style={Styles.modalOverlay}>
                     <Pressable
                         style={{ position: 'absolute', top: 0, bottom: 0, left: 0, right: 0 }}
-                        onPress={() => setShowCalendar(false)}
+                        onPress={() => {
+                            setShowCalendar(false);
+                            closeNativePicker();
+                        }}
                     />
                     <View style={Styles.dateModalContainer}>
                         <Text style={Styles.dateModalTitle}>{t('selectDateRange')}</Text>
@@ -669,65 +830,29 @@ const SelectCompetitionScreen = ({ navigation, route }: any) => {
                         </View>
                         <SizeBox height={8} />
                         <View style={Styles.rangeHeaderRow}>
-                            <View style={Styles.rangePill}>
+                            <TouchableOpacity
+                                style={Styles.rangePill}
+                                onPress={() => openRangeFieldPicker('start')}
+                                activeOpacity={0.8}
+                            >
                                 <Text style={Styles.rangePillLabel}>{t('start')}</Text>
                                 <Text style={Styles.rangePillValue}>{calendarStart ?? t('selectDate')}</Text>
-                            </View>
-                            <View style={Styles.rangePill}>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                                style={Styles.rangePill}
+                                onPress={() => openRangeFieldPicker('end')}
+                                activeOpacity={0.8}
+                            >
                                 <Text style={Styles.rangePillLabel}>{t('end')}</Text>
                                 <Text style={Styles.rangePillValue}>{calendarEnd ?? t('selectDate')}</Text>
-                            </View>
+                            </TouchableOpacity>
                         </View>
                         <SizeBox height={12} />
-                        <CalendarList
-                            style={Styles.calendarContainer}
-                            current={calendarStart ?? toDateString(new Date())}
-                            initialDate={calendarStart ?? toDateString(new Date())}
-                            firstDay={1}
-                            onDayPress={handleDayPress}
-                            markingType="period"
-                            markedDates={(() => {
-                                if (!calendarStart) return {};
-                                const start = calendarStart;
-                                const end = calendarEnd ?? calendarStart;
-                                const marks: Record<string, any> = {};
-                                let current = new Date(start);
-                                const endDate = new Date(end);
-                                while (current <= endDate) {
-                                    const key = toDateString(current);
-                                    const isStart = key === start;
-                                    const isEnd = key === end;
-                                    marks[key] = {
-                                        startingDay: isStart,
-                                        endingDay: isEnd,
-                                        color: isStart || isEnd ? colors.primaryColor : colors.secondaryBlueColor,
-                                        textColor: isStart || isEnd ? colors.pureWhite : colors.mainTextColor,
-                                    };
-                                    current.setDate(current.getDate() + 1);
-                                }
-                                return marks;
-                            })()}
-                            theme={{
-                                calendarBackground: colors.modalBackground,
-                                backgroundColor: colors.modalBackground,
-                                dayTextColor: colors.mainTextColor,
-                                monthTextColor: colors.mainTextColor,
-                                textSectionTitleColor: colors.subTextColor,
-                                selectedDayBackgroundColor: colors.primaryColor,
-                                selectedDayTextColor: colors.pureWhite,
-                                todayTextColor: colors.primaryColor,
-                                weekVerticalMargin: 0,
-                                textDayHeaderFontSize: 11,
-                                textDayFontSize: 14,
-                            }}
-                            pastScrollRange={12}
-                            futureScrollRange={12}
-                            scrollEnabled
-                            showScrollIndicator
-                        />
-                        <SizeBox height={12} />
                         <View style={Styles.modalButtonRow}>
-                            <TouchableOpacity style={Styles.modalCancelButton} onPress={() => setShowCalendar(false)}>
+                            <TouchableOpacity style={Styles.modalCancelButton} onPress={() => {
+                                setShowCalendar(false);
+                                closeNativePicker();
+                            }}>
                                 <Text style={Styles.modalCancelText}>{t('cancel')}</Text>
                             </TouchableOpacity>
                             <TouchableOpacity
@@ -739,8 +864,40 @@ const SelectCompetitionScreen = ({ navigation, route }: any) => {
                             </TouchableOpacity>
                         </View>
                     </View>
+                    {Platform.OS === 'ios' && nativePickerVisible && activeDateField ? (
+                        <View style={Styles.nativePickerOverlay}>
+                            <Pressable style={Styles.nativePickerBackdrop} onPress={closeNativePicker} />
+                            <View style={Styles.nativePickerSheet}>
+                                <View style={Styles.nativePickerToolbar}>
+                                    <TouchableOpacity style={Styles.nativePickerAction} onPress={closeNativePicker}>
+                                        <Text style={Styles.nativePickerActionText}>{t('cancel')}</Text>
+                                    </TouchableOpacity>
+                                    <TouchableOpacity style={Styles.nativePickerAction} onPress={applyNativePickerSelection}>
+                                        <Text style={Styles.nativePickerActionText}>{t('apply')}</Text>
+                                    </TouchableOpacity>
+                                </View>
+                                <DateTimePicker
+                                    {...pickerVisualProps}
+                                    value={nativePickerDate}
+                                    mode="date"
+                                    display="spinner"
+                                    onChange={onNativePickerChange}
+                                />
+                            </View>
+                        </View>
+                    ) : null}
                 </View>
             </Modal>
+
+            {nativePickerVisible && activeDateField && Platform.OS === 'android' ? (
+                <DateTimePicker
+                    {...pickerVisualProps}
+                    value={nativePickerDate}
+                    mode="date"
+                    display="default"
+                    onChange={onNativePickerChange}
+                />
+            ) : null}
         </View>
     );
 };

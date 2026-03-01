@@ -8,6 +8,7 @@ import SelectLanguageScreen from '../screens/authFlow/selectLanguageScreen/Selec
 import CreateProfileScreen from '../screens/authFlow/createProfileScreen/CreateProfileScreen';
 import SelectEventScreen from '../screens/authFlow/selectEventScreen/SelectEventScreen';
 import CompleteAthleteDetailsScreen from '../screens/authFlow/completeAthleteDetails/CompleteAthleteDetailsScreen';
+import CompleteSupportDetailsScreen from '../screens/authFlow/completeSupportDetails/CompleteSupportDetailsScreen';
 import BottomTabBar from './BottomTabBar';
 import AddTalentScreen from '../screens/authFlow/setUpTalent/AddTalentScreen';
 import SelecteTalent from '../screens/authFlow/setUpTalent/performer/SelecteTalent';
@@ -103,6 +104,7 @@ const RootStackNavigation = () => {
             <Stack.Screen name="CreateProfileScreen" component={CreateProfileScreen} />
             <Stack.Screen name="SelectEventScreen" component={SelectEventScreen} />
             <Stack.Screen name="CompleteAthleteDetailsScreen" component={CompleteAthleteDetailsScreen} />
+            <Stack.Screen name="CompleteSupportDetailsScreen" component={CompleteSupportDetailsScreen} />
             <Stack.Screen name="CreateGroupProfileScreen" component={CreateGroupProfileScreen} />
             <Stack.Screen name="CreatePhotographerProfileScreen" component={CreatePhotographerProfileScreen} />
             <Stack.Screen name="LanguageScreen" component={LanguageScreen} />
