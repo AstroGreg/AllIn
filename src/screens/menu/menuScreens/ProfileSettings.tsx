@@ -16,7 +16,7 @@ interface SettingsItem {
 
 const ProfileSettings = ({ navigation }: any) => {
     const { t } = useTranslation();
-    const { userProfile } = useAuth();
+    const { userProfile, user, authBootstrap } = useAuth();
     const insets = useSafeAreaInsets();
     const { colors } = useTheme();
     const Styles = createStyles(colors);
@@ -37,6 +37,8 @@ const ProfileSettings = ({ navigation }: any) => {
     const hasRoadTrailProfile = selectedEventsNormalized.some((entry) =>
         entry === 'road-events' || entry === 'road&trail' || entry === 'road_trail' || entry.includes('road') || entry.includes('trail'),
     );
+    const authSubject = String(authBootstrap?.sub ?? user?.sub ?? '').trim().toLowerCase();
+    const canChangePassword = !authSubject || authSubject.startsWith('auth0|');
 
     const settingsItems: SettingsItem[] = [
         {
@@ -44,11 +46,11 @@ const ProfileSettings = ({ navigation }: any) => {
             title: t('Name'),
             onPress: () => navigation.navigate('NameSettings'),
         },
-        {
+        ...(canChangePassword ? [{
             icon: <Lock size={20} color={colors.primaryColor} variant="Linear" />,
             title: 'Change Password',
             onPress: () => navigation.navigate('ChangePassword'),
-        },
+        }] : []),
         {
             icon: <User size={20} color={colors.primaryColor} variant="Linear" />,
             title: 'Change Username',

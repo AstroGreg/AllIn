@@ -131,9 +131,9 @@ const CompetitionDetailsScreen = ({ navigation, route }: any) => {
         for (const [year, chest] of Object.entries(raw as Record<string, unknown>)) {
             const safeYear = String(year ?? '').trim();
             if (!/^\d{4}$/.test(safeYear)) continue;
-            const parsed = Number(chest);
-            if (!Number.isInteger(parsed) || parsed < 0) continue;
-            out[safeYear] = String(parsed);
+            const safeChest = String(chest ?? '').trim();
+            if (!/^\d+$/.test(safeChest)) continue;
+            out[safeYear] = safeChest;
         }
         return out;
     }, []);
@@ -142,12 +142,22 @@ const CompetitionDetailsScreen = ({ navigation, route }: any) => {
             ...normalizeChestByYear(userProfile?.chestNumbersByYear ?? {}),
             ...profileChestByYear,
         };
+        const currentYear = String(new Date().getFullYear());
         const eventYear =
             getYearFromDateLike(String(route?.params?.date ?? '')) ||
             getYearFromDateLike(String(route?.params?.name ?? route?.params?.eventName ?? '')) ||
             getYearFromDateLike(String(route?.params?.location ?? ''));
         if (eventYear && byYear[eventYear] != null && String(byYear[eventYear]).trim().length > 0) {
             return String(byYear[eventYear]).trim();
+        }
+        if (byYear[currentYear] != null && String(byYear[currentYear]).trim().length > 0) {
+            return String(byYear[currentYear]).trim();
+        }
+        const latestYear = Object.keys(byYear)
+            .filter((year) => /^\d{4}$/.test(year) && String(byYear[year]).trim().length > 0)
+            .sort((a, b) => Number(b) - Number(a))[0];
+        if (latestYear) {
+            return String(byYear[latestYear]).trim();
         }
         return '';
     }, [getYearFromDateLike, normalizeChestByYear, profileChestByYear, route?.params?.date, route?.params?.eventName, route?.params?.location, route?.params?.name, userProfile?.chestNumbersByYear]);
@@ -639,6 +649,62 @@ const CompetitionDetailsScreen = ({ navigation, route }: any) => {
         }
     }, [apiAccessToken, canSubscribe, isSubscribed, isSubscriptionLoading, refreshSubscribed, resolvedEventId, t]);
 
+    const renderMediaSection = () => (
+        <>
+            <SizeBox height={24} />
+
+            <Text style={styles.sectionTitle}>{t('Media')}</Text>
+            <SizeBox height={12} />
+            <View style={styles.mediaShowcaseCard}>
+                <View style={styles.mediaShowcaseHead}>
+                    <Text style={styles.mediaShowcaseTitle}>{t('All Videos')}</Text>
+                    <View style={styles.mediaShowcaseTag}>
+                        <Text style={styles.mediaShowcaseTagText}>{t('Untagged included')}</Text>
+                    </View>
+                </View>
+                <Text style={styles.mediaShowcaseDescription}>
+                    {t('Shows every uploaded video for this competition, even if not tagged to a discipline.')}
+                </Text>
+                <TouchableOpacity
+                    style={styles.showAllButton}
+                    onPress={() => navigation.navigate('AllVideosOfEvents', {
+                        eventName: competitionName,
+                        eventId: eventId ?? competitionId,
+                        competitionId: competitionId ?? eventId,
+                    })}
+                >
+                    <Text style={styles.showAllButtonText}>{t('Show All Videos')}</Text>
+                    <ArrowRight size={18} color={colors.pureWhite} variant="Linear" />
+                </TouchableOpacity>
+            </View>
+
+            <SizeBox height={18} />
+
+            <View style={styles.mediaShowcaseCard}>
+                <View style={styles.mediaShowcaseHead}>
+                    <Text style={styles.mediaShowcaseTitle}>{t('All Photos')}</Text>
+                    <View style={styles.mediaShowcaseTag}>
+                        <Text style={styles.mediaShowcaseTagText}>{t('Untagged included')}</Text>
+                    </View>
+                </View>
+                <Text style={styles.mediaShowcaseDescription}>
+                    {t('Shows every uploaded photo for this competition, including untagged uploads.')}
+                </Text>
+                <TouchableOpacity
+                    style={styles.showAllPhotosButton}
+                    onPress={() => navigation.navigate('AllPhotosOfEvents', {
+                        eventName: competitionName,
+                        eventId: eventId ?? competitionId,
+                        competitionId: competitionId ?? eventId,
+                    })}
+                >
+                    <Text style={styles.showAllPhotosButtonText}>{t('Show All Photos')}</Text>
+                    <ArrowRight size={18} color={colors.primaryColor} variant="Linear" />
+                </TouchableOpacity>
+            </View>
+        </>
+    );
+
     return (
         <View style={styles.mainContainer}>
             <SizeBox height={insets.top} />
@@ -774,6 +840,7 @@ const CompetitionDetailsScreen = ({ navigation, route }: any) => {
                                 </ScrollView>
                                 <SizeBox height={8} />
                                 <Text style={styles.helperText}>{t('Tap a checkpoint to search photos, videos, or AI.')}</Text>
+                                {renderMediaSection()}
                             </>
                         )}
 
@@ -843,58 +910,7 @@ const CompetitionDetailsScreen = ({ navigation, route }: any) => {
                             </View>
                         )}
 
-                        <SizeBox height={24} />
-
-                        <Text style={styles.sectionTitle}>{t('Media')}</Text>
-                        <SizeBox height={12} />
-                        <View style={styles.mediaShowcaseCard}>
-                            <View style={styles.mediaShowcaseHead}>
-                                <Text style={styles.mediaShowcaseTitle}>{t('All Videos')}</Text>
-                                <View style={styles.mediaShowcaseTag}>
-                                    <Text style={styles.mediaShowcaseTagText}>{t('Untagged included')}</Text>
-                                </View>
-                            </View>
-                            <Text style={styles.mediaShowcaseDescription}>
-                                {t('Shows every uploaded video for this competition, even if not tagged to a discipline.')}
-                            </Text>
-                            <TouchableOpacity
-                                style={styles.showAllButton}
-                                onPress={() => navigation.navigate('AllVideosOfEvents', {
-                                    eventName: competitionName,
-                                    eventId: eventId ?? competitionId,
-                                    competitionId: competitionId ?? eventId,
-                                })}
-                            >
-                                <Text style={styles.showAllButtonText}>{t('Show All Videos')}</Text>
-                                <ArrowRight size={18} color={colors.pureWhite} variant="Linear" />
-                            </TouchableOpacity>
-                        </View>
-
-                        <SizeBox height={18} />
-
-                        {/* Photos Section */}
-                        <View style={styles.mediaShowcaseCard}>
-                            <View style={styles.mediaShowcaseHead}>
-                                <Text style={styles.mediaShowcaseTitle}>{t('All Photos')}</Text>
-                                <View style={styles.mediaShowcaseTag}>
-                                    <Text style={styles.mediaShowcaseTagText}>{t('Untagged included')}</Text>
-                                </View>
-                            </View>
-                            <Text style={styles.mediaShowcaseDescription}>
-                                {t('Shows every uploaded photo for this competition, including untagged uploads.')}
-                            </Text>
-                            <TouchableOpacity
-                                style={styles.showAllPhotosButton}
-                                onPress={() => navigation.navigate('AllPhotosOfEvents', {
-                                    eventName: competitionName,
-                                    eventId: eventId ?? competitionId,
-                                    competitionId: competitionId ?? eventId,
-                                })}
-                            >
-                                <Text style={styles.showAllPhotosButtonText}>{t('Show All Photos')}</Text>
-                                <ArrowRight size={18} color={colors.primaryColor} variant="Linear" />
-                            </TouchableOpacity>
-                        </View>
+                        {renderMediaSection()}
 
                         <SizeBox height={insets.bottom > 0 ? insets.bottom + 100 : 120} />
                     </>

@@ -31,8 +31,8 @@ const CategorySelectionScreen = ({ navigation, route }: any) => {
     const categories: CategoryOption[] = [
         {
             id: 'find',
-            title: 'Single User',
-            subtitle: 'Individual',
+            title: 'Athlete',
+            subtitle: 'Athlete profile',
             description: 'Set up a personal profile to manage your sports focus, results, and media.',
             icon: <Gallery size={24} color={colors.grayColor} />,
             iconSelected: <Gallery size={24} color={colors.primaryColor} />,
@@ -85,7 +85,7 @@ const CategorySelectionScreen = ({ navigation, route }: any) => {
                 showsVerticalScrollIndicator={false}
                 contentContainerStyle={Styles.scrollContent}
             >
-                <SizeBox height={60} />
+                <SizeBox height={18} />
 
                 <View style={Styles.headerContainer}>
                     <Text style={Styles.headingText}>
@@ -96,7 +96,7 @@ const CategorySelectionScreen = ({ navigation, route }: any) => {
                     </Text>
                 </View>
 
-                <SizeBox height={24} />
+                <SizeBox height={12} />
 
                 <View style={Styles.optionsContainer}>
                     {categories.map((category) => {
@@ -120,11 +120,11 @@ const CategorySelectionScreen = ({ navigation, route }: any) => {
                                             {isSelected ? category.iconSelected : category.icon}
                                         </View>
                                         <View style={Styles.optionTextContainer}>
-                                            <Text style={Styles.optionTitle}>{category.title}</Text>
+                                            <Text style={Styles.optionTitle} numberOfLines={1}>{category.title}</Text>
                                             <Text style={Styles.optionSubtitle}>{category.subtitle}</Text>
                                         </View>
                                     </View>
-                                    <Text style={Styles.optionDescription}>{category.description}</Text>
+                                    <Text style={Styles.optionDescription} numberOfLines={2}>{category.description}</Text>
                                 </View>
 
                                 {isSelected ? (
@@ -138,12 +138,10 @@ const CategorySelectionScreen = ({ navigation, route }: any) => {
                         );
                     })}
                 </View>
-
-                <SizeBox height={40} />
             </ScrollView>
 
             <View style={[Styles.buttonContainer, { paddingBottom: insets.bottom + 20 }]}>
-                <Text style={Styles.nextStepText}>{nextStepLabel}</Text>
+                {!fromAddFlow && <Text style={Styles.nextStepText}>{nextStepLabel}</Text>}
                 {!fromAddFlow && (
                     <TouchableOpacity
                         style={Styles.guestButton}
@@ -153,7 +151,7 @@ const CategorySelectionScreen = ({ navigation, route }: any) => {
                         <Text style={Styles.guestButtonText}>{t('Continue as guest (set up later)')}</Text>
                     </TouchableOpacity>
                 )}
-{isLoading ? (
+                {isLoading ? (
                     <ActivityIndicator size="large" color={colors.primaryColor} />
                 ) : (
                     <CustomButton title={t('Continue')} onPress={handleContinue} />

@@ -98,6 +98,7 @@ export interface UserProfile {
     supportOrganization?: string;
     supportBaseLocation?: string;
     supportAthletes?: string[];
+    supportAthleteProfileIds?: string[];
 
     // Verification
     documentUploaded?: boolean;
@@ -160,6 +161,39 @@ const logApiTokenDebug = (label: string, token?: string | null) => {
     });
 };
 
+const asNonEmptyText = (value: any): string | null => {
+    const normalized = String(value ?? '').trim();
+    return normalized.length > 0 ? normalized : null;
+};
+
+const looksLikeSystemIdentity = (value: any): boolean => {
+    const normalized = String(value ?? '').trim().toLowerCase();
+    if (!normalized) return false;
+    if (normalized.includes('|')) return true;
+    return /^(google-oauth2|auth0|apple)[._:-]/.test(normalized);
+};
+
+const profilePatchFromBootstrap = (bootstrap: AuthBootstrapResponse | null): Partial<UserProfile> | null => {
+    const account = bootstrap?.user;
+    if (!account) return null;
+
+    const patch: Partial<UserProfile> = {};
+    const usernameRaw = asNonEmptyText((account as any).username);
+    const username = usernameRaw && !looksLikeSystemIdentity(usernameRaw) ? usernameRaw : null;
+    const firstName = asNonEmptyText((account as any).first_name);
+    const lastName = asNonEmptyText((account as any).last_name);
+    const nationality = asNonEmptyText((account as any).nationality);
+    const birthdate = asNonEmptyText((account as any).birthdate);
+
+    if (username) patch.username = username;
+    if (firstName) patch.firstName = firstName;
+    if (lastName) patch.lastName = lastName;
+    if (nationality) patch.nationality = nationality;
+    if (birthdate) patch.birthDate = birthdate.slice(0, 10);
+
+    return Object.keys(patch).length > 0 ? patch : null;
+};
+
 const triggerAuthBootstrap = async (accessToken: string): Promise<AuthBootstrapResponse | null> => {
     try {
         const payload = await getAuthBootstrap(accessToken);
@@ -184,6 +218,37 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     useEffect(() => {
         checkStoredCredentials();
     }, []);
+
+    const syncProfileFromBootstrap = async (bootstrap: AuthBootstrapResponse | null) => {
+        const patch = profilePatchFromBootstrap(bootstrap);
+        if (!patch) return;
+        try {
+            let stored: UserProfile = {};
+            const raw = await AsyncStorage.getItem(PROFILE_STORAGE_KEY);
+            if (raw) {
+                try {
+                    stored = JSON.parse(raw) as UserProfile;
+                } catch {
+                    stored = {};
+                }
+            }
+            const merged: UserProfile = {
+                ...stored,
+                ...patch,
+                updatedAt: new Date().toISOString(),
+            };
+            if (looksLikeSystemIdentity(merged.username)) {
+                delete merged.username;
+            }
+            if (!merged.createdAt) {
+                merged.createdAt = new Date().toISOString();
+            }
+            await AsyncStorage.setItem(PROFILE_STORAGE_KEY, JSON.stringify(merged));
+            setUserProfile(merged);
+        } catch (err: any) {
+            console.log('[Auth] Could not sync local profile from bootstrap:', err?.message ?? err);
+        }
+    };
 
     const checkStoredCredentials = async () => {
         console.log('[Auth] Checking stored credentials...');
@@ -248,6 +313,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
                     setIsAuthenticated(true);
                     const bootstrap = await triggerAuthBootstrap(credentials.accessToken);
                     setAuthBootstrap(bootstrap);
+                    await syncProfileFromBootstrap(bootstrap);
                 }
             } else {
                 console.log('[Auth] No stored credentials found');
@@ -394,6 +460,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
                 await storeCredentials(credentials);
                 const bootstrap = await triggerAuthBootstrap(credentials.accessToken);
                 setAuthBootstrap(bootstrap);
+                await syncProfileFromBootstrap(bootstrap);
                 console.log('[Auth] Login successful!');
             } else {
                 console.log('[Auth] No access token in credentials, login may have been cancelled');
@@ -492,6 +559,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
                 await storeCredentials(credentials);
                 const bootstrap = await triggerAuthBootstrap(credentials.accessToken);
                 setAuthBootstrap(bootstrap);
+                await syncProfileFromBootstrap(bootstrap);
                 console.log('[Auth] Signup successful!');
             } else {
                 console.log('[Auth] No access token in credentials, signup may have been cancelled');
@@ -555,6 +623,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         if (!token) return null;
         const payload = await triggerAuthBootstrap(token);
         setAuthBootstrap(payload);
+        await syncProfileFromBootstrap(payload);
         return payload;
     };
 

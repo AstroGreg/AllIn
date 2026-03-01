@@ -16,28 +16,29 @@ export const createStyles = (colors: ThemeColors) => StyleSheet.create({
     },
     headingText: {
         ...Fonts.medium22,
-        fontSize: 24,
-        lineHeight: 32,
+        fontSize: 22,
+        lineHeight: 28,
         color: colors.mainTextColor,
         textAlign: 'center',
     },
     subHeadingText: {
         ...Fonts.regular14,
-        lineHeight: 22,
+        lineHeight: 20,
         color: colors.grayColor,
         textAlign: 'center',
-        marginTop: 10,
+        marginTop: 8,
     },
     optionsContainer: {
-        gap: 24,
-        marginTop: 24,
+        gap: 12,
+        marginTop: 6,
     },
     optionCard: {
         borderRadius: 10,
         borderWidth: 0.5,
         borderColor: colors.lightGrayColor,
         backgroundColor: colors.cardBackground,
-        padding: 16,
+        paddingHorizontal: 14,
+        paddingVertical: 12,
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
@@ -48,7 +49,7 @@ export const createStyles = (colors: ThemeColors) => StyleSheet.create({
     },
     optionContent: {
         flex: 1,
-        gap: 6,
+        gap: 4,
     },
     optionHeader: {
         flexDirection: 'row',
@@ -56,8 +57,8 @@ export const createStyles = (colors: ThemeColors) => StyleSheet.create({
         gap: 12,
     },
     iconContainer: {
-        width: 50,
-        height: 50,
+        width: 44,
+        height: 44,
         borderRadius: 10,
         backgroundColor: colors.btnBackgroundColor,
         alignItems: 'center',
@@ -68,21 +69,21 @@ export const createStyles = (colors: ThemeColors) => StyleSheet.create({
     },
     optionTextContainer: {
         flex: 1,
-        gap: 6,
+        gap: 2,
     },
     optionTitle: {
-        ...Fonts.medium18,
-        lineHeight: 26,
+        ...Fonts.medium16,
+        lineHeight: 22,
         color: colors.mainTextColor,
     },
     optionSubtitle: {
-        ...Fonts.regular14,
-        lineHeight: 22,
+        ...Fonts.regular13,
+        lineHeight: 18,
         color: colors.grayColor,
     },
     optionDescription: {
-        ...Fonts.regular14,
-        lineHeight: 22,
+        ...Fonts.regular13,
+        lineHeight: 19,
         color: colors.grayColor,
     },
     arrowContainer: {
@@ -95,9 +96,9 @@ export const createStyles = (colors: ThemeColors) => StyleSheet.create({
     },
     buttonContainer: {
         paddingHorizontal: 20,
-        paddingBottom: 40,
+        paddingBottom: 14,
         marginTop: 'auto',
-        gap: 12,
+        gap: 10,
     },
     nextStepText: {
         ...Fonts.regular14,

@@ -1,4 +1,4 @@
-import { View, Text, TouchableOpacity, ScrollView, TextInput } from 'react-native'
+import { View, Text, TouchableOpacity, ScrollView, TextInput, Alert } from 'react-native'
 import React, { useState } from 'react'
 import { createStyles } from '../MenuStyles'
 import SizeBox from '../../../constants/SizeBox'
@@ -13,10 +13,26 @@ const ChangeUsername = ({ navigation }: any) => {
     const insets = useSafeAreaInsets();
     const { colors } = useTheme();
     const Styles = createStyles(colors);
-    const { userProfile, user, updateUserProfile } = useAuth();
+    const { userProfile, user, authBootstrap, updateUserProfile, updateUserAccount } = useAuth();
     const [newUsername, setNewUsername] = useState('');
     const [isEditing, setIsEditing] = useState(false);
-    const currentUsername = userProfile?.username || user?.nickname || 'Not set';
+    const looksLikeSystemIdentity = (value: any): boolean => {
+        const normalized = String(value ?? '').trim().toLowerCase();
+        if (!normalized) return false;
+        if (normalized.includes('|')) return true;
+        return /^(google-oauth2|auth0|apple)[._:-]/.test(normalized);
+    };
+    const sanitizeUsername = (value: any): string => {
+        const normalized = String(value ?? '').trim();
+        if (!normalized || looksLikeSystemIdentity(normalized)) return '';
+        return normalized;
+    };
+
+    const currentUsername =
+        sanitizeUsername(userProfile?.username) ||
+        sanitizeUsername(authBootstrap?.user?.username) ||
+        sanitizeUsername(user?.nickname) ||
+        'Not set';
 
     return (
         <View style={Styles.mainContainer}>
@@ -80,7 +96,13 @@ const ChangeUsername = ({ navigation }: any) => {
                                 style={Styles.saveButton}
                                 onPress={async () => {
                                     if (!newUsername.trim()) return;
-                                    await updateUserProfile({ username: newUsername.trim() });
+                                    const nextUsername = newUsername.trim();
+                                    if (looksLikeSystemIdentity(nextUsername)) {
+                                        Alert.alert(t('Invalid username'), t('Please choose a custom username.'));
+                                        return;
+                                    }
+                                    await updateUserAccount({ username: nextUsername });
+                                    await updateUserProfile({ username: nextUsername });
                                     setIsEditing(false);
                                 }}
                             >
