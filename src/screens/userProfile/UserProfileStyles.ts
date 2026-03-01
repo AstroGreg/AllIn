@@ -384,6 +384,37 @@ export const createStyles = (colors: ThemeColors) => StyleSheet.create({
         alignSelf: 'flex-start',
         paddingVertical: 2,
     },
+    membershipSection: {
+        marginTop: 14,
+        gap: 8,
+    },
+    membershipTitle: {
+        ...Fonts.medium13,
+        color: colors.mainTextColor,
+    },
+    membershipWrap: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        gap: 8,
+    },
+    membershipChip: {
+        maxWidth: '100%',
+        paddingHorizontal: 12,
+        paddingVertical: 8,
+        borderRadius: 10,
+        borderWidth: 0.5,
+        borderColor: colors.lightGrayColor,
+        backgroundColor: colors.btnBackgroundColor,
+    },
+    membershipChipTitle: {
+        ...Fonts.medium12,
+        color: colors.mainTextColor,
+    },
+    membershipChipMeta: {
+        ...Fonts.regular11,
+        color: colors.subTextColor,
+        marginTop: 2,
+    },
     athleteMetaInlineValue: {
         ...Fonts.medium13,
         color: colors.mainTextColor,

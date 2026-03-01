@@ -389,6 +389,10 @@ const SelectCompetitionScreen = ({ navigation, route }: any) => {
         return rawEvents.map((event) => {
             const eventId = String(event.event_id);
             const mediaInfo = mediaByEvent[eventId];
+            const rawEventThumb = String((event as any)?.thumbnail_url || '').trim();
+            const eventThumb = rawEventThumb
+                ? (withAccessToken(toAbsoluteUrl(rawEventThumb)) || toAbsoluteUrl(rawEventThumb))
+                : null;
             const rawType = String((event as any).event_type || (event as any).competition_type || (event as any).event_category || '');
             const nameSource = event.event_name || event.event_title || '';
             const typeGuess = rawType || nameSource;
@@ -399,7 +403,7 @@ const SelectCompetitionScreen = ({ navigation, route }: any) => {
                 location: event.event_location || '',
                 date: event.event_date || '',
                 videoCount: mediaInfo?.videoCount ?? 0,
-                thumbnailUrl: mediaInfo?.thumbUrl ?? null,
+                thumbnailUrl: eventThumb ?? mediaInfo?.thumbUrl ?? null,
                 competitionType: isRoad ? 'road' : 'track',
                 organizingClub: String(
                     (event as any).organizing_club
@@ -410,7 +414,7 @@ const SelectCompetitionScreen = ({ navigation, route }: any) => {
                 ).trim(),
             };
         });
-    }, [mediaByEvent, rawEvents]);
+    }, [mediaByEvent, rawEvents, toAbsoluteUrl, withAccessToken]);
 
     const formatDisplayDate = useCallback((value: string) => {
         if (!value) return '—';

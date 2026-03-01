@@ -11,6 +11,7 @@ import { useTheme } from '../../../context/ThemeContext'
 import { useTranslation } from 'react-i18next'
 import UnifiedSearchInput from '../../../components/unifiedSearchInput/UnifiedSearchInput';
 import { useEvents } from '../../../context/EventsContext'
+import { getApiBaseUrl } from '../../../constants/RuntimeConfig';
 
 interface EventCategory {
     id: string | number;
@@ -214,6 +215,15 @@ const CompetitionDetailsScreen = ({ navigation, route }: any) => {
         return `${String(value)}${sep}access_token=${encodeURIComponent(apiAccessToken)}`;
     }, [apiAccessToken, isSignedUrl]);
 
+    const toAbsoluteUrl = useCallback((value?: string | null) => {
+        if (!value) return null;
+        const raw = String(value);
+        if (raw.startsWith('http://') || raw.startsWith('https://')) return raw;
+        const base = getApiBaseUrl();
+        if (!base) return raw;
+        return `${base.replace(/\/$/, '')}/${raw.replace(/^\//, '')}`;
+    }, []);
+
     const isVideoMedia = useCallback((item: MediaViewAllItem) => {
         const mediaType = String(item?.type ?? '').toLowerCase();
         if (mediaType === 'video') return true;
@@ -258,7 +268,7 @@ const CompetitionDetailsScreen = ({ navigation, route }: any) => {
                     id: map.id,
                     label: map.name ?? t('Course'),
                     description: map.name ? t('Course map') : t('Course map'),
-                    imageUrl: map.image_url ?? undefined,
+                    imageUrl: withAccessToken(toAbsoluteUrl(map.image_url ?? map.storage_key ?? null)) ?? undefined,
                     disciplineId: map.competition_id ? String(map.competition_id) : null,
                     checkpoints: (map.checkpoints ?? []).map((cp: CompetitionMapCheckpoint) => ({
                         id: cp.id,
@@ -287,7 +297,7 @@ const CompetitionDetailsScreen = ({ navigation, route }: any) => {
         return () => {
             isActive = false;
         };
-    }, [apiAccessToken, isRoadTrailCompetition, resolvedEventId, t]);
+    }, [apiAccessToken, isRoadTrailCompetition, resolvedEventId, t, toAbsoluteUrl, withAccessToken]);
 
     useEffect(() => {
         if (!apiAccessToken || !resolvedEventId || isRoadTrailCompetition) {
@@ -394,7 +404,7 @@ const CompetitionDetailsScreen = ({ navigation, route }: any) => {
                         course.id === current.id
                             ? {
                                 ...course,
-                                imageUrl: res.map.image_url ?? course.imageUrl,
+                                imageUrl: withAccessToken(toAbsoluteUrl(res.map.image_url ?? res.map.storage_key ?? null)) ?? course.imageUrl,
                                 checkpoints: (res.checkpoints ?? []).map((cp) => ({
                                     id: cp.id,
                                     label: cp.label ?? `Checkpoint ${cp.checkpoint_index}`,
@@ -412,7 +422,7 @@ const CompetitionDetailsScreen = ({ navigation, route }: any) => {
         return () => {
             isActive = false;
         };
-    }, [apiAccessToken, courseOptions, isRoadTrailCompetition, selectedCourseId]);
+    }, [apiAccessToken, courseOptions, isRoadTrailCompetition, selectedCourseId, toAbsoluteUrl, withAccessToken]);
 
     const renderEventCard = (event: EventCategory) => (
         <TouchableOpacity

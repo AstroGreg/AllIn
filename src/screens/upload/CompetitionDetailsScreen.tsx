@@ -9,14 +9,21 @@ import { useAuth } from '../../context/AuthContext'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import { useFocusEffect } from '@react-navigation/native'
 import { useTranslation } from 'react-i18next'
-import Images from '../../constants/Images'
 import FastImage from 'react-native-fast-image'
-import { ApiError, getEventCompetitions } from '../../services/apiGateway'
+import { ApiError, CompetitionMapSummary, getCompetitionMaps, getEventCompetitions } from '../../services/apiGateway'
+import { getApiBaseUrl } from '../../constants/RuntimeConfig'
 
 interface EventCategory {
     id: string;
     name: string;
     kind: 'track' | 'field' | 'road';
+}
+
+interface RoadCourseMap {
+    id: string;
+    label: string;
+    imageUrl: string | null;
+    disciplineId: string | null;
 }
 
 const DIVISIONS = [
@@ -63,11 +70,49 @@ const CompetitionDetailsScreen = ({ navigation, route }: any) => {
     const [roadEvents, setRoadEvents] = useState<EventCategory[]>([]);
     const [isLoadingDisciplines, setIsLoadingDisciplines] = useState(false);
     const [disciplinesError, setDisciplinesError] = useState<string | null>(null);
+    const [roadCourseMaps, setRoadCourseMaps] = useState<RoadCourseMap[]>([]);
+    const [selectedRoadCourseMapId, setSelectedRoadCourseMapId] = useState<string>('');
+    const [isLoadingRoadCourseMaps, setIsLoadingRoadCourseMaps] = useState(false);
 
     const competitionId = useMemo(
         () => String(competition?.id || competition?.event_id || competition?.eventId || '').trim(),
         [competition?.event_id, competition?.eventId, competition?.id],
     );
+
+    const isSignedUrl = useCallback((value?: string | null) => {
+        if (!value) return false;
+        const lower = String(value).toLowerCase();
+        return (
+            lower.includes('x-amz-signature') ||
+            lower.includes('x-amz-credential') ||
+            lower.includes('x-amz-security-token') ||
+            lower.includes('signature=') ||
+            lower.includes('sig=') ||
+            lower.includes('token=') ||
+            lower.includes('expires=') ||
+            lower.includes('sv=') ||
+            lower.includes('se=') ||
+            lower.includes('sp=')
+        );
+    }, []);
+
+    const withAccessToken = useCallback((value?: string | null) => {
+        if (!value) return null;
+        if (!apiAccessToken) return String(value);
+        if (isSignedUrl(value)) return String(value);
+        if (String(value).includes('access_token=')) return String(value);
+        const sep = String(value).includes('?') ? '&' : '?';
+        return `${String(value)}${sep}access_token=${encodeURIComponent(apiAccessToken)}`;
+    }, [apiAccessToken, isSignedUrl]);
+
+    const toAbsoluteUrl = useCallback((value?: string | null) => {
+        if (!value) return null;
+        const raw = String(value);
+        if (raw.startsWith('http://') || raw.startsWith('https://')) return raw;
+        const base = getApiBaseUrl();
+        if (!base) return raw;
+        return `${base.replace(/\/$/, '')}/${raw.replace(/^\//, '')}`;
+    }, []);
 
     const formatDate = useCallback((value?: string) => {
         if (!value) return '';
@@ -189,10 +234,58 @@ const CompetitionDetailsScreen = ({ navigation, route }: any) => {
         };
     }, [apiAccessToken, classifyDiscipline, competitionId, competitionType]);
 
+    useEffect(() => {
+        if (!apiAccessToken || !competitionId || competitionType !== 'road') {
+            setRoadCourseMaps([]);
+            setSelectedRoadCourseMapId('');
+            setIsLoadingRoadCourseMaps(false);
+            return;
+        }
+        let active = true;
+        const loadRoadMaps = async () => {
+            setIsLoadingRoadCourseMaps(true);
+            try {
+                const res = await getCompetitionMaps(apiAccessToken, {
+                    event_id: competitionId,
+                    include_checkpoints: false,
+                });
+                if (!active) return;
+                const maps = (Array.isArray(res?.maps) ? res.maps : []).map((map: CompetitionMapSummary) => {
+                    const url = map.image_url ?? map.storage_key ?? null;
+                    return {
+                        id: String(map.id),
+                        label: String(map.name || t('Course map')),
+                        imageUrl: withAccessToken(toAbsoluteUrl(url)),
+                        disciplineId: map.competition_id ? String(map.competition_id) : null,
+                    } as RoadCourseMap;
+                });
+                setRoadCourseMaps(maps);
+                setSelectedRoadCourseMapId((prev) => (
+                    maps.some((item) => item.id === prev) ? prev : (maps[0]?.id || '')
+                ));
+            } catch {
+                if (!active) return;
+                setRoadCourseMaps([]);
+                setSelectedRoadCourseMapId('');
+            } finally {
+                if (active) setIsLoadingRoadCourseMaps(false);
+            }
+        };
+        loadRoadMaps();
+        return () => {
+            active = false;
+        };
+    }, [apiAccessToken, competitionId, competitionType, t, toAbsoluteUrl, withAccessToken]);
+
     const activeEvents = useMemo(() => {
         if (competitionType === 'road') return roadEvents;
         return activeTab === 'track' ? trackEvents : fieldEvents;
     }, [activeTab, competitionType, fieldEvents, roadEvents, trackEvents]);
+
+    const selectedRoadCourseMap = useMemo(() => {
+        if (roadCourseMaps.length === 0) return null;
+        return roadCourseMaps.find((map) => map.id === selectedRoadCourseMapId) ?? roadCourseMaps[0];
+    }, [roadCourseMaps, selectedRoadCourseMapId]);
 
     const loadCounts = useCallback(async () => {
         if (!competitionId) {
@@ -232,6 +325,12 @@ const CompetitionDetailsScreen = ({ navigation, route }: any) => {
     );
 
     const openCategoryModal = (category: EventCategory) => {
+        if (competitionType === 'road') {
+            const matchedMap = roadCourseMaps.find((map) => map.disciplineId === category.id);
+            if (matchedMap) {
+                setSelectedRoadCourseMapId(matchedMap.id);
+            }
+        }
         setSelectedEvent(category);
         setSelectedGender(null);
         setSelectedDivision(null);
@@ -335,10 +434,24 @@ const CompetitionDetailsScreen = ({ navigation, route }: any) => {
                     <>
                         <SizeBox height={12} />
                         <View style={Styles.mapCard}>
-                            <FastImage source={Images.map} style={Styles.mapImage} resizeMode="cover" />
-                            <View style={Styles.mapOverlay}>
-                                <Text style={Styles.mapTitle}>{t('Course map')}</Text>
-                            </View>
+                            {isLoadingRoadCourseMaps ? (
+                                <View style={Styles.disciplineLoadingState}>
+                                    <ActivityIndicator color={colors.primaryColor} />
+                                    <SizeBox height={8} />
+                                    <Text style={Styles.disciplineLoadingText}>{t('Loading course maps...')}</Text>
+                                </View>
+                            ) : selectedRoadCourseMap?.imageUrl ? (
+                                <>
+                                    <FastImage source={{ uri: selectedRoadCourseMap.imageUrl }} style={Styles.mapImage} resizeMode="cover" />
+                                    <View style={Styles.mapOverlay}>
+                                        <Text style={Styles.mapTitle}>{selectedRoadCourseMap.label || t('Course map')}</Text>
+                                    </View>
+                                </>
+                            ) : (
+                                <View style={Styles.disciplineEmptyState}>
+                                    <Text style={Styles.disciplineEmptyTitle}>{t('No map uploaded for this course yet.')}</Text>
+                                </View>
+                            )}
                         </View>
                     </>
                 ) : null}

@@ -5,9 +5,9 @@ type RouteTarget = {
   params?: Record<string, any>;
 };
 
-const asCategory = (value: any): 'find' | 'manage' | '' => {
+const asCategory = (value: any): 'find' | 'manage' | 'support' | '' => {
   const raw = String(value ?? '').trim().toLowerCase();
-  if (raw === 'find' || raw === 'manage') return raw;
+  if (raw === 'find' || raw === 'manage' || raw === 'support') return raw;
   return '';
 };
 
@@ -34,13 +34,14 @@ export const resolvePostAuthRoute = (
 ): RouteTarget => {
   const category = asCategory(userProfile?.category);
   const selectedEventsPresent = hasSelectedEvents(userProfile?.selectedEvents);
+  const needsEventSelection = category !== 'support';
 
   // On cold reopen, bootstrap can fail transiently (network/server startup).
   // In that case, resume from local onboarding progress instead of forcing
   // users back to "Complete your account".
   if (!bootstrap) {
     if (!category) return { name: 'CategorySelectionScreen' };
-    if (!selectedEventsPresent) {
+    if (needsEventSelection && !selectedEventsPresent) {
       return {
         name: 'SelectEventScreen',
         params: { selectedCategory: category },
@@ -62,7 +63,7 @@ export const resolvePostAuthRoute = (
       return { name: 'CreateProfileScreen' };
     }
     if (!category) return { name: 'CategorySelectionScreen' };
-    if (!selectedEventsPresent) {
+    if (needsEventSelection && !selectedEventsPresent) {
       return {
         name: 'SelectEventScreen',
         params: { selectedCategory: category },
@@ -77,7 +78,7 @@ export const resolvePostAuthRoute = (
 
   if (!category) return { name: 'CategorySelectionScreen' };
 
-  if (!selectedEventsPresent) {
+  if (needsEventSelection && !selectedEventsPresent) {
     return {
       name: 'SelectEventScreen',
       params: { selectedCategory: category },

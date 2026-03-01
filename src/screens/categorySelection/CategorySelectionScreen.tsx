@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, Alert, ActivityIndicator } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Gallery, Profile2User, ArrowRight, TickCircle } from 'iconsax-react-nativejs';
+import { Gallery, Profile2User, User, ArrowRight, TickCircle } from 'iconsax-react-nativejs';
 import { createStyles } from './CategorySelectionScreenStyles';
 import SizeBox from '../../constants/SizeBox';
 import CustomButton from '../../components/customButton/CustomButton';
@@ -24,7 +24,7 @@ const CategorySelectionScreen = ({ navigation, route }: any) => {
     const Styles = createStyles(colors);
     const insets = useSafeAreaInsets();
     const { updateUserProfile } = useAuth();
-    const [selectedCategory, setSelectedCategory] = useState<'find' | 'manage'>('find');
+    const [selectedCategory, setSelectedCategory] = useState<'find' | 'manage' | 'support'>('find');
     const [isLoading, setIsLoading] = useState(false);
     const fromAddFlow = Boolean(route?.params?.fromAddFlow);
 
@@ -45,7 +45,22 @@ const CategorySelectionScreen = ({ navigation, route }: any) => {
             icon: <Profile2User size={24} color={colors.grayColor} />,
             iconSelected: <Profile2User size={24} color={colors.primaryColor} />,
         },
+        {
+            id: 'support',
+            title: 'Coach / Parent / Physio / Fan',
+            subtitle: 'Support Profile',
+            description: 'Follow athletes, save collections, and add your support role without athlete-only setup.',
+            icon: <User size={24} color={colors.grayColor} />,
+            iconSelected: <User size={24} color={colors.primaryColor} />,
+        },
     ];
+
+    const nextStepLabel =
+        selectedCategory === 'find'
+            ? t('Next: Complete athlete profile')
+            : selectedCategory === 'manage'
+                ? t('Next: Complete group/admin profile')
+                : t('Next: Complete support profile');
 
     const handleContinue = async () => {
         setIsLoading(true);
@@ -94,7 +109,7 @@ const CategorySelectionScreen = ({ navigation, route }: any) => {
                                     isSelected && Styles.optionCardSelected,
                                 ]}
                                 activeOpacity={0.7}
-                                onPress={() => setSelectedCategory(category.id as 'find' | 'manage')}
+                                onPress={() => setSelectedCategory(category.id as 'find' | 'manage' | 'support')}
                             >
                                 <View style={Styles.optionContent}>
                                     <View style={Styles.optionHeader}>
@@ -128,6 +143,7 @@ const CategorySelectionScreen = ({ navigation, route }: any) => {
             </ScrollView>
 
             <View style={[Styles.buttonContainer, { paddingBottom: insets.bottom + 20 }]}>
+                <Text style={Styles.nextStepText}>{nextStepLabel}</Text>
                 {!fromAddFlow && (
                     <TouchableOpacity
                         style={Styles.guestButton}

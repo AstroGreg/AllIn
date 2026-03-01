@@ -233,9 +233,13 @@ export interface ProfileSummary {
     website?: string | null;
     chest_numbers_by_year?: Record<string, number> | null;
     nationality?: string | null;
+    track_field_club?: string | null;
+    track_field_main_event?: string | null;
+    road_trail_main_event?: string | null;
     avatar_url?: string | null;
     avatar_media_id?: string | null;
     avatar_media?: any;
+    groups?: ProfileGroupMembership[] | null;
   };
   posts_count?: number;
   followers_count?: number;
@@ -329,6 +333,7 @@ export interface GroupSummary {
   name: string;
   description?: string | null;
   bio?: string | null;
+  location?: string | null;
   website?: string | null;
   coaches?: string[] | null;
   focuses?: string[] | null;
@@ -343,6 +348,19 @@ export interface GroupSummary {
   likes_count?: number;
   followers_count?: number;
   is_following?: boolean;
+  is_official_club?: boolean;
+  official_club_code?: string | null;
+}
+
+export interface ProfileGroupMembership {
+  group_id: string;
+  name?: string | null;
+  bio?: string | null;
+  location?: string | null;
+  role?: string | null;
+  avatar_media_id?: string | null;
+  is_official_club?: boolean;
+  official_club_code?: string | null;
 }
 
 export interface GroupResponse {
@@ -687,6 +705,7 @@ export interface SubscribedEvent {
   competition_date?: string | null;
   competition_type?: string | null;
   organizing_club?: string | null;
+  thumbnail_url?: string | null;
 }
 
 export interface SubscribedEventsResponse {
@@ -710,6 +729,7 @@ export async function getSubscribedEvents(accessToken: string): Promise<Subscrib
     competition_date: row?.competition_date ?? null,
     competition_type: normalizeCompetitionType(row?.competition_type),
     organizing_club: normalizeOrganizerClub(row),
+    thumbnail_url: row?.thumbnail_url ?? null,
   }));
   return {ok: Boolean(res?.ok), count: Number(res?.count ?? events.length), events};
 }
@@ -949,6 +969,7 @@ export async function searchEvents(
     competition_date: row?.competition_date ?? null,
     competition_type: normalizeCompetitionType(row?.competition_type),
     organizing_club: normalizeOrganizerClub(row),
+    thumbnail_url: row?.thumbnail_url ?? null,
   }));
   return {ok: Boolean(res?.ok), count: Number(res?.count ?? events.length), events};
 }
@@ -1929,6 +1950,7 @@ export interface ProfileSummaryResponse {
     avatar_url?: string | null;
     avatar_media_id?: string | null;
     avatar_media?: MediaViewAllItem | null;
+    groups?: ProfileGroupMembership[] | null;
   };
   posts_count: number;
   followers_count: number;

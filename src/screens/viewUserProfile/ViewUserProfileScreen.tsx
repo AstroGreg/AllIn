@@ -18,6 +18,7 @@ import {
     getProfileTimeline,
     unfollowProfile,
     type PostSummary,
+    type ProfileGroupMembership,
     type ProfileCollection,
     type ProfileSummary,
     type ProfileTimelineEntry,
@@ -27,6 +28,14 @@ import { useTranslation } from 'react-i18next';
 import ProfileNewsSection, { type ProfileNewsItem } from '../../components/profileNews/ProfileNewsSection';
 
 type PostSummaryWithCover = PostSummary & { coverImage?: string | null };
+type ProfileMembershipItem = {
+    group_id: string;
+    name: string;
+    location: string;
+    role: string | null;
+    is_official_club: boolean;
+    official_club_code: string | null;
+};
 
 const ViewUserProfileScreen = ({ navigation, route }: any) => {
     const { t } = useTranslation();
@@ -286,15 +295,55 @@ const ViewUserProfileScreen = ({ navigation, route }: any) => {
         if (!latestYear) return '';
         return String(byYear[latestYear] ?? '').trim();
     }, [currentYear, summary?.profile]);
+    const normalizeMembership = useCallback((entry: Partial<ProfileGroupMembership> | null | undefined): ProfileMembershipItem | null => {
+        if (!entry || typeof entry !== 'object') return null;
+        const groupId = String((entry as any)?.group_id ?? '').trim();
+        const name = String((entry as any)?.name ?? '').trim();
+        if (!groupId || !name) return null;
+        const location = String((entry as any)?.location ?? '').trim();
+        const roleRaw = String((entry as any)?.role ?? '').trim();
+        const officialClubCode = String((entry as any)?.official_club_code ?? '').trim();
+        const isOfficialClub = Boolean((entry as any)?.is_official_club) || officialClubCode.length > 0;
+        return {
+            group_id: groupId,
+            name,
+            location,
+            role: roleRaw.length > 0 ? roleRaw : null,
+            is_official_club: isOfficialClub,
+            official_club_code: officialClubCode.length > 0 ? officialClubCode : null,
+        };
+    }, []);
+    const profileMemberships = useMemo(() => {
+        const groups = Array.isArray((summary?.profile as any)?.groups)
+            ? ((summary?.profile as any)?.groups as Array<Partial<ProfileGroupMembership>>)
+            : [];
+        return groups
+            .map((entry) => normalizeMembership(entry))
+            .filter((entry): entry is ProfileMembershipItem => Boolean(entry))
+            .sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }));
+    }, [normalizeMembership, summary?.profile]);
+    const officialMemberships = useMemo(
+        () => profileMemberships.filter((entry) => entry.is_official_club),
+        [profileMemberships],
+    );
+    const communityMemberships = useMemo(
+        () => profileMemberships.filter((entry) => !entry.is_official_club),
+        [profileMemberships],
+    );
+    const primaryOfficialClubName = useMemo(
+        () => String(officialMemberships[0]?.name ?? '').trim(),
+        [officialMemberships],
+    );
     const athleticsClub = useMemo(() => {
         return String(
             (summary?.profile as any)?.track_field_club ??
             (summary?.profile as any)?.athletics_club ??
             (summary?.profile as any)?.running_club ??
             (summary?.profile as any)?.running_club_name ??
+            primaryOfficialClubName ??
             '',
         ).trim();
-    }, [summary?.profile]);
+    }, [primaryOfficialClubName, summary?.profile]);
     const trackFieldMainEvent = useMemo(
         () => String((summary?.profile as any)?.track_field_main_event ?? '').trim(),
         [summary?.profile],
@@ -485,6 +534,30 @@ const ViewUserProfileScreen = ({ navigation, route }: any) => {
                                     {website}
                                 </Text>
                             </TouchableOpacity>
+                        </View>
+                    ) : null}
+                    {communityMemberships.length > 0 ? (
+                        <View style={Styles.membershipSection}>
+                            <Text style={Styles.membershipTitle}>{t('Community groups')}</Text>
+                            <View style={Styles.membershipWrap}>
+                                {communityMemberships.map((group) => (
+                                    <TouchableOpacity
+                                        key={group.group_id}
+                                        style={Styles.membershipChip}
+                                        activeOpacity={0.85}
+                                        onPress={() => navigation.navigate('GroupProfileScreen', { groupId: group.group_id, showBackButton: true })}
+                                    >
+                                        <Text style={Styles.membershipChipTitle} numberOfLines={1}>
+                                            {group.name}
+                                        </Text>
+                                        {group.location.length > 0 ? (
+                                            <Text style={Styles.membershipChipMeta} numberOfLines={1}>
+                                                {group.location}
+                                            </Text>
+                                        ) : null}
+                                    </TouchableOpacity>
+                                ))}
+                            </View>
                         </View>
                     ) : null}
                 </View>

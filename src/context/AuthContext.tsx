@@ -69,7 +69,7 @@ export interface UserProfile {
     nationality?: string;
 
     // Category selection
-    category?: 'find' | 'sell' | 'manage';
+    category?: 'find' | 'sell' | 'manage' | 'support';
 
     // Events selection
     selectedEvents?: string[];
@@ -92,6 +92,12 @@ export interface UserProfile {
     // Photographer profile
     photographerName?: string;
     photographerWebsite?: string;
+
+    // Support profile
+    supportRole?: 'Coach' | 'Parent' | 'Fysiotherapist' | 'Fan' | string;
+    supportOrganization?: string;
+    supportBaseLocation?: string;
+    supportAthletes?: string[];
 
     // Verification
     documentUploaded?: boolean;
@@ -218,30 +224,36 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
                                     } as User;
                                 } else {
                                     console.log('[Auth] ID token expired');
-                                    throw new Error('Token expired');
                                 }
                             }
                         } catch (decodeError: any) {
                             console.log('[Auth] Failed to decode ID token:', decodeError.message);
-                            throw decodeError;
                         }
                     }
 
-                    if (userInfo) {
-                        setUser(userInfo);
-                        setAccessToken(credentials.accessToken);
-                        setIsAuthenticated(true);
-                        const bootstrap = await triggerAuthBootstrap(credentials.accessToken);
-                        setAuthBootstrap(bootstrap);
-                    } else {
-                        throw new Error('Could not validate session');
+                    if (!userInfo) {
+                        const auth0 = getAuth0();
+                        if (auth0) {
+                            try {
+                                userInfo = await auth0.auth.userInfo({ token: credentials.accessToken });
+                            } catch (userInfoError: any) {
+                                console.log('[Auth] Could not fetch userInfo during restore:', userInfoError?.message ?? userInfoError);
+                            }
+                        }
                     }
+
+                    // Keep session if access token exists, even when ID token is stale/unavailable.
+                    setUser(userInfo);
+                    setAccessToken(credentials.accessToken);
+                    setIsAuthenticated(true);
+                    const bootstrap = await triggerAuthBootstrap(credentials.accessToken);
+                    setAuthBootstrap(bootstrap);
                 }
             } else {
                 console.log('[Auth] No stored credentials found');
             }
         } catch (err: any) {
-            // Token expired or invalid, clear stored credentials
+            // Invalid stored payload (e.g. malformed JSON), clear and continue logged out.
             console.log('[Auth] Token validation failed:', err.message);
             await AsyncStorage.removeItem(AUTH_STORAGE_KEY);
         } finally {
@@ -326,7 +338,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
                 ...(connection && { connection }),
                 // Force fresh login by adding prompt parameter
                 additionalParameters: {
-                    prompt: 'login',
+                    // Keep SSO/session restoration behavior enabled (don't force re-login each time).
                 },
             };
             const credentials = await auth0.webAuth.authorize(authorizeParams);
@@ -427,7 +439,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
                 ...(connection && { connection }),
                 additionalParameters: {
                     screen_hint: 'signup',
-                    prompt: 'login',
                 },
             };
             const credentials = await auth0.webAuth.authorize(authorizeParams);

@@ -99,6 +99,12 @@ export const createStyles = (colors: ThemeColors) => StyleSheet.create({
         marginTop: 'auto',
         gap: 12,
     },
+    nextStepText: {
+        ...Fonts.regular14,
+        lineHeight: 22,
+        color: colors.grayColor,
+        textAlign: 'center',
+    },
     guestButton: {
         height: 54,
         borderRadius: 10,
