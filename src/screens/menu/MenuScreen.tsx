@@ -95,6 +95,16 @@ const MenuScreen = ({ navigation }: any) => {
                     title={t('authentication')}
                     onPress={() => navigation.navigate('Authentication')}
                 />
+                {isAuthenticated && (
+                    <>
+                        <SizeBox height={12} />
+                        <MenuContainers
+                            icon={<SecurityUser size={20} color={colors.primaryColor} variant="Linear" />}
+                            title="Admin Pane"
+                            onPress={() => navigation.navigate('AdminPane')}
+                        />
+                    </>
+                )}
 
                 <SizeBox height={24} />
 

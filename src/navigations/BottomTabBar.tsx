@@ -109,6 +109,7 @@ import RightToBeForgotten from "../screens/menu/menuScreens/RightToBeForgotten";
 import Authentication from "../screens/menu/menuScreens/Authentication";
 import AuthenticatorSetup from "../screens/menu/menuScreens/AuthenticatorSetup";
 import VerificationCode from "../screens/menu/menuScreens/VerificationCode";
+import AdminPane from "../screens/menu/menuScreens/AdminPane";
 import Fonts from "../constants/Fonts";
 
 const Tab = createBottomTabNavigator();
@@ -249,6 +250,7 @@ const MenuStackNavigator = () => {
             <MenuStack.Screen name="Authentication" component={Authentication} />
             <MenuStack.Screen name="AuthenticatorSetup" component={AuthenticatorSetup} />
             <MenuStack.Screen name="VerificationCode" component={VerificationCode} />
+            <MenuStack.Screen name="AdminPane" component={AdminPane} />
             <MenuStack.Screen name="CategorySelectionScreen" component={CategorySelectionScreen} />
         </MenuStack.Navigator>
     );

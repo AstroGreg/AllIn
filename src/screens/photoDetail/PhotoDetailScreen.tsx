@@ -16,6 +16,7 @@ import {AppConfig} from '../../constants/AppConfig';
 import Slider from '@react-native-community/slider';
 import Icons from '../../constants/Icons';
 import { useTranslation } from 'react-i18next'
+import { useInstagramStoryImageComposer } from '../../components/share/InstagramStoryComposer';
 
 type FeedbackChoice = 'yes' | 'no' | null;
 const INSTAGRAM_APP_ID = String(AppConfig.INSTAGRAM_APP_ID ?? '').trim();
@@ -28,6 +29,7 @@ const PhotoDetailScreen = ({navigation, route}: any) => {
     const moreDotsColor = colors.mainTextColor;
     const {apiAccessToken} = useAuth();
     const {eventNameById} = useEvents();
+    const {composeInstagramStoryImage, composerElement} = useInstagramStoryImageComposer();
 
     const eventTitle = route?.params?.eventTitle || '';
     const blogTitleFromRoute = route?.params?.blogTitle || route?.params?.postTitle || route?.params?.post?.title || '';
@@ -789,6 +791,11 @@ const PhotoDetailScreen = ({navigation, route}: any) => {
                     Alert.alert(t('Instagram Story failed'), t('INSTAGRAM_APP_ID is missing.'));
                     return;
                 }
+                const pkg = await ShareLib.isPackageInstalled?.('com.instagram.android');
+                if (pkg && !pkg.isInstalled) {
+                    Alert.alert(t('Instagram unavailable'), t('Install Instagram to share to Stories.'));
+                    return;
+                }
                 const localAsset = shareUrl
                     ? await ensureLocalFile(shareUrl, extensionFromUrl(shareUrl))
                     : null;
@@ -796,15 +803,20 @@ const PhotoDetailScreen = ({navigation, route}: any) => {
                     Alert.alert(t('Share failed'), t('Unable to download the media file.'));
                     return;
                 }
+                const isLocalVideo = /\.(mp4|mov|m4v)(\?|$)/i.test(localAsset);
+                const composedAsset =
+                    isLocalVideo
+                        ? null
+                        : await composeInstagramStoryImage(localAsset, headerLabel || t('SpotMe'), 'SpotMe');
                 await ShareLib.shareSingle({
                     social: ShareLib.Social.INSTAGRAM_STORIES,
                     appId: INSTAGRAM_APP_ID,
-                    backgroundImage: localAsset && !localAsset.includes('.mp4') ? localAsset : bannerUri,
-                    backgroundVideo: localAsset && localAsset.includes('.mp4') ? localAsset : undefined,
-                    stickerImage: bannerUri,
+                    backgroundImage: isLocalVideo ? bannerUri : composedAsset,
+                    backgroundVideo: isLocalVideo ? localAsset : undefined,
+                    stickerImage: isLocalVideo ? bannerUri : undefined,
                     backgroundTopColor: '#0D0F12',
                     backgroundBottomColor: '#0D0F12',
-                    attributionURL: 'https://myjourney.coffee',
+                    attributionURL: 'https://spot-me.ai',
                 });
                 return;
             } catch (e: any) {
@@ -1331,6 +1343,7 @@ const PhotoDetailScreen = ({navigation, route}: any) => {
                     </View>
                 </View>
             </Modal>
+            {composerElement}
         </View>
     );
 };
