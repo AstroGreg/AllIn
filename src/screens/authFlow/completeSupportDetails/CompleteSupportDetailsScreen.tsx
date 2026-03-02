@@ -12,6 +12,51 @@ import { Add, CloseCircle, SearchNormal1 } from 'iconsax-react-nativejs';
 import { ProfileSearchResult, searchProfiles } from '../../../services/apiGateway';
 
 const ROLES = ['Coach', 'Parent', 'Fysiotherapist', 'Fan'];
+type CityOption = {
+    city: string;
+    postalCode?: string;
+    countryCode: string;
+};
+
+const CITY_OPTIONS: CityOption[] = [
+    { city: 'Brussels', postalCode: '1000', countryCode: 'BE' },
+    { city: 'Antwerp', postalCode: '2000', countryCode: 'BE' },
+    { city: 'Ghent', postalCode: '9000', countryCode: 'BE' },
+    { city: 'Bruges', postalCode: '8000', countryCode: 'BE' },
+    { city: 'Leuven', postalCode: '3000', countryCode: 'BE' },
+    { city: 'Hasselt', postalCode: '3500', countryCode: 'BE' },
+    { city: 'Liege', postalCode: '4000', countryCode: 'BE' },
+    { city: 'Namur', postalCode: '5000', countryCode: 'BE' },
+    { city: 'Charleroi', postalCode: '6000', countryCode: 'BE' },
+    { city: 'Mechelen', postalCode: '2800', countryCode: 'BE' },
+    { city: 'Mons', postalCode: '7000', countryCode: 'BE' },
+    { city: 'Kortrijk', postalCode: '8500', countryCode: 'BE' },
+    { city: 'Aalst', postalCode: '9300', countryCode: 'BE' },
+    { city: 'Ostend', postalCode: '8400', countryCode: 'BE' },
+    { city: 'Genk', postalCode: '3600', countryCode: 'BE' },
+    { city: 'Sint-Niklaas', postalCode: '9100', countryCode: 'BE' },
+    { city: 'Roeselare', postalCode: '8800', countryCode: 'BE' },
+    { city: 'Turnhout', postalCode: '2300', countryCode: 'BE' },
+    { city: 'Tournai', postalCode: '7500', countryCode: 'BE' },
+    { city: 'Waterloo', postalCode: '1410', countryCode: 'BE' },
+    { city: 'Diepenbeek', postalCode: '3590', countryCode: 'BE' },
+    { city: 'Merksem', postalCode: '2170', countryCode: 'BE' },
+    { city: 'Amsterdam', postalCode: '1012', countryCode: 'NL' },
+    { city: 'Rotterdam', postalCode: '3011', countryCode: 'NL' },
+    { city: 'Utrecht', postalCode: '3511', countryCode: 'NL' },
+    { city: 'Eindhoven', postalCode: '5611', countryCode: 'NL' },
+    { city: 'Paris', postalCode: '75001', countryCode: 'FR' },
+    { city: 'Lille', postalCode: '59000', countryCode: 'FR' },
+    { city: 'London', postalCode: 'WC2N', countryCode: 'GB' },
+    { city: 'Berlin', postalCode: '10115', countryCode: 'DE' },
+    { city: 'Cologne', postalCode: '50667', countryCode: 'DE' },
+    { city: 'Luxembourg', postalCode: '1118', countryCode: 'LU' },
+];
+
+const formatCityLabel = (option: CityOption) => {
+    const postalPart = option.postalCode ? ` ${option.postalCode}` : '';
+    return `${option.city}${postalPart} (${option.countryCode})`;
+};
 
 const CompleteSupportDetailsScreen = ({ navigation }: any) => {
     const { t } = useTranslation();
@@ -23,6 +68,7 @@ const CompleteSupportDetailsScreen = ({ navigation }: any) => {
     const [supportRole, setSupportRole] = useState<string>('Coach');
     const [organization, setOrganization] = useState('');
     const [baseLocation, setBaseLocation] = useState('');
+    const [isBaseLocationFocused, setIsBaseLocationFocused] = useState(false);
     const [athleteQuery, setAthleteQuery] = useState('');
     const [athleteResults, setAthleteResults] = useState<ProfileSearchResult[]>([]);
     const [isSearchingAthletes, setIsSearchingAthletes] = useState(false);
@@ -37,6 +83,35 @@ const CompleteSupportDetailsScreen = ({ navigation }: any) => {
         () => new Set(selectedAthletes.map((entry) => entry.name.trim().toLowerCase()).filter(Boolean)),
         [selectedAthletes],
     );
+    const filteredCityOptions = useMemo(() => {
+        const query = baseLocation.trim().toLowerCase();
+        if (!query) return [];
+        return CITY_OPTIONS
+            .map((option) => ({
+                option,
+                label: formatCityLabel(option),
+            }))
+            .filter(({ option, label }) => {
+                const city = option.city.toLowerCase();
+                const country = option.countryCode.toLowerCase();
+                const postalCode = String(option.postalCode || '').toLowerCase();
+                const normalizedLabel = label.toLowerCase();
+                return (
+                    city.includes(query) ||
+                    postalCode.includes(query) ||
+                    country.includes(query) ||
+                    normalizedLabel.includes(query)
+                );
+            })
+            .sort((a, b) => {
+                const aStarts = a.option.city.toLowerCase().startsWith(query) ? 0 : 1;
+                const bStarts = b.option.city.toLowerCase().startsWith(query) ? 0 : 1;
+                if (aStarts !== bStarts) return aStarts - bStarts;
+                return a.label.localeCompare(b.label);
+            })
+            .slice(0, 8);
+    }, [baseLocation]);
+    const showCitySuggestions = isBaseLocationFocused && filteredCityOptions.length > 0;
 
     const localStyles = useMemo(() => StyleSheet.create({
         roleRow: {
@@ -78,6 +153,49 @@ const CompleteSupportDetailsScreen = ({ navigation }: any) => {
             flex: 1,
             color: colors.mainTextColor,
             paddingVertical: 12,
+        },
+        locationFieldWrap: {
+            gap: 8,
+        },
+        locationInputRow: {
+            minHeight: 54,
+            borderWidth: 1,
+            borderRadius: 10,
+            borderColor: colors.borderColor,
+            backgroundColor: colors.secondaryColor,
+            paddingHorizontal: 14,
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: 10,
+        },
+        locationInputRowFocused: {
+            borderColor: colors.primaryColor,
+        },
+        locationInput: {
+            flex: 1,
+            color: colors.mainTextColor,
+            paddingVertical: 12,
+        },
+        locationResultsDropdown: {
+            borderWidth: 0.5,
+            borderColor: colors.lightGrayColor,
+            borderRadius: 10,
+            backgroundColor: colors.cardBackground,
+            maxHeight: 210,
+            overflow: 'hidden',
+        },
+        locationResultRow: {
+            paddingHorizontal: 14,
+            paddingVertical: 12,
+            borderBottomWidth: 0.5,
+            borderBottomColor: colors.lightGrayColor,
+        },
+        locationResultRowLast: {
+            borderBottomWidth: 0,
+        },
+        locationResultText: {
+            color: colors.mainTextColor,
+            fontSize: 14,
         },
         customActionButton: {
             alignSelf: 'flex-start',
@@ -235,6 +353,11 @@ const CompleteSupportDetailsScreen = ({ navigation }: any) => {
         setSelectedAthletes((prev) => prev.filter((entry) => entry.key !== key));
     };
 
+    const handleSelectCity = (cityLabel: string) => {
+        setBaseLocation(cityLabel);
+        setIsBaseLocationFocused(false);
+    };
+
     const handleSkip = () => {
         navigation.reset({
             index: 0,
@@ -311,13 +434,46 @@ const CompleteSupportDetailsScreen = ({ navigation }: any) => {
                             onChangeText={setOrganization}
                         />
 
-                        <CustomTextInput
-                            label={t('Based in')}
-                            placeholder={t('Optional')}
-                            icon={<Icons.Location height={16} width={16} />}
-                            value={baseLocation}
-                            onChangeText={setBaseLocation}
-                        />
+                        <View style={localStyles.locationFieldWrap}>
+                            <Text style={Styles.clubFieldLabel}>{t('Based in')}</Text>
+                            <View
+                                style={[
+                                    localStyles.locationInputRow,
+                                    isBaseLocationFocused && localStyles.locationInputRowFocused,
+                                ]}
+                            >
+                                <Icons.Location height={16} width={16} />
+                                <TextInput
+                                    value={baseLocation}
+                                    onChangeText={setBaseLocation}
+                                    placeholder={t('Optional')}
+                                    placeholderTextColor={colors.grayColor}
+                                    style={localStyles.locationInput}
+                                    autoCapitalize="words"
+                                    onFocus={() => setIsBaseLocationFocused(true)}
+                                    onBlur={() => {
+                                        setTimeout(() => setIsBaseLocationFocused(false), 120);
+                                    }}
+                                />
+                            </View>
+                            {showCitySuggestions && (
+                                <View style={localStyles.locationResultsDropdown}>
+                                    {filteredCityOptions.map(({ label }, index) => (
+                                        <TouchableOpacity
+                                            key={label}
+                                            style={[
+                                                localStyles.locationResultRow,
+                                                index === filteredCityOptions.length - 1 && localStyles.locationResultRowLast,
+                                            ]}
+                                            activeOpacity={0.85}
+                                            onPress={() => handleSelectCity(label)}
+                                        >
+                                            <Text style={localStyles.locationResultText}>{label}</Text>
+                                        </TouchableOpacity>
+                                    ))}
+                                </View>
+                            )}
+                        </View>
 
                         <Text style={Styles.clubFieldLabel}>{t('Athletes you coach/support')}</Text>
                         <Text style={localStyles.selectedHint}>
