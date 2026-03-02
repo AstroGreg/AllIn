@@ -22,6 +22,7 @@ import {
     type ProfileSearchResult,
 } from '../../services/apiGateway';
 import { getApiBaseUrl } from '../../constants/RuntimeConfig';
+import { getFilteredCityOptions } from '../../constants/locationSuggestions';
 
 type MemberPick = ProfileSearchResult & { role: 'athlete' | 'coach' };
 type GroupFocus = 'track-field' | 'road-events';
@@ -56,6 +57,7 @@ const CreateGroupProfileScreen = ({ navigation, route }: any) => {
     const [groupName, setGroupName] = useState('');
     const [groupDescription, setGroupDescription] = useState('');
     const [groupWebsite, setGroupWebsite] = useState('');
+    const [isBaseLocationFocused, setIsBaseLocationFocused] = useState(false);
     const [missingRequiredFields, setMissingRequiredFields] = useState<{ groupName: boolean; groupDescription: boolean }>({
         groupName: false,
         groupDescription: false,
@@ -158,9 +160,56 @@ const CreateGroupProfileScreen = ({ navigation, route }: any) => {
         };
     }, [apiAccessToken, editGroupId, mode]);
 
+    const filteredCityOptions = useMemo(() => getFilteredCityOptions(groupDescription), [groupDescription]);
+    const showCitySuggestions = isBaseLocationFocused && filteredCityOptions.length > 0;
+
     const localStyles = useMemo(
         () =>
             StyleSheet.create({
+                locationFieldWrap: {
+                    gap: 8,
+                },
+                locationInputRow: {
+                    minHeight: 54,
+                    borderWidth: 0.5,
+                    borderRadius: 10,
+                    borderColor: colors.borderColor,
+                    backgroundColor: colors.secondaryColor,
+                    paddingHorizontal: 16,
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    gap: 10,
+                },
+                locationInputRowFocused: {
+                    borderColor: colors.primaryColor,
+                    borderWidth: 1,
+                },
+                locationInput: {
+                    flex: 1,
+                    ...styles.textInput,
+                    paddingVertical: 12,
+                },
+                locationResultsDropdown: {
+                    borderWidth: 0.5,
+                    borderColor: colors.lightGrayColor,
+                    borderRadius: 10,
+                    backgroundColor: colors.cardBackground,
+                    maxHeight: 210,
+                    overflow: 'hidden',
+                },
+                locationResultRow: {
+                    paddingHorizontal: 14,
+                    paddingVertical: 12,
+                    borderBottomWidth: 0.5,
+                    borderBottomColor: colors.lightGrayColor,
+                },
+                locationResultRowLast: {
+                    borderBottomWidth: 0,
+                },
+                locationResultText: {
+                    color: colors.mainTextColor,
+                    fontSize: 14,
+                },
                 roleToggle: {
                     flexDirection: 'row',
                     gap: 10,
@@ -276,7 +325,7 @@ const CreateGroupProfileScreen = ({ navigation, route }: any) => {
                     borderWidth: 1.5,
                 },
             }),
-        [colors],
+        [colors, styles],
     );
 
     const toAbsoluteUrl = (value?: string | null) => {
@@ -329,6 +378,14 @@ const CreateGroupProfileScreen = ({ navigation, route }: any) => {
 
     const removeMember = (profileId: string) => {
         setSelectedMembers((prev) => prev.filter((m) => m.profile_id !== profileId));
+    };
+
+    const handleSelectCity = (label: string) => {
+        setGroupDescription(label);
+        setIsBaseLocationFocused(false);
+        if (missingRequiredFields.groupDescription && label.trim()) {
+            setMissingRequiredFields((prev) => ({ ...prev, groupDescription: false }));
+        }
     };
 
     const selectedAthletes = useMemo(() => selectedMembers.filter((m) => m.role === 'athlete'), [selectedMembers]);
@@ -488,7 +545,11 @@ const CreateGroupProfileScreen = ({ navigation, route }: any) => {
                 </TouchableOpacity>
             </View>
 
-            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
+            <ScrollView
+                showsVerticalScrollIndicator={false}
+                keyboardShouldPersistTaps="handled"
+                contentContainerStyle={styles.scrollContent}
+            >
                 <View style={styles.titleSection}>
                     <Text style={styles.title}>{mode === 'edit' ? t('Edit Group') : t('Create Group')}</Text>
                     <Text style={styles.subtitle}>{t('Add athletes and coaches to your group')}</Text>
@@ -537,20 +598,50 @@ const CreateGroupProfileScreen = ({ navigation, route }: any) => {
 
                     <View style={styles.inputGroup}>
                         <Text style={styles.inputLabel}>{t('Based in (required)')}</Text>
-                        <View style={[styles.inputContainer, missingRequiredFields.groupDescription && localStyles.requiredErrorBorder]}>
-                            <Edit2 size={22} color={colors.primaryColor} variant="Linear" />
-                            <TextInput
-                                style={styles.textInput}
-                                placeholder={t('City')}
-                                placeholderTextColor={colors.grayColor}
-                                value={groupDescription}
-                                onChangeText={(value) => {
-                                    setGroupDescription(value);
-                                    if (missingRequiredFields.groupDescription && value.trim()) {
-                                        setMissingRequiredFields((prev) => ({ ...prev, groupDescription: false }));
-                                    }
-                                }}
-                            />
+                        <View style={localStyles.locationFieldWrap}>
+                            <View
+                                style={[
+                                    localStyles.locationInputRow,
+                                    isBaseLocationFocused && localStyles.locationInputRowFocused,
+                                    missingRequiredFields.groupDescription && localStyles.requiredErrorBorder,
+                                ]}
+                            >
+                                <Icons.Location height={16} width={16} />
+                                <TextInput
+                                    style={localStyles.locationInput}
+                                    placeholder={t('City')}
+                                    placeholderTextColor={colors.grayColor}
+                                    value={groupDescription}
+                                    onChangeText={(value) => {
+                                        setGroupDescription(value);
+                                        if (missingRequiredFields.groupDescription && value.trim()) {
+                                            setMissingRequiredFields((prev) => ({ ...prev, groupDescription: false }));
+                                        }
+                                    }}
+                                    autoCapitalize="words"
+                                    onFocus={() => setIsBaseLocationFocused(true)}
+                                    onBlur={() => {
+                                        setTimeout(() => setIsBaseLocationFocused(false), 120);
+                                    }}
+                                />
+                            </View>
+                            {showCitySuggestions ? (
+                                <View style={localStyles.locationResultsDropdown}>
+                                    {filteredCityOptions.map(({ label }, index) => (
+                                        <TouchableOpacity
+                                            key={label}
+                                            style={[
+                                                localStyles.locationResultRow,
+                                                index === filteredCityOptions.length - 1 && localStyles.locationResultRowLast,
+                                            ]}
+                                            activeOpacity={0.85}
+                                            onPress={() => handleSelectCity(label)}
+                                        >
+                                            <Text style={localStyles.locationResultText}>{label}</Text>
+                                        </TouchableOpacity>
+                                    ))}
+                                </View>
+                            ) : null}
                         </View>
                     </View>
                     <View style={styles.inputGroup}>

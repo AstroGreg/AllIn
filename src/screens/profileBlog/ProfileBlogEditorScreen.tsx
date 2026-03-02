@@ -1,13 +1,13 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { View, Text, TouchableOpacity, TextInput, ScrollView, Image, ActivityIndicator, Modal, Pressable, BackHandler, Platform } from 'react-native';
+import { View, Text, TouchableOpacity, TextInput, ScrollView, Image, ActivityIndicator, Modal, Pressable, BackHandler } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import DateTimePicker from '@react-native-community/datetimepicker';
 import { ArrowLeft2, Add, Trash, Calendar as CalendarIcon, CloseCircle } from 'iconsax-react-nativejs';
 import { launchImageLibrary } from 'react-native-image-picker';
 import { useFocusEffect } from '@react-navigation/native';
 import { useTheme } from '../../context/ThemeContext';
 import SizeBox from '../../constants/SizeBox';
 import { createStyles } from './ProfileBlogEditorStyles';
+import DatePickerModal from '../../components/datePickerModal/DatePickerModal';
 import { useAuth } from '../../context/AuthContext';
 import { useEvents } from '../../context/EventsContext';
 import { createPost, deletePost, getPostById, searchProfiles, updatePost, uploadMediaBatch, type MediaViewAllItem } from '../../services/apiGateway';
@@ -26,16 +26,6 @@ const ProfileBlogEditorScreen = ({ navigation, route }: any) => {
     const insets = useSafeAreaInsets();
     const { colors } = useTheme();
     const Styles = createStyles(colors);
-    const isLightTheme = String(colors.backgroundColor || '').toLowerCase() === '#ffffff';
-    const pickerVisualProps = useMemo<any>(() => (
-        Platform.OS === 'ios'
-            ? {
-                themeVariant: isLightTheme ? 'light' : 'dark',
-                textColor: isLightTheme ? '#0B1220' : '#F8FAFC',
-                accentColor: colors.primaryColor,
-            }
-            : {}
-    ), [colors.primaryColor, isLightTheme]);
     const mode: 'add' | 'edit' = route?.params?.mode ?? 'add';
     const postId: string | null = route?.params?.postId ?? route?.params?.entry?.id ?? null;
     const entryPreview: any = route?.params?.entry ?? null;
@@ -47,7 +37,6 @@ const ProfileBlogEditorScreen = ({ navigation, route }: any) => {
     const [description, setDescription] = useState('');
     const [postDate, setPostDate] = useState<Date | null>(null);
     const [showDateModal, setShowDateModal] = useState(false);
-    const [nativePickerDate, setNativePickerDate] = useState<Date>(new Date());
     const [showEventModal, setShowEventModal] = useState(false);
     const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
     const [media, setMedia] = useState<BlogMedia[]>([]);
@@ -141,6 +130,22 @@ const ProfileBlogEditorScreen = ({ navigation, route }: any) => {
         return null;
     }, []);
 
+    const toDateString = useCallback((value: Date) => {
+        const yyyy = value.getFullYear();
+        const mm = String(value.getMonth() + 1).padStart(2, '0');
+        const dd = String(value.getDate()).padStart(2, '0');
+        return `${yyyy}-${mm}-${dd}`;
+    }, []);
+
+    const fromDateString = useCallback((value?: string | null) => {
+        const raw = String(value || '').trim();
+        if (!raw) return null;
+        const [year, month, day] = raw.split('-').map(Number);
+        if (!year || !month || !day) return null;
+        const parsed = new Date(year, month - 1, day, 0, 0, 0, 0);
+        return Number.isNaN(parsed.getTime()) ? null : parsed;
+    }, []);
+
     const splitDescriptionMeta = useCallback((value?: string | null) => {
         const lines = String(value || '').split('\n');
         let parsedHighlight = '';
@@ -217,34 +222,8 @@ const ProfileBlogEditorScreen = ({ navigation, route }: any) => {
     }, [apiAccessToken, mode, postId, splitDescriptionMeta]);
 
     const openDateModal = useCallback(() => {
-        const seedDate = postDate || new Date();
-        setNativePickerDate(seedDate);
         setShowDateModal(true);
-    }, [postDate]);
-
-    const applyDateModal = useCallback(() => {
-        const next = new Date(postDate || new Date());
-        next.setFullYear(nativePickerDate.getFullYear(), nativePickerDate.getMonth(), nativePickerDate.getDate());
-        next.setHours(0, 0, 0, 0);
-        setPostDate(next);
-        setShowDateModal(false);
-    }, [nativePickerDate, postDate]);
-
-    const onNativeDateChange = useCallback((event: any, selectedDate?: Date) => {
-        if (event?.type === 'dismissed') {
-            setShowDateModal(false);
-            return;
-        }
-        const pickedDate = selectedDate ?? nativePickerDate;
-        setNativePickerDate(pickedDate);
-        if (Platform.OS === 'android') {
-            const next = new Date(postDate || new Date());
-            next.setFullYear(pickedDate.getFullYear(), pickedDate.getMonth(), pickedDate.getDate());
-            next.setHours(0, 0, 0, 0);
-            setPostDate(next);
-            setShowDateModal(false);
-        }
-    }, [nativePickerDate, postDate]);
+    }, []);
 
     const pickMedia = useCallback(async () => {
         setIsPickingMedia(true);
@@ -775,42 +754,17 @@ const ProfileBlogEditorScreen = ({ navigation, route }: any) => {
                 </View>
             </Modal>
 
-            {Platform.OS === 'ios' ? (
-                <Modal
-                    visible={showDateModal}
-                    transparent
-                    animationType="fade"
-                    onRequestClose={() => setShowDateModal(false)}
-                >
-                    <View style={Styles.modalOverlay}>
-                        <Pressable style={Styles.modalBackdrop} onPress={() => setShowDateModal(false)} />
-                        <View style={Styles.dateModalContainer}>
-                            <Text style={Styles.dateModalTitle}>{t('Select date')}</Text>
-                            <SizeBox height={10} />
-                            <DateTimePicker
-                                {...pickerVisualProps}
-                                value={nativePickerDate}
-                                mode="date"
-                                display="spinner"
-                                onChange={onNativeDateChange}
-                            />
-                            <TouchableOpacity style={Styles.modalDoneButton} onPress={applyDateModal}>
-                                <Text style={Styles.modalDoneButtonText}>{t('Done')}</Text>
-                            </TouchableOpacity>
-                        </View>
-                    </View>
-                </Modal>
-            ) : null}
-
-            {Platform.OS === 'android' && showDateModal ? (
-                <DateTimePicker
-                    {...pickerVisualProps}
-                    value={nativePickerDate}
-                    mode="date"
-                    display="default"
-                    onChange={onNativeDateChange}
-                />
-            ) : null}
+            <DatePickerModal
+                visible={showDateModal}
+                value={postDate ? toDateString(postDate) : null}
+                title={t('Select date')}
+                maxDate={null}
+                onClose={() => setShowDateModal(false)}
+                onApply={(value) => {
+                    setPostDate(fromDateString(value));
+                    setShowDateModal(false);
+                }}
+            />
         </View>
     );
 };
