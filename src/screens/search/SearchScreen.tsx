@@ -810,10 +810,7 @@ const SearchScreen = ({ navigation }: any) => {
                                 ) : null}
                             </View>
                         </View>
-                    </View>
-                    {person.role === 'Athlete' && (
-                        <>
-                            <SizeBox height={10} />
+                        {person.role === 'Athlete' && !isOwnSearchResult ? (
                             <TouchableOpacity
                                 style={Styles.followBtn}
                                 disabled={!apiAccessToken || !person.profile_id || followBusyProfileId === String(person.profile_id)}
@@ -844,8 +841,8 @@ const SearchScreen = ({ navigation }: any) => {
                                     {person.isFollowing ? t('Following') : t('Follow')}
                                 </Text>
                             </TouchableOpacity>
-                        </>
-                    )}
+                        ) : null}
+                    </View>
                 </View>
             </TouchableOpacity>
         );

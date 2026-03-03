@@ -368,6 +368,7 @@ export const createStyles = (colors: ThemeColors) => StyleSheet.create({
         borderRadius: 8,
         width: 83,
         height: 36,
+        marginLeft: 12,
         alignItems: 'center',
         justifyContent: 'center',
     },
