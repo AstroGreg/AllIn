@@ -231,6 +231,7 @@ export interface ProfileSummary {
     username?: string | null;
     bio?: string | null;
     website?: string | null;
+    selected_events?: string[] | null;
     chest_numbers_by_year?: Record<string, number> | null;
     nationality?: string | null;
     track_field_club?: string | null;
@@ -308,6 +309,7 @@ export interface ProfileSearchResult {
   profile_id: string;
   display_name?: string | null;
   avatar_url?: string | null;
+  selected_events?: string[] | null;
   track_field_club?: string | null;
   track_field_main_event?: string | null;
   road_trail_main_event?: string | null;
@@ -1945,6 +1947,7 @@ export interface ProfileSummaryResponse {
     username?: string | null;
     bio?: string | null;
     website?: string | null;
+    selected_events?: string[] | null;
     chest_numbers_by_year?: Record<string, number> | null;
     nationality?: string | null;
     track_field_club?: string | null;
@@ -1968,6 +1971,8 @@ export async function updateProfileSummary(
   params: {
     display_name?: string | null;
     bio?: string | null;
+    selected_events?: string[] | null;
+    selectedEvents?: string[] | null;
     chest_numbers_by_year?: Record<string, number> | null;
     chestNumbersByYear?: Record<string, number> | null;
     track_field_club?: string | null;
@@ -1988,6 +1993,11 @@ export async function updateProfileSummary(
     avatar_url: params.avatar_url ?? undefined,
     avatar_media_id: params.avatar_media_id ?? undefined,
   };
+  if (Object.prototype.hasOwnProperty.call(params, 'selected_events')) {
+    body.selected_events = params.selected_events;
+  } else if (Object.prototype.hasOwnProperty.call(params, 'selectedEvents')) {
+    body.selected_events = params.selectedEvents;
+  }
   if (Object.prototype.hasOwnProperty.call(params, 'chest_numbers_by_year')) {
     body.chest_numbers_by_year = params.chest_numbers_by_year;
   } else if (Object.prototype.hasOwnProperty.call(params, 'chestNumbersByYear')) {

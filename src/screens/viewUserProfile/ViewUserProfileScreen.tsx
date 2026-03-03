@@ -260,7 +260,7 @@ const ViewUserProfileScreen = ({ navigation, route }: any) => {
     }, [displayHandle, summary?.profile?.bio, t]);
 
     const selectedEventProfilesNormalized = useMemo(() => {
-        const raw = (summary?.profile as any)?.selected_events;
+        const raw = summary?.profile?.selected_events;
         const events = Array.isArray(raw) ? raw : [];
         return events
             .map((entry: any) =>
@@ -280,8 +280,16 @@ const ViewUserProfileScreen = ({ navigation, route }: any) => {
     const hasRoadTrailProfile = selectedEventProfilesNormalized.some((entry) =>
         entry === 'road-events' || entry === 'road&trail' || entry === 'road_trail' || entry.includes('road') || entry.includes('trail'),
     );
-    const isTrackProfileView = !hasRoadTrailProfile || hasTrackFieldProfile;
-    const profileCategoryLabel = isTrackProfileView ? t('trackAndField') : t('roadAndTrail');
+    const profileSportKind = hasTrackFieldProfile
+        ? 'track'
+        : hasRoadTrailProfile
+            ? 'road'
+            : null;
+    const profileCategoryLabel = profileSportKind === 'track'
+        ? t('trackAndField')
+        : profileSportKind === 'road'
+            ? t('roadAndTrail')
+            : '';
     const currentYear = useMemo(() => String(new Date().getFullYear()), []);
     const currentChestNumber = useMemo(() => {
         const raw = (summary?.profile as any)?.chest_numbers_by_year;
@@ -364,11 +372,14 @@ const ViewUserProfileScreen = ({ navigation, route }: any) => {
     const profileMetaTokens = useMemo(() => {
         const trackEventWithClub = [trackFieldMainEvent, athleticsClub].map((entry) => String(entry || '').trim()).filter(Boolean).join(' · ');
         const roadEventWithClub = [roadTrailMainEvent, athleticsClub].map((entry) => String(entry || '').trim()).filter(Boolean).join(' · ');
-        if (isTrackProfileView) {
+        if (profileSportKind === 'track') {
             return [nationality, currentChestNumber, trackEventWithClub].map((entry) => String(entry || '').trim()).filter(Boolean);
         }
-        return [nationality, roadEventWithClub].map((entry) => String(entry || '').trim()).filter(Boolean);
-    }, [athleticsClub, currentChestNumber, isTrackProfileView, nationality, roadTrailMainEvent, trackFieldMainEvent]);
+        if (profileSportKind === 'road') {
+            return [nationality, roadEventWithClub].map((entry) => String(entry || '').trim()).filter(Boolean);
+        }
+        return [nationality, currentChestNumber, athleticsClub].map((entry) => String(entry || '').trim()).filter(Boolean);
+    }, [athleticsClub, currentChestNumber, nationality, profileSportKind, roadTrailMainEvent, trackFieldMainEvent]);
     const openProfileWebsite = useCallback(async () => {
         const raw = String(website || '').trim();
         if (!raw) return;
@@ -510,10 +521,16 @@ const ViewUserProfileScreen = ({ navigation, route }: any) => {
                                     <Text style={Styles.statLabel}>{t('Followers')}</Text>
                                 </View>
                                 <View style={Styles.statDivider} />
-                                <View style={localStyles.profileCategoryCompact}>
-                                    <Icons.TrackFieldLogo width={22} height={18} />
-                                    <Text style={localStyles.profileCategoryCompactText}>{profileCategoryLabel}</Text>
-                                </View>
+                                {profileCategoryLabel.length > 0 ? (
+                                    <View style={localStyles.profileCategoryCompact}>
+                                        {profileSportKind === 'track' ? (
+                                            <Icons.TrackFieldLogo width={22} height={18} />
+                                        ) : (
+                                            <Icons.PersonRunningColorful width={20} height={20} />
+                                        )}
+                                        <Text style={localStyles.profileCategoryCompactText}>{profileCategoryLabel}</Text>
+                                    </View>
+                                ) : null}
                             </View>
                         </View>
                     </View>

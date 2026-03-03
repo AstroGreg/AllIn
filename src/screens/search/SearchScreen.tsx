@@ -353,12 +353,27 @@ const SearchScreen = ({ navigation }: any) => {
                 setPeopleResults(
                     rows.map((profile, idx) => ({
                         ...(function () {
+                            const selectedEventsNormalized = Array.isArray(profile.selected_events)
+                                ? profile.selected_events
+                                    .map((entry) => String(entry || '').trim().toLowerCase())
+                                    .filter(Boolean)
+                                : [];
                             const trackFieldMainEvent = String(profile.track_field_main_event || '').trim();
                             const roadTrailMainEvent = String(profile.road_trail_main_event || '').trim();
                             const trackFieldClub = String(profile.track_field_club || '').trim();
-                            const sportKind: 'track' | 'road' | null = roadTrailMainEvent
-                                ? 'road'
-                                : (trackFieldMainEvent || trackFieldClub)
+                            const hasTrackFieldProfile = selectedEventsNormalized.some((entry) =>
+                                entry === 'track-field' || entry === 'track&field' || entry === 'track_field' || entry.includes('track'),
+                            );
+                            const hasRoadTrailProfile = selectedEventsNormalized.some((entry) =>
+                                entry === 'road-events' || entry === 'road&trail' || entry === 'road_trail' || entry.includes('road') || entry.includes('trail'),
+                            );
+                            const sportKind: 'track' | 'road' | null = hasTrackFieldProfile
+                                ? 'track'
+                                : hasRoadTrailProfile
+                                    ? 'road'
+                                    : roadTrailMainEvent
+                                        ? 'road'
+                                        : (trackFieldMainEvent || trackFieldClub)
                                     ? 'track'
                                     : null;
                             const sportLabel = sportKind === 'road'

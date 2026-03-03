@@ -96,9 +96,13 @@ const UserProfileScreen = ({ navigation, route }: any) => {
             ? t('trackAndField')
             : '';
     const selectedEventProfiles = useMemo(() => {
-        const events = userProfile?.selectedEvents;
-        return Array.isArray(events) ? events : [];
-    }, [userProfile?.selectedEvents]);
+        const serverEvents = profileSummary?.profile?.selected_events;
+        if (Array.isArray(serverEvents) && serverEvents.length > 0) {
+            return serverEvents;
+        }
+        const localEvents = userProfile?.selectedEvents;
+        return Array.isArray(localEvents) ? localEvents : [];
+    }, [profileSummary?.profile?.selected_events, userProfile?.selectedEvents]);
     const selectedEventProfilesNormalized = useMemo(
         () =>
             selectedEventProfiles

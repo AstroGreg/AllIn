@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, Image, ActivityIndicator } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, Image, ActivityIndicator, Alert } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import FastImage from 'react-native-fast-image';
 import { createStyles } from './SelectEventScreenStyles';
@@ -8,7 +8,8 @@ import Images from '../../../constants/Images';
 import Icons from '../../../constants/Icons';
 import { useTheme } from '../../../context/ThemeContext';
 import { useAuth } from '../../../context/AuthContext';
-import { useTranslation } from 'react-i18next'
+import { updateProfileSummary } from '../../../services/apiGateway';
+import { useTranslation } from 'react-i18next';
 
 interface EventOption {
     id: string;
@@ -30,7 +31,7 @@ const SelectEventScreen = ({ navigation, route }: any) => {
     const { colors } = useTheme();
     const Styles = createStyles(colors);
     const insets = useSafeAreaInsets();
-    const { updateUserProfile, userProfile } = useAuth();
+    const { updateUserProfile, userProfile, apiAccessToken } = useAuth();
     const [selectedEvents, setSelectedEvents] = useState<string[]>([]);
     const [isLoading, setIsLoading] = useState(false);
     const selectedCategory = String(route?.params?.selectedCategory || '').trim().toLowerCase();
@@ -64,17 +65,20 @@ const SelectEventScreen = ({ navigation, route }: any) => {
                 ? Array.from(new Set([...existingSelectedEvents, ...selectedEvents]))
                 : selectedEvents;
             await updateUserProfile({ selectedEvents: nextSelectedEvents });
+            if (apiAccessToken && selectedCategory !== 'manage') {
+                await updateProfileSummary(apiAccessToken, { selected_events: nextSelectedEvents });
+            }
 
             if (selectedCategory === 'find') {
-                navigation.navigate('CompleteAthleteDetailsScreen', { selectedEvents });
+                navigation.navigate('CompleteAthleteDetailsScreen', { selectedEvents: nextSelectedEvents });
             } else if (selectedCategory === 'manage') {
                 navigation.navigate('CreateGroupProfileScreen', {
-                    selectedFocuses: selectedEvents,
-                    selectedEvents,
+                    selectedFocuses: nextSelectedEvents,
+                    selectedEvents: nextSelectedEvents,
                     focusLocked: true,
                 });
             } else if (selectedCategory === 'support') {
-                navigation.navigate('CompleteSupportDetailsScreen', { selectedEvents });
+                navigation.navigate('CompleteSupportDetailsScreen', { selectedEvents: nextSelectedEvents });
             } else if (selectedCategory === 'sell') {
                 navigation.navigate('CreatePhotographerProfileScreen');
             } else {
