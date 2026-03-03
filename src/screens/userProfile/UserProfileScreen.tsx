@@ -749,7 +749,14 @@ const UserProfileScreen = ({ navigation, route }: any) => {
 
     const profileDisplayName = useMemo(() => {
         const fromSummary = String((profileSummary as any)?.profile?.display_name ?? '').trim();
-        if (fromSummary) return fromSummary;
+        const normalizedSummary = fromSummary.toLowerCase();
+        const isPlaceholderSummary =
+            !fromSummary ||
+            normalizedSummary === 'new user' ||
+            normalizedSummary === 'newuser' ||
+            normalizedSummary.includes('|') ||
+            normalizedSummary.endsWith('.auth@allin.local');
+        if (!isPlaceholderSummary) return fromSummary;
 
         const fromLocal = [userProfile?.firstName, userProfile?.lastName]
             .filter((part) => String(part ?? '').trim().length > 0)

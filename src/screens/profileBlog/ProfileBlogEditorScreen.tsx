@@ -384,9 +384,6 @@ const ProfileBlogEditorScreen = ({ navigation, route }: any) => {
         if (currentStep < TOTAL_STEPS) setCurrentStep((prev) => prev + 1);
     }, [currentStep, description, existingPreview.length, highlight, linkedPeople.length, media.length, postDate, selectedEventId, skipEvent, skipHighlight, skipMedia, skipPeople, title]);
 
-    const goPrevStep = useCallback(() => {
-        if (currentStep > 1) setCurrentStep((prev) => prev - 1);
-    }, [currentStep]);
     const goPreviewStep = useCallback(() => {
         setShowPreviewModal(true);
     }, []);
@@ -477,6 +474,14 @@ const ProfileBlogEditorScreen = ({ navigation, route }: any) => {
         title,
     ]);
 
+    const handleEditorBack = useCallback(() => {
+        if (currentStep > 1) {
+            setCurrentStep((prev) => Math.max(1, prev - 1));
+            return;
+        }
+        navigation.goBack();
+    }, [currentStep, navigation]);
+
     useFocusEffect(
         useCallback(() => {
             const onHardwareBackPress = () => {
@@ -492,17 +497,14 @@ const ProfileBlogEditorScreen = ({ navigation, route }: any) => {
                     setShowDateModal(false);
                     return true;
                 }
-                if (currentStep > 1) {
-                    setCurrentStep((prev) => Math.max(1, prev - 1));
-                    return true;
-                }
+                handleEditorBack();
                 return true;
             };
             const subscription = BackHandler.addEventListener('hardwareBackPress', onHardwareBackPress);
             return () => {
                 subscription.remove();
             };
-        }, [closePreviewModal, currentStep, showDateModal, showEventModal, showPreviewModal]),
+        }, [closePreviewModal, handleEditorBack, showDateModal, showEventModal, showPreviewModal]),
     );
 
     return (
@@ -511,7 +513,7 @@ const ProfileBlogEditorScreen = ({ navigation, route }: any) => {
             <View style={Styles.header}>
                 <TouchableOpacity
                     style={Styles.headerButton}
-                    onPress={currentStep > 1 ? goPrevStep : () => navigation.goBack()}
+                    onPress={handleEditorBack}
                 >
                     <ArrowLeft2 size={24} color={colors.primaryColor} variant="Linear" />
                 </TouchableOpacity>
