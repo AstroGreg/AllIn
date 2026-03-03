@@ -45,6 +45,7 @@ const ProfileBlogEditorScreen = ({ navigation, route }: any) => {
     const [isPickingMedia, setIsPickingMedia] = useState(false);
     const [showValidation, setShowValidation] = useState(false);
     const [currentStep, setCurrentStep] = useState(1);
+    const [showPreviewModal, setShowPreviewModal] = useState(false);
     const [skipHighlight, setSkipHighlight] = useState(false);
     const [skipMedia, setSkipMedia] = useState(false);
     const [skipEvent, setSkipEvent] = useState(false);
@@ -387,10 +388,11 @@ const ProfileBlogEditorScreen = ({ navigation, route }: any) => {
         if (currentStep > 1) setCurrentStep((prev) => prev - 1);
     }, [currentStep]);
     const goPreviewStep = useCallback(() => {
-        if (currentStep < TOTAL_STEPS) {
-            setCurrentStep(TOTAL_STEPS);
-        }
-    }, [currentStep, TOTAL_STEPS]);
+        setShowPreviewModal(true);
+    }, []);
+    const closePreviewModal = useCallback(() => {
+        setShowPreviewModal(false);
+    }, []);
 
     const skipHighlightStep = useCallback(() => {
         if (currentStep !== 3) return;
@@ -427,9 +429,61 @@ const ProfileBlogEditorScreen = ({ navigation, route }: any) => {
         return true;
     }, [currentStep, description, existingPreview.length, highlight, linkedPeople.length, media.length, postDate, selectedEventId, skipEvent, skipHighlight, skipMedia, skipPeople, title]);
 
+    const firstPreviewImageUri = useMemo(() => {
+        const firstImage = [...existingPreview, ...media].find((item) => item?.type === 'image' && item?.uri);
+        return firstImage?.uri ? String(firstImage.uri) : null;
+    }, [existingPreview, media]);
+
+    const renderPreviewCard = useCallback(() => (
+        <View style={Styles.previewCard}>
+            <Text style={Styles.previewTitle}>{title || t('Untitled blog')}</Text>
+            <Text style={Styles.previewMeta}>{postDate ? postDate.toLocaleDateString() : t('No date')}</Text>
+            <Text style={Styles.previewText}>{description || t('No description')}</Text>
+            {!skipHighlight && !!highlight.trim() && (
+                <Text style={Styles.previewMeta}>{t('Highlight')}: {highlight.trim()}</Text>
+            )}
+            {selectedEvent ? (
+                <Text style={Styles.previewMeta}>{t('Event')}: {selectedEventLabel}</Text>
+            ) : null}
+            {linkedPeople.length > 0 ? (
+                <Text style={Styles.previewMeta}>{t('People')}: {linkedPeople.join(', ')}</Text>
+            ) : null}
+            <Text style={Styles.previewMeta}>{t('Media')}: {existingPreview.length + media.length}</Text>
+            {firstPreviewImageUri ? (
+                <Image
+                    source={{ uri: firstPreviewImageUri }}
+                    style={Styles.previewMediaImage}
+                    resizeMode="cover"
+                />
+            ) : null}
+        </View>
+    ), [
+        Styles.previewMediaImage,
+        Styles.previewCard,
+        Styles.previewMeta,
+        Styles.previewText,
+        Styles.previewTitle,
+        description,
+        existingPreview.length,
+        firstPreviewImageUri,
+        highlight,
+        linkedPeople,
+        media.length,
+        postDate,
+        selectedEvent,
+        selectedEventLabel,
+        skipHighlight,
+        t,
+        title,
+    ]);
+
     useFocusEffect(
         useCallback(() => {
             const onHardwareBackPress = () => {
+                if (showPreviewModal) {
+                    closePreviewModal();
+                    return true;
+                }
                 if (showEventModal) {
                     setShowEventModal(false);
                     return true;
@@ -448,7 +502,7 @@ const ProfileBlogEditorScreen = ({ navigation, route }: any) => {
             return () => {
                 subscription.remove();
             };
-        }, [currentStep, showDateModal, showEventModal]),
+        }, [closePreviewModal, currentStep, showDateModal, showEventModal, showPreviewModal]),
     );
 
     return (
@@ -627,21 +681,7 @@ const ProfileBlogEditorScreen = ({ navigation, route }: any) => {
                 )}
 
                 {currentStep === 7 && (
-                    <View style={Styles.previewCard}>
-                        <Text style={Styles.previewTitle}>{title || t('Untitled blog')}</Text>
-                        <Text style={Styles.previewMeta}>{postDate ? postDate.toLocaleDateString() : t('No date')}</Text>
-                        <Text style={Styles.previewText}>{description || t('No description')}</Text>
-                        {!skipHighlight && !!highlight.trim() && (
-                            <Text style={Styles.previewMeta}>{t('Highlight')}: {highlight.trim()}</Text>
-                        )}
-                        {selectedEvent ? (
-                            <Text style={Styles.previewMeta}>{t('Event')}: {selectedEventLabel}</Text>
-                        ) : null}
-                        {linkedPeople.length > 0 ? (
-                            <Text style={Styles.previewMeta}>{t('People')}: {linkedPeople.join(', ')}</Text>
-                        ) : null}
-                        <Text style={Styles.previewMeta}>{t('Media')}: {existingPreview.length + media.length}</Text>
-                    </View>
+                    renderPreviewCard()
                 )}
 
                 <View style={Styles.actionRow}>
@@ -765,6 +805,42 @@ const ProfileBlogEditorScreen = ({ navigation, route }: any) => {
                     setShowDateModal(false);
                 }}
             />
+
+            <Modal
+                visible={showPreviewModal}
+                animationType="slide"
+                onRequestClose={closePreviewModal}
+            >
+                <View style={Styles.mainContainer}>
+                    <SizeBox height={insets.top} />
+                    <View style={Styles.header}>
+                        <TouchableOpacity style={Styles.headerButton} onPress={closePreviewModal}>
+                            <ArrowLeft2 size={24} color={colors.primaryColor} variant="Linear" />
+                        </TouchableOpacity>
+                        <View style={Styles.headerTitleRow}>
+                            <Text style={Styles.headerTitle}>{t('Preview')}</Text>
+                        </View>
+                        <View style={Styles.headerSpacer} />
+                    </View>
+
+                    <ScrollView contentContainerStyle={Styles.scrollContent} showsVerticalScrollIndicator={false}>
+                        <View style={Styles.stepHeaderRow}>
+                            <Text style={Styles.stepTitle}>{t('Preview')}</Text>
+                        </View>
+
+                        {renderPreviewCard()}
+
+                        {mode === 'edit' && postId ? (
+                            <TouchableOpacity style={Styles.deleteButton} onPress={deleteEntry}>
+                                <Trash size={16} color="#ED5454" variant="Linear" />
+                                <Text style={Styles.deleteText}>{t('Delete blog')}</Text>
+                            </TouchableOpacity>
+                        ) : null}
+
+                        <SizeBox height={insets.bottom > 0 ? insets.bottom + 16 : 32} />
+                    </ScrollView>
+                </View>
+            </Modal>
         </View>
     );
 };

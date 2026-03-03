@@ -25,6 +25,10 @@ export const createStyles = (colors: ThemeColors) =>
             alignItems: 'center',
             justifyContent: 'center',
         },
+        headerSpacer: {
+            width: 44,
+            height: 44,
+        },
         headerTitle: {
             ...Fonts.medium18,
             color: colors.mainTextColor,
@@ -347,6 +351,13 @@ export const createStyles = (colors: ThemeColors) =>
         previewText: {
             ...Fonts.regular14,
             color: colors.mainTextColor,
+        },
+        previewMediaImage: {
+            width: '100%',
+            height: 220,
+            borderRadius: 12,
+            marginTop: 4,
+            backgroundColor: colors.btnBackgroundColor,
         },
         loadingOverlay: {
             position: 'absolute',
