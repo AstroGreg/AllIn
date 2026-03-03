@@ -17,6 +17,8 @@ interface CustomTextInputProps {
     isDown?: boolean;
     keyboardType?: any;
     autoCapitalize?: 'none' | 'sentences' | 'words' | 'characters';
+    hasError?: boolean;
+    showFloatingLabel?: boolean;
 }
 
 const CustomTextInput = ({
@@ -30,7 +32,9 @@ const CustomTextInput = ({
     isIcon = true,
     keyboardType,
     isDown = false,
-    autoCapitalize = 'sentences'
+    autoCapitalize = 'sentences',
+    hasError = false,
+    showFloatingLabel = true,
 }: CustomTextInputProps) => {
     const [activeInput, setActiveInput] = useState(false);
     const [secureTextEntry, setSecureTextEntry] = useState(true);
@@ -42,15 +46,21 @@ const CustomTextInput = ({
             <Text style={Styles.label}>{label}</Text>
             {subLabel && <SizeBox height={4} />}
             {subLabel && <Text style={Styles.subLabel}>{subLabel}</Text>}
-            <View style={[Styles.inputContainer, activeInput && { borderColor: colors.primaryColor }]}>
+            <View
+                style={[
+                    Styles.inputContainer,
+                    hasError && { borderColor: colors.errorColor },
+                    activeInput && !hasError && { borderColor: colors.primaryColor },
+                ]}
+            >
                 {isIcon && icon}
                 <SizeBox width={isIcon ? 10 : 0} />
                 <View style={[Styles.inputBox, isPass && { width: '80%' }]}>
-                    {activeInput && <Text style={Styles.inputTitle}>{label}</Text>}
+                    {activeInput && showFloatingLabel && <Text style={Styles.inputTitle}>{label}</Text>}
                     <TextInput
                         placeholder={activeInput ? '' : placeholder}
                         placeholderTextColor={colors.grayColor}
-                        style={[Styles.input, !activeInput && { height: '100%' }]}
+                        style={[Styles.input, (!activeInput || !showFloatingLabel) && { height: '100%' }]}
                         onFocus={() => setActiveInput(true)}
                         onBlur={() => setActiveInput(false)}
                         secureTextEntry={isPass ? secureTextEntry : false}

@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, Image, Alert, ActivityIndicator } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, Image, ActivityIndicator } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import FastImage from 'react-native-fast-image';
 import { createStyles } from './SelectEventScreenStyles';
@@ -31,7 +31,7 @@ const SelectEventScreen = ({ navigation, route }: any) => {
     const Styles = createStyles(colors);
     const insets = useSafeAreaInsets();
     const { updateUserProfile, userProfile } = useAuth();
-    const [selectedEvents, setSelectedEvents] = useState<string[]>(['track-field']);
+    const [selectedEvents, setSelectedEvents] = useState<string[]>([]);
     const [isLoading, setIsLoading] = useState(false);
     const selectedCategory = String(route?.params?.selectedCategory || '').trim().toLowerCase();
     const fromAddFlow = Boolean(route?.params?.fromAddFlow);
@@ -54,9 +54,7 @@ const SelectEventScreen = ({ navigation, route }: any) => {
     };
 
     const handleNext = async () => {
-        const requireSelection = selectedCategory !== 'support';
-        if (requireSelection && selectedEvents.length === 0) {
-            Alert.alert(t('Error'), t('Please select at least one event'));
+        if (selectedEvents.length === 0) {
             return;
         }
 
@@ -120,9 +118,7 @@ const SelectEventScreen = ({ navigation, route }: any) => {
                     </Text>
                     <SizeBox height={8} />
                     <Text style={Styles.subHeadingText}>
-                        {selectedCategory === 'support'
-                            ? t('Optional: helps personalize your feed')
-                            : t('Select one or more disciplines')}
+                        {t('Select one or more disciplines')}
                     </Text>
 
                     <SizeBox height={24} />
@@ -183,10 +179,13 @@ const SelectEventScreen = ({ navigation, route }: any) => {
                     </TouchableOpacity>
 
                     <TouchableOpacity
-                        style={[Styles.nextButton, isLoading && { opacity: 0.5 }]}
+                        style={[
+                            Styles.nextButton,
+                            (isLoading || selectedEvents.length === 0) && Styles.nextButtonDisabled,
+                        ]}
                         activeOpacity={0.7}
                         onPress={handleNext}
-                        disabled={isLoading}
+                        disabled={isLoading || selectedEvents.length === 0}
                     >
                         {isLoading ? (
                             <ActivityIndicator size="small" color="#fff" />

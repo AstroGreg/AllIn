@@ -36,6 +36,9 @@ const CreateProfileScreen = ({ navigation }: any) => {
     const [showNationalityModal, setShowNationalityModal] = useState(false);
     const [showBirthdateModal, setShowBirthdateModal] = useState(false);
     const [nationalitySearch, setNationalitySearch] = useState('');
+    const [showStep1Validation, setShowStep1Validation] = useState(false);
+    const [showStep2Validation, setShowStep2Validation] = useState(false);
+    const [showStep3Validation, setShowStep3Validation] = useState(false);
 
     useEffect(() => {
         let mounted = true;
@@ -209,24 +212,27 @@ const CreateProfileScreen = ({ navigation }: any) => {
     const handleContinue = async () => {
         if (step === 1) {
             if (!canContinueStep1) {
-                Alert.alert(t('Error'), t('Please fill in all required fields'));
+                setShowStep1Validation(true);
                 return;
             }
+            setShowStep1Validation(false);
             setStep(2);
             return;
         }
         if (step === 2) {
             if (!canContinueStep2) {
-                Alert.alert(t('Error'), t('Please fill in all required fields'));
+                setShowStep2Validation(true);
                 return;
             }
+            setShowStep2Validation(false);
             setStep(3);
             return;
         }
         if (!canSubmitStep3) {
-            Alert.alert(t('Error'), t('Please fill in all required fields'));
+            setShowStep3Validation(true);
             return;
         }
+        setShowStep3Validation(false);
 
         setIsLoading(true);
         try {
@@ -324,7 +330,14 @@ const CreateProfileScreen = ({ navigation }: any) => {
                                 placeholder={t('Enter First Name')}
                                 icon={<Icons.User height={16} width={16} />}
                                 value={firstName}
-                                onChangeText={setFirstName}
+                                showFloatingLabel={false}
+                                onChangeText={(value) => {
+                                    setFirstName(value);
+                                    if (showStep1Validation && value.trim().length > 0 && lastName.trim().length > 0) {
+                                        setShowStep1Validation(false);
+                                    }
+                                }}
+                                hasError={showStep1Validation && firstName.trim().length === 0}
                             />
                             <SizeBox height={24} />
                             <CustomTextInput
@@ -332,7 +345,14 @@ const CreateProfileScreen = ({ navigation }: any) => {
                                 placeholder={t('Enter Last Name')}
                                 icon={<Icons.User height={16} width={16} />}
                                 value={lastName}
-                                onChangeText={setLastName}
+                                showFloatingLabel={false}
+                                onChangeText={(value) => {
+                                    setLastName(value);
+                                    if (showStep1Validation && firstName.trim().length > 0 && value.trim().length > 0) {
+                                        setShowStep1Validation(false);
+                                    }
+                                }}
+                                hasError={showStep1Validation && lastName.trim().length === 0}
                             />
                         </>
                     )}
@@ -344,7 +364,14 @@ const CreateProfileScreen = ({ navigation }: any) => {
                                 placeholder={t('Enter Username')}
                                 icon={<Icons.User height={16} width={16} />}
                                 value={username}
-                                onChangeText={setUsername}
+                                showFloatingLabel={false}
+                                onChangeText={(value) => {
+                                    setUsername(value);
+                                    if (showStep2Validation && value.trim().length > 0 && email.trim().length > 0) {
+                                        setShowStep2Validation(false);
+                                    }
+                                }}
+                                hasError={showStep2Validation && username.trim().length === 0}
                                 autoCapitalize="none"
                             />
                             <SizeBox height={24} />
@@ -353,7 +380,14 @@ const CreateProfileScreen = ({ navigation }: any) => {
                                 placeholder={t('Enter Email')}
                                 icon={<Icons.User height={16} width={16} />}
                                 value={email}
-                                onChangeText={setEmail}
+                                showFloatingLabel={false}
+                                onChangeText={(value) => {
+                                    setEmail(value);
+                                    if (showStep2Validation && username.trim().length > 0 && value.trim().length > 0) {
+                                        setShowStep2Validation(false);
+                                    }
+                                }}
+                                hasError={showStep2Validation && email.trim().length === 0}
                                 autoCapitalize="none"
                                 keyboardType="email-address"
                             />
@@ -364,7 +398,13 @@ const CreateProfileScreen = ({ navigation }: any) => {
                         <>
                             <Text style={Styles.label}>{t('Nationality')}</Text>
                             <TouchableOpacity
-                                style={[Styles.inputContainer, { marginTop: 8 }]}
+                                style={[
+                                    Styles.inputContainer,
+                                    { marginTop: 8 },
+                                    showStep3Validation && nationality.trim().length === 0
+                                        ? { borderColor: colors.errorColor }
+                                        : null,
+                                ]}
                                 onPress={openNationalityModal}
                                 activeOpacity={0.8}
                             >
@@ -380,7 +420,13 @@ const CreateProfileScreen = ({ navigation }: any) => {
 
                             <Text style={Styles.label}>{t('Your Birth Date')}</Text>
                             <TouchableOpacity
-                                style={[Styles.dateButton, { marginTop: 8 }]}
+                                style={[
+                                    Styles.dateButton,
+                                    { marginTop: 8 },
+                                    showStep3Validation && birthDate.trim().length === 0
+                                        ? { borderColor: colors.errorColor }
+                                        : null,
+                                ]}
                                 onPress={openBirthdateModal}
                                 activeOpacity={0.8}
                             >
@@ -447,6 +493,9 @@ const CreateProfileScreen = ({ navigation }: any) => {
                                         style={{ paddingVertical: 14, borderBottomWidth: 0.5, borderBottomColor: colors.lightGrayColor }}
                                         onPress={() => {
                                             setNationality(option);
+                                            if (showStep3Validation && option.trim().length > 0 && birthDate.trim().length > 0) {
+                                                setShowStep3Validation(false);
+                                            }
                                             closeNationalityModal();
                                         }}
                                     >
@@ -466,6 +515,9 @@ const CreateProfileScreen = ({ navigation }: any) => {
                 onClose={() => setShowBirthdateModal(false)}
                 onApply={(value) => {
                     setBirthDate(value || '');
+                    if (showStep3Validation && nationality.trim().length > 0 && String(value || '').trim().length > 0) {
+                        setShowStep3Validation(false);
+                    }
                     setShowBirthdateModal(false);
                 }}
             />

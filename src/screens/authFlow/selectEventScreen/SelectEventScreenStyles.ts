@@ -120,6 +120,9 @@ export const createStyles = (colors: ThemeColors) => StyleSheet.create({
         flexDirection: 'row',
         gap: 8,
     },
+    nextButtonDisabled: {
+        backgroundColor: colors.lightGrayColor,
+    },
     nextButtonText: {
         ...Fonts.medium16,
         lineHeight: 24,
