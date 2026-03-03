@@ -6,12 +6,14 @@ import SizeBox from '../../constants/SizeBox'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useTheme } from '../../context/ThemeContext'
 import Icons from '../../constants/Icons'
+import Images from '../../constants/Images'
 import FastImage from 'react-native-fast-image'
 import { SearchNormal1, Calendar, Location, CloseCircle, Clock, ArrowDown2, Camera } from 'iconsax-react-nativejs'
 import { useTranslation } from 'react-i18next'
 import { useAuth } from '../../context/AuthContext'
 import { ApiError, followProfile, getGroupMembers, getProfileSummary, searchEvents, searchGroups, searchProfiles, unfollowProfile } from '../../services/apiGateway'
 import UnifiedSearchInput from '../../components/unifiedSearchInput/UnifiedSearchInput'
+import { getApiBaseUrl } from '../../constants/RuntimeConfig'
  
 
 const FILTERS = ['Competition', 'Person', 'Group', 'Location'] as const
@@ -40,8 +42,12 @@ interface PersonResult {
     avatar_url?: string | null;
     role: 'Athlete' | 'Photographer';
     activity: string;
+    sportLabel?: string;
+    sportKind?: 'track' | 'road' | null;
     location: string;
     runningClub?: string;
+    trackFieldMainEvent?: string;
+    roadTrailMainEvent?: string;
     isFollowing?: boolean;
     events?: string[];
 }
@@ -65,7 +71,7 @@ const SearchScreen = ({ navigation }: any) => {
     const insets = useSafeAreaInsets();
     const { colors } = useTheme();
     const { t } = useTranslation();
-    const { apiAccessToken } = useAuth();
+    const { apiAccessToken, user } = useAuth();
     const Styles = createStyles(colors);
     const isLightTheme = String(colors.backgroundColor || '').toLowerCase() === '#ffffff';
     const pickerVisualProps = useMemo<any>(() => (
@@ -111,6 +117,29 @@ const SearchScreen = ({ navigation }: any) => {
     const [defaultVisibleCount, setDefaultVisibleCount] = useState(DEFAULT_COMPETITIONS_INITIAL_LIMIT);
     const [searchVisibleCount, setSearchVisibleCount] = useState(SEARCH_RESULTS_INITIAL_LIMIT);
     const loadMoreLockedRef = useRef(false);
+    const authPicture = String(user?.picture || '').trim();
+
+    const toAbsoluteUrl = useCallback((value?: string | null) => {
+        const raw = String(value || '').trim();
+        if (!raw) return null;
+        if (/^https?:\/\//i.test(raw)) return raw;
+        const base = getApiBaseUrl();
+        return `${base.replace(/\/$/, '')}/${raw.replace(/^\//, '')}`;
+    }, []);
+
+    const withAccessToken = useCallback((value?: string | null) => {
+        const raw = String(value || '').trim();
+        const token = String(apiAccessToken || '').trim();
+        if (!raw) return null;
+        if (!token) return raw;
+        const separator = raw.includes('?') ? '&' : '?';
+        return `${raw}${separator}access_token=${encodeURIComponent(token)}`;
+    }, [apiAccessToken]);
+
+    const resolveAvatarUrl = useCallback((value?: string | null) => {
+        const absolute = toAbsoluteUrl(value);
+        return withAccessToken(absolute) || absolute;
+    }, [toAbsoluteUrl, withAccessToken]);
  
     const competitionTypeFilters = useMemo(
         () => ([
@@ -323,15 +352,37 @@ const SearchScreen = ({ navigation }: any) => {
                 const rows = Array.isArray(res?.profiles) ? res.profiles : [];
                 setPeopleResults(
                     rows.map((profile, idx) => ({
+                        ...(function () {
+                            const trackFieldMainEvent = String(profile.track_field_main_event || '').trim();
+                            const roadTrailMainEvent = String(profile.road_trail_main_event || '').trim();
+                            const trackFieldClub = String(profile.track_field_club || '').trim();
+                            const sportKind: 'track' | 'road' | null = roadTrailMainEvent
+                                ? 'road'
+                                : (trackFieldMainEvent || trackFieldClub)
+                                    ? 'track'
+                                    : null;
+                            const sportLabel = sportKind === 'road'
+                                ? t('roadAndTrail')
+                                : sportKind === 'track'
+                                    ? t('trackAndField')
+                                    : '';
+                            return {
+                                trackFieldMainEvent,
+                                roadTrailMainEvent,
+                                trackFieldClub,
+                                sportKind,
+                                sportLabel,
+                            };
+                        })(),
                         id: idx + 1,
                         profile_id: String(profile.profile_id || ''),
                         name: String(profile.display_name || t('User')),
                         avatar_url: profile.avatar_url ?? null,
                         role: 'Athlete',
-                        activity: t('Profile'),
+                        activity: '',
                         location: String((profile as any)?.location || '').trim(),
                         runningClub: String(
-                            (profile as any)?.track_field_club ||
+                            String(profile.track_field_club || '').trim() ||
                             (profile as any)?.running_club ||
                             (profile as any)?.athletics_club ||
                             '',
@@ -383,7 +434,9 @@ const SearchScreen = ({ navigation }: any) => {
                             name: String(member.display_name || t('User')),
                             avatar_url: member.avatar_url ?? null,
                             role: 'Athlete',
-                            activity: t('Group member'),
+                            activity: '',
+                            sportLabel: '',
+                            sportKind: null,
                             location: '',
                         });
                     });
@@ -689,93 +742,99 @@ const SearchScreen = ({ navigation }: any) => {
         </TouchableOpacity>
     );
 
-    const renderPersonCard = (person: PersonResult) => (
-        <TouchableOpacity
-            key={person.profile_id ?? String(person.id)}
-            style={Styles.userCard}
-            onPress={() => openProfileFromSearch(person.profile_id ?? null)}
-        >
-            <View style={Styles.userCardContent}>
-                <View style={Styles.userHeader}>
-                    {person.avatar_url ? (
+    const renderPersonCard = (person: PersonResult) => {
+        const avatarUrl = resolveAvatarUrl(person.avatar_url);
+        const isOwnSearchResult =
+            String(person.profile_id || '').trim().length > 0 &&
+            String(person.profile_id || '').trim() === String(ownProfileId || '').trim();
+        const avatarSource = avatarUrl
+            ? { uri: avatarUrl }
+            : isOwnSearchResult && authPicture
+                ? { uri: authPicture }
+                : Images.profilePic;
+        return (
+            <TouchableOpacity
+                key={person.profile_id ?? String(person.id)}
+                style={Styles.userCard}
+                onPress={() => openProfileFromSearch(person.profile_id ?? null)}
+            >
+                <View style={Styles.userCardContent}>
+                    <View style={Styles.userHeader}>
                         <FastImage
-                            source={{ uri: person.avatar_url }}
+                            source={avatarSource}
                             style={Styles.userAvatar}
                             resizeMode="cover"
                         />
-                    ) : (
-                        <View style={Styles.userAvatarPlaceholder}>
-                            <Text style={Styles.userAvatarPlaceholderText}>
-                                {String(person.name || '').trim().charAt(0).toUpperCase() || '?'}
-                            </Text>
-                        </View>
-                    )}
-                    <SizeBox width={8} />
-                    <View style={Styles.userInfo}>
-                        <View style={Styles.userNameRow}>
-                            <Text style={Styles.userName}>{person.name}</Text>
-                            <View style={Styles.userTypeBadge}>
-                                <Text style={Styles.userTypeText}>{t(person.role)}</Text>
+                        <SizeBox width={8} />
+                        <View style={Styles.userInfo}>
+                            <View style={Styles.userNameRow}>
+                                <Text style={Styles.userName}>{person.name}</Text>
                             </View>
-                        </View>
-                        <View style={Styles.userDetails}>
-                            <View style={Styles.userDetailItem}>
-                                {person.role === 'Athlete' ? (
-                                    <Icons.Run height={16} width={16} />
-                                ) : (
-                                    <Camera size={16} color="#9B9F9F" variant="Linear" />
-                                )}
-                                <SizeBox width={4} />
-                                <Text style={Styles.userDetailText}>{person.activity}</Text>
+                            <View style={Styles.userDetails}>
+                                {String(person.sportLabel || '').trim().length > 0 ? (
+                                    <View style={Styles.userDetailItem}>
+                                        {person.sportKind === 'track' ? (
+                                            <Icons.TrackFieldLogo width={16} height={16} />
+                                        ) : person.sportKind === 'road' ? (
+                                            <Icons.PersonRunningColorful width={16} height={16} />
+                                        ) : person.role === 'Athlete' ? (
+                                            <Icons.Run height={16} width={16} />
+                                        ) : (
+                                            <Camera size={16} color="#9B9F9F" variant="Linear" />
+                                        )}
+                                        <SizeBox width={4} />
+                                        <Text style={Styles.userDetailText}>{person.sportLabel}</Text>
+                                    </View>
+                                ) : null}
+                                {(person.runningClub || person.location) ? (
+                                    <View style={Styles.userDetailItem}>
+                                        <Text style={Styles.userDetailText}>
+                                            {person.runningClub || person.location}
+                                        </Text>
+                                    </View>
+                                ) : null}
                             </View>
-                            {(person.runningClub || person.location) ? (
-                                <View style={Styles.userDetailItem}>
-                                    <Text style={Styles.userDetailText}>
-                                        {person.runningClub || person.location}
-                                    </Text>
-                                </View>
-                            ) : null}
                         </View>
                     </View>
-                </View>
-                {person.role === 'Athlete' && (
-                    <>
-                        <SizeBox height={10} />
-                        <TouchableOpacity
-                            style={Styles.followBtn}
-                            disabled={!apiAccessToken || !person.profile_id || followBusyProfileId === String(person.profile_id)}
-                            onPress={async (e) => {
-                                e.stopPropagation?.();
-                                const targetId = String(person.profile_id || '').trim();
-                                if (!apiAccessToken || !targetId) return;
-                                try {
-                                    setFollowBusyProfileId(targetId);
-                                    if (person.isFollowing) {
-                                        await unfollowProfile(apiAccessToken, targetId);
-                                    } else {
-                                        await followProfile(apiAccessToken, targetId);
+                    {person.role === 'Athlete' && (
+                        <>
+                            <SizeBox height={10} />
+                            <TouchableOpacity
+                                style={Styles.followBtn}
+                                disabled={!apiAccessToken || !person.profile_id || followBusyProfileId === String(person.profile_id)}
+                                onPress={async (e) => {
+                                    e.stopPropagation?.();
+                                    const targetId = String(person.profile_id || '').trim();
+                                    if (!apiAccessToken || !targetId) return;
+                                    try {
+                                        setFollowBusyProfileId(targetId);
+                                        if (person.isFollowing) {
+                                            await unfollowProfile(apiAccessToken, targetId);
+                                        } else {
+                                            await followProfile(apiAccessToken, targetId);
+                                        }
+                                        setPeopleResults((prev) =>
+                                            prev.map((p) =>
+                                                String(p.profile_id || '') === targetId
+                                                    ? { ...p, isFollowing: !Boolean(p.isFollowing) }
+                                                    : p,
+                                            ),
+                                        );
+                                    } finally {
+                                        setFollowBusyProfileId((current) => (current === targetId ? null : current));
                                     }
-                                    setPeopleResults((prev) =>
-                                        prev.map((p) =>
-                                            String(p.profile_id || '') === targetId
-                                                ? { ...p, isFollowing: !Boolean(p.isFollowing) }
-                                                : p,
-                                        ),
-                                    );
-                                } finally {
-                                    setFollowBusyProfileId((current) => (current === targetId ? null : current));
-                                }
-                            }}
-                        >
-                            <Text style={Styles.followBtnText}>
-                                {person.isFollowing ? t('Following') : t('Follow')}
-                            </Text>
-                        </TouchableOpacity>
-                    </>
-                )}
-            </View>
-        </TouchableOpacity>
-    );
+                                }}
+                            >
+                                <Text style={Styles.followBtnText}>
+                                    {person.isFollowing ? t('Following') : t('Follow')}
+                                </Text>
+                            </TouchableOpacity>
+                        </>
+                    )}
+                </View>
+            </TouchableOpacity>
+        );
+    };
 
     const renderGroupAvatarCell = (uri: string | undefined, style: any) => (
         uri ? (

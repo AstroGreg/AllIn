@@ -308,6 +308,9 @@ export interface ProfileSearchResult {
   profile_id: string;
   display_name?: string | null;
   avatar_url?: string | null;
+  track_field_club?: string | null;
+  track_field_main_event?: string | null;
+  road_trail_main_event?: string | null;
 }
 
 export interface ProfileSearchResponse {
