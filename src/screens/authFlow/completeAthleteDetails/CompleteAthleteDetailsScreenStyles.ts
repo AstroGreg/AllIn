@@ -52,6 +52,11 @@ export const createStyles = (colors: ThemeColors) => StyleSheet.create({
         alignItems: 'center',
         flexDirection: 'row',
         paddingHorizontal: 16,
+    },
+    clubFieldTapArea: {
+        flex: 1,
+        flexDirection: 'row',
+        alignItems: 'center',
         justifyContent: 'space-between',
     },
     clubFieldLeft: {
@@ -66,6 +71,11 @@ export const createStyles = (colors: ThemeColors) => StyleSheet.create({
     clubFieldPlaceholder: {
         ...Fonts.regular14,
         color: colors.grayColor,
+    },
+    clubClearButton: {
+        marginLeft: 10,
+        alignItems: 'center',
+        justifyContent: 'center',
     },
     modalBackdrop: {
         flex: 1,
@@ -103,10 +113,19 @@ export const createStyles = (colors: ThemeColors) => StyleSheet.create({
         paddingVertical: 12,
         borderBottomWidth: 0.5,
         borderBottomColor: colors.lightGrayColor,
+        borderRadius: 10,
+        paddingHorizontal: 10,
+    },
+    groupItemSelected: {
+        backgroundColor: colors.secondaryColor,
     },
     groupItemText: {
         ...Fonts.regular14,
         color: colors.mainTextColor,
+    },
+    groupItemTextSelected: {
+        color: colors.primaryColor,
+        fontWeight: '600',
     },
     emptyText: {
         ...Fonts.regular14,

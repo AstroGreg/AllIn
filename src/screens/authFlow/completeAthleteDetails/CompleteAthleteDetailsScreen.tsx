@@ -102,6 +102,11 @@ const CompleteAthleteDetailsScreen = ({ navigation }: any) => {
         setClubModalVisible(false);
     };
 
+    const handleClearRunningClub = () => {
+        setRunningClub('');
+        setRunningClubGroupId('');
+    };
+
     return (
         <View style={Styles.mainContainer}>
             <SizeBox height={insets.top} />
@@ -148,20 +153,31 @@ const CompleteAthleteDetailsScreen = ({ navigation }: any) => {
                         />
 
                         <Text style={Styles.clubFieldLabel}>{t('Running Club')}</Text>
-                        <TouchableOpacity
-                            style={Styles.clubFieldContainer}
-                            activeOpacity={0.8}
-                            onPress={() => setClubModalVisible(true)}
-                        >
-                            <View style={Styles.clubFieldLeft}>
-                                <Buildings size={16} color={colors.primaryColor} />
-                                <SizeBox width={10} />
-                                <Text style={runningClub ? Styles.clubFieldText : Styles.clubFieldPlaceholder}>
-                                    {runningClub || t('Choose Running Club')}
-                                </Text>
-                            </View>
-                            <Icons.Dropdown height={20} width={20} />
-                        </TouchableOpacity>
+                        <View style={Styles.clubFieldContainer}>
+                            <TouchableOpacity
+                                style={Styles.clubFieldTapArea}
+                                activeOpacity={0.8}
+                                onPress={() => setClubModalVisible(true)}
+                            >
+                                <View style={Styles.clubFieldLeft}>
+                                    <Buildings size={16} color={colors.primaryColor} />
+                                    <SizeBox width={10} />
+                                    <Text style={runningClub ? Styles.clubFieldText : Styles.clubFieldPlaceholder}>
+                                        {runningClub || t('Choose Running Club')}
+                                    </Text>
+                                </View>
+                                <Icons.Dropdown height={20} width={20} />
+                            </TouchableOpacity>
+                            {runningClub ? (
+                                <TouchableOpacity
+                                    style={Styles.clubClearButton}
+                                    activeOpacity={0.8}
+                                    onPress={handleClearRunningClub}
+                                >
+                                    <CloseCircle size={18} color={colors.grayColor} />
+                                </TouchableOpacity>
+                            ) : null}
+                        </View>
                     </View>
                 </View>
 
@@ -226,14 +242,26 @@ const CompleteAthleteDetailsScreen = ({ navigation }: any) => {
                             <FlatList
                                 data={groupOptions}
                                 keyExtractor={(item) => String(item.group_id)}
-                                renderItem={({ item }) => (
-                                    <TouchableOpacity
-                                        style={Styles.groupItem}
-                                        onPress={() => handleSelectRunningClub(item)}
-                                    >
-                                        <Text style={Styles.groupItemText}>{item.name}</Text>
-                                    </TouchableOpacity>
-                                )}
+                                renderItem={({ item }) => {
+                                    const isSelected = String(item.group_id || '') === runningClubGroupId;
+                                    return (
+                                        <TouchableOpacity
+                                            style={[Styles.groupItem, isSelected && Styles.groupItemSelected]}
+                                            onPress={() => {
+                                                if (isSelected) {
+                                                    handleClearRunningClub();
+                                                    setClubModalVisible(false);
+                                                    return;
+                                                }
+                                                handleSelectRunningClub(item);
+                                            }}
+                                        >
+                                            <Text style={[Styles.groupItemText, isSelected && Styles.groupItemTextSelected]}>
+                                                {item.name}
+                                            </Text>
+                                        </TouchableOpacity>
+                                    );
+                                }}
                                 ListEmptyComponent={<Text style={Styles.emptyText}>{t('No groups found')}</Text>}
                             />
                         )}

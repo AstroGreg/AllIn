@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useCallback, useContext, useState, useEffect, ReactNode } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { AppConfig } from '../constants/AppConfig';
 import { getAuthBootstrap, updateUserMe, type AuthBootstrapResponse, type UpdateUserMeInput } from '../services/apiGateway';
@@ -194,13 +194,22 @@ const profilePatchFromBootstrap = (bootstrap: AuthBootstrapResponse | null): Par
     return Object.keys(patch).length > 0 ? patch : null;
 };
 
-const triggerAuthBootstrap = async (accessToken: string): Promise<AuthBootstrapResponse | null> => {
+const triggerAuthBootstrap = async (
+    accessToken: string,
+    options?: { throwOnFailure?: boolean; context?: string },
+): Promise<AuthBootstrapResponse | null> => {
     try {
         const payload = await getAuthBootstrap(accessToken);
         console.log('[Auth] Bootstrap succeeded:', payload?.needs_user_onboarding ? 'needs_onboarding' : 'ready');
         return payload;
     } catch (err: any) {
-        console.log('[Auth] Bootstrap failed:', err?.message ?? err);
+        console.log(
+            `[Auth] Bootstrap failed${options?.context ? ` (${options.context})` : ''}:`,
+            err?.message ?? err,
+        );
+        if (options?.throwOnFailure) {
+            throw err;
+        }
         return null;
     }
 };
@@ -214,9 +223,43 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const [accessToken, setAccessToken] = useState<string | null>(null);
     const [error, setError] = useState<string | null>(null);
 
-    // Check for stored credentials on app start
-    useEffect(() => {
-        checkStoredCredentials();
+    const clearAuthSessionState = useCallback(async (clearStoredCredentials: boolean) => {
+        if (clearStoredCredentials) {
+            try {
+                await AsyncStorage.removeItem(AUTH_STORAGE_KEY);
+            } catch (err: any) {
+                console.log('[Auth] Could not clear stored credentials:', err?.message ?? err);
+            }
+        }
+        setUser(null);
+        setAuthBootstrap(null);
+        setAccessToken(null);
+        setIsAuthenticated(false);
+    }, []);
+
+    const finalizeAuthenticatedSession = useCallback(async (
+        credentials: Credentials,
+        userInfo: User | null,
+        context: 'login' | 'signup' | 'restore',
+    ) => {
+        const token = String(credentials?.accessToken ?? '').trim();
+        if (!token) {
+            throw new Error('Missing access token');
+        }
+
+        const bootstrap = await triggerAuthBootstrap(token, { throwOnFailure: true, context });
+        if (!bootstrap) {
+            throw new Error('Auth bootstrap failed');
+        }
+
+        console.log('[Auth] User info:', userInfo?.email || 'No email');
+        await storeCredentials(credentials);
+        setUser(userInfo);
+        setAccessToken(token);
+        setIsAuthenticated(true);
+        setAuthBootstrap(bootstrap);
+        await syncProfileFromBootstrap(bootstrap);
+        return bootstrap;
     }, []);
 
     const syncProfileFromBootstrap = async (bootstrap: AuthBootstrapResponse | null) => {
@@ -250,7 +293,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         }
     };
 
-    const checkStoredCredentials = async () => {
+    const checkStoredCredentials = useCallback(async () => {
         console.log('[Auth] Checking stored credentials...');
         try {
             const storedCredentials = await AsyncStorage.getItem(AUTH_STORAGE_KEY);
@@ -307,25 +350,24 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
                         }
                     }
 
-                    // Keep session if access token exists, even when ID token is stale/unavailable.
-                    setUser(userInfo);
-                    setAccessToken(credentials.accessToken);
-                    setIsAuthenticated(true);
-                    const bootstrap = await triggerAuthBootstrap(credentials.accessToken);
-                    setAuthBootstrap(bootstrap);
-                    await syncProfileFromBootstrap(bootstrap);
+                    await finalizeAuthenticatedSession(credentials, userInfo, 'restore');
                 }
             } else {
                 console.log('[Auth] No stored credentials found');
             }
         } catch (err: any) {
-            // Invalid stored payload (e.g. malformed JSON), clear and continue logged out.
-            console.log('[Auth] Token validation failed:', err.message);
-            await AsyncStorage.removeItem(AUTH_STORAGE_KEY);
+            // Invalid stored payload or failed bootstrap during restore, clear and continue logged out.
+            console.log('[Auth] Session restore failed:', err.message);
+            await clearAuthSessionState(true);
         } finally {
             setIsLoading(false);
         }
-    };
+    }, [clearAuthSessionState, finalizeAuthenticatedSession]);
+
+    // Check for stored credentials on app start
+    useEffect(() => {
+        checkStoredCredentials();
+    }, [checkStoredCredentials]);
 
     const storeCredentials = async (credentials: Credentials) => {
         try {
@@ -453,14 +495,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
                     }
                 }
 
-                console.log('[Auth] User info:', userInfo?.email || 'No email');
-                setUser(userInfo);
-                setAccessToken(credentials.accessToken);
-                setIsAuthenticated(true);
-                await storeCredentials(credentials);
-                const bootstrap = await triggerAuthBootstrap(credentials.accessToken);
-                setAuthBootstrap(bootstrap);
-                await syncProfileFromBootstrap(bootstrap);
+                await finalizeAuthenticatedSession(credentials, userInfo, 'login');
                 console.log('[Auth] Login successful!');
             } else {
                 console.log('[Auth] No access token in credentials, login may have been cancelled');
@@ -476,6 +511,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
                                err.code === 'CANCELLED';
 
             if (!isCancelled) {
+                await clearAuthSessionState(false);
                 const errorMessage = err.message || 'Login failed. Please try again.';
                 setError(errorMessage);
                 throw new Error(errorMessage);
@@ -552,14 +588,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
                     }
                 }
 
-                console.log('[Auth] User info:', userInfo?.email || 'No email');
-                setUser(userInfo);
-                setAccessToken(credentials.accessToken);
-                setIsAuthenticated(true);
-                await storeCredentials(credentials);
-                const bootstrap = await triggerAuthBootstrap(credentials.accessToken);
-                setAuthBootstrap(bootstrap);
-                await syncProfileFromBootstrap(bootstrap);
+                await finalizeAuthenticatedSession(credentials, userInfo, 'signup');
                 console.log('[Auth] Signup successful!');
             } else {
                 console.log('[Auth] No access token in credentials, signup may have been cancelled');
@@ -575,6 +604,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
                                err.code === 'CANCELLED';
 
             if (!isCancelled) {
+                await clearAuthSessionState(false);
                 const errorMessage = err.message || 'Signup failed. Please try again.';
                 setError(errorMessage);
                 throw new Error(errorMessage);
@@ -593,11 +623,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             await AsyncStorage.removeItem(AUTH_STORAGE_KEY);
             await AsyncStorage.removeItem(PROFILE_STORAGE_KEY);
             await AsyncStorage.removeItem('@dev_api_token');
-            setUser(null);
+            await clearAuthSessionState(false);
             setUserProfile(null);
-            setAuthBootstrap(null);
-            setAccessToken(null);
-            setIsAuthenticated(false);
         } catch (err: any) {
             console.error('Logout error:', err);
         } finally {
