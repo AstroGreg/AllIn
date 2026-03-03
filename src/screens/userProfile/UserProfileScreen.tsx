@@ -56,6 +56,10 @@ const UserProfileScreen = ({ navigation, route }: any) => {
     const { t } = useTranslation();
     const Styles = createStyles(colors);
     const { user, userProfile, apiAccessToken, updateUserProfile } = useAuth();
+    const defaultProfileImage = useMemo(() => {
+        const googlePicture = String(user?.picture ?? '').trim();
+        return googlePicture ? { uri: googlePicture } : Images.profilePic;
+    }, [user?.picture]);
     const [activeTab, setActiveTab] = useState('photos');
     const [timelineItems, setTimelineItems] = useState<TimelineEntry[]>([]);
     const [profileTab, setProfileTab] = useState<'timeline' | 'activity' | 'collections' | 'downloads'>('timeline');
@@ -66,7 +70,7 @@ const UserProfileScreen = ({ navigation, route }: any) => {
     const [showProfileSwitcherModal, setShowProfileSwitcherModal] = useState(false);
     const [pendingDeleteBlog, setPendingDeleteBlog] = useState<ProfileNewsItem | null>(null);
     const [isDeletingBlog, setIsDeletingBlog] = useState(false);
-    const [profileImage, setProfileImage] = useState<any>(Images.profile1);
+    const [profileImage, setProfileImage] = useState<any>(defaultProfileImage);
     const [isUpdatingAvatar, setIsUpdatingAvatar] = useState(false);
     const [downloadsSummary, setDownloadsSummary] = useState<{ total_downloads: number; total_views: number; total_profit_cents?: number } | null>(
         null,
@@ -303,17 +307,19 @@ const UserProfileScreen = ({ navigation, route }: any) => {
                         setProfileImage({ uri: withToken });
                     }
                 } else {
-                    setProfileImage(Images.profile1);
+                    setProfileImage(defaultProfileImage);
                 }
             } catch {
                 setProfileSummary(null);
                 const localChestByYear = normalizeChestByYear(userProfile?.chestNumbersByYear ?? {});
                 setChestNumbersByYear(localChestByYear);
+                setProfileImage(defaultProfileImage);
             }
         } else {
             setProfileSummary(null);
             const localChestByYear = normalizeChestByYear(userProfile?.chestNumbersByYear ?? {});
             setChestNumbersByYear(localChestByYear);
+            setProfileImage(defaultProfileImage);
         }
 
         // News/blogs: server-driven (no more local dummy list)
@@ -444,6 +450,7 @@ const UserProfileScreen = ({ navigation, route }: any) => {
     }, [
         apiAccessToken,
         categoryStorageKey,
+        defaultProfileImage,
         normalizeChestByYear,
         resolveTimelineMediaThumb,
         t,

@@ -4,6 +4,7 @@ import SizeBox from '../../constants/SizeBox';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import FastImage from 'react-native-fast-image';
 import Icons from '../../constants/Icons';
+import Images from '../../constants/Images';
 import { useTheme } from '../../context/ThemeContext';
 import { createStyles } from '../userProfile/UserProfileStyles';
 import { ArrowLeft2, Clock, DocumentText, Gallery } from 'iconsax-react-nativejs';
@@ -460,7 +461,7 @@ const ViewUserProfileScreen = ({ navigation, route }: any) => {
                                     {profileImageUrl ? (
                                         <FastImage source={{ uri: profileImageUrl }} style={Styles.profileImage} resizeMode="cover" />
                                     ) : (
-                                        <View style={[Styles.profileImage, { backgroundColor: colors.btnBackgroundColor }]} />
+                                        <FastImage source={Images.profilePic} style={Styles.profileImage} resizeMode="cover" />
                                     )}
                                 </View>
                             </View>
