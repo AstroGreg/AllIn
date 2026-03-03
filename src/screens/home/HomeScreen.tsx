@@ -1334,10 +1334,10 @@ const HomeScreen = ({ navigation }: any) => {
         const fallbackName = isSelf ? userName : (mapped?.name || t('Uploader'));
         const fallbackAvatar =
             isSelf
-                ? (profilePic ? { uri: profilePic } : Images.profile1)
+                ? (profilePic ? { uri: profilePic } : Images.profilePic)
                 : mapped?.avatarUrl
                     ? { uri: toAbsoluteUrl(mapped.avatarUrl) as string }
-                    : Images.profile1;
+                    : Images.profilePic;
         return {
             profileId,
             name: fallbackName,
@@ -1466,7 +1466,7 @@ const HomeScreen = ({ navigation }: any) => {
                             name: post.author?.display_name ?? userName,
                             avatar: post.author?.avatar_url
                                 ? { uri: toAbsoluteUrl(post.author.avatar_url) as string }
-                                : (profilePic ? { uri: profilePic } : Images.profile1),
+                                : Images.profilePic,
                             date: formatPostTime(post.created_at),
                         }}
                         onPressUser={() => openProfileFromId(post.author?.profile_id)}
@@ -1518,7 +1518,7 @@ const HomeScreen = ({ navigation }: any) => {
                                     writer: post.author?.display_name ?? userName,
                                     writerImage: post.author?.avatar_url
                                         ? { uri: toAbsoluteUrl(post.author.avatar_url) as string }
-                                        : (profilePic ? { uri: profilePic } : Images.profile1),
+                                        : Images.profilePic,
                                     description: post.description ?? post.summary ?? '',
                                 },
                             });
