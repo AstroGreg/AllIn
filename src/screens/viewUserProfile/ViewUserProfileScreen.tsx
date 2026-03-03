@@ -422,6 +422,33 @@ const ViewUserProfileScreen = ({ navigation, route }: any) => {
     const localStyles = useMemo(
         () =>
             StyleSheet.create({
+                profileLeftColumn: {
+                    width: 132,
+                    alignItems: 'center',
+                    justifyContent: 'flex-start',
+                    flexShrink: 0,
+                },
+                profileIdentityUnderAvatar: {
+                    marginTop: 10,
+                    width: '100%',
+                    alignItems: 'center',
+                    gap: 4,
+                },
+                profileRightColumn: {
+                    flex: 1,
+                    alignItems: 'flex-end',
+                    justifyContent: 'center',
+                    minWidth: 0,
+                },
+                profileCategoryCompact: {
+                    alignItems: 'center',
+                    gap: 4,
+                    minWidth: 70,
+                },
+                profileCategoryCompactText: {
+                    fontSize: 12,
+                    color: colors.primaryColor,
+                },
                 followButton: {
                     marginTop: 16,
                     paddingVertical: 12,
@@ -455,7 +482,7 @@ const ViewUserProfileScreen = ({ navigation, route }: any) => {
             <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={Styles.scrollContent}>
                 <View style={Styles.profileCard}>
                     <View style={Styles.profileTopRow}>
-                        <View style={Styles.profileHeaderRow}>
+                        <View style={localStyles.profileLeftColumn}>
                             <View style={Styles.profileImageContainer}>
                                 <View style={Styles.profileImageInner}>
                                     {profileImageUrl ? (
@@ -465,32 +492,28 @@ const ViewUserProfileScreen = ({ navigation, route }: any) => {
                                     )}
                                 </View>
                             </View>
+                            <View style={localStyles.profileIdentityUnderAvatar}>
+                                <Text style={[Styles.userName, { textAlign: 'center' }]} numberOfLines={2}>
+                                    {displayName}
+                                </Text>
+                                {displayHandle.length > 0 ? (
+                                    <Text style={[Styles.userHandleInline, { textAlign: 'center' }]} numberOfLines={1}>
+                                        @{displayHandle}
+                                    </Text>
+                                ) : null}
+                            </View>
+                        </View>
+                        <View style={localStyles.profileRightColumn}>
                             <View style={Styles.statsContainerRight}>
                                 <View style={Styles.statItem}>
                                     <Text style={Styles.statValue}>{summary?.followers_count ?? 0}</Text>
                                     <Text style={Styles.statLabel}>{t('Followers')}</Text>
                                 </View>
-                            </View>
-                        </View>
-                        <View style={Styles.profileCategoryOnly}>
-                            <Icons.TrackFieldLogo width={28} height={24} />
-                            <Text style={Styles.profileCategoryText}>{profileCategoryLabel}</Text>
-                        </View>
-                    </View>
-
-                    <View style={Styles.profileIdentityBlock}>
-                        <View style={Styles.profileIdentityRow}>
-                            <View style={Styles.profileIdentityHandleWrap}>
-                                {displayHandle.length > 0 ? (
-                                    <Text style={Styles.userHandleInline} numberOfLines={1}>
-                                        @{displayHandle}
-                                    </Text>
-                                ) : null}
-                            </View>
-                            <View style={Styles.profileIdentityNameWrap}>
-                                <Text style={Styles.userName} numberOfLines={1}>
-                                    {displayName}
-                                </Text>
+                                <View style={Styles.statDivider} />
+                                <View style={localStyles.profileCategoryCompact}>
+                                    <Icons.TrackFieldLogo width={22} height={18} />
+                                    <Text style={localStyles.profileCategoryCompactText}>{profileCategoryLabel}</Text>
+                                </View>
                             </View>
                         </View>
                     </View>
