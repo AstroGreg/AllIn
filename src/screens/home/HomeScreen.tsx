@@ -662,7 +662,7 @@ const HomeScreen = ({ navigation }: any) => {
         }
     }, [getMediaShareUrl, t]);
 
-    const handleShareMediaInstagram = useCallback(async (media?: HomeOverviewMedia | MediaViewAllItem | null, storyTitle?: string | null) => {
+    const handleShareMediaInstagram = useCallback(async (media?: HomeOverviewMedia | MediaViewAllItem | null) => {
         if (!media?.media_id) {
             Alert.alert(t('Share unavailable'), t('No media available yet.'));
             return;
@@ -683,6 +683,16 @@ const HomeScreen = ({ navigation }: any) => {
             Alert.alert(t('Share unavailable'), t('This video is streaming-only right now. Try again later.'));
             return;
         }
+
+        const normalizedStoryTitle = (() => {
+            const resolvedEventName = media?.event_id
+                ? String(eventNameById(media.event_id) || '').trim()
+                : '';
+            if (!resolvedEventName || resolvedEventName.toLowerCase() === t('Event').toLowerCase()) {
+                return '';
+            }
+            return resolvedEventName;
+        })();
 
         try {
             const pkg = await NativeShare.isPackageInstalled('com.instagram.android');
@@ -728,7 +738,7 @@ const HomeScreen = ({ navigation }: any) => {
                     ? null
                     : await composeInstagramStoryImage(
                         fileUrl,
-                        String((media as any)?.title || storyTitle || '').trim() || 'SpotMe',
+                        normalizedStoryTitle,
                         'SpotMe',
                     );
             await NativeShare.shareSingle({
@@ -752,7 +762,7 @@ const HomeScreen = ({ navigation }: any) => {
             setDownloadProgress(null);
             downloadInFlightRef.current = false;
         }
-    }, [buildDownloadPath, composeInstagramStoryImage, pickDownloadUrl, t]);
+    }, [buildDownloadPath, composeInstagramStoryImage, eventNameById, pickDownloadUrl, t]);
 
     const handleDownloadMedia = useCallback(async (media?: HomeOverviewMedia | MediaViewAllItem | null) => {
         if (!media?.media_id) {
@@ -826,7 +836,7 @@ const HomeScreen = ({ navigation }: any) => {
             const actions = [
                 { label: t('Download'), onPress: () => handleDownloadMedia(safeMedia) },
                 { label: t('Share'), onPress: () => handleShareMedia(safeMedia) },
-                { label: t('Share to Instagram Story'), onPress: () => handleShareMediaInstagram(safeMedia, label) },
+                { label: t('Share to Instagram Story'), onPress: () => handleShareMediaInstagram(safeMedia) },
                 {
                     label: t('Report an issue with this video/photo'),
                     onPress: () => openReportIssuePopup(safeMedia),

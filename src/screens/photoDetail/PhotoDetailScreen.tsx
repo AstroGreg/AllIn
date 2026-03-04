@@ -241,6 +241,17 @@ const PhotoDetailScreen = ({navigation, route}: any) => {
         if (resolvedEventName) return resolvedEventName;
         return '';
     }, [blogTitleFromRoute, eventId, eventNameById, eventTitle, normalizeHeaderLabel]);
+    const instagramStoryTitle = useMemo(() => {
+        const routeEventTitle = normalizeHeaderLabel(eventTitle);
+        if (routeEventTitle) {
+            return routeEventTitle;
+        }
+        const resolvedEventName = normalizeHeaderLabel(eventNameById(eventId));
+        if (resolvedEventName) {
+            return resolvedEventName;
+        }
+        return '';
+    }, [eventId, eventNameById, eventTitle, normalizeHeaderLabel]);
 
     const shouldFetchMedia = useMemo(() => {
         if (!apiAccessToken || !effectiveMediaId) return false;
@@ -807,7 +818,7 @@ const PhotoDetailScreen = ({navigation, route}: any) => {
                 const composedAsset =
                     isLocalVideo
                         ? null
-                        : await composeInstagramStoryImage(localAsset, headerLabel || t('SpotMe'), 'SpotMe');
+                        : await composeInstagramStoryImage(localAsset, instagramStoryTitle, 'SpotMe');
                 await ShareLib.shareSingle({
                     social: ShareLib.Social.INSTAGRAM_STORIES,
                     appId: INSTAGRAM_APP_ID,
@@ -831,7 +842,7 @@ const PhotoDetailScreen = ({navigation, route}: any) => {
             return;
         }
         await handleShareNative();
-    }, [ensureLocalFile, extensionFromUrl, getShareModule, handleShareNative, resolveShareUrl, t]);
+    }, [composeInstagramStoryImage, ensureLocalFile, extensionFromUrl, getShareModule, handleShareNative, instagramStoryTitle, resolveShareUrl, t]);
 
     const openMoreMenu = useCallback(() => {
         const actions = [
