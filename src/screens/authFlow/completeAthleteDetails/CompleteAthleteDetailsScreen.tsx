@@ -11,7 +11,7 @@ import { useTheme } from '../../../context/ThemeContext';
 import { useAuth } from '../../../context/AuthContext';
 import { Buildings, CloseCircle } from 'iconsax-react-nativejs';
 import { useTranslation } from 'react-i18next'
-import { ApiError, GroupSummary, searchGroups } from '../../../services/apiGateway';
+import { ApiError, GroupSummary, searchGroups, updateProfileSummary } from '../../../services/apiGateway';
 
 const CompleteAthleteDetailsScreen = ({ navigation }: any) => {
     const { t } = useTranslation();
@@ -85,6 +85,18 @@ const CompleteAthleteDetailsScreen = ({ navigation }: any) => {
                 runningClub,
                 runningClubGroupId,
             });
+            if (apiAccessToken) {
+                await updateProfileSummary(apiAccessToken, {
+                    chest_numbers_by_year: Object.entries(chestNumbersByYear).reduce((acc, [year, chest]) => {
+                        const parsed = Number(chest);
+                        if (/^\d{4}$/.test(String(year)) && Number.isInteger(parsed) && parsed >= 0) {
+                            acc[String(year)] = parsed;
+                        }
+                        return acc;
+                    }, {} as Record<string, number>),
+                    track_field_club: String(runningClub || '').trim() || null,
+                });
+            }
             navigation.reset({
                 index: 0,
                 routes: [{ name: 'BottomTabBar' }],

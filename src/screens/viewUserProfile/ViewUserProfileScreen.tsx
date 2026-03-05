@@ -1,4 +1,4 @@
-import { View, Text, TouchableOpacity, ScrollView, ActivityIndicator, StyleSheet, Dimensions, Linking, Alert } from 'react-native';
+﻿import { View, Text, TouchableOpacity, ScrollView, ActivityIndicator, StyleSheet, Dimensions, Linking, Alert } from 'react-native';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import SizeBox from '../../constants/SizeBox';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -369,17 +369,44 @@ const ViewUserProfileScreen = ({ navigation, route }: any) => {
         () => String((summary?.profile as any)?.website ?? '').trim(),
         [summary?.profile],
     );
-    const profileMetaTokens = useMemo(() => {
-        const trackEventWithClub = [trackFieldMainEvent, athleticsClub].map((entry) => String(entry || '').trim()).filter(Boolean).join(' · ');
-        const roadEventWithClub = [roadTrailMainEvent, athleticsClub].map((entry) => String(entry || '').trim()).filter(Boolean).join(' · ');
-        if (profileSportKind === 'track') {
-            return [nationality, currentChestNumber, trackEventWithClub].map((entry) => String(entry || '').trim()).filter(Boolean);
+    const profileDistance = useMemo(() => {
+        if (profileSportKind === 'track') return String(trackFieldMainEvent || '').trim();
+        if (profileSportKind === 'road') return String(roadTrailMainEvent || '').trim();
+        return String(trackFieldMainEvent || roadTrailMainEvent || '').trim();
+    }, [profileSportKind, roadTrailMainEvent, trackFieldMainEvent]);
+    const formatMetaDisplayValue = useCallback((value: string) => {
+        const trimmed = String(value || '').trim();
+        if (trimmed.length <= 11) return trimmed;
+        return `${trimmed.slice(0, 11)}...`;
+    }, []);
+
+    const clubGroupId = useMemo(() => {
+        const normalizedClub = String(athleticsClub || '').trim().toLowerCase();
+        if (!normalizedClub) return null;
+        const exactMembership = profileMemberships.find(
+            (entry) => String(entry?.name || '').trim().toLowerCase() === normalizedClub,
+        );
+        if (exactMembership?.group_id) return String(exactMembership.group_id);
+        if (officialMemberships.length === 1) {
+            return String(officialMemberships[0].group_id || '') || null;
         }
-        if (profileSportKind === 'road') {
-            return [nationality, roadEventWithClub].map((entry) => String(entry || '').trim()).filter(Boolean);
-        }
-        return [nationality, currentChestNumber, athleticsClub].map((entry) => String(entry || '').trim()).filter(Boolean);
-    }, [athleticsClub, currentChestNumber, nationality, profileSportKind, roadTrailMainEvent, trackFieldMainEvent]);
+        return null;
+    }, [athleticsClub, officialMemberships, profileMemberships]);
+
+    const profileMetaItems = useMemo(() => {
+        return [
+            { key: 'nationality', value: nationality },
+            { key: 'chest', value: currentChestNumber },
+            { key: 'distance', value: profileDistance },
+            { key: 'club', value: athleticsClub, groupId: clubGroupId },
+        ]
+            .map((entry) => ({
+                ...entry,
+                value: formatMetaDisplayValue(String(entry.value || '').trim()),
+                groupId: String((entry as any).groupId || '').trim() || null,
+            }))
+            .filter((entry) => entry.value.length > 0);
+    }, [athleticsClub, clubGroupId, currentChestNumber, formatMetaDisplayValue, nationality, profileDistance]);
     const openProfileWebsite = useCallback(async () => {
         const raw = String(website || '').trim();
         if (!raw) return;
@@ -554,14 +581,25 @@ const ViewUserProfileScreen = ({ navigation, route }: any) => {
                         <Text style={Styles.bioText}>{bioText}</Text>
                         <View style={Styles.bioDivider} />
                     </View>
-                    {profileMetaTokens.length > 0 && (
+                    {profileMetaItems.length > 0 && (
                         <View style={Styles.athleteMetaSection}>
                             <View style={Styles.athleteMetaInlineBox}>
-                                {profileMetaTokens.map((token, index) => (
-                                    <React.Fragment key={`meta-${token}-${index}`}>
-                                        <Text style={Styles.athleteMetaInlineValue}>{token}</Text>
-                                        {index < profileMetaTokens.length - 1 ? (
-                                            <Text style={Styles.athleteMetaInlineDot}>•</Text>
+                                {profileMetaItems.map((entry, index) => (
+                                    <React.Fragment key={`meta-${entry.key}-${index}`}>
+                                        {entry.key === 'club' && entry.groupId ? (
+                                            <TouchableOpacity
+                                                activeOpacity={0.8}
+                                                onPress={() => navigation.navigate('GroupProfileScreen', { groupId: entry.groupId, showBackButton: true })}
+                                            >
+                                                <Text style={[Styles.athleteMetaInlineValue, { color: colors.primaryColor, textDecorationLine: 'underline' }]}>
+                                                    {entry.value}
+                                                </Text>
+                                            </TouchableOpacity>
+                                        ) : (
+                                            <Text style={Styles.athleteMetaInlineValue}>{entry.value}</Text>
+                                        )}
+                                        {index < profileMetaItems.length - 1 ? (
+                                            <Text style={Styles.athleteMetaInlineDot}>{' \u2022 '}</Text>
                                         ) : null}
                                     </React.Fragment>
                                 ))}
@@ -752,3 +790,5 @@ const ViewUserProfileScreen = ({ navigation, route }: any) => {
 };
 
 export default ViewUserProfileScreen;
+
+

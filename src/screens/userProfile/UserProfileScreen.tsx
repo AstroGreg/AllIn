@@ -1,4 +1,4 @@
-import { View, Text, TouchableOpacity, ScrollView, Dimensions, Modal, ActivityIndicator, Alert, Linking, TextInput } from 'react-native'
+﻿import { View, Text, TouchableOpacity, ScrollView, Dimensions, Modal, ActivityIndicator, Alert, Linking, TextInput } from 'react-native'
 import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import SizeBox from '../../constants/SizeBox'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
@@ -698,24 +698,44 @@ const UserProfileScreen = ({ navigation, route }: any) => {
         ).trim();
     }, [profileSummary, userProfile?.nationality]);
 
-    const profileMetaTokens = useMemo(() => {
-        const trackEventWithClub = [trackFieldMainEvent, athleticsClub].map((entry) => String(entry || '').trim()).filter(Boolean).join(' · ');
-        const roadEventWithClub = [roadTrailMainEvent, athleticsClub].map((entry) => String(entry || '').trim()).filter(Boolean).join(' · ');
-        if (profileCategory === 'Track&Field') {
-            return [
-                profileNationality,
-                currentChestNumber,
-                trackEventWithClub,
-            ].map((entry) => String(entry || '').trim()).filter(Boolean);
+    const profileDistance = useMemo(() => {
+        if (profileCategory === 'Track&Field') return String(trackFieldMainEvent || '').trim();
+        if (profileCategory === 'Road&Trail') return String(roadTrailMainEvent || '').trim();
+        return String(trackFieldMainEvent || roadTrailMainEvent || '').trim();
+    }, [profileCategory, roadTrailMainEvent, trackFieldMainEvent]);
+    const formatMetaDisplayValue = useCallback((value: string) => {
+        const trimmed = String(value || '').trim();
+        if (trimmed.length <= 11) return trimmed;
+        return `${trimmed.slice(0, 11)}...`;
+    }, []);
+
+    const clubGroupId = useMemo(() => {
+        const normalizedClub = String(athleticsClub || '').trim().toLowerCase();
+        if (!normalizedClub) return null;
+        const exactMembership = profileMemberships.find(
+            (entry) => String(entry?.name || '').trim().toLowerCase() === normalizedClub,
+        );
+        if (exactMembership?.group_id) return String(exactMembership.group_id);
+        if (officialMemberships.length === 1) {
+            return String(officialMemberships[0].group_id || '') || null;
         }
-        if (profileCategory === 'Road&Trail') {
-            return [
-                profileNationality,
-                roadEventWithClub,
-            ].map((entry) => String(entry || '').trim()).filter(Boolean);
-        }
-        return [];
-    }, [athleticsClub, currentChestNumber, profileCategory, profileNationality, roadTrailMainEvent, trackFieldMainEvent]);
+        return null;
+    }, [athleticsClub, officialMemberships, profileMemberships]);
+
+    const profileMetaItems = useMemo(() => {
+        return [
+            { key: 'nationality', value: profileNationality },
+            { key: 'chest', value: currentChestNumber },
+            { key: 'distance', value: profileDistance },
+            { key: 'club', value: athleticsClub, groupId: clubGroupId },
+        ]
+            .map((entry) => ({
+                ...entry,
+                value: formatMetaDisplayValue(String(entry.value || '').trim()),
+                groupId: String((entry as any).groupId || '').trim() || null,
+            }))
+            .filter((entry) => entry.value.length > 0);
+    }, [athleticsClub, clubGroupId, currentChestNumber, formatMetaDisplayValue, profileDistance, profileNationality]);
 
     const openProfileWebsite = useCallback(async () => {
         const raw = String(profileWebsite || '').trim();
@@ -836,8 +856,8 @@ const UserProfileScreen = ({ navigation, route }: any) => {
     }, []);
 
     const formatMoney = useCallback((cents?: number | null) => {
-        if (cents == null || !Number.isFinite(Number(cents))) return '—';
-        return `€${(Number(cents) / 100).toFixed(2)}`;
+        if (cents == null || !Number.isFinite(Number(cents))) return 'â€”';
+        return `â‚¬${(Number(cents) / 100).toFixed(2)}`;
     }, []);
 
     const formatCount = useCallback((value?: number | null) => {
@@ -1154,12 +1174,28 @@ const UserProfileScreen = ({ navigation, route }: any) => {
                         </Text>
                         <View style={Styles.bioDivider} />
                     </View>
-                    {profileMetaTokens.length > 0 && (
+                    {profileMetaItems.length > 0 && (
                         <View style={Styles.athleteMetaSection}>
                             <View style={Styles.athleteMetaInlineBox}>
-                                <Text style={Styles.athleteMetaInlineText} numberOfLines={1} ellipsizeMode="tail">
-                                    {profileMetaTokens.join('  •  ')}
-                                </Text>
+                                {profileMetaItems.map((entry, index) => (
+                                    <React.Fragment key={`meta-${entry.key}-${index}`}>
+                                        {entry.key === 'club' && entry.groupId ? (
+                                            <TouchableOpacity
+                                                activeOpacity={0.8}
+                                                onPress={() => navigation.navigate('GroupProfileScreen', { groupId: entry.groupId })}
+                                            >
+                                                <Text style={[Styles.athleteMetaInlineValue, { color: colors.primaryColor, textDecorationLine: 'underline' }]}>
+                                                    {entry.value}
+                                                </Text>
+                                            </TouchableOpacity>
+                                        ) : (
+                                            <Text style={Styles.athleteMetaInlineValue}>{entry.value}</Text>
+                                        )}
+                                        {index < profileMetaItems.length - 1 ? (
+                                            <Text style={Styles.athleteMetaInlineDot}>{' \u2022 '}</Text>
+                                        ) : null}
+                                    </React.Fragment>
+                                ))}
                             </View>
                         </View>
                     )}
@@ -1429,7 +1465,7 @@ const UserProfileScreen = ({ navigation, route }: any) => {
                                 <Text>
                                     <Text style={Styles.downloadsText}>{t('Total downloads')}: </Text>
                                     <Text style={Styles.downloadsTextBold}>
-                                        {downloadsSummary ? String(downloadsSummary.total_downloads) : '—'}
+                                        {downloadsSummary ? String(downloadsSummary.total_downloads) : 'â€”'}
                                     </Text>
                                 </Text>
                             </View>
@@ -1442,13 +1478,13 @@ const UserProfileScreen = ({ navigation, route }: any) => {
                             <View style={Styles.earningsCard}>
                                 <Text style={Styles.earningsLabel}>{t('Views')}</Text>
                                 <Text style={Styles.earningsValue}>
-                                    {downloadsSummary ? String(downloadsSummary.total_views) : '—'}
+                                    {downloadsSummary ? String(downloadsSummary.total_views) : 'â€”'}
                                 </Text>
                             </View>
                             <View style={Styles.earningsCard}>
                                 <Text style={Styles.earningsLabel}>{t('Profit')}</Text>
                                 <Text style={Styles.earningsValue}>
-                                    {downloadsSummary ? formatMoney(downloadsSummary.total_profit_cents ?? 0) : '—'}
+                                    {downloadsSummary ? formatMoney(downloadsSummary.total_profit_cents ?? 0) : 'â€”'}
                                 </Text>
                             </View>
                         </View>
@@ -1529,7 +1565,7 @@ const UserProfileScreen = ({ navigation, route }: any) => {
                                     <Icons.TrackFieldLogo width={20} height={20} />
                                 </View>
                                 <Text style={Styles.profileSwitcherLabel}>{t('trackAndField')}</Text>
-                                <Text style={Styles.profileSwitcherCheck}>{profileCategory === 'Track&Field' ? '✓' : ''}</Text>
+                                <Text style={Styles.profileSwitcherCheck}>{profileCategory === 'Track&Field' ? 'âœ“' : ''}</Text>
                             </TouchableOpacity>
                         ) : null}
 
@@ -1545,7 +1581,7 @@ const UserProfileScreen = ({ navigation, route }: any) => {
                                     <Icons.PersonRunningColorful width={20} height={20} />
                                 </View>
                                 <Text style={Styles.profileSwitcherLabel}>{t('roadAndTrail')}</Text>
-                                <Text style={Styles.profileSwitcherCheck}>{profileCategory === 'Road&Trail' ? '✓' : ''}</Text>
+                                <Text style={Styles.profileSwitcherCheck}>{profileCategory === 'Road&Trail' ? 'âœ“' : ''}</Text>
                             </TouchableOpacity>
                         ) : null}
 
@@ -1749,3 +1785,5 @@ const UserProfileScreen = ({ navigation, route }: any) => {
 };
 
 export default UserProfileScreen;
+
+
