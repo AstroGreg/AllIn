@@ -7,6 +7,8 @@ const Font = {
     Black: 'Inter_28pt-Black',
     Bold: 'Inter_28pt-Bold',
     ExtraBold: 'Inter_28pt-ExtraBold',
+    Anton: 'Anton',
+    Squeeze: 'Squeeze',
 };
 
 export default Font;

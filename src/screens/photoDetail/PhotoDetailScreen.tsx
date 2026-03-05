@@ -66,6 +66,22 @@ const PhotoDetailScreen = ({navigation, route}: any) => {
             route?.params?.eventId,
             route?.params?.event_id,
         );
+        const routeCompetitionId = pickString(
+            media?.competitionId,
+            media?.competition_id,
+            legacyPhoto?.competitionId,
+            legacyPhoto?.competition_id,
+            route?.params?.competitionId,
+            route?.params?.competition_id,
+        );
+        const routeCheckpointId = pickString(
+            media?.checkpointId,
+            media?.checkpoint_id,
+            legacyPhoto?.checkpointId,
+            legacyPhoto?.checkpoint_id,
+            route?.params?.checkpointId,
+            route?.params?.checkpoint_id,
+        );
         const typeToken = String(
             pickString(
                 media?.type,
@@ -142,6 +158,16 @@ const PhotoDetailScreen = ({navigation, route}: any) => {
             media_id: routeMediaId,
             eventId: routeEventId,
             event_id: routeEventId,
+            competitionId: routeCompetitionId,
+            competition_id: routeCompetitionId,
+            checkpointId: routeCheckpointId,
+            checkpoint_id: routeCheckpointId,
+            checkpoint_label: pickString(media?.checkpoint_label, legacyPhoto?.checkpoint_label, route?.params?.checkpoint_label),
+            checkpoint_name: pickString(media?.checkpoint_name, legacyPhoto?.checkpoint_name, route?.params?.checkpoint_name),
+            course_label: pickString(media?.course_label, legacyPhoto?.course_label, route?.params?.course_label),
+            course_name: pickString(media?.course_name, legacyPhoto?.course_name, route?.params?.course_name),
+            segment_label: pickString(media?.segment_label, legacyPhoto?.segment_label, route?.params?.segment_label),
+            segment_name: pickString(media?.segment_name, legacyPhoto?.segment_name, route?.params?.segment_name),
             type: normalizedType,
             thumbnailUrl,
             thumbnail_url: thumbnailUrl,
@@ -166,7 +192,28 @@ const PhotoDetailScreen = ({navigation, route}: any) => {
             assets,
             title: pickString(media?.title, legacyPhoto?.title),
         };
-    }, [legacyPhoto, media, pickString, route?.params?.eventId, route?.params?.event_id, route?.params?.matchType, route?.params?.match_type, route?.params?.mediaId, route?.params?.media_id, route?.params?.type]);
+    }, [
+        legacyPhoto,
+        media,
+        pickString,
+        route?.params?.checkpointId,
+        route?.params?.checkpoint_id,
+        route?.params?.checkpoint_label,
+        route?.params?.checkpoint_name,
+        route?.params?.competitionId,
+        route?.params?.competition_id,
+        route?.params?.course_label,
+        route?.params?.course_name,
+        route?.params?.eventId,
+        route?.params?.event_id,
+        route?.params?.matchType,
+        route?.params?.match_type,
+        route?.params?.mediaId,
+        route?.params?.media_id,
+        route?.params?.segment_label,
+        route?.params?.segment_name,
+        route?.params?.type,
+    ]);
     const mediaId: string | null = routeMedia.id;
     const eventId: string | null = routeMedia.eventId;
     const matchType: string | null = routeMedia.matchType;
@@ -196,6 +243,16 @@ const PhotoDetailScreen = ({navigation, route}: any) => {
         media_id: item.media_id,
         eventId: item.event_id,
         event_id: item.event_id,
+        competitionId: (item as any).competition_id ?? null,
+        competition_id: (item as any).competition_id ?? null,
+        checkpointId: (item as any).checkpoint_id ?? null,
+        checkpoint_id: (item as any).checkpoint_id ?? null,
+        checkpoint_label: (item as any).checkpoint_label ?? null,
+        checkpoint_name: (item as any).checkpoint_name ?? null,
+        course_label: (item as any).course_label ?? null,
+        course_name: (item as any).course_name ?? null,
+        segment_label: (item as any).segment_label ?? null,
+        segment_name: (item as any).segment_name ?? null,
         thumbnailUrl: item.thumbnail_url,
         thumbnail_url: item.thumbnail_url,
         previewUrl: item.preview_url,

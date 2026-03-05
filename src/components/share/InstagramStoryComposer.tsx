@@ -10,29 +10,26 @@ import Svg, {
     Text as SvgText,
     TSpan,
 } from 'react-native-svg';
-import Colors from '../../constants/Colors';
+import Images from '../../constants/Images';
 
 const STORY_WIDTH = 1080;
 const STORY_HEIGHT = 1920;
 const STORY_PADDING_X = 52;
 const STORY_PADDING_TOP = 74;
-const STORY_PADDING_BOTTOM = 56;
 const TITLE_FONT_SIZE = 50;
 const TITLE_LINE_HEIGHT = 60;
-const TITLE_MAX_LINES = 3;
 const BADGE_HEIGHT = 120;
 const BADGE_RADIUS = 60;
 const BADGE_TEXT_INSET_X = 40;
 const BADGE_FONT_SIZE = 60;
 const BADGE_ICON_SIZE = 68;
 const BADGE_ICON_GAP = 20;
-const APP_MARK_VIEWBOX = 20;
-const APP_MARK_PATH = 'M10.0003 1.66669C5.40033 1.66669 1.66699 5.40002 1.66699 10C1.66699 14.6 5.40033 18.3334 10.0003 18.3334C14.6003 18.3334 18.3337 14.6 18.3337 10C18.3337 5.40002 14.6003 1.66669 10.0003 1.66669ZM14.167 14.5584C12.742 14.5584 11.4087 13.9417 10.342 12.8C9.13366 13.8917 7.55866 14.5584 5.83366 14.5584C5.49199 14.5584 5.20866 14.275 5.20866 13.9334C5.20866 13.5917 5.49199 13.3084 5.83366 13.3084C8.72533 13.3084 11.117 11.0167 11.4253 8.08335H10.0003H5.84199C5.50033 8.08335 5.21699 7.80002 5.21699 7.45835C5.21699 7.11669 5.50033 6.84169 5.84199 6.84169H9.37533V6.06669C9.37533 5.72502 9.65866 5.44169 10.0003 5.44169C10.342 5.44169 10.6253 5.72502 10.6253 6.06669V6.84169H12.0337C12.0503 6.84169 12.067 6.83335 12.0837 6.83335C12.1003 6.83335 12.117 6.84169 12.1337 6.84169H14.1587C14.5003 6.84169 14.7837 7.12502 14.7837 7.46669C14.7837 7.80835 14.5003 8.09169 14.1587 8.09169H12.6753C12.5503 9.51669 12.017 10.825 11.2003 11.8917C12.0337 12.8167 13.0753 13.3167 14.167 13.3167C14.5087 13.3167 14.792 13.6 14.792 13.9417C14.792 14.2834 14.5087 14.5584 14.167 14.5584Z';
 
 export type InstagramStoryComposeRequest = {
     id: string;
     imageUri: string;
     title?: string | null;
+    subtitle?: string | null;
     appName?: string | null;
 };
 
@@ -60,20 +57,22 @@ function estimateTextWidth(text: string, fontSize: number) {
     }, 0);
 }
 
-function fitLineWithEllipsis(text: string, maxWidth: number, fontSize: number) {
-    const trimmed = text.trim();
-    if (!trimmed) {
-        return '';
+function splitWordToFit(word: string, maxWidth: number, fontSize: number) {
+    const chunks: string[] = [];
+    let current = '';
+    for (const char of Array.from(word)) {
+        const candidate = `${current}${char}`;
+        if (current && estimateTextWidth(candidate, fontSize) > maxWidth) {
+            chunks.push(current);
+            current = char;
+            continue;
+        }
+        current = candidate;
     }
-    if (estimateTextWidth(trimmed, fontSize) <= maxWidth) {
-        return trimmed;
+    if (current) {
+        chunks.push(current);
     }
-
-    let output = trimmed;
-    while (output.length > 1 && estimateTextWidth(`${output}...`, fontSize) > maxWidth) {
-        output = output.slice(0, -1).trimEnd();
-    }
-    return `${output}...`;
+    return chunks;
 }
 
 function stripDateText(text: string) {
@@ -99,7 +98,7 @@ function stripDateText(text: string) {
         .trim();
 }
 
-function wrapTitleLines(text: string, maxWidth: number, fontSize: number, maxLines: number) {
+function wrapTitleLines(text: string, maxWidth: number, fontSize: number) {
     const trimmed = stripDateText(text);
     if (!trimmed) {
         return [];
@@ -120,36 +119,42 @@ function wrapTitleLines(text: string, maxWidth: number, fontSize: number, maxLin
             continue;
         }
 
-        if (!current) {
-            lines.push(fitLineWithEllipsis(word, maxWidth, fontSize));
-        } else {
+        if (current) {
             lines.push(current);
+            current = '';
         }
 
-        current = current && estimateTextWidth(word, fontSize) > maxWidth
-            ? ''
-            : word;
-
-        if (lines.length >= maxLines) {
-            return lines.slice(0, maxLines);
+        if (estimateTextWidth(word, fontSize) > maxWidth) {
+            const wordChunks = splitWordToFit(word, maxWidth, fontSize);
+            lines.push(...wordChunks);
+            continue;
         }
+        current = word;
     }
 
     if (current) {
         lines.push(current);
     }
 
-    if (lines.length <= maxLines) {
-        return lines;
-    }
+    return lines;
+}
 
-    const clipped = lines.slice(0, maxLines);
-    clipped[maxLines - 1] = fitLineWithEllipsis(
-        `${clipped[maxLines - 1]} ${lines.slice(maxLines).join(' ')}`,
-        maxWidth,
-        fontSize,
-    );
-    return clipped;
+function buildRightRoundedRectPath(x: number, y: number, width: number, height: number, radius: number) {
+    const safeRadius = Math.max(0, Math.min(radius, height / 2, width));
+    const right = x + width;
+    const bottom = y + height;
+    if (safeRadius <= 0) {
+        return `M ${x} ${y} H ${right} V ${bottom} H ${x} Z`;
+    }
+    return [
+        `M ${x} ${y}`,
+        `H ${right - safeRadius}`,
+        `A ${safeRadius} ${safeRadius} 0 0 1 ${right} ${y + safeRadius}`,
+        `V ${bottom - safeRadius}`,
+        `A ${safeRadius} ${safeRadius} 0 0 1 ${right - safeRadius} ${bottom}`,
+        `H ${x}`,
+        'Z',
+    ].join(' ');
 }
 
 async function writeBase64Png(base64: string, requestId: string) {
@@ -190,23 +195,28 @@ const InstagramStoryComposer = ({request, onComplete, onError}: ComposerProps) =
     const titleLines = useMemo(() => {
         return wrapTitleLines(
             String(request?.title || ''),
-            STORY_WIDTH - STORY_PADDING_X * 2 - 220,
+            STORY_WIDTH / 2 - STORY_PADDING_X,
             TITLE_FONT_SIZE,
-            TITLE_MAX_LINES,
         );
     }, [request?.title]);
+    const titleFirstLineY = STORY_PADDING_TOP * 2 + TITLE_FONT_SIZE;
 
     const appName = String(request?.appName || 'SpotMe').trim() || 'SpotMe';
+    const appLogoUri = useMemo(() => RNImage.resolveAssetSource(Images.logo).uri, []);
     const badgeWidth = useMemo(() => {
         return estimateTextWidth(appName, BADGE_FONT_SIZE)
             + BADGE_TEXT_INSET_X * 2
             + BADGE_ICON_GAP
             + BADGE_ICON_SIZE;
     }, [appName]);
-    const badgeX = STORY_WIDTH - STORY_PADDING_X - badgeWidth;
-    const badgeY = STORY_HEIGHT - STORY_PADDING_BOTTOM - BADGE_HEIGHT;
+    const badgeX = 0;
+    const badgeY = (STORY_HEIGHT - BADGE_HEIGHT) / 2 + BADGE_HEIGHT;
     const badgeIconX = badgeX + badgeWidth - BADGE_TEXT_INSET_X - BADGE_ICON_SIZE;
     const badgeIconY = badgeY + (BADGE_HEIGHT - BADGE_ICON_SIZE) / 2;
+    const badgePath = useMemo(
+        () => buildRightRoundedRectPath(badgeX, badgeY, badgeWidth, BADGE_HEIGHT, BADGE_RADIUS),
+        [badgeX, badgeY, badgeWidth],
+    );
 
     const exportStoryImage = useCallback(async () => {
         if (!request || !svgRef.current || captureStarted) {
@@ -290,18 +300,20 @@ const InstagramStoryComposer = ({request, onComplete, onError}: ComposerProps) =
 
                 {titleLines.length > 0 ? (
                     <SvgText
-                        x={STORY_PADDING_X}
-                        y={STORY_PADDING_TOP + TITLE_FONT_SIZE}
+                        x={STORY_WIDTH - STORY_PADDING_X}
+                        y={titleFirstLineY}
                         fill="#FFFFFF"
                         fontSize={TITLE_FONT_SIZE}
                         fontWeight="700"
+                        fontFamily="Anton"
                         stroke="rgba(0,0,0,0.45)"
                         strokeWidth={2}
+                        textAnchor="end"
                     >
                         {titleLines.map((line, index) => (
                             <TSpan
                                 key={`${request.id}-title-${index}`}
-                                x={STORY_PADDING_X}
+                                x={STORY_WIDTH - STORY_PADDING_X}
                                 dy={index === 0 ? 0 : TITLE_LINE_HEIGHT}
                             >
                                 {line}
@@ -310,30 +322,23 @@ const InstagramStoryComposer = ({request, onComplete, onError}: ComposerProps) =
                     </SvgText>
                 ) : null}
 
-                <Rect
-                    x={badgeX}
-                    y={badgeY}
-                    width={badgeWidth}
-                    height={BADGE_HEIGHT}
-                    rx={BADGE_RADIUS}
-                    ry={BADGE_RADIUS}
-                    fill="rgba(255,255,255,0.14)"
-                    stroke="rgba(255,255,255,0.18)"
-                    strokeWidth={2}
-                />
+                <Path d={badgePath} fill="rgba(60,130,246,0.50)" />
                 <SvgText
                     x={badgeX + BADGE_TEXT_INSET_X}
                     y={badgeY + BADGE_HEIGHT / 2 + BADGE_FONT_SIZE * 0.34}
-                    fill={Colors.primaryColor}
+                    fill="#FFFFFF"
                     fontSize={BADGE_FONT_SIZE}
                     fontWeight="700"
                 >
                     {appName}
                 </SvgText>
-                <Path
-                    d={APP_MARK_PATH}
-                    fill={Colors.primaryColor}
-                    transform={`translate(${badgeIconX} ${badgeIconY}) scale(${BADGE_ICON_SIZE / APP_MARK_VIEWBOX})`}
+                <SvgImage
+                    x={badgeIconX}
+                    y={badgeIconY}
+                    width={BADGE_ICON_SIZE}
+                    height={BADGE_ICON_SIZE}
+                    href={{uri: appLogoUri}}
+                    preserveAspectRatio="xMidYMid meet"
                 />
             </Svg>
         </View>
@@ -347,7 +352,7 @@ export function useInstagramStoryImageComposer() {
         reject: (reason?: any) => void;
     } | null>(null);
 
-    const composeInstagramStoryImage = useCallback((imageUri: string, title?: string | null, appName = 'SpotMe') => {
+    const composeInstagramStoryImage = useCallback((imageUri: string, title?: string | null, appName = 'SpotMe', subtitle?: string | null) => {
         return new Promise<string>((resolve, reject) => {
             if (pendingRef.current) {
                 pendingRef.current.reject(new Error('Instagram Story composition was interrupted.'));
@@ -357,6 +362,7 @@ export function useInstagramStoryImageComposer() {
                 id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
                 imageUri,
                 title,
+                subtitle,
                 appName,
             });
         });

@@ -75,6 +75,9 @@ type UploadItem = {
   type?: string | null;
   fileName?: string | null;
   category?: string | null;
+  competition_map_id?: string | null;
+  checkpoint_id?: string | null;
+  checkpoint_label?: string | null;
   price_cents?: number;
   price_currency?: string;
   status: 'pending' | 'uploading' | 'uploaded' | 'failed';
@@ -174,6 +177,9 @@ const UploadProgressScreen = ({navigation, route}: any) => {
             type: asset?.type ?? null,
             fileName: asset?.fileName ?? null,
             category: String(category),
+            competition_map_id: asset?.competition_map_id ? String(asset.competition_map_id) : null,
+            checkpoint_id: asset?.checkpoint_id ? String(asset.checkpoint_id) : null,
+            checkpoint_label: asset?.checkpoint_label ? String(asset.checkpoint_label) : null,
             price_cents: Number(asset?.price_cents ?? 0) || 0,
             price_currency: String(asset?.price_currency || 'EUR'),
             status: 'pending',
@@ -254,6 +260,8 @@ const UploadProgressScreen = ({navigation, route}: any) => {
               files,
               watermark_text: watermarkText,
               event_id,
+              competition_map_id: String(batch[0]?.competition_map_id || '').trim() || undefined,
+              checkpoint_id: String(batch[0]?.checkpoint_id || '').trim() || undefined,
               is_anonymous: anonymous,
               price_cents: Number(batch[0]?.price_cents ?? 0) || 0,
               price_currency: String(batch[0]?.price_currency || 'EUR'),
@@ -261,6 +269,8 @@ const UploadProgressScreen = ({navigation, route}: any) => {
           : await uploadMediaBatch(apiAccessToken, {
               files,
               event_id,
+              competition_map_id: String(batch[0]?.competition_map_id || '').trim() || undefined,
+              checkpoint_id: String(batch[0]?.checkpoint_id || '').trim() || undefined,
               is_anonymous: anonymous,
               price_cents: Number(batch[0]?.price_cents ?? 0) || 0,
               price_currency: String(batch[0]?.price_currency || 'EUR'),

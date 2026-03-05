@@ -24,6 +24,11 @@ interface RoadCourseMap {
     label: string;
     imageUrl: string | null;
     disciplineId: string | null;
+    checkpoints: Array<{
+        id: string;
+        label: string;
+        checkpointIndex: number;
+    }>;
 }
 
 const DIVISIONS = [
@@ -160,6 +165,13 @@ const CompetitionDetailsScreen = ({ navigation, route }: any) => {
         return 'track';
     }, [competitionType]);
 
+    const normalizeCheckpointLabel = useCallback((value?: string | null) => {
+        return String(value || '')
+            .toLowerCase()
+            .replace(/[^a-z0-9]+/g, ' ')
+            .trim();
+    }, []);
+
     useEffect(() => {
         if (!apiAccessToken || !competitionId) {
             setTrackEvents([]);
@@ -247,7 +259,7 @@ const CompetitionDetailsScreen = ({ navigation, route }: any) => {
             try {
                 const res = await getCompetitionMaps(apiAccessToken, {
                     event_id: competitionId,
-                    include_checkpoints: false,
+                    include_checkpoints: true,
                 });
                 if (!active) return;
                 const maps = (Array.isArray(res?.maps) ? res.maps : []).map((map: CompetitionMapSummary) => {
@@ -257,6 +269,13 @@ const CompetitionDetailsScreen = ({ navigation, route }: any) => {
                         label: String(map.name || t('Course map')),
                         imageUrl: withAccessToken(toAbsoluteUrl(url)),
                         disciplineId: map.competition_id ? String(map.competition_id) : null,
+                        checkpoints: Array.isArray(map.checkpoints)
+                            ? map.checkpoints.map((cp) => ({
+                                id: String(cp.id),
+                                label: String(cp.label || `Checkpoint ${Number(cp.checkpoint_index ?? 0) + 1}`),
+                                checkpointIndex: Number(cp.checkpoint_index ?? 0),
+                            }))
+                            : [],
                     } as RoadCourseMap;
                 });
                 setRoadCourseMaps(maps);
@@ -339,6 +358,42 @@ const CompetitionDetailsScreen = ({ navigation, route }: any) => {
 
     const handleContinue = () => {
         if (!selectedEvent || !selectedGender || !selectedDivision) return;
+        const selectedMap = competitionType === 'road' ? selectedRoadCourseMap : null;
+        const selectedEventNameNormalized = normalizeCheckpointLabel(selectedEvent?.name);
+        const selectedCheckpoint = (() => {
+            if (!selectedMap || !Array.isArray(selectedMap.checkpoints) || selectedMap.checkpoints.length === 0) {
+                return null;
+            }
+            const checkpoints = selectedMap.checkpoints;
+            const exact = checkpoints.find((cp) => normalizeCheckpointLabel(cp.label) === selectedEventNameNormalized);
+            if (exact) return exact;
+
+            const includesMatch = checkpoints.find((cp) => {
+                const cpNorm = normalizeCheckpointLabel(cp.label);
+                return (
+                    cpNorm.includes(selectedEventNameNormalized) ||
+                    selectedEventNameNormalized.includes(cpNorm)
+                );
+            });
+            if (includesMatch) return includesMatch;
+
+            if (/\bstart\b/i.test(selectedEvent?.name || '')) {
+                const startMatch = checkpoints.find((cp) => /\bstart\b/i.test(cp.label || ''));
+                if (startMatch) return startMatch;
+            }
+            if (/\bfinish\b/i.test(selectedEvent?.name || '')) {
+                const finishMatch = checkpoints.find((cp) => /\bfinish\b/i.test(cp.label || ''));
+                if (finishMatch) return finishMatch;
+            }
+            const kmMatch = String(selectedEvent?.name || '').match(/(\d+(?:[.,]\d+)?)\s*km/i);
+            if (kmMatch?.[1]) {
+                const kmValue = kmMatch[1].replace(',', '.');
+                const byKm = checkpoints.find((cp) => new RegExp(`\\b${kmValue}\\s*km\\b`, 'i').test(cp.label || ''));
+                if (byKm) return byKm;
+            }
+            return checkpoints[0] ?? null;
+        })();
+
         navigation.navigate('UploadDetailsScreen', {
             competition,
             category: selectedEvent,
@@ -347,6 +402,9 @@ const CompetitionDetailsScreen = ({ navigation, route }: any) => {
             account,
             anonymous,
             competitionType,
+            competition_map_id: selectedMap?.id ?? null,
+            checkpoint_id: selectedCheckpoint?.id ?? null,
+            checkpoint_label: selectedCheckpoint?.label ?? null,
         });
         setCategoryModalVisible(false);
     };

@@ -87,5 +87,20 @@
 	<string>AllIn needs camera access for face verification and photo capture</string>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>AllIn needs microphone access for video recording</string>
+	<key>UIAppFonts</key>
+	<array>
+		<string>Anton-Regular.ttf</string>
+		<string>Anton.ttf</string>
+		<string>Inter_24pt-Light.ttf</string>
+		<string>Inter_24pt-Medium.ttf</string>
+		<string>Inter_24pt-Regular.ttf</string>
+		<string>Inter_24pt-SemiBold.ttf</string>
+		<string>Inter_24pt-Thin.ttf</string>
+		<string>Inter_28pt-Black.ttf</string>
+		<string>Inter_28pt-Bold.ttf</string>
+		<string>Inter_28pt-ExtraBold.ttf</string>
+		<string>Inter_28pt-Light.ttf</string>
+		<string>Squeeze.ttf</string>
+	</array>
 </dict>
 </plist>

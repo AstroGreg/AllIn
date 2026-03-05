@@ -54,6 +54,21 @@ const UploadDetailsScreen = ({ navigation, route }: any) => {
     const account = route?.params?.account;
     const anonymous = route?.params?.anonymous;
     const competitionType = route?.params?.competitionType ?? competition?.competitionType;
+    const selectedCompetitionMapId = String(
+        route?.params?.competition_map_id ??
+        category?.competition_map_id ??
+        '',
+    ).trim() || null;
+    const selectedCheckpointId = String(
+        route?.params?.checkpoint_id ??
+        category?.checkpoint_id ??
+        '',
+    ).trim() || null;
+    const selectedCheckpointLabel = String(
+        route?.params?.checkpoint_label ??
+        category?.checkpoint_label ??
+        '',
+    ).trim() || null;
 
     const handleFilePicker = async () => {
         const options: any = {
@@ -148,6 +163,9 @@ const UploadDetailsScreen = ({ navigation, route }: any) => {
                 height: asset?.height,
                 price_cents: Number(asset?.price_cents ?? defaultPriceCentsForType(asset?.type)),
                 price_currency: String(asset?.price_currency || 'EUR'),
+                competition_map_id: selectedCompetitionMapId,
+                checkpoint_id: selectedCheckpointId,
+                checkpoint_label: selectedCheckpointLabel,
             })).filter((asset) => asset.uri);
             // Overwrite the category selection instead of appending forever (keeps the UI clean).
             safeExisting[eventName] = mappedAssets;

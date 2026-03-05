@@ -2058,6 +2058,9 @@ export async function uploadMediaBatch(
   params: {
     files: Array<{uri: string; type?: string | null; name?: string | null}>;
     event_id?: string | null;
+    competition_map_id?: string | null;
+    checkpoint_id?: string | null;
+    checkpoint_index?: number | null;
     post_id?: string | null;
     is_anonymous?: boolean;
     price_cents?: number;
@@ -2074,6 +2077,9 @@ export async function uploadMediaBatch(
     } as any);
   }
   if (params.event_id) form.append('event_id', String(params.event_id));
+  if (params.competition_map_id) form.append('competition_map_id', String(params.competition_map_id));
+  if (params.checkpoint_id) form.append('checkpoint_id', String(params.checkpoint_id));
+  if (params.checkpoint_index != null) form.append('checkpoint_index', String(params.checkpoint_index));
   if (params.post_id) form.append('post_id', String(params.post_id));
   if (params.is_anonymous != null) form.append('is_anonymous', params.is_anonymous ? 'true' : 'false');
   if (params.price_cents != null) form.append('price_cents', String(Math.max(0, Number(params.price_cents) || 0)));
@@ -2096,6 +2102,9 @@ export async function uploadMediaBatchWatermark(
     files: Array<{uri: string; type?: string | null; name?: string | null}>;
     watermark_text: string;
     event_id?: string | null;
+    competition_map_id?: string | null;
+    checkpoint_id?: string | null;
+    checkpoint_index?: number | null;
     post_id?: string | null;
     is_anonymous?: boolean;
     price_cents?: number;
@@ -2113,6 +2122,9 @@ export async function uploadMediaBatchWatermark(
     } as any);
   }
   if (params.event_id) form.append('event_id', String(params.event_id));
+  if (params.competition_map_id) form.append('competition_map_id', String(params.competition_map_id));
+  if (params.checkpoint_id) form.append('checkpoint_id', String(params.checkpoint_id));
+  if (params.checkpoint_index != null) form.append('checkpoint_index', String(params.checkpoint_index));
   if (params.post_id) form.append('post_id', String(params.post_id));
   if (params.is_anonymous != null) form.append('is_anonymous', params.is_anonymous ? 'true' : 'false');
   if (params.price_cents != null) form.append('price_cents', String(Math.max(0, Number(params.price_cents) || 0)));
