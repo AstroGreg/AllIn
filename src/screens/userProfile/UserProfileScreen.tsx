@@ -651,22 +651,6 @@ const UserProfileScreen = ({ navigation, route }: any) => {
         () => profileMemberships.filter((entry) => !entry.is_official_club),
         [profileMemberships],
     );
-    const primaryOfficialClubName = useMemo(
-        () => String(officialMemberships[0]?.name ?? '').trim(),
-        [officialMemberships],
-    );
-
-    const athleticsClub = useMemo(() => {
-        const fromSummary =
-            (profileSummary as any)?.profile?.track_field_club ??
-            (profileSummary as any)?.profile?.athletics_club ??
-            (profileSummary as any)?.profile?.running_club ??
-            (profileSummary as any)?.profile?.running_club_name ??
-            null;
-        const fromLocal = (userProfile as any)?.trackFieldClub ?? userProfile?.runningClub ?? null;
-        return String(fromSummary ?? fromLocal ?? primaryOfficialClubName ?? '').trim();
-    }, [primaryOfficialClubName, profileSummary, userProfile]);
-
     const trackFieldMainEvent = useMemo(() => {
         return String(
             (profileSummary as any)?.profile?.track_field_main_event ??
@@ -709,33 +693,18 @@ const UserProfileScreen = ({ navigation, route }: any) => {
         return `${trimmed.slice(0, 11)}...`;
     }, []);
 
-    const clubGroupId = useMemo(() => {
-        const normalizedClub = String(athleticsClub || '').trim().toLowerCase();
-        if (!normalizedClub) return null;
-        const exactMembership = profileMemberships.find(
-            (entry) => String(entry?.name || '').trim().toLowerCase() === normalizedClub,
-        );
-        if (exactMembership?.group_id) return String(exactMembership.group_id);
-        if (officialMemberships.length === 1) {
-            return String(officialMemberships[0].group_id || '') || null;
-        }
-        return null;
-    }, [athleticsClub, officialMemberships, profileMemberships]);
-
     const profileMetaItems = useMemo(() => {
         return [
             { key: 'nationality', value: profileNationality },
             { key: 'chest', value: currentChestNumber },
             { key: 'distance', value: profileDistance },
-            { key: 'club', value: athleticsClub, groupId: clubGroupId },
         ]
             .map((entry) => ({
                 ...entry,
                 value: formatMetaDisplayValue(String(entry.value || '').trim()),
-                groupId: String((entry as any).groupId || '').trim() || null,
             }))
             .filter((entry) => entry.value.length > 0);
-    }, [athleticsClub, clubGroupId, currentChestNumber, formatMetaDisplayValue, profileDistance, profileNationality]);
+    }, [currentChestNumber, formatMetaDisplayValue, profileDistance, profileNationality]);
 
     const openProfileWebsite = useCallback(async () => {
         const raw = String(profileWebsite || '').trim();
@@ -1179,18 +1148,7 @@ const UserProfileScreen = ({ navigation, route }: any) => {
                             <View style={Styles.athleteMetaInlineBox}>
                                 {profileMetaItems.map((entry, index) => (
                                     <React.Fragment key={`meta-${entry.key}-${index}`}>
-                                        {entry.key === 'club' && entry.groupId ? (
-                                            <TouchableOpacity
-                                                activeOpacity={0.8}
-                                                onPress={() => navigation.navigate('GroupProfileScreen', { groupId: entry.groupId })}
-                                            >
-                                                <Text style={[Styles.athleteMetaInlineValue, { color: colors.primaryColor, textDecorationLine: 'underline' }]}>
-                                                    {entry.value}
-                                                </Text>
-                                            </TouchableOpacity>
-                                        ) : (
-                                            <Text style={Styles.athleteMetaInlineValue}>{entry.value}</Text>
-                                        )}
+                                        <Text style={Styles.athleteMetaInlineValue}>{entry.value}</Text>
                                         {index < profileMetaItems.length - 1 ? (
                                             <Text style={Styles.athleteMetaInlineDot}>{' \u2022 '}</Text>
                                         ) : null}
