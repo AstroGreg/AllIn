@@ -81,9 +81,10 @@ const CompleteAthleteDetailsScreen = ({ navigation }: any) => {
                     : {};
             await updateUserProfile({
                 chestNumbersByYear,
-                website,
-                runningClub,
-                runningClubGroupId,
+                website: String(website || '').trim(),
+                runningClub: String(runningClub || '').trim(),
+                trackFieldClub: String(runningClub || '').trim(),
+                runningClubGroupId: String(runningClubGroupId || '').trim(),
             });
             if (apiAccessToken) {
                 await updateProfileSummary(apiAccessToken, {
@@ -95,6 +96,8 @@ const CompleteAthleteDetailsScreen = ({ navigation }: any) => {
                         return acc;
                     }, {} as Record<string, number>),
                     track_field_club: String(runningClub || '').trim() || null,
+                    running_club_group_id: String(runningClubGroupId || '').trim() || null,
+                    website: String(website || '').trim() || null,
                 });
             }
             navigation.reset({

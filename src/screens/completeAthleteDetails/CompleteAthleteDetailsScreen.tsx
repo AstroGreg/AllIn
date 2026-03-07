@@ -60,6 +60,7 @@ const CompleteAthleteDetailsScreen = ({ navigation, route }: any) => {
                     track_field_club: String(runningClub || '').trim() || null,
                     track_field_main_event: String(trackMainEvent || '').trim() || null,
                     road_trail_main_event: String(roadMainEvent || '').trim() || null,
+                    website: String(website || '').trim() || null,
                 });
             }
             navigation.goBack();

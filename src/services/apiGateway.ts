@@ -1951,6 +1951,7 @@ export interface ProfileSummaryResponse {
     chest_numbers_by_year?: Record<string, number> | null;
     nationality?: string | null;
     track_field_club?: string | null;
+    running_club_group_id?: string | null;
     track_field_main_event?: string | null;
     road_trail_main_event?: string | null;
     avatar_url?: string | null;
@@ -1977,6 +1978,8 @@ export async function updateProfileSummary(
     chestNumbersByYear?: Record<string, number> | null;
     track_field_club?: string | null;
     trackFieldClub?: string | null;
+    running_club_group_id?: string | null;
+    runningClubGroupId?: string | null;
     track_field_main_event?: string | null;
     trackFieldMainEvent?: string | null;
     road_trail_main_event?: string | null;
@@ -2007,6 +2010,11 @@ export async function updateProfileSummary(
     body.track_field_club = params.track_field_club;
   } else if (Object.prototype.hasOwnProperty.call(params, 'trackFieldClub')) {
     body.track_field_club = params.trackFieldClub;
+  }
+  if (Object.prototype.hasOwnProperty.call(params, 'running_club_group_id')) {
+    body.running_club_group_id = params.running_club_group_id;
+  } else if (Object.prototype.hasOwnProperty.call(params, 'runningClubGroupId')) {
+    body.running_club_group_id = params.runningClubGroupId;
   }
   if (Object.prototype.hasOwnProperty.call(params, 'track_field_main_event')) {
     body.track_field_main_event = params.track_field_main_event;

@@ -11,7 +11,7 @@ import FastImage from 'react-native-fast-image'
 import { SearchNormal1, Calendar, Location, CloseCircle, Clock, ArrowDown2, Camera } from 'iconsax-react-nativejs'
 import { useTranslation } from 'react-i18next'
 import { useAuth } from '../../context/AuthContext'
-import { ApiError, followProfile, getGroupMembers, getProfileSummary, searchEvents, searchGroups, searchProfiles, unfollowProfile } from '../../services/apiGateway'
+import { ApiError, followProfile, getGroupMembers, getProfileSummary, getProfileSummaryById, searchEvents, searchGroups, searchProfiles, unfollowProfile } from '../../services/apiGateway'
 import UnifiedSearchInput from '../../components/unifiedSearchInput/UnifiedSearchInput'
 import { getApiBaseUrl } from '../../constants/RuntimeConfig'
  
@@ -113,6 +113,7 @@ const SearchScreen = ({ navigation }: any) => {
     const [peopleResults, setPeopleResults] = useState<PersonResult[]>([]);
     const [peopleError, setPeopleError] = useState<string | null>(null);
     const [groupLinkedPeople, setGroupLinkedPeople] = useState<PersonResult[]>([]);
+    const [resolvedPersonAvatars, setResolvedPersonAvatars] = useState<Record<string, string>>({});
     const [followBusyProfileId, setFollowBusyProfileId] = useState<string | null>(null);
     const [defaultVisibleCount, setDefaultVisibleCount] = useState(DEFAULT_COMPETITIONS_INITIAL_LIMIT);
     const [searchVisibleCount, setSearchVisibleCount] = useState(SEARCH_RESULTS_INITIAL_LIMIT);
@@ -468,6 +469,63 @@ const SearchScreen = ({ navigation }: any) => {
         };
     }, [apiAccessToken, groupQuery, groupResults, hasTypedQuery, t]);
 
+    useEffect(() => {
+        let mounted = true;
+        if (!apiAccessToken) {
+            setResolvedPersonAvatars({});
+            return () => {};
+        }
+        const rows = [...peopleResults, ...groupLinkedPeople];
+        const missingIds = Array.from(
+            new Set(
+                rows
+                    .filter((person) => !String(person.avatar_url || '').trim())
+                    .map((person) => String(person.profile_id || '').trim())
+                    .filter(Boolean),
+            ),
+        ).slice(0, 20);
+
+        if (missingIds.length === 0) {
+            setResolvedPersonAvatars({});
+            return () => {};
+        }
+
+        const loadFallbackAvatars = async () => {
+            const entries = await Promise.all(
+                missingIds.map(async (profileId) => {
+                    try {
+                        const summary = await getProfileSummaryById(apiAccessToken, profileId);
+                        const avatarMedia = (summary as any)?.profile?.avatar_media ?? null;
+                        const avatarCandidate =
+                            avatarMedia?.thumbnail_url ||
+                            avatarMedia?.preview_url ||
+                            avatarMedia?.full_url ||
+                            avatarMedia?.raw_url ||
+                            avatarMedia?.original_url ||
+                            summary?.profile?.avatar_url ||
+                            null;
+                        const safeUrl = String(avatarCandidate || '').trim();
+                        return safeUrl ? [profileId, safeUrl] as const : null;
+                    } catch {
+                        return null;
+                    }
+                }),
+            );
+            if (!mounted) return;
+            const nextMap: Record<string, string> = {};
+            entries.forEach((entry) => {
+                if (!entry) return;
+                nextMap[entry[0]] = entry[1];
+            });
+            setResolvedPersonAvatars(nextMap);
+        };
+
+        loadFallbackAvatars();
+        return () => {
+            mounted = false;
+        };
+    }, [apiAccessToken, groupLinkedPeople, peopleResults]);
+
     const parseEventDate = (value: string) => {
         const [day, month, year] = value.split('/').map(Number);
         if (!day || !month || !year) return null;
@@ -758,10 +816,13 @@ const SearchScreen = ({ navigation }: any) => {
     );
 
     const renderPersonCard = (person: PersonResult) => {
-        const avatarUrl = resolveAvatarUrl(person.avatar_url);
+        const profileIdKey = String(person.profile_id || '').trim();
+        const fallbackAvatar = profileIdKey ? resolvedPersonAvatars[profileIdKey] : null;
+        const avatarUrl = resolveAvatarUrl(person.avatar_url || fallbackAvatar);
         const isOwnSearchResult =
             String(person.profile_id || '').trim().length > 0 &&
             String(person.profile_id || '').trim() === String(ownProfileId || '').trim();
+        const clubOrLocation = String(person.runningClub || person.location || '').trim();
         const avatarSource = avatarUrl
             ? { uri: avatarUrl }
             : isOwnSearchResult && authPicture
@@ -785,7 +846,7 @@ const SearchScreen = ({ navigation }: any) => {
                             <View style={Styles.userNameRow}>
                                 <Text style={Styles.userName}>{person.name}</Text>
                             </View>
-                            <View style={Styles.userDetails}>
+                            <View style={Styles.userDetailsStack}>
                                 {String(person.sportLabel || '').trim().length > 0 ? (
                                     <View style={Styles.userDetailItem}>
                                         {person.sportKind === 'track' ? (
@@ -801,13 +862,13 @@ const SearchScreen = ({ navigation }: any) => {
                                         <Text style={Styles.userDetailText}>{person.sportLabel}</Text>
                                     </View>
                                 ) : null}
-                                {(person.runningClub || person.location) ? (
-                                    <View style={Styles.userDetailItem}>
-                                        <Text style={Styles.userDetailText}>
-                                            {person.runningClub || person.location}
+                                {clubOrLocation.length > 0 ? (
+                                    <View style={Styles.userClubDetailItem}>
+                                        <Text style={Styles.userDetailText} numberOfLines={1}>
+                                            {clubOrLocation}
                                         </Text>
                                     </View>
-                                ) : null}
+                ) : null}
                             </View>
                         </View>
                         {person.role === 'Athlete' && !isOwnSearchResult ? (
@@ -1036,10 +1097,10 @@ const SearchScreen = ({ navigation }: any) => {
     }, [activeDateField, applyPickedDateToField, closeNativePicker, nativePickerDate]);
 
     const searchPlaceholder = (() => {
-        if (activeFilter === 'Competition') return t('Type competition name');
-        if (activeFilter === 'Person') return t('Type person name');
-        if (activeFilter === 'Group') return t('Type group name');
-        return t('Search by location');
+        if (activeFilter === 'Competition') return t('Competition');
+        if (activeFilter === 'Person') return t('Name');
+        if (activeFilter === 'Group') return t('Group name');
+        return t('Location');
     })();
 
     return (

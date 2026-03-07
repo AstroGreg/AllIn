@@ -353,9 +353,19 @@ export const createStyles = (colors: ThemeColors) => StyleSheet.create({
         justifyContent: 'space-between',
         marginTop: 2,
     },
+    userDetailsStack: {
+        marginTop: 2,
+        alignItems: 'flex-start',
+        gap: 2,
+    },
     userDetailItem: {
         flexDirection: 'row',
         alignItems: 'center',
+    },
+    userClubDetailItem: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginTop: 1,
     },
     userDetailText: {
         ...Fonts.regular12,
@@ -363,17 +373,18 @@ export const createStyles = (colors: ThemeColors) => StyleSheet.create({
     },
     followBtn: {
         backgroundColor: colors.primaryColor,
-        paddingHorizontal: 16,
-        paddingVertical: 10,
+        paddingHorizontal: 10,
+        paddingVertical: 6,
         borderRadius: 8,
-        width: 83,
-        height: 36,
-        marginLeft: 12,
+        minWidth: 55,
+        height: 31,
+        marginLeft: 10,
+        alignSelf: 'flex-start',
         alignItems: 'center',
         justifyContent: 'center',
     },
     followBtnText: {
-        ...Fonts.regular14,
+        ...Fonts.regular12,
         color: colors.pureWhite,
     },
     sectionTitle: {

@@ -241,14 +241,20 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         credentials: Credentials,
         userInfo: User | null,
         context: 'login' | 'signup' | 'restore',
+        options?: { allowBootstrapFailure?: boolean },
     ) => {
         const token = String(credentials?.accessToken ?? '').trim();
         if (!token) {
             throw new Error('Missing access token');
         }
 
-        const bootstrap = await triggerAuthBootstrap(token, { throwOnFailure: true, context });
-        if (!bootstrap) {
+        const allowBootstrapFailure = options?.allowBootstrapFailure === true;
+        const bootstrap = await triggerAuthBootstrap(token, {
+            throwOnFailure: !allowBootstrapFailure,
+            context,
+        });
+
+        if (!bootstrap && !allowBootstrapFailure) {
             throw new Error('Auth bootstrap failed');
         }
 
@@ -258,7 +264,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         setAccessToken(token);
         setIsAuthenticated(true);
         setAuthBootstrap(bootstrap);
-        await syncProfileFromBootstrap(bootstrap);
+        if (bootstrap) {
+            await syncProfileFromBootstrap(bootstrap);
+        }
         return bootstrap;
     }, []);
 
@@ -350,7 +358,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
                         }
                     }
 
-                    await finalizeAuthenticatedSession(credentials, userInfo, 'restore');
+                    await finalizeAuthenticatedSession(credentials, userInfo, 'restore', {
+                        allowBootstrapFailure: true,
+                    });
                 }
             } else {
                 console.log('[Auth] No stored credentials found');
