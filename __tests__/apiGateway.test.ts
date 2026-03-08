@@ -114,6 +114,8 @@ describe('apiGateway service layer', () => {
       trackFieldClub: 'Fast Club',
       trackFieldMainEvent: '100m',
       roadTrailMainEvent: '10k',
+      documentUploaded: true,
+      faceVerified: false,
       bio: 'Runner',
     });
 
@@ -131,6 +133,8 @@ describe('apiGateway service layer', () => {
           track_field_club: 'Fast Club',
           track_field_main_event: '100m',
           road_trail_main_event: '10k',
+          document_uploaded: true,
+          face_verified: false,
         }),
       }),
     );

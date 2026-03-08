@@ -19,6 +19,7 @@ const ManageProfiles = ({ navigation }: any) => {
   const [groups, setGroups] = useState<GroupSummary[]>([]);
   const [loadingGroups, setLoadingGroups] = useState(false);
   const [busyGroupId, setBusyGroupId] = useState<string | null>(null);
+  const [updatingSelectedEvents, setUpdatingSelectedEvents] = useState(false);
 
   const selectedEvents = useMemo(() => {
     const events = userProfile?.selectedEvents;
@@ -60,6 +61,10 @@ const ManageProfiles = ({ navigation }: any) => {
   }, [loadGroups]);
 
   const removePersonalProfile = async (eventId: 'track-field' | 'road-events') => {
+    if (!apiAccessToken) {
+      Alert.alert(t('Error'), t('Please sign in again.'));
+      return;
+    }
     const next = selectedEvents.filter((entry: any) => {
       const normalized = String(
         typeof entry === 'string'
@@ -71,7 +76,14 @@ const ManageProfiles = ({ navigation }: any) => {
       }
       return !(normalized === 'road-events' || normalized === 'road&trail' || normalized === 'road_trail' || normalized.includes('road') || normalized.includes('trail'));
     });
-    await updateUserProfile({ selectedEvents: next as any });
+    setUpdatingSelectedEvents(true);
+    try {
+      await updateUserProfile({ selectedEvents: next as any });
+    } catch {
+      Alert.alert(t('Error'), t('Failed to save. Please try again.'));
+    } finally {
+      setUpdatingSelectedEvents(false);
+    }
   };
 
   const handleDeleteGroup = (group: GroupSummary) => {
@@ -118,8 +130,15 @@ const ManageProfiles = ({ navigation }: any) => {
           <>
             <View style={Styles.accountSettingsCard}>
               <Text style={Styles.accountSettingsTitle}>{t('trackAndField')}</Text>
-              <TouchableOpacity onPress={() => removePersonalProfile('track-field')}>
-                <Trash size={18} color={colors.errorColor || '#E14B4B'} variant="Linear" />
+              <TouchableOpacity
+                onPress={() => removePersonalProfile('track-field')}
+                disabled={updatingSelectedEvents}
+              >
+                {updatingSelectedEvents ? (
+                  <ActivityIndicator size="small" color={colors.primaryColor} />
+                ) : (
+                  <Trash size={18} color={colors.errorColor || '#E14B4B'} variant="Linear" />
+                )}
               </TouchableOpacity>
             </View>
             <SizeBox height={10} />
@@ -129,8 +148,15 @@ const ManageProfiles = ({ navigation }: any) => {
           <>
             <View style={Styles.accountSettingsCard}>
               <Text style={Styles.accountSettingsTitle}>{t('roadAndTrail')}</Text>
-              <TouchableOpacity onPress={() => removePersonalProfile('road-events')}>
-                <Trash size={18} color={colors.errorColor || '#E14B4B'} variant="Linear" />
+              <TouchableOpacity
+                onPress={() => removePersonalProfile('road-events')}
+                disabled={updatingSelectedEvents}
+              >
+                {updatingSelectedEvents ? (
+                  <ActivityIndicator size="small" color={colors.primaryColor} />
+                ) : (
+                  <Trash size={18} color={colors.errorColor || '#E14B4B'} variant="Linear" />
+                )}
               </TouchableOpacity>
             </View>
             <SizeBox height={10} />

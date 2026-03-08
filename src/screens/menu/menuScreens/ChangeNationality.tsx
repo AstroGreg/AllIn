@@ -1,4 +1,4 @@
-import { View, Text, TouchableOpacity, ScrollView, Modal, Pressable } from 'react-native'
+import { View, Text, TouchableOpacity, ScrollView, Modal, Pressable, Alert } from 'react-native'
 import React, { useMemo, useState } from 'react'
 import { createStyles } from '../MenuStyles'
 import SizeBox from '../../../constants/SizeBox'
@@ -14,7 +14,7 @@ const ChangeNationality = ({ navigation }: any) => {
     const insets = useSafeAreaInsets();
     const { colors } = useTheme();
     const Styles = createStyles(colors);
-    const { userProfile, authBootstrap, updateUserProfile, updateUserAccount } = useAuth();
+    const { userProfile, authBootstrap, updateUserAccount } = useAuth();
     const [newNationality, setNewNationality] = useState('');
     const [isEditing, setIsEditing] = useState(false);
     const [showModal, setShowModal] = useState(false);
@@ -86,9 +86,12 @@ const ChangeNationality = ({ navigation }: any) => {
                                 onPress={async () => {
                                     if (!newNationality.trim()) return;
                                     const nextNationality = newNationality.trim();
-                                    await updateUserAccount({ nationality: nextNationality });
-                                    await updateUserProfile({ nationality: nextNationality });
-                                    setIsEditing(false);
+                                    try {
+                                        await updateUserAccount({ nationality: nextNationality });
+                                        setIsEditing(false);
+                                    } catch {
+                                        Alert.alert(t('Error'), t('Failed to save. Please try again.'));
+                                    }
                                 }}
                             >
                                 <Text style={Styles.saveButtonText}>{t('Save')}</Text>

@@ -13,7 +13,7 @@ const ChangeUsername = ({ navigation }: any) => {
     const insets = useSafeAreaInsets();
     const { colors } = useTheme();
     const Styles = createStyles(colors);
-    const { userProfile, user, authBootstrap, updateUserProfile, updateUserAccount } = useAuth();
+    const { userProfile, user, authBootstrap, updateUserAccount } = useAuth();
     const [newUsername, setNewUsername] = useState('');
     const [isEditing, setIsEditing] = useState(false);
     const looksLikeSystemIdentity = (value: any): boolean => {
@@ -101,9 +101,12 @@ const ChangeUsername = ({ navigation }: any) => {
                                         Alert.alert(t('Invalid username'), t('Please choose a custom username.'));
                                         return;
                                     }
-                                    await updateUserAccount({ username: nextUsername });
-                                    await updateUserProfile({ username: nextUsername });
-                                    setIsEditing(false);
+                                    try {
+                                        await updateUserAccount({ username: nextUsername });
+                                        setIsEditing(false);
+                                    } catch {
+                                        Alert.alert(t('Error'), t('Failed to save. Please try again.'));
+                                    }
                                 }}
                             >
                                 <Text style={Styles.saveButtonText}>{t('Save')}</Text>
