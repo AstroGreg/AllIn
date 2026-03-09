@@ -1,4 +1,4 @@
-import { View, Text, TouchableOpacity, ScrollView, TextInput, ActivityIndicator } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, TextInput, ActivityIndicator, Alert } from 'react-native';
 import React, { useMemo, useState } from 'react';
 import { createStyles } from '../MenuStyles';
 import SizeBox from '../../../constants/SizeBox';
@@ -6,7 +6,6 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../../context/ThemeContext';
 import { ArrowLeft2, User } from 'iconsax-react-nativejs';
 import { useAuth } from '../../../context/AuthContext';
-import { updateProfileSummary } from '../../../services/apiGateway';
 import { useTranslation } from 'react-i18next';
 
 const NameSettings = ({ navigation }: any) => {
@@ -21,22 +20,29 @@ const NameSettings = ({ navigation }: any) => {
   const [isSaving, setIsSaving] = useState(false);
 
   const canSave = useMemo(
-    () => !isSaving && (firstName.trim().length > 0 || lastName.trim().length > 0),
-    [firstName, isSaving, lastName],
+    () =>
+      !isSaving &&
+      Boolean(apiAccessToken) &&
+      (firstName.trim().length > 0 || lastName.trim().length > 0),
+    [apiAccessToken, firstName, isSaving, lastName],
   );
 
   const handleSave = async () => {
-    if (!canSave) return;
+    if (!apiAccessToken) {
+      Alert.alert(t('Error'), t('Please sign in again.'));
+      return;
+    }
+    if (!canSave) {
+      return;
+    }
     setIsSaving(true);
     try {
       const trimmedFirst = firstName.trim();
       const trimmedLast = lastName.trim();
-      const displayName = `${trimmedFirst} ${trimmedLast}`.trim();
       await updateUserProfile({ firstName: trimmedFirst, lastName: trimmedLast });
-      if (apiAccessToken && displayName.length > 0) {
-        await updateProfileSummary(apiAccessToken, { display_name: displayName });
-      }
       navigation.goBack();
+    } catch {
+      Alert.alert(t('Error'), t('Failed to save. Please try again.'));
     } finally {
       setIsSaving(false);
     }

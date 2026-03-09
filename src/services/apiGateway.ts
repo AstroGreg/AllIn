@@ -229,6 +229,12 @@ export interface ProfileSummary {
   profile: {
     display_name?: string | null;
     username?: string | null;
+    category?: string | null;
+    support_role?: string | null;
+    support_organization?: string | null;
+    support_base_location?: string | null;
+    support_athletes?: string[] | null;
+    support_athlete_profile_ids?: string[] | null;
     bio?: string | null;
     website?: string | null;
     selected_events?: string[] | null;
@@ -237,6 +243,8 @@ export interface ProfileSummary {
     track_field_club?: string | null;
     track_field_main_event?: string | null;
     road_trail_main_event?: string | null;
+    document_uploaded?: boolean | null;
+    face_verified?: boolean | null;
     avatar_url?: string | null;
     avatar_media_id?: string | null;
     avatar_media?: any;
@@ -1945,6 +1953,12 @@ export interface ProfileSummaryResponse {
   profile: {
     display_name?: string | null;
     username?: string | null;
+    category?: string | null;
+    support_role?: string | null;
+    support_organization?: string | null;
+    support_base_location?: string | null;
+    support_athletes?: string[] | null;
+    support_athlete_profile_ids?: string[] | null;
     bio?: string | null;
     website?: string | null;
     selected_events?: string[] | null;
@@ -1954,6 +1968,8 @@ export interface ProfileSummaryResponse {
     running_club_group_id?: string | null;
     track_field_main_event?: string | null;
     road_trail_main_event?: string | null;
+    document_uploaded?: boolean | null;
+    face_verified?: boolean | null;
     avatar_url?: string | null;
     avatar_media_id?: string | null;
     avatar_media?: MediaViewAllItem | null;
@@ -1971,6 +1987,17 @@ export async function updateProfileSummary(
   accessToken: string,
   params: {
     display_name?: string | null;
+    category?: string | null;
+    support_role?: string | null;
+    supportRole?: string | null;
+    support_organization?: string | null;
+    supportOrganization?: string | null;
+    support_base_location?: string | null;
+    supportBaseLocation?: string | null;
+    support_athletes?: string[] | null;
+    supportAthletes?: string[] | null;
+    support_athlete_profile_ids?: string[] | null;
+    supportAthleteProfileIds?: string[] | null;
     bio?: string | null;
     selected_events?: string[] | null;
     selectedEvents?: string[] | null;
@@ -1984,6 +2011,10 @@ export async function updateProfileSummary(
     trackFieldMainEvent?: string | null;
     road_trail_main_event?: string | null;
     roadTrailMainEvent?: string | null;
+    document_uploaded?: boolean | null;
+    documentUploaded?: boolean | null;
+    face_verified?: boolean | null;
+    faceVerified?: boolean | null;
     website?: string | null;
     avatar_url?: string | null;
     avatar_media_id?: string | null;
@@ -1991,11 +2022,37 @@ export async function updateProfileSummary(
 ): Promise<ProfileSummaryResponse> {
   const body: any = {
     display_name: params.display_name ?? undefined,
+    category: params.category ?? undefined,
     bio: params.bio ?? undefined,
     website: params.website ?? undefined,
     avatar_url: params.avatar_url ?? undefined,
     avatar_media_id: params.avatar_media_id ?? undefined,
   };
+  if (Object.prototype.hasOwnProperty.call(params, 'support_role')) {
+    body.support_role = params.support_role;
+  } else if (Object.prototype.hasOwnProperty.call(params, 'supportRole')) {
+    body.support_role = params.supportRole;
+  }
+  if (Object.prototype.hasOwnProperty.call(params, 'support_organization')) {
+    body.support_organization = params.support_organization;
+  } else if (Object.prototype.hasOwnProperty.call(params, 'supportOrganization')) {
+    body.support_organization = params.supportOrganization;
+  }
+  if (Object.prototype.hasOwnProperty.call(params, 'support_base_location')) {
+    body.support_base_location = params.support_base_location;
+  } else if (Object.prototype.hasOwnProperty.call(params, 'supportBaseLocation')) {
+    body.support_base_location = params.supportBaseLocation;
+  }
+  if (Object.prototype.hasOwnProperty.call(params, 'support_athletes')) {
+    body.support_athletes = params.support_athletes;
+  } else if (Object.prototype.hasOwnProperty.call(params, 'supportAthletes')) {
+    body.support_athletes = params.supportAthletes;
+  }
+  if (Object.prototype.hasOwnProperty.call(params, 'support_athlete_profile_ids')) {
+    body.support_athlete_profile_ids = params.support_athlete_profile_ids;
+  } else if (Object.prototype.hasOwnProperty.call(params, 'supportAthleteProfileIds')) {
+    body.support_athlete_profile_ids = params.supportAthleteProfileIds;
+  }
   if (Object.prototype.hasOwnProperty.call(params, 'selected_events')) {
     body.selected_events = params.selected_events;
   } else if (Object.prototype.hasOwnProperty.call(params, 'selectedEvents')) {
@@ -2025,6 +2082,16 @@ export async function updateProfileSummary(
     body.road_trail_main_event = params.road_trail_main_event;
   } else if (Object.prototype.hasOwnProperty.call(params, 'roadTrailMainEvent')) {
     body.road_trail_main_event = params.roadTrailMainEvent;
+  }
+  if (Object.prototype.hasOwnProperty.call(params, 'document_uploaded')) {
+    body.document_uploaded = params.document_uploaded;
+  } else if (Object.prototype.hasOwnProperty.call(params, 'documentUploaded')) {
+    body.document_uploaded = params.documentUploaded;
+  }
+  if (Object.prototype.hasOwnProperty.call(params, 'face_verified')) {
+    body.face_verified = params.face_verified;
+  } else if (Object.prototype.hasOwnProperty.call(params, 'faceVerified')) {
+    body.face_verified = params.faceVerified;
   }
   return apiRequest<ProfileSummaryResponse>('/profiles/me', {
     method: 'PUT',

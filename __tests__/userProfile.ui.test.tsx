@@ -249,7 +249,7 @@ describe('UserProfileScreen UI', () => {
     expect(navigation.navigate).toHaveBeenCalledWith('CategorySelectionScreen', {fromAddFlow: true});
   });
 
-  test('renders club in profile meta and opens group profile on press', async () => {
+  test('renders profile meta for track athlete', async () => {
     mockGetProfileSummary.mockResolvedValue({
       profile_id: 'profile-1',
       followers_count: 42,
@@ -270,15 +270,39 @@ describe('UserProfileScreen UI', () => {
       },
     });
 
-    const navigation = createNavigation();
-    render(<UserProfileScreen navigation={navigation} route={{params: {}}} />);
+    render(<UserProfileScreen navigation={createNavigation()} route={{params: {}}} />);
 
     await waitFor(() => {
       expect(screen.getByText('Followers')).toBeTruthy();
       expect(screen.getByText('trackAndField')).toBeTruthy();
     });
+  });
 
-    fireEvent.press(screen.getByText('Leuven Athl...'));
-    expect(navigation.navigate).toHaveBeenCalledWith('GroupProfileScreen', {groupId: 'group-1'});
+  test('shows joined group under Community groups on profile', async () => {
+    mockGetProfileSummary.mockResolvedValue({
+      profile_id: 'profile-join-1',
+      followers_count: 10,
+      profile: {
+        selected_events: ['track-field'],
+        nationality: 'BE',
+        chest_numbers_by_year: {'2026': 321},
+        track_field_main_event: '400m',
+        groups: [
+          {
+            group_id: 'group-2',
+            name: 'Morning Group',
+            is_official_club: false,
+          },
+        ],
+      },
+    });
+
+    const navigation = createNavigation();
+    render(<UserProfileScreen navigation={navigation} route={{params: {}}} />);
+
+    await waitFor(() => {
+      expect(screen.getByText('Community groups')).toBeTruthy();
+      expect(screen.getByText('Morning Group')).toBeTruthy();
+    });
   });
 });

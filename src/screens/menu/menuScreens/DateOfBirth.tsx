@@ -1,4 +1,4 @@
-import { View, Text, TouchableOpacity, ScrollView, Modal, Pressable } from 'react-native'
+import { View, Text, TouchableOpacity, ScrollView, Modal, Pressable, Alert } from 'react-native'
 import React, { useEffect, useMemo, useState } from 'react'
 import { createStyles } from '../MenuStyles'
 import SizeBox from '../../../constants/SizeBox'
@@ -14,7 +14,7 @@ const DateOfBirth = ({ navigation }: any) => {
     const { colors } = useTheme();
     const { t } = useTranslation();
     const Styles = createStyles(colors);
-    const { userProfile, authBootstrap, updateUserProfile, updateUserAccount } = useAuth();
+    const { userProfile, authBootstrap, updateUserAccount } = useAuth();
     const [selectedDate, setSelectedDate] = useState<string | null>(null);
     const [isEditing, setIsEditing] = useState(false);
     const [showCalendar, setShowCalendar] = useState(false);
@@ -147,9 +147,12 @@ const DateOfBirth = ({ navigation }: any) => {
                                 style={Styles.saveButton}
                                 onPress={async () => {
                                     if (!selectedDate) return;
-                                    await updateUserAccount({ birthdate: selectedDate });
-                                    await updateUserProfile({ birthDate: selectedDate });
-                                    setIsEditing(false);
+                                    try {
+                                        await updateUserAccount({ birthdate: selectedDate });
+                                        setIsEditing(false);
+                                    } catch {
+                                        Alert.alert(t('Error'), t('Failed to save. Please try again.'));
+                                    }
                                 }}
                             >
                                 <Text style={Styles.saveButtonText}>{t('save')}</Text>

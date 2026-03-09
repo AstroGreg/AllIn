@@ -1,7 +1,7 @@
 import React, { createContext, useCallback, useContext, useState, useEffect, ReactNode } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { AppConfig } from '../constants/AppConfig';
-import { getAuthBootstrap, updateUserMe, type AuthBootstrapResponse, type UpdateUserMeInput } from '../services/apiGateway';
+import { getAuthBootstrap, updateProfileSummary, updateUserMe, type AuthBootstrapResponse, type UpdateUserMeInput } from '../services/apiGateway';
 
 // Auth0 credentials
 const requireConfig = (key: string, value: any) => {
@@ -164,6 +164,25 @@ const logApiTokenDebug = (label: string, token?: string | null) => {
 const asNonEmptyText = (value: any): string | null => {
     const normalized = String(value ?? '').trim();
     return normalized.length > 0 ? normalized : null;
+};
+
+const normalizeNullableText = (value: any): string | null => {
+    if (value == null) return null;
+    const normalized = String(value).trim();
+    return normalized.length > 0 ? normalized : null;
+};
+
+const mapOnboardingCategoryToBackend = (value: any): string | null => {
+    const normalized = String(value ?? '').trim().toLowerCase();
+    if (!normalized) return null;
+    if (normalized === 'find') return 'Athlete';
+    if (normalized === 'manage') return 'club';
+    if (normalized === 'support') return 'photographer';
+    if (normalized === 'sell') return 'photographer';
+    if (normalized === 'athlete') return 'Athlete';
+    if (normalized === 'club') return 'club';
+    if (normalized === 'photographer') return 'photographer';
+    return null;
 };
 
 const looksLikeSystemIdentity = (value: any): boolean => {
@@ -400,22 +419,125 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
                 updatedProfile.createdAt = new Date().toISOString();
             }
 
-            // Store locally
-            await AsyncStorage.setItem(PROFILE_STORAGE_KEY, JSON.stringify(updatedProfile));
-            setUserProfile(updatedProfile);
+            const hasOwn = (key: keyof UserProfile) =>
+                Object.prototype.hasOwnProperty.call(profileData, key);
 
-            // If authenticated, also update Auth0 user metadata
-            const auth0 = getAuth0();
-            if (accessToken && auth0) {
-                try {
-                    await auth0.auth.userInfo({ token: accessToken });
-                    // Note: To update user_metadata in Auth0, you typically need to use the Management API
-                    // which requires a separate access token. For simplicity, we're storing locally.
-                    // In production, you'd call your backend to update Auth0 user_metadata.
-                } catch (err) {
-                    console.log('Could not sync profile to Auth0:', err);
+            if (accessToken) {
+                const userPatch: UpdateUserMeInput = {};
+
+                if (hasOwn('username')) userPatch.username = normalizeNullableText(profileData.username);
+                if (hasOwn('firstName')) userPatch.first_name = normalizeNullableText(profileData.firstName);
+                if (hasOwn('lastName')) userPatch.last_name = normalizeNullableText(profileData.lastName);
+                if (hasOwn('nationality')) userPatch.nationality = normalizeNullableText(profileData.nationality);
+                if (hasOwn('birthDate')) {
+                    const rawBirthDate = normalizeNullableText(profileData.birthDate);
+                    userPatch.birthdate = rawBirthDate ? rawBirthDate.slice(0, 10) : null;
+                }
+
+                if (Object.keys(userPatch).length > 0) {
+                    await updateUserMe(accessToken, userPatch);
+                }
+
+                const profilePatch: any = {};
+
+                if (hasOwn('selectedEvents')) {
+                    const selected = Array.isArray(profileData.selectedEvents)
+                        ? profileData.selectedEvents
+                            .map((entry) => String(entry ?? '').trim())
+                            .filter(Boolean)
+                        : [];
+                    profilePatch.selected_events = Array.from(new Set(selected));
+                }
+                if (hasOwn('chestNumbersByYear')) {
+                    const raw = profileData.chestNumbersByYear;
+                    const normalized: Record<string, number> = {};
+                    if (raw && typeof raw === 'object') {
+                        Object.entries(raw).forEach(([year, chest]) => {
+                            const safeYear = String(year || '').trim();
+                            if (!/^\d{4}$/.test(safeYear)) return;
+                            const parsed = Number(chest);
+                            if (!Number.isInteger(parsed) || parsed < 0) return;
+                            normalized[safeYear] = parsed;
+                        });
+                    }
+                    profilePatch.chest_numbers_by_year = normalized;
+                }
+                if (hasOwn('trackFieldClub')) {
+                    profilePatch.track_field_club = normalizeNullableText(profileData.trackFieldClub);
+                } else if (hasOwn('runningClub')) {
+                    profilePatch.track_field_club = normalizeNullableText(profileData.runningClub);
+                }
+                if (hasOwn('runningClubGroupId')) {
+                    profilePatch.running_club_group_id = normalizeNullableText(profileData.runningClubGroupId);
+                }
+                if (hasOwn('trackFieldMainEvent')) {
+                    profilePatch.track_field_main_event = normalizeNullableText(profileData.trackFieldMainEvent);
+                }
+                if (hasOwn('roadTrailMainEvent')) {
+                    profilePatch.road_trail_main_event = normalizeNullableText(profileData.roadTrailMainEvent);
+                }
+                if (hasOwn('website')) {
+                    profilePatch.website = normalizeNullableText(profileData.website);
+                }
+                if (hasOwn('photographerWebsite') && !hasOwn('website')) {
+                    profilePatch.website = normalizeNullableText(profileData.photographerWebsite);
+                }
+                if (hasOwn('supportRole')) {
+                    profilePatch.support_role = normalizeNullableText(profileData.supportRole);
+                }
+                if (hasOwn('supportOrganization')) {
+                    profilePatch.support_organization = normalizeNullableText(profileData.supportOrganization);
+                }
+                if (hasOwn('supportBaseLocation')) {
+                    profilePatch.support_base_location = normalizeNullableText(profileData.supportBaseLocation);
+                }
+                if (hasOwn('supportAthletes')) {
+                    const supportAthletes = Array.isArray(profileData.supportAthletes)
+                        ? profileData.supportAthletes
+                            .map((entry) => String(entry ?? '').trim())
+                            .filter(Boolean)
+                        : [];
+                    profilePatch.support_athletes = Array.from(new Set(supportAthletes));
+                }
+                if (hasOwn('supportAthleteProfileIds')) {
+                    const supportAthleteProfileIds = Array.isArray(profileData.supportAthleteProfileIds)
+                        ? profileData.supportAthleteProfileIds
+                            .map((entry) => String(entry ?? '').trim())
+                            .filter(Boolean)
+                        : [];
+                    profilePatch.support_athlete_profile_ids = Array.from(new Set(supportAthleteProfileIds));
+                }
+                if (hasOwn('documentUploaded')) {
+                    profilePatch.document_uploaded = Boolean(profileData.documentUploaded);
+                }
+                if (hasOwn('faceVerified')) {
+                    profilePatch.face_verified = Boolean(profileData.faceVerified);
+                }
+                if (hasOwn('category')) {
+                    const mappedCategory = mapOnboardingCategoryToBackend(profileData.category);
+                    profilePatch.category = mappedCategory;
+                }
+                if (hasOwn('photographerName')) {
+                    const photographerDisplayName = normalizeNullableText(profileData.photographerName);
+                    if (photographerDisplayName) {
+                        profilePatch.display_name = photographerDisplayName;
+                    }
+                }
+                if (hasOwn('firstName') || hasOwn('lastName')) {
+                    const displayName = `${normalizeNullableText(updatedProfile.firstName) || ''} ${normalizeNullableText(updatedProfile.lastName) || ''}`.trim();
+                    if (displayName.length > 0) {
+                        profilePatch.display_name = displayName;
+                    }
+                }
+
+                if (Object.keys(profilePatch).length > 0) {
+                    await updateProfileSummary(accessToken, profilePatch);
                 }
             }
+
+            // Store locally after backend sync succeeds (if authenticated).
+            await AsyncStorage.setItem(PROFILE_STORAGE_KEY, JSON.stringify(updatedProfile));
+            setUserProfile(updatedProfile);
         } catch (err) {
             console.error('Error updating user profile:', err);
             throw err;
