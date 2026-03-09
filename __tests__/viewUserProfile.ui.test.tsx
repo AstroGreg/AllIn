@@ -216,7 +216,7 @@ describe('ViewUserProfileScreen UI', () => {
     expect(screen.queryByText('Following')).toBeNull();
   });
 
-  test('opens club group profile when club value is pressed in meta row', async () => {
+  test('opens club group profile from community groups', async () => {
     mockGetProfileSummary.mockResolvedValue({profile_id: 'viewer-1'});
     mockGetProfileSummaryById.mockResolvedValue({
       profile_id: 'target-2',
@@ -248,10 +248,10 @@ describe('ViewUserProfileScreen UI', () => {
     );
 
     await waitFor(() => {
-      expect(screen.getByText('Leuven Athl...')).toBeTruthy();
+      expect(screen.getByText('Leuven Athletics')).toBeTruthy();
     });
 
-    fireEvent.press(screen.getByText('Leuven Athl...'));
+    fireEvent.press(screen.getByText('Leuven Athletics'));
     expect(navigation.navigate).toHaveBeenCalledWith('GroupProfileScreen', {
       groupId: 'group-9',
       showBackButton: true,
