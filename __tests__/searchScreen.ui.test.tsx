@@ -288,4 +288,154 @@ describe('SearchScreen UI', () => {
     expect(screen.queryByText('Follow')).toBeNull();
     expect(screen.queryByText('Following')).toBeNull();
   });
+
+  test('person filter shows the searched user first in frontend results', async () => {
+    mockSearchProfiles.mockResolvedValue({
+      profiles: [
+        {
+          profile_id: 'profile-target',
+          display_name: 'Alex Runner',
+          selected_events: ['road-events'],
+        },
+        {
+          profile_id: 'profile-other',
+          display_name: 'Alex Coach',
+          selected_events: ['track-field'],
+        },
+      ],
+    });
+
+    render(<SearchScreen navigation={createNavigation()} />);
+
+    fireEvent.press(screen.getByText('Person'));
+    fireEvent.changeText(screen.getByTestId('search-input'), 'Alex');
+
+    await waitFor(() => {
+      expect(screen.getByText('Results')).toBeTruthy();
+      expect(screen.getByText('People')).toBeTruthy();
+      expect(screen.getByText('Alex Runner')).toBeTruthy();
+      expect(screen.getByText('Alex Coach')).toBeTruthy();
+    });
+
+    const orderedPeople = screen
+      .getAllByText(/^(Alex Runner|Alex Coach)$/)
+      .map(node => String(node.props.children));
+
+    expect(orderedPeople[0]).toBe('Alex Runner');
+  });
+
+  test('competition filter shows the searched competition first in frontend results', async () => {
+    mockSearchEvents.mockResolvedValue({
+      events: [
+        {
+          event_id: 'evt-target',
+          event_name: 'City Championship',
+          event_date: '2026-05-10',
+          event_location: 'Brussels',
+          competition_type: 'track',
+        },
+        {
+          event_id: 'evt-other',
+          event_name: 'City Fun Run',
+          event_date: '2026-04-10',
+          event_location: 'Brussels',
+          competition_type: 'road',
+        },
+      ],
+    });
+
+    render(<SearchScreen navigation={createNavigation()} />);
+
+    fireEvent.press(screen.getByText('Competition'));
+    fireEvent.changeText(screen.getByTestId('search-input'), 'City');
+
+    await waitFor(() => {
+      expect(screen.getByText('Results')).toBeTruthy();
+      expect(screen.getByText('Competitions')).toBeTruthy();
+      expect(screen.getByText('City Championship')).toBeTruthy();
+      expect(screen.getByText('City Fun Run')).toBeTruthy();
+    });
+
+    const orderedCompetitions = screen
+      .getAllByText(/^(City Championship|City Fun Run)$/)
+      .map(node => String(node.props.children));
+
+    expect(orderedCompetitions[0]).toBe('City Championship');
+  });
+
+  test('group filter shows the searched group first in frontend results', async () => {
+    mockSearchGroups.mockResolvedValue({
+      groups: [
+        {
+          group_id: 'group-target',
+          name: 'Apex Runners',
+          member_count: 8,
+          location: 'Brussels',
+        },
+        {
+          group_id: 'group-other',
+          name: 'Bravo Runners',
+          member_count: 5,
+          location: 'Brussels',
+        },
+      ],
+    });
+
+    render(<SearchScreen navigation={createNavigation()} />);
+
+    fireEvent.press(screen.getByText('Group'));
+    fireEvent.changeText(screen.getByTestId('search-input'), 'Runners');
+
+    await waitFor(() => {
+      expect(screen.getByText('Results')).toBeTruthy();
+      expect(screen.getByText('Groups')).toBeTruthy();
+      expect(screen.getByText('Apex Runners')).toBeTruthy();
+      expect(screen.getByText('Bravo Runners')).toBeTruthy();
+    });
+
+    const orderedGroups = screen
+      .getAllByText(/^(Apex Runners|Bravo Runners)$/)
+      .map(node => String(node.props.children));
+
+    expect(orderedGroups[0]).toBe('Apex Runners');
+  });
+
+  test('location filter shows the searched location competition first in frontend results', async () => {
+    mockSearchEvents.mockResolvedValue({
+      events: [
+        {
+          event_id: 'evt-loc-target',
+          event_name: 'Leuven Spring Classic',
+          event_date: '2026-05-12',
+          event_location: 'Leuven',
+          competition_type: 'road',
+        },
+        {
+          event_id: 'evt-loc-other',
+          event_name: 'Leuven Night Run',
+          event_date: '2026-04-12',
+          event_location: 'Leuven',
+          competition_type: 'road',
+        },
+      ],
+    });
+
+    render(<SearchScreen navigation={createNavigation()} />);
+
+    fireEvent.press(screen.getByText('Location'));
+    fireEvent.changeText(screen.getByTestId('search-input'), 'Leuven');
+
+    await waitFor(() => {
+      expect(screen.getByText('Results')).toBeTruthy();
+      expect(screen.getByText('Competitions')).toBeTruthy();
+      expect(screen.getByText('Leuven Spring Classic')).toBeTruthy();
+      expect(screen.getByText('Leuven Night Run')).toBeTruthy();
+    });
+
+    const orderedCompetitions = screen
+      .getAllByText(/^(Leuven Spring Classic|Leuven Night Run)$/)
+      .map(node => String(node.props.children));
+
+    expect(orderedCompetitions[0]).toBe('Leuven Spring Classic');
+  });
 });
