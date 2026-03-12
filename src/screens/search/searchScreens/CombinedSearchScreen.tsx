@@ -186,16 +186,13 @@ const CombinedSearchScreen = ({navigation}: any) => {
 
   const fetchEvents = useCallback(
     async (query: string) => {
-      if (!apiAccessToken) {
-        setEventsError(t('Missing API token.'));
-        return;
-      }
       const trimmedQuery = query.trim();
       const isAutoload = trimmedQuery.length === 0;
       setIsLoadingEvents(true);
       setEventsError(null);
+      const requestAccessToken = apiAccessToken ?? '';
       try {
-        const res = await searchEvents(apiAccessToken, {
+        const res = await searchEvents(requestAccessToken, {
           q: trimmedQuery,
           limit: isAutoload ? COMPETITION_AUTOLOAD_LIMIT : COMPETITION_SEARCH_LIMIT,
         });
@@ -362,11 +359,6 @@ const CombinedSearchScreen = ({navigation}: any) => {
   }, [bib, contextText, includeFace, navigation, origin, selectedEvents]);
 
   const runCombinedSearch = useCallback(async () => {
-    if (!apiAccessToken) {
-      Alert.alert(t('Missing API token'), t('Log in or set a Dev API token to use AI Search.'));
-      return;
-    }
-
     if (selectedEventIds.length === 0) {
       setCompetitionRequiredError(true);
       return;
@@ -390,6 +382,7 @@ const CombinedSearchScreen = ({navigation}: any) => {
     const collected: any[] = [];
     const seen = new Set<string>();
     const eventNameLookup = new Map(selectedEvents.map((event) => [event.id, event.name]));
+    const requestAccessToken = apiAccessToken ?? '';
     const addResults = (items: any[], matchType: string) => {
       for (const item of items) {
         const id = String(item.media_id ?? item.id ?? '');
@@ -410,7 +403,7 @@ const CombinedSearchScreen = ({navigation}: any) => {
       if (wantsBib) {
         for (const eventId of selectedEventIds) {
           try {
-            const res = await searchMediaByBib(apiAccessToken, {
+            const res = await searchMediaByBib(requestAccessToken, {
               event_id: eventId,
               bib: activeBib,
             });
@@ -433,7 +426,7 @@ const CombinedSearchScreen = ({navigation}: any) => {
       if (wantsContext) {
         for (const eventId of selectedEventIds) {
           try {
-            const results = await searchObject(apiAccessToken, {
+            const results = await searchObject(requestAccessToken, {
               q: contextText.trim(),
               top: 150,
               event_id: eventId,
@@ -456,7 +449,7 @@ const CombinedSearchScreen = ({navigation}: any) => {
 
       if (wantsFace) {
         try {
-          const res = await searchFaceByEnrollment(apiAccessToken, {
+          const res = await searchFaceByEnrollment(requestAccessToken, {
             event_ids: selectedEventIds,
             label: 'default',
             limit: 600,
@@ -571,11 +564,6 @@ const CombinedSearchScreen = ({navigation}: any) => {
       return;
     }
 
-    if (!apiAccessToken) {
-      Alert.alert(t('Missing API token'), t('Log in or set a Dev API token to use AI Search.'));
-      return;
-    }
-
     if (faceEnrollmentStatus === 'ready') {
       setIncludeFace(true);
       return;
@@ -610,8 +598,9 @@ const CombinedSearchScreen = ({navigation}: any) => {
     setErrorText(null);
     setNeedsConsent(false);
     setMissingAngles(null);
+    const requestAccessToken = apiAccessToken ?? '';
     try {
-      await searchFaceByEnrollment(apiAccessToken, {
+      await searchFaceByEnrollment(requestAccessToken, {
         event_ids: [selectedEventIds[0]],
         label: 'default',
         limit: 1,

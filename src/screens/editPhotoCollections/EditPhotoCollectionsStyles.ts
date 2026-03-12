@@ -165,8 +165,13 @@ export const createStyles = (colors: ThemeColors) => StyleSheet.create({
         backgroundColor: colors.cardBackground,
     },
     photosGrid: {
+        width: '100%',
         flexDirection: 'row',
         flexWrap: 'wrap',
+        justifyContent: 'flex-start',
+        alignContent: 'flex-start',
+        columnGap: 10,
+        rowGap: 10,
         gap: 10,
     },
     photoImage: {

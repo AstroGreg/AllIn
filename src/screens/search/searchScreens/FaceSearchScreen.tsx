@@ -197,11 +197,6 @@ const FaceSearchScreen = ({navigation, route}: any) => {
     };
 
     const runSearch = useCallback(async () => {
-        if (!apiAccessToken) {
-            Alert.alert(t('Missing API token'), t('Log in or set a Dev API token to use Face Search.'));
-            return;
-        }
-
         if (!localFilters.competition || !String(localFilters.competition).trim()) {
             setErrorText(t('Select a competition first.'));
             return;
@@ -211,8 +206,9 @@ const FaceSearchScreen = ({navigation, route}: any) => {
         setMissingAngles(null);
         setErrorText(null);
         setIsSearching(true);
+        const requestAccessToken = apiAccessToken ?? '';
         try {
-            const me = authMe ?? (await getAuthMe(apiAccessToken));
+            const me = authMe ?? (await getAuthMe(requestAccessToken));
             setAuthMe(me);
 
             const hasFilterConstraints = Boolean(
@@ -231,7 +227,7 @@ const FaceSearchScreen = ({navigation, route}: any) => {
                 return;
             }
 
-            const res = await searchFaceByEnrollment(apiAccessToken, {
+            const res = await searchFaceByEnrollment(requestAccessToken, {
                 event_ids,
                 label: 'default',
                 limit: 600,

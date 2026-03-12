@@ -335,6 +335,7 @@ const VideoPlayingScreen = ({ navigation, route }: any) => {
             const created = await createPost(apiAccessToken, {
                 title: entryTitle,
                 description: entryTitle,
+                post_type: 'video',
             });
             const postId = String(created?.post?.id ?? '').trim();
             if (!postId) {

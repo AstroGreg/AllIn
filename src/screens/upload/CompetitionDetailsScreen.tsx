@@ -432,6 +432,7 @@ const CompetitionDetailsScreen = ({ navigation, route }: any) => {
             account,
             anonymous,
             competitionType: isRoadFocus ? 'road' : 'track',
+            discipline_id: selectedEvent?.id ?? null,
             competition_map_id: selectedMap?.id ?? null,
             checkpoint_id: selectedCheckpoint?.id ?? null,
             checkpoint_label: selectedCheckpoint?.label ?? null,

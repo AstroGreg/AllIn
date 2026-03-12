@@ -4,7 +4,7 @@ import FastImage from 'react-native-fast-image';
 import SizeBox from '../../constants/SizeBox';
 import { Trash } from 'iconsax-react-nativejs';
 
-export type ProfileNewsItemKind = 'blog' | 'competition';
+export type ProfileNewsItemKind = 'blog' | 'photo' | 'video';
 export type ProfileNewsItem = {
     id: string;
     kind?: ProfileNewsItemKind;
@@ -14,7 +14,9 @@ export type ProfileNewsItem = {
     description?: string | null;
     coverImage?: string | null;
     postId?: string | null;
-    eventId?: string | null;
+    mediaId?: string | null;
+    mediaType?: 'image' | 'video' | null;
+    canDelete?: boolean;
 };
 
 type Props = {
@@ -23,7 +25,8 @@ type Props = {
     items: ProfileNewsItem[];
     emptyText: string;
     blogLabel: string;
-    eventLabel?: string;
+    photoLabel?: string;
+    videoLabel?: string;
     onPressItem: (item: ProfileNewsItem) => void;
     actionLabel?: string;
     onPressAction?: () => void;
@@ -105,7 +108,8 @@ const ProfileNewsSection = ({
     items,
     emptyText,
     blogLabel,
-    eventLabel,
+    photoLabel,
+    videoLabel,
     onPressItem,
     actionLabel,
     onPressAction,
@@ -113,8 +117,15 @@ const ProfileNewsSection = ({
     onSwipeDelete,
 }: Props) => {
     const renderCard = (item: ProfileNewsItem) => {
-        const isBlog = (item.kind ?? 'blog') === 'blog';
-        const badgeLabel = isBlog ? blogLabel : (eventLabel || 'Event');
+        const kind = item.kind ?? 'blog';
+        const isBlog = kind === 'blog';
+        const isPhoto = kind === 'photo';
+        const isVideo = kind === 'video';
+        const badgeLabel = isBlog
+            ? blogLabel
+            : isPhoto
+                ? (photoLabel || 'Photo')
+                : (videoLabel || 'Video');
         const descriptionText = String(item.description || '');
         return (
         <TouchableOpacity
@@ -169,7 +180,7 @@ const ProfileNewsSection = ({
                     items.map((item) => (
                     <SwipeDeleteRow
                         key={`news-swipe-${item.id}`}
-                        enabled={Boolean(enableSwipeDelete && onSwipeDelete && (item.kind ?? 'blog') === 'blog')}
+                        enabled={Boolean(enableSwipeDelete && onSwipeDelete && item.canDelete !== false)}
                         onSwipeRight={() => {
                             if (onSwipeDelete) onSwipeDelete(item);
                         }}

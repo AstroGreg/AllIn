@@ -1,4 +1,4 @@
-import { View, Text, TouchableOpacity, ScrollView, Switch, Modal, Image, ActivityIndicator, Alert } from 'react-native'
+import { View, Text, TouchableOpacity, ScrollView, Switch, Modal, Image, ActivityIndicator, Alert, InteractionManager } from 'react-native'
 import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import SizeBox from '../../../constants/SizeBox'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
@@ -73,6 +73,8 @@ const CompetitionDetailsScreen = ({ navigation, route }: any) => {
     const [subscribeUseDefaultChest, setSubscribeUseDefaultChest] = useState(true);
     const [subscribeUseFace, setSubscribeUseFace] = useState(false);
     const [profileChestByYear, setProfileChestByYear] = useState<Record<string, string>>({});
+    const [profileFaceVerified, setProfileFaceVerified] = useState<boolean | null>(null);
+    const [profileFaceConsentGranted, setProfileFaceConsentGranted] = useState<boolean | null>(null);
     const [subscribeDisciplineIds, setSubscribeDisciplineIds] = useState<string[]>([SUBSCRIPTION_ALL_DISCIPLINE_ID]);
     const [subscribeCategoryLabels, setSubscribeCategoryLabels] = useState<string[]>(['All']);
 
@@ -187,8 +189,8 @@ const CompetitionDetailsScreen = ({ navigation, route }: any) => {
         () => String((subscribeUseDefaultChest ? defaultChestNumber : subscribeChestNumber) ?? '').trim(),
         [defaultChestNumber, subscribeChestNumber, subscribeUseDefaultChest],
     );
-    const hasFaceEnrollment = Boolean((userProfile as any)?.faceVerified);
-    const faceConsentGranted = Boolean((userProfile as any)?.faceConsentGranted);
+    const hasFaceEnrollment = profileFaceVerified ?? Boolean((userProfile as any)?.faceVerified);
+    const faceConsentGranted = profileFaceConsentGranted ?? Boolean((userProfile as any)?.faceConsentGranted);
 
     useEffect(() => {
         if (!apiAccessToken) return;
@@ -198,6 +200,8 @@ const CompetitionDetailsScreen = ({ navigation, route }: any) => {
                 const summary = await getProfileSummary(apiAccessToken);
                 if (!active) return;
                 setProfileChestByYear(normalizeChestByYear(summary?.profile?.chest_numbers_by_year ?? {}));
+                setProfileFaceVerified(Boolean(summary?.profile?.face_verified));
+                setProfileFaceConsentGranted(Boolean((summary?.profile as any)?.face_consent_granted));
             } catch {
                 // keep local fallback from userProfile
             }
@@ -382,7 +386,7 @@ const CompetitionDetailsScreen = ({ navigation, route }: any) => {
                             name,
                             hasArrow: true,
                             badges: comp.discipline_group ? [String(comp.discipline_group)] : undefined,
-                            thumbnailUrl: null,
+                            thumbnailUrl: withAccessToken(toAbsoluteUrl(comp.thumbnail_url ?? null)),
                             group: comp.discipline_group ?? null,
                             _kind: kind,
                         } as EventCategory & { _kind: 'track' | 'field' };
@@ -412,7 +416,7 @@ const CompetitionDetailsScreen = ({ navigation, route }: any) => {
         return () => {
             isActive = false;
         };
-    }, [apiAccessToken, competitionFocusId, competitionType, isRoadTrailCompetition, resolvedEventId, t]);
+    }, [apiAccessToken, competitionFocusId, competitionType, isRoadTrailCompetition, resolvedEventId, t, toAbsoluteUrl, withAccessToken]);
 
     useEffect(() => {
         if (!isRoadTrailCompetition) return;
@@ -657,14 +661,6 @@ const CompetitionDetailsScreen = ({ navigation, route }: any) => {
         }
     }, [apiAccessToken]);
 
-    const handleEnroll = useCallback(() => {
-        setAiCompareModalVisible(false);
-        navigation.navigate('SearchFaceCaptureScreen', {
-            mode: 'enrolFace',
-            afterEnroll: { screen: 'AISearchScreen' },
-        });
-    }, [navigation]);
-
     const resetSubscribeSheet = useCallback(() => {
         setSubscribeStep(0);
         setSubscribeUseDefaultChest(false);
@@ -683,6 +679,157 @@ const CompetitionDetailsScreen = ({ navigation, route }: any) => {
         setSubscribeSheetVisible(false);
         resetSubscribeSheet();
     }, [resetSubscribeSheet]);
+
+    const handleEnroll = useCallback(() => {
+        setAiCompareModalVisible(false);
+        navigation.navigate('SearchFaceCaptureScreen', {
+            mode: 'enrolFace',
+            afterEnroll: { screen: 'AISearchScreen' },
+        });
+    }, [navigation]);
+    const refreshProfileFaceState = useCallback(async () => {
+        if (!apiAccessToken) {
+            return {
+                hasFaceEnrollment: Boolean((userProfile as any)?.faceVerified),
+                faceConsentGranted: Boolean((userProfile as any)?.faceConsentGranted),
+            };
+        }
+        try {
+            const summary = await getProfileSummary(apiAccessToken);
+            const nextHasFaceEnrollment = Boolean(summary?.profile?.face_verified);
+            const nextFaceConsentGranted = Boolean((summary?.profile as any)?.face_consent_granted);
+            setProfileFaceVerified(nextHasFaceEnrollment);
+            setProfileFaceConsentGranted(nextFaceConsentGranted);
+            return {
+                hasFaceEnrollment: nextHasFaceEnrollment,
+                faceConsentGranted: nextFaceConsentGranted,
+            };
+        } catch {
+            return {
+                hasFaceEnrollment: profileFaceVerified ?? Boolean((userProfile as any)?.faceVerified),
+                faceConsentGranted: profileFaceConsentGranted ?? Boolean((userProfile as any)?.faceConsentGranted),
+            };
+        }
+    }, [apiAccessToken, profileFaceConsentGranted, profileFaceVerified, userProfile]);
+    const startSubscriptionFaceEnrollment = useCallback(() => {
+        closeSubscribeSheet();
+        InteractionManager.runAfterInteractions(() => {
+            navigation.navigate('SearchFaceCaptureScreen', {
+                mode: 'enrolFace',
+                requireConsentBeforeEnroll: false,
+                afterEnroll: { screen: 'AISearchScreen' },
+            });
+        });
+    }, [closeSubscribeSheet, navigation]);
+    const handleSubscribeFaceToggle = useCallback(async (nextValue: boolean) => {
+        if (!nextValue) {
+            setSubscribeUseFace(false);
+            return;
+        }
+        if (!apiAccessToken) {
+            Alert.alert(t('Missing API token'), t('Log in again to enable face recognition.'));
+            return;
+        }
+        if (!resolvedEventId) {
+            const latest = await refreshProfileFaceState();
+            if (latest.hasFaceEnrollment && latest.faceConsentGranted) {
+                setSubscribeUseFace(true);
+                return;
+            }
+            Alert.alert(t('Select competition'), t('Pick a competition first, then enable face recognition.'));
+            return;
+        }
+        try {
+            await searchFaceByEnrollment(apiAccessToken, {
+                event_ids: [resolvedEventId],
+                label: 'default',
+                limit: 1,
+                top: 1,
+                save: false,
+            });
+            setProfileFaceVerified(true);
+            setProfileFaceConsentGranted(true);
+            setSubscribeUseFace(true);
+            return;
+        } catch (e: any) {
+            if (e instanceof ApiError) {
+                const body = e.body ?? {};
+                if (e.status === 403 && String(e.message).toLowerCase().includes('consent')) {
+                    setProfileFaceVerified(true);
+                    setProfileFaceConsentGranted(false);
+                    Alert.alert(
+                        t('Face recognition consent'),
+                        t('Allow face recognition for this competition?'),
+                        [
+                            { text: t('Cancel'), style: 'cancel' },
+                            {
+                                text: t('Allow'),
+                                onPress: async () => {
+                                    try {
+                                        await grantFaceRecognitionConsent(apiAccessToken);
+                                        setProfileFaceConsentGranted(true);
+                                        setSubscribeUseFace(true);
+                                    } catch (consentError: any) {
+                                        const msg = consentError instanceof ApiError ? consentError.message : String(consentError?.message ?? consentError);
+                                        Alert.alert(t('Consent failed'), msg);
+                                    }
+                                },
+                            },
+                        ],
+                    );
+                    return;
+                }
+                if (e.status === 400 && Array.isArray(body?.missing_angles)) {
+                    setProfileFaceVerified(false);
+                    Alert.alert(
+                        t('Face setup required'),
+                        t('Set up your face scan to use face recognition for this competition.'),
+                        [
+                            { text: t('Cancel'), style: 'cancel' },
+                            { text: t('Set up face'), onPress: startSubscriptionFaceEnrollment },
+                        ],
+                    );
+                    return;
+                }
+            }
+        }
+        const latest = await refreshProfileFaceState();
+        if (latest.hasFaceEnrollment && latest.faceConsentGranted) {
+            setSubscribeUseFace(true);
+            return;
+        }
+        if (latest.faceConsentGranted) {
+            Alert.alert(
+                t('Face setup required'),
+                t('Set up your face scan to use face recognition for this competition.'),
+                [
+                    { text: t('Cancel'), style: 'cancel' },
+                    { text: t('Set up face'), onPress: startSubscriptionFaceEnrollment },
+                ],
+            );
+            return;
+        }
+        Alert.alert(
+            t('Face recognition consent'),
+            t('Before face setup, please confirm consent for face recognition.'),
+            [
+                { text: t('Cancel'), style: 'cancel' },
+                {
+                    text: t('Continue'),
+                    onPress: async () => {
+                        try {
+                            await grantFaceRecognitionConsent(apiAccessToken);
+                            setProfileFaceConsentGranted(true);
+                            startSubscriptionFaceEnrollment();
+                        } catch (consentError: any) {
+                            const msg = consentError instanceof ApiError ? consentError.message : String(consentError?.message ?? consentError);
+                            Alert.alert(t('Consent failed'), msg);
+                        }
+                    },
+                },
+            ],
+        );
+    }, [apiAccessToken, refreshProfileFaceState, resolvedEventId, startSubscriptionFaceEnrollment, t]);
 
     const handleOpenSubscriptionSummary = useCallback(() => {
         if (!canSubscribe || !resolvedEventId) return;
@@ -1349,8 +1496,7 @@ const CompetitionDetailsScreen = ({ navigation, route }: any) => {
                                         </View>
                                         <Switch
                                             value={subscribeUseFace}
-                                            onValueChange={setSubscribeUseFace}
-                                            disabled={!hasFaceEnrollment}
+                                            onValueChange={handleSubscribeFaceToggle}
                                             trackColor={{ false: colors.lightGrayColor, true: colors.primaryColor }}
                                             thumbColor={colors.pureWhite}
                                         />

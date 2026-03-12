@@ -95,11 +95,6 @@ const ContextSearchLoadingScreen = ({ navigation, route }: any) => {
         let cancelled = false;
 
         const run = async () => {
-            if (!apiAccessToken) {
-                setErrorText(t('Missing API token. Log in or set a Dev API token to use Context Search.'));
-                return;
-            }
-
             const q = queryText;
             if (!q) {
                 setErrorText(t('Missing query. Please go back and enter a search phrase.'));
@@ -108,8 +103,9 @@ const ContextSearchLoadingScreen = ({ navigation, route }: any) => {
 
             setErrorText(null);
             setMatchedCount(null);
+            const requestAccessToken = apiAccessToken ?? '';
             try {
-                const results = await searchObject(apiAccessToken, {q, top: 150, event_id: eventIdFromFilters ?? undefined});
+                const results = await searchObject(requestAccessToken, {q, top: 150, event_id: eventIdFromFilters ?? undefined});
                 if (cancelled) return;
                 setMatchedCount(results.length);
                 navigation.replace('AISearchResultsScreen', {
@@ -135,10 +131,6 @@ const ContextSearchLoadingScreen = ({ navigation, route }: any) => {
                 });
             } catch (e: any) {
                 if (cancelled) return;
-                if (e instanceof ApiError && e.status === 402) {
-                    setErrorText(t('Insufficient AI tokens to run this search.'));
-                    return;
-                }
                 const msg = e instanceof ApiError ? e.message : String(e?.message ?? e);
                 setErrorText(msg);
             }

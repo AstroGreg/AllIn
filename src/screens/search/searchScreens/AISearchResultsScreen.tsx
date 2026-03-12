@@ -251,11 +251,7 @@ const AISearchResultsScreen = ({navigation, route}: any) => {
             <View key={pill.key} style={styles.refinePill}>
               <Text style={styles.refinePillText}>{pill.label}</Text>
             </View>
-          )) : (
-            <View style={styles.refinePillMuted}>
-              <Text style={styles.refinePillMutedText}>{t('Review the match groups below or refine the search.')}</Text>
-            </View>
-          )}
+          )) : null}
         </ScrollView>
         <TouchableOpacity style={styles.refineButton} onPress={() => navigation.goBack()}>
           <Text style={styles.refineButtonText}>{t('Refine')}</Text>

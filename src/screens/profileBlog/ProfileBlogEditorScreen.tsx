@@ -21,6 +21,11 @@ type BlogMedia = {
     mimeType?: string;
 };
 
+type LinkedPerson = {
+    profile_id: string | null;
+    display_name: string;
+};
+
 const ProfileBlogEditorScreen = ({ navigation, route }: any) => {
     const { t } = useTranslation();
     const insets = useSafeAreaInsets();
@@ -52,7 +57,7 @@ const ProfileBlogEditorScreen = ({ navigation, route }: any) => {
     const [skipEvent, setSkipEvent] = useState(false);
     const [skipPeople, setSkipPeople] = useState(false);
     const [highlight, setHighlight] = useState('');
-    const [linkedPeople, setLinkedPeople] = useState<string[]>([]);
+    const [linkedPeople, setLinkedPeople] = useState<LinkedPerson[]>([]);
     const [peopleQuery, setPeopleQuery] = useState('');
     const [peopleResults, setPeopleResults] = useState<Array<{ profile_id: string; display_name: string }>>([]);
     const [peopleSearchLoading, setPeopleSearchLoading] = useState(false);
@@ -176,12 +181,12 @@ const ProfileBlogEditorScreen = ({ navigation, route }: any) => {
         };
     }, []);
 
-    const buildDescriptionWithMeta = useCallback((baseDescription: string, valueHighlight: string, people: string[], skip: boolean) => {
+    const buildDescriptionWithMeta = useCallback((baseDescription: string, valueHighlight: string, people: LinkedPerson[], skip: boolean) => {
         const out: string[] = [String(baseDescription || '').trim()].filter(Boolean);
         if (!skip && String(valueHighlight || '').trim()) {
             out.push(`Highlight: ${String(valueHighlight).trim()}`);
         }
-        const cleanPeople = Array.from(new Set(people.map((p) => String(p || '').trim()).filter(Boolean)));
+        const cleanPeople = Array.from(new Set(people.map((p) => String(p?.display_name || '').trim()).filter(Boolean)));
         if (cleanPeople.length > 0) {
             out.push(`People: ${cleanPeople.join(', ')}`);
         }
@@ -206,7 +211,27 @@ const ProfileBlogEditorScreen = ({ navigation, route }: any) => {
                     const parsed = splitDescriptionMeta(resp.post.description ?? '');
                     setDescription(parsed.description);
                     setHighlight(parsed.highlight);
-                    setLinkedPeople(parsed.people);
+                    const taggedProfiles = Array.isArray((resp.post as any)?.tagged_profiles) ? (resp.post as any).tagged_profiles : [];
+                    const taggedByName = new Map<string, LinkedPerson>(
+                        taggedProfiles
+                            .map((person: any): [string, LinkedPerson] => [
+                                String(person?.display_name ?? '').trim().toLowerCase(),
+                                {
+                                    profile_id: String(person?.profile_id ?? '').trim() || null,
+                                    display_name: String(person?.display_name ?? '').trim(),
+                                },
+                            ])
+                            .filter((entry: [string, LinkedPerson]) => entry[0].length > 0 && entry[1].display_name.length > 0),
+                    );
+                    const restoredPeople: LinkedPerson[] = parsed.people.map((name) => {
+                        const safeName = String(name || '').trim();
+                        const tagged = taggedByName.get(safeName.toLowerCase());
+                        if (tagged) {
+                            return tagged;
+                        }
+                        return { profile_id: null, display_name: safeName };
+                    });
+                    setLinkedPeople(restoredPeople);
                     setSkipHighlight(!parsed.highlight);
                     if (resp.post.created_at) {
                         const parsed = new Date(String(resp.post.created_at));
@@ -264,6 +289,13 @@ const ProfileBlogEditorScreen = ({ navigation, route }: any) => {
         try {
             const fullDescription = buildDescriptionWithMeta(description, highlight, linkedPeople, skipHighlight);
             const summary = fullDescription.length > 180 ? `${fullDescription.slice(0, 180)}…` : fullDescription;
+            const taggedProfileIds = Array.from(
+                new Set(
+                    linkedPeople
+                        .map((person) => String(person.profile_id || '').trim())
+                        .filter(Boolean),
+                ),
+            );
             let currentId = postId;
             if (mode === 'edit' && postId) {
                 await updatePost(apiAccessToken, String(postId), {
@@ -271,6 +303,7 @@ const ProfileBlogEditorScreen = ({ navigation, route }: any) => {
                     description: fullDescription,
                     summary,
                     created_at: postDate ? postDate.toISOString() : undefined,
+                    tagged_profile_ids: taggedProfileIds,
                 });
             } else {
                 const created = await createPost(apiAccessToken, {
@@ -279,6 +312,8 @@ const ProfileBlogEditorScreen = ({ navigation, route }: any) => {
                     summary,
                     event_id: selectedEventId ? String(selectedEventId) : undefined,
                     group_id: groupId || undefined,
+                    post_type: 'blog',
+                    tagged_profile_ids: taggedProfileIds,
                 });
                 currentId = created?.post?.id ?? null;
             }
@@ -317,17 +352,28 @@ const ProfileBlogEditorScreen = ({ navigation, route }: any) => {
 
     const TOTAL_STEPS = 7;
 
-    const addPerson = useCallback((name: string) => {
-        const safe = String(name || '').trim();
-        if (!safe) return;
+    const addPerson = useCallback((person: string | { profile_id: string; display_name: string }) => {
+        const safeName = String(typeof person === 'string' ? person : person.display_name).trim();
+        const safeId = typeof person === 'string' ? '' : String(person.profile_id || '').trim();
+        if (!safeName) return;
         setSkipPeople(false);
-        setLinkedPeople((prev) => (prev.includes(safe) ? prev : [...prev, safe]));
+        setLinkedPeople((prev) => {
+            const existingIndex = prev.findIndex((entry) => String(entry.display_name).trim().toLowerCase() === safeName.toLowerCase());
+            if (existingIndex !== -1) {
+                if (!safeId || prev[existingIndex]?.profile_id) return prev;
+                const next = [...prev];
+                next[existingIndex] = { ...next[existingIndex], profile_id: safeId };
+                return next;
+            }
+            return [...prev, { profile_id: safeId || null, display_name: safeName }];
+        });
         setPeopleQuery('');
         setPeopleResults([]);
     }, []);
 
     const removePerson = useCallback((name: string) => {
-        setLinkedPeople((prev) => prev.filter((entry) => entry !== name));
+        const safe = String(name || '').trim().toLowerCase();
+        setLinkedPeople((prev) => prev.filter((entry) => String(entry.display_name || '').trim().toLowerCase() !== safe));
     }, []);
 
     useEffect(() => {
@@ -448,7 +494,7 @@ const ProfileBlogEditorScreen = ({ navigation, route }: any) => {
                 <Text style={Styles.previewMeta}>{t('Event')}: {selectedEventLabel}</Text>
             ) : null}
             {linkedPeople.length > 0 ? (
-                <Text style={Styles.previewMeta}>{t('People')}: {linkedPeople.join(', ')}</Text>
+                <Text style={Styles.previewMeta}>{t('People')}: {linkedPeople.map((person) => person.display_name).join(', ')}</Text>
             ) : null}
             <Text style={Styles.previewMeta}>{t('Media')}: {existingPreview.length + media.length}</Text>
             {firstPreviewImageUri ? (
@@ -664,7 +710,7 @@ const ProfileBlogEditorScreen = ({ navigation, route }: any) => {
                         {!peopleSearchLoading && peopleQuery.trim().length > 0 && peopleResults.length > 0 && (
                             <View style={Styles.eventListContent}>
                                 {peopleResults.map((person) => (
-                                    <TouchableOpacity key={person.profile_id} style={Styles.eventRow} onPress={() => addPerson(person.display_name)}>
+                                    <TouchableOpacity key={person.profile_id} style={Styles.eventRow} onPress={() => addPerson(person)}>
                                         <Text style={Styles.eventRowText}>{person.display_name}</Text>
                                     </TouchableOpacity>
                                 ))}
@@ -673,9 +719,9 @@ const ProfileBlogEditorScreen = ({ navigation, route }: any) => {
                         {linkedPeople.length > 0 && (
                             <View style={Styles.peopleChipsRow}>
                                 {linkedPeople.map((person) => (
-                                    <View key={person} style={Styles.peopleChip}>
-                                        <Text style={Styles.peopleChipText}>{person}</Text>
-                                        <TouchableOpacity onPress={() => removePerson(person)}>
+                                    <View key={`${person.profile_id ?? 'manual'}-${person.display_name}`} style={Styles.peopleChip}>
+                                        <Text style={Styles.peopleChipText}>{person.display_name}</Text>
+                                        <TouchableOpacity onPress={() => removePerson(person.display_name)}>
                                             <Trash size={14} color={colors.subTextColor} variant="Linear" />
                                         </TouchableOpacity>
                                     </View>

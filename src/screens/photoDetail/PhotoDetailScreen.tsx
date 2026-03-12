@@ -1038,6 +1038,7 @@ const PhotoDetailScreen = ({navigation, route}: any) => {
             const created = await createPost(apiAccessToken, {
                 title: entryTitle,
                 description: entryTitle,
+                post_type: 'photo',
             });
             const postId = String(created?.post?.id ?? '').trim();
             if (!postId) {

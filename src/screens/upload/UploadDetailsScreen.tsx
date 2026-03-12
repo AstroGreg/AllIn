@@ -1,4 +1,4 @@
-import { View, Text, TouchableOpacity, TextInput, ActivityIndicator } from 'react-native'
+import { View, Text, TouchableOpacity, TextInput, ActivityIndicator, InteractionManager } from 'react-native'
 import React, { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next';
 import { createStyles } from './UploadDetailsStyles'
@@ -62,6 +62,12 @@ const UploadDetailsScreen = ({ navigation, route }: any) => {
         category?.competition_map_id ??
         '',
     ).trim() || null;
+    const selectedDisciplineId = String(
+        route?.params?.discipline_id ??
+        category?.id ??
+        category?.discipline_id ??
+        '',
+    ).trim() || null;
     const selectedCheckpointId = String(
         route?.params?.checkpoint_id ??
         category?.checkpoint_id ??
@@ -87,6 +93,9 @@ const UploadDetailsScreen = ({ navigation, route }: any) => {
                 setIsPreparingAssets(true);
                 setPreparingAssetIndex(0);
                 setPreparingAssetTotal(result.assets.length);
+                await new Promise<void>((resolve) => {
+                    requestAnimationFrame(() => resolve());
+                });
                 // Copy to a persistent app directory immediately so the temp picker path
                 // doesn't disappear before we upload (common on iOS for /tmp files).
                 const destDir = `${RNFS.DocumentDirectoryPath}/allin_uploads`;
@@ -125,6 +134,12 @@ const UploadDetailsScreen = ({ navigation, route }: any) => {
                 }
 
                 setSelectedAssets(copied);
+                await new Promise<void>((resolve) => {
+                    requestAnimationFrame(() => resolve());
+                });
+                await new Promise<void>((resolve) => {
+                    InteractionManager.runAfterInteractions(() => resolve());
+                });
             }
         } catch (error) {
             console.error('Error picking media:', error);
@@ -176,6 +191,7 @@ const UploadDetailsScreen = ({ navigation, route }: any) => {
                 height: asset?.height,
                 price_cents: Number(asset?.price_cents ?? defaultPriceCentsForType(asset?.type)),
                 price_currency: String(asset?.price_currency || 'EUR'),
+                discipline_id: selectedDisciplineId,
                 competition_map_id: selectedCompetitionMapId,
                 checkpoint_id: selectedCheckpointId,
                 checkpoint_label: selectedCheckpointLabel,

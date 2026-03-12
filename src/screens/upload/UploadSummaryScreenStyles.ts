@@ -57,20 +57,22 @@ export const createStyles = (colors: ThemeColors) => StyleSheet.create({
         ...Fonts.medium16,
         color: colors.mainTextColor,
     },
-    itemsRow: {
+    itemsGrid: {
         flexDirection: 'row',
-        gap: 16,
+        flexWrap: 'wrap',
+        justifyContent: 'space-between',
     },
     uploadItem: {
-        flex: 1,
+        width: '48%',
         borderWidth: 0.5,
         borderColor: colors.lightGrayColor,
         borderRadius: 10,
         overflow: 'hidden',
+        marginBottom: 16,
     },
     thumbnailContainer: {
         width: '100%',
-        height: 100,
+        height: 150,
         position: 'relative',
     },
     thumbnail: {
@@ -95,12 +97,11 @@ export const createStyles = (colors: ThemeColors) => StyleSheet.create({
         justifyContent: 'center',
     },
     itemInfo: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
+        alignItems: 'flex-start',
         paddingHorizontal: 12,
         paddingVertical: 10,
         backgroundColor: colors.cardBackground,
+        gap: 8,
     },
     priceText: {
         ...Fonts.medium14,
@@ -116,6 +117,7 @@ export const createStyles = (colors: ThemeColors) => StyleSheet.create({
         height: 34,
         minWidth: 88,
         backgroundColor: colors.backgroundColor,
+        alignSelf: 'stretch',
     },
     priceEuro: {
         ...Fonts.medium14,
@@ -131,6 +133,7 @@ export const createStyles = (colors: ThemeColors) => StyleSheet.create({
     resolutionText: {
         ...Fonts.regular12,
         color: colors.grayColor,
+        lineHeight: 16,
     },
     confirmButton: {
         flexDirection: 'row',

@@ -315,7 +315,7 @@ const UploadSummaryScreen = ({ navigation, route }: any) => {
         <View key={index} style={Styles.categorySection}>
             <Text style={Styles.categoryTitle}>{category.name}</Text>
             <SizeBox height={16} />
-            <View style={Styles.itemsRow}>
+            <View style={Styles.itemsGrid}>
                 {category.items.map((item) => renderUploadItem(item, category.name))}
             </View>
         </View>

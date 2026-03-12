@@ -210,7 +210,12 @@ const ViewUserProfileScreen = ({ navigation, route }: any) => {
                     const coverCandidate = cover?.thumbnail_url || cover?.preview_url || cover?.full_url || cover?.raw_url || null;
                     const resolved = coverCandidate ? toAbsoluteUrl(String(coverCandidate)) : null;
                     const coverImage = resolved ? (withAccessToken(resolved) || resolved) : null;
-                    return { ...entry, coverImage };
+                    return {
+                        ...entry,
+                        coverImage,
+                        mediaId: String(cover?.media_id ?? '').trim() || null,
+                        mediaType: cover?.type === 'video' ? 'video' : (cover?.media_id ? 'image' : null),
+                    };
                 });
                 if (mounted) setPosts(mapped);
             } catch {
@@ -562,6 +567,13 @@ const ViewUserProfileScreen = ({ navigation, route }: any) => {
     const activityItems = useMemo<ProfileNewsItem[]>(() => {
         return posts.map((entry) => ({
             id: String(entry.id),
+            kind: String((entry as any)?.post_type ?? '').trim().toLowerCase() === 'photo'
+                ? 'photo'
+                : String((entry as any)?.post_type ?? '').trim().toLowerCase() === 'video'
+                    ? 'video'
+                    : 'blog',
+            mediaId: (entry as any)?.mediaId ? String((entry as any).mediaId) : null,
+            mediaType: (entry as any)?.mediaType === 'video' ? 'video' : (entry as any)?.mediaType === 'image' ? 'image' : null,
             title: String(entry.title || ''),
             date: entry.created_at ? String(entry.created_at).slice(0, 10) : '',
             description: String(entry.summary || entry.description || ''),
@@ -842,7 +854,27 @@ const ViewUserProfileScreen = ({ navigation, route }: any) => {
                         items={activityItems}
                         emptyText={t('No news yet.')}
                         blogLabel={t('Blog')}
+                        photoLabel={t('Photo')}
+                        videoLabel={t('Video')}
                         onPressItem={(item) => {
+                            if (item.kind === 'photo' && item.mediaId) {
+                                navigation.navigate('PhotoDetailScreen', {
+                                    eventTitle: item.title,
+                                    media: { id: item.mediaId, type: 'image' },
+                                });
+                                return;
+                            }
+                            if (item.kind === 'video' && item.mediaId) {
+                                navigation.navigate('VideoPlayingScreen', {
+                                    video: {
+                                        media_id: item.mediaId,
+                                        title: item.title,
+                                        thumbnail: item.coverImage ? { uri: String(item.coverImage) } : undefined,
+                                        uri: '',
+                                    },
+                                });
+                                return;
+                            }
                             navigation.navigate('ViewUserBlogDetailsScreen', {
                                 postId: item.id,
                                 postPreview: {

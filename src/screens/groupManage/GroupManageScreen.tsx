@@ -1,9 +1,8 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Alert, Modal, Pressable, ScrollView, Share, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Add, ArrowLeft2, Trash } from 'iconsax-react-nativejs';
+import { Add, ArrowLeft2, Copy, Link21, Refresh2, Share as ShareIcon, Trash } from 'iconsax-react-nativejs';
 import Clipboard from '@react-native-clipboard/clipboard';
-import FastImage from 'react-native-fast-image';
 import SizeBox from '../../constants/SizeBox';
 import { useTheme } from '../../context/ThemeContext';
 import { useTranslation } from 'react-i18next';
@@ -367,14 +366,14 @@ const GroupManageScreen = ({ navigation, route }: any) => {
     iconButtonDisabled: { opacity: 0.6 },
     memberRow: {
       flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-      paddingVertical: 12,
+      alignItems: 'flex-start',
+      gap: 10,
+      paddingVertical: 8,
       borderBottomWidth: 0.5,
       borderBottomColor: colors.lightGrayColor,
     },
-    memberInfo: { flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1 },
-    avatar: { width: 44, height: 44, borderRadius: 22, backgroundColor: colors.btnBackgroundColor },
+    memberInfo: { flex: 1 },
+    memberBody: { flex: 1 },
     memberName: { fontSize: 14, color: colors.mainTextColor },
     memberRole: { fontSize: 12, color: colors.subTextColor },
     roleButtonsInline: { flexDirection: 'row', gap: 6, marginTop: 6, flexWrap: 'wrap' },
@@ -402,6 +401,16 @@ const GroupManageScreen = ({ navigation, route }: any) => {
       paddingVertical: 3,
     },
     roleBadgeText: { fontSize: 11, color: colors.primaryColor },
+    memberRemoveButton: {
+      width: 34,
+      height: 34,
+      borderRadius: 17,
+      borderWidth: 1,
+      borderColor: colors.borderColor,
+      backgroundColor: colors.btnBackgroundColor,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
     manualCoachChips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 10 },
     manualCoachChip: {
       flexDirection: 'row',
@@ -422,6 +431,8 @@ const GroupManageScreen = ({ navigation, route }: any) => {
       borderColor: colors.primaryColor,
       backgroundColor: colors.secondaryBlueColor,
       paddingVertical: 10,
+      flexDirection: 'row',
+      gap: 8,
       alignItems: 'center',
       justifyContent: 'center',
     },
@@ -459,6 +470,8 @@ const GroupManageScreen = ({ navigation, route }: any) => {
       borderWidth: 1,
       borderColor: colors.borderColor,
       backgroundColor: colors.btnBackgroundColor,
+      flexDirection: 'row',
+      gap: 8,
       alignItems: 'center',
       justifyContent: 'center',
     },
@@ -507,6 +520,7 @@ const GroupManageScreen = ({ navigation, route }: any) => {
               <Text style={styles.sectionTitle}>{t('Invitation link')}</Text>
               <Text style={styles.hint}>{t('Generate a shareable link so people can join this group directly in the app')}</Text>
               <TouchableOpacity style={styles.inviteLinkButton} onPress={openInviteLinkModal}>
+                <Link21 size={16} color={colors.primaryColor} variant="Linear" />
                 <Text style={styles.inviteLinkButtonText}>{t('Generate invitation link')}</Text>
               </TouchableOpacity>
             </View>
@@ -514,7 +528,6 @@ const GroupManageScreen = ({ navigation, route }: any) => {
             <View style={styles.sectionCard}>
               <Text style={styles.sectionTitle}>{t('Manage members')}</Text>
               {members.map((member) => {
-                const avatarUrl = member.avatar_url ? toAbsoluteUrl(String(member.avatar_url)) : null;
                 const permissionRole = String(member.permission_role || member.role || '').toLowerCase();
                 const canEditPermission = permissionRole !== 'owner' && !(isAdmin && permissionRole === 'admin');
                 const canEditPublicRoles = canManageGroup;
@@ -530,8 +543,7 @@ const GroupManageScreen = ({ navigation, route }: any) => {
                 return (
                   <View key={String(member.profile_id)} style={styles.memberRow}>
                     <View style={styles.memberInfo}>
-                      {avatarUrl ? <FastImage source={{ uri: avatarUrl }} style={styles.avatar} /> : <View style={styles.avatar} />}
-                      <View style={{ flex: 1 }}>
+                      <View style={styles.memberBody}>
                         <Text style={styles.memberName}>{member.display_name || t('Member')}</Text>
                         {badges.length > 0 ? (
                           <View style={styles.roleBadgeRow}>
@@ -595,7 +607,10 @@ const GroupManageScreen = ({ navigation, route }: any) => {
                       <TouchableOpacity
                         onPress={() => handleRemoveMember(member)}
                         disabled={isRemovingMember}
-                        style={isRemovingMember ? styles.iconButtonDisabled : undefined}
+                        style={[
+                          styles.memberRemoveButton,
+                          isRemovingMember && styles.iconButtonDisabled,
+                        ]}
                       >
                         {isRemovingMember ? (
                           <ActivityIndicator size="small" color={colors.errorColor || '#E14B4B'} />
@@ -713,7 +728,10 @@ const GroupManageScreen = ({ navigation, route }: any) => {
                 {inviteLinkBusy ? (
                   <ActivityIndicator size="small" color={colors.whiteColor} />
                 ) : (
-                  <Text style={styles.modalActionTextPrimary}>{inviteLinkUrl ? t('Regenerate') : t('Generate')}</Text>
+                  <>
+                    <Refresh2 size={16} color={colors.whiteColor} variant="Linear" />
+                    <Text style={styles.modalActionTextPrimary}>{inviteLinkUrl ? t('Regenerate') : t('Generate')}</Text>
+                  </>
                 )}
               </TouchableOpacity>
             </View>
@@ -721,9 +739,11 @@ const GroupManageScreen = ({ navigation, route }: any) => {
             {inviteLinkUrl ? (
               <View style={styles.modalActionsRow}>
                 <TouchableOpacity style={styles.modalAction} onPress={handleCopyInviteLink}>
+                  <Copy size={16} color={colors.mainTextColor} variant="Linear" />
                   <Text style={styles.modalActionText}>{t('Copy link')}</Text>
                 </TouchableOpacity>
                 <TouchableOpacity style={styles.modalAction} onPress={handleShareInviteLink}>
+                  <ShareIcon size={16} color={colors.mainTextColor} variant="Linear" />
                   <Text style={styles.modalActionText}>{t('Share')}</Text>
                 </TouchableOpacity>
               </View>

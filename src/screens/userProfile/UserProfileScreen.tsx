@@ -73,7 +73,6 @@ const UserProfileScreen = ({ navigation, route }: any) => {
     const [timelineItems, setTimelineItems] = useState<TimelineEntry[]>([]);
     const [profileTab, setProfileTab] = useState<'timeline' | 'activity' | 'collections' | 'downloads'>('timeline');
     const [blogEntries, setBlogEntries] = useState<any[]>([]);
-    const [linkedCompetitionItems, setLinkedCompetitionItems] = useState<ProfileNewsItem[]>([]);
     const [profileCategory, setProfileCategory] = useState<ProfileModeId | null>(null);
     const [showProfileSwitcherModal, setShowProfileSwitcherModal] = useState(false);
     const [pendingDeleteBlog, setPendingDeleteBlog] = useState<ProfileNewsItem | null>(null);
@@ -380,13 +379,19 @@ const UserProfileScreen = ({ navigation, route }: any) => {
                         const media = entry?.media ?? null;
                         const coverCandidate = media?.thumbnail_url || media?.preview_url || media?.full_url || media?.raw_url || null;
                         const resolved = coverCandidate ? toAbsoluteUrl(String(coverCandidate)) : null;
+                        const rawPostType = String(entry?.post?.post_type ?? '').trim().toLowerCase();
                         return {
                             id: String(entry?.post?.id ?? ''),
+                            kind: rawPostType === 'photo' || rawPostType === 'video' ? rawPostType : 'blog',
+                            postId: String(entry?.post?.id ?? ''),
+                            mediaId: String(media?.media_id ?? media?.id ?? '').trim() || null,
+                            mediaType: media?.type === 'video' ? 'video' : (media?.media_id || media?.id ? 'image' : null),
                             title: String(entry?.post?.title ?? ''),
                             createdAt: entry?.post?.created_at ? String(entry.post.created_at) : null,
                             date: entry?.post?.created_at ? String(entry.post.created_at).slice(0, 10) : '',
                             description: String(entry?.post?.summary ?? entry?.post?.description ?? ''),
                             coverImage: resolved ? (withAccessToken(resolved) || resolved) : null,
+                            canDelete: String(entry?.post?.author?.profile_id ?? '') === String(profileSummary?.profile_id ?? ''),
                         };
                     })
                     .filter((entry) => entry.id.length > 0);
@@ -394,7 +399,6 @@ const UserProfileScreen = ({ navigation, route }: any) => {
             } catch {
                 setBlogEntries([]);
             }
-            setLinkedCompetitionItems([]);
             setHasLoadedActivity(true);
             setIsActivityLoading(false);
             return;
@@ -424,8 +428,13 @@ const UserProfileScreen = ({ navigation, route }: any) => {
                     const coverCandidate = cover?.thumbnail_url || cover?.preview_url || cover?.full_url || cover?.raw_url || null;
                     const resolved = coverCandidate ? toAbsoluteUrl(String(coverCandidate)) : null;
                     const coverImage = resolved ? (withAccessToken(resolved) || resolved) : null;
+                    const rawPostType = String((p as any)?.post_type ?? '').trim().toLowerCase();
                     return ({
                         id: String(p.id),
+                        postId: String(p.id),
+                        kind: rawPostType === 'photo' || rawPostType === 'video' ? rawPostType : 'blog',
+                        mediaId: String(cover?.media_id ?? '').trim() || null,
+                        mediaType: cover?.type === 'video' ? 'video' : (cover?.media_id ? 'image' : null),
                         title: String(p.title || ''),
                         createdAt: createdAtRaw ? String(createdAtRaw) : null,
                         date: createdAtRaw ? String(createdAtRaw).slice(0, 10) : '',
@@ -433,45 +442,15 @@ const UserProfileScreen = ({ navigation, route }: any) => {
                         coverImage,
                         likes_count: Number((p as any)?.likes_count ?? 0),
                         views_count: Number((p as any)?.views_count ?? 0),
+                        canDelete: String((p as any)?.author?.profile_id ?? '') === String(postsProfileId),
                     });
                 });
                 setBlogEntries(mapped);
             } catch {
                 setBlogEntries([]);
             }
-
-            try {
-                const resp = await getProfileTimeline(apiAccessToken, 'me');
-                const items = Array.isArray((resp as any)?.items) ? (resp as any)?.items : [];
-                const eventsMap = new Map<string, ProfileNewsItem>();
-                items.forEach((entry: ProfileTimelineEntry & { linked_events?: any[]; cover_thumbnail_url?: string | null; event_date?: string | null }) => {
-                    const linkedEvents = Array.isArray((entry as any)?.linked_events) ? (entry as any)?.linked_events : [];
-                    const coverCandidate = (entry as any)?.cover_thumbnail_url || null;
-                    const resolvedCover = coverCandidate ? toAbsoluteUrl(String(coverCandidate)) : null;
-                    linkedEvents.forEach((linkedEvent: any) => {
-                        const linkedEventId = String(linkedEvent?.event_id ?? '').trim();
-                        if (!linkedEventId) return;
-                        const eventDate = String(linkedEvent?.event_date ?? (entry as any)?.event_date ?? '').trim() || null;
-                        const current = eventsMap.get(linkedEventId);
-                        eventsMap.set(linkedEventId, {
-                            id: `event:${linkedEventId}`,
-                            kind: 'competition',
-                            eventId: linkedEventId,
-                            title: String(linkedEvent?.event_name ?? t('competition')),
-                            sortAt: eventDate,
-                            date: eventDate,
-                            description: String(linkedEvent?.event_location ?? '').trim(),
-                            coverImage: current?.coverImage ?? (resolvedCover ? (withAccessToken(resolvedCover) || resolvedCover) : null),
-                        });
-                    });
-                });
-                setLinkedCompetitionItems(Array.from(eventsMap.values()));
-            } catch {
-                setLinkedCompetitionItems([]);
-            }
         } else {
             setBlogEntries([]);
-            setLinkedCompetitionItems([]);
         }
 
         setHasLoadedActivity(true);
@@ -1135,36 +1114,30 @@ const UserProfileScreen = ({ navigation, route }: any) => {
             return dt.toLocaleDateString();
         };
 
-        const blogItems: ProfileNewsItem[] = blogEntries.map((entry) => ({
+        const newsItems: ProfileNewsItem[] = blogEntries.map((entry) => ({
             id: String(entry.id),
-            kind: 'blog',
-            postId: String(entry.id),
+            kind: entry.kind === 'photo' || entry.kind === 'video' ? entry.kind : 'blog',
+            postId: String(entry.postId ?? entry.id),
+            mediaId: entry.mediaId ? String(entry.mediaId) : null,
+            mediaType: entry.mediaType === 'video' ? 'video' : entry.mediaType === 'image' ? 'image' : null,
             title: String(entry.title || ''),
             sortAt: entry.createdAt ? String(entry.createdAt) : (entry.date ? String(entry.date) : null),
             date: entry.createdAt ? toDateLabel(String(entry.createdAt)) : (entry.date ? String(entry.date) : ''),
             description: entry.description ? String(entry.description) : '',
             coverImage: entry.coverImage ? String(entry.coverImage) : null,
+            canDelete: entry.canDelete !== false,
         }));
 
-        const eventItems = linkedCompetitionItems.map((event) => ({
-            ...event,
-            date: toDateLabel(event.sortAt ?? event.date ?? null),
-        }));
-
-        const combinedItems = profileCategory === 'support'
-            ? blogItems
-            : [...blogItems, ...eventItems];
-
-        return combinedItems.sort((a, b) => {
+        return newsItems.sort((a, b) => {
             const aDate = toTimestamp(a.sortAt ?? a.date ?? null);
             const bDate = toTimestamp(b.sortAt ?? b.date ?? null);
             if (bDate !== aDate) return bDate - aDate;
             return String(b.id).localeCompare(String(a.id));
         });
-    }, [blogEntries, linkedCompetitionItems, profileCategory]);
+    }, [blogEntries]);
 
     const handleSwipeDeleteBlog = useCallback((item: ProfileNewsItem) => {
-        if ((item.kind ?? 'blog') !== 'blog') return;
+        if (item.canDelete === false) return;
         setPendingDeleteBlog(item);
     }, []);
 
@@ -1184,32 +1157,36 @@ const UserProfileScreen = ({ navigation, route }: any) => {
     }, [apiAccessToken, isDeletingBlog, pendingDeleteBlog, t]);
 
     const handlePressActivityItem = useCallback((item: ProfileNewsItem) => {
-        if ((item.kind ?? 'blog') === 'blog') {
-            const postId = String(item.postId ?? item.id);
-            navigation.navigate('ViewUserBlogDetailsScreen', {
-                postId,
-                postPreview: {
-                    title: item.title,
-                    date: item.date,
-                    description: item.description,
-                    coverImage: item.coverImage,
+        if (item.kind === 'photo' && item.mediaId) {
+            navigation.navigate('PhotoDetailScreen', {
+                eventTitle: item.title,
+                media: {
+                    id: item.mediaId,
+                    type: 'image',
                 },
             });
             return;
         }
-
-        const eventId = String(item.eventId || '').trim();
-        if (!eventId) {
+        if (item.kind === 'video' && item.mediaId) {
+            navigation.navigate('VideoPlayingScreen', {
+                video: {
+                    media_id: item.mediaId,
+                    title: item.title,
+                    thumbnail: item.coverImage ? { uri: String(item.coverImage) } : undefined,
+                    uri: '',
+                },
+            });
             return;
         }
-
-        navigation.navigate('CompetitionDetailsScreen', {
-            name: item.title,
-            eventId,
-            competitionId: eventId,
-            date: item.sortAt ?? item.date,
-            location: item.description ?? '',
-            showBackButton: true,
+        const postId = String(item.postId ?? item.id);
+        navigation.navigate('ViewUserBlogDetailsScreen', {
+            postId,
+            postPreview: {
+                title: item.title,
+                date: item.date,
+                description: item.description,
+                coverImage: item.coverImage,
+            },
         });
     }, [navigation]);
 
@@ -1520,9 +1497,10 @@ const UserProfileScreen = ({ navigation, route }: any) => {
                             enableSwipeDelete={profileCategory !== 'support'}
                             onSwipeDelete={handleSwipeDeleteBlog}
                             items={activityItems}
-                            emptyText={profileCategory === 'support' ? t('No news yet.') : t('No news yet. Add a competition to your profile or publish a blog.')}
+                            emptyText={profileCategory === 'support' ? t('No news yet.') : t('No news yet. Publish a blog or add media to your news page.')}
                             blogLabel={t('Blog')}
-                            eventLabel={t('competition')}
+                            photoLabel={t('Photo')}
+                            videoLabel={t('Video')}
                             onPressItem={handlePressActivityItem}
                         />
                     )

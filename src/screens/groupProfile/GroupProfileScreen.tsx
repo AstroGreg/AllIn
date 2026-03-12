@@ -565,6 +565,39 @@ const GroupProfileScreen = ({ navigation, route }: any) => {
                     fontSize: 11,
                     color: colors.errorColor || '#E14B4B',
                 },
+                postCardPressable: {
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    gap: 12,
+                },
+                postCardBody: {
+                    flex: 1,
+                },
+                postCardThumb: {
+                    width: 88,
+                    height: 88,
+                    borderRadius: 10,
+                    backgroundColor: colors.btnBackgroundColor,
+                },
+                postCardFooterRow: {
+                    marginTop: 10,
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    gap: 10,
+                },
+                postTypeChip: {
+                    borderRadius: 999,
+                    borderWidth: 1,
+                    borderColor: colors.primaryColor,
+                    backgroundColor: colors.secondaryBlueColor,
+                    paddingHorizontal: 10,
+                    paddingVertical: 5,
+                },
+                postTypeChipText: {
+                    fontSize: 11,
+                    color: colors.primaryColor,
+                },
                 actionButton: {
                     marginTop: 12,
                     borderRadius: 10,
@@ -630,8 +663,10 @@ const GroupProfileScreen = ({ navigation, route }: any) => {
                 collectionsGrid: {
                     marginTop: 10,
                     flexDirection: 'row',
+                    flexWrap: 'wrap',
                     gap: 8,
-                    justifyContent: 'space-between',
+                    justifyContent: 'flex-start',
+                    alignContent: 'flex-start',
                 },
                 collectionImage: {
                     width: 76,
@@ -894,30 +929,60 @@ const GroupProfileScreen = ({ navigation, route }: any) => {
                             groupNews.map((post) => (
                                 <View key={String(post.id)} style={localStyles.eventListCard}>
                                     <TouchableOpacity
+                                        style={localStyles.postCardPressable}
                                         activeOpacity={0.85}
                                         onPress={() => navigation.navigate('ViewUserBlogDetailsScreen', { postId: String(post.id), postPreview: post })}
                                     >
-                                        <Text style={localStyles.eventListName}>{String(post.title || t('Blog'))}</Text>
-                                        {post.created_at ? <Text style={localStyles.eventListMeta}>{String(post.created_at).slice(0, 10)}</Text> : null}
-                                        {post.summary ? (
-                                            <Text style={localStyles.eventListMeta} numberOfLines={2}>
-                                                {String(post.summary)}
-                                            </Text>
-                                        ) : null}
-                                    </TouchableOpacity>
-                                    {canManageGroup ? (
-                                        <TouchableOpacity
-                                            style={localStyles.postDeleteButton}
-                                            onPress={() => handleDeleteNewsPost(String(post.id))}
-                                            disabled={Boolean(deletingPostById[String(post.id)])}
-                                        >
-                                            {deletingPostById[String(post.id)] ? (
-                                                <ActivityIndicator size="small" color={colors.errorColor || '#E14B4B'} />
+                                        {(() => {
+                                            const coverRaw =
+                                                post.cover_media?.thumbnail_url ||
+                                                post.cover_media?.preview_url ||
+                                                post.cover_media?.full_url ||
+                                                post.cover_media?.raw_url ||
+                                                post.cover_media?.original_url ||
+                                                null;
+                                            const coverAbsolute = coverRaw ? toAbsoluteUrl(String(coverRaw)) : null;
+                                            const coverUrl = withAccessToken(coverAbsolute || undefined) || coverAbsolute;
+                                            return coverUrl ? (
+                                                <FastImage source={{ uri: String(coverUrl) }} style={localStyles.postCardThumb} resizeMode="cover" />
                                             ) : (
-                                                <Text style={localStyles.postDeleteButtonText}>{t('Delete')}</Text>
-                                            )}
-                                        </TouchableOpacity>
-                                    ) : null}
+                                                <View style={localStyles.postCardThumb} />
+                                            );
+                                        })()}
+                                        <View style={localStyles.postCardBody}>
+                                            <Text style={localStyles.eventListName}>{String(post.title || t('Blog'))}</Text>
+                                            {post.created_at ? <Text style={localStyles.eventListMeta}>{String(post.created_at).slice(0, 10)}</Text> : null}
+                                            {post.summary ? (
+                                                <Text style={localStyles.eventListMeta} numberOfLines={2}>
+                                                    {String(post.summary)}
+                                                </Text>
+                                            ) : null}
+                                            <View style={localStyles.postCardFooterRow}>
+                                                <View style={localStyles.postTypeChip}>
+                                                    <Text style={localStyles.postTypeChipText}>
+                                                        {String(post.post_type || 'blog').toLowerCase() === 'video'
+                                                            ? t('Video')
+                                                            : String(post.post_type || 'blog').toLowerCase() === 'photo'
+                                                                ? t('Photo')
+                                                                : t('Blog')}
+                                                    </Text>
+                                                </View>
+                                                {canManageGroup ? (
+                                                    <TouchableOpacity
+                                                        style={localStyles.postDeleteButton}
+                                                        onPress={() => handleDeleteNewsPost(String(post.id))}
+                                                        disabled={Boolean(deletingPostById[String(post.id)])}
+                                                    >
+                                                        {deletingPostById[String(post.id)] ? (
+                                                            <ActivityIndicator size="small" color={colors.errorColor || '#E14B4B'} />
+                                                        ) : (
+                                                            <Text style={localStyles.postDeleteButtonText}>{t('Delete')}</Text>
+                                                        )}
+                                                    </TouchableOpacity>
+                                                ) : null}
+                                            </View>
+                                        </View>
+                                    </TouchableOpacity>
                                 </View>
                             ))
                         )}

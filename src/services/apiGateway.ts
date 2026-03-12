@@ -1169,6 +1169,7 @@ export interface EventCompetition {
   discipline_group?: string | null;
   sort_order?: number | null;
   media_count?: number | null;
+  thumbnail_url?: string | null;
 }
 
 export interface EventCompetitionsResponse {
@@ -2471,6 +2472,7 @@ export async function uploadMediaBatch(
   params: {
     files: Array<{uri: string; type?: string | null; name?: string | null}>;
     event_id?: string | null;
+    discipline_id?: string | null;
     competition_map_id?: string | null;
     checkpoint_id?: string | null;
     checkpoint_index?: number | null;
@@ -2492,6 +2494,7 @@ export async function uploadMediaBatch(
     } as any);
   }
   if (params.event_id) form.append('event_id', String(params.event_id));
+  if (params.discipline_id) form.append('discipline_id', String(params.discipline_id));
   if (params.competition_map_id) form.append('competition_map_id', String(params.competition_map_id));
   if (params.checkpoint_id) form.append('checkpoint_id', String(params.checkpoint_id));
   if (params.checkpoint_index != null) form.append('checkpoint_index', String(params.checkpoint_index));
@@ -2519,6 +2522,7 @@ export async function uploadMediaBatchWatermark(
     files: Array<{uri: string; type?: string | null; name?: string | null}>;
     watermark_text: string;
     event_id?: string | null;
+    discipline_id?: string | null;
     competition_map_id?: string | null;
     checkpoint_id?: string | null;
     checkpoint_index?: number | null;
@@ -2541,6 +2545,7 @@ export async function uploadMediaBatchWatermark(
     } as any);
   }
   if (params.event_id) form.append('event_id', String(params.event_id));
+  if (params.discipline_id) form.append('discipline_id', String(params.discipline_id));
   if (params.competition_map_id) form.append('competition_map_id', String(params.competition_map_id));
   if (params.checkpoint_id) form.append('checkpoint_id', String(params.checkpoint_id));
   if (params.checkpoint_index != null) form.append('checkpoint_index', String(params.checkpoint_index));
@@ -2616,6 +2621,7 @@ export async function recordPostView(accessToken: string, post_id: string): Prom
 
 export interface PostSummary {
   id: string;
+  post_type?: 'blog' | 'photo' | 'video' | null;
   title: string;
   summary?: string | null;
   description?: string | null;
@@ -2625,6 +2631,7 @@ export interface PostSummary {
   views_count: number;
   liked_by_me: boolean;
   author?: {profile_id: string; display_name: string; avatar_url?: string | null};
+  tagged_profiles?: Array<{profile_id: string; display_name?: string | null}>;
   cover_media?: {
     media_id: string;
     type: 'image' | 'video';
@@ -2654,7 +2661,7 @@ export async function getPostById(accessToken: string, post_id: string): Promise
 
 export async function createPost(
   accessToken: string,
-  params: {title: string; description: string; summary?: string | null; created_at?: string | null; event_id?: string | null; group_id?: string | null},
+  params: {title: string; description: string; summary?: string | null; created_at?: string | null; event_id?: string | null; group_id?: string | null; post_type?: 'blog' | 'photo' | 'video' | null; tagged_profile_ids?: string[]},
 ): Promise<{ok: boolean; post: PostSummary}> {
   return apiRequest(`/posts`, {
     method: 'POST',
@@ -2666,6 +2673,8 @@ export async function createPost(
       created_at: params.created_at ?? undefined,
       event_id: params.event_id ?? undefined,
       group_id: params.group_id ?? undefined,
+      post_type: params.post_type ?? undefined,
+      tagged_profile_ids: params.tagged_profile_ids ?? undefined,
     },
   });
 }
@@ -2687,7 +2696,7 @@ export async function attachMediaToPost(
 export async function updatePost(
   accessToken: string,
   post_id: string,
-  params: {title?: string | null; description?: string | null; summary?: string | null; created_at?: string | null},
+  params: {title?: string | null; description?: string | null; summary?: string | null; created_at?: string | null; post_type?: 'blog' | 'photo' | 'video' | null; tagged_profile_ids?: string[]},
 ): Promise<{ok: boolean; post: PostSummary}> {
   return apiRequest(`/posts/${encodeURIComponent(post_id)}`, {
     method: 'PUT',
@@ -2697,6 +2706,8 @@ export async function updatePost(
       description: params.description ?? undefined,
       summary: params.summary ?? undefined,
       created_at: params.created_at ?? undefined,
+      post_type: params.post_type ?? undefined,
+      tagged_profile_ids: params.tagged_profile_ids ?? undefined,
     },
   });
 }

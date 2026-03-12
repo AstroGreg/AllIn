@@ -268,11 +268,6 @@ const BibSearchScreen = ({navigation}: any) => {
   const canSearch = activeBib.length > 0 && selectedEventId.trim().length > 0 && !isSearching;
 
   const runSearch = useCallback(async () => {
-    if (!apiAccessToken) {
-      Alert.alert(t('Missing API token'), t('Log in or set a Dev API token to use Chest Number Search.'));
-      return;
-    }
-
     const safeBib = activeBib;
     const safeEventId = selectedEventId.trim();
     if (!safeBib || !safeEventId) {
@@ -282,8 +277,9 @@ const BibSearchScreen = ({navigation}: any) => {
 
     setIsSearching(true);
     setErrorText(null);
+    const requestAccessToken = apiAccessToken ?? '';
     try {
-      const res = await searchMediaByBib(apiAccessToken, {event_id: safeEventId, bib: safeBib});
+      const res = await searchMediaByBib(requestAccessToken, {event_id: safeEventId, bib: safeBib});
       const results = Array.isArray(res?.results) ? res.results : [];
 
       navigation.navigate('AISearchResultsScreen', {
@@ -309,10 +305,6 @@ const BibSearchScreen = ({navigation}: any) => {
         },
       });
     } catch (e: any) {
-      if (e instanceof ApiError && e.status === 402) {
-        setErrorText('Insufficient AI tokens to run this search.');
-        return;
-      }
       const msg = e instanceof ApiError ? e.message : String(e?.message ?? e);
       setErrorText(msg);
     } finally {

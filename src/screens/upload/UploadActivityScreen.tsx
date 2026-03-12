@@ -6,7 +6,12 @@ import {useTheme} from '../../context/ThemeContext';
 import {useTranslation} from 'react-i18next';
 import SizeBox from '../../constants/SizeBox';
 import {createStyles} from './UploadActivityScreenStyles';
-import {listUploadSessions, removeUploadSession, type UploadSession} from '../../services/uploadSessions';
+import {
+  calculateUploadProgressState,
+  listUploadSessions,
+  removeUploadSession,
+  type UploadSession,
+} from '../../services/uploadSessions';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import RNFS from 'react-native-fs';
 
@@ -53,18 +58,19 @@ const UploadActivityScreen = ({navigation}: any) => {
   );
 
   const progressFor = useCallback((s: UploadSession) => {
-    if (s.phase === 'processing') {
-      const denom = Math.max(1, Number(s.processing_total ?? 0));
-      return Math.min(1, Number(s.processing_ready ?? 0) / denom);
-    }
-    const denom = Math.max(1, Number(s.total ?? 0));
-    return Math.min(1, Number(s.uploaded ?? 0) / denom);
+    return calculateUploadProgressState(s).overallProgress;
   }, []);
 
   const metaFor = useCallback(
     (s: UploadSession) => {
-      if (s.phase === 'processing') return `${s.processing_ready ?? 0}/${s.processing_total ?? 0} ${t('ready')}`;
-      return `${s.uploaded ?? 0}/${s.total ?? 0} ${t('uploaded')}`;
+      const state = calculateUploadProgressState(s);
+      if (s.phase === 'processing') {
+        return `${state.processingReady}/${state.processingTotal} ${t('ready')} • ${state.uploaded}/${state.total} ${t('uploaded')}`;
+      }
+      if (s.phase === 'done') {
+        return `${state.total}/${state.total} ${t('ready')}`;
+      }
+      return `${state.uploaded}/${state.total} ${t('uploaded')}`;
     },
     [t],
   );

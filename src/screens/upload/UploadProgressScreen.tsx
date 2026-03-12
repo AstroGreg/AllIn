@@ -15,7 +15,12 @@ import {
   uploadMediaBatchWatermark,
   type MediaProcessingStatus,
 } from '../../services/apiGateway';
-import {getUploadSession, upsertUploadSession, type UploadSession} from '../../services/uploadSessions';
+import {
+  calculateUploadProgressState,
+  getUploadSession,
+  upsertUploadSession,
+  type UploadSession,
+} from '../../services/uploadSessions';
 import RNFS from 'react-native-fs';
 import FastImage from 'react-native-fast-image';
 
@@ -75,6 +80,7 @@ type UploadItem = {
   type?: string | null;
   fileName?: string | null;
   category?: string | null;
+  discipline_id?: string | null;
   competition_map_id?: string | null;
   checkpoint_id?: string | null;
   checkpoint_label?: string | null;
@@ -114,6 +120,7 @@ const UploadProgressScreen = ({navigation, route}: any) => {
   const [phase, setPhase] = useState<'idle' | 'uploading' | 'processing' | 'done'>('idle');
   const [error, setError] = useState<string | null>(null);
   const [processing, setProcessing] = useState<{ready: number; total: number}>({ready: 0, total: 0});
+  const [sessionSnapshot, setSessionSnapshot] = useState<UploadSession | null>(null);
   const pollTimerRef = useRef<any>(null);
   const mediaIdsRef = useRef<string[]>([]);
   const [statusById, setStatusById] = useState<Record<string, MediaProcessingStatus>>({});
@@ -143,6 +150,7 @@ const UploadProgressScreen = ({navigation, route}: any) => {
       updatedAt: Date.now(),
     };
     sessionRef.current = next;
+    setSessionSnapshot(next);
     await upsertUploadSession(next);
   }, [anonymous, competitionId, sessionId, watermarkText]);
 
@@ -177,6 +185,7 @@ const UploadProgressScreen = ({navigation, route}: any) => {
             type: asset?.type ?? null,
             fileName: asset?.fileName ?? null,
             category: String(category),
+            discipline_id: asset?.discipline_id ? String(asset.discipline_id) : null,
             competition_map_id: asset?.competition_map_id ? String(asset.competition_map_id) : null,
             checkpoint_id: asset?.checkpoint_id ? String(asset.checkpoint_id) : null,
             checkpoint_label: asset?.checkpoint_label ? String(asset.checkpoint_label) : null,
@@ -260,6 +269,7 @@ const UploadProgressScreen = ({navigation, route}: any) => {
               files,
               watermark_text: watermarkText,
               event_id,
+              discipline_id: String(batch[0]?.discipline_id || '').trim() || undefined,
               competition_map_id: String(batch[0]?.competition_map_id || '').trim() || undefined,
               checkpoint_id: String(batch[0]?.checkpoint_id || '').trim() || undefined,
               is_anonymous: anonymous,
@@ -270,6 +280,7 @@ const UploadProgressScreen = ({navigation, route}: any) => {
           : await uploadMediaBatch(apiAccessToken, {
               files,
               event_id,
+              discipline_id: String(batch[0]?.discipline_id || '').trim() || undefined,
               competition_map_id: String(batch[0]?.competition_map_id || '').trim() || undefined,
               checkpoint_id: String(batch[0]?.checkpoint_id || '').trim() || undefined,
               is_anonymous: anonymous,
@@ -335,11 +346,18 @@ const UploadProgressScreen = ({navigation, route}: any) => {
       const existing = await getUploadSession(sessionId);
       if (existing) {
         sessionRef.current = existing;
+        setSessionSnapshot(existing);
         if (Array.isArray(existing.media_ids)) {
           mediaIdsRef.current = existing.media_ids;
         }
+        setProcessing({
+          ready: Number(existing.processing_ready ?? 0),
+          total: Number(existing.processing_total ?? 0),
+        });
+        setError(existing.error ? String(existing.error) : null);
         if (existing.phase === 'processing') setPhase('processing');
         if (existing.phase === 'done') setPhase('done');
+        if (existing.phase === 'failed') setPhase('idle');
         if (!autoStart) return;
       }
       if (autoStart) uploadAll();
@@ -348,11 +366,13 @@ const UploadProgressScreen = ({navigation, route}: any) => {
   }, []);
 
   const computeUploadProgress = useMemo(() => {
-    const total = items.length;
-    const done = items.filter((x) => x.status === 'uploaded').length;
+    const total = items.length > 0 ? items.length : Number(sessionSnapshot?.total ?? 0);
+    const done = items.length > 0
+      ? items.filter((x) => x.status === 'uploaded').length
+      : Number(sessionSnapshot?.uploaded ?? 0);
     const failed = items.filter((x) => x.status === 'failed').length;
     return {total, done, failed};
-  }, [items]);
+  }, [items, sessionSnapshot?.total, sessionSnapshot?.uploaded]);
 
   const pollStatus = useCallback(async () => {
     if (!apiAccessToken) return;
@@ -414,12 +434,13 @@ const UploadProgressScreen = ({navigation, route}: any) => {
   }, [phase, t]);
 
   const progress = useMemo(() => {
-    if (phase === 'processing') {
-      const denom = Math.max(1, processing.total);
-      return Math.min(1, processing.ready / denom);
-    }
-    const denom = Math.max(1, computeUploadProgress.total);
-    return Math.min(1, computeUploadProgress.done / denom);
+    return calculateUploadProgressState({
+      phase,
+      total: computeUploadProgress.total,
+      uploaded: computeUploadProgress.done,
+      processing_ready: processing.ready,
+      processing_total: processing.total,
+    }).overallProgress;
   }, [computeUploadProgress.done, computeUploadProgress.total, phase, processing.ready, processing.total]);
 
   const subtitle = useMemo(() => {
@@ -429,8 +450,16 @@ const UploadProgressScreen = ({navigation, route}: any) => {
   }, [phase, t]);
 
   const progressLabel = useMemo(() => {
-    if (phase === 'processing') return `${processing.ready}/${processing.total} ${t('ready')}`;
-    return `${computeUploadProgress.done}/${computeUploadProgress.total} ${t('uploaded')}`;
+    const state = calculateUploadProgressState({
+      phase,
+      total: computeUploadProgress.total,
+      uploaded: computeUploadProgress.done,
+      processing_ready: processing.ready,
+      processing_total: processing.total,
+    });
+    if (phase === 'processing') return `${state.processingReady}/${state.processingTotal} ${t('ready')} • ${state.uploaded}/${state.total} ${t('uploaded')}`;
+    if (phase === 'done') return `${state.total}/${state.total} ${t('ready')}`;
+    return `${state.uploaded}/${state.total} ${t('uploaded')}`;
   }, [computeUploadProgress.done, computeUploadProgress.total, phase, processing.ready, processing.total, t]);
 
   const handleBack = () => {
