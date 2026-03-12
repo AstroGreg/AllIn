@@ -44,6 +44,7 @@ const BibSearchScreen = ({navigation}: any) => {
   const [modalFilterKey, setModalFilterKey] = useState<keyof AiFilterState | null>(null);
 
   const [bib, setBib] = useState('');
+  const [useDefaultBib, setUseDefaultBib] = useState(false);
   const [profileChestByYear, setProfileChestByYear] = useState<Record<string, string>>({});
   const [selectedEventId, setSelectedEventId] = useState('');
   const [isSearching, setIsSearching] = useState(false);
@@ -143,13 +144,17 @@ const BibSearchScreen = ({navigation}: any) => {
     [events, selectedEventId],
   );
 
+  const defaultBib = useMemo(() => resolveDefaultBib(selectedEvent ?? null), [resolveDefaultBib, selectedEvent]);
+  const activeBib = useMemo(
+    () => String((useDefaultBib ? defaultBib : bib) ?? '').trim(),
+    [bib, defaultBib, useDefaultBib],
+  );
+
   useEffect(() => {
-    if (bib.trim().length > 0) return;
-    const resolved = resolveDefaultBib(selectedEvent ?? null);
-    if (resolved) {
-      setBib(resolved);
+    if (!defaultBib && useDefaultBib) {
+      setUseDefaultBib(false);
     }
-  }, [bib, resolveDefaultBib, selectedEvent]);
+  }, [defaultBib, useDefaultBib]);
 
   const filteredEvents = useMemo(() => {
     const query = String(localFilters?.competition ?? '').trim().toLowerCase();
@@ -260,7 +265,7 @@ const BibSearchScreen = ({navigation}: any) => {
     }
   };
 
-  const canSearch = bib.trim().length > 0 && selectedEventId.trim().length > 0 && !isSearching;
+  const canSearch = activeBib.length > 0 && selectedEventId.trim().length > 0 && !isSearching;
 
   const runSearch = useCallback(async () => {
     if (!apiAccessToken) {
@@ -268,7 +273,7 @@ const BibSearchScreen = ({navigation}: any) => {
       return;
     }
 
-    const safeBib = bib.trim();
+    const safeBib = activeBib;
     const safeEventId = selectedEventId.trim();
     if (!safeBib || !safeEventId) {
       Alert.alert(t('Missing info'), t('Please enter a chest number and select a competition.'));
@@ -313,7 +318,7 @@ const BibSearchScreen = ({navigation}: any) => {
     } finally {
       setIsSearching(false);
     }
-  }, [apiAccessToken, bib, localFilters?.competition, localFilters?.timeRange?.end, localFilters?.timeRange?.start, navigation, selectedEvent?.event_date, selectedEvent?.event_name, selectedEvent?.event_title, selectedEventId, t]);
+  }, [activeBib, apiAccessToken, localFilters?.competition, localFilters?.timeRange?.end, localFilters?.timeRange?.start, navigation, selectedEvent?.event_date, selectedEvent?.event_name, selectedEvent?.event_title, selectedEventId, t]);
 
   const handleBack = useCallback(() => {
     const parent = navigation.getParent?.();
@@ -427,16 +432,35 @@ const BibSearchScreen = ({navigation}: any) => {
           <SizeBox height={22} />
 
           <Text style={styles.inputLabel}>{t('Chest number')}</Text>
-          <UnifiedSearchInput
-            containerStyle={styles.inputContainer}
-            left={<SearchNormal1 size={20} color={colors.grayColor} variant="Linear" />}
-            inputStyle={styles.input}
-            placeholder={t('e.g. 1234')}
-            value={bib}
-            onChangeText={setBib}
-            keyboardType="number-pad"
-            returnKeyType="next"
-          />
+          {!useDefaultBib || !defaultBib ? (
+            <UnifiedSearchInput
+              containerStyle={styles.inputContainer}
+              left={<SearchNormal1 size={20} color={colors.grayColor} variant="Linear" />}
+              inputStyle={styles.input}
+              placeholder={t('e.g. 1234')}
+              value={bib}
+              onChangeText={setBib}
+              keyboardType="number-pad"
+              returnKeyType="next"
+            />
+          ) : null}
+          <TouchableOpacity
+            style={styles.defaultChestRow}
+            onPress={() => {
+              if (!defaultBib) return;
+              setUseDefaultBib((prev) => !prev);
+            }}
+            activeOpacity={0.85}
+          >
+            <View style={[styles.defaultChestBox, useDefaultBib && styles.defaultChestBoxActive]}>
+              {useDefaultBib ? <Text style={styles.defaultChestCheck}>{t('✓')}</Text> : null}
+            </View>
+            <Text style={styles.defaultChestText}>
+              {defaultBib
+                ? `${t('Use saved chest number')} (${defaultBib})`
+                : t('No saved chest number yet. Enter the chest number for this competition below.')}
+            </Text>
+          </TouchableOpacity>
 
           <SizeBox height={18} />
 

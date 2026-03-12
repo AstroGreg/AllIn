@@ -89,12 +89,10 @@ const EventSummaryScreen = ({ navigation, route }: any) => {
 
     const subscriptionRows = useMemo(() => {
         const rows = [];
-        if (isTrackCompetition) {
-            rows.push({
-                label: t('Chest number'),
-                value: chestNumber ? `${competitionYear} · ${chestNumber}` : t('Not set'),
-            });
-        }
+        rows.push({
+            label: t('Chest number'),
+            value: chestNumber ? `${competitionYear} · ${chestNumber}` : t('Not set'),
+        });
         rows.push({
             label: t('Disciplines'),
             value: selectedDisciplineLabels.length > 0 ? selectedDisciplineLabels.join(', ') : t('Not set'),
@@ -123,7 +121,6 @@ const EventSummaryScreen = ({ navigation, route }: any) => {
         competitionYear,
         faceConsentGranted,
         hasFaceEnrollment,
-        isTrackCompetition,
         selectedCategoryLabels,
         selectedDisciplineLabels,
         t,
@@ -139,12 +136,12 @@ const EventSummaryScreen = ({ navigation, route }: any) => {
             await subscribeToEvent(apiAccessToken, subscription.eventId, {
                 discipline_ids: selectedDisciplineIds,
                 category_labels: selectedCategoryLabels,
-                chest_number: isTrackCompetition && chestNumber ? chestNumber : null,
+                chest_number: chestNumber || null,
                 face_recognition_enabled: wantsFaceRecognition,
             });
             const warnings: string[] = [];
 
-            if (isTrackCompetition && /^\d+$/.test(chestNumber)) {
+            if (/^\d+$/.test(chestNumber)) {
                 try {
                     const summary = await getProfileSummary(apiAccessToken);
                     const existing = normalizeChestByYear(
@@ -188,7 +185,6 @@ const EventSummaryScreen = ({ navigation, route }: any) => {
         competitionYear,
         faceConsentGranted,
         isSubmitting,
-        isTrackCompetition,
         refreshSubscribed,
         subscription?.eventId,
         selectedCategoryLabels,

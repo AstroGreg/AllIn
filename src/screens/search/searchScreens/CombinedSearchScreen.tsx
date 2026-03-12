@@ -39,6 +39,7 @@ interface EventOption {
 interface ResumeCombinedSearchPayload {
   selectedEvents?: Array<Partial<EventOption>>;
   bib?: string;
+  useSavedBib?: boolean;
   contextText?: string;
   includeFace?: boolean;
   autoRun?: boolean;
@@ -67,6 +68,7 @@ const CombinedSearchScreen = ({navigation}: any) => {
     | undefined;
 
   const [bib, setBib] = useState('');
+  const [useDefaultBib, setUseDefaultBib] = useState(false);
   const [contextText, setContextText] = useState('');
   const [includeFace, setIncludeFace] = useState(false);
 
@@ -159,6 +161,11 @@ const CombinedSearchScreen = ({navigation}: any) => {
       return '';
     },
     [getYearFromEvent, normalizeChestByYear, profileChestByYear, userProfile?.chestNumbersByYear],
+  );
+  const defaultBib = useMemo(() => resolveDefaultChestForEvents(selectedEvents), [resolveDefaultChestForEvents, selectedEvents]);
+  const activeBib = useMemo(
+    () => String((useDefaultBib ? defaultBib : bib) ?? '').trim(),
+    [bib, defaultBib, useDefaultBib],
   );
 
   const refreshMe = useCallback(async () => {
@@ -254,6 +261,9 @@ const CombinedSearchScreen = ({navigation}: any) => {
     if (typeof resumeCombinedSearch.bib === 'string') {
       setBib(resumeCombinedSearch.bib);
     }
+    if (typeof resumeCombinedSearch.useSavedBib === 'boolean') {
+      setUseDefaultBib(resumeCombinedSearch.useSavedBib);
+    }
     if (typeof resumeCombinedSearch.contextText === 'string') {
       setContextText(resumeCombinedSearch.contextText);
     }
@@ -277,12 +287,10 @@ const CombinedSearchScreen = ({navigation}: any) => {
   }, [autoCompare]);
 
   useEffect(() => {
-    if (selectedEvents.length === 0) return;
-    const chestNumber = resolveDefaultChestForEvents(selectedEvents);
-    if (chestNumber) {
-      setBib(chestNumber);
+    if (!defaultBib && useDefaultBib) {
+      setUseDefaultBib(false);
     }
-  }, [resolveDefaultChestForEvents, selectedEvents]);
+  }, [defaultBib, useDefaultBib]);
 
   const toggleEvent = (option: EventOption) => {
     setSelectedEvents((prev) => {
@@ -302,10 +310,7 @@ const CombinedSearchScreen = ({navigation}: any) => {
   const applyAutoCompare = () => {
     setShowAutoCompareModal(false);
     setIncludeFace(true);
-    const chestNumber = resolveDefaultChestForEvents(selectedEvents);
-    if (chestNumber) {
-      setBib(chestNumber);
-    }
+    if (defaultBib) setUseDefaultBib(true);
     setPendingAutoRun(true);
   };
 
@@ -313,6 +318,7 @@ const CombinedSearchScreen = ({navigation}: any) => {
     const resumePayload: ResumeCombinedSearchPayload = {
       selectedEvents,
       bib,
+      useSavedBib: useDefaultBib,
       contextText,
       includeFace,
       autoRun: true,
@@ -367,7 +373,7 @@ const CombinedSearchScreen = ({navigation}: any) => {
     }
     setCompetitionRequiredError(false);
 
-    const wantsBib = bib.trim().length > 0;
+    const wantsBib = activeBib.length > 0;
     const wantsContext = contextText.trim().length > 0;
     const wantsFace = includeFace;
 
@@ -406,7 +412,7 @@ const CombinedSearchScreen = ({navigation}: any) => {
           try {
             const res = await searchMediaByBib(apiAccessToken, {
               event_id: eventId,
-              bib: bib.trim(),
+              bib: activeBib,
             });
             const results = Array.isArray(res?.results) ? res.results : [];
             addResults(
@@ -502,7 +508,7 @@ const CombinedSearchScreen = ({navigation}: any) => {
         results: collected,
         matchType: 'combined',
         refineContext: {
-          bib: bib.trim() || undefined,
+          bib: activeBib || undefined,
           date: selectedEvents.length === 1 ? selectedEvents[0]?.date ?? undefined : undefined,
         },
         manualBrowse: selectedEventIds.length === 1
@@ -519,7 +525,7 @@ const CombinedSearchScreen = ({navigation}: any) => {
     }
   }, [
     apiAccessToken,
-    bib,
+    activeBib,
     contextText,
     includeFace,
     navigation,
@@ -532,10 +538,10 @@ const CombinedSearchScreen = ({navigation}: any) => {
   useEffect(() => {
     if (!pendingAutoRun) return;
     if (!hasCompetition) return;
-    if (!bib.trim() && !contextText.trim() && !includeFace) return;
+    if (!activeBib && !contextText.trim() && !includeFace) return;
     setPendingAutoRun(false);
     runCombinedSearch();
-  }, [bib, contextText, hasCompetition, includeFace, pendingAutoRun, runCombinedSearch]);
+  }, [activeBib, contextText, hasCompetition, includeFace, pendingAutoRun, runCombinedSearch]);
 
   const handleGrantConsent = useCallback(async () => {
     if (!apiAccessToken) return;
@@ -959,16 +965,36 @@ const CombinedSearchScreen = ({navigation}: any) => {
 
           <SizeBox height={20} />
           <Text style={styles.sectionTitle}>{t('Chest number')}</Text>
-          <UnifiedSearchInput
-            containerStyle={styles.inputContainer}
-            left={<SearchNormal1 size={20} color={colors.grayColor} variant="Linear" />}
-            inputStyle={styles.input}
-            placeholder={t('e.g. 1234')}
-            value={bib}
-            onChangeText={setBib}
-            keyboardType="number-pad"
-            returnKeyType="next"
-          />
+          {!useDefaultBib || !defaultBib ? (
+            <UnifiedSearchInput
+              containerStyle={styles.inputContainer}
+              left={<SearchNormal1 size={20} color={colors.grayColor} variant="Linear" />}
+              inputStyle={styles.input}
+              placeholder={t('e.g. 1234')}
+              value={bib}
+              onChangeText={setBib}
+              keyboardType="number-pad"
+              returnKeyType="next"
+            />
+          ) : null}
+          <SizeBox height={10} />
+          <View style={styles.toggleRow}>
+            <View style={styles.toggleInfo}>
+              <Text style={styles.faceSectionTitle}>{t('Use saved chest number')}</Text>
+              <Text style={styles.helperText}>
+                {defaultBib
+                  ? `${defaultBib}`
+                  : t('No saved chest number yet. Enter the chest number for this competition below.')}
+              </Text>
+            </View>
+            <CustomSwitch
+              isEnabled={useDefaultBib}
+              toggleSwitch={() => {
+                if (!defaultBib) return;
+                setUseDefaultBib((prev) => !prev);
+              }}
+            />
+          </View>
 
           <SizeBox height={20} />
           <Text style={styles.sectionTitle}>{t('Context')}</Text>

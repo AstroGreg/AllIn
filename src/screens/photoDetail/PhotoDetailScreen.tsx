@@ -8,7 +8,7 @@ import SizeBox from '../../constants/SizeBox';
 import {useTheme} from '../../context/ThemeContext';
 import {useAuth} from '../../context/AuthContext';
 import {useEvents} from '../../context/EventsContext';
-import {ApiError, addProfileCollectionItems, createMediaIssueRequest, getAiFeedbackLabel, getMediaById, postAiFeedbackLabel, recordDownload, recordMediaView, type MediaViewAllItem} from '../../services/apiGateway';
+import {ApiError, attachMediaToPost, createMediaIssueRequest, createPost, getAiFeedbackLabel, getMediaById, postAiFeedbackLabel, recordDownload, recordMediaView, type MediaViewAllItem} from '../../services/apiGateway';
 import Video from 'react-native-video';
 import ShimmerEffect from '../../components/shimmerEffect/ShimmerEffect';
 import {getApiBaseUrl, getHlsBaseUrl} from '../../constants/RuntimeConfig';
@@ -18,7 +18,6 @@ import Icons from '../../constants/Icons';
 import { useTranslation } from 'react-i18next'
 import { useInstagramStoryImageComposer } from '../../components/share/InstagramStoryComposer';
 import { usePreventMediaCapture } from '../../utils/usePreventMediaCapture';
-import { getProfileCollectionScopeKey } from '../../utils/profileSelections';
 
 type FeedbackChoice = 'yes' | 'no' | null;
 const INSTAGRAM_APP_ID = String(AppConfig.INSTAGRAM_APP_ID ?? '').trim();
@@ -30,7 +29,7 @@ const PhotoDetailScreen = ({navigation, route}: any) => {
     const Styles = createStyles(colors);
     const isDarkSurface = String(colors.backgroundColor || '').toLowerCase() !== '#ffffff';
     const headerIconColor = isDarkSurface ? colors.pureWhite : colors.primaryColor;
-    const {apiAccessToken, userProfile} = useAuth();
+    const {apiAccessToken} = useAuth();
     const {eventNameById} = useEvents();
     const {composeInstagramStoryImage, composerElement} = useInstagramStoryImageComposer();
     usePreventMediaCapture(true);
@@ -223,12 +222,6 @@ const PhotoDetailScreen = ({navigation, route}: any) => {
     const matchType: string | null = routeMedia.matchType;
     const effectiveMediaId = mediaId;
     const resolvedMediaId = mediaId;
-    const collectionScopeKey = useMemo(() => {
-        const explicit = String(route?.params?.collectionScopeKey ?? '').trim();
-        if (explicit) return explicit;
-        const derived = getProfileCollectionScopeKey(userProfile);
-        return String(derived || 'default');
-    }, [route?.params?.collectionScopeKey, userProfile]);
 
     useEffect(() => {
         if (!apiAccessToken) return;
@@ -1033,7 +1026,7 @@ const PhotoDetailScreen = ({navigation, route}: any) => {
 
     const handleAddToProfile = useCallback(async () => {
         if (!apiAccessToken) {
-            Alert.alert(t('Missing API token'), t('Log in or set a Dev API token to add media to your profile.'));
+            Alert.alert(t('Missing API token'), t('Log in or set a Dev API token to add media to your news page.'));
             return;
         }
         if (!resolvedMediaId) {
@@ -1041,32 +1034,29 @@ const PhotoDetailScreen = ({navigation, route}: any) => {
             return;
         }
         try {
-            const response = await addProfileCollectionItems(apiAccessToken, {
-                type: 'image',
-                media_ids: [resolvedMediaId],
-                scope_key: collectionScopeKey,
+            const entryTitle = String(headerLabel || eventTitle || t('Competition')).trim() || t('Competition');
+            const created = await createPost(apiAccessToken, {
+                title: entryTitle,
+                description: entryTitle,
             });
-            const added = Number(response?.added ?? 0);
-            const skipped = Number(response?.skipped ?? 0);
-            if (added > 0) {
-                showInfoPopup(t('Added to profile'), t('This photo is now in your collection.'));
-                return;
+            const postId = String(created?.post?.id ?? '').trim();
+            if (!postId) {
+                throw new Error(t('Could not create the news post.'));
             }
-            if (skipped > 0) {
-                showInfoPopup(t('Already saved'), t('This photo is already in your collection.'));
-                return;
-            }
-            showInfoPopup(t('Could not add'), t('Try again in a moment.'));
+            await attachMediaToPost(apiAccessToken, postId, {
+                media_ids: [String(resolvedMediaId)],
+            });
+            showInfoPopup(t('Added to news page'), t('This photo now appears on your news page.'));
         } catch (e: any) {
             const message = e instanceof ApiError ? e.message : String(e?.message ?? e);
             Alert.alert(t('Could not add'), message);
         }
-    }, [apiAccessToken, collectionScopeKey, resolvedMediaId, showInfoPopup, t]);
+    }, [apiAccessToken, eventTitle, headerLabel, resolvedMediaId, showInfoPopup, t]);
 
     const openMoreMenu = useCallback(() => {
         const actions = [
             {label: t('Download'), onPress: handleDownload},
-            {label: t('Add to profile'), onPress: handleAddToProfile},
+            {label: t('Add to news'), onPress: handleAddToProfile},
             {label: t('Share'), onPress: handleShareNative},
             {label: t('Share to Instagram Story'), onPress: handleShareInstagram},
             {label: t('Report an issue with this video/photo'), onPress: openReportIssuePopup},

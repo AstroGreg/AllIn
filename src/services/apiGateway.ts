@@ -2670,6 +2670,20 @@ export async function createPost(
   });
 }
 
+export async function attachMediaToPost(
+  accessToken: string,
+  post_id: string,
+  params: {media_ids: string[]},
+): Promise<{ok: boolean; post_id: string; attached: number; skipped: number}> {
+  return apiRequest(`/posts/${encodeURIComponent(post_id)}/media`, {
+    method: 'POST',
+    accessToken,
+    body: {
+      media_ids: params.media_ids,
+    },
+  });
+}
+
 export async function updatePost(
   accessToken: string,
   post_id: string,

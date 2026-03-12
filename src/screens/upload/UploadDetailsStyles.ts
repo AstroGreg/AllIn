@@ -60,6 +60,9 @@ export const createStyles = (colors: ThemeColors) => StyleSheet.create({
         justifyContent: 'center',
         flexDirection: 'row'
     },
+    uploadContainerDisabled: {
+        opacity: 0.65,
+    },
     uploadText: {
         ...Fonts.regular14,
         fontWeight: '500',
@@ -169,6 +172,37 @@ export const createStyles = (colors: ThemeColors) => StyleSheet.create({
 
     disabledUpload: {
         opacity: 0.5,
+    },
+    preparingOverlay: {
+        position: 'absolute',
+        top: 0,
+        right: 0,
+        bottom: 0,
+        left: 0,
+        backgroundColor: 'rgba(0,0,0,0.28)',
+        alignItems: 'center',
+        justifyContent: 'center',
+        paddingHorizontal: 24,
+    },
+    preparingCard: {
+        minWidth: 220,
+        borderRadius: 16,
+        paddingHorizontal: 22,
+        paddingVertical: 24,
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: colors.cardBackground,
+        borderWidth: 0.5,
+        borderColor: colors.lightGrayColor,
+    },
+    preparingTitle: {
+        ...Fonts.medium16,
+        color: colors.mainTextColor,
+    },
+    preparingText: {
+        ...Fonts.regular13,
+        color: colors.grayColor,
+        textAlign: 'center',
     },
 });
 

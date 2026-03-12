@@ -18,18 +18,17 @@ import Icons from '../../constants/Icons';
 import SubscriptionModal from '../../components/subscriptionModal/SubscriptionModal';
 import { useTheme } from '../../context/ThemeContext';
 import { useAuth } from '../../context/AuthContext';
-import { addProfileCollectionItems, createMediaIssueRequest, getMediaById, recordDownload } from '../../services/apiGateway';
+import { ApiError, attachMediaToPost, createMediaIssueRequest, createPost, getMediaById, recordDownload } from '../../services/apiGateway';
 import { getApiBaseUrl, getHlsBaseUrl } from '../../constants/RuntimeConfig';
 import { useTranslation } from 'react-i18next'
 import { usePreventMediaCapture } from '../../utils/usePreventMediaCapture';
-import { getProfileCollectionScopeKey } from '../../utils/profileSelections';
 
 const VideoPlayingScreen = ({ navigation, route }: any) => {
     const { t } = useTranslation();
     const insets = useSafeAreaInsets();
     const { colors } = useTheme();
     const Styles = createStyles(colors);
-    const { apiAccessToken, userProfile } = useAuth();
+    const { apiAccessToken } = useAuth();
     usePreventMediaCapture(true);
     const showBuyModalOnLoad = route?.params?.showBuyModal || false;
     const videoPrice = route?.params?.video?.price || '€0,20';
@@ -77,7 +76,7 @@ const VideoPlayingScreen = ({ navigation, route }: any) => {
     const [currentTime, setCurrentTime] = useState(0);
     const [isSeeking, setIsSeeking] = useState(false);
     const [pendingSeek, setPendingSeek] = useState(0);
-    const videoRef = useRef<Video>(null);
+    const videoRef = useRef<any>(null);
     const [sliderWidth, setSliderWidth] = useState(0);
     const [moreMenuVisible, setMoreMenuVisible] = useState(false);
     const [moreMenuActions, setMoreMenuActions] = useState<Array<{ label: string; onPress: () => void }>>([]);
@@ -88,12 +87,6 @@ const VideoPlayingScreen = ({ navigation, route }: any) => {
     const [infoPopupVisible, setInfoPopupVisible] = useState(false);
     const [infoPopupTitle, setInfoPopupTitle] = useState('');
     const [infoPopupMessage, setInfoPopupMessage] = useState('');
-    const collectionScopeKey = useMemo(() => {
-        const explicit = String(route?.params?.collectionScopeKey ?? '').trim();
-        if (explicit) return explicit;
-        const derived = getProfileCollectionScopeKey(userProfile);
-        return String(derived || 'default');
-    }, [route?.params?.collectionScopeKey, userProfile]);
 
     useEffect(() => {
         setVideoTitle(fallbackVideo.title);
@@ -161,7 +154,7 @@ const VideoPlayingScreen = ({ navigation, route }: any) => {
         getMediaById(apiAccessToken, String(routeMediaId))
             .then((media) => {
                 if (!mounted) return;
-                const title = media.title || media.description || fallbackVideo.title;
+                const title = (media as any)?.title || (media as any)?.description || fallbackVideo.title;
                 setVideoTitle(title);
                 const hls = media.hls_manifest_path ? toHlsUrl(media.hls_manifest_path) : null;
                 const candidates = [
@@ -322,9 +315,15 @@ const VideoPlayingScreen = ({ navigation, route }: any) => {
         }
     }, [apiAccessToken, ensureLocalFile, extensionFromUrl, getShareModule, resolveDownloadUrl, routeEventId, routeMediaId, t]);
 
+    const showInfoPopup = useCallback((title: string, message: string) => {
+        setInfoPopupTitle(title);
+        setInfoPopupMessage(message);
+        setInfoPopupVisible(true);
+    }, []);
+
     const handleAddToProfile = useCallback(async () => {
         if (!apiAccessToken) {
-            Alert.alert(t('Missing API token'), t('Log in or set a Dev API token to add media to your profile.'));
+            Alert.alert(t('Missing API token'), t('Log in or set a Dev API token to add media to your news page.'));
             return;
         }
         if (!routeMediaId) {
@@ -332,38 +331,29 @@ const VideoPlayingScreen = ({ navigation, route }: any) => {
             return;
         }
         try {
-            const response = await addProfileCollectionItems(apiAccessToken, {
-                type: 'video',
-                media_ids: [String(routeMediaId)],
-                scope_key: collectionScopeKey,
+            const entryTitle = String(route?.params?.eventTitle ?? videoTitle ?? t('Competition')).trim() || t('Competition');
+            const created = await createPost(apiAccessToken, {
+                title: entryTitle,
+                description: entryTitle,
             });
-            const added = Number(response?.added ?? 0);
-            const skipped = Number(response?.skipped ?? 0);
-            if (added > 0) {
-                showInfoPopup(t('Added to profile'), t('This video is now in your collection.'));
-                return;
+            const postId = String(created?.post?.id ?? '').trim();
+            if (!postId) {
+                throw new Error(t('Could not create the news post.'));
             }
-            if (skipped > 0) {
-                showInfoPopup(t('Already saved'), t('This video is already in your collection.'));
-                return;
-            }
-            showInfoPopup(t('Could not add'), t('Try again in a moment.'));
+            await attachMediaToPost(apiAccessToken, postId, {
+                media_ids: [String(routeMediaId)],
+            });
+            showInfoPopup(t('Added to news page'), t('This video now appears on your news page.'));
         } catch (e: any) {
-            const message = String(e?.message ?? e);
+            const message = e instanceof ApiError ? e.message : String(e?.message ?? e);
             Alert.alert(t('Could not add'), message);
         }
-    }, [apiAccessToken, collectionScopeKey, routeMediaId, showInfoPopup, t]);
+    }, [apiAccessToken, route?.params?.eventTitle, routeMediaId, showInfoPopup, t, videoTitle]);
 
     const handleRecharge = () => {
         setShowFailedModal(false);
         setShowSubscriptionModal(true);
     };
-
-    const showInfoPopup = useCallback((title: string, message: string) => {
-        setInfoPopupTitle(title);
-        setInfoPopupMessage(message);
-        setInfoPopupVisible(true);
-    }, []);
 
     useEffect(() => {
         if (!infoPopupVisible) return;
@@ -419,7 +409,7 @@ const VideoPlayingScreen = ({ navigation, route }: any) => {
     const openMoreMenu = useCallback(() => {
         const actions = [
             {label: t('Download'), onPress: handleDownload},
-            {label: t('Add to profile'), onPress: handleAddToProfile},
+            {label: t('Add to news'), onPress: handleAddToProfile},
             {label: t('Report an issue with this video/photo'), onPress: openReportIssuePopup},
             {label: t('Go to author profile'), onPress: handleGoToProfile},
             {label: t('Go to event'), onPress: handleGoToEvent},

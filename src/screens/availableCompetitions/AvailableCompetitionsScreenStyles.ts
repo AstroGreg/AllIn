@@ -360,8 +360,13 @@ export const createStyles = (colors: ThemeColors) => StyleSheet.create({
     modalSectionTitle: {
         ...Fonts.medium14,
         color: colors.mainTextColor,
-        marginTop: 12,
-        marginBottom: 8,
+        marginBottom: 6,
+    },
+    modalSectionHint: {
+        ...Fonts.regular12,
+        color: colors.subTextColor,
+        lineHeight: 18,
+        marginBottom: 10,
     },
     modalChipsGrid: {
         flexDirection: 'row',
@@ -468,6 +473,16 @@ export const createStyles = (colors: ThemeColors) => StyleSheet.create({
         marginTop: 16,
         gap: 12,
     },
+    modalScrollContent: {
+        gap: 14,
+    },
+    modalSectionCard: {
+        borderRadius: 16,
+        padding: 14,
+        borderWidth: 0.5,
+        borderColor: colors.borderColor,
+        backgroundColor: colors.secondaryColor,
+    },
     modalCancelButton: {
         flex: 1,
         height: 46,
@@ -512,6 +527,7 @@ export const createStyles = (colors: ThemeColors) => StyleSheet.create({
         borderRadius: 20,
         padding: 20,
         gap: 12,
+        maxHeight: '88%',
     },
     feedbackTitle: {
         ...Fonts.medium18,

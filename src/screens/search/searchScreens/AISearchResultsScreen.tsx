@@ -91,9 +91,8 @@ const AISearchResultsScreen = ({navigation, route}: any) => {
     if (refineContext.bib) pills.push({key: 'bib', label: `${t('Chest number')}: ${refineContext.bib}`});
     if (refineContext.discipline) pills.push({key: 'discipline', label: `${t('discipline')}: ${refineContext.discipline}`});
     if (refineContext.checkpoint) pills.push({key: 'checkpoint', label: `${t('Checkpoint')}: ${refineContext.checkpoint}`});
-    if (refineContext.date) pills.push({key: 'date', label: `${t('Date')}: ${refineContext.date}`});
     return pills;
-  }, [refineContext.bib, refineContext.checkpoint, refineContext.date, refineContext.discipline, t]);
+  }, [refineContext.bib, refineContext.checkpoint, refineContext.discipline, t]);
 
   const matchLabel = useCallback(
     (matchType?: string) => {
@@ -166,6 +165,18 @@ const AISearchResultsScreen = ({navigation, route}: any) => {
         Alert.alert(t('Missing URL'), t('No preview/original URL was provided for this result.'));
         return;
       }
+      if (item.type === 'video') {
+        navigation.navigate('VideoPlayingScreen', {
+          mediaId: item.id,
+          startAt: item.matchTimeSeconds ?? 0,
+          video: {
+            title: item.eventName || eventNameById(item.eventId),
+            thumbnail: item.imageUrl,
+            uri: item.originalUrl ?? item.previewUrl ?? item.imageUrl,
+          },
+        });
+        return;
+      }
       navigation.navigate('PhotoDetailScreen', {
         startAt: item.matchTimeSeconds ?? 0,
         eventTitle: item.eventName || eventNameById(item.eventId),
@@ -212,8 +223,10 @@ const AISearchResultsScreen = ({navigation, route}: any) => {
               <Text style={styles.confidenceChipText}>{confidenceLabel(item)}</Text>
             </View>
           </View>
-          {item.bibNumber ? <Text style={styles.resultMeta}>{t('Chest number')}: {item.bibNumber}</Text> : null}
-          {item.type === 'video' ? <Text style={styles.resultMeta}>{t('Video')}</Text> : null}
+          <View>
+            {item.bibNumber ? <Text style={styles.resultMeta}>{t('Chest number')}: {item.bibNumber}</Text> : null}
+            {item.type === 'video' ? <Text style={styles.resultMeta}>{t('Video')}</Text> : null}
+          </View>
         </View>
       </TouchableOpacity>
     ),

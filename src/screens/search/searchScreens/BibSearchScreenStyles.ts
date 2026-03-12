@@ -171,6 +171,37 @@ export const createStyles = (colors: ThemeColors) =>
       ...Fonts.regular14,
       color: colors.mainTextColor,
     },
+    defaultChestRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 8,
+      marginTop: 10,
+    },
+    defaultChestBox: {
+      width: 18,
+      height: 18,
+      borderRadius: 5,
+      borderWidth: 1,
+      borderColor: colors.lightGrayColor,
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: colors.cardBackground,
+    },
+    defaultChestBoxActive: {
+      backgroundColor: colors.primaryColor,
+      borderColor: colors.primaryColor,
+    },
+    defaultChestCheck: {
+      color: colors.pureWhite,
+      fontSize: 12,
+      fontWeight: '700',
+    },
+    defaultChestText: {
+      ...Fonts.regular12,
+      color: colors.subTextColor,
+      flex: 1,
+      lineHeight: 18,
+    },
     card: {
       backgroundColor: colors.cardBackground,
       borderWidth: 1,

@@ -1,4 +1,4 @@
-import { View, Text, TouchableOpacity, TextInput } from 'react-native'
+import { View, Text, TouchableOpacity, TextInput, ActivityIndicator } from 'react-native'
 import React, { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next';
 import { createStyles } from './UploadDetailsStyles'
@@ -47,6 +47,9 @@ const UploadDetailsScreen = ({ navigation, route }: any) => {
     const Styles = createStyles(colors);
     const { t } = useTranslation();
     const [selectedAssets, setSelectedAssets] = useState<any[]>([]);
+    const [isPreparingAssets, setIsPreparingAssets] = useState(false);
+    const [preparingAssetIndex, setPreparingAssetIndex] = useState(0);
+    const [preparingAssetTotal, setPreparingAssetTotal] = useState(0);
     const [allPhotosPrice, setAllPhotosPrice] = useState('1.00');
     const [allVideosPrice, setAllVideosPrice] = useState('5.00');
     const competition = route?.params?.competition;
@@ -81,6 +84,9 @@ const UploadDetailsScreen = ({ navigation, route }: any) => {
         try {
             const result: any = await launchImageLibrary(options);
             if (result.assets) {
+                setIsPreparingAssets(true);
+                setPreparingAssetIndex(0);
+                setPreparingAssetTotal(result.assets.length);
                 // Copy to a persistent app directory immediately so the temp picker path
                 // doesn't disappear before we upload (common on iOS for /tmp files).
                 const destDir = `${RNFS.DocumentDirectoryPath}/allin_uploads`;
@@ -88,6 +94,7 @@ const UploadDetailsScreen = ({ navigation, route }: any) => {
 
                 const copied: any[] = [];
                 for (let i = 0; i < result.assets.length; i += 1) {
+                    setPreparingAssetIndex(i + 1);
                     const a = result.assets[i];
                     const uri = normalizeFileUri(String(a?.uri || ''));
                     if (!uri) continue;
@@ -121,6 +128,10 @@ const UploadDetailsScreen = ({ navigation, route }: any) => {
             }
         } catch (error) {
             console.error('Error picking media:', error);
+        } finally {
+            setIsPreparingAssets(false);
+            setPreparingAssetIndex(0);
+            setPreparingAssetTotal(0);
         }
     };
 
@@ -216,7 +227,11 @@ const UploadDetailsScreen = ({ navigation, route }: any) => {
                 )}
 
                 <SizeBox height={12} />
-                <TouchableOpacity style={Styles.uploadContainer} onPress={handleFilePicker}>
+                <TouchableOpacity
+                    style={[Styles.uploadContainer, isPreparingAssets && Styles.uploadContainerDisabled]}
+                    onPress={handleFilePicker}
+                    disabled={isPreparingAssets}
+                >
                     <Text style={Styles.uploadText}>{t('Browse files')}</Text>
                 </TouchableOpacity>
                 {selectedCount > 0 ? (
@@ -260,14 +275,30 @@ const UploadDetailsScreen = ({ navigation, route }: any) => {
                 <TouchableOpacity
                     style={[
                         Styles.btnContianer,
-                        { opacity: selectedCount > 0 ? 1 : 0.5 }
+                        { opacity: selectedCount > 0 && !isPreparingAssets ? 1 : 0.5 }
                     ]}
                     onPress={handleUpload}
-                    disabled={selectedCount === 0}
+                    disabled={selectedCount === 0 || isPreparingAssets}
                 >
                     <Text style={Styles.btnText}>{buttonLabel}</Text>
                 </TouchableOpacity>
             </View>
+
+            {isPreparingAssets ? (
+                <View style={Styles.preparingOverlay}>
+                    <View style={Styles.preparingCard}>
+                        <ActivityIndicator size="large" color={colors.primaryColor} />
+                        <SizeBox height={14} />
+                        <Text style={Styles.preparingTitle}>{t('Preparing files')}</Text>
+                        <SizeBox height={6} />
+                        <Text style={Styles.preparingText}>
+                            {preparingAssetTotal > 0
+                                ? `${preparingAssetIndex}/${preparingAssetTotal} ${t('files')}`
+                                : t('Preparing selected media...')}
+                        </Text>
+                    </View>
+                </View>
+            ) : null}
 
         </View>
     )

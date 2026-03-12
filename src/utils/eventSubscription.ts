@@ -11,6 +11,7 @@ export const SUBSCRIPTION_CATEGORY_OPTIONS = [
 ] as const;
 
 export type SubscriptionCategoryLabel = (typeof SUBSCRIPTION_CATEGORY_OPTIONS)[number];
+export const SUBSCRIPTION_ALL_DISCIPLINE_ID = '__all__';
 
 export type SubscriptionDisciplineOption = {
   id: string;
@@ -26,7 +27,13 @@ export function buildSubscriptionDisciplineOptions(
     discipline_group?: string | null;
   }>,
 ): SubscriptionDisciplineOption[] {
-  const out: SubscriptionDisciplineOption[] = [];
+  const out: SubscriptionDisciplineOption[] = [
+    {
+      id: SUBSCRIPTION_ALL_DISCIPLINE_ID,
+      label: 'All',
+      group: null,
+    },
+  ];
   const seen = new Set<string>();
   for (const row of rows) {
     const id = String(row?.id ?? '').trim();
@@ -48,9 +55,16 @@ export function toggleSubscriptionDiscipline(
 ): string[] {
   const safeId = String(disciplineId || '').trim();
   if (!safeId) return selectedIds;
-  return selectedIds.includes(safeId)
-    ? selectedIds.filter((value) => value !== safeId)
-    : [...selectedIds, safeId];
+  if (safeId === SUBSCRIPTION_ALL_DISCIPLINE_ID) {
+    return [SUBSCRIPTION_ALL_DISCIPLINE_ID];
+  }
+
+  const base = selectedIds.filter((value) => value !== SUBSCRIPTION_ALL_DISCIPLINE_ID);
+  if (base.includes(safeId)) {
+    const next = base.filter((value) => value !== safeId);
+    return next.length > 0 ? next : [SUBSCRIPTION_ALL_DISCIPLINE_ID];
+  }
+  return [...base, safeId];
 }
 
 export function normalizeSubscriptionCategories(

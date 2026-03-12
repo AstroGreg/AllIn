@@ -423,6 +423,23 @@ export const createStyles = (colors: ThemeColors) => {
         borderRadius: 20,
         padding: 20,
         gap: 12,
+        maxHeight: '88%',
+    },
+    feedbackScrollContent: {
+        gap: 14,
+    },
+    feedbackSectionCard: {
+        borderRadius: 16,
+        padding: 14,
+        borderWidth: 0.5,
+        borderColor: colors.lightGrayColor,
+        backgroundColor: colors.secondaryColor,
+    },
+    feedbackSectionHint: {
+        ...Fonts.regular12,
+        color: colors.subTextColor,
+        lineHeight: 18,
+        marginBottom: 10,
     },
     feedbackTitle: {
         ...Fonts.medium18,
@@ -471,6 +488,32 @@ export const createStyles = (colors: ThemeColors) => {
         ...Fonts.medium12,
         color: colors.mainTextColor,
         marginBottom: 6,
+    },
+    modalChipsGrid: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        gap: 10,
+    },
+    modalChip: {
+        backgroundColor: colors.cardBackground,
+        borderRadius: 16,
+        borderWidth: 0.5,
+        borderColor: colors.lightGrayColor,
+        paddingHorizontal: 12,
+        height: 32,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    modalChipActive: {
+        backgroundColor: colors.primaryColor,
+        borderColor: colors.primaryColor,
+    },
+    modalChipText: {
+        ...Fonts.regular12,
+        color: colors.subTextColor,
+    },
+    modalChipTextActive: {
+        color: colors.pureWhite,
     },
     modalInputRow: {
         borderWidth: 1,

@@ -163,6 +163,7 @@ const SearchFaceCaptureScreen = ({ navigation, route }: any) => {
     const [isTransitioning, setIsTransitioning] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isApproving, setIsApproving] = useState(false);
+    const [submitError, setSubmitError] = useState<string | null>(null);
     const [pendingPhotoUri, setPendingPhotoUri] = useState<string | null>(null);
     const [pendingAngleId, setPendingAngleId] = useState<string | null>(null);
     const [, setFaceSizeRatio] = useState<number>(0);
@@ -362,6 +363,7 @@ const SearchFaceCaptureScreen = ({ navigation, route }: any) => {
 
         try {
             const photo = await cameraRef.current.takePhoto();
+            setSubmitError(null);
 
             if (!isMountedRef.current) return;
 
@@ -609,6 +611,7 @@ const SearchFaceCaptureScreen = ({ navigation, route }: any) => {
             Alert.alert(t('Missing API token'), t('Log in or set a Dev API token to enroll your face.'));
             return;
         }
+        setSubmitError(null);
         const requiredCount = getRequiredCapturesForAngle(pendingAngleId);
         const before = capturedImages[pendingAngleId]?.length ?? 0;
         const nextCount = before + 1;
@@ -701,6 +704,7 @@ const SearchFaceCaptureScreen = ({ navigation, route }: any) => {
     const handleRejectPhoto = useCallback(() => {
         setPendingPhotoUri(null);
         setPendingAngleId(null);
+        setSubmitError(null);
         stableMatchFramesRef.current = 0;
     }, []);
 
@@ -805,6 +809,8 @@ const SearchFaceCaptureScreen = ({ navigation, route }: any) => {
                 return (capturedImages[k]?.length ?? 0) < requiredCount || angleVerification[k]?.status !== 'accepted';
             });
             if (missing.length > 0) {
+                const msg = `${t('Please capture')}: ${missing.join(', ')}`;
+                setSubmitError(msg);
                 Alert.alert(t('Missing angles'), `${t('Please capture')}: ${missing.join(', ')}`);
                 const firstMissingIndex = captureAngles.findIndex(a => missing.includes(a.id as any));
                 if (firstMissingIndex >= 0) {
@@ -813,9 +819,10 @@ const SearchFaceCaptureScreen = ({ navigation, route }: any) => {
                 return;
             }
 
+            setSubmitError(null);
             setIsSubmitting(true);
             try {
-                await enrollFace(
+                const enrolled = await enrollFace(
                     apiAccessToken,
                     {
                         frontal: capturedImages.frontal,
@@ -826,18 +833,46 @@ const SearchFaceCaptureScreen = ({ navigation, route }: any) => {
                     },
                     { replace: enrollReplace },
                 );
-
-                if (afterEnroll?.screen) {
-                    navigation.navigate(afterEnroll.screen, afterEnroll.params ?? {});
-                } else {
-                    navigation.navigate('AISearchScreen', {autoSearch: true});
+                if (!enrolled?.ok) {
+                    throw new Error(t('Face enrollment did not complete. Please try again.'));
                 }
+
+                Alert.alert(
+                    t('Face enrolled'),
+                    t('Your face scan was saved successfully.'),
+                    [
+                        {
+                            text: t('OK'),
+                            onPress: () => {
+                                if (afterEnroll?.screen) {
+                                    if (typeof navigation.replace === 'function') {
+                                        navigation.replace(afterEnroll.screen, afterEnroll.params ?? {});
+                                    } else {
+                                        navigation.navigate(afterEnroll.screen, afterEnroll.params ?? {});
+                                    }
+                                    return;
+                                }
+                                if (typeof navigation.goBack === 'function') {
+                                    navigation.goBack();
+                                    return;
+                                }
+                                if (typeof navigation.replace === 'function') {
+                                    navigation.replace('AISearchScreen', {autoSearch: true});
+                                } else {
+                                    navigation.navigate('AISearchScreen', {autoSearch: true});
+                                }
+                            },
+                        },
+                    ],
+                );
             } catch (e: any) {
                 if (e instanceof ApiError && e.status === 403 && String(e.message).toLowerCase().includes('consent')) {
+                    setSubmitError(t('Enable face recognition consent first, then try again.'));
                     Alert.alert(t('Consent required'), t('Enable face recognition consent first, then try again.'));
                     return;
                 }
                 const msg = e instanceof ApiError ? e.message : String(e?.message ?? e);
+                setSubmitError(msg);
                 Alert.alert(t('Enrollment failed'), msg);
             } finally {
                 setIsSubmitting(false);
@@ -1149,6 +1184,11 @@ const SearchFaceCaptureScreen = ({ navigation, route }: any) => {
 
                 {/* Buttons */}
                 <View style={styles.buttonContainer}>
+                    {submitError ? (
+                        <Text style={[styles.submitErrorText, { color: colors.errorColor || '#D14343' }]}>
+                            {submitError}
+                        </Text>
+                    ) : null}
                     {isReviewing ? (
                         <View style={styles.reviewRow}>
                             <TouchableOpacity
@@ -1415,6 +1455,11 @@ const styles = StyleSheet.create({
     buttonContainer: {
         width: '100%',
         gap: 16,
+    },
+    submitErrorText: {
+        ...Fonts.regular13,
+        lineHeight: 20,
+        textAlign: 'center',
     },
     reviewRow: {
         flexDirection: 'row',

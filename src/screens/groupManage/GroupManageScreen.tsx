@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Alert, Modal, Pressable, ScrollView, Share, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { ArrowLeft2, Add, SearchNormal1, Trash } from 'iconsax-react-nativejs';
+import { Add, ArrowLeft2, Trash } from 'iconsax-react-nativejs';
 import Clipboard from '@react-native-clipboard/clipboard';
 import FastImage from 'react-native-fast-image';
 import SizeBox from '../../constants/SizeBox';
@@ -11,19 +11,13 @@ import { useAuth } from '../../context/AuthContext';
 import {
   getGroup,
   getGroupMembers,
-  getProfileSummary,
   createGroupInviteLink,
-  inviteGroupMember,
-  listGroupInvites,
   removeGroupMember,
-  searchProfiles,
   updateGroup,
   updateGroupMemberRole,
   updateGroupMemberPublicRoles,
   type GroupMember,
-  type GroupMemberInvite,
   type GroupSummary,
-  type ProfileSearchResult,
 } from '../../services/apiGateway';
 import { getApiBaseUrl } from '../../constants/RuntimeConfig';
 
@@ -38,20 +32,10 @@ const GroupManageScreen = ({ navigation, route }: any) => {
 
   const [group, setGroup] = useState<GroupSummary | null>(null);
   const [members, setMembers] = useState<GroupMember[]>([]);
-  const [viewerProfileId, setViewerProfileId] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
-  const [memberQuery, setMemberQuery] = useState('');
-  const [memberSearchLoading, setMemberSearchLoading] = useState(false);
-  const [memberSearchResults, setMemberSearchResults] = useState<ProfileSearchResult[]>([]);
-  const [pendingInviteByProfile, setPendingInviteByProfile] = useState<Record<string, string>>({});
-  const [addBusyByProfile, setAddBusyByProfile] = useState<Record<string, boolean>>({});
   const [roleBusyByProfile, setRoleBusyByProfile] = useState<Record<string, boolean>>({});
   const [removeBusyByProfile, setRemoveBusyByProfile] = useState<Record<string, boolean>>({});
-
-  const [selectedInviteProfile, setSelectedInviteProfile] = useState<ProfileSearchResult | null>(null);
-  const [invitePublicRoles, setInvitePublicRoles] = useState<PublicMemberRole[]>(['athlete']);
-  const [invitePermission, setInvitePermission] = useState<'member' | 'admin'>('member');
 
   const [manualCoachName, setManualCoachName] = useState('');
   const [isSavingManualCoach, setIsSavingManualCoach] = useState(false);
@@ -99,125 +83,6 @@ const GroupManageScreen = ({ navigation, route }: any) => {
     loadData();
   }, [loadData]);
 
-  useEffect(() => {
-    let mounted = true;
-    if (!apiAccessToken) return () => {};
-    getProfileSummary(apiAccessToken)
-      .then((resp) => {
-        if (mounted) setViewerProfileId(resp?.profile_id ? String(resp.profile_id) : null);
-      })
-      .catch(() => {});
-    return () => {
-      mounted = false;
-    };
-  }, [apiAccessToken]);
-
-  useEffect(() => {
-    let mounted = true;
-    if (!apiAccessToken || !groupId || !canManageGroup) {
-      setPendingInviteByProfile({});
-      return () => {
-        mounted = false;
-      };
-    }
-    (async () => {
-      try {
-        const resp = await listGroupInvites(apiAccessToken, groupId, { status: 'pending', limit: 200 });
-        if (!mounted) return;
-        const invites = Array.isArray(resp?.invites) ? resp.invites : [];
-        const next = invites.reduce((acc, invite: GroupMemberInvite) => {
-          const profileId = String(invite?.profile_id || '').trim();
-          if (profileId) acc[profileId] = String(invite.role || 'member');
-          return acc;
-        }, {} as Record<string, string>);
-        setPendingInviteByProfile(next);
-      } catch {
-        if (mounted) setPendingInviteByProfile({});
-      }
-    })();
-    return () => {
-      mounted = false;
-    };
-  }, [apiAccessToken, canManageGroup, groupId]);
-
-  const memberIds = useMemo(() => new Set(members.map((m) => String(m.profile_id))), [members]);
-
-  const filteredMemberSearchResults = useMemo(() => {
-    const own = String(viewerProfileId || '').trim();
-    return memberSearchResults.filter((profile) => {
-      const profileId = String(profile?.profile_id || '').trim();
-      if (!profileId) return false;
-      if (profileId === own) return false;
-      return !memberIds.has(profileId);
-    });
-  }, [memberIds, memberSearchResults, viewerProfileId]);
-
-  useEffect(() => {
-    let mounted = true;
-    if (!apiAccessToken || !canManageGroup || !groupId) {
-      setMemberSearchResults([]);
-      setMemberSearchLoading(false);
-      return () => {
-        mounted = false;
-      };
-    }
-    const query = memberQuery.trim();
-    if (!query) {
-      setMemberSearchResults([]);
-      setMemberSearchLoading(false);
-      return () => {
-        mounted = false;
-      };
-    }
-
-    const timer = setTimeout(async () => {
-      setMemberSearchLoading(true);
-      try {
-        const resp = await searchProfiles(apiAccessToken, { q: query, limit: 12 });
-        if (!mounted) return;
-        setMemberSearchResults(resp?.profiles || []);
-      } catch {
-        if (!mounted) return;
-        setMemberSearchResults([]);
-      } finally {
-        if (mounted) setMemberSearchLoading(false);
-      }
-    }, 250);
-
-    return () => {
-      mounted = false;
-      clearTimeout(timer);
-    };
-  }, [apiAccessToken, canManageGroup, groupId, memberQuery]);
-
-  const handleAddMember = async (profile: ProfileSearchResult) => {
-    if (!apiAccessToken || !groupId || !canManageGroup) return;
-    const profileId = String(profile?.profile_id || '').trim();
-    if (!profileId || memberIds.has(profileId)) return;
-    if (pendingInviteByProfile[profileId]) return;
-    if (addBusyByProfile[profileId]) return;
-    const roleToInvite = invitePermission;
-    setAddBusyByProfile((prev) => ({ ...prev, [profileId]: true }));
-    try {
-      await inviteGroupMember(apiAccessToken, groupId, {
-        profile_id: profileId,
-        role: roleToInvite,
-        public_roles: invitePublicRoles,
-      });
-      setPendingInviteByProfile((prev) => ({ ...prev, [profileId]: roleToInvite }));
-      setMemberSearchResults((prev) => prev.filter((p) => String(p.profile_id) !== profileId));
-      setSelectedInviteProfile(null);
-      setInvitePermission('member');
-      setInvitePublicRoles(['athlete']);
-      setMemberQuery('');
-      await loadData();
-    } catch {
-      // ignore
-    } finally {
-      setAddBusyByProfile((prev) => ({ ...prev, [profileId]: false }));
-    }
-  };
-
   const handleRemoveMember = useCallback(async (member: GroupMember) => {
     if (!apiAccessToken || !groupId || !canManageGroup) return;
     const targetProfileId = String(member?.profile_id || '').trim();
@@ -228,12 +93,6 @@ const GroupManageScreen = ({ navigation, route }: any) => {
       await removeGroupMember(apiAccessToken, groupId, targetProfileId);
 
       setMembers((prev) => prev.filter((entry) => String(entry?.profile_id || '').trim() !== targetProfileId));
-      setPendingInviteByProfile((prev) => {
-        if (!Object.prototype.hasOwnProperty.call(prev, targetProfileId)) return prev;
-        const next = { ...prev };
-        delete next[targetProfileId];
-        return next;
-      });
 
       await loadData();
     } catch {
@@ -274,16 +133,6 @@ const GroupManageScreen = ({ navigation, route }: any) => {
     const backendRole = String(member?.role || '').toLowerCase();
     if (backendRole === 'athlete' || backendRole === 'coach' || backendRole === 'physio') return [backendRole];
     return [];
-  }, []);
-
-  const toggleInvitePublicRole = useCallback((role: PublicMemberRole) => {
-    setInvitePublicRoles((prev) => {
-      if (prev.includes(role)) {
-        const next = prev.filter((entry) => entry !== role);
-        return next.length > 0 ? next : prev;
-      }
-      return [...prev, role];
-    });
   }, []);
 
   const toggleInviteLinkPublicRole = useCallback((role: PublicMemberRole) => {
@@ -660,106 +509,6 @@ const GroupManageScreen = ({ navigation, route }: any) => {
               <TouchableOpacity style={styles.inviteLinkButton} onPress={openInviteLinkModal}>
                 <Text style={styles.inviteLinkButtonText}>{t('Generate invitation link')}</Text>
               </TouchableOpacity>
-            </View>
-
-            <View style={styles.sectionCard}>
-              <Text style={styles.sectionTitle}>{t('Invite member')}</Text>
-              <Text style={styles.hint}>{t('Search first, then choose public roles and permission')}</Text>
-              <View style={styles.searchInputWrap}>
-                <SearchNormal1 size={18} color={colors.primaryColor} variant="Linear" />
-                <TextInput
-                  style={styles.searchInput}
-                  placeholder={t('Search users')}
-                  placeholderTextColor={colors.subTextColor}
-                  value={memberQuery}
-                  onChangeText={setMemberQuery}
-                  returnKeyType="search"
-                />
-              </View>
-
-              {memberSearchLoading ? (
-                <View style={styles.stateRow}><ActivityIndicator size="small" color={colors.primaryColor} /></View>
-              ) : null}
-
-              {!memberSearchLoading && !selectedInviteProfile
-                ? filteredMemberSearchResults.map((profile) => {
-                  const profileId = String(profile.profile_id);
-                  const pendingRole = pendingInviteByProfile[profileId];
-                  return (
-                    <TouchableOpacity
-                      key={profileId}
-                      style={styles.searchResultRow}
-                      onPress={() => setSelectedInviteProfile(profile)}
-                      disabled={Boolean(pendingRole)}
-                    >
-                      <View style={{ flex: 1, paddingRight: 12 }}>
-                        <Text style={styles.searchResultName}>{profile.display_name || t('Unnamed user')}</Text>
-                        <Text style={styles.searchResultMeta}>
-                          {pendingRole ? `${t('Invite pending')} (${pendingRole})` : t('Tap to continue')}
-                        </Text>
-                      </View>
-                    </TouchableOpacity>
-                  );
-                })
-                : null}
-
-              {selectedInviteProfile ? (
-                <View style={styles.selectedInviteCard}>
-                  <Text style={styles.selectedInviteName}>{selectedInviteProfile.display_name || t('Unnamed user')}</Text>
-                  <Text style={styles.selectedInviteMeta}>{t('Select public roles')}</Text>
-                  <View style={styles.roleToggle}>
-                    {(['athlete', 'coach', 'physio'] as const).map((role) => (
-                      <TouchableOpacity
-                        key={role}
-                        style={[styles.roleButton, invitePublicRoles.includes(role) && styles.roleButtonActive]}
-                        onPress={() => toggleInvitePublicRole(role)}
-                      >
-                        <Text style={invitePublicRoles.includes(role) ? styles.roleTextActive : styles.roleText}>
-                          {t(role === 'athlete' ? 'Athlete' : role === 'coach' ? 'Coach' : 'Physio')}
-                        </Text>
-                      </TouchableOpacity>
-                    ))}
-                  </View>
-
-                  <Text style={styles.selectedInviteMeta}>{t('Select permission')}</Text>
-                  <View style={styles.roleToggle}>
-                    <TouchableOpacity
-                      style={[styles.roleButton, invitePermission === 'member' && styles.roleButtonActive]}
-                      onPress={() => setInvitePermission('member')}
-                    >
-                      <Text style={invitePermission === 'member' ? styles.roleTextActive : styles.roleText}>{t('Member')}</Text>
-                    </TouchableOpacity>
-                    {isOwner ? (
-                      <TouchableOpacity
-                        style={[styles.roleButton, invitePermission === 'admin' && styles.roleButtonActive]}
-                        onPress={() => setInvitePermission('admin')}
-                      >
-                        <Text style={invitePermission === 'admin' ? styles.roleTextActive : styles.roleText}>{t('Admin')}</Text>
-                      </TouchableOpacity>
-                    ) : null}
-                  </View>
-
-                  <View style={styles.actionRow}>
-                    <TouchableOpacity style={styles.neutralButton} onPress={() => setSelectedInviteProfile(null)}>
-                      <Text style={styles.neutralButtonText}>{t('Cancel')}</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      style={styles.actionButton}
-                      onPress={() => handleAddMember(selectedInviteProfile)}
-                      disabled={Boolean(addBusyByProfile[String(selectedInviteProfile.profile_id)]) || invitePublicRoles.length === 0}
-                    >
-                      {addBusyByProfile[String(selectedInviteProfile.profile_id)] ? (
-                        <ActivityIndicator size="small" color={colors.whiteColor} />
-                      ) : (
-                        <>
-                          <Add size={14} color={colors.whiteColor} variant="Linear" />
-                          <Text style={styles.actionButtonText}>{t('Invite')}</Text>
-                        </>
-                      )}
-                    </TouchableOpacity>
-                  </View>
-                </View>
-              ) : null}
             </View>
 
             <View style={styles.sectionCard}>

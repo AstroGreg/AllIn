@@ -1,5 +1,5 @@
 import React, { useMemo, useState, useEffect, useCallback, useRef } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, TextInput, Modal, Pressable, useWindowDimensions, ActivityIndicator, Platform, Switch } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, TextInput, Modal, Pressable, useWindowDimensions, ActivityIndicator, Platform, Switch, Alert } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
@@ -17,8 +17,17 @@ import SizeBox from '../../constants/SizeBox';
 import Images from '../../constants/Images';
 import { useTheme } from '../../context/ThemeContext';
 import { useAuth } from '../../context/AuthContext';
-import { ApiError, searchEvents } from '../../services/apiGateway';
+import { ApiError, getEventCompetitions, searchEvents } from '../../services/apiGateway';
 import { useTranslation } from 'react-i18next';
+import {
+    buildSubscriptionDisciplineOptions,
+    normalizeSubscriptionCategories,
+    SUBSCRIPTION_ALL_DISCIPLINE_ID,
+    SUBSCRIPTION_CATEGORY_OPTIONS,
+    toggleSubscriptionCategory,
+    toggleSubscriptionDiscipline,
+    type SubscriptionDisciplineOption,
+} from '../../utils/eventSubscription';
 
 const EVENT_FILTERS = ['Competition', 'Location'] as const;
 type EventFilterKey = typeof EVENT_FILTERS[number];
@@ -66,9 +75,14 @@ const AvailableEventsScreen = ({ navigation }: any) => {
     const [activeDateField, setActiveDateField] = useState<'start' | 'end' | null>(null);
     const [showSubscribeModal, setShowSubscribeModal] = useState(false);
     const [modalEvent, setModalEvent] = useState<any | null>(null);
+    const [subscribeStep, setSubscribeStep] = useState<0 | 1 | 2>(0);
     const [chestNumber, setChestNumber] = useState('');
     const [useDefaultChest, setUseDefaultChest] = useState(false);
-    const [allowFaceRecognition, setAllowFaceRecognition] = useState(true);
+    const [allowFaceRecognition, setAllowFaceRecognition] = useState(false);
+    const [selectedDisciplineIds, setSelectedDisciplineIds] = useState<string[]>([SUBSCRIPTION_ALL_DISCIPLINE_ID]);
+    const [selectedCategoryLabels, setSelectedCategoryLabels] = useState<string[]>(['All']);
+    const [subscribeDisciplines, setSubscribeDisciplines] = useState<SubscriptionDisciplineOption[]>([]);
+    const [subscribeDisciplinesLoading, setSubscribeDisciplinesLoading] = useState(false);
     const [availableEvents, setAvailableEvents] = useState<any[]>([]);
     const [isLoadingEvents, setIsLoadingEvents] = useState(false);
     const [eventsError, setEventsError] = useState<string | null>(null);
@@ -322,38 +336,98 @@ const AvailableEventsScreen = ({ navigation }: any) => {
     const modalWidth = Math.min(windowWidth * 0.9, 420);
 
     const resetSubscribeForm = useCallback(() => {
+        setSubscribeStep(0);
         setChestNumber('');
         setUseDefaultChest(false);
-        setAllowFaceRecognition(Boolean((userProfile as any)?.faceVerified));
+        setAllowFaceRecognition(false);
+        setSelectedDisciplineIds([SUBSCRIPTION_ALL_DISCIPLINE_ID]);
+        setSelectedCategoryLabels(['All']);
+        setSubscribeDisciplines([]);
+        setSubscribeDisciplinesLoading(false);
     }, [userProfile]);
 
     const openSubscribeModal = useCallback((event: any) => {
         resetSubscribeForm();
         setModalEvent(event);
         setShowSubscribeModal(true);
-    }, [resetSubscribeForm]);
+        if (!apiAccessToken || !event?.id) return;
+        setSubscribeDisciplinesLoading(true);
+        getEventCompetitions(apiAccessToken, String(event.id), { onlyWithMedia: false })
+            .then((res) => {
+                const options = buildSubscriptionDisciplineOptions(Array.isArray(res?.competitions) ? res.competitions : []);
+                setSubscribeDisciplines(options);
+                setSelectedDisciplineIds([SUBSCRIPTION_ALL_DISCIPLINE_ID]);
+            })
+            .catch(() => {
+                setSubscribeDisciplines([]);
+                setSelectedDisciplineIds([SUBSCRIPTION_ALL_DISCIPLINE_ID]);
+            })
+            .finally(() => {
+                setSubscribeDisciplinesLoading(false);
+            });
+    }, [apiAccessToken, resetSubscribeForm]);
 
     const closeSubscribeModal = useCallback(() => {
         setShowSubscribeModal(false);
         setModalEvent(null);
         resetSubscribeForm();
     }, [resetSubscribeForm]);
+    const promptFaceEnrollment = useCallback(() => {
+        Alert.alert(
+            t('Face setup required'),
+            t('Set up your face scan to use face recognition for this competition.'),
+            [
+                { text: t('Cancel'), style: 'cancel' },
+                {
+                    text: t('Set up face'),
+                    onPress: () => {
+                        const parentNav = navigation.getParent?.();
+                        if (parentNav) {
+                            parentNav.navigate('Search', {
+                                screen: 'SearchFaceCaptureScreen',
+                                params: {
+                                    mode: 'enrolFace',
+                                    afterEnroll: {
+                                        screen: 'AISearchScreen',
+                                    },
+                                },
+                            });
+                            return;
+                        }
+                        navigation.navigate('AISearchScreen');
+                    },
+                },
+            ],
+        );
+    }, [navigation, t]);
 
-    const isTrackCompetition = String(modalEvent?.competitionType || '').toLowerCase() === 'track';
     const activeChestNumber = useMemo(() => {
-        if (!isTrackCompetition) return '';
         return String((useDefaultChest ? defaultChestNumber : chestNumber) ?? '').trim();
-    }, [chestNumber, defaultChestNumber, isTrackCompetition, useDefaultChest]);
-    const hasChestNumber = !isTrackCompetition || (
-        useDefaultChest
-            ? Boolean(defaultChestNumber)
-            : chestNumber.trim().length > 0
+    }, [chestNumber, defaultChestNumber, useDefaultChest]);
+    const normalizedDisciplineIds = useMemo(
+        () => selectedDisciplineIds.includes(SUBSCRIPTION_ALL_DISCIPLINE_ID) ? [] : selectedDisciplineIds,
+        [selectedDisciplineIds],
     );
-    const canContinue = hasChestNumber;
+    const selectedDisciplineLabels = useMemo(
+        () => {
+            if (selectedDisciplineIds.includes(SUBSCRIPTION_ALL_DISCIPLINE_ID)) {
+                return [t('all')];
+            }
+            const labels = subscribeDisciplines
+                .filter((option) => selectedDisciplineIds.includes(option.id))
+                .map((option) => option.label);
+            return labels.length > 0 ? labels : [t('all')];
+        },
+        [selectedDisciplineIds, subscribeDisciplines, t],
+    );
+    const normalizedCategoryLabels = useMemo(
+        () => normalizeSubscriptionCategories(selectedCategoryLabels),
+        [selectedCategoryLabels],
+    );
 
     const handleSubscribeReview = useCallback(() => {
         if (!modalEvent?.id) return;
-        const safeChestNumber = isTrackCompetition && /^\d+$/.test(activeChestNumber) ? activeChestNumber : '';
+        const safeChestNumber = /^\d+$/.test(activeChestNumber) ? activeChestNumber : '';
         const eventYear =
             getYearFromDateLike(modalEvent?.date) ||
             getYearFromDateLike(modalEvent?.title) ||
@@ -369,11 +443,14 @@ const AvailableEventsScreen = ({ navigation }: any) => {
                 eventTypeLabel: getCompetitionTypeLabel(modalEvent.competitionType),
                 organizingClub: String(modalEvent.organizingClub ?? ''),
                 competitionYear: eventYear,
-                isTrackCompetition,
+                isTrackCompetition: true,
                 chestNumber: safeChestNumber || null,
                 useFaceRecognition: hasFaceEnrollment ? allowFaceRecognition : false,
                 hasFaceEnrollment,
                 faceConsentGranted,
+                disciplineIds: normalizedDisciplineIds,
+                disciplineLabels: selectedDisciplineLabels,
+                categoryLabels: normalizedCategoryLabels,
             },
         });
     }, [
@@ -384,9 +461,11 @@ const AvailableEventsScreen = ({ navigation }: any) => {
         getCompetitionTypeLabel,
         getYearFromDateLike,
         hasFaceEnrollment,
-        isTrackCompetition,
         modalEvent,
         navigation,
+        normalizedCategoryLabels,
+        normalizedDisciplineIds,
+        selectedDisciplineLabels,
     ]);
 
     const competitionQuery = filterValues.Competition.trim().toLowerCase();
@@ -690,9 +769,14 @@ const AvailableEventsScreen = ({ navigation }: any) => {
                 <View style={Styles.feedbackBackdrop}>
                     <Pressable style={{ position: 'absolute', top: 0, right: 0, bottom: 0, left: 0 }} onPress={closeSubscribeModal} />
                     <View style={Styles.feedbackCard}>
-                        <>
+                        <ScrollView
+                            showsVerticalScrollIndicator={false}
+                            contentContainerStyle={Styles.modalScrollContent}
+                        >
                                 <View style={Styles.modalHeaderRow}>
-                                    <Text style={Styles.modalTitle}>{t('subscribeToEvent')}</Text>
+                                    <Text style={Styles.modalTitle}>
+                                        {subscribeStep === 0 ? t('Discipline') : subscribeStep === 1 ? t('Category') : t('User')}
+                                    </Text>
                                     <TouchableOpacity
                                         style={Styles.modalHeaderAction}
                                         onPress={() => {
@@ -711,16 +795,66 @@ const AvailableEventsScreen = ({ navigation }: any) => {
                                         <Text style={Styles.modalHeaderActionText}>{t('viewCompetition')}</Text>
                                     </TouchableOpacity>
                                 </View>
-                                <Text style={Styles.modalSubtitle}>
-                                    {modalEvent?.title ?? t('selectDisciplineChest')}
-                                </Text>
-                                <Text style={Styles.feedbackText}>
-                                    {t('Follow this competition to stay updated.')}
-                                </Text>
 
-                                {isTrackCompetition && (
+                                {subscribeStep === 0 ? (
+                                    <View style={Styles.modalSectionCard}>
+                                        <Text style={Styles.modalSectionTitle}>{t('disciplines')}</Text>
+                                        <Text style={Styles.modalSectionHint}>{t('Choose one or more disciplines, or keep All for the full competition.')}</Text>
+                                        {subscribeDisciplinesLoading ? (
+                                            <View style={{ paddingVertical: 10, alignItems: 'center' }}>
+                                                <ActivityIndicator color={colors.primaryColor} />
+                                            </View>
+                                        ) : (
+                                            <View style={Styles.modalChipsGrid}>
+                                                {subscribeDisciplines.map((item) => {
+                                                    const isSelected = selectedDisciplineIds.includes(item.id);
+                                                    return (
+                                                        <TouchableOpacity
+                                                            key={`discipline-${item.id}`}
+                                                            style={[Styles.modalChip, isSelected && Styles.modalChipActive]}
+                                                            onPress={() => setSelectedDisciplineIds((prev) => toggleSubscriptionDiscipline(prev, item.id))}
+                                                            activeOpacity={0.8}
+                                                        >
+                                                            <Text style={[Styles.modalChipText, isSelected && Styles.modalChipTextActive]}>
+                                                                {item.id === SUBSCRIPTION_ALL_DISCIPLINE_ID ? t('all') : item.label}
+                                                            </Text>
+                                                        </TouchableOpacity>
+                                                    );
+                                                })}
+                                            </View>
+                                        )}
+                                    </View>
+                                ) : null}
+
+                                {subscribeStep === 1 ? (
+                                    <View style={Styles.modalSectionCard}>
+                                        <Text style={Styles.modalSectionTitle}>{t('Category')}</Text>
+                                        <Text style={Styles.modalSectionHint}>{t('Choose the categories you want to follow, or keep All.')}</Text>
+                                        <View style={Styles.modalChipsGrid}>
+                                            {SUBSCRIPTION_CATEGORY_OPTIONS.map((item) => {
+                                                const isSelected = normalizedCategoryLabels.includes(item);
+                                                return (
+                                                    <TouchableOpacity
+                                                        key={`category-${item}`}
+                                                        style={[Styles.modalChip, isSelected && Styles.modalChipActive]}
+                                                        onPress={() => setSelectedCategoryLabels((prev) => toggleSubscriptionCategory(prev, item))}
+                                                        activeOpacity={0.8}
+                                                    >
+                                                        <Text style={[Styles.modalChipText, isSelected && Styles.modalChipTextActive]}>
+                                                            {t(item === 'All' ? 'all' : item)}
+                                                        </Text>
+                                                    </TouchableOpacity>
+                                                );
+                                            })}
+                                        </View>
+                                    </View>
+                                ) : null}
+
+                                {subscribeStep === 2 ? (
                                     <>
+                                        <View style={Styles.modalSectionCard}>
                                         <Text style={Styles.modalSectionTitle}>{t('Chest number')}</Text>
+                                        <Text style={Styles.modalSectionHint}>{t('Chest number is optional. Leave it empty to follow all photos for this subscription.')}</Text>
                                         {!useDefaultChest || !defaultChestNumber ? (
                                             <View style={Styles.modalChestInput}>
                                                 <User size={16} color={colors.subTextColor} variant="Linear" />
@@ -750,46 +884,68 @@ const AvailableEventsScreen = ({ navigation }: any) => {
                                                     : t('No saved chest number yet. Enter the chest number for this competition below.')}
                                             </Text>
                                         </TouchableOpacity>
-                                    </>
-                                )}
+                                        </View>
 
-                                <Text style={Styles.modalSectionTitle}>{t('Face')}</Text>
-                                <View style={Styles.modalToggleRow}>
-                                    <View style={Styles.modalToggleCopy}>
-                                        <Text style={Styles.modalToggleTitle}>{t('Allow face recognition for this competition')}</Text>
-                                        <Text style={Styles.modalToggleHint}>
-                                            {!hasFaceEnrollment
-                                                ? t('Face: enrollment required.')
-                                                : faceConsentGranted
-                                                    ? t('Face recognition is already enabled on your profile.')
-                                                    : t('Permission will be requested when you confirm.')}
-                                        </Text>
-                                    </View>
-                                    <Switch
-                                        value={allowFaceRecognition}
-                                        onValueChange={setAllowFaceRecognition}
-                                        disabled={!hasFaceEnrollment}
-                                        trackColor={{ false: colors.lightGrayColor, true: colors.primaryColor }}
-                                        thumbColor={colors.pureWhite}
-                                    />
-                                </View>
+                                        <View style={Styles.modalSectionCard}>
+                                            <Text style={Styles.modalSectionTitle}>{t('Face')}</Text>
+                                            <View style={Styles.modalToggleRow}>
+                                                <View style={Styles.modalToggleCopy}>
+                                                    <Text style={Styles.modalToggleTitle}>{t('Allow face recognition for this competition')}</Text>
+                                                    <Text style={Styles.modalToggleHint}>
+                                                        {!hasFaceEnrollment
+                                                            ? t('Face: enrollment required.')
+                                                            : faceConsentGranted
+                                                                ? t('Enable this only if you want notifications narrowed to your face.')
+                                                                : t('Permission will be requested when you confirm.')}
+                                                    </Text>
+                                                </View>
+                                                <Switch
+                                                    value={allowFaceRecognition}
+                                                    onValueChange={(nextValue) => {
+                                                        if (nextValue && !hasFaceEnrollment) {
+                                                            promptFaceEnrollment();
+                                                            return;
+                                                        }
+                                                        setAllowFaceRecognition(nextValue);
+                                                    }}
+                                                    trackColor={{ false: colors.lightGrayColor, true: colors.primaryColor }}
+                                                    thumbColor={colors.pureWhite}
+                                                />
+                                            </View>
+                                        </View>
+                                    </>
+                                ) : null}
 
                                 <View style={Styles.modalButtonsRow}>
-                                    <TouchableOpacity style={Styles.modalCancelButton} onPress={closeSubscribeModal}>
-                                        <Text style={Styles.modalCancelText}>{t('cancel')}</Text>
+                                    <TouchableOpacity
+                                        style={Styles.modalCancelButton}
+                                        onPress={() => {
+                                            if (subscribeStep === 0) {
+                                                closeSubscribeModal();
+                                                return;
+                                            }
+                                            setSubscribeStep((prev) => Math.max(0, prev - 1) as 0 | 1 | 2);
+                                        }}
+                                    >
+                                        <Text style={Styles.modalCancelText}>{subscribeStep === 0 ? t('cancel') : t('Back')}</Text>
                                     </TouchableOpacity>
                                     <TouchableOpacity
-                                        style={[Styles.modalConfirmButton, !canContinue && Styles.modalConfirmButtonDisabled]}
-                                        onPress={handleSubscribeReview}
-                                        disabled={!canContinue}
+                                        style={Styles.modalConfirmButton}
+                                        onPress={() => {
+                                            if (subscribeStep < 2) {
+                                                setSubscribeStep((prev) => Math.min(2, prev + 1) as 0 | 1 | 2);
+                                                return;
+                                            }
+                                            handleSubscribeReview();
+                                        }}
                                         testID="available-event-subscribe-confirm"
                                     >
-                                        <Text style={[Styles.modalConfirmText, !canContinue && Styles.modalConfirmTextDisabled]}>
-                                            {t('Review')}
+                                        <Text style={Styles.modalConfirmText}>
+                                            {subscribeStep < 2 ? t('Next') : t('Review')}
                                         </Text>
                                     </TouchableOpacity>
                                 </View>
-                        </>
+                        </ScrollView>
                     </View>
                 </View>
             </Modal>
