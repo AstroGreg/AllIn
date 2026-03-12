@@ -50,7 +50,7 @@ const SAVE_FACE_CAPTURE_ANGLES: CaptureAngle[] = [
     { id: 'right', title: 'Right Side', instruction: 'Turn your head to the right and hold still', yawMin: -55, yawMax: -10, pitchMin: -20, pitchMax: 20 },
 ];
 
-// 5 angles for backend enrollment (/ai/faces/enroll)
+// Enrollment uses five verified angles, one accepted capture per angle.
 const ENROLL_FACE_CAPTURE_ANGLES: CaptureAngle[] = [
     { id: 'frontal', title: 'Front', instruction: 'Look straight at the camera and hold still', yawMin: -25, yawMax: 25, pitchMin: -25, pitchMax: 25 },
     { id: 'left_profile', title: 'Left Profile', instruction: 'Turn your head to the left and hold still', yawMin: 5, yawMax: 75, pitchMin: -25, pitchMax: 25 },
@@ -128,7 +128,6 @@ const SearchFaceCaptureScreen = ({ navigation, route }: any) => {
     const enrollReplace: boolean = mode === 'enrolFace' ? (route?.params?.replace !== false) : true;
     const guidedAutoCapture: boolean = mode === 'enrolFace' ? (route?.params?.guidedAutoCapture !== false) : true;
     const requireConsentBeforeEnroll: boolean = mode === 'enrolFace' ? (route?.params?.requireConsentBeforeEnroll !== false) : false;
-    const templatesPerAngle: number = mode === 'enrolFace' ? (useLiveness ? 1 : 3) : 1;
     const afterEnroll = route?.params?.afterEnroll ?? null;
     const [isGrantingConsent, setIsGrantingConsent] = useState(false);
     const [hasPreEnrollConsent, setHasPreEnrollConsent] = useState(mode !== 'enrolFace' || !requireConsentBeforeEnroll);
@@ -191,19 +190,30 @@ const SearchFaceCaptureScreen = ({ navigation, route }: any) => {
         currentAngleIndexRef.current = currentAngleIndex;
     }, [currentAngleIndex]);
 
+    const getRequiredCapturesForAngle = useCallback((angleId?: string | null) => {
+        if (mode !== 'enrolFace') return 1;
+        return angleId === 'frontal' ? ENROLL_DISTANCE_STEPS.length : 1;
+    }, [mode]);
+
+    const getDistanceStepForAngle = useCallback((angleId?: string | null, currentCount: number = 0) => {
+        if (mode !== 'enrolFace' || angleId !== 'frontal') return null;
+        const index = Math.min(currentCount, ENROLL_DISTANCE_STEPS.length - 1);
+        return ENROLL_DISTANCE_STEPS[index];
+    }, [mode]);
+
     useEffect(() => {
         const a = captureAngles[currentAngleIndex];
         const id = a?.id;
         const count = id ? (capturedImages[id]?.length ?? 0) : 0;
-        const required = mode === 'enrolFace' ? templatesPerAngle : 1;
+        const required = getRequiredCapturesForAngle(id);
         hasCurrentImageRef.current = count >= required;
-    }, [capturedImages, currentAngleIndex, captureAngles, mode, templatesPerAngle]);
+    }, [capturedImages, currentAngleIndex, captureAngles, getRequiredCapturesForAngle]);
 
     const currentAngle = captureAngles[currentAngleIndex];
     const currentImages = capturedImages[currentAngle?.id] ?? [];
     const currentImage = currentImages.length > 0 ? currentImages[currentImages.length - 1] : undefined;
-    const distanceIndex = mode === 'enrolFace' ? Math.min(currentImages.length, ENROLL_DISTANCE_STEPS.length - 1) : 0;
-    const distanceStep = mode === 'enrolFace' ? ENROLL_DISTANCE_STEPS[distanceIndex] : null;
+    const currentRequiredCount = getRequiredCapturesForAngle(currentAngle?.id);
+    const distanceStep = getDistanceStepForAngle(currentAngle?.id, currentImages.length);
     const isReviewing = !!pendingPhotoUri;
 
     useEffect(() => {
@@ -211,8 +221,11 @@ const SearchFaceCaptureScreen = ({ navigation, route }: any) => {
     }, [distanceStep]);
     const verifiedCount = useMemo(() => {
         if (mode !== 'enrolFace') return 0;
-        return captureAngles.filter(a => (capturedImages[a.id]?.length ?? 0) >= templatesPerAngle && angleVerification[a.id]?.status === 'accepted').length;
-    }, [angleVerification, captureAngles, capturedImages, mode, templatesPerAngle]);
+        return captureAngles.filter(a => {
+            const required = getRequiredCapturesForAngle(a.id);
+            return (capturedImages[a.id]?.length ?? 0) >= required && angleVerification[a.id]?.status === 'accepted';
+        }).length;
+    }, [angleVerification, captureAngles, capturedImages, getRequiredCapturesForAngle, mode]);
 
     const completedCount = mode === 'enrolFace' ? verifiedCount : Object.values(capturedImages).filter(v => (v?.length ?? 0) > 0).length;
     const allCaptured = completedCount === captureAngles.length;
@@ -358,7 +371,7 @@ const SearchFaceCaptureScreen = ({ navigation, route }: any) => {
             if (!capturedAngle?.id) return;
 
             const beforeCount = capturedImages[capturedAngle.id]?.length ?? 0;
-            const requiredCount = mode === 'enrolFace' ? templatesPerAngle : 1;
+            const requiredCount = getRequiredCapturesForAngle(capturedAngle.id);
 
             let canProceed = true;
             if (mode === 'enrolFace') {
@@ -509,7 +522,7 @@ const SearchFaceCaptureScreen = ({ navigation, route }: any) => {
                 setIsCapturing(false);
             }
         }
-    }, [apiAccessToken, captureAngles, capturedImages, guidedAutoCapture, livenessChallengeId, mode, templatesPerAngle, useLiveness, t]);
+    }, [apiAccessToken, captureAngles, capturedImages, getRequiredCapturesForAngle, guidedAutoCapture, livenessChallengeId, mode, useLiveness, t]);
 
     const clearCountdown = useCallback(() => {
         if (countdownRef.current) {
@@ -596,7 +609,7 @@ const SearchFaceCaptureScreen = ({ navigation, route }: any) => {
             Alert.alert(t('Missing API token'), t('Log in or set a Dev API token to enroll your face.'));
             return;
         }
-        const requiredCount = mode === 'enrolFace' ? templatesPerAngle : 1;
+        const requiredCount = getRequiredCapturesForAngle(pendingAngleId);
         const before = capturedImages[pendingAngleId]?.length ?? 0;
         const nextCount = before + 1;
 
@@ -683,7 +696,7 @@ const SearchFaceCaptureScreen = ({ navigation, route }: any) => {
             .finally(() => {
                 setIsApproving(false);
             });
-    }, [advanceAngle, apiAccessToken, captureAngles, capturedImages, mode, pendingAngleId, pendingPhotoUri, t, templatesPerAngle]);
+    }, [advanceAngle, apiAccessToken, captureAngles, capturedImages, getRequiredCapturesForAngle, mode, pendingAngleId, pendingPhotoUri, t]);
 
     const handleRejectPhoto = useCallback(() => {
         setPendingPhotoUri(null);
@@ -787,7 +800,10 @@ const SearchFaceCaptureScreen = ({ navigation, route }: any) => {
             }
 
             const required = ['frontal', 'left_profile', 'right_profile', 'upward', 'downward'] as const;
-            const missing = required.filter(k => (capturedImages[k]?.length ?? 0) < templatesPerAngle || angleVerification[k]?.status !== 'accepted');
+            const missing = required.filter(k => {
+                const requiredCount = getRequiredCapturesForAngle(k);
+                return (capturedImages[k]?.length ?? 0) < requiredCount || angleVerification[k]?.status !== 'accepted';
+            });
             if (missing.length > 0) {
                 Alert.alert(t('Missing angles'), `${t('Please capture')}: ${missing.join(', ')}`);
                 const firstMissingIndex = captureAngles.findIndex(a => missing.includes(a.id as any));
@@ -835,7 +851,7 @@ const SearchFaceCaptureScreen = ({ navigation, route }: any) => {
             leftSideImage: capturedImages['left'],
             rightSideImage: capturedImages['right'],
         });
-    }, [apiAccessToken, afterEnroll, angleVerification, captureAngles, capturedImages, enrollReplace, mode, navigation, t, templatesPerAngle]);
+    }, [apiAccessToken, afterEnroll, angleVerification, captureAngles, capturedImages, enrollReplace, getRequiredCapturesForAngle, mode, navigation, t]);
 
     const handleCancel = useCallback(() => {
         navigation.goBack();
@@ -852,10 +868,10 @@ const SearchFaceCaptureScreen = ({ navigation, route }: any) => {
             }
             if (verify?.status === 'partial') {
                 const have = capturedImages[currentAngle?.id]?.length ?? 0;
-                const need = Math.max(0, templatesPerAngle - have);
+                const need = Math.max(0, currentRequiredCount - have);
                 if (need <= 0) return t('Great! Moving on…');
                 if (distanceStep) {
-                    return `${t(distanceStep.instruction)} (${have + 1}/${templatesPerAngle})`;
+                    return `${t(distanceStep.instruction)} (${have + 1}/${currentRequiredCount})`;
                 }
                 return `${t('Nice — take')} ${need} ${t('more photo(s) for this angle.')}`;
             }
@@ -888,7 +904,7 @@ const SearchFaceCaptureScreen = ({ navigation, route }: any) => {
         if (faceDetected) {
             if (distanceStep) {
                 const have = capturedImages[currentAngle?.id]?.length ?? 0;
-                return `${t(distanceStep.instruction)} (${Math.min(have + 1, templatesPerAngle)}/${templatesPerAngle})`;
+                return `${t(distanceStep.instruction)} (${Math.min(have + 1, currentRequiredCount)}/${currentRequiredCount})`;
             }
             return t(currentAngle.instruction);
         }
@@ -969,7 +985,7 @@ const SearchFaceCaptureScreen = ({ navigation, route }: any) => {
         );
     }
 
-    const requiredForAngle = mode === 'enrolFace' ? templatesPerAngle : 1;
+    const requiredForAngle = currentRequiredCount;
     const hasEnoughForAngle = currentImages.length >= requiredForAngle;
     const showCameraPreview = consentGateSatisfied && !hasEnoughForAngle && !isReviewing;
     const showCapturedPreview = (isReviewing && !!pendingPhotoUri) || (hasEnoughForAngle && !!currentImage);

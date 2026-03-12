@@ -338,11 +338,13 @@ export const createStyles = (colors: ThemeColors) => StyleSheet.create({
     },
     toggleTab: {
         flex: 1,
-        height: 39,
+        minHeight: 46,
         minWidth: 0,
         alignItems: 'center',
         justifyContent: 'center',
         borderRadius: 8,
+        gap: 4,
+        paddingVertical: 6,
     },
     toggleTabActive: {
         backgroundColor: 'rgba(60, 130, 246, 0.3)',

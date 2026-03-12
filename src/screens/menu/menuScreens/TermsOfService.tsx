@@ -43,11 +43,11 @@ const TermsOfService = ({ navigation }: any) => {
                     <Text style={Styles.termsSectionTitle}>{t('Terms of Service')}</Text>
                     <SizeBox height={12} />
                     <Text style={Styles.termsText}>
-                        Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry's standard dummy text ever since the 1500s, when an unknown printer took a galley of type and scrambled it to make a type specimen book. It has survived not only five centuries, but also the leap into electronic typesetting,
+                        {t('These terms explain how SpotMe is provided, which features are available, and what is expected from users when uploading, buying, or sharing media.')}
                     </Text>
                     <SizeBox height={8} />
                     <Text style={Styles.termsText}>
-                        Link to Terms and Conditions of third-party service providers used by the app
+                        {t('Third-party services used by the app may also apply their own terms and privacy rules.')}
                     </Text>
                     <SizeBox height={8} />
                     {thirdPartyLinks.map((link, index) => (
@@ -64,7 +64,7 @@ const TermsOfService = ({ navigation }: any) => {
                     <Text style={Styles.termsSectionTitle}>{t('Changes to This Terms and Conditions')}</Text>
                     <SizeBox height={12} />
                     <Text style={Styles.termsText}>
-                        Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry's standard dummy text ever since the 1500s, when an unknown printer took a galley of type and scrambled it to make a type specimen book. It has survived not only five centuries, but also the leap into electronic typesetting,
+                        {t('We may update these terms when features, billing rules, or legal requirements change. Material updates should be reviewed before you continue using the app.')}
                     </Text>
                 </View>
 
@@ -75,7 +75,7 @@ const TermsOfService = ({ navigation }: any) => {
                     <Text style={Styles.termsSectionTitle}>{t('Contact Us')}</Text>
                     <SizeBox height={12} />
                     <Text style={Styles.termsText}>
-                        Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry's standard dummy text ever since the 1500s, when an unknown printer took a galley of type and scrambled it to make a type specimen book. It has survived not only five centuries, but also the leap into electronic typesetting,
+                        {t('If you have questions about these terms, billing, or privacy requests, contact the SpotMe support team through the help section in the app.')}
                     </Text>
                 </View>
 

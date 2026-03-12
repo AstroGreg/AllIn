@@ -26,8 +26,6 @@ const PaymentMethod = ({ navigation, route }: any) => {
     const [selectedCard, setSelectedCard] = useState(1);
     const customInputRef = useRef<TextInput>(null);
     const redirectTo = route?.params?.redirectTo;
-    const contextSearch = route?.params?.contextSearch;
-    const filters = route?.params?.filters;
 
     const amounts = ['€5', '€10', '€15'];
 
@@ -155,7 +153,7 @@ const PaymentMethod = ({ navigation, route }: any) => {
                                 <View style={Styles.bankCardInfo}>
                                     <Text style={Styles.bankName}>{card.bankName}</Text>
                                     <Text style={Styles.cardHolderText}>
-                                        Cardholder: <Text style={Styles.cardHolderName}>{card.cardHolder}</Text>
+                                        {t('Cardholder')}: <Text style={Styles.cardHolderName}>{card.cardHolder}</Text>
                                     </Text>
                                     <Text style={Styles.cardNumber}>{card.cardNumber}</Text>
                                 </View>
@@ -168,9 +166,9 @@ const PaymentMethod = ({ navigation, route }: any) => {
                                     setSelectedCard(card.id);
                                     handlePayNow();
                                 }}
-                            >
+                                >
                                 <Text style={selectedCard === card.id ? Styles.payNowText : Styles.payNowTextGrey}>
-                                    Pay Now
+                                    {t('Pay Now')}
                                 </Text>
                             </TouchableOpacity>
                         </View>

@@ -297,7 +297,7 @@ const ViewUserBlogDetailsScreen = ({ navigation, route }: any) => {
                             onPress={async () => {
                                 try {
                                     await NativeShare.open({
-                                        message: postData?.title ? String(postData.title) : 'AllIn',
+                                        message: postData?.title ? String(postData.title) : 'SpotMe',
                                         subject: postData?.title ? String(postData.title) : undefined,
                                     });
                                 } catch {

@@ -1,9 +1,9 @@
 import { View, Text, TouchableOpacity, ScrollView, TextInput, ActivityIndicator, Alert, StyleSheet } from 'react-native';
 import React, { useMemo, useState, useEffect } from 'react';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import SizeBox from '../../constants/SizeBox';
 import Icons from '../../constants/Icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { CommonActions } from '@react-navigation/native';
 import { createStyles } from './CreateGroupProfileStyles';
 import { ArrowLeft2, People, Edit2, SearchNormal1, Add, CloseCircle, Profile2User } from 'iconsax-react-nativejs';
 import { launchImageLibrary } from 'react-native-image-picker';
@@ -11,11 +11,14 @@ import FastImage from 'react-native-fast-image';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
 import { useTranslation } from 'react-i18next';
+import SportFocusIcon from '../../components/profile/SportFocusIcon';
 import {
     createGroup,
     getGroup,
     getMediaById,
     inviteGroupMember,
+    searchClubs,
+    searchGroups,
     searchProfiles,
     uploadMediaBatch,
     updateGroup,
@@ -23,16 +26,18 @@ import {
 } from '../../services/apiGateway';
 import { getApiBaseUrl } from '../../constants/RuntimeConfig';
 import { getFilteredCityOptions } from '../../constants/locationSuggestions';
+import { getSportFocusDefinitions, getSportFocusLabel, normalizeFocusId, type SportFocusId } from '../../utils/profileSelections';
+import { buildBottomTabGroupProfileReset } from '../../utils/navigationResets';
 
 type MemberPick = ProfileSearchResult & { role: 'athlete' | 'coach' };
-type GroupFocus = 'track-field' | 'road-events';
+type GroupFocus = SportFocusId;
 
 const CreateGroupProfileScreen = ({ navigation, route }: any) => {
     const insets = useSafeAreaInsets();
     const { colors } = useTheme();
     const { t } = useTranslation();
     const styles = createStyles(colors);
-    const { apiAccessToken } = useAuth();
+    const { apiAccessToken, authBootstrap } = useAuth();
     const mode = route?.params?.mode === 'edit' ? 'edit' : 'create';
     const editGroupId = route?.params?.groupId ? String(route.params.groupId) : null;
     const initialSelectedFocuses = useMemo(() => {
@@ -42,11 +47,7 @@ const CreateGroupProfileScreen = ({ navigation, route }: any) => {
             new Set(
                 raw
                     .map((entry: any) => String(entry || '').trim().toLowerCase())
-                    .map((entry: string) => {
-                        if (entry.includes('track')) return 'track-field';
-                        if (entry.includes('road') || entry.includes('trail')) return 'road-events';
-                        return '';
-                    })
+                    .map((entry: string) => normalizeFocusId(entry) || '')
                     .filter(Boolean),
             ),
         ) as GroupFocus[];
@@ -75,6 +76,12 @@ const CreateGroupProfileScreen = ({ navigation, route }: any) => {
     const [isLoadingGroup, setIsLoadingGroup] = useState(false);
     const [iconPreviewUrl, setIconPreviewUrl] = useState<string | null>(null);
     const [iconUploadFile, setIconUploadFile] = useState<{ uri: string; type: string; name: string } | null>(null);
+    const [groupNameStatus, setGroupNameStatus] = useState<{ state: 'idle' | 'checking' | 'available' | 'group' | 'club'; message: string | null }>({
+        state: 'idle',
+        message: null,
+    });
+    const [originalGroupName, setOriginalGroupName] = useState('');
+    const activeProfileId = String(authBootstrap?.profile_id || '').trim();
 
     useEffect(() => {
         let mounted = true;
@@ -85,6 +92,7 @@ const CreateGroupProfileScreen = ({ navigation, route }: any) => {
                 const resp = await getGroup(apiAccessToken, editGroupId);
                 if (!mounted) return;
                 setGroupName(String(resp?.group?.name ?? ''));
+                setOriginalGroupName(String(resp?.group?.name ?? ''));
                 setGroupDescription(
                     String(
                         (resp?.group as any)?.location ??
@@ -110,31 +118,12 @@ const CreateGroupProfileScreen = ({ navigation, route }: any) => {
                 const normalizedServerFocuses = Array.from(
                     new Set(
                         serverFocusesRaw
-                            .map((entry) => {
-                                if (entry.includes('track')) return 'track-field';
-                                if (entry.includes('road') || entry.includes('trail')) return 'road-events';
-                                return '';
-                            })
+                            .map((entry) => normalizeFocusId(entry) || '')
                             .filter(Boolean),
                     ),
                 ) as GroupFocus[];
                 if (normalizedServerFocuses.length > 0) {
                     setSelectedFocuses(normalizedServerFocuses);
-                } else {
-                    const stored = String((await AsyncStorage.getItem(`@group_focuses_${editGroupId}`)) || '').trim();
-                    if (stored) {
-                        try {
-                            const parsed = JSON.parse(stored);
-                            const fromStorage = (Array.isArray(parsed) ? parsed : [])
-                                .map((entry: any) => String(entry || '').trim().toLowerCase())
-                                .filter((entry: string) => entry === 'track-field' || entry === 'road-events') as GroupFocus[];
-                            if (fromStorage.length > 0) {
-                                setSelectedFocuses(Array.from(new Set(fromStorage)));
-                            }
-                        } catch {
-                            // ignore
-                        }
-                    }
                 }
                 const avatarMediaId = String(resp?.group?.avatar_media_id ?? '').trim();
                 if (avatarMediaId) {
@@ -185,7 +174,6 @@ const CreateGroupProfileScreen = ({ navigation, route }: any) => {
                     borderWidth: 1,
                 },
                 locationInput: {
-                    flex: 1,
                     ...styles.textInput,
                     paddingVertical: 12,
                 },
@@ -324,6 +312,14 @@ const CreateGroupProfileScreen = ({ navigation, route }: any) => {
                     borderColor: colors.errorColor || '#D32F2F',
                     borderWidth: 1.5,
                 },
+                fieldHelper: {
+                    fontSize: 12,
+                    color: colors.subTextColor,
+                },
+                fieldError: {
+                    fontSize: 12,
+                    color: colors.errorColor || '#D32F2F',
+                },
             }),
         [colors, styles],
     );
@@ -339,7 +335,7 @@ const CreateGroupProfileScreen = ({ navigation, route }: any) => {
 
     useEffect(() => {
         let mounted = true;
-        if (!apiAccessToken) {
+        if (!apiAccessToken || mode !== 'edit') {
             setResults([]);
             return () => {
                 mounted = false;
@@ -355,7 +351,12 @@ const CreateGroupProfileScreen = ({ navigation, route }: any) => {
             setSearching(true);
             try {
                 const resp = await searchProfiles(apiAccessToken, { q: term, limit: 10 });
-                if (mounted) setResults(resp.profiles || []);
+                if (mounted) {
+                    const nextResults = Array.isArray(resp?.profiles)
+                        ? resp.profiles.filter((profile) => String(profile?.profile_id || '').trim() !== activeProfileId)
+                        : [];
+                    setResults(nextResults);
+                }
             } catch {
                 if (mounted) setResults([]);
             } finally {
@@ -367,12 +368,67 @@ const CreateGroupProfileScreen = ({ navigation, route }: any) => {
             mounted = false;
             clearTimeout(handler);
         };
-    }, [apiAccessToken, query]);
+    }, [activeProfileId, apiAccessToken, mode, query]);
+
+    useEffect(() => {
+        let mounted = true;
+        const normalizedName = String(groupName || '').trim().replace(/\s+/g, ' ').toLowerCase();
+        const normalizedOriginal = String(originalGroupName || '').trim().replace(/\s+/g, ' ').toLowerCase();
+        if (!apiAccessToken || normalizedName.length < 2) {
+            setGroupNameStatus({ state: 'idle', message: null });
+            return () => {
+                mounted = false;
+            };
+        }
+        if (mode === 'edit' && normalizedName === normalizedOriginal) {
+            setGroupNameStatus({ state: 'available', message: null });
+            return () => {
+                mounted = false;
+            };
+        }
+
+        setGroupNameStatus({ state: 'checking', message: null });
+        const handler = setTimeout(async () => {
+            try {
+                const [groupsResp, clubsResp] = await Promise.all([
+                    searchGroups(apiAccessToken, { q: groupName.trim(), limit: 12 }),
+                    searchClubs(apiAccessToken, { q: groupName.trim(), limit: 12 }),
+                ]);
+                if (!mounted) return;
+
+                const exactGroup = Array.isArray(groupsResp?.groups)
+                    ? groupsResp.groups.find((entry) => String(entry?.name || '').trim().replace(/\s+/g, ' ').toLowerCase() === normalizedName)
+                    : null;
+                if (exactGroup) {
+                    setGroupNameStatus({ state: 'group', message: t('A group with this name already exists.') });
+                    return;
+                }
+
+                const exactClub = Array.isArray(clubsResp?.clubs)
+                    ? clubsResp.clubs.find((entry) => String(entry?.name || '').trim().replace(/\s+/g, ' ').toLowerCase() === normalizedName)
+                    : null;
+                if (exactClub) {
+                    setGroupNameStatus({ state: 'club', message: t('This name is already used by an official club.') });
+                    return;
+                }
+
+                setGroupNameStatus({ state: 'available', message: null });
+            } catch {
+                if (mounted) setGroupNameStatus({ state: 'idle', message: null });
+            }
+        }, 280);
+
+        return () => {
+            mounted = false;
+            clearTimeout(handler);
+        };
+    }, [apiAccessToken, groupName, mode, originalGroupName, t]);
 
     const selectedIds = useMemo(() => new Set(selectedMembers.map((m) => m.profile_id)), [selectedMembers]);
 
     const addMember = (profile: ProfileSearchResult) => {
-        if (!profile?.profile_id || selectedIds.has(profile.profile_id)) return;
+        const memberProfileId = String(profile?.profile_id || '').trim();
+        if (!memberProfileId || memberProfileId === activeProfileId || selectedIds.has(memberProfileId)) return;
         setSelectedMembers((prev) => [...prev, { ...profile, role: roleMode }]);
     };
 
@@ -391,11 +447,12 @@ const CreateGroupProfileScreen = ({ navigation, route }: any) => {
     const selectedAthletes = useMemo(() => selectedMembers.filter((m) => m.role === 'athlete'), [selectedMembers]);
     const selectedCoaches = useMemo(() => selectedMembers.filter((m) => m.role === 'coach'), [selectedMembers]);
     const focusOptions = useMemo(
-        () => [
-            { id: 'track-field' as GroupFocus, label: t('trackAndField'), icon: <Icons.TrackFieldLogo width={16} height={16} /> },
-            { id: 'road-events' as GroupFocus, label: t('roadAndTrail'), icon: <Icons.PersonRunningColorful width={16} height={16} /> },
-        ],
-        [t],
+        () => getSportFocusDefinitions().map((focus) => ({
+            id: focus.id as GroupFocus,
+            label: getSportFocusLabel(focus.id, t),
+            icon: <SportFocusIcon focusId={focus.id} size={16} color={colors.primaryColor} />,
+        })),
+        [colors.primaryColor, t],
     );
     const visibleFocusOptions = useMemo(() => {
         if (!focusLocked) return focusOptions;
@@ -420,6 +477,8 @@ const CreateGroupProfileScreen = ({ navigation, route }: any) => {
         const result = await launchImageLibrary({
             mediaType: 'photo',
             selectionLimit: 1,
+            presentationStyle: 'fullScreen',
+            assetRepresentationMode: 'current',
         });
         const asset = result.assets?.[0];
         if (!asset?.uri) return;
@@ -441,6 +500,14 @@ const CreateGroupProfileScreen = ({ navigation, route }: any) => {
         if (nextMissingRequiredFields.groupName || nextMissingRequiredFields.groupDescription) {
             return;
         }
+        if (groupNameStatus.state === 'checking') {
+            Alert.alert(t('Checking name'), t('Please wait until the group name check finishes.'));
+            return;
+        }
+        if (groupNameStatus.state === 'group' || groupNameStatus.state === 'club') {
+            Alert.alert(t('Choose a different name'), groupNameStatus.message || t('This name is not available.'));
+            return;
+        }
         if (!apiAccessToken) {
             Alert.alert(t('Error'), t('You must be logged in'));
             return;
@@ -451,7 +518,10 @@ const CreateGroupProfileScreen = ({ navigation, route }: any) => {
             let groupId = '';
             let avatarMediaId: string | undefined;
             if (iconUploadFile) {
-                const uploaded = await uploadMediaBatch(apiAccessToken, { files: [iconUploadFile] });
+                const uploaded = await uploadMediaBatch(apiAccessToken, {
+                    files: [iconUploadFile],
+                    skip_profile_collection: true,
+                });
                 const uploadedId = String(uploaded?.results?.[0]?.media_id || '').trim();
                 if (uploadedId) avatarMediaId = uploadedId;
             }
@@ -500,31 +570,26 @@ const CreateGroupProfileScreen = ({ navigation, route }: any) => {
                 groupId = String((created as any)?.group?.group_id || (created as any)?.group?.id || '').trim();
             }
             if (groupId) {
-                await AsyncStorage.setItem(`@group_focuses_${groupId}`, JSON.stringify(focusPayload));
-                const additions = selectedMembers.map((member) =>
-                    inviteGroupMember(apiAccessToken, groupId, {
-                        profile_id: member.profile_id,
-                        role: member.role,
-                    }),
-                );
-                if (additions.length) {
-                    await Promise.allSettled(additions);
+                if (mode === 'edit') {
+                    const additions = selectedMembers.map((member) =>
+                        inviteGroupMember(apiAccessToken, groupId, {
+                            profile_id: member.profile_id,
+                            role: 'member',
+                            public_roles: [member.role],
+                        }),
+                    );
+                    if (additions.length) {
+                        await Promise.allSettled(additions);
+                    }
                 }
-                navigation.reset({
-                    index: 0,
-                    routes: [
-                        {
-                            name: 'BottomTabBar',
-                            params: {
-                                screen: 'Profile',
-                                params: {
-                                    screen: 'GroupProfileScreen',
-                                    params: { groupId },
-                                },
-                            },
-                        },
-                    ],
-                });
+                navigation.dispatch(
+                    CommonActions.reset(
+                        buildBottomTabGroupProfileReset(groupId, {
+                            showBackButton: true,
+                            origin: 'profile',
+                        }),
+                    ),
+                );
             } else {
                 Alert.alert(t('Error'), t('Could not create group. Please try again.'));
             }
@@ -552,7 +617,11 @@ const CreateGroupProfileScreen = ({ navigation, route }: any) => {
             >
                 <View style={styles.titleSection}>
                     <Text style={styles.title}>{mode === 'edit' ? t('Edit Group') : t('Create Group')}</Text>
-                    <Text style={styles.subtitle}>{t('Add athletes and coaches to your group')}</Text>
+                    <Text style={styles.subtitle}>
+                        {mode === 'edit'
+                            ? t('Invite athletes and coaches to your group')
+                            : t('Set up your group details. Members can join after creation.')}
+                    </Text>
                 </View>
 
                 {isLoadingGroup ? (
@@ -594,6 +663,12 @@ const CreateGroupProfileScreen = ({ navigation, route }: any) => {
                                 }}
                             />
                         </View>
+                        {groupNameStatus.state === 'checking' ? (
+                            <Text style={localStyles.fieldHelper}>{t('Checking group name...')}</Text>
+                        ) : null}
+                        {groupNameStatus.message ? (
+                            <Text style={localStyles.fieldError}>{groupNameStatus.message}</Text>
+                        ) : null}
                     </View>
 
                     <View style={styles.inputGroup}>
@@ -682,124 +757,128 @@ const CreateGroupProfileScreen = ({ navigation, route }: any) => {
                         </View>
                     </View>
 
-                    <View style={styles.inputGroup}>
-                        <Text style={styles.inputLabel}>{t('Add Members')}</Text>
-                        <View style={localStyles.roleToggle}>
-                            <TouchableOpacity
-                                style={[localStyles.roleButton, roleMode === 'athlete' && localStyles.roleButtonActive]}
-                                onPress={() => setRoleMode('athlete')}
-                            >
-                                <Text style={roleMode === 'athlete' ? localStyles.roleTextActive : localStyles.roleText}>
-                                    {t('Athletes')}
-                                </Text>
-                            </TouchableOpacity>
-                            <TouchableOpacity
-                                style={[localStyles.roleButton, roleMode === 'coach' && localStyles.roleButtonActive]}
-                                onPress={() => setRoleMode('coach')}
-                            >
-                                <Text style={roleMode === 'coach' ? localStyles.roleTextActive : localStyles.roleText}>
-                                    {t('Coaches')}
-                                </Text>
-                            </TouchableOpacity>
-                        </View>
-
-                        <View style={styles.inputContainer}>
-                            <SearchNormal1 size={20} color={colors.primaryColor} variant="Linear" />
-                            <TextInput
-                                style={styles.textInput}
-                                placeholder={t('Search users')}
-                                placeholderTextColor={colors.grayColor}
-                                value={query}
-                                onChangeText={setQuery}
-                            />
-                        </View>
-
-                        {searching && (
-                            <View style={localStyles.emptyState}>
-                                <ActivityIndicator size="small" color={colors.primaryColor} />
-                            </View>
-                        )}
-
-                        {!searching && query.trim().length > 0 && results.length === 0 && (
-                            <View style={localStyles.emptyState}>
-                                <Text style={localStyles.emptyText}>{t('No results')}</Text>
-                            </View>
-                        )}
-
-                        {!searching && results.map((profile) => (
-                            <View key={profile.profile_id} style={localStyles.resultCard}>
-                                <View>
-                                    <Text style={localStyles.resultName}>
-                                        {profile.display_name || t('Unnamed user')}
-                                    </Text>
-                                    <Text style={localStyles.resultRole}>
-                                        {roleMode === 'coach' ? t('Coach') : t('Athlete')}
-                                    </Text>
+                    {mode === 'edit' ? (
+                        <>
+                            <View style={styles.inputGroup}>
+                                <Text style={styles.inputLabel}>{t('Add Members')}</Text>
+                                <View style={localStyles.roleToggle}>
+                                    <TouchableOpacity
+                                        style={[localStyles.roleButton, roleMode === 'athlete' && localStyles.roleButtonActive]}
+                                        onPress={() => setRoleMode('athlete')}
+                                    >
+                                        <Text style={roleMode === 'athlete' ? localStyles.roleTextActive : localStyles.roleText}>
+                                            {t('Athletes')}
+                                        </Text>
+                                    </TouchableOpacity>
+                                    <TouchableOpacity
+                                        style={[localStyles.roleButton, roleMode === 'coach' && localStyles.roleButtonActive]}
+                                        onPress={() => setRoleMode('coach')}
+                                    >
+                                        <Text style={roleMode === 'coach' ? localStyles.roleTextActive : localStyles.roleText}>
+                                            {t('Coaches')}
+                                        </Text>
+                                    </TouchableOpacity>
                                 </View>
-                                <TouchableOpacity style={localStyles.addButton} onPress={() => addMember(profile)}>
-                                    <Add size={16} color={colors.whiteColor} variant="Linear" />
-                                    <Text style={localStyles.addButtonText}>{t('Add')}</Text>
-                                </TouchableOpacity>
-                            </View>
-                        ))}
-                    </View>
 
-                    <View style={styles.inputGroup}>
-                        <Text style={styles.inputLabel}>{t('Selected Athletes')}</Text>
-                        {selectedAthletes.length === 0 ? (
-                            <Text style={styles.subtitle}>{t('No athletes added yet')}</Text>
-                        ) : (
-                            <View style={localStyles.chipRow}>
-                                {selectedAthletes.map((member) => (
-                                    <TouchableOpacity
-                                        key={member.profile_id}
-                                        style={localStyles.chip}
-                                        onPress={() => removeMember(member.profile_id)}
-                                    >
-                                        <Profile2User size={14} color={colors.primaryColor} variant="Linear" />
-                                        <Text style={localStyles.chipText}>
-                                            {member.display_name || t('Athlete')}
-                                        </Text>
-                                        <CloseCircle size={14} color={colors.subTextColor} variant="Linear" />
-                                    </TouchableOpacity>
-                                ))}
-                            </View>
-                        )}
-                    </View>
+                                <View style={styles.inputContainer}>
+                                    <SearchNormal1 size={20} color={colors.primaryColor} variant="Linear" />
+                                    <TextInput
+                                        style={styles.textInput}
+                                        placeholder={t('Search users')}
+                                        placeholderTextColor={colors.grayColor}
+                                        value={query}
+                                        onChangeText={setQuery}
+                                    />
+                                </View>
 
-                    <View style={styles.inputGroup}>
-                        <Text style={styles.inputLabel}>{t('Selected Coaches')}</Text>
-                        {selectedCoaches.length === 0 && manualCoachNames.length === 0 ? (
-                            <Text style={styles.subtitle}>{t('No coaches added yet')}</Text>
-                        ) : (
-                            <View style={localStyles.chipRow}>
-                                {manualCoachNames.map((coachName) => (
-                                    <TouchableOpacity
-                                        key={`manual-coach-${coachName}`}
-                                        style={localStyles.chip}
-                                        onPress={() => removeManualCoachName(coachName)}
-                                    >
-                                        <Profile2User size={14} color={colors.primaryColor} variant="Linear" />
-                                        <Text style={localStyles.chipText}>{coachName}</Text>
-                                        <CloseCircle size={14} color={colors.subTextColor} variant="Linear" />
-                                    </TouchableOpacity>
-                                ))}
-                                {selectedCoaches.map((member) => (
-                                    <TouchableOpacity
-                                        key={member.profile_id}
-                                        style={localStyles.chip}
-                                        onPress={() => removeMember(member.profile_id)}
-                                    >
-                                        <Profile2User size={14} color={colors.primaryColor} variant="Linear" />
-                                        <Text style={localStyles.chipText}>
-                                            {member.display_name || t('Coach')}
-                                        </Text>
-                                        <CloseCircle size={14} color={colors.subTextColor} variant="Linear" />
-                                    </TouchableOpacity>
+                                {searching && (
+                                    <View style={localStyles.emptyState}>
+                                        <ActivityIndicator size="small" color={colors.primaryColor} />
+                                    </View>
+                                )}
+
+                                {!searching && query.trim().length > 0 && results.length === 0 && (
+                                    <View style={localStyles.emptyState}>
+                                        <Text style={localStyles.emptyText}>{t('No results')}</Text>
+                                    </View>
+                                )}
+
+                                {!searching && results.map((profile) => (
+                                    <View key={profile.profile_id} style={localStyles.resultCard}>
+                                        <View>
+                                            <Text style={localStyles.resultName}>
+                                                {profile.display_name || t('Unnamed user')}
+                                            </Text>
+                                            <Text style={localStyles.resultRole}>
+                                                {roleMode === 'coach' ? t('Coach') : t('Athlete')}
+                                            </Text>
+                                        </View>
+                                        <TouchableOpacity style={localStyles.addButton} onPress={() => addMember(profile)}>
+                                            <Add size={16} color={colors.whiteColor} variant="Linear" />
+                                            <Text style={localStyles.addButtonText}>{t('Add')}</Text>
+                                        </TouchableOpacity>
+                                    </View>
                                 ))}
                             </View>
-                        )}
-                    </View>
+
+                            <View style={styles.inputGroup}>
+                                <Text style={styles.inputLabel}>{t('Selected Athletes')}</Text>
+                                {selectedAthletes.length === 0 ? (
+                                    <Text style={styles.subtitle}>{t('No athletes added yet')}</Text>
+                                ) : (
+                                    <View style={localStyles.chipRow}>
+                                        {selectedAthletes.map((member) => (
+                                            <TouchableOpacity
+                                                key={member.profile_id}
+                                                style={localStyles.chip}
+                                                onPress={() => removeMember(member.profile_id)}
+                                            >
+                                                <Profile2User size={14} color={colors.primaryColor} variant="Linear" />
+                                                <Text style={localStyles.chipText}>
+                                                    {member.display_name || t('Athlete')}
+                                                </Text>
+                                                <CloseCircle size={14} color={colors.subTextColor} variant="Linear" />
+                                            </TouchableOpacity>
+                                        ))}
+                                    </View>
+                                )}
+                            </View>
+
+                            <View style={styles.inputGroup}>
+                                <Text style={styles.inputLabel}>{t('Selected Coaches')}</Text>
+                                {selectedCoaches.length === 0 && manualCoachNames.length === 0 ? (
+                                    <Text style={styles.subtitle}>{t('No coaches added yet')}</Text>
+                                ) : (
+                                    <View style={localStyles.chipRow}>
+                                        {manualCoachNames.map((coachName) => (
+                                            <TouchableOpacity
+                                                key={`manual-coach-${coachName}`}
+                                                style={localStyles.chip}
+                                                onPress={() => removeManualCoachName(coachName)}
+                                            >
+                                                <Profile2User size={14} color={colors.primaryColor} variant="Linear" />
+                                                <Text style={localStyles.chipText}>{coachName}</Text>
+                                                <CloseCircle size={14} color={colors.subTextColor} variant="Linear" />
+                                            </TouchableOpacity>
+                                        ))}
+                                        {selectedCoaches.map((member) => (
+                                            <TouchableOpacity
+                                                key={member.profile_id}
+                                                style={localStyles.chip}
+                                                onPress={() => removeMember(member.profile_id)}
+                                            >
+                                                <Profile2User size={14} color={colors.primaryColor} variant="Linear" />
+                                                <Text style={localStyles.chipText}>
+                                                    {member.display_name || t('Coach')}
+                                                </Text>
+                                                <CloseCircle size={14} color={colors.subTextColor} variant="Linear" />
+                                            </TouchableOpacity>
+                                        ))}
+                                    </View>
+                                )}
+                            </View>
+                        </>
+                    ) : null}
                 </View>
 
                 <TouchableOpacity

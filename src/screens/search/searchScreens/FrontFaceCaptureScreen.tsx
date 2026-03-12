@@ -12,7 +12,6 @@ import { useTranslation } from 'react-i18next'
 
 // Custom camera frame with corner brackets
 const CameraFrame = ({ width, height, children, primaryColor, secondaryColor }: { width: number; height: number; children: React.ReactNode; primaryColor: string; secondaryColor: string }) => {
-    const { t } = useTranslation();
     const strokeWidth = 10;
     const cornerLength = 80;
     const borderRadius = 10;
@@ -115,6 +114,7 @@ const FRAME_WIDTH = SCREEN_WIDTH - 40; // 20px padding on each side
 const FRAME_HEIGHT = 465;
 
 const FrontFaceCaptureScreen = ({ navigation }: any) => {
+    const { t } = useTranslation();
     const insets = useSafeAreaInsets();
     const { colors } = useTheme();
     const styles = createStyles(colors);
@@ -166,7 +166,7 @@ const FrontFaceCaptureScreen = ({ navigation }: any) => {
             <View style={styles.content}>
                 {/* Instruction Text */}
                 <Text style={styles.instructionText}>
-                    Look straight at the camera and keep your face inside the frame
+                    {t('Look straight at the camera and keep your face inside the frame.')}
                 </Text>
 
                 <SizeBox height={16} />

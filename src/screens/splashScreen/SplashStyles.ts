@@ -6,8 +6,19 @@ export const createStyles = (colors: ThemeColors) => StyleSheet.create({
         flex: 1,
         backgroundColor: colors.primaryColor,
         alignItems: 'center',
-        justifyContent: 'center'
-    }
+        justifyContent: 'center',
+    },
+    logo: {
+        width: 320,
+        height: 320,
+    },
+    wordmark: {
+        marginTop: 18,
+        color: '#FFFFFF',
+        fontSize: 34,
+        fontWeight: '800',
+        letterSpacing: 0.6,
+    },
 });
 
 const Styles = createStyles(lightColors);

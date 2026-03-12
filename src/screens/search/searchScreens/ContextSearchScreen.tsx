@@ -11,12 +11,16 @@ import { createStyles } from './ContextSearchScreenStyles';
 import UnifiedSearchInput from '../../../components/unifiedSearchInput/UnifiedSearchInput';
 import { useRoute } from '@react-navigation/native';
 import { useTranslation } from 'react-i18next'
-
-const FILTERS = ['Competition', 'Person', 'Group', 'Location'];
+import {
+    buildSearchFilterChipLabel,
+    getSearchFilterLabel,
+    SEARCH_FILTER_KEYS,
+    type SearchFilterKey,
+} from '../../../utils/searchLabels';
 
 interface FilterChip {
     id: number;
-    label: string;
+    label: SearchFilterKey;
     value: string;
 }
 
@@ -33,7 +37,7 @@ const ContextSearchScreen = ({ navigation }: any) => {
     const [contextSearchText, setContextSearchText] = useState('');
     const [activeChips, setActiveChips] = useState<FilterChip[]>([]);
     const [showFilterModal, setShowFilterModal] = useState(false);
-    const [modalFilterType, setModalFilterType] = useState('');
+    const [modalFilterType, setModalFilterType] = useState<SearchFilterKey | ''>('');
     const { events } = useEvents();
 
     useEffect(() => {
@@ -60,12 +64,13 @@ const ContextSearchScreen = ({ navigation }: any) => {
         }
     }, [filterState]);
 
-    const handleFilterPress = (filter: string) => {
+    const handleFilterPress = (filter: SearchFilterKey) => {
         setModalFilterType(filter);
         setShowFilterModal(true);
     };
 
-    const handleSelectOption = (label: string, value: string) => {
+    const handleSelectOption = (label: SearchFilterKey | '', value: string) => {
+        if (!label) return;
         const newChip: FilterChip = {
             id: Date.now(),
             label,
@@ -123,7 +128,7 @@ const ContextSearchScreen = ({ navigation }: any) => {
 
     const filterOptions = useMemo(() => {
         const competitions = events.map((event) => {
-            const name = String(event.event_name || event.event_title || 'Competition');
+            const name = String(event.event_name || event.event_title || t('Competition'));
             const date = event.event_date ? new Date(event.event_date).toLocaleDateString() : '';
             const location = event.event_location ? String(event.event_location) : '';
             const sublabel = [date, location].filter(Boolean).join(' • ');
@@ -139,7 +144,7 @@ const ContextSearchScreen = ({ navigation }: any) => {
         const people = AI_PEOPLE.map((p) => ({ label: p.name, value: p.name }));
         const groups = AI_GROUPS.map((g) => ({ label: g.name, value: g.name }));
         return { competitions, locations, people, groups };
-    }, [events]);
+    }, [events, t]);
 
     return (
         <View style={Styles.container}>
@@ -157,7 +162,7 @@ const ContextSearchScreen = ({ navigation }: any) => {
             <ScrollView style={Styles.content} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
                 <Text style={Styles.title}>{t('Describe Context')}</Text>
                 <Text style={Styles.subtitle}>
-                    Enter keywords or describe what you're looking for
+                    {t("Enter keywords or describe what you're looking for")}
                 </Text>
                 <SizeBox height={24} />
 
@@ -185,7 +190,7 @@ const ContextSearchScreen = ({ navigation }: any) => {
                     showsHorizontalScrollIndicator={false}
                     contentContainerStyle={Styles.filterTabsContainer}
                 >
-                    {FILTERS.map((filter) => {
+                    {SEARCH_FILTER_KEYS.map((filter) => {
                         const hasValue = activeChips.some(chip => chip.label === filter);
                         return (
                             <TouchableOpacity
@@ -194,7 +199,7 @@ const ContextSearchScreen = ({ navigation }: any) => {
                                 onPress={() => handleFilterPress(filter)}
                             >
                                 <Text style={[Styles.filterTabText, hasValue && Styles.filterTabTextActive]}>
-                                    {filter}
+                                    {getSearchFilterLabel(filter, t)}
                                 </Text>
                             </TouchableOpacity>
                         );
@@ -213,7 +218,7 @@ const ContextSearchScreen = ({ navigation }: any) => {
                                     onPress={() => removeChip(chip.id)}
                                 >
                                     <Text style={Styles.activeChipText}>
-                                        {chip.label}: {chip.value}
+                                        {buildSearchFilterChipLabel(chip.label, chip.value, t)}
                                     </Text>
                                     <CloseCircle size={16} color="#FFFFFF" variant="Bold" />
                                 </TouchableOpacity>
@@ -258,7 +263,7 @@ const ContextSearchScreen = ({ navigation }: any) => {
                 >
                     <View style={Styles.modalContainer}>
                         <TouchableOpacity activeOpacity={1}>
-                            <Text style={Styles.modalTitle}>{modalFilterType}</Text>
+                            <Text style={Styles.modalTitle}>{modalFilterType ? getSearchFilterLabel(modalFilterType, t) : ''}</Text>
                             <SizeBox height={16} />
                             <ScrollView style={Styles.modalList} contentContainerStyle={Styles.modalListContent}>
                                 {(modalFilterType === 'Competition' ? filterOptions.competitions

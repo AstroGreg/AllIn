@@ -26,9 +26,7 @@ const AdvertisementScreen = ({ navigation }: any) => {
             >
                 <View style={Styles.contentContainer}>
                     <View style={Styles.adOverlay}>
-                        <Text style={Styles.adText}>
-                            Ads like 50% discount in Adidas shoes etc
-                        </Text>
+                        <Text style={Styles.adText}>{t('Sponsored update')}</Text>
                     </View>
                 </View>
 

@@ -3,7 +3,7 @@ import Fonts from '../../constants/Fonts';
 import type {ThemeColors} from '../../constants/Theme';
 
 const {width} = Dimensions.get('window');
-const cardWidth = (width - 40 - 12) / 2; // 40 = horizontal padding, 12 = gap
+const cardWidth = (width - 40 - 12) / 2;
 
 export const createStyles = (colors: ThemeColors) =>
   StyleSheet.create({
@@ -46,6 +46,212 @@ export const createStyles = (colors: ThemeColors) =>
       color: colors.grayColor,
     },
 
+    dashboardContent: {
+      paddingTop: 20,
+      paddingHorizontal: 20,
+    },
+    dashboardHero: {
+      padding: 18,
+      borderRadius: 18,
+      borderWidth: 1,
+      borderColor: colors.lightGrayColor,
+      backgroundColor: colors.cardBackground,
+      marginBottom: 16,
+      gap: 8,
+    },
+    dashboardEyebrow: {
+      ...Fonts.medium12,
+      color: colors.primaryColor,
+      textTransform: 'uppercase',
+      letterSpacing: 1,
+    },
+    dashboardTitle: {
+      ...Fonts.medium18,
+      color: colors.mainTextColor,
+    },
+    dashboardSubtitle: {
+      ...Fonts.regular13,
+      color: colors.subTextColor,
+      lineHeight: 20,
+    },
+    periodToggleRow: {
+      flexDirection: 'row',
+      gap: 10,
+      marginBottom: 16,
+    },
+    periodToggle: {
+      flex: 1,
+      minHeight: 40,
+      borderRadius: 999,
+      backgroundColor: colors.btnBackgroundColor,
+      borderWidth: 1,
+      borderColor: colors.lightGrayColor,
+      alignItems: 'center',
+      justifyContent: 'center',
+      paddingHorizontal: 10,
+    },
+    periodToggleActive: {
+      backgroundColor: colors.primaryColor,
+      borderColor: colors.primaryColor,
+    },
+    periodToggleText: {
+      ...Fonts.medium12,
+      color: colors.subTextColor,
+    },
+    periodToggleTextActive: {
+      color: colors.pureWhite,
+    },
+    kpiGrid: {
+      flexDirection: 'row',
+      gap: 12,
+      marginBottom: 16,
+    },
+    kpiCard: {
+      flex: 1,
+      paddingHorizontal: 14,
+      paddingVertical: 16,
+      borderRadius: 16,
+      borderWidth: 1,
+      borderColor: colors.lightGrayColor,
+      backgroundColor: colors.cardBackground,
+      minHeight: 96,
+      justifyContent: 'space-between',
+    },
+    kpiLabel: {
+      ...Fonts.regular12,
+      color: colors.subTextColor,
+    },
+    kpiValue: {
+      ...Fonts.medium18,
+      color: colors.mainTextColor,
+      marginTop: 8,
+    },
+    dashboardQuickLinks: {
+      flexDirection: 'row',
+      gap: 12,
+      marginBottom: 20,
+    },
+    dashboardQuickLink: {
+      flex: 1,
+      paddingHorizontal: 14,
+      paddingVertical: 14,
+      borderRadius: 16,
+      backgroundColor: colors.cardBackground,
+      borderWidth: 1,
+      borderColor: colors.lightGrayColor,
+      minHeight: 88,
+      justifyContent: 'space-between',
+    },
+    dashboardQuickLinkTitle: {
+      ...Fonts.medium14,
+      color: colors.mainTextColor,
+    },
+    dashboardQuickLinkSubtitle: {
+      ...Fonts.regular12,
+      color: colors.subTextColor,
+      lineHeight: 18,
+      marginTop: 8,
+    },
+    dashboardCompetitionCard: {
+      borderRadius: 18,
+      borderWidth: 1,
+      borderColor: colors.lightGrayColor,
+      backgroundColor: colors.cardBackground,
+      padding: 16,
+      marginBottom: 14,
+      gap: 14,
+    },
+    dashboardCompetitionTopRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 12,
+    },
+    dashboardCompetitionThumb: {
+      width: 72,
+      height: 72,
+      borderRadius: 14,
+      backgroundColor: colors.btnBackgroundColor,
+    },
+    dashboardCompetitionThumbPlaceholder: {
+      width: 72,
+      height: 72,
+      borderRadius: 14,
+      backgroundColor: colors.btnBackgroundColor,
+    },
+    dashboardCompetitionInfo: {
+      flex: 1,
+      gap: 4,
+    },
+    dashboardCompetitionTitle: {
+      ...Fonts.medium16,
+      color: colors.mainTextColor,
+    },
+    dashboardCompetitionMeta: {
+      ...Fonts.regular12,
+      color: colors.subTextColor,
+      lineHeight: 18,
+    },
+    trendRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 6,
+      marginTop: 4,
+    },
+    trendText: {
+      ...Fonts.regular12,
+    },
+    trendFlatDot: {
+      width: 8,
+      height: 8,
+      borderRadius: 4,
+      backgroundColor: colors.subTextColor,
+    },
+    dashboardCompetitionStatsRow: {
+      flexDirection: 'row',
+      gap: 10,
+    },
+    dashboardMiniStat: {
+      flex: 1,
+      paddingHorizontal: 10,
+      paddingVertical: 10,
+      borderRadius: 12,
+      backgroundColor: colors.btnBackgroundColor,
+    },
+    dashboardMiniStatLabel: {
+      ...Fonts.regular11,
+      color: colors.subTextColor,
+      marginBottom: 6,
+    },
+    dashboardMiniStatValue: {
+      ...Fonts.medium14,
+      color: colors.mainTextColor,
+    },
+    dashboardCompetitionFooter: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      gap: 12,
+    },
+    dashboardCompetitionFootnote: {
+      ...Fonts.regular12,
+      color: colors.subTextColor,
+    },
+    dashboardOpenButton: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 6,
+      paddingHorizontal: 14,
+      paddingVertical: 10,
+      borderRadius: 999,
+      borderWidth: 1,
+      borderColor: colors.primaryColor,
+      backgroundColor: colors.secondaryBlueColor,
+    },
+    dashboardOpenButtonText: {
+      ...Fonts.medium12,
+      color: colors.primaryColor,
+    },
+
     listContent: {
       paddingTop: 24,
       paddingBottom: 24,
@@ -53,18 +259,17 @@ export const createStyles = (colors: ThemeColors) =>
     sectionTitle: {
       ...Fonts.medium18,
       color: colors.mainTextColor,
-      paddingHorizontal: 20,
-      marginBottom: 16,
+      marginBottom: 12,
     },
     listHeader: {
       paddingHorizontal: 20,
       marginBottom: 16,
     },
     searchBar: {
-      marginTop: 12,
+      marginTop: 10,
       borderWidth: 1,
       borderColor: colors.lightGrayColor,
-      borderRadius: 12,
+      borderRadius: 14,
       paddingHorizontal: 12,
       paddingVertical: 10,
       backgroundColor: colors.btnBackgroundColor,
@@ -103,20 +308,6 @@ export const createStyles = (colors: ThemeColors) =>
       color: colors.grayColor,
       flex: 1,
     },
-    viewButton: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: 6,
-      backgroundColor: colors.primaryColor,
-      borderRadius: 10,
-      paddingHorizontal: 12,
-      paddingVertical: 8,
-    },
-    viewButtonText: {
-      ...Fonts.medium14,
-      fontSize: 12,
-      color: colors.pureWhite,
-    },
     emptyText: {
       ...Fonts.regular14,
       color: colors.grayColor,
@@ -129,7 +320,8 @@ export const createStyles = (colors: ThemeColors) =>
       color: '#FF3B30',
       textAlign: 'center',
       paddingHorizontal: 20,
-      marginTop: 16,
+      marginTop: 6,
+      marginBottom: 16,
     },
     profitCard: {
       marginHorizontal: 20,
@@ -254,5 +446,51 @@ export const createStyles = (colors: ThemeColors) =>
     mediaMeta: {
       ...Fonts.regular12,
       color: colors.grayColor,
+    },
+    tutorialCard: {
+      marginHorizontal: 20,
+      marginBottom: 14,
+      borderRadius: 14,
+      borderWidth: 1,
+      borderColor: colors.lightGrayColor,
+      backgroundColor: colors.cardBackground,
+      padding: 14,
+      gap: 10,
+    },
+    tutorialTitle: {
+      ...Fonts.medium16,
+      color: colors.mainTextColor,
+    },
+    tutorialBody: {
+      ...Fonts.regular13,
+      color: colors.subTextColor,
+      lineHeight: 18,
+    },
+    tutorialImage: {
+      width: '100%',
+      height: 140,
+      borderRadius: 10,
+      backgroundColor: colors.btnBackgroundColor,
+    },
+    tutorialPrimaryButton: {
+      minHeight: 46,
+      borderRadius: 12,
+      backgroundColor: colors.primaryColor,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    tutorialPrimaryButtonText: {
+      ...Fonts.medium14,
+      color: colors.pureWhite,
+    },
+    loadingOverlay: {
+      position: 'absolute',
+      left: 0,
+      right: 0,
+      top: 0,
+      bottom: 0,
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: 'rgba(0,0,0,0.02)',
     },
   });

@@ -1,5 +1,6 @@
 import React from 'react'
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { Platform } from 'react-native';
 import { useTheme } from '../context/ThemeContext';
 import SplashScreen from '../screens/splashScreen/SplashScreen';
 import LoginScreen from '../screens/authFlow/loginScreen/LoginScreen';
@@ -27,6 +28,7 @@ import DeleteAndPause from '../screens/menu/menuScreens/DeleteAndPause';
 import PaymentMethod from '../screens/menu/menuScreens/PaymentMethod';
 import AddNewCard from '../screens/menu/menuScreens/AddNewCard';
 import ProfileSettings from '../screens/menu/menuScreens/ProfileSettings';
+import AthleteDetailsHub from '../screens/menu/menuScreens/AthleteDetailsHub';
 import FacialRecognitionSettings from '../screens/menu/menuScreens/FacialRecognitionSettings';
 import EditProfile from '../screens/menu/menuScreens/EditProfile';
 import EditBioScreens from '../screens/viewUserProfile/profileScreens/EditBioScreens';
@@ -76,34 +78,67 @@ import DocumentUploadScreen from '../screens/documentUpload/DocumentUploadScreen
 import FaceVerificationScreen from '../screens/faceVerification/FaceVerificationScreen';
 import CreateGroupProfileScreen from '../screens/createGroupProfile/CreateGroupProfileScreen';
 import CreatePhotographerProfileScreen from '../screens/createPhotographerProfile/CreatePhotographerProfileScreen';
+import SelectCompetitionScreen from '../screens/upload/SelectCompetitionScreen';
+import UploadCompetitionDetailsScreen from '../screens/upload/CompetitionDetailsScreen';
+import EventSummaryScreen from '../screens/competitionSummary/CompetitionSummaryScreen';
 import ContextSearchLoadingScreen from '../screens/search/searchScreens/ContextSearchLoadingScreen';
 import AISearchResultsScreen from '../screens/search/searchScreens/AISearchResultsScreen';
 import FullPageImageViewerScreen from '../screens/fullPageImageViewer/FullPageImageViewerScreen';
+import GroupInviteLinkScreen from '../screens/groupInviteLink/GroupInviteLinkScreen';
 
 const Stack = createNativeStackNavigator();
-const RootStackNavigation = () => {
+const RootStackNavigation = ({
+    initialRouteName,
+    initialRouteParams,
+}: {
+    initialRouteName?: string;
+    initialRouteParams?: Record<string, any>;
+}) => {
     const { colors, isDark } = useTheme();
+    const resolvedInitialRouteName = typeof initialRouteName === 'string' && initialRouteName.trim().length > 0
+        ? initialRouteName
+        : 'SplashScreen';
+    const getInitialParams = (screenName: string) =>
+        resolvedInitialRouteName === screenName ? initialRouteParams : undefined;
 
     return (
         <Stack.Navigator
-            initialRouteName={'SplashScreen'}
+            initialRouteName={resolvedInitialRouteName}
             screenOptions={{
                 headerShown: false,
                 statusBarBackgroundColor: colors.backgroundColor,
                 statusBarStyle: isDark ? 'light' : 'dark',
                 presentation: 'card',
                 animationTypeForReplace: 'push',
+                gestureEnabled: true,
+                fullScreenGestureEnabled: Platform.OS === 'ios',
             }}>
             <Stack.Screen name="SplashScreen" component={SplashScreen} />
             <Stack.Screen name="AdvertisementScreen" component={AdvertisementScreen} />
-            <Stack.Screen name="CategorySelectionScreen" component={CategorySelectionScreen} />
+            <Stack.Screen
+                name="CategorySelectionScreen"
+                component={CategorySelectionScreen}
+                initialParams={getInitialParams('CategorySelectionScreen')}
+            />
             <Stack.Screen name="DocumentUploadScreen" component={DocumentUploadScreen} />
             <Stack.Screen name="FaceVerificationScreen" component={FaceVerificationScreen} />
             <Stack.Screen name="SelectLanguageScreen" component={SelectLanguageScreen} />
             <Stack.Screen name="LoginScreen" component={LoginScreen} />
-            <Stack.Screen name="CreateProfileScreen" component={CreateProfileScreen} />
-            <Stack.Screen name="SelectEventScreen" component={SelectEventScreen} />
-            <Stack.Screen name="CompleteAthleteDetailsScreen" component={CompleteAthleteDetailsScreen} />
+            <Stack.Screen
+                name="CreateProfileScreen"
+                component={CreateProfileScreen}
+                initialParams={getInitialParams('CreateProfileScreen')}
+            />
+            <Stack.Screen
+                name="SelectEventScreen"
+                component={SelectEventScreen}
+                initialParams={getInitialParams('SelectEventScreen')}
+            />
+            <Stack.Screen
+                name="CompleteAthleteDetailsScreen"
+                component={CompleteAthleteDetailsScreen}
+                initialParams={getInitialParams('CompleteAthleteDetailsScreen')}
+            />
             <Stack.Screen name="CompleteSupportDetailsScreen" component={CompleteSupportDetailsScreen} />
             <Stack.Screen name="CreateGroupProfileScreen" component={CreateGroupProfileScreen} />
             <Stack.Screen name="CreatePhotographerProfileScreen" component={CreatePhotographerProfileScreen} />
@@ -126,9 +161,14 @@ const RootStackNavigation = () => {
             <Stack.Screen name="PaymentMethod" component={PaymentMethod} />
             <Stack.Screen name="AddNewCard" component={AddNewCard} />
             <Stack.Screen name="ProfileSettings" component={ProfileSettings} />
+            <Stack.Screen name="AthleteDetailsHub" component={AthleteDetailsHub} />
             <Stack.Screen name="FacialRecognitionSettings" component={FacialRecognitionSettings} />
             <Stack.Screen name="EditProfile" component={EditProfile} />
-            <Stack.Screen name="EditBioScreens" component={EditBioScreens} />
+            <Stack.Screen
+                name="EditBioScreens"
+                component={EditBioScreens}
+                initialParams={getInitialParams('EditBioScreens')}
+            />
             <Stack.Screen name="MediaScreens" component={MediaScreens} />
             <Stack.Screen name="PhotosScreen" component={PhotosScreen} />
             <Stack.Screen name="VideoScreen" component={VideoScreen} />
@@ -145,6 +185,7 @@ const RootStackNavigation = () => {
             <Stack.Screen name="RightSideCaptureScreen" component={RightSideCaptureScreen} />
             <Stack.Screen name="NameThisFaceScreen" component={NameThisFaceScreen} />
             <Stack.Screen name="CompetitionDetailsScreen" component={CompetitionDetailsScreen} />
+            <Stack.Screen name="EventSummaryScreen" component={EventSummaryScreen} />
             <Stack.Screen name="Location" component={Location} />
             <Stack.Screen name="Help" component={Help} />
             <Stack.Screen name="TermsOfService" component={TermsOfService} />
@@ -158,7 +199,21 @@ const RootStackNavigation = () => {
             <Stack.Screen name="RoadTrailSettings" component={RoadTrailSettings} />
             <Stack.Screen name="NameSettings" component={NameSettings} />
             <Stack.Screen name="ManageProfiles" component={ManageProfiles} />
-            <Stack.Screen name="UserProfileScreen" component={UserProfileScreen} />
+            <Stack.Screen
+                name="UserProfileScreen"
+                component={UserProfileScreen}
+                initialParams={getInitialParams('UserProfileScreen')}
+            />
+            <Stack.Screen
+                name="RootUploadSelectCompetitionScreen"
+                component={SelectCompetitionScreen}
+                initialParams={getInitialParams('RootUploadSelectCompetitionScreen')}
+            />
+            <Stack.Screen
+                name="RootUploadCompetitionDetailsScreen"
+                component={UploadCompetitionDetailsScreen}
+                initialParams={getInitialParams('RootUploadCompetitionDetailsScreen')}
+            />
             <Stack.Screen name="ViewUserProfileScreen" component={ViewUserProfileScreen} />
             <Stack.Screen name="ViewUserCollectionsPhotosScreen" component={ViewUserCollectionsPhotosScreen} />
             <Stack.Screen name="ViewUserCollectionsVideosScreen" component={ViewUserCollectionsVideosScreen} />
@@ -179,6 +234,7 @@ const RootStackNavigation = () => {
                     animation: 'fade',
                 }}
             />
+            <Stack.Screen name="GroupInviteLinkScreen" component={GroupInviteLinkScreen} />
 
         </Stack.Navigator>
     )

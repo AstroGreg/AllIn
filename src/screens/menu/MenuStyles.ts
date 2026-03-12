@@ -99,7 +99,9 @@ export const createStyles = (colors: ThemeColors) => StyleSheet.create({
     titlesText: {
         ...Fonts.regular14,
         fontWeight: '400',
-        color: colors.mainTextColor
+        color: colors.mainTextColor,
+        flex: 1,
+        flexShrink: 1,
     },
     talentContainer: {
         borderRadius: 10,
@@ -187,8 +189,9 @@ export const createStyles = (colors: ThemeColors) => StyleSheet.create({
         backgroundColor: colors.secondaryBlueColor,
     },
     nextArrow: {
-        position: 'absolute',
-        right: 12
+        marginLeft: 'auto',
+        alignItems: 'center',
+        justifyContent: 'center',
     },
     pauseContent: {
         flex: 1,
@@ -606,6 +609,12 @@ export const createStyles = (colors: ThemeColors) => StyleSheet.create({
     addCardInputText: {
         color: colors.mainTextColor,
     },
+    inlineHelperText: {
+        ...Fonts.regular12,
+        color: colors.subTextColor,
+        marginTop: 8,
+        marginLeft: 4,
+    },
     continueBtn: {
         flexDirection: 'row',
         alignItems: 'center',
@@ -801,15 +810,24 @@ export const createStyles = (colors: ThemeColors) => StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'space-between',
         padding: 16,
-        height: 70,
+        minHeight: 78,
         borderRadius: 10,
         borderWidth: 0.5,
         borderColor: colors.lightGrayColor,
         backgroundColor: colors.whiteColor,
+        overflow: 'hidden',
     },
     accountSettingsLeft: {
         flexDirection: 'row',
         alignItems: 'center',
+        flex: 1,
+        minWidth: 0,
+    },
+    accountSettingsArrowWrap: {
+        marginLeft: 12,
+        flexShrink: 0,
+        alignItems: 'center',
+        justifyContent: 'center',
     },
     accountSettingsIconContainer: {
         width: 40,
@@ -823,6 +841,7 @@ export const createStyles = (colors: ThemeColors) => StyleSheet.create({
         ...Fonts.regular14,
         color: colors.mainTextColor,
         lineHeight: 22,
+        flexShrink: 1,
     },
     currentValueCard: {
         borderWidth: 0.5,

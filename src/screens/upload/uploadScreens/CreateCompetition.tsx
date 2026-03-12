@@ -17,13 +17,15 @@ const CreateCompetition = ({ navigation }: any) => {
     const insets = useSafeAreaInsets();
     const { colors } = useTheme();
     const Styles = createStyles(colors);
-    const [selectedImages, setSelectedImages] = useState([]);
+    const [_selectedImages, setSelectedImages] = useState([]);
 
     const handleImagePicker = async () => {
         const options: any = {
             mediaType: 'photo',
-            selectionLimit: 0,
+            selectionLimit: 12,
             quality: 1,
+            presentationStyle: 'fullScreen',
+            assetRepresentationMode: 'current',
         };
 
         try {

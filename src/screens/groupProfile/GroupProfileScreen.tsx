@@ -1,16 +1,17 @@
 import { View, Text, TouchableOpacity, ScrollView, ActivityIndicator, StyleSheet, Linking, Alert, Modal } from 'react-native';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { launchImageLibrary } from 'react-native-image-picker';
 import SizeBox from '../../constants/SizeBox';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useFocusEffect } from '@react-navigation/native';
 import FastImage from 'react-native-fast-image';
 import { createStyles } from './GroupProfileStyles';
-import { Location, Profile2User, User, Edit2 } from 'iconsax-react-nativejs';
+import { Location, Profile2User, User, Edit2, DocumentText, MedalStar, Gallery } from 'iconsax-react-nativejs';
 import Icons from '../../constants/Icons';
 import { useTheme } from '../../context/ThemeContext';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../context/AuthContext';
+import SportFocusIcon from '../../components/profile/SportFocusIcon';
 import {
     deletePost,
     followProfile,
@@ -33,6 +34,7 @@ import {
     type PostSummary,
 } from '../../services/apiGateway';
 import { getApiBaseUrl } from '../../constants/RuntimeConfig';
+import { getSportFocusLabel, normalizeFocusId, normalizeSelectedEvents, type SportFocusId } from '../../utils/profileSelections';
 
 const GroupProfileScreen = ({ navigation, route }: any) => {
     const insets = useSafeAreaInsets();
@@ -55,10 +57,8 @@ const GroupProfileScreen = ({ navigation, route }: any) => {
     const [deletingPostById, setDeletingPostById] = useState<Record<string, boolean>>({});
     const [groupIconUrl, setGroupIconUrl] = useState<string | null>(null);
     const [isUpdatingGroupAvatar, setIsUpdatingGroupAvatar] = useState(false);
-    const [storedFocuses, setStoredFocuses] = useState<string[]>([]);
     const [showProfileSwitcherModal, setShowProfileSwitcherModal] = useState(false);
     const [myGroups, setMyGroups] = useState<Array<{ id: string; name: string }>>([]);
-    const [memberRoleTags, setMemberRoleTags] = useState<Record<string, Array<'athlete' | 'coach' | 'physio'>>>({});
     const showBackButton = Boolean(route?.params?.showBackButton) || String(route?.params?.origin || '').toLowerCase() === 'search';
 
     const { apiAccessToken, userProfile } = useAuth();
@@ -121,6 +121,12 @@ const GroupProfileScreen = ({ navigation, route }: any) => {
     useEffect(() => {
         loadBaseGroupData();
     }, [loadBaseGroupData]);
+
+    useFocusEffect(
+        useCallback(() => {
+            void loadBaseGroupData();
+        }, [loadBaseGroupData]),
+    );
 
     const toAbsoluteUrl = useCallback((value?: string | null) => {
         if (!value) return null;
@@ -194,29 +200,9 @@ const GroupProfileScreen = ({ navigation, route }: any) => {
     const hasGroupRelationship = useMemo(() => String(group?.my_role || '').trim().length > 0, [group?.my_role]);
     const canOpenGroupSwitcher = hasGroupRelationship;
 
-    const selectedEventsNormalized = useMemo(() => {
-        const raw = userProfile?.selectedEvents;
-        if (!Array.isArray(raw)) return [];
-        return raw
-            .map((entry: any) =>
-                String(
-                    typeof entry === 'string'
-                        ? entry
-                        : entry?.id ?? entry?.value ?? entry?.event_id ?? entry?.name ?? '',
-                )
-                    .trim()
-                    .toLowerCase(),
-            )
-            .filter(Boolean);
-    }, [userProfile?.selectedEvents]);
-
-    const hasTrackFieldProfile = useMemo(
-        () => selectedEventsNormalized.some((entry) => entry === 'track-field' || entry === 'track&field' || entry === 'track_field' || entry.includes('track')),
-        [selectedEventsNormalized],
-    );
-    const hasRoadTrailProfile = useMemo(
-        () => selectedEventsNormalized.some((entry) => entry === 'road-events' || entry === 'road&trail' || entry === 'road_trail' || entry.includes('road') || entry.includes('trail')),
-        [selectedEventsNormalized],
+    const viewerSportFocuses = useMemo(
+        () => normalizeSelectedEvents(userProfile?.selectedEvents ?? []),
+        [userProfile?.selectedEvents],
     );
 
     useEffect(() => {
@@ -258,97 +244,27 @@ const GroupProfileScreen = ({ navigation, route }: any) => {
         '',
     ).trim() || t('No description added yet.');
     const groupWebsite = String((group as any)?.website ?? '').trim();
-    useEffect(() => {
-        let mounted = true;
-        const safeGroupId = String(group?.group_id || '').trim();
-        if (!safeGroupId) {
-            setStoredFocuses([]);
-            return () => {
-                mounted = false;
-            };
-        }
-        (async () => {
-            try {
-                const raw = String((await AsyncStorage.getItem(`@group_focuses_${safeGroupId}`)) || '').trim();
-                if (!raw) {
-                    if (mounted) setStoredFocuses([]);
-                    return;
-                }
-                const parsed = JSON.parse(raw);
-                const normalized = (Array.isArray(parsed) ? parsed : [])
-                    .map((entry: any) => String(entry || '').trim().toLowerCase())
-                    .filter(Boolean);
-                if (mounted) setStoredFocuses(normalized);
-            } catch {
-                if (mounted) setStoredFocuses([]);
-            }
-        })();
-        return () => {
-            mounted = false;
-        };
-    }, [group?.group_id]);
 
-    useEffect(() => {
-        let mounted = true;
-        const safeGroupId = String(group?.group_id || '').trim();
-        if (!safeGroupId) {
-            setMemberRoleTags({});
-            return () => {
-                mounted = false;
-            };
-        }
-        (async () => {
-            try {
-                const raw = await AsyncStorage.getItem(`@group_member_role_tags_${safeGroupId}`);
-                if (!mounted) return;
-                const parsed = raw ? JSON.parse(raw) : {};
-                const next = Object.entries(parsed || {}).reduce((acc, [profileId, roles]) => {
-                    const normalized = Array.isArray(roles)
-                        ? roles
-                            .map((entry) => String(entry || '').toLowerCase())
-                            .filter((entry): entry is 'athlete' | 'coach' | 'physio' => entry === 'athlete' || entry === 'coach' || entry === 'physio')
-                        : [];
-                    if (normalized.length > 0) acc[String(profileId)] = normalized;
-                    return acc;
-                }, {} as Record<string, Array<'athlete' | 'coach' | 'physio'>>);
-                setMemberRoleTags(next);
-            } catch {
-                if (mounted) setMemberRoleTags({});
-            }
-        })();
-        return () => {
-            mounted = false;
-        };
-    }, [group?.group_id]);
-
-    const groupFocuses = useMemo(() => {
+    const groupFocuses = useMemo<SportFocusId[]>(() => {
         const raw = [
             ...(Array.isArray((group as any)?.focuses) ? ((group as any)?.focuses as string[]) : []),
             ...(Array.isArray((group as any)?.competition_focuses) ? ((group as any)?.competition_focuses as string[]) : []),
             ...(Array.isArray((group as any)?.selected_events) ? ((group as any)?.selected_events as string[]) : []),
-            ...storedFocuses,
         ]
             .map((entry) => String(entry || '').trim().toLowerCase())
             .filter(Boolean);
-        const mapped = Array.from(
-            new Set(
-                raw
-                    .map((entry) => {
-                        if (entry.includes('track')) return 'track-field';
-                        if (entry.includes('road') || entry.includes('trail')) return 'road-events';
-                        return '';
-                    })
-                    .filter(Boolean),
-            ),
-        );
+        const mapped = Array.from(new Set(raw.map((entry) => normalizeFocusId(entry)).filter(Boolean))) as SportFocusId[];
         return mapped.length > 0 ? mapped : ['track-field'];
-    }, [group, storedFocuses]);
+    }, [group]);
 
     const membersWithDisplayRoles = useMemo(
         () =>
             members.map((member) => {
-                const profileId = String(member.profile_id || '').trim();
-                const localRoles = memberRoleTags[profileId] || [];
+                const remoteRoles = Array.isArray(member.public_roles)
+                    ? member.public_roles
+                        .map((entry) => String(entry || '').toLowerCase())
+                        .filter((entry): entry is 'athlete' | 'coach' | 'physio' => entry === 'athlete' || entry === 'coach' || entry === 'physio')
+                    : [];
                 const backendRole = String(member.role || '').toLowerCase();
                 const fallbackRoles =
                     backendRole === 'athlete' || backendRole === 'coach' || backendRole === 'physio'
@@ -356,17 +272,17 @@ const GroupProfileScreen = ({ navigation, route }: any) => {
                         : [];
                 return {
                     ...member,
-                    displayRoles: localRoles.length > 0 ? localRoles : fallbackRoles,
+                    displayRoles: remoteRoles.length > 0 ? remoteRoles : fallbackRoles,
                 };
             }),
-        [memberRoleTags, members],
+        [members],
     );
     const coaches = useMemo(
-        () => members.filter((m) => {
-            const role = String(m.role || '').toLowerCase();
-            return role === 'coach' || role === 'owner';
-        }),
-        [members],
+        () =>
+            membersWithDisplayRoles.filter((member) =>
+                Array.isArray(member.displayRoles) && member.displayRoles.includes('coach'),
+            ),
+        [membersWithDisplayRoles],
     );
     const displayedMemberCount = useMemo(() => {
         const loadedCount = Array.isArray(members) ? members.length : 0;
@@ -487,6 +403,8 @@ const GroupProfileScreen = ({ navigation, route }: any) => {
         const result = await launchImageLibrary({
             mediaType: 'photo',
             selectionLimit: 1,
+            presentationStyle: 'fullScreen',
+            assetRepresentationMode: 'current',
         });
         const asset = result?.assets?.[0];
         if (!asset?.uri) return;
@@ -501,6 +419,7 @@ const GroupProfileScreen = ({ navigation, route }: any) => {
                         name: asset.fileName ?? `group-avatar-${Date.now()}.jpg`,
                     },
                 ],
+                skip_profile_collection: true,
             });
             const firstResult = Array.isArray(uploadResp?.results) ? uploadResp.results.find((entry: any) => entry?.media_id) : null;
             const mediaId = firstResult?.media_id ? String(firstResult.media_id) : '';
@@ -809,15 +728,11 @@ const GroupProfileScreen = ({ navigation, route }: any) => {
                             <Text style={styles.bioText}>{groupDescription}</Text>
                             <View style={styles.groupFocusSection}>
                                 <View style={styles.groupFocusInlineBox}>
-                                    {groupFocuses.map((focusId) => (
+                                    {groupFocuses.map((focusId: SportFocusId) => (
                                         <View key={`focus-chip-${focusId}`} style={styles.groupFocusChip}>
-                                            {focusId === 'track-field' ? (
-                                                <Icons.TrackFieldLogo width={16} height={16} />
-                                            ) : (
-                                                <Icons.PersonRunningColorful width={16} height={16} />
-                                            )}
+                                            <SportFocusIcon focusId={focusId} size={16} color={colors.primaryColor} />
                                             <Text style={styles.groupFocusChipText}>
-                                                {focusId === 'track-field' ? t('trackAndField') : t('roadAndTrail')}
+                                                {getSportFocusLabel(focusId, t)}
                                             </Text>
                                         </View>
                                     ))}
@@ -845,24 +760,24 @@ const GroupProfileScreen = ({ navigation, route }: any) => {
 
                 {group ? (
                     <View style={styles.toggleTabBar}>
-                        {(['news', 'members', 'competitions', 'collections'] as const).map((tab) => (
+                        {([
+                            { id: 'news', label: t('News'), icon: <DocumentText size={16} color={activeTab === 'news' ? colors.primaryColor : colors.grayColor} variant="Linear" /> },
+                            { id: 'members', label: t('Members'), icon: <Profile2User size={16} color={activeTab === 'members' ? colors.primaryColor : colors.grayColor} variant="Linear" /> },
+                            { id: 'competitions', label: t('Competitions'), icon: <MedalStar size={16} color={activeTab === 'competitions' ? colors.primaryColor : colors.grayColor} variant="Linear" /> },
+                            { id: 'collections', label: t('Collections'), icon: <Gallery size={16} color={activeTab === 'collections' ? colors.primaryColor : colors.grayColor} variant="Linear" /> },
+                        ] as const).map((tab) => (
                             <TouchableOpacity
-                                key={tab}
-                                style={[styles.toggleTab, activeTab === tab && styles.toggleTabActive]}
-                                onPress={() => setActiveTab(tab)}
+                                key={tab.id}
+                                style={[styles.toggleTab, activeTab === tab.id && styles.toggleTabActive]}
+                                onPress={() => setActiveTab(tab.id)}
                             >
+                                {tab.icon}
                                 <Text
-                                    style={activeTab === tab ? styles.toggleTabTextActive : styles.toggleTabText}
+                                    style={activeTab === tab.id ? styles.toggleTabTextActive : styles.toggleTabText}
                                     numberOfLines={1}
                                     ellipsizeMode="tail"
                                 >
-                                    {tab === 'news'
-                                        ? t('News')
-                                        : tab === 'members'
-                                            ? t('Members')
-                                            : tab === 'competitions'
-                                                ? t('Competitions')
-                                                : t('Collections')}
+                                    {tab.label}
                                 </Text>
                             </TouchableOpacity>
                         ))}
@@ -885,6 +800,12 @@ const GroupProfileScreen = ({ navigation, route }: any) => {
                             membersWithDisplayRoles.map((member) => {
                                 const avatarUrl = member.avatar_url ? toAbsoluteUrl(String(member.avatar_url)) : null;
                                 const isSelf = viewerProfileId && String(member.profile_id) === String(viewerProfileId);
+                                const permissionRole = String(member.permission_role || member.role || '').toLowerCase();
+                                const badges = [
+                                    ...(permissionRole === 'owner' ? [t('Owner')] : []),
+                                    ...(permissionRole === 'admin' ? [t('Admin')] : []),
+                                    ...member.displayRoles.map((role) => t(role === 'coach' ? 'Coach' : role === 'physio' ? 'Physio' : 'Athlete')),
+                                ];
                                 return (
                                     <View key={String(member.profile_id)} style={localStyles.memberRow}>
                                         <TouchableOpacity
@@ -904,10 +825,10 @@ const GroupProfileScreen = ({ navigation, route }: any) => {
                                             <View>
                                                 <Text style={localStyles.memberName}>{member.display_name || t('Member')}</Text>
                                                 <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 4 }}>
-                                                    {member.displayRoles.length > 0 ? (
-                                                        member.displayRoles.map((role) => (
+                                                    {badges.length > 0 ? (
+                                                        badges.map((badge, index) => (
                                                             <View
-                                                                key={`${member.profile_id}-tag-${role}`}
+                                                                key={`${member.profile_id}-tag-${badge}-${index}`}
                                                                 style={{
                                                                     borderWidth: 1,
                                                                     borderColor: colors.primaryColor,
@@ -918,13 +839,13 @@ const GroupProfileScreen = ({ navigation, route }: any) => {
                                                                 }}
                                                             >
                                                                 <Text style={{ color: colors.primaryColor, fontSize: 11 }}>
-                                                                    {role === 'coach' ? t('Coach') : role === 'physio' ? t('Physio') : t('Athlete')}
+                                                                    {badge}
                                                                 </Text>
                                                             </View>
                                                         ))
                                                     ) : (
                                                         <Text style={localStyles.memberRole}>
-                                                            {String(member.role || '').toLowerCase() === 'admin' ? t('Admin') : t('Member')}
+                                                            {permissionRole === 'admin' ? t('Admin') : t('Member')}
                                                         </Text>
                                                     )}
                                                 </View>
@@ -1206,8 +1127,9 @@ const GroupProfileScreen = ({ navigation, route }: any) => {
                         <Text style={styles.profileSwitcherTitle}>{t('Switch profile')}</Text>
                         <SizeBox height={8} />
 
-                        {hasTrackFieldProfile ? (
+                        {viewerSportFocuses.map((focusId) => (
                             <TouchableOpacity
+                                key={`switch-focus-${focusId}`}
                                 style={styles.profileSwitcherRow}
                                 onPress={() => {
                                     setShowProfileSwitcherModal(false);
@@ -1215,40 +1137,18 @@ const GroupProfileScreen = ({ navigation, route }: any) => {
                                         screen: 'Profile',
                                         params: {
                                             screen: 'UserProfileScreen',
-                                            params: { forceProfileCategory: 'Track&Field' },
+                                            params: { forceProfileCategory: focusId },
                                         },
                                     });
                                 }}
                             >
                                 <View style={styles.profileSwitcherAvatar}>
-                                    <Icons.TrackFieldLogo width={20} height={20} />
+                                    <SportFocusIcon focusId={focusId} size={20} color={colors.primaryColor} />
                                 </View>
-                                <Text style={styles.profileSwitcherLabel}>{t('trackAndField')}</Text>
+                                <Text style={styles.profileSwitcherLabel}>{getSportFocusLabel(focusId, t)}</Text>
                                 <Text style={styles.profileSwitcherCheck} />
                             </TouchableOpacity>
-                        ) : null}
-
-                        {hasRoadTrailProfile ? (
-                            <TouchableOpacity
-                                style={styles.profileSwitcherRow}
-                                onPress={() => {
-                                    setShowProfileSwitcherModal(false);
-                                    navigation.navigate('BottomTabBar', {
-                                        screen: 'Profile',
-                                        params: {
-                                            screen: 'UserProfileScreen',
-                                            params: { forceProfileCategory: 'Road&Trail' },
-                                        },
-                                    });
-                                }}
-                            >
-                                <View style={styles.profileSwitcherAvatar}>
-                                    <Icons.PersonRunningColorful width={20} height={20} />
-                                </View>
-                                <Text style={styles.profileSwitcherLabel}>{t('roadAndTrail')}</Text>
-                                <Text style={styles.profileSwitcherCheck} />
-                            </TouchableOpacity>
-                        ) : null}
+                        ))}
 
                         {myGroups.map((item) => (
                             <TouchableOpacity

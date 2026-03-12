@@ -100,7 +100,7 @@ const MenuScreen = ({ navigation }: any) => {
                         <SizeBox height={12} />
                         <MenuContainers
                             icon={<SecurityUser size={20} color={colors.primaryColor} variant="Linear" />}
-                            title="Admin Pane"
+                            title={t('Admin Pane')}
                             onPress={() => navigation.navigate('AdminPane')}
                         />
                     </>

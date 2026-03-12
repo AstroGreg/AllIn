@@ -8,6 +8,7 @@ import { ArrowLeft2, Add, Trash } from 'iconsax-react-nativejs';
 import { useAuth } from '../../../context/AuthContext';
 import { deleteGroup, getMyGroups, type GroupSummary } from '../../../services/apiGateway';
 import { useTranslation } from 'react-i18next';
+import { getSportFocusLabel, normalizeMainDisciplines, normalizeSelectedEvents, type SportFocusId } from '../../../utils/profileSelections';
 
 const ManageProfiles = ({ navigation }: any) => {
   const insets = useSafeAreaInsets();
@@ -21,26 +22,27 @@ const ManageProfiles = ({ navigation }: any) => {
   const [busyGroupId, setBusyGroupId] = useState<string | null>(null);
   const [updatingSelectedEvents, setUpdatingSelectedEvents] = useState(false);
 
-  const selectedEvents = useMemo(() => {
-    const events = userProfile?.selectedEvents;
-    return Array.isArray(events) ? [...events] : [];
-  }, [userProfile?.selectedEvents]);
-  const selectedEventsNormalized = useMemo(
-    () =>
-      selectedEvents
-        .map((entry: any) => String(
-          typeof entry === 'string'
-            ? entry
-            : entry?.id ?? entry?.value ?? entry?.event_id ?? entry?.name ?? '',
-        ).trim().toLowerCase())
-        .filter(Boolean),
-    [selectedEvents],
+  const selectedFocuses = useMemo(
+    () => normalizeSelectedEvents(userProfile?.selectedEvents ?? []),
+    [userProfile?.selectedEvents],
   );
-  const hasTrack = selectedEventsNormalized.some((entry) =>
-    entry === 'track-field' || entry === 'track&field' || entry === 'track_field' || entry.includes('track'),
-  );
-  const hasRoad = selectedEventsNormalized.some((entry) =>
-    entry === 'road-events' || entry === 'road&trail' || entry === 'road_trail' || entry.includes('road') || entry.includes('trail'),
+  const hasSupportProfile = useMemo(() => {
+    return (
+      String((userProfile as any)?.supportRole ?? '').trim().length > 0 ||
+      (Array.isArray((userProfile as any)?.supportClubCodes) && (userProfile as any).supportClubCodes.length > 0) ||
+      (Array.isArray((userProfile as any)?.supportGroupIds) && (userProfile as any).supportGroupIds.length > 0) ||
+      (Array.isArray((userProfile as any)?.supportAthletes) && (userProfile as any).supportAthletes.length > 0) ||
+      (Array.isArray((userProfile as any)?.supportFocuses) && (userProfile as any).supportFocuses.length > 0) ||
+      userProfile?.category === 'support'
+    );
+  }, [userProfile]);
+  const canOpenAddProfileFlow = true;
+  const linkedMainDisciplines = useMemo(
+    () => normalizeMainDisciplines((userProfile as any)?.mainDisciplines ?? {}, {
+      trackFieldMainEvent: userProfile?.trackFieldMainEvent ?? null,
+      roadTrailMainEvent: userProfile?.roadTrailMainEvent ?? null,
+    }),
+    [userProfile],
   );
 
   const loadGroups = useCallback(async () => {
@@ -60,25 +62,20 @@ const ManageProfiles = ({ navigation }: any) => {
     loadGroups();
   }, [loadGroups]);
 
-  const removePersonalProfile = async (eventId: 'track-field' | 'road-events') => {
+  const removePersonalProfile = async (focusId: SportFocusId) => {
     if (!apiAccessToken) {
       Alert.alert(t('Error'), t('Please sign in again.'));
       return;
     }
-    const next = selectedEvents.filter((entry: any) => {
-      const normalized = String(
-        typeof entry === 'string'
-          ? entry
-          : entry?.id ?? entry?.value ?? entry?.event_id ?? entry?.name ?? '',
-      ).trim().toLowerCase();
-      if (eventId === 'track-field') {
-        return !(normalized === 'track-field' || normalized === 'track&field' || normalized === 'track_field' || normalized.includes('track'));
-      }
-      return !(normalized === 'road-events' || normalized === 'road&trail' || normalized === 'road_trail' || normalized.includes('road') || normalized.includes('trail'));
-    });
+    const next = selectedFocuses.filter((entry) => entry !== focusId);
+    const nextMainDisciplines = { ...linkedMainDisciplines };
+    delete nextMainDisciplines[focusId];
     setUpdatingSelectedEvents(true);
     try {
-      await updateUserProfile({ selectedEvents: next as any });
+      await updateUserProfile({
+        selectedEvents: next as any,
+        mainDisciplines: nextMainDisciplines,
+      });
     } catch {
       Alert.alert(t('Error'), t('Failed to save. Please try again.'));
     } finally {
@@ -126,12 +123,12 @@ const ManageProfiles = ({ navigation }: any) => {
 
         <Text style={Styles.sectionTitle}>{t('Personal profiles')}</Text>
         <SizeBox height={12} />
-        {hasTrack && (
-          <>
+        {selectedFocuses.length > 0 ? selectedFocuses.map((focusId) => (
+          <React.Fragment key={focusId}>
             <View style={Styles.accountSettingsCard}>
-              <Text style={Styles.accountSettingsTitle}>{t('trackAndField')}</Text>
+              <Text style={Styles.accountSettingsTitle}>{getSportFocusLabel(focusId, t)}</Text>
               <TouchableOpacity
-                onPress={() => removePersonalProfile('track-field')}
+                onPress={() => removePersonalProfile(focusId)}
                 disabled={updatingSelectedEvents}
               >
                 {updatingSelectedEvents ? (
@@ -142,27 +139,8 @@ const ManageProfiles = ({ navigation }: any) => {
               </TouchableOpacity>
             </View>
             <SizeBox height={10} />
-          </>
-        )}
-        {hasRoad && (
-          <>
-            <View style={Styles.accountSettingsCard}>
-              <Text style={Styles.accountSettingsTitle}>{t('roadAndTrail')}</Text>
-              <TouchableOpacity
-                onPress={() => removePersonalProfile('road-events')}
-                disabled={updatingSelectedEvents}
-              >
-                {updatingSelectedEvents ? (
-                  <ActivityIndicator size="small" color={colors.primaryColor} />
-                ) : (
-                  <Trash size={18} color={colors.errorColor || '#E14B4B'} variant="Linear" />
-                )}
-              </TouchableOpacity>
-            </View>
-            <SizeBox height={10} />
-          </>
-        )}
-        {!hasTrack && !hasRoad && (
+          </React.Fragment>
+        )) : (
           <>
             <View style={Styles.accountSettingsCard}>
               <Text style={Styles.accountSettingsTitle}>{t('No personal profiles linked yet')}</Text>
@@ -170,7 +148,21 @@ const ManageProfiles = ({ navigation }: any) => {
             <SizeBox height={10} />
           </>
         )}
-        {(!hasTrack || !hasRoad) && (
+        {hasSupportProfile ? (
+          <>
+            <View style={Styles.accountSettingsCard}>
+              <TouchableOpacity onPress={() => navigation.navigate('CompleteSupportDetailsScreen', { editMode: true })} style={{ flex: 1 }}>
+                <Text style={Styles.accountSettingsTitle}>
+                  {String((userProfile as any)?.supportRole ?? '').trim().length > 0
+                    ? `${String((userProfile as any)?.supportRole).trim()} ${t('profile')}`
+                    : t('Support profile')}
+                </Text>
+              </TouchableOpacity>
+            </View>
+            <SizeBox height={10} />
+          </>
+        ) : null}
+        {canOpenAddProfileFlow && (
           <>
             <TouchableOpacity
               style={Styles.accountSettingsCard}
@@ -198,7 +190,14 @@ const ManageProfiles = ({ navigation }: any) => {
             return (
               <React.Fragment key={groupId}>
                 <View style={Styles.accountSettingsCard}>
-                  <TouchableOpacity onPress={() => navigation.navigate('GroupProfileScreen', { groupId })} style={{ flex: 1 }}>
+                  <TouchableOpacity
+                    onPress={() => navigation.navigate('GroupProfileScreen', {
+                      groupId,
+                      showBackButton: true,
+                      origin: 'profile',
+                    })}
+                    style={{ flex: 1 }}
+                  >
                     <Text style={Styles.accountSettingsTitle}>{group.name || t('Group')}</Text>
                   </TouchableOpacity>
                   {String(group.my_role || '').toLowerCase() === 'owner' && (
@@ -216,16 +215,18 @@ const ManageProfiles = ({ navigation }: any) => {
             );
           })
         )}
-        <TouchableOpacity
-          style={Styles.accountSettingsCard}
-          onPress={() => navigation.navigate('CategorySelectionScreen', { fromAddFlow: true })}
-        >
-          <View style={Styles.accountSettingsLeft}>
-            <Add size={16} color={colors.primaryColor} variant="Linear" />
-            <SizeBox width={10} />
-            <Text style={Styles.accountSettingsTitle}>{t('Add')}</Text>
-          </View>
-        </TouchableOpacity>
+        {(groups.length === 0 || canOpenAddProfileFlow) ? (
+          <TouchableOpacity
+            style={Styles.accountSettingsCard}
+            onPress={() => navigation.navigate('CategorySelectionScreen', { fromAddFlow: true })}
+          >
+            <View style={Styles.accountSettingsLeft}>
+              <Add size={16} color={colors.primaryColor} variant="Linear" />
+              <SizeBox width={10} />
+              <Text style={Styles.accountSettingsTitle}>{t('Add group')}</Text>
+            </View>
+          </TouchableOpacity>
+        ) : null}
 
         <SizeBox height={insets.bottom > 0 ? insets.bottom + 20 : 40} />
       </ScrollView>

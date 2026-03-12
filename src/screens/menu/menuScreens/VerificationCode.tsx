@@ -60,7 +60,7 @@ const VerificationCode = ({ navigation }: any) => {
                     <Text style={styles.title}>{t('Enter verification code')}</Text>
                     <SizeBox height={6} />
                     <Text style={styles.description}>
-                        Open your authenticator app and enter the 6-digit code.
+                        {t('Open your authenticator app and enter the 6-digit code.')}
                     </Text>
                 </View>
 

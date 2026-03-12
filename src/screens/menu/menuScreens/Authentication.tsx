@@ -45,7 +45,7 @@ const Authentication = ({ navigation }: any) => {
                     <Text style={styles.title}>{t('Protect your account')}</Text>
                     <SizeBox height={6} />
                     <Text style={styles.description}>
-                        Add an extra layer of security to prevent unauthorized access to your donations and payment methods.
+                        {t('Add an extra layer of security to protect your account and payment methods.')}
                     </Text>
                 </View>
 
@@ -64,7 +64,7 @@ const Authentication = ({ navigation }: any) => {
                         <View style={styles.optionContent}>
                             <Text style={styles.optionTitle}>{t('2- Factor Authentication')}</Text>
                             <Text style={styles.optionDescription}>
-                                Receive a unique code via text message to verify it's you.
+                                {t('Receive a unique code by text message to verify that it is you.')}
                             </Text>
                         </View>
                         <View style={styles.radioContainer}>
@@ -91,7 +91,7 @@ const Authentication = ({ navigation }: any) => {
                         <View style={styles.optionContent}>
                             <Text style={styles.optionTitle}>{t('Authenticator App')}</Text>
                             <Text style={styles.optionDescription}>
-                                Use Google Authenticator or Authy to generate secure codes.
+                                {t('Use Google Authenticator or Authy to generate secure codes.')}
                             </Text>
                         </View>
                         <View style={styles.radioContainer}>

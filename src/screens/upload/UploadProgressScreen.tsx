@@ -265,6 +265,7 @@ const UploadProgressScreen = ({navigation, route}: any) => {
               is_anonymous: anonymous,
               price_cents: Number(batch[0]?.price_cents ?? 0) || 0,
               price_currency: String(batch[0]?.price_currency || 'EUR'),
+              skip_profile_collection: true,
             })
           : await uploadMediaBatch(apiAccessToken, {
               files,
@@ -274,6 +275,7 @@ const UploadProgressScreen = ({navigation, route}: any) => {
               is_anonymous: anonymous,
               price_cents: Number(batch[0]?.price_cents ?? 0) || 0,
               price_currency: String(batch[0]?.price_currency || 'EUR'),
+              skip_profile_collection: true,
             });
 
         const results = Array.isArray(resp?.results) ? resp.results : [];

@@ -118,6 +118,7 @@ jest.mock('iconsax-react-nativejs', () => {
     Clock: createIcon('Clock'),
     ArrowRight: createIcon('ArrowRight'),
     DocumentText: createIcon('DocumentText'),
+    Add: createIcon('Add'),
     Gallery: createIcon('Gallery'),
     DocumentDownload: createIcon('DocumentDownload'),
   };
@@ -274,11 +275,11 @@ describe('UserProfileScreen UI', () => {
 
     await waitFor(() => {
       expect(screen.getByText('Followers')).toBeTruthy();
-      expect(screen.getByText('trackAndField')).toBeTruthy();
+      expect(screen.getByText('Track & Field')).toBeTruthy();
     });
   });
 
-  test('shows joined group under Community groups on profile', async () => {
+  test('shows joined group in the compact meta summary on profile', async () => {
     mockGetProfileSummary.mockResolvedValue({
       profile_id: 'profile-join-1',
       followers_count: 10,
@@ -301,8 +302,8 @@ describe('UserProfileScreen UI', () => {
     render(<UserProfileScreen navigation={navigation} route={{params: {}}} />);
 
     await waitFor(() => {
-      expect(screen.getByText('Community groups')).toBeTruthy();
-      expect(screen.getByText('Morning Group')).toBeTruthy();
+      expect(screen.getByText('400 m')).toBeTruthy();
+      expect(screen.getByText(/Morning Gro/i)).toBeTruthy();
     });
   });
 });

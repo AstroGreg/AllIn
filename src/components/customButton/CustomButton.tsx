@@ -12,6 +12,7 @@ interface CustomButtonProps {
     isAdd?: boolean;
     isBack?: boolean;
     isSecondary?: boolean;
+    testID?: string;
 }
 
 const CustomButton = ({
@@ -21,6 +22,7 @@ const CustomButton = ({
     isAdd = false,
     isBack = false,
     isSecondary = false,
+    testID,
 }: CustomButtonProps) => {
     const { colors } = useTheme();
     const Styles = createStyles(colors);
@@ -32,6 +34,7 @@ const CustomButton = ({
                 useSecondaryStyle && Styles.secondaryButtonContainer,
                 isSmall && { height: 48 },
             ]}
+            testID={testID}
             activeOpacity={0.7}
             onPress={onPress}
         >

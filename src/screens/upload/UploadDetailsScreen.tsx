@@ -73,8 +73,10 @@ const UploadDetailsScreen = ({ navigation, route }: any) => {
     const handleFilePicker = async () => {
         const options: any = {
             mediaType: 'mixed',
-            selectionLimit: 0,
+            selectionLimit: 20,
             quality: 1,
+            presentationStyle: 'fullScreen',
+            assetRepresentationMode: 'current',
         };
         try {
             const result: any = await launchImageLibrary(options);
@@ -173,11 +175,12 @@ const UploadDetailsScreen = ({ navigation, route }: any) => {
         } catch {
             // ignore
         }
-        navigation.navigate('WatermarkScreen', {
+        navigation.navigate('UploadSummaryScreen', {
             competition,
             account,
             anonymous,
             competitionType,
+            watermarkText: 'SpotMe',
         });
     };
 

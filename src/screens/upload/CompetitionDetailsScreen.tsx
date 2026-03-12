@@ -12,11 +12,13 @@ import { useTranslation } from 'react-i18next'
 import FastImage from 'react-native-fast-image'
 import { ApiError, CompetitionMapSummary, getCompetitionMaps, getEventCompetitions } from '../../services/apiGateway'
 import { getApiBaseUrl } from '../../constants/RuntimeConfig'
+import { getSportFocusLabel, normalizeFocusId, type SportFocusId } from '../../utils/profileSelections'
 
 interface EventCategory {
     id: string;
     name: string;
     kind: 'track' | 'field' | 'road';
+    group?: string | null;
 }
 
 interface RoadCourseMap {
@@ -63,6 +65,14 @@ const CompetitionDetailsScreen = ({ navigation, route }: any) => {
     const account = route?.params?.account;
     const anonymous = route?.params?.anonymous;
     const competitionType: 'track' | 'road' = route?.params?.competitionType ?? 'track';
+    const [competitionFocusId, setCompetitionFocusId] = useState<SportFocusId | null>(
+        normalizeFocusId(
+            competition?.competition_focus
+            ?? competition?.competition_type
+            ?? route?.params?.competitionFocus
+            ?? route?.params?.competitionType,
+        ),
+    );
 
     const [activeTab, setActiveTab] = useState<'track' | 'field'>('track');
     const [categoryModalVisible, setCategoryModalVisible] = useState(false);
@@ -129,9 +139,11 @@ const CompetitionDetailsScreen = ({ navigation, route }: any) => {
         return `${day}/${month}/${year}`;
     }, []);
 
+    const isRoadFocus = competitionFocusId === 'road-events' || competitionType === 'road';
+    const isTrackFieldFocus = competitionFocusId === 'track-field' || (!competitionFocusId && competitionType === 'track');
     const competitionTypeLabel = useMemo(
-        () => (competitionType === 'road' ? t('roadAndTrail') : t('trackAndField')),
-        [competitionType, t],
+        () => (competitionFocusId ? getSportFocusLabel(competitionFocusId, t) : (isRoadFocus ? t('roadAndTrail') : t('trackAndField'))),
+        [competitionFocusId, isRoadFocus, t],
     );
     const competitionMetaLine = useMemo(() => {
         const parts = [
@@ -149,17 +161,26 @@ const CompetitionDetailsScreen = ({ navigation, route }: any) => {
         [competition?.organizingClub, competition?.organizing_club],
     );
 
-    const classifyDiscipline = useCallback((name: string, typeToken: string): EventCategory['kind'] => {
+    const classifyDiscipline = useCallback((name: string, typeToken: string, groupToken: string, focusId: SportFocusId | null): EventCategory['kind'] => {
         const normalizedName = name.toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
         const normalizedType = String(typeToken || '').toLowerCase();
+        const normalizedGroup = String(groupToken || '').toLowerCase();
+        if (focusId === 'road-events') {
+            return 'road';
+        }
+        if (focusId && focusId !== 'track-field') {
+            return 'track';
+        }
         if (
             ROAD_DISCIPLINE_PATTERN.test(normalizedType)
             || ROAD_DISCIPLINE_PATTERN.test(normalizedName)
+            || normalizedGroup === 'road'
+            || normalizedGroup === 'trail'
             || competitionType === 'road'
         ) {
             return 'road';
         }
-        if (/field/.test(normalizedType) || FIELD_DISCIPLINE_PATTERN.test(normalizedName)) {
+        if (/field/.test(normalizedType) || FIELD_DISCIPLINE_PATTERN.test(normalizedName) || normalizedGroup === 'jumps' || normalizedGroup === 'throws') {
             return 'field';
         }
         return 'track';
@@ -190,6 +211,8 @@ const CompetitionDetailsScreen = ({ navigation, route }: any) => {
                 const res = await getEventCompetitions(apiAccessToken, competitionId);
                 if (!isActive) return;
                 const rows = Array.isArray(res?.competitions) ? res.competitions : [];
+                const resolvedFocus = normalizeFocusId(rows[0]?.competition_focus ?? competitionFocusId ?? competitionType);
+                setCompetitionFocusId(resolvedFocus);
                 const seenIds = new Set<string>();
                 const seenNames = new Set<string>();
                 const normalizedRows: EventCategory[] = [];
@@ -198,6 +221,7 @@ const CompetitionDetailsScreen = ({ navigation, route }: any) => {
                     const id = String(row?.id || '').trim();
                     const rawName = String(row?.competition_name || row?.competition_name_normalized || '').trim();
                     const typeToken = String(row?.competition_type || '').trim();
+                    const groupToken = String(row?.discipline_group || '').trim();
                     if (!id || !rawName || seenIds.has(id)) continue;
                     seenIds.add(id);
                     const normalizedName = rawName.toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
@@ -206,7 +230,8 @@ const CompetitionDetailsScreen = ({ navigation, route }: any) => {
                     normalizedRows.push({
                         id,
                         name: rawName,
-                        kind: classifyDiscipline(rawName, typeToken),
+                        kind: classifyDiscipline(rawName, typeToken, groupToken, resolvedFocus),
+                        group: row?.discipline_group ?? null,
                     });
                 }
 
@@ -216,11 +241,15 @@ const CompetitionDetailsScreen = ({ navigation, route }: any) => {
                 });
                 const events = withoutGeneric.length > 0 ? withoutGeneric : normalizedRows;
 
-                if (competitionType === 'road') {
+                if (resolvedFocus === 'road-events' || competitionType === 'road') {
                     const roadOnly = events.filter((item) => item.kind === 'road');
                     setRoadEvents(roadOnly.length > 0 ? roadOnly : events);
                     setTrackEvents([]);
                     setFieldEvents([]);
+                } else if (resolvedFocus && resolvedFocus !== 'track-field') {
+                    setTrackEvents(events);
+                    setFieldEvents([]);
+                    setRoadEvents([]);
                 } else {
                     const field = events.filter((item) => item.kind === 'field');
                     const track = events.filter((item) => item.kind !== 'field');
@@ -244,10 +273,10 @@ const CompetitionDetailsScreen = ({ navigation, route }: any) => {
         return () => {
             isActive = false;
         };
-    }, [apiAccessToken, classifyDiscipline, competitionId, competitionType]);
+    }, [apiAccessToken, classifyDiscipline, competitionFocusId, competitionId, competitionType]);
 
     useEffect(() => {
-        if (!apiAccessToken || !competitionId || competitionType !== 'road') {
+        if (!apiAccessToken || !competitionId || !isRoadFocus) {
             setRoadCourseMaps([]);
             setSelectedRoadCourseMapId('');
             setIsLoadingRoadCourseMaps(false);
@@ -294,12 +323,13 @@ const CompetitionDetailsScreen = ({ navigation, route }: any) => {
         return () => {
             active = false;
         };
-    }, [apiAccessToken, competitionId, competitionType, t, toAbsoluteUrl, withAccessToken]);
+    }, [apiAccessToken, competitionId, isRoadFocus, t, toAbsoluteUrl, withAccessToken]);
 
     const activeEvents = useMemo(() => {
-        if (competitionType === 'road') return roadEvents;
+        if (isRoadFocus) return roadEvents;
+        if (!isTrackFieldFocus) return trackEvents;
         return activeTab === 'track' ? trackEvents : fieldEvents;
-    }, [activeTab, competitionType, fieldEvents, roadEvents, trackEvents]);
+    }, [activeTab, fieldEvents, isRoadFocus, isTrackFieldFocus, roadEvents, trackEvents]);
 
     const selectedRoadCourseMap = useMemo(() => {
         if (roadCourseMaps.length === 0) return null;
@@ -344,7 +374,7 @@ const CompetitionDetailsScreen = ({ navigation, route }: any) => {
     );
 
     const openCategoryModal = (category: EventCategory) => {
-        if (competitionType === 'road') {
+        if (isRoadFocus) {
             const matchedMap = roadCourseMaps.find((map) => map.disciplineId === category.id);
             if (matchedMap) {
                 setSelectedRoadCourseMapId(matchedMap.id);
@@ -358,7 +388,7 @@ const CompetitionDetailsScreen = ({ navigation, route }: any) => {
 
     const handleContinue = () => {
         if (!selectedEvent || !selectedGender || !selectedDivision) return;
-        const selectedMap = competitionType === 'road' ? selectedRoadCourseMap : null;
+        const selectedMap = isRoadFocus ? selectedRoadCourseMap : null;
         const selectedEventNameNormalized = normalizeCheckpointLabel(selectedEvent?.name);
         const selectedCheckpoint = (() => {
             if (!selectedMap || !Array.isArray(selectedMap.checkpoints) || selectedMap.checkpoints.length === 0) {
@@ -401,7 +431,7 @@ const CompetitionDetailsScreen = ({ navigation, route }: any) => {
             division: selectedDivision,
             account,
             anonymous,
-            competitionType,
+            competitionType: isRoadFocus ? 'road' : 'track',
             competition_map_id: selectedMap?.id ?? null,
             checkpoint_id: selectedCheckpoint?.id ?? null,
             checkpoint_label: selectedCheckpoint?.label ?? null,
@@ -435,7 +465,7 @@ const CompetitionDetailsScreen = ({ navigation, route }: any) => {
     };
 
     return (
-        <View style={Styles.mainContainer}>
+        <View style={Styles.mainContainer} testID="upload-competition-details-screen">
             <SizeBox height={insets.top} />
 
             <View style={Styles.header}>
@@ -448,12 +478,12 @@ const CompetitionDetailsScreen = ({ navigation, route }: any) => {
                     onPress={() => {
                         if (!competitionId) return;
                         Alert.alert(
-                            'Reset upload draft?',
-                            'This will clear selected files for this competition on this device.',
+                            t('Reset upload draft?'),
+                            t('This will clear selected files for this competition on this device.'),
                             [
-                                { text: 'Cancel', style: 'cancel' },
+                                { text: t('Cancel'), style: 'cancel' },
                                 {
-                                    text: 'Reset',
+                                    text: t('Reset'),
                                     style: 'destructive',
                                     onPress: async () => {
                                         try {
@@ -488,7 +518,7 @@ const CompetitionDetailsScreen = ({ navigation, route }: any) => {
                     ) : null}
                 </View>
 
-                {competitionType === 'road' ? (
+                {isRoadFocus ? (
                     <>
                         <SizeBox height={12} />
                         <View style={Styles.mapCard}>
@@ -516,7 +546,7 @@ const CompetitionDetailsScreen = ({ navigation, route }: any) => {
 
                 <SizeBox height={20} />
 
-                {competitionType === 'track' && (
+                {isTrackFieldFocus && (
                     <>
                         <View style={Styles.toggleContainer}>
                             <TouchableOpacity
@@ -541,7 +571,7 @@ const CompetitionDetailsScreen = ({ navigation, route }: any) => {
                 )}
 
                 <Text style={Styles.sectionTitle}>
-                    {competitionType === 'road' ? t('Choose a checkpoint') : t('Events')}
+                    {isRoadFocus ? t('Choose a checkpoint') : t('Disciplines')}
                 </Text>
                 <SizeBox height={16} />
 

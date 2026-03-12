@@ -331,7 +331,31 @@ export const createStyles = (colors: ThemeColors) => StyleSheet.create({
         ...Fonts.regular13,
         color: colors.subTextColor,
         marginTop: 4,
-        marginBottom: 12,
+        marginBottom: 8,
+    },
+    modalValueText: {
+        ...Fonts.regular12,
+        color: colors.subTextColor,
+        lineHeight: 18,
+        marginBottom: 10,
+    },
+    modalBenefitsRow: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        gap: 8,
+        marginBottom: 6,
+    },
+    modalBenefitPill: {
+        paddingHorizontal: 10,
+        paddingVertical: 6,
+        borderRadius: 999,
+        borderWidth: 1,
+        borderColor: colors.primaryColor,
+        backgroundColor: colors.secondaryBlueColor,
+    },
+    modalBenefitText: {
+        ...Fonts.regular12,
+        color: colors.primaryColor,
     },
     modalSectionTitle: {
         ...Fonts.medium14,
@@ -411,6 +435,32 @@ export const createStyles = (colors: ThemeColors) => StyleSheet.create({
         ...Fonts.regular12,
         color: colors.subTextColor,
     },
+    modalToggleRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        gap: 12,
+        paddingHorizontal: 12,
+        paddingVertical: 12,
+        borderRadius: 12,
+        borderWidth: 0.5,
+        borderColor: colors.borderColor,
+        backgroundColor: colors.secondaryColor,
+    },
+    modalToggleCopy: {
+        flex: 1,
+        gap: 4,
+        paddingRight: 8,
+    },
+    modalToggleTitle: {
+        ...Fonts.medium13,
+        color: colors.mainTextColor,
+    },
+    modalToggleHint: {
+        ...Fonts.regular12,
+        color: colors.subTextColor,
+        lineHeight: 18,
+    },
     modalButtonsRow: {
         flexDirection: 'row',
         alignItems: 'center',
@@ -449,6 +499,70 @@ export const createStyles = (colors: ThemeColors) => StyleSheet.create({
     },
     modalConfirmTextDisabled: {
         color: colors.pureWhite,
+    },
+    feedbackBackdrop: {
+        flex: 1,
+        backgroundColor: 'rgba(0,0,0,0.45)',
+        justifyContent: 'flex-end',
+        paddingHorizontal: 20,
+        paddingBottom: 24,
+    },
+    feedbackCard: {
+        backgroundColor: colors.cardBackground,
+        borderRadius: 20,
+        padding: 20,
+        gap: 12,
+    },
+    feedbackTitle: {
+        ...Fonts.medium18,
+        color: colors.mainTextColor,
+    },
+    feedbackText: {
+        ...Fonts.regular13,
+        color: colors.subTextColor,
+        lineHeight: 20,
+    },
+    feedbackBenefitsRow: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        gap: 8,
+    },
+    feedbackBenefitPill: {
+        paddingHorizontal: 10,
+        paddingVertical: 6,
+        borderRadius: 999,
+        backgroundColor: colors.secondaryBlueColor,
+        borderWidth: 1,
+        borderColor: colors.primaryColor,
+    },
+    feedbackBenefitText: {
+        ...Fonts.regular12,
+        color: colors.primaryColor,
+    },
+    feedbackPrimaryButton: {
+        height: 48,
+        borderRadius: 12,
+        backgroundColor: colors.primaryColor,
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginTop: 6,
+    },
+    feedbackPrimaryButtonText: {
+        ...Fonts.medium14,
+        color: colors.pureWhite,
+    },
+    feedbackSecondaryButton: {
+        height: 48,
+        borderRadius: 12,
+        borderWidth: 0.5,
+        borderColor: colors.lightGrayColor,
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: colors.backgroundColor,
+    },
+    feedbackSecondaryButtonText: {
+        ...Fonts.medium14,
+        color: colors.subTextColor,
     },
     // Filter styles
     filtersContainer: {

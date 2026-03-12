@@ -249,7 +249,12 @@ const VideoDetailsScreen = ({ navigation, route }: any) => {
     };
 
     const handlePickVideo = async () => {
-        const result = await launchImageLibrary({ mediaType: 'video', selectionLimit: 1 });
+        const result = await launchImageLibrary({
+            mediaType: 'video',
+            selectionLimit: 1,
+            presentationStyle: 'fullScreen',
+            assetRepresentationMode: 'current',
+        });
         const asset = result.assets?.[0];
         if (asset) {
             setUploadFileName(asset.fileName || asset.uri || 'new_upload.mp4');

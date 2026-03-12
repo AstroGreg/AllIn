@@ -34,10 +34,19 @@ const ProfileTimelineEditScreen = ({ navigation, route }: any) => {
     const storageKey: string = route?.params?.storageKey ?? '@profile_timeline_self';
     const item: TimelineEntry | null = route?.params?.item ?? null;
     const blogStorageKey: string | null = route?.params?.blogStorageKey ?? null;
+    const collectionScopeKey: string = String(route?.params?.collectionScopeKey ?? 'default').trim() || 'default';
     const competitionOptions: string[] = useMemo(() => {
         const raw = route?.params?.competitionOptions;
         return Array.isArray(raw) ? raw : [];
     }, [route?.params?.competitionOptions]);
+    const prefillCompetitionId = useMemo(
+        () => String(route?.params?.prefillCompetitionId ?? '').trim(),
+        [route?.params?.prefillCompetitionId],
+    );
+    const prefillCompetitionTitle = useMemo(
+        () => String(route?.params?.prefillCompetitionTitle ?? '').trim(),
+        [route?.params?.prefillCompetitionTitle],
+    );
 
     const [form, setForm] = useState({
         title: '',
@@ -60,6 +69,7 @@ const ProfileTimelineEditScreen = ({ navigation, route }: any) => {
     const [isUploading, setIsUploading] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
     const [currentStep, setCurrentStep] = useState(1);
+    const [showPreviewModal, setShowPreviewModal] = useState(false);
     const [skipHighlight, setSkipHighlight] = useState(false);
     const [linkedPeople, setLinkedPeople] = useState<string[]>([]);
     const [peopleQuery, setPeopleQuery] = useState('');
@@ -67,7 +77,7 @@ const ProfileTimelineEditScreen = ({ navigation, route }: any) => {
     const [peopleSearchLoading, setPeopleSearchLoading] = useState(false);
     const { apiAccessToken } = useAuth();
 
-    const TOTAL_STEPS = 7;
+    const TOTAL_STEPS = 6;
 
     const isSignedUrl = useCallback((value?: string | null) => {
         if (!value) return false;
@@ -137,6 +147,10 @@ const ProfileTimelineEditScreen = ({ navigation, route }: any) => {
         const fallback = new Date(raw);
         return Number.isNaN(fallback.getTime()) ? null : fallback;
     }, []);
+    const prefillCompetitionDate = useMemo(
+        () => parseDateValue(route?.params?.prefillCompetitionDate ?? null),
+        [parseDateValue, route?.params?.prefillCompetitionDate],
+    );
 
     const splitDescriptionAndPeople = useCallback((value?: string | null) => {
         const raw = String(value || '');
@@ -220,6 +234,19 @@ const ProfileTimelineEditScreen = ({ navigation, route }: any) => {
     }, [item, parseDateValue, splitDescriptionAndPeople]);
 
     useEffect(() => {
+        if (mode !== 'add' || item) return;
+        if (prefillCompetitionId) {
+            setLinkedCompetitionIds((prev) => (prev.includes(prefillCompetitionId) ? prev : [prefillCompetitionId, ...prev]));
+        }
+        if (prefillCompetitionTitle) {
+            setForm((prev) => (prev.title.trim().length > 0 ? prev : { ...prev, title: prefillCompetitionTitle }));
+        }
+        if (prefillCompetitionDate) {
+            setEventDate(prefillCompetitionDate);
+        }
+    }, [item, mode, prefillCompetitionDate, prefillCompetitionId, prefillCompetitionTitle]);
+
+    useEffect(() => {
         if (!apiAccessToken || !item) return;
         const coverId = (item as any)?.cover_media_id;
         if (!coverId) return;
@@ -295,6 +322,12 @@ const ProfileTimelineEditScreen = ({ navigation, route }: any) => {
             setCompetitionSearch('');
         }
     }, [showCompetitionModal]);
+
+    useEffect(() => {
+        if (currentStep > TOTAL_STEPS) {
+            setCurrentStep(TOTAL_STEPS);
+        }
+    }, [TOTAL_STEPS, currentStep]);
 
     const saveItem = useCallback(async () => {
         const title = form.title.trim();
@@ -424,7 +457,10 @@ const ProfileTimelineEditScreen = ({ navigation, route }: any) => {
         if (files.length === 0) return [];
         setIsUploading(true);
         try {
-            const resp = await uploadMediaBatch(apiAccessToken, { files });
+            const resp = await uploadMediaBatch(apiAccessToken, {
+                files,
+                collection_scope_key: collectionScopeKey,
+            });
             const mediaIds = Array.isArray(resp?.results)
                 ? resp.results.map((r: any) => r.media_id).filter(Boolean)
                 : [];
@@ -437,13 +473,15 @@ const ProfileTimelineEditScreen = ({ navigation, route }: any) => {
         } finally {
             setIsUploading(false);
         }
-    }, [apiAccessToken, t]);
+    }, [apiAccessToken, collectionScopeKey, t]);
 
     const addMedia = useCallback(async () => {
         const res = await launchImageLibrary({
             mediaType: 'mixed',
             selectionLimit: 8,
             quality: 0.9,
+            presentationStyle: 'fullScreen',
+            assetRepresentationMode: 'current',
         });
         if (res.didCancel || !res.assets) return;
         const uploaded = await uploadAssets(res.assets);
@@ -457,6 +495,8 @@ const ProfileTimelineEditScreen = ({ navigation, route }: any) => {
             mediaType: 'photo',
             selectionLimit: 1,
             quality: 0.9,
+            presentationStyle: 'fullScreen',
+            assetRepresentationMode: 'current',
         });
         if (res.didCancel || !res.assets) return;
         const uploaded = await uploadAssets(res.assets);
@@ -554,10 +594,29 @@ const ProfileTimelineEditScreen = ({ navigation, route }: any) => {
         if (currentStep > 1) setCurrentStep((prev) => prev - 1);
     }, [currentStep]);
     const goPreviewStep = useCallback(() => {
-        if (currentStep < TOTAL_STEPS) {
-            setCurrentStep(TOTAL_STEPS);
-        }
-    }, [currentStep, TOTAL_STEPS]);
+        setShowPreviewModal(true);
+    }, []);
+
+    const closePreviewModal = useCallback(() => {
+        setShowPreviewModal(false);
+    }, []);
+
+    const renderPreviewCard = useCallback(() => (
+        <View style={Styles.previewCard}>
+            <Text style={Styles.previewTitle}>{form.title || t('Untitled milestone')}</Text>
+            <Text style={Styles.previewMeta}>{eventDate.toLocaleDateString()}</Text>
+            <Text style={Styles.previewText}>{form.description || t('No description')}</Text>
+            {!skipHighlight && !!form.highlight.trim() && (
+                <Text style={Styles.previewSubline}>{t('Highlight')}: {form.highlight.trim()}</Text>
+            )}
+            {linkedPeople.length > 0 && (
+                <Text style={Styles.previewSubline}>{t('People')}: {linkedPeople.join(', ')}</Text>
+            )}
+            <Text style={Styles.previewMeta}>
+                {t('Media')}: {mediaItems.length} · {t('Blogs')}: {linkedBlogIds.length} · {t('Competitions')}: {linkedCompetitionIds.length}
+            </Text>
+        </View>
+    ), [Styles.previewCard, Styles.previewMeta, Styles.previewSubline, Styles.previewText, Styles.previewTitle, eventDate, form.description, form.highlight, form.title, linkedBlogIds.length, linkedCompetitionIds.length, linkedPeople, mediaItems.length, skipHighlight, t]);
 
     return (
         <View style={Styles.mainContainer}>
@@ -580,8 +639,7 @@ const ProfileTimelineEditScreen = ({ navigation, route }: any) => {
                             currentStep === 2 ? t('Description') :
                                 currentStep === 3 ? t('Highlight') :
                                     currentStep === 4 ? t('Timeline background') :
-                                        currentStep === 5 ? t('Milestone media') :
-                                            currentStep === 6 ? t('Links') : t('Preview')}
+                                        currentStep === 5 ? t('Milestone media') : t('Links')}
                     </Text>
                 </View>
 
@@ -772,23 +830,6 @@ const ProfileTimelineEditScreen = ({ navigation, route }: any) => {
                     </>
                 )}
 
-                {currentStep === 7 && (
-                    <View style={Styles.previewCard}>
-                        <Text style={Styles.previewTitle}>{form.title || t('Untitled milestone')}</Text>
-                        <Text style={Styles.previewMeta}>{eventDate.toLocaleDateString()}</Text>
-                        <Text style={Styles.previewText}>{form.description || t('No description')}</Text>
-                        {!skipHighlight && !!form.highlight.trim() && (
-                            <Text style={Styles.previewSubline}>{t('Highlight')}: {form.highlight.trim()}</Text>
-                        )}
-                        {linkedPeople.length > 0 && (
-                            <Text style={Styles.previewSubline}>{t('People')}: {linkedPeople.join(', ')}</Text>
-                        )}
-                        <Text style={Styles.previewMeta}>
-                            {t('Media')}: {mediaItems.length} · {t('Blogs')}: {linkedBlogIds.length} · {t('Competitions')}: {linkedCompetitionIds.length}
-                        </Text>
-                    </View>
-                )}
-
                 <View style={Styles.actionRow}>
                     {currentStep < TOTAL_STEPS ? (
                         <TouchableOpacity style={Styles.previewShortcutButton} onPress={goPreviewStep}>
@@ -858,6 +899,29 @@ const ProfileTimelineEditScreen = ({ navigation, route }: any) => {
                     onChange={onNativeDateChange}
                 />
             ) : null}
+
+            <Modal
+                visible={showPreviewModal}
+                transparent
+                animationType="fade"
+                onRequestClose={closePreviewModal}
+            >
+                <View style={Styles.modalOverlay}>
+                    <Pressable style={Styles.modalBackdrop} onPress={closePreviewModal} />
+                    <View style={Styles.modalCard}>
+                        <View style={Styles.modalHeader}>
+                            <Text style={Styles.modalTitle}>{t('Preview')}</Text>
+                            <TouchableOpacity style={Styles.modalCloseButton} onPress={closePreviewModal}>
+                                <CloseCircle size={20} color={colors.subTextColor} variant="Linear" />
+                            </TouchableOpacity>
+                        </View>
+                        {renderPreviewCard()}
+                        <TouchableOpacity style={Styles.modalDoneButton} onPress={closePreviewModal}>
+                            <Text style={Styles.modalDoneButtonText}>{t('Back to editing')}</Text>
+                        </TouchableOpacity>
+                    </View>
+                </View>
+            </Modal>
 
             <Modal
                 visible={showBlogModal}

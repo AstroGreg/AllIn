@@ -1,4 +1,4 @@
-import {StyleSheet, Dimensions} from 'react-native';
+import {Dimensions, StyleSheet} from 'react-native';
 import Fonts from '../../../constants/Fonts';
 import {ThemeColors, lightColors} from '../../../constants/Theme';
 
@@ -33,60 +33,132 @@ export const createStyles = (colors: ThemeColors) =>
       ...Fonts.medium18,
       color: colors.mainTextColor,
     },
+    refineBar: {
+      paddingHorizontal: 20,
+      paddingVertical: 12,
+      borderBottomWidth: 0.5,
+      borderBottomColor: colors.lightGrayColor,
+      backgroundColor: colors.backgroundColor,
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 10,
+    },
+    refinePillsRow: {
+      gap: 8,
+      paddingRight: 8,
+    },
+    refinePill: {
+      paddingHorizontal: 12,
+      paddingVertical: 8,
+      borderRadius: 999,
+      backgroundColor: colors.btnBackgroundColor,
+      borderWidth: 1,
+      borderColor: colors.lightGrayColor,
+    },
+    refinePillText: {
+      ...Fonts.regular12,
+      color: colors.mainTextColor,
+    },
+    refinePillMuted: {
+      paddingVertical: 8,
+    },
+    refinePillMutedText: {
+      ...Fonts.regular12,
+      color: colors.subTextColor,
+    },
+    refineButton: {
+      minWidth: 82,
+      height: 38,
+      borderRadius: 19,
+      backgroundColor: colors.primaryColor,
+      alignItems: 'center',
+      justifyContent: 'center',
+      paddingHorizontal: 14,
+    },
+    refineButtonText: {
+      ...Fonts.medium12,
+      color: colors.pureWhite,
+    },
     container: {
       flex: 1,
       paddingHorizontal: 20,
     },
     resultsHeader: {
       flexDirection: 'row',
-      alignItems: 'center',
+      alignItems: 'flex-start',
       justifyContent: 'space-between',
+      gap: 12,
     },
     resultsTitle: {
       ...Fonts.medium18,
       color: colors.mainTextColor,
     },
+    resultsSubtitle: {
+      ...Fonts.regular13,
+      color: colors.subTextColor,
+      marginTop: 6,
+      lineHeight: 18,
+      maxWidth: width - 152,
+    },
     resultsBadge: {
       backgroundColor: colors.btnBackgroundColor,
-      borderRadius: 6,
+      borderRadius: 999,
       paddingHorizontal: 12,
-      paddingVertical: 6,
+      paddingVertical: 8,
+      borderWidth: 1,
+      borderColor: colors.lightGrayColor,
     },
     resultsBadgeText: {
-      ...Fonts.regular12,
+      ...Fonts.medium12,
       color: colors.mainTextColor,
     },
-    groupSection: {
+    section: {
       marginBottom: 24,
     },
-    groupHeader: {
+    sectionHeader: {
       flexDirection: 'row',
-      alignItems: 'center',
+      alignItems: 'flex-start',
       justifyContent: 'space-between',
+      gap: 12,
       marginBottom: 12,
     },
-    groupTitle: {
+    sectionTitle: {
       ...Fonts.medium16,
       color: colors.mainTextColor,
     },
-    groupCountBadge: {
-      backgroundColor: colors.secondaryColor,
-      borderRadius: 999,
-      paddingHorizontal: 10,
-      paddingVertical: 4,
+    sectionSubtitle: {
+      ...Fonts.regular12,
+      color: colors.subTextColor,
+      marginTop: 4,
+      lineHeight: 18,
+      maxWidth: width - 120,
     },
-    groupCountText: {
-      ...Fonts.semibold12,
+    sectionCountBadge: {
+      minWidth: 36,
+      height: 28,
+      borderRadius: 14,
+      backgroundColor: colors.secondaryColor,
+      alignItems: 'center',
+      justifyContent: 'center',
+      paddingHorizontal: 8,
+    },
+    sectionCountText: {
+      ...Fonts.medium12,
       color: colors.mainTextColor,
     },
-    groupGrid: {
+    emptySectionText: {
+      ...Fonts.regular13,
+      color: colors.subTextColor,
+      paddingVertical: 12,
+    },
+    grid: {
       flexDirection: 'row',
       flexWrap: 'wrap',
       gap: CARD_GAP,
     },
     resultCard: {
       width: CARD_WIDTH,
-      borderRadius: 12,
+      borderRadius: 16,
       borderWidth: 1,
       borderColor: colors.lightGrayColor,
       backgroundColor: colors.cardBackground,
@@ -95,48 +167,89 @@ export const createStyles = (colors: ThemeColors) =>
     },
     resultImage: {
       width: '100%',
-      height: 120,
+      height: 128,
       backgroundColor: colors.btnBackgroundColor,
-    },
-    resultInfo: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-      paddingHorizontal: 10,
-      paddingVertical: 8,
-      gap: 6,
-    },
-    matchChip: {
-      borderRadius: 999,
-      backgroundColor: colors.secondaryColor,
-      paddingHorizontal: 8,
-      paddingVertical: 4,
-    },
-    matchChipText: {
-      ...Fonts.semibold10,
-      color: colors.mainTextColor,
-      letterSpacing: 0.3,
-    },
-    mediaType: {
-      ...Fonts.regular10,
-      color: colors.subTextColor,
     },
     downloadButton: {
       position: 'absolute',
       right: 8,
       top: 8,
-      width: 28,
-      height: 28,
-      borderRadius: 14,
-      backgroundColor: 'rgba(255,255,255,0.85)',
+      width: 30,
+      height: 30,
+      borderRadius: 15,
+      backgroundColor: 'rgba(255,255,255,0.92)',
       alignItems: 'center',
       justifyContent: 'center',
     },
-    emptyText: {
-      ...Fonts.regular14,
-      color: colors.grayColor,
-      textAlign: 'center',
-      paddingVertical: 24,
+    resultBody: {
+      paddingHorizontal: 10,
+      paddingVertical: 10,
+      gap: 6,
+    },
+    resultEventName: {
+      ...Fonts.medium13,
+      color: colors.mainTextColor,
+    },
+    resultChipRow: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: 6,
+    },
+    sourceChip: {
+      borderRadius: 999,
+      backgroundColor: colors.secondaryColor,
+      paddingHorizontal: 8,
+      paddingVertical: 4,
+    },
+    sourceChipText: {
+      ...Fonts.medium10,
+      color: colors.mainTextColor,
+    },
+    confidenceChip: {
+      borderRadius: 999,
+      backgroundColor: colors.secondaryBlueColor,
+      paddingHorizontal: 8,
+      paddingVertical: 4,
+      borderWidth: 1,
+      borderColor: colors.primaryColor,
+    },
+    confidenceChipText: {
+      ...Fonts.medium10,
+      color: colors.primaryColor,
+    },
+    resultMeta: {
+      ...Fonts.regular11,
+      color: colors.subTextColor,
+    },
+    manualBrowseCard: {
+      borderRadius: 16,
+      borderWidth: 1,
+      borderColor: colors.lightGrayColor,
+      backgroundColor: colors.cardBackground,
+      overflow: 'hidden',
+    },
+    manualBrowseAction: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      gap: 12,
+      paddingHorizontal: 16,
+      paddingVertical: 16,
+      borderBottomWidth: 0.5,
+      borderBottomColor: colors.lightGrayColor,
+    },
+    manualBrowseActionCopy: {
+      flex: 1,
+      gap: 4,
+    },
+    manualBrowseActionTitle: {
+      ...Fonts.medium14,
+      color: colors.mainTextColor,
+    },
+    manualBrowseActionSubtitle: {
+      ...Fonts.regular12,
+      color: colors.subTextColor,
+      lineHeight: 18,
     },
   });
 

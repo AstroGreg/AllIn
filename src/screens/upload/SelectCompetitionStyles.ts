@@ -220,7 +220,7 @@ export const createStyles = (colors: ThemeColors) => StyleSheet.create({
         borderWidth: 0.5,
         borderColor: colors.lightGrayColor,
         padding: 16,
-        marginBottom: 24,
+        marginBottom: 8,
     },
     competitionContent: {
         flexDirection: 'row',

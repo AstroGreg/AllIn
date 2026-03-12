@@ -84,14 +84,15 @@ android {
     buildToolsVersion rootProject.ext.buildToolsVersion
     compileSdk rootProject.ext.compileSdkVersion
 
-    namespace "com.AllIn"
+    namespace "com.spotme"
     defaultConfig {
-        applicationId "com.AllIn"
+        applicationId "com.spotme"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1
         versionName "1.0"
-        resValue "string", "build_config_package", "com.AllIn"
+        resValue "string", "build_config_package", "com.spotme"
+        missingDimensionStrategy "react-native-capture-protection", "base"
         manifestPlaceholders = [
             auth0Domain: "auth.spot-me.ai",
             auth0Scheme: "com.spotme.auth0",

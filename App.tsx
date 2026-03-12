@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react'
+import React, { useEffect, useMemo } from 'react'
 import { DarkTheme, DefaultTheme, NavigationContainer, useNavigationContainerRef, type Theme } from '@react-navigation/native'
 import { BackHandler, LogBox, Platform } from 'react-native'
 import RootStackNavigation from './src/navigations/RootStackNavigation'
@@ -7,9 +7,38 @@ import { AuthProvider } from './src/context/AuthContext'
 import { EventsProvider } from './src/context/EventsContext'
 import './src/i18n'
 
-const AppNavigation = () => {
+const parseJsonProp = <T,>(value: unknown): T | undefined => {
+  if (value == null) return undefined;
+  if (typeof value === 'object') return value as T;
+  const raw = String(value).trim();
+  if (!raw) return undefined;
+  try {
+    return JSON.parse(raw) as T;
+  } catch {
+    return undefined;
+  }
+};
+
+const AppNavigation = ({
+  initialRouteName,
+  initialRouteParams,
+}: {
+  initialRouteName?: string;
+  initialRouteParams?: Record<string, any>;
+}) => {
   const { colors, isDark } = useTheme();
   const navigationRef = useNavigationContainerRef();
+  const linking = useMemo(
+    () => ({
+      prefixes: ['spotme://'],
+      config: {
+        screens: {
+          GroupInviteLinkScreen: 'group-invite/:token',
+        },
+      },
+    }),
+    [],
+  );
 
   useEffect(() => {
     if (Platform.OS !== 'android') return;
@@ -42,20 +71,38 @@ const AppNavigation = () => {
   };
 
   return (
-    <NavigationContainer ref={navigationRef} theme={navTheme}>
-      <RootStackNavigation />
+    <NavigationContainer ref={navigationRef} theme={navTheme} linking={linking}>
+      <RootStackNavigation
+        initialRouteName={initialRouteName}
+        initialRouteParams={initialRouteParams}
+      />
     </NavigationContainer>
   );
 };
 
-const App = () => {
+const App = (props: any) => {
   LogBox.ignoreAllLogs();
 
+  const initialRouteName = typeof props?.e2eInitialRouteName === 'string'
+    ? String(props.e2eInitialRouteName).trim() || undefined
+    : undefined;
+  const initialRouteParams = useMemo(
+    () => parseJsonProp<Record<string, any>>(props?.e2eInitialRouteParams),
+    [props?.e2eInitialRouteParams],
+  );
+  const initialE2EAuth = useMemo(
+    () => parseJsonProp<Record<string, any>>(props?.e2eAuthState),
+    [props?.e2eAuthState],
+  );
+
   return (
-    <AuthProvider>
+    <AuthProvider initialE2EAuth={initialE2EAuth}>
       <EventsProvider>
         <ThemeProvider>
-          <AppNavigation />
+          <AppNavigation
+            initialRouteName={initialRouteName}
+            initialRouteParams={initialRouteParams}
+          />
         </ThemeProvider>
       </EventsProvider>
     </AuthProvider>

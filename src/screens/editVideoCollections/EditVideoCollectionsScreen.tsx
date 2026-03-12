@@ -9,14 +9,14 @@ import { createStyles } from './EditVideoCollectionsStyles'
 import { useTheme } from '../../context/ThemeContext'
 import { useAuth } from '../../context/AuthContext'
 import { useFocusEffect } from '@react-navigation/native'
-import { addProfileCollectionItems, getProfileCollectionByType, removeProfileCollectionItems, setProfileCollectionFeatured, updateProfileCollectionByType, uploadMediaBatch, type ProfileCollectionItem } from '../../services/apiGateway'
+import { getProfileCollectionByType, removeProfileCollectionItems, setProfileCollectionFeatured, updateProfileCollectionByType, uploadMediaBatch, type ProfileCollectionItem } from '../../services/apiGateway'
 import { getApiBaseUrl } from '../../constants/RuntimeConfig'
 import { useTranslation } from 'react-i18next'
 import { launchImageLibrary } from 'react-native-image-picker'
 
 type SelectionMode = 'none' | 'top4' | 'delete';
 
-const EditVideoCollectionsScreen = ({ navigation }: any) => {
+const EditVideoCollectionsScreen = ({ navigation, route }: any) => {
     const insets = useSafeAreaInsets();
     const { width } = Dimensions.get('window');
     const imageWidth = Math.floor((width - 40 - 24 - 30) / 4);
@@ -24,6 +24,10 @@ const EditVideoCollectionsScreen = ({ navigation }: any) => {
     const { t } = useTranslation();
     const styles = createStyles(colors);
     const { apiAccessToken } = useAuth();
+    const collectionScopeKey = useMemo(
+        () => String(route?.params?.collectionScopeKey ?? 'default').trim() || 'default',
+        [route?.params?.collectionScopeKey],
+    );
 
     const [selectionMode, setSelectionMode] = useState<SelectionMode>('none');
     const [selectedVideoIds, setSelectedVideoIds] = useState<string[]>([]);
@@ -80,14 +84,14 @@ const EditVideoCollectionsScreen = ({ navigation }: any) => {
             return;
         }
         try {
-            const collection = await getProfileCollectionByType(apiAccessToken, 'video');
+            const collection = await getProfileCollectionByType(apiAccessToken, 'video', { scope_key: collectionScopeKey });
             setCollectionVideos(Array.isArray(collection?.items) ? collection.items : []);
             setCollectionName(String(collection?.collection?.name ?? t('My Video Collections')));
         } catch {
             setCollectionVideos([]);
             setCollectionName(t('My Video Collections'));
         }
-    }, [apiAccessToken, t]);
+    }, [apiAccessToken, collectionScopeKey, t]);
 
     useFocusEffect(
         useCallback(() => {
@@ -112,6 +116,8 @@ const EditVideoCollectionsScreen = ({ navigation }: any) => {
         const res = await launchImageLibrary({
             mediaType: 'video',
             selectionLimit: 6,
+            presentationStyle: 'fullScreen',
+            assetRepresentationMode: 'current',
         });
         if (res.didCancel || !res.assets) return;
         const files = res.assets
@@ -124,14 +130,13 @@ const EditVideoCollectionsScreen = ({ navigation }: any) => {
         if (files.length === 0) return;
         setIsUploading(true);
         try {
-            const uploaded = await uploadMediaBatch(apiAccessToken, { files });
-            const mediaIds = Array.isArray(uploaded?.results)
-                ? uploaded.results.map((r: any) => r.media_id).filter(Boolean)
-                : [];
-            if (mediaIds.length > 0) {
-                await addProfileCollectionItems(apiAccessToken, { type: 'video', media_ids: mediaIds });
-            }
+            await uploadMediaBatch(apiAccessToken, {
+                files,
+                collection_scope_key: collectionScopeKey,
+            });
             await loadData();
+        } catch (e: any) {
+            Alert.alert(t('Upload failed'), String(e?.message ?? e ?? t('Please try again.')));
         } finally {
             setIsUploading(false);
         }
@@ -164,7 +169,11 @@ const EditVideoCollectionsScreen = ({ navigation }: any) => {
 
     const handleConfirmDelete = async () => {
         if (!apiAccessToken || selectedVideoIds.length === 0) return;
-        await removeProfileCollectionItems(apiAccessToken, { type: 'video', media_ids: selectedVideoIds });
+        await removeProfileCollectionItems(apiAccessToken, {
+            type: 'video',
+            media_ids: selectedVideoIds,
+            scope_key: collectionScopeKey,
+        });
         await loadData();
         setSelectionMode('none');
         setSelectedVideoIds([]);
@@ -172,7 +181,11 @@ const EditVideoCollectionsScreen = ({ navigation }: any) => {
 
     const handleConfirmTop4 = async () => {
         if (!apiAccessToken) return;
-        await setProfileCollectionFeatured(apiAccessToken, { type: 'video', media_ids: selectedVideoIds });
+        await setProfileCollectionFeatured(apiAccessToken, {
+            type: 'video',
+            media_ids: selectedVideoIds,
+            scope_key: collectionScopeKey,
+        });
         await loadData();
         setSelectionMode('none');
         setSelectedVideoIds([]);
@@ -187,14 +200,18 @@ const EditVideoCollectionsScreen = ({ navigation }: any) => {
         }
         setIsSavingName(true);
         try {
-            await updateProfileCollectionByType(apiAccessToken, { type: 'video', name: nextName });
+            await updateProfileCollectionByType(apiAccessToken, {
+                type: 'video',
+                name: nextName,
+                scope_key: collectionScopeKey,
+            });
             await loadData();
         } catch (e: any) {
             Alert.alert(t('Save failed'), String(e?.message ?? e ?? t('Please try again')));
         } finally {
             setIsSavingName(false);
         }
-    }, [apiAccessToken, collectionName, isSavingName, loadData, t]);
+    }, [apiAccessToken, collectionName, collectionScopeKey, isSavingName, loadData, t]);
 
     const getSelectionNumber = (videoId: string): number | null => {
         const index = selectedVideoIds.indexOf(videoId);

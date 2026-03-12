@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { View, Text, TouchableOpacity, TextInput, ScrollView, Image, ActivityIndicator, Modal, Pressable, BackHandler } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { ArrowLeft2, Add, Trash, Calendar as CalendarIcon, CloseCircle } from 'iconsax-react-nativejs';
+import { ArrowLeft2, Add, Trash, Calendar as CalendarIcon } from 'iconsax-react-nativejs';
 import { launchImageLibrary } from 'react-native-image-picker';
 import { useFocusEffect } from '@react-navigation/native';
 import { useTheme } from '../../context/ThemeContext';
@@ -30,6 +30,7 @@ const ProfileBlogEditorScreen = ({ navigation, route }: any) => {
     const postId: string | null = route?.params?.postId ?? route?.params?.entry?.id ?? null;
     const entryPreview: any = route?.params?.entry ?? null;
     const groupId: string | null = route?.params?.groupId ? String(route.params.groupId) : null;
+    const collectionScopeKey: string = String(route?.params?.collectionScopeKey ?? 'default').trim() || 'default';
     const { apiAccessToken } = useAuth();
     const { events: subscribedEvents } = useEvents();
 
@@ -232,6 +233,8 @@ const ProfileBlogEditorScreen = ({ navigation, route }: any) => {
             const result = await launchImageLibrary({
                 mediaType: 'mixed',
                 selectionLimit: 6,
+                presentationStyle: 'fullScreen',
+                assetRepresentationMode: 'current',
             });
             const items = result.assets ?? [];
             const mapped = items
@@ -288,13 +291,15 @@ const ProfileBlogEditorScreen = ({ navigation, route }: any) => {
                         name: item.name ?? `blog-${Date.now()}`,
                     })),
                     post_id: String(currentId),
+                    collection_scope_key: groupId ? undefined : collectionScopeKey,
+                    skip_profile_collection: Boolean(groupId),
                 });
             }
             navigation.goBack();
         } finally {
             setIsSaving(false);
         }
-    }, [apiAccessToken, buildDescriptionWithMeta, description, groupId, highlight, linkedPeople, media, mode, navigation, postDate, postId, selectedEventId, skipHighlight, title]);
+    }, [apiAccessToken, buildDescriptionWithMeta, collectionScopeKey, description, groupId, highlight, linkedPeople, media, mode, navigation, postDate, postId, selectedEventId, skipHighlight, title]);
 
     const titleInvalid = showValidation && title.trim().length === 0;
     const descriptionInvalid = showValidation && description.trim().length === 0;
@@ -520,9 +525,7 @@ const ProfileBlogEditorScreen = ({ navigation, route }: any) => {
                 <View style={Styles.headerTitleRow}>
                     <Text style={Styles.headerTitle}>{mode === 'edit' ? t('Edit blog') : t('New blog')}</Text>
                 </View>
-                <TouchableOpacity style={Styles.headerButton} onPress={() => navigation.goBack()}>
-                    <CloseCircle size={22} color={colors.subTextColor} variant="Linear" />
-                </TouchableOpacity>
+                <View style={Styles.headerSpacer} />
             </View>
 
             <ScrollView contentContainerStyle={Styles.scrollContent} showsVerticalScrollIndicator={false}>

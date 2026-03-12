@@ -1,4 +1,4 @@
-import { Image, View } from 'react-native';
+import { Image, Text, View } from 'react-native';
 import { createStyles } from './SplashStyles';
 import Images from '../../constants/Images';
 import { useEffect } from 'react';
@@ -31,7 +31,7 @@ const SplashScreen = ({ navigation }: any) => {
                     has_profiles: bootstrap?.has_profiles ?? null,
                     needs_user_onboarding: bootstrap?.needs_user_onboarding ?? null,
                     has_local_category: Boolean(String(resolvedProfile?.category ?? '').trim()),
-                    has_local_selected_events: Array.isArray(resolvedProfile?.selectedEvents) && resolvedProfile.selectedEvents.length > 0,
+                    has_local_selected_events: Array.isArray(resolvedProfile?.selectedEvents) && (resolvedProfile?.selectedEvents?.length ?? 0) > 0,
                 });
                 navigation.reset({
                     index: 0,
@@ -51,8 +51,10 @@ const SplashScreen = ({ navigation }: any) => {
         <View style={styles.mainContainer}>
             <Image
                 source={Images.logo}
-                style={{ width: 150, height: 163 }}
+                style={styles.logo}
+                resizeMode="contain"
             />
+            <Text style={styles.wordmark}>SpotMe</Text>
         </View>
     );
 };

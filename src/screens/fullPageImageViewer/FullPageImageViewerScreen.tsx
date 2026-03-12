@@ -13,14 +13,16 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { CloseCircle } from 'iconsax-react-nativejs';
 import { createStyles } from './FullPageImageViewerStyles';
 import { useTheme } from '../../context/ThemeContext';
+import { usePreventMediaCapture } from '../../utils/usePreventMediaCapture';
 
-const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
+const { width: screenWidth } = Dimensions.get('window');
 
 const FullPageImageViewerScreen = ({ navigation, route }: any) => {
     const { images, initialIndex = 0, title } = route.params;
     const insets = useSafeAreaInsets();
     const { colors } = useTheme();
     const Styles = createStyles(colors);
+    usePreventMediaCapture(true);
 
     const [currentIndex, setCurrentIndex] = useState(initialIndex);
     const flatListRef = useRef<FlatList>(null);

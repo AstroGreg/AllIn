@@ -21,7 +21,7 @@ export const createStyles = (colors: ThemeColors) =>
             width: 44,
             height: 44,
             borderRadius: 22,
-            backgroundColor: colors.btnBackgroundColor,
+            backgroundColor: 'transparent',
             alignItems: 'center',
             justifyContent: 'center',
         },

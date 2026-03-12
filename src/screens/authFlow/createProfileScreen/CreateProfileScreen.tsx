@@ -1,28 +1,46 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { View, Text, ScrollView, Alert, ActivityIndicator, TouchableOpacity, Modal, Pressable, TextInput, BackHandler } from 'react-native';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { View, Text, Alert, ActivityIndicator, TouchableOpacity, Modal, Pressable, TextInput, BackHandler, ScrollView } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import FastImage from 'react-native-fast-image';
 import { useFocusEffect } from '@react-navigation/native';
 import { createStyles } from './CreateProfileScreenStyles';
 import SizeBox from '../../../constants/SizeBox';
-import CustomTextInput from '../../../components/customTextInput/CustomTextInput';
 import CustomButton from '../../../components/customButton/CustomButton';
 import DatePickerModal from '../../../components/datePickerModal/DatePickerModal';
+import KeyboardAvoidingContainer from '../../../components/KeyboardAvoidingContainer';
 import Icons from '../../../constants/Icons';
 import Images from '../../../constants/Images';
 import { useTheme } from '../../../context/ThemeContext';
 import { useAuth } from '../../../context/AuthContext';
-import { ApiError } from '../../../services/apiGateway';
+import { ApiError, checkAccountAvailability, type AccountAvailabilityProvider } from '../../../services/apiGateway';
 import { ArrowDown2, Calendar as CalendarIcon, Card } from 'iconsax-react-nativejs';
 import { getNationalityOptions } from '../../../constants/Nationalities';
 import { useTranslation } from 'react-i18next';
+import { formatAccountProvider, validateEmailInput, validateUsernameInput } from '../../../utils/accountAvailability';
+import { getWizardStepLabel } from '../../../utils/profileSelections';
+
+type AvailabilityState = {
+    status: 'idle' | 'checking' | 'available' | 'taken' | 'invalid';
+    message: string;
+    valid: boolean;
+    available: boolean;
+    provider: AccountAvailabilityProvider | null;
+};
+
+const neutralAvailabilityState = (): AvailabilityState => ({
+    status: 'idle',
+    message: '',
+    valid: true,
+    available: true,
+    provider: null,
+});
 
 const CreateProfileScreen = ({ navigation }: any) => {
     const { t } = useTranslation();
     const { colors } = useTheme();
     const Styles = createStyles(colors);
     const insets = useSafeAreaInsets();
-    const { updateUserAccount, authBootstrap, refreshAuthBootstrap, user: authUser } = useAuth();
+    const { updateUserAccount, authBootstrap, refreshAuthBootstrap, user: authUser, accessToken } = useAuth();
 
     const [username, setUsername] = useState('');
     const [firstName, setFirstName] = useState('');
@@ -39,6 +57,11 @@ const CreateProfileScreen = ({ navigation }: any) => {
     const [showStep1Validation, setShowStep1Validation] = useState(false);
     const [showStep2Validation, setShowStep2Validation] = useState(false);
     const [showStep3Validation, setShowStep3Validation] = useState(false);
+    const [usernameAvailability, setUsernameAvailability] = useState<AvailabilityState>(neutralAvailabilityState);
+    const [emailAvailability, setEmailAvailability] = useState<AvailabilityState>(neutralAvailabilityState);
+    const lastNameRef = useRef<TextInput | null>(null);
+    const usernameRef = useRef<TextInput | null>(null);
+    const emailRef = useRef<TextInput | null>(null);
 
     useEffect(() => {
         let mounted = true;
@@ -174,8 +197,16 @@ const CreateProfileScreen = ({ navigation }: any) => {
         [firstName, lastName]
     );
     const canContinueStep2 = useMemo(
-        () => username.trim().length > 0 && email.trim().length > 0,
-        [username, email]
+        () =>
+            username.trim().length > 0 &&
+            email.trim().length > 0 &&
+            usernameAvailability.valid &&
+            usernameAvailability.available &&
+            emailAvailability.valid &&
+            emailAvailability.available &&
+            usernameAvailability.status !== 'checking' &&
+            emailAvailability.status !== 'checking',
+        [email, emailAvailability, username, usernameAvailability]
     );
     const canSubmitStep3 = useMemo(
         () => nationality.trim().length > 0 && birthDate.trim().length > 0,
@@ -208,6 +239,187 @@ const CreateProfileScreen = ({ navigation }: any) => {
     const openBirthdateModal = () => {
         setShowBirthdateModal(true);
     };
+
+    const usernameReasonMessage = useCallback((reason: string | null) => {
+        if (reason === 'required') return t('Username is required.');
+        if (reason === 'too_short') return t('Use at least 2 characters.');
+        if (reason === 'too_long') return t('Use 32 characters or fewer.');
+        if (reason === 'invalid_format') return t('Use only letters, numbers, dots, underscores, or hyphens.');
+        return t('This username is already in use.');
+    }, [t]);
+
+    const emailReasonMessage = useCallback((reason: string | null, provider?: AccountAvailabilityProvider | null) => {
+        if (reason === 'required') return t('Email is required.');
+        if (reason === 'invalid_format') return t('Enter a valid email address.');
+        if (provider) {
+            return t('This email is already linked to {{provider}}.', {
+                provider: formatAccountProvider(provider),
+            });
+        }
+        return t('This email is already in use.');
+    }, [t]);
+
+    useEffect(() => {
+        if (step !== 2) return;
+        const value = username.trim();
+        if (!value) {
+            setUsernameAvailability(neutralAvailabilityState());
+            return;
+        }
+        const reason = validateUsernameInput(value);
+        if (reason) {
+            setUsernameAvailability({
+                status: 'invalid',
+                message: usernameReasonMessage(reason),
+                valid: false,
+                available: false,
+                provider: null,
+            });
+            return;
+        }
+        if (!accessToken) {
+            setUsernameAvailability(neutralAvailabilityState());
+            return;
+        }
+
+        let cancelled = false;
+        setUsernameAvailability({
+            status: 'checking',
+            message: t('Checking username...'),
+            valid: true,
+            available: false,
+            provider: null,
+        });
+
+        const timer = setTimeout(async () => {
+            try {
+                const res = await checkAccountAvailability(accessToken, { username: value });
+                if (cancelled) return;
+                const next = res.username;
+                if (!next) {
+                    setUsernameAvailability(neutralAvailabilityState());
+                    return;
+                }
+                if (!next.valid) {
+                    setUsernameAvailability({
+                        status: 'invalid',
+                        message: usernameReasonMessage(next.reason ?? null),
+                        valid: false,
+                        available: false,
+                        provider: null,
+                    });
+                    return;
+                }
+                if (!next.available) {
+                    setUsernameAvailability({
+                        status: 'taken',
+                        message: usernameReasonMessage(next.reason ?? 'taken'),
+                        valid: true,
+                        available: false,
+                        provider: null,
+                    });
+                    return;
+                }
+                setUsernameAvailability({
+                    status: 'available',
+                    message: t('Username is available.'),
+                    valid: true,
+                    available: true,
+                    provider: null,
+                });
+            } catch {
+                if (!cancelled) {
+                    setUsernameAvailability(neutralAvailabilityState());
+                }
+            }
+        }, 350);
+
+        return () => {
+            cancelled = true;
+            clearTimeout(timer);
+        };
+    }, [accessToken, step, t, username, usernameReasonMessage]);
+
+    useEffect(() => {
+        if (step !== 2) return;
+        const value = email.trim();
+        if (!value) {
+            setEmailAvailability(neutralAvailabilityState());
+            return;
+        }
+        const reason = validateEmailInput(value);
+        if (reason) {
+            setEmailAvailability({
+                status: 'invalid',
+                message: emailReasonMessage(reason),
+                valid: false,
+                available: false,
+                provider: null,
+            });
+            return;
+        }
+        if (!accessToken) {
+            setEmailAvailability(neutralAvailabilityState());
+            return;
+        }
+
+        let cancelled = false;
+        setEmailAvailability({
+            status: 'checking',
+            message: t('Checking email...'),
+            valid: true,
+            available: false,
+            provider: null,
+        });
+
+        const timer = setTimeout(async () => {
+            try {
+                const res = await checkAccountAvailability(accessToken, { email: value });
+                if (cancelled) return;
+                const next = res.email;
+                if (!next) {
+                    setEmailAvailability(neutralAvailabilityState());
+                    return;
+                }
+                if (!next.valid) {
+                    setEmailAvailability({
+                        status: 'invalid',
+                        message: emailReasonMessage(next.reason ?? null, next.provider),
+                        valid: false,
+                        available: false,
+                        provider: next.provider ?? null,
+                    });
+                    return;
+                }
+                if (!next.available) {
+                    setEmailAvailability({
+                        status: 'taken',
+                        message: emailReasonMessage(next.reason ?? 'taken', next.provider),
+                        valid: true,
+                        available: false,
+                        provider: next.provider ?? null,
+                    });
+                    return;
+                }
+                setEmailAvailability({
+                    status: 'available',
+                    message: t('Email is available.'),
+                    valid: true,
+                    available: true,
+                    provider: null,
+                });
+            } catch {
+                if (!cancelled) {
+                    setEmailAvailability(neutralAvailabilityState());
+                }
+            }
+        }, 350);
+
+        return () => {
+            cancelled = true;
+            clearTimeout(timer);
+        };
+    }, [accessToken, email, emailReasonMessage, step, t]);
 
     const handleContinue = async () => {
         if (step === 1) {
@@ -301,7 +513,7 @@ const CreateProfileScreen = ({ navigation }: any) => {
     return (
         <View style={Styles.mainContainer}>
             <SizeBox height={insets.top} />
-            <ScrollView showsVerticalScrollIndicator={false}>
+            <KeyboardAvoidingContainer keyboardVerticalOffset={insets.top + 12}>
                 <SizeBox height={30} />
 
                 <View style={Styles.imageContainer}>
@@ -319,78 +531,181 @@ const CreateProfileScreen = ({ navigation }: any) => {
                     <SizeBox height={8} />
                     <Text style={Styles.subHeadingText}>{t('Add your user details before creating profiles.')}</Text>
                     <SizeBox height={8} />
-                    <Text style={Styles.subHeadingText}>{t(`Step ${step} of 3`)}</Text>
+                    <Text style={Styles.subHeadingText}>{getWizardStepLabel(step, 3, t)}</Text>
 
                     <SizeBox height={24} />
 
                     {step === 1 && (
                         <>
-                            <CustomTextInput
-                                label={t('First Name')}
-                                placeholder={t('Enter First Name')}
-                                icon={<Icons.User height={16} width={16} />}
-                                value={firstName}
-                                showFloatingLabel={false}
-                                onChangeText={(value) => {
-                                    setFirstName(value);
-                                    if (showStep1Validation && value.trim().length > 0 && lastName.trim().length > 0) {
-                                        setShowStep1Validation(false);
-                                    }
-                                }}
-                                hasError={showStep1Validation && firstName.trim().length === 0}
-                            />
+                            <Text style={Styles.label}>{t('First Name')}</Text>
+                            <View
+                                style={[
+                                    Styles.inputContainer,
+                                    Styles.nativeInputRow,
+                                    { marginTop: 8 },
+                                    showStep1Validation && firstName.trim().length === 0 ? { borderColor: colors.errorColor } : null,
+                                ]}
+                            >
+                                <Icons.User height={16} width={16} />
+                                <SizeBox width={10} />
+                                <TextInput
+                                    style={Styles.nativeInput}
+                                    value={firstName}
+                                    onChangeText={(value) => {
+                                        setFirstName(value);
+                                        if (showStep1Validation && value.trim().length > 0 && lastName.trim().length > 0) {
+                                            setShowStep1Validation(false);
+                                        }
+                                    }}
+                                    placeholder={t('Enter First Name')}
+                                    placeholderTextColor={colors.grayColor}
+                                    autoCapitalize="words"
+                                    autoCorrect={false}
+                                    textContentType="givenName"
+                                    autoComplete="name-given"
+                                    returnKeyType="next"
+                                    blurOnSubmit={false}
+                                    onSubmitEditing={() => lastNameRef.current?.focus()}
+                                />
+                            </View>
                             <SizeBox height={24} />
-                            <CustomTextInput
-                                label={t('Last Name')}
-                                placeholder={t('Enter Last Name')}
-                                icon={<Icons.User height={16} width={16} />}
-                                value={lastName}
-                                showFloatingLabel={false}
-                                onChangeText={(value) => {
-                                    setLastName(value);
-                                    if (showStep1Validation && firstName.trim().length > 0 && value.trim().length > 0) {
-                                        setShowStep1Validation(false);
-                                    }
-                                }}
-                                hasError={showStep1Validation && lastName.trim().length === 0}
-                            />
+                            <Text style={Styles.label}>{t('Last Name')}</Text>
+                            <View
+                                style={[
+                                    Styles.inputContainer,
+                                    Styles.nativeInputRow,
+                                    { marginTop: 8 },
+                                    showStep1Validation && lastName.trim().length === 0 ? { borderColor: colors.errorColor } : null,
+                                ]}
+                            >
+                                <Icons.User height={16} width={16} />
+                                <SizeBox width={10} />
+                                <TextInput
+                                    ref={lastNameRef}
+                                    style={Styles.nativeInput}
+                                    value={lastName}
+                                    onChangeText={(value) => {
+                                        setLastName(value);
+                                        if (showStep1Validation && firstName.trim().length > 0 && value.trim().length > 0) {
+                                            setShowStep1Validation(false);
+                                        }
+                                    }}
+                                    placeholder={t('Enter Last Name')}
+                                    placeholderTextColor={colors.grayColor}
+                                    autoCapitalize="words"
+                                    autoCorrect={false}
+                                    textContentType="familyName"
+                                    autoComplete="name-family"
+                                    returnKeyType="next"
+                                    blurOnSubmit={false}
+                                    onSubmitEditing={() => setStep(2)}
+                                />
+                            </View>
                         </>
                     )}
 
                     {step === 2 && (
                         <>
-                            <CustomTextInput
-                                label={t('Username')}
-                                placeholder={t('Enter Username')}
-                                icon={<Icons.User height={16} width={16} />}
-                                value={username}
-                                showFloatingLabel={false}
-                                onChangeText={(value) => {
-                                    setUsername(value);
-                                    if (showStep2Validation && value.trim().length > 0 && email.trim().length > 0) {
-                                        setShowStep2Validation(false);
-                                    }
-                                }}
-                                hasError={showStep2Validation && username.trim().length === 0}
-                                autoCapitalize="none"
-                            />
+                            <Text style={Styles.label}>{t('Username')}</Text>
+                            <View
+                                style={[
+                                    Styles.inputContainer,
+                                    Styles.nativeInputRow,
+                                    { marginTop: 8 },
+                                    (showStep2Validation && username.trim().length === 0) ||
+                                    usernameAvailability.status === 'invalid' ||
+                                    usernameAvailability.status === 'taken'
+                                        ? { borderColor: colors.errorColor }
+                                        : null,
+                                ]}
+                            >
+                                <Icons.User height={16} width={16} />
+                                <SizeBox width={10} />
+                                <TextInput
+                                    ref={usernameRef}
+                                    style={Styles.nativeInput}
+                                    value={username}
+                                    onChangeText={(value) => {
+                                        setUsername(value);
+                                        if (showStep2Validation && value.trim().length > 0 && email.trim().length > 0) {
+                                            setShowStep2Validation(false);
+                                        }
+                                    }}
+                                    placeholder={t('Enter Username')}
+                                    placeholderTextColor={colors.grayColor}
+                                    autoCapitalize="none"
+                                    autoCorrect={false}
+                                    textContentType="username"
+                                    autoComplete="username"
+                                    returnKeyType="next"
+                                    blurOnSubmit={false}
+                                    onSubmitEditing={() => emailRef.current?.focus()}
+                                />
+                            </View>
+                            {usernameAvailability.status !== 'idle' ? (
+                                <Text
+                                    style={[
+                                        Styles.helperText,
+                                        usernameAvailability.status === 'available'
+                                            ? { color: colors.greenColor }
+                                            : usernameAvailability.status === 'checking'
+                                                ? { color: colors.grayColor }
+                                                : { color: colors.errorColor },
+                                    ]}
+                                >
+                                    {usernameAvailability.message}
+                                </Text>
+                            ) : null}
                             <SizeBox height={24} />
-                            <CustomTextInput
-                                label={t('Email')}
-                                placeholder={t('Enter Email')}
-                                icon={<Icons.User height={16} width={16} />}
-                                value={email}
-                                showFloatingLabel={false}
-                                onChangeText={(value) => {
-                                    setEmail(value);
-                                    if (showStep2Validation && username.trim().length > 0 && value.trim().length > 0) {
-                                        setShowStep2Validation(false);
-                                    }
-                                }}
-                                hasError={showStep2Validation && email.trim().length === 0}
-                                autoCapitalize="none"
-                                keyboardType="email-address"
-                            />
+                            <Text style={Styles.label}>{t('Email')}</Text>
+                            <View
+                                style={[
+                                    Styles.inputContainer,
+                                    Styles.nativeInputRow,
+                                    { marginTop: 8 },
+                                    (showStep2Validation && email.trim().length === 0) ||
+                                    emailAvailability.status === 'invalid' ||
+                                    emailAvailability.status === 'taken'
+                                        ? { borderColor: colors.errorColor }
+                                        : null,
+                                ]}
+                            >
+                                <Icons.User height={16} width={16} />
+                                <SizeBox width={10} />
+                                <TextInput
+                                    ref={emailRef}
+                                    style={Styles.nativeInput}
+                                    value={email}
+                                    onChangeText={(value) => {
+                                        setEmail(value);
+                                        if (showStep2Validation && username.trim().length > 0 && value.trim().length > 0) {
+                                            setShowStep2Validation(false);
+                                        }
+                                    }}
+                                    placeholder={t('Enter Email')}
+                                    placeholderTextColor={colors.grayColor}
+                                    autoCapitalize="none"
+                                    autoCorrect={false}
+                                    textContentType="emailAddress"
+                                    autoComplete="email"
+                                    keyboardType="email-address"
+                                    returnKeyType="done"
+                                />
+                            </View>
+                            {emailAvailability.status !== 'idle' ? (
+                                <Text
+                                    style={[
+                                        Styles.helperText,
+                                        emailAvailability.status === 'available'
+                                            ? { color: colors.greenColor }
+                                            : emailAvailability.status === 'checking'
+                                                ? { color: colors.grayColor }
+                                                : { color: colors.errorColor },
+                                    ]}
+                                >
+                                    {emailAvailability.message}
+                                </Text>
+                            ) : null}
                         </>
                     )}
 
@@ -456,7 +771,7 @@ const CreateProfileScreen = ({ navigation }: any) => {
                 </View>
 
                 <SizeBox height={40} />
-            </ScrollView>
+            </KeyboardAvoidingContainer>
 
             <Modal visible={showNationalityModal} transparent animationType="fade" onRequestClose={closeNationalityModal}>
                 <Pressable style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'center', padding: 20 }} onPress={closeNationalityModal}>

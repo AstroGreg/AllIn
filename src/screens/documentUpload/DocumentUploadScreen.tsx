@@ -45,6 +45,8 @@ const DocumentUploadScreen = ({ navigation, route }: any) => {
                 mediaType: 'photo',
                 selectionLimit: 1,
                 quality: 0.9,
+                presentationStyle: 'fullScreen',
+                assetRepresentationMode: 'current',
             });
 
             if (result.didCancel) return;
@@ -85,11 +87,11 @@ const DocumentUploadScreen = ({ navigation, route }: any) => {
 
                 <View style={Styles.headerContainer}>
                     <Text style={Styles.headingText}>
-                        Government Document{'\n'}Upload
+                        {t('Government Document')}
+                        {'\n'}
+                        {t('Upload')}
                     </Text>
-                    <Text style={Styles.subHeadingText}>
-                        Secure Verification Portal
-                    </Text>
+                    <Text style={Styles.subHeadingText}>{t('Secure Verification Portal')}</Text>
                 </View>
 
                 <SizeBox height={24} />

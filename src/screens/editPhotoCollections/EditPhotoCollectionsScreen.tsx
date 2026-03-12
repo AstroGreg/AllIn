@@ -8,14 +8,14 @@ import { createStyles } from './EditPhotoCollectionsStyles'
 import { useTheme } from '../../context/ThemeContext'
 import { useAuth } from '../../context/AuthContext'
 import { useFocusEffect } from '@react-navigation/native'
-import { addProfileCollectionItems, getProfileCollectionByType, removeProfileCollectionItems, setProfileCollectionFeatured, updateProfileCollectionByType, uploadMediaBatch, type ProfileCollectionItem } from '../../services/apiGateway'
+import { getProfileCollectionByType, removeProfileCollectionItems, setProfileCollectionFeatured, updateProfileCollectionByType, uploadMediaBatch, type ProfileCollectionItem } from '../../services/apiGateway'
 import { getApiBaseUrl } from '../../constants/RuntimeConfig'
 import { useTranslation } from 'react-i18next'
 import { launchImageLibrary } from 'react-native-image-picker'
 
 type SelectionMode = 'none' | 'top4' | 'delete';
 
-const EditPhotoCollectionsScreen = ({ navigation }: any) => {
+const EditPhotoCollectionsScreen = ({ navigation, route }: any) => {
     const insets = useSafeAreaInsets();
     const { width } = Dimensions.get('window');
     const imageWidth = Math.floor((width - 40 - 24 - 30) / 4);
@@ -23,6 +23,10 @@ const EditPhotoCollectionsScreen = ({ navigation }: any) => {
     const { t } = useTranslation();
     const styles = createStyles(colors);
     const { apiAccessToken } = useAuth();
+    const collectionScopeKey = useMemo(
+        () => String(route?.params?.collectionScopeKey ?? 'default').trim() || 'default',
+        [route?.params?.collectionScopeKey],
+    );
 
     const [selectionMode, setSelectionMode] = useState<SelectionMode>('none');
     const [selectedPhotoIds, setSelectedPhotoIds] = useState<string[]>([]);
@@ -79,14 +83,14 @@ const EditPhotoCollectionsScreen = ({ navigation }: any) => {
             return;
         }
         try {
-            const collection = await getProfileCollectionByType(apiAccessToken, 'image');
+            const collection = await getProfileCollectionByType(apiAccessToken, 'image', { scope_key: collectionScopeKey });
             setCollectionPhotos(Array.isArray(collection?.items) ? collection.items : []);
             setCollectionName(String(collection?.collection?.name ?? t('My Photo Collections')));
         } catch {
             setCollectionPhotos([]);
             setCollectionName(t('My Photo Collections'));
         }
-    }, [apiAccessToken, t]);
+    }, [apiAccessToken, collectionScopeKey, t]);
 
     useFocusEffect(
         useCallback(() => {
@@ -112,6 +116,8 @@ const EditPhotoCollectionsScreen = ({ navigation }: any) => {
             mediaType: 'photo',
             selectionLimit: 12,
             quality: 0.9,
+            presentationStyle: 'fullScreen',
+            assetRepresentationMode: 'current',
         });
         if (res.didCancel || !res.assets) return;
         const files = res.assets
@@ -124,14 +130,13 @@ const EditPhotoCollectionsScreen = ({ navigation }: any) => {
         if (files.length === 0) return;
         setIsUploading(true);
         try {
-            const uploaded = await uploadMediaBatch(apiAccessToken, { files });
-            const mediaIds = Array.isArray(uploaded?.results)
-                ? uploaded.results.map((r: any) => r.media_id).filter(Boolean)
-                : [];
-            if (mediaIds.length > 0) {
-                await addProfileCollectionItems(apiAccessToken, { type: 'image', media_ids: mediaIds });
-            }
+            await uploadMediaBatch(apiAccessToken, {
+                files,
+                collection_scope_key: collectionScopeKey,
+            });
             await loadData();
+        } catch (e: any) {
+            Alert.alert(t('Upload failed'), String(e?.message ?? e ?? t('Please try again.')));
         } finally {
             setIsUploading(false);
         }
@@ -164,7 +169,11 @@ const EditPhotoCollectionsScreen = ({ navigation }: any) => {
 
     const handleConfirmDelete = async () => {
         if (!apiAccessToken || selectedPhotoIds.length === 0) return;
-        await removeProfileCollectionItems(apiAccessToken, { type: 'image', media_ids: selectedPhotoIds });
+        await removeProfileCollectionItems(apiAccessToken, {
+            type: 'image',
+            media_ids: selectedPhotoIds,
+            scope_key: collectionScopeKey,
+        });
         await loadData();
         setSelectionMode('none');
         setSelectedPhotoIds([]);
@@ -172,7 +181,11 @@ const EditPhotoCollectionsScreen = ({ navigation }: any) => {
 
     const handleConfirmTop4 = async () => {
         if (!apiAccessToken) return;
-        await setProfileCollectionFeatured(apiAccessToken, { type: 'image', media_ids: selectedPhotoIds });
+        await setProfileCollectionFeatured(apiAccessToken, {
+            type: 'image',
+            media_ids: selectedPhotoIds,
+            scope_key: collectionScopeKey,
+        });
         await loadData();
         setSelectionMode('none');
         setSelectedPhotoIds([]);
@@ -187,14 +200,18 @@ const EditPhotoCollectionsScreen = ({ navigation }: any) => {
         }
         setIsSavingName(true);
         try {
-            await updateProfileCollectionByType(apiAccessToken, { type: 'image', name: nextName });
+            await updateProfileCollectionByType(apiAccessToken, {
+                type: 'image',
+                name: nextName,
+                scope_key: collectionScopeKey,
+            });
             await loadData();
         } catch (e: any) {
             Alert.alert(t('Save failed'), String(e?.message ?? e ?? t('Please try again')));
         } finally {
             setIsSavingName(false);
         }
-    }, [apiAccessToken, collectionName, isSavingName, loadData, t]);
+    }, [apiAccessToken, collectionName, collectionScopeKey, isSavingName, loadData, t]);
 
     const getSelectionNumber = (photoId: string): number | null => {
         const index = selectedPhotoIds.indexOf(photoId);

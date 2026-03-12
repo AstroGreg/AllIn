@@ -1,5 +1,5 @@
 import React, {useCallback, useEffect, useMemo, useState} from 'react';
-import {Alert, Modal, ScrollView, Text, TextInput, TouchableOpacity, View} from 'react-native';
+import {Alert, Modal, ScrollView, Text, TouchableOpacity, View} from 'react-native';
 import SizeBox from '../../../constants/SizeBox';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import {useTheme} from '../../../context/ThemeContext';
@@ -13,6 +13,12 @@ import {useRoute} from '@react-navigation/native';
 import {AI_GROUPS, AI_PEOPLE} from '../../../constants/AiFilterOptions';
 import { useTranslation } from 'react-i18next'
 import UnifiedSearchInput from '../../../components/unifiedSearchInput/UnifiedSearchInput';
+import {
+  buildSearchFilterChipLabel,
+  formatSearchDateRangeLabel,
+  getSearchFilterLabel,
+  type SearchFilterKey,
+} from '../../../utils/searchLabels';
 
 type AiFilterState = {
   competition?: string;
@@ -172,20 +178,20 @@ const BibSearchScreen = ({navigation}: any) => {
 
   const filterChips = useMemo(() => {
     const chips: Array<{key: keyof AiFilterState; label: string}> = [];
-    if (localFilters.competition) chips.push({key: 'competition', label: `Competition: ${localFilters.competition}`});
-    if (localFilters.person) chips.push({key: 'person', label: `Person: ${localFilters.person}`});
-    if (localFilters.group) chips.push({key: 'group', label: `Group: ${localFilters.group}`});
-    if (localFilters.location) chips.push({key: 'location', label: `Location: ${localFilters.location}`});
+    if (localFilters.competition) chips.push({key: 'competition', label: buildSearchFilterChipLabel('Competition', String(localFilters.competition), t)});
+    if (localFilters.person) chips.push({key: 'person', label: buildSearchFilterChipLabel('Person', String(localFilters.person), t)});
+    if (localFilters.group) chips.push({key: 'group', label: buildSearchFilterChipLabel('Group', String(localFilters.group), t)});
+    if (localFilters.location) chips.push({key: 'location', label: buildSearchFilterChipLabel('Location', String(localFilters.location), t)});
     if (localFilters.timeRange?.start || localFilters.timeRange?.end) {
       const start = localFilters.timeRange?.start
         ? new Date(localFilters.timeRange.start).toLocaleDateString()
         : '';
       const end = localFilters.timeRange?.end ? new Date(localFilters.timeRange.end).toLocaleDateString() : '';
-      const rangeLabel = start && end ? `${start} – ${end}` : start ? `From ${start}` : `Until ${end}`;
-      chips.push({key: 'timeRange', label: `Date: ${rangeLabel}`});
+      const rangeLabel = formatSearchDateRangeLabel(t, start, end);
+      chips.push({key: 'timeRange', label: `${t('Date')}: ${rangeLabel}`});
     }
     return chips;
-  }, [localFilters]);
+  }, [localFilters, t]);
 
   type FilterOption = {id: string; label: string; sublabel?: string};
 
@@ -201,7 +207,7 @@ const BibSearchScreen = ({navigation}: any) => {
 
   const filterOptions = useMemo<Record<keyof AiFilterState, FilterOption[]>>(() => {
     const competitions = events.map((event) => {
-      const name = String(event.event_name || event.event_title || 'Competition');
+      const name = String(event.event_name || event.event_title || t('Competition'));
       const date = event.event_date ? new Date(event.event_date).toLocaleDateString() : '';
       const location = event.event_location ? String(event.event_location) : '';
       const sublabel = [date, location].filter(Boolean).join(' • ');
@@ -217,7 +223,7 @@ const BibSearchScreen = ({navigation}: any) => {
       competitionType: [],
       timeRange: [],
     };
-  }, [events, locationOptions]);
+  }, [events, locationOptions, t]);
 
   const openFilterModal = (key: keyof AiFilterState) => {
     setModalFilterKey(key);
@@ -279,6 +285,23 @@ const BibSearchScreen = ({navigation}: any) => {
         matchedCount: results.length,
         results: results.map((r) => ({...r, event_id: safeEventId})),
         matchType: 'bib',
+        refineContext: {
+          bib: safeBib,
+          date: localFilters?.timeRange?.start || localFilters?.timeRange?.end
+            ? [
+                localFilters?.timeRange?.start ? new Date(localFilters.timeRange.start).toLocaleDateString() : null,
+                localFilters?.timeRange?.end ? new Date(localFilters.timeRange.end).toLocaleDateString() : null,
+              ]
+                .filter(Boolean)
+                .join(' - ')
+            : undefined,
+        },
+        manualBrowse: {
+          eventId: safeEventId,
+          competitionId: safeEventId,
+          eventName: selectedEvent?.event_name || selectedEvent?.event_title || localFilters?.competition,
+          eventDate: selectedEvent?.event_date,
+        },
       });
     } catch (e: any) {
       if (e instanceof ApiError && e.status === 402) {
@@ -290,7 +313,7 @@ const BibSearchScreen = ({navigation}: any) => {
     } finally {
       setIsSearching(false);
     }
-  }, [apiAccessToken, bib, navigation, selectedEventId]);
+  }, [apiAccessToken, bib, localFilters?.competition, localFilters?.timeRange?.end, localFilters?.timeRange?.start, navigation, selectedEvent?.event_date, selectedEvent?.event_name, selectedEvent?.event_title, selectedEventId, t]);
 
   const handleBack = useCallback(() => {
     const parent = navigation.getParent?.();
@@ -353,16 +376,16 @@ const BibSearchScreen = ({navigation}: any) => {
 
             <View style={styles.filterButtonsRow}>
               <TouchableOpacity style={styles.filterButton} onPress={() => openFilterModal('competition')}>
-                <Text style={styles.filterButtonText}>{t('Competition')}</Text>
+                <Text style={styles.filterButtonText}>{getSearchFilterLabel('Competition', t)}</Text>
               </TouchableOpacity>
               <TouchableOpacity style={styles.filterButton} onPress={() => openFilterModal('person')}>
-                <Text style={styles.filterButtonText}>{t('Person')}</Text>
+                <Text style={styles.filterButtonText}>{getSearchFilterLabel('Person', t)}</Text>
               </TouchableOpacity>
               <TouchableOpacity style={styles.filterButton} onPress={() => openFilterModal('group')}>
-                <Text style={styles.filterButtonText}>{t('Group')}</Text>
+                <Text style={styles.filterButtonText}>{getSearchFilterLabel('Group', t)}</Text>
               </TouchableOpacity>
               <TouchableOpacity style={styles.filterButton} onPress={() => openFilterModal('location')}>
-                <Text style={styles.filterButtonText}>{t('Location')}</Text>
+                <Text style={styles.filterButtonText}>{getSearchFilterLabel('Location', t)}</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -378,7 +401,7 @@ const BibSearchScreen = ({navigation}: any) => {
           >
             <TouchableOpacity style={styles.filterModalOverlay} activeOpacity={1} onPress={() => setShowFilterModal(false)}>
               <TouchableOpacity style={styles.filterModalCard} activeOpacity={1}>
-                <Text style={styles.filterModalTitle}>{t('Select')} {t(modalFilterKey ?? 'filter')}</Text>
+                <Text style={styles.filterModalTitle}>{t('Select')} {modalFilterKey ? getSearchFilterLabel(modalFilterKey.charAt(0).toUpperCase() + modalFilterKey.slice(1) as SearchFilterKey, t) : t('filter')}</Text>
                 <ScrollView style={styles.filterModalList} contentContainerStyle={styles.filterModalListContent}>
                   {(modalFilterKey ? filterOptions[modalFilterKey] : []).map((option) => (
                     <TouchableOpacity

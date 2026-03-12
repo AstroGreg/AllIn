@@ -17,7 +17,6 @@ const FacialRecognitionSettings = ({ navigation }: any) => {
     navigation.navigate('SearchFaceCaptureScreen', {
       mode: 'enrolFace',
       replace: true,
-      templatesPerAngle: 3,
       afterEnroll: { screen: 'ProfileSettings' },
     });
   }, [navigation]);
@@ -48,7 +47,7 @@ const FacialRecognitionSettings = ({ navigation }: any) => {
 
           <SizeBox height={12} />
           <Text style={{ color: colors.grayColor, lineHeight: 20 }}>
-            Capture a full set of angles. If you do this multiple times (append), we store multiple templates per angle (different lighting/distance) for higher accuracy.
+            {t('Capture the front angle at close, medium, and far distance, then capture the other angles once.')}
           </Text>
 
           <SizeBox height={16} />
@@ -63,7 +62,7 @@ const FacialRecognitionSettings = ({ navigation }: any) => {
               alignItems: 'center',
             }}
           >
-            <Text style={{ color: colors.pureWhite, fontWeight: '600' }}>{t('Enroll Face (3 per angle)')}</Text>
+            <Text style={{ color: colors.pureWhite, fontWeight: '600' }}>{t('Enroll Face')}</Text>
           </TouchableOpacity>
 
         </View>

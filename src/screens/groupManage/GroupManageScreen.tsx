@@ -1,9 +1,9 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Alert, Modal, Pressable, ScrollView, Share, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ArrowLeft2, Add, SearchNormal1, Trash } from 'iconsax-react-nativejs';
+import Clipboard from '@react-native-clipboard/clipboard';
 import FastImage from 'react-native-fast-image';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import SizeBox from '../../constants/SizeBox';
 import { useTheme } from '../../context/ThemeContext';
 import { useTranslation } from 'react-i18next';
@@ -12,12 +12,14 @@ import {
   getGroup,
   getGroupMembers,
   getProfileSummary,
+  createGroupInviteLink,
   inviteGroupMember,
   listGroupInvites,
   removeGroupMember,
   searchProfiles,
   updateGroup,
   updateGroupMemberRole,
+  updateGroupMemberPublicRoles,
   type GroupMember,
   type GroupMemberInvite,
   type GroupSummary,
@@ -50,10 +52,14 @@ const GroupManageScreen = ({ navigation, route }: any) => {
   const [selectedInviteProfile, setSelectedInviteProfile] = useState<ProfileSearchResult | null>(null);
   const [invitePublicRoles, setInvitePublicRoles] = useState<PublicMemberRole[]>(['athlete']);
   const [invitePermission, setInvitePermission] = useState<'member' | 'admin'>('member');
-  const [memberRoleTags, setMemberRoleTags] = useState<Record<string, PublicMemberRole[]>>({});
 
   const [manualCoachName, setManualCoachName] = useState('');
   const [isSavingManualCoach, setIsSavingManualCoach] = useState(false);
+  const [inviteLinkVisible, setInviteLinkVisible] = useState(false);
+  const [inviteLinkBusy, setInviteLinkBusy] = useState(false);
+  const [inviteLinkUrl, setInviteLinkUrl] = useState('');
+  const [inviteLinkPermission, setInviteLinkPermission] = useState<'member' | 'admin'>('member');
+  const [inviteLinkPublicRoles, setInviteLinkPublicRoles] = useState<PublicMemberRole[]>(['athlete']);
 
   const canManageGroup = useMemo(() => {
     const role = String(group?.my_role || '').toLowerCase();
@@ -70,54 +76,6 @@ const GroupManageScreen = ({ navigation, route }: any) => {
     if (!base) return raw;
     return `${base.replace(/\/$/, '')}/${raw.replace(/^\//, '')}`;
   }, []);
-  const roleTagsStorageKey = useMemo(
-    () => (groupId ? `@group_member_role_tags_${groupId}` : ''),
-    [groupId],
-  );
-
-  const persistRoleTags = useCallback(
-    async (next: Record<string, PublicMemberRole[]>) => {
-      if (!roleTagsStorageKey) return;
-      try {
-        await AsyncStorage.setItem(roleTagsStorageKey, JSON.stringify(next));
-      } catch {
-        // ignore
-      }
-    },
-    [roleTagsStorageKey],
-  );
-
-  useEffect(() => {
-    let mounted = true;
-    if (!roleTagsStorageKey) {
-      setMemberRoleTags({});
-      return () => {
-        mounted = false;
-      };
-    }
-    (async () => {
-      try {
-        const raw = await AsyncStorage.getItem(roleTagsStorageKey);
-        if (!mounted) return;
-        const parsed = raw ? JSON.parse(raw) : {};
-        const next = Object.entries(parsed || {}).reduce((acc, [profileId, roles]) => {
-          const normalized = Array.isArray(roles)
-            ? roles
-                .map((entry) => String(entry || '').toLowerCase())
-                .filter((entry): entry is PublicMemberRole => entry === 'athlete' || entry === 'coach' || entry === 'physio')
-            : [];
-          if (normalized.length > 0) acc[String(profileId)] = normalized;
-          return acc;
-        }, {} as Record<string, PublicMemberRole[]>);
-        setMemberRoleTags(next);
-      } catch {
-        if (mounted) setMemberRoleTags({});
-      }
-    })();
-    return () => {
-      mounted = false;
-    };
-  }, [roleTagsStorageKey]);
 
   const loadData = useCallback(async () => {
     if (!apiAccessToken || !groupId) return;
@@ -244,17 +202,15 @@ const GroupManageScreen = ({ navigation, route }: any) => {
       await inviteGroupMember(apiAccessToken, groupId, {
         profile_id: profileId,
         role: roleToInvite,
+        public_roles: invitePublicRoles,
       });
-      const nextRoles: PublicMemberRole[] = invitePublicRoles.length > 0 ? invitePublicRoles : ['athlete'];
-      const nextTags = { ...memberRoleTags, [profileId]: Array.from(new Set(nextRoles)) };
-      setMemberRoleTags(nextTags);
-      await persistRoleTags(nextTags);
       setPendingInviteByProfile((prev) => ({ ...prev, [profileId]: roleToInvite }));
       setMemberSearchResults((prev) => prev.filter((p) => String(p.profile_id) !== profileId));
       setSelectedInviteProfile(null);
       setInvitePermission('member');
       setInvitePublicRoles(['athlete']);
       setMemberQuery('');
+      await loadData();
     } catch {
       // ignore
     } finally {
@@ -279,20 +235,13 @@ const GroupManageScreen = ({ navigation, route }: any) => {
         return next;
       });
 
-      if (Object.prototype.hasOwnProperty.call(memberRoleTags, targetProfileId)) {
-        const nextTags = { ...memberRoleTags };
-        delete nextTags[targetProfileId];
-        setMemberRoleTags(nextTags);
-        await persistRoleTags(nextTags);
-      }
-
       await loadData();
     } catch {
       // ignore
     } finally {
       setRemoveBusyByProfile((prev) => ({ ...prev, [targetProfileId]: false }));
     }
-  }, [apiAccessToken, canManageGroup, groupId, loadData, memberRoleTags, persistRoleTags, removeBusyByProfile]);
+  }, [apiAccessToken, canManageGroup, groupId, loadData, removeBusyByProfile]);
 
   const handleChangeMemberPermission = useCallback(async (member: GroupMember, nextPermission: 'member' | 'admin') => {
     if (!apiAccessToken || !groupId || !canManageGroup) return;
@@ -316,13 +265,16 @@ const GroupManageScreen = ({ navigation, route }: any) => {
   }, [apiAccessToken, canManageGroup, groupId, isAdmin, loadData, roleBusyByProfile]);
 
   const getDisplayRoles = useCallback((member: GroupMember): PublicMemberRole[] => {
-    const profileId = String(member?.profile_id || '').trim();
-    const local = profileId ? memberRoleTags[profileId] : undefined;
-    if (Array.isArray(local) && local.length > 0) return local;
+    const remoteRoles = Array.isArray(member?.public_roles)
+      ? member.public_roles
+          .map((entry) => String(entry || '').toLowerCase())
+          .filter((entry): entry is PublicMemberRole => entry === 'athlete' || entry === 'coach' || entry === 'physio')
+      : [];
+    if (remoteRoles.length > 0) return remoteRoles;
     const backendRole = String(member?.role || '').toLowerCase();
     if (backendRole === 'athlete' || backendRole === 'coach' || backendRole === 'physio') return [backendRole];
     return [];
-  }, [memberRoleTags]);
+  }, []);
 
   const toggleInvitePublicRole = useCallback((role: PublicMemberRole) => {
     setInvitePublicRoles((prev) => {
@@ -334,14 +286,20 @@ const GroupManageScreen = ({ navigation, route }: any) => {
     });
   }, []);
 
-  const toggleMemberPublicRole = useCallback(async (profileId: string, role: PublicMemberRole, fallbackRole?: string | null) => {
-    const safeProfileId = String(profileId || '').trim();
+  const toggleInviteLinkPublicRole = useCallback((role: PublicMemberRole) => {
+    setInviteLinkPublicRoles((prev) => {
+      if (prev.includes(role)) {
+        const next = prev.filter((entry) => entry !== role);
+        return next.length > 0 ? next : prev;
+      }
+      return [...prev, role];
+    });
+  }, []);
+
+  const toggleMemberPublicRole = useCallback(async (member: GroupMember, role: PublicMemberRole) => {
+    const safeProfileId = String(member?.profile_id || '').trim();
     if (!safeProfileId) return;
-    const currentBase = Array.isArray(memberRoleTags[safeProfileId])
-      ? memberRoleTags[safeProfileId]
-      : (String(fallbackRole || '').toLowerCase() === 'athlete' || String(fallbackRole || '').toLowerCase() === 'coach' || String(fallbackRole || '').toLowerCase() === 'physio')
-        ? ([String(fallbackRole).toLowerCase()] as PublicMemberRole[])
-        : [];
+    const currentBase = getDisplayRoles(member);
     const set = new Set<PublicMemberRole>(currentBase);
     if (set.has(role)) {
       if (set.size === 1) return;
@@ -350,10 +308,18 @@ const GroupManageScreen = ({ navigation, route }: any) => {
       set.add(role);
     }
     const nextRoles = Array.from(set);
-    const next = { ...memberRoleTags, [safeProfileId]: nextRoles };
-    setMemberRoleTags(next);
-    await persistRoleTags(next);
-  }, [memberRoleTags, persistRoleTags]);
+    if (!apiAccessToken || !groupId) return;
+    try {
+      await updateGroupMemberPublicRoles(apiAccessToken, groupId, safeProfileId, { public_roles: nextRoles });
+      setMembers((prev) => prev.map((entry) => (
+        String(entry?.profile_id || '').trim() === safeProfileId
+          ? { ...entry, public_roles: nextRoles }
+          : entry
+      )));
+    } catch {
+      // ignore
+    }
+  }, [apiAccessToken, getDisplayRoles, groupId]);
 
   const manualCoachNames = useMemo(() => {
     const source = Array.isArray(group?.coaches) ? (group?.coaches ?? []) : [];
@@ -378,6 +344,72 @@ const GroupManageScreen = ({ navigation, route }: any) => {
       setIsSavingManualCoach(false);
     }
   }, [apiAccessToken, canManageGroup, groupId, isSavingManualCoach, manualCoachName, manualCoachNames]);
+
+  const handleRemoveManualCoach = useCallback(async (name: string) => {
+    const value = String(name || '').trim();
+    if (!apiAccessToken || !groupId || !canManageGroup || !value) return;
+    try {
+      const next = manualCoachNames.filter((entry) => String(entry || '').trim().toLowerCase() !== value.toLowerCase());
+      const updated = await updateGroup(apiAccessToken, groupId, { coaches: next });
+      setGroup((prev) => {
+        if (!prev) return updated?.group ?? prev;
+        return updated?.group ? { ...prev, ...updated.group } : prev;
+      });
+    } catch {
+      // ignore
+    }
+  }, [apiAccessToken, canManageGroup, groupId, manualCoachNames]);
+
+  const buildInviteLinkUrl = useCallback((token: string) => `spotme://group-invite/${encodeURIComponent(token)}`, []);
+
+  const openInviteLinkModal = useCallback(() => {
+    setInviteLinkVisible(true);
+    setInviteLinkBusy(false);
+    setInviteLinkUrl('');
+    setInviteLinkPermission('member');
+    setInviteLinkPublicRoles(['athlete']);
+  }, []);
+
+  const closeInviteLinkModal = useCallback(() => {
+    if (inviteLinkBusy) return;
+    setInviteLinkVisible(false);
+  }, [inviteLinkBusy]);
+
+  const handleGenerateInviteLink = useCallback(async () => {
+    if (!apiAccessToken || !groupId || !canManageGroup || inviteLinkPublicRoles.length === 0 || inviteLinkBusy) return;
+    setInviteLinkBusy(true);
+    try {
+      const resp = await createGroupInviteLink(apiAccessToken, groupId, {
+        role: inviteLinkPermission,
+        public_roles: inviteLinkPublicRoles,
+      });
+      const token = String(resp?.invite_link?.token || '').trim();
+      setInviteLinkUrl(token ? buildInviteLinkUrl(token) : '');
+    } catch (error: any) {
+      const message = String(error?.message ?? error ?? '').trim() || t('Unable to create invitation link');
+      Alert.alert(t('Invitation link failed'), message);
+    } finally {
+      setInviteLinkBusy(false);
+    }
+  }, [apiAccessToken, buildInviteLinkUrl, canManageGroup, groupId, inviteLinkBusy, inviteLinkPermission, inviteLinkPublicRoles, t]);
+
+  const handleCopyInviteLink = useCallback(() => {
+    if (!inviteLinkUrl) return;
+    Clipboard.setString(inviteLinkUrl);
+    Alert.alert(t('Copied'), t('Invitation link copied to clipboard.'));
+  }, [inviteLinkUrl, t]);
+
+  const handleShareInviteLink = useCallback(async () => {
+    if (!inviteLinkUrl) return;
+    try {
+      await Share.share({
+        message: inviteLinkUrl,
+        url: inviteLinkUrl,
+      });
+    } catch {
+      // ignore share cancellation/errors here
+    }
+  }, [inviteLinkUrl]);
 
   const styles = useMemo(() => StyleSheet.create({
     container: { flex: 1, backgroundColor: colors.backgroundColor },
@@ -511,6 +543,82 @@ const GroupManageScreen = ({ navigation, route }: any) => {
     },
     roleButtonInlineText: { fontSize: 11, color: colors.subTextColor },
     roleButtonInlineTextActive: { fontSize: 11, color: colors.primaryColor },
+    roleBadgeRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 6 },
+    roleBadge: {
+      borderRadius: 999,
+      borderWidth: 1,
+      borderColor: colors.primaryColor,
+      backgroundColor: colors.secondaryBlueColor,
+      paddingHorizontal: 8,
+      paddingVertical: 3,
+    },
+    roleBadgeText: { fontSize: 11, color: colors.primaryColor },
+    manualCoachChips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 10 },
+    manualCoachChip: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 6,
+      borderRadius: 999,
+      borderWidth: 1,
+      borderColor: colors.borderColor,
+      backgroundColor: colors.btnBackgroundColor,
+      paddingHorizontal: 10,
+      paddingVertical: 6,
+    },
+    manualCoachChipText: { fontSize: 12, color: colors.mainTextColor },
+    inviteLinkButton: {
+      marginTop: 10,
+      borderRadius: 10,
+      borderWidth: 1,
+      borderColor: colors.primaryColor,
+      backgroundColor: colors.secondaryBlueColor,
+      paddingVertical: 10,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    inviteLinkButtonText: { fontSize: 13, color: colors.primaryColor, fontWeight: '600' },
+    modalBackdrop: {
+      flex: 1,
+      backgroundColor: 'rgba(0,0,0,0.5)',
+      justifyContent: 'center',
+      paddingHorizontal: 20,
+    },
+    modalCard: {
+      borderRadius: 18,
+      borderWidth: 1,
+      borderColor: colors.borderColor,
+      backgroundColor: colors.cardBackground,
+      padding: 18,
+      gap: 12,
+    },
+    modalTitle: { fontSize: 18, color: colors.mainTextColor, fontWeight: '700' },
+    modalHint: { fontSize: 13, color: colors.subTextColor, lineHeight: 20 },
+    linkValueCard: {
+      borderRadius: 12,
+      borderWidth: 1,
+      borderColor: colors.borderColor,
+      backgroundColor: colors.btnBackgroundColor,
+      paddingHorizontal: 12,
+      paddingVertical: 10,
+    },
+    linkValueText: { fontSize: 12, color: colors.mainTextColor },
+    modalActionsRow: { flexDirection: 'row', gap: 10 },
+    modalAction: {
+      flex: 1,
+      height: 44,
+      borderRadius: 10,
+      borderWidth: 1,
+      borderColor: colors.borderColor,
+      backgroundColor: colors.btnBackgroundColor,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    modalActionPrimary: {
+      backgroundColor: colors.primaryColor,
+      borderColor: colors.primaryColor,
+    },
+    modalActionText: { fontSize: 13, color: colors.mainTextColor, fontWeight: '600' },
+    modalActionTextPrimary: { fontSize: 13, color: colors.whiteColor, fontWeight: '600' },
   }), [colors]);
 
   if (!groupId) {
@@ -546,6 +654,14 @@ const GroupManageScreen = ({ navigation, route }: any) => {
 
         {!loading && canManageGroup ? (
           <>
+            <View style={styles.sectionCard}>
+              <Text style={styles.sectionTitle}>{t('Invitation link')}</Text>
+              <Text style={styles.hint}>{t('Generate a shareable link so people can join this group directly in the app')}</Text>
+              <TouchableOpacity style={styles.inviteLinkButton} onPress={openInviteLinkModal}>
+                <Text style={styles.inviteLinkButtonText}>{t('Generate invitation link')}</Text>
+              </TouchableOpacity>
+            </View>
+
             <View style={styles.sectionCard}>
               <Text style={styles.sectionTitle}>{t('Invite member')}</Text>
               <Text style={styles.hint}>{t('Search first, then choose public roles and permission')}</Text>
@@ -650,62 +766,83 @@ const GroupManageScreen = ({ navigation, route }: any) => {
               <Text style={styles.sectionTitle}>{t('Manage members')}</Text>
               {members.map((member) => {
                 const avatarUrl = member.avatar_url ? toAbsoluteUrl(String(member.avatar_url)) : null;
-                const role = String(member.role || '').toLowerCase();
-                const canEditRole = role !== 'owner' && !(isAdmin && role === 'admin');
+                const permissionRole = String(member.permission_role || member.role || '').toLowerCase();
+                const canEditPermission = permissionRole !== 'owner' && !(isAdmin && permissionRole === 'admin');
+                const canEditPublicRoles = canManageGroup;
                 const isRemovingMember = Boolean(removeBusyByProfile[String(member.profile_id)]);
                 const permissionOptions = isOwner ? (['member', 'admin'] as const) : (['member'] as const);
-                const selectedPermission: 'member' | 'admin' = role === 'admin' ? 'admin' : 'member';
+                const selectedPermission: 'member' | 'admin' = permissionRole === 'admin' ? 'admin' : 'member';
                 const publicRoles = getDisplayRoles(member);
+                const badges = [
+                  ...(permissionRole === 'owner' ? [t('Owner')] : []),
+                  ...(permissionRole === 'admin' ? [t('Admin')] : []),
+                  ...publicRoles.map((role) => t(role === 'coach' ? 'Coach' : role === 'physio' ? 'Physio' : 'Athlete')),
+                ];
                 return (
                   <View key={String(member.profile_id)} style={styles.memberRow}>
                     <View style={styles.memberInfo}>
                       {avatarUrl ? <FastImage source={{ uri: avatarUrl }} style={styles.avatar} /> : <View style={styles.avatar} />}
                       <View style={{ flex: 1 }}>
                         <Text style={styles.memberName}>{member.display_name || t('Member')}</Text>
-                        {canEditRole ? (
+                        {badges.length > 0 ? (
+                          <View style={styles.roleBadgeRow}>
+                            {badges.map((badge, index) => (
+                              <View key={`${member.profile_id}-badge-${badge}-${index}`} style={styles.roleBadge}>
+                                <Text style={styles.roleBadgeText}>{badge}</Text>
+                              </View>
+                            ))}
+                          </View>
+                        ) : null}
+                        {canEditPermission || canEditPublicRoles ? (
                           <>
-                            <Text style={styles.memberRole}>{t('Permission')}</Text>
-                            <View style={styles.roleButtonsInline}>
-                              {permissionOptions.map((option) => {
-                                const selected = selectedPermission === option;
-                                return (
-                                  <TouchableOpacity
-                                    key={`${member.profile_id}-permission-${option}`}
-                                    style={[styles.roleButtonInline, selected && styles.roleButtonInlineActive]}
-                                    disabled={Boolean(roleBusyByProfile[String(member.profile_id)])}
-                                    onPress={() => handleChangeMemberPermission(member, option)}
-                                  >
-                                    <Text style={selected ? styles.roleButtonInlineTextActive : styles.roleButtonInlineText}>
-                                      {t(option === 'admin' ? 'Admin' : 'Member')}
-                                    </Text>
-                                  </TouchableOpacity>
-                                );
-                              })}
-                            </View>
-                            <Text style={styles.memberRole}>{t('Public role tags')}</Text>
-                            <View style={styles.roleButtonsInline}>
-                              {(['athlete', 'coach', 'physio'] as const).map((option) => {
-                                const selected = publicRoles.includes(option);
-                                return (
-                                  <TouchableOpacity
-                                    key={`${member.profile_id}-tag-${option}`}
-                                    style={[styles.roleButtonInline, selected && styles.roleButtonInlineActive]}
-                                    onPress={() => toggleMemberPublicRole(String(member.profile_id), option, member.role)}
-                                  >
-                                    <Text style={selected ? styles.roleButtonInlineTextActive : styles.roleButtonInlineText}>
-                                      {t(option === 'coach' ? 'Coach' : option === 'physio' ? 'Physio' : 'Athlete')}
-                                    </Text>
-                                  </TouchableOpacity>
-                                );
-                              })}
-                            </View>
+                            {canEditPermission ? (
+                              <>
+                                <Text style={styles.memberRole}>{t('Permission')}</Text>
+                                <View style={styles.roleButtonsInline}>
+                                  {permissionOptions.map((option) => {
+                                    const selected = selectedPermission === option;
+                                    return (
+                                      <TouchableOpacity
+                                        key={`${member.profile_id}-permission-${option}`}
+                                        style={[styles.roleButtonInline, selected && styles.roleButtonInlineActive]}
+                                        disabled={Boolean(roleBusyByProfile[String(member.profile_id)])}
+                                        onPress={() => handleChangeMemberPermission(member, option)}
+                                      >
+                                        <Text style={selected ? styles.roleButtonInlineTextActive : styles.roleButtonInlineText}>
+                                          {t(option === 'admin' ? 'Admin' : 'Member')}
+                                        </Text>
+                                      </TouchableOpacity>
+                                    );
+                                  })}
+                                </View>
+                              </>
+                            ) : null}
+                            {canEditPublicRoles ? (
+                              <>
+                                <Text style={styles.memberRole}>{t('Public role tags')}</Text>
+                                <View style={styles.roleButtonsInline}>
+                                  {(['athlete', 'coach', 'physio'] as const).map((option) => {
+                                    const selected = publicRoles.includes(option);
+                                    return (
+                                      <TouchableOpacity
+                                        key={`${member.profile_id}-tag-${option}`}
+                                        style={[styles.roleButtonInline, selected && styles.roleButtonInlineActive]}
+                                        onPress={() => toggleMemberPublicRole(member, option)}
+                                      >
+                                        <Text style={selected ? styles.roleButtonInlineTextActive : styles.roleButtonInlineText}>
+                                          {t(option === 'coach' ? 'Coach' : option === 'physio' ? 'Physio' : 'Athlete')}
+                                        </Text>
+                                      </TouchableOpacity>
+                                    );
+                                  })}
+                                </View>
+                              </>
+                            ) : null}
                           </>
-                        ) : (
-                          <Text style={styles.memberRole}>{t('Owner')}</Text>
-                        )}
+                        ) : null}
                       </View>
                     </View>
-                    {canEditRole ? (
+                    {canEditPermission ? (
                       <TouchableOpacity
                         onPress={() => handleRemoveMember(member)}
                         disabled={isRemovingMember}
@@ -744,12 +881,107 @@ const GroupManageScreen = ({ navigation, route }: any) => {
                   )}
                 </TouchableOpacity>
               </View>
+              {manualCoachNames.length > 0 ? (
+                <View style={styles.manualCoachChips}>
+                  {manualCoachNames.map((coachName) => (
+                    <TouchableOpacity
+                      key={`manual-coach-${coachName}`}
+                      style={styles.manualCoachChip}
+                      onPress={() => handleRemoveManualCoach(coachName)}
+                    >
+                      <Text style={styles.manualCoachChipText}>{coachName}</Text>
+                      <Trash size={14} color={colors.errorColor || '#E14B4B'} variant="Linear" />
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              ) : null}
             </View>
           </>
         ) : null}
 
         <SizeBox height={insets.bottom > 0 ? insets.bottom + 20 : 40} />
       </ScrollView>
+
+      <Modal
+        visible={inviteLinkVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={closeInviteLinkModal}
+      >
+        <Pressable style={styles.modalBackdrop} onPress={closeInviteLinkModal}>
+          <Pressable style={styles.modalCard} onPress={() => {}}>
+            <Text style={styles.modalTitle}>{t('Invitation link')}</Text>
+            <Text style={styles.modalHint}>{t('Choose the public role tags for people joining through this link, then generate and share it.')}</Text>
+
+            <Text style={styles.selectedInviteMeta}>{t('Select public roles')}</Text>
+            <View style={styles.roleToggle}>
+              {(['athlete', 'coach', 'physio'] as const).map((role) => (
+                <TouchableOpacity
+                  key={`invite-link-role-${role}`}
+                  style={[styles.roleButton, inviteLinkPublicRoles.includes(role) && styles.roleButtonActive]}
+                  onPress={() => toggleInviteLinkPublicRole(role)}
+                >
+                  <Text style={inviteLinkPublicRoles.includes(role) ? styles.roleTextActive : styles.roleText}>
+                    {t(role === 'athlete' ? 'Athlete' : role === 'coach' ? 'Coach' : 'Physio')}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+
+            <Text style={styles.selectedInviteMeta}>{t('Select permission')}</Text>
+            <View style={styles.roleToggle}>
+              <TouchableOpacity
+                style={[styles.roleButton, inviteLinkPermission === 'member' && styles.roleButtonActive]}
+                onPress={() => setInviteLinkPermission('member')}
+              >
+                <Text style={inviteLinkPermission === 'member' ? styles.roleTextActive : styles.roleText}>{t('Member')}</Text>
+              </TouchableOpacity>
+              {isOwner ? (
+                <TouchableOpacity
+                  style={[styles.roleButton, inviteLinkPermission === 'admin' && styles.roleButtonActive]}
+                  onPress={() => setInviteLinkPermission('admin')}
+                >
+                  <Text style={inviteLinkPermission === 'admin' ? styles.roleTextActive : styles.roleText}>{t('Admin')}</Text>
+                </TouchableOpacity>
+              ) : null}
+            </View>
+
+            {inviteLinkUrl ? (
+              <View style={styles.linkValueCard}>
+                <Text style={styles.linkValueText}>{inviteLinkUrl}</Text>
+              </View>
+            ) : null}
+
+            <View style={styles.modalActionsRow}>
+              <TouchableOpacity style={styles.modalAction} onPress={closeInviteLinkModal} disabled={inviteLinkBusy}>
+                <Text style={styles.modalActionText}>{t('Close')}</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.modalAction, styles.modalActionPrimary]}
+                onPress={handleGenerateInviteLink}
+                disabled={inviteLinkBusy || inviteLinkPublicRoles.length === 0}
+              >
+                {inviteLinkBusy ? (
+                  <ActivityIndicator size="small" color={colors.whiteColor} />
+                ) : (
+                  <Text style={styles.modalActionTextPrimary}>{inviteLinkUrl ? t('Regenerate') : t('Generate')}</Text>
+                )}
+              </TouchableOpacity>
+            </View>
+
+            {inviteLinkUrl ? (
+              <View style={styles.modalActionsRow}>
+                <TouchableOpacity style={styles.modalAction} onPress={handleCopyInviteLink}>
+                  <Text style={styles.modalActionText}>{t('Copy link')}</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.modalAction} onPress={handleShareInviteLink}>
+                  <Text style={styles.modalActionText}>{t('Share')}</Text>
+                </TouchableOpacity>
+              </View>
+            ) : null}
+          </Pressable>
+        </Pressable>
+      </Modal>
     </View>
   );
 };

@@ -119,6 +119,8 @@ const GroupCollectionsManageScreen = ({ navigation, route }: any) => {
       mediaType: type === 'video' ? 'video' : 'photo',
       selectionLimit: type === 'video' ? 6 : 12,
       quality: type === 'video' ? undefined : 0.9,
+      presentationStyle: 'fullScreen',
+      assetRepresentationMode: 'current',
     });
     if (res.didCancel || !res.assets) return;
     const files = res.assets
@@ -131,7 +133,10 @@ const GroupCollectionsManageScreen = ({ navigation, route }: any) => {
     if (files.length === 0) return;
     setIsUploading(true);
     try {
-      const uploaded = await uploadMediaBatch(apiAccessToken, { files });
+      const uploaded = await uploadMediaBatch(apiAccessToken, {
+        files,
+        skip_profile_collection: true,
+      });
       const mediaIds = Array.isArray(uploaded?.results) ? uploaded.results.map((r: any) => r.media_id).filter(Boolean) : [];
       if (mediaIds.length > 0) {
         await addGroupCollectionItems(apiAccessToken, { group_id: groupId, type, media_ids: mediaIds });

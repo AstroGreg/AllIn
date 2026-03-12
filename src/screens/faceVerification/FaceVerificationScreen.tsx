@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Alert, Linking, ActivityIndicator } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import FastImage from 'react-native-fast-image';
-import { ArrowRight, ArrowLeft } from 'iconsax-react-nativejs';
+import { ArrowRight } from 'iconsax-react-nativejs';
 import {
     Camera,
     useCameraDevice,
@@ -57,11 +57,10 @@ const FaceVerificationScreen = ({ navigation, route }: any) => {
 
     const [currentAngleIndex, setCurrentAngleIndex] = useState(0);
     const [capturedImages, setCapturedImages] = useState<{ [key: string]: string }>({});
-    const [isCapturing, setIsCapturing] = useState(false);
     const [faceDetected, setFaceDetected] = useState(false);
     const [angleMatched, setAngleMatched] = useState(false);
     const [countdown, setCountdown] = useState<number | null>(null);
-    const [isTransitioning, setIsTransitioning] = useState(false);
+    const [isTransitioning] = useState(false);
 
     // Use refs to track state in worklet callbacks (avoid stale closures)
     const currentAngleIndexRef = useRef(currentAngleIndex);
@@ -135,6 +134,41 @@ const FaceVerificationScreen = ({ navigation, route }: any) => {
         return yawMatch && pitchMatch;
     }, []);
 
+    // Clear countdown
+    const clearCountdown = useCallback(() => {
+        if (countdownRef.current) {
+            clearInterval(countdownRef.current);
+            countdownRef.current = null;
+        }
+        countdownActiveRef.current = false;
+        setCountdown(null);
+    }, []);
+
+    const advanceToNextAngle = useCallback(() => {
+        if (!isMountedRef.current) return;
+        clearCountdown();
+        const nextIndex = currentAngleIndexRef.current + 1;
+        if (nextIndex < CAPTURE_ANGLES.length) {
+            setCurrentAngleIndex(nextIndex);
+            setAngleMatched(false);
+            setCountdown(null);
+            countdownActiveRef.current = false;
+        }
+    }, [clearCountdown]);
+
+    const handleRetakeCurrentAngle = useCallback(() => {
+        if (!currentAngle?.id) return;
+        clearCountdown();
+        setCapturedImages((prev) => {
+            const next = { ...prev };
+            delete next[currentAngle.id];
+            return next;
+        });
+        setAngleMatched(false);
+        setCountdown(null);
+        countdownActiveRef.current = false;
+    }, [clearCountdown, currentAngle?.id]);
+
     // Capture photo
     const capturePhoto = useCallback(async () => {
         if (!cameraRef.current || isCapturingRef.current || hasCurrentImageRef.current || isTransitioningRef.current) {
@@ -142,7 +176,6 @@ const FaceVerificationScreen = ({ navigation, route }: any) => {
         }
 
         isCapturingRef.current = true;
-        setIsCapturing(true);
 
         try {
             const photo = await cameraRef.current.takePhoto();
@@ -157,46 +190,11 @@ const FaceVerificationScreen = ({ navigation, route }: any) => {
                 ...prev,
                 [capturedAngle.id]: photoUri
             }));
-
-            // Auto-advance to next angle after a delay
-            if (capturedAngleIndex < CAPTURE_ANGLES.length - 1) {
-                isTransitioningRef.current = true;
-                setIsTransitioning(true);
-
-                setTimeout(() => {
-                    if (!isMountedRef.current) return;
-
-                    setCurrentAngleIndex(capturedAngleIndex + 1);
-                    setAngleMatched(false);
-                    setCountdown(null);
-                    countdownActiveRef.current = false;
-
-                    // Allow a brief moment before enabling detection again
-                    setTimeout(() => {
-                        if (!isMountedRef.current) return;
-                        isTransitioningRef.current = false;
-                        setIsTransitioning(false);
-                    }, 500);
-                }, 1500);
-            }
         } catch (error) {
             console.log('Capture error:', error);
         } finally {
             isCapturingRef.current = false;
-            if (isMountedRef.current) {
-                setIsCapturing(false);
-            }
         }
-    }, []);
-
-    // Clear countdown
-    const clearCountdown = useCallback(() => {
-        if (countdownRef.current) {
-            clearInterval(countdownRef.current);
-            countdownRef.current = null;
-        }
-        countdownActiveRef.current = false;
-        setCountdown(null);
     }, []);
 
     // Start countdown
@@ -277,10 +275,17 @@ const FaceVerificationScreen = ({ navigation, route }: any) => {
     }, [detectFaces, handleFaceDetected]);
 
     const handleContinue = useCallback(async () => {
+        if (currentImage && !allCaptured) {
+            advanceToNextAngle();
+            return;
+        }
+        if (!allCaptured) {
+            return;
+        }
         setIsSaving(true);
         try {
             await updateUserProfile({
-                faceVerified: allCaptured,
+                faceVerified: true,
             });
             if (afterVerification?.screen) {
                 navigation.navigate(afterVerification.screen, afterVerification.params ?? {});
@@ -295,7 +300,7 @@ const FaceVerificationScreen = ({ navigation, route }: any) => {
         } finally {
             setIsSaving(false);
         }
-    }, [afterVerification, allCaptured, navigation, t, updateUserProfile]);
+    }, [advanceToNextAngle, afterVerification, allCaptured, currentImage, navigation, t, updateUserProfile]);
 
     const handleCancel = useCallback(() => {
         navigation.goBack();
@@ -308,6 +313,12 @@ const FaceVerificationScreen = ({ navigation, route }: any) => {
         }
         if (countdown !== null) {
             return t('Perfect!');
+        }
+        if (currentImage && !allCaptured) {
+            return t('Review this capture, then continue or retake.');
+        }
+        if (currentImage && allCaptured) {
+            return t('Review your final capture, then save when ready.');
         }
         if (angleMatched) {
             return t('Perfect!');
@@ -452,11 +463,12 @@ const FaceVerificationScreen = ({ navigation, route }: any) => {
                     <TouchableOpacity
                         style={[
                             Styles.primaryButton,
+                            (!currentImage && !allCaptured) && Styles.primaryButtonDisabled,
                             isSaving && Styles.primaryButtonDisabled
                         ]}
                         activeOpacity={0.7}
                         onPress={handleContinue}
-                        disabled={isSaving}
+                        disabled={isSaving || (!currentImage && !allCaptured)}
                     >
                         {isSaving ? (
                             <ActivityIndicator size="small" color={colors.pureWhite} />
@@ -473,9 +485,9 @@ const FaceVerificationScreen = ({ navigation, route }: any) => {
                     <TouchableOpacity
                         style={Styles.secondaryButton}
                         activeOpacity={0.7}
-                        onPress={handleCancel}
+                        onPress={currentImage ? handleRetakeCurrentAngle : handleCancel}
                     >
-                        <Text style={Styles.secondaryButtonText}>{t('Cancel')}</Text>
+                        <Text style={Styles.secondaryButtonText}>{currentImage ? t('Redo face') : t('Cancel')}</Text>
                         <ArrowRight size={24} color={colors.grayColor} />
                     </TouchableOpacity>
                 </View>

@@ -1,61 +1,125 @@
-import { View, Text, TouchableOpacity, ScrollView, TextInput, Modal, Pressable, ActivityIndicator, Alert } from 'react-native';
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
+import { ActivityIndicator, Alert, ScrollView, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { ArrowLeft2, Buildings, CloseCircle, Global, Profile2User, User } from 'iconsax-react-nativejs';
+
 import { createStyles } from '../MenuStyles';
 import SizeBox from '../../../constants/SizeBox';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../../context/ThemeContext';
-import { ArrowDown2, ArrowLeft2 } from 'iconsax-react-nativejs';
 import { useAuth } from '../../../context/AuthContext';
-import { ApiError, getProfileSummary, updateProfileSummary } from '../../../services/apiGateway';
+import {
+  ApiError,
+  getGroup,
+  getProfileSummary,
+  searchClubs,
+  searchGroups,
+} from '../../../services/apiGateway';
 import { useTranslation } from 'react-i18next';
+import ChestNumbersByYearField from '../../../components/profile/ChestNumbersByYearField';
+import SearchPickerModal, { type SearchPickerOption } from '../../../components/profile/SearchPickerModal';
+import {
+  buildDisciplineSearchOptions,
+  focusUsesChestNumbers,
+  getChestNumberFieldLabel,
+  getDisciplineLabel,
+  getFocusDisciplineModalTitle,
+  getFocusMainDisciplineLabel,
+  getMainDisciplineForFocus,
+  getOfficialClubFieldLabel,
+  getOfficialClubHelperText,
+  getOfficialClubModalTitle,
+  getOfficialClubPlaceholder,
+  getOfficialClubSearchFocuses,
+  getSportFocusLabel,
+  getTrainingGroupFieldLabel,
+  getTrainingGroupModalTitle,
+  getTrainingGroupPlaceholder,
+  normalizeMainDisciplines,
+  normalizeSelectedEvents,
+  type SportFocusId,
+} from '../../../utils/profileSelections';
 
-const TrackFieldSettings = ({ navigation }: any) => {
+const normalizeChestByYear = (raw: any): Record<string, string> => {
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return {};
+  const out: Record<string, string> = {};
+  for (const [year, chest] of Object.entries(raw as Record<string, unknown>)) {
+    const safeYear = String(year ?? '').trim();
+    if (!/^\d{4}$/.test(safeYear)) continue;
+    const parsed = Number(chest);
+    if (!Number.isInteger(parsed) || parsed < 0) continue;
+    out[safeYear] = String(parsed);
+  }
+  return out;
+};
+
+const TrackFieldSettings = ({ navigation, route }: any) => {
   const insets = useSafeAreaInsets();
   const { colors } = useTheme();
   const { t } = useTranslation();
   const Styles = createStyles(colors);
   const { apiAccessToken, userProfile, updateUserProfile } = useAuth();
+  const currentYear = useMemo(() => String(new Date().getFullYear()), []);
 
-  const currentYear = useMemo(() => new Date().getFullYear(), []);
-  const [selectedYear, setSelectedYear] = useState<string>(String(currentYear));
-  const [showYearPicker, setShowYearPicker] = useState(false);
+  const requestedFocusId = String(route?.params?.focusId || '').trim();
+  const selectedFocuses = useMemo(() => {
+    const allFocuses = normalizeSelectedEvents(userProfile?.selectedEvents ?? []);
+    if (!requestedFocusId) return allFocuses;
+    return allFocuses.filter((focusId) => focusId === requestedFocusId);
+  }, [requestedFocusId, userProfile?.selectedEvents]);
+  const screenTitle = useMemo(() => {
+    if (selectedFocuses.length === 1) return getSportFocusLabel(selectedFocuses[0], t);
+    return t('Athlete details');
+  }, [selectedFocuses, t]);
+  const clubSearchFocuses = useMemo(
+    () => getOfficialClubSearchFocuses(selectedFocuses),
+    [selectedFocuses],
+  );
+  const showOfficialClubField = clubSearchFocuses.length > 0;
+  const officialClubHelperText = useMemo(
+    () => getOfficialClubHelperText(selectedFocuses, t),
+    [selectedFocuses, t],
+  );
+
   const [chestByYear, setChestByYear] = useState<Record<string, string>>({});
-  const [chestInput, setChestInput] = useState('');
   const [clubInput, setClubInput] = useState('');
-  const [mainEventInput, setMainEventInput] = useState('');
+  const [clubId, setClubId] = useState('');
+  const [runningGroupName, setRunningGroupName] = useState('');
+  const [runningGroupId, setRunningGroupId] = useState('');
   const [websiteInput, setWebsiteInput] = useState('');
+  const [mainDisciplines, setMainDisciplines] = useState<Record<string, string>>({});
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
 
-  const yearOptions = useMemo(() => {
-    const out: string[] = [];
-    for (let y = currentYear; y >= 2000; y -= 1) out.push(String(y));
-    return out;
-  }, [currentYear]);
-  const quickYears = useMemo(() => yearOptions.slice(0, 4), [yearOptions]);
+  const [clubModalVisible, setClubModalVisible] = useState(false);
+  const [clubQuery, setClubQuery] = useState('');
+  const [clubOptions, setClubOptions] = useState<SearchPickerOption[]>([]);
+  const [clubsLoading, setClubsLoading] = useState(false);
+  const [clubsError, setClubsError] = useState<string | null>(null);
 
-  const normalizeChestByYear = useCallback((raw: any): Record<string, string> => {
-    if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return {};
-    const out: Record<string, string> = {};
-    for (const [year, chest] of Object.entries(raw as Record<string, unknown>)) {
-      const safeYear = String(year ?? '').trim();
-      if (!/^\d{4}$/.test(safeYear)) continue;
-      const parsed = Number(chest);
-      if (!Number.isInteger(parsed) || parsed < 0) continue;
-      out[safeYear] = String(parsed);
-    }
-    return out;
-  }, []);
+  const [groupModalVisible, setGroupModalVisible] = useState(false);
+  const [groupQuery, setGroupQuery] = useState('');
+  const [groupOptions, setGroupOptions] = useState<SearchPickerOption[]>([]);
+  const [groupsLoading, setGroupsLoading] = useState(false);
+  const [groupsError, setGroupsError] = useState<string | null>(null);
+
+  const [disciplineModalVisible, setDisciplineModalVisible] = useState(false);
+  const [disciplineFocusId, setDisciplineFocusId] = useState<SportFocusId | null>(null);
+  const [disciplineQuery, setDisciplineQuery] = useState('');
 
   useEffect(() => {
     let active = true;
     (async () => {
+      const fallbackMainDisciplines = normalizeMainDisciplines((userProfile as any)?.mainDisciplines ?? {}, {
+        trackFieldMainEvent: (userProfile as any)?.trackFieldMainEvent ?? null,
+        roadTrailMainEvent: (userProfile as any)?.roadTrailMainEvent ?? null,
+      });
       if (!apiAccessToken) {
         if (!active) return;
         setChestByYear(normalizeChestByYear(userProfile?.chestNumbersByYear ?? {}));
-        setClubInput(String((userProfile as any)?.trackFieldClub ?? ''));
-        setMainEventInput(String((userProfile as any)?.trackFieldMainEvent ?? ''));
+        setClubInput(String((userProfile as any)?.trackFieldClub ?? (userProfile as any)?.runningClub ?? ''));
+        setRunningGroupId(String((userProfile as any)?.runningClubGroupId ?? ''));
         setWebsiteInput(String((userProfile as any)?.website ?? ''));
+        setMainDisciplines(fallbackMainDisciplines);
         setIsLoading(false);
         return;
       }
@@ -64,12 +128,19 @@ const TrackFieldSettings = ({ navigation }: any) => {
         if (!active) return;
         setChestByYear(normalizeChestByYear(summary?.profile?.chest_numbers_by_year ?? {}));
         setClubInput(String(summary?.profile?.track_field_club ?? (userProfile as any)?.trackFieldClub ?? ''));
-        setMainEventInput(String(summary?.profile?.track_field_main_event ?? (userProfile as any)?.trackFieldMainEvent ?? ''));
+        setRunningGroupId(String(summary?.profile?.running_club_group_id ?? (userProfile as any)?.runningClubGroupId ?? ''));
         setWebsiteInput(String(summary?.profile?.website ?? (userProfile as any)?.website ?? ''));
+        setMainDisciplines(normalizeMainDisciplines(summary?.profile?.main_disciplines ?? {}, {
+          trackFieldMainEvent: summary?.profile?.track_field_main_event ?? null,
+          roadTrailMainEvent: summary?.profile?.road_trail_main_event ?? null,
+        }));
       } catch {
         if (!active) return;
         setChestByYear(normalizeChestByYear(userProfile?.chestNumbersByYear ?? {}));
+        setClubInput(String((userProfile as any)?.trackFieldClub ?? (userProfile as any)?.runningClub ?? ''));
+        setRunningGroupId(String((userProfile as any)?.runningClubGroupId ?? ''));
         setWebsiteInput(String((userProfile as any)?.website ?? ''));
+        setMainDisciplines(fallbackMainDisciplines);
       } finally {
         if (active) setIsLoading(false);
       }
@@ -77,44 +148,130 @@ const TrackFieldSettings = ({ navigation }: any) => {
     return () => {
       active = false;
     };
-  }, [apiAccessToken, normalizeChestByYear, updateUserProfile, userProfile]);
+  }, [apiAccessToken, userProfile]);
 
   useEffect(() => {
-    setChestInput(String(chestByYear[selectedYear] ?? ''));
-  }, [chestByYear, selectedYear]);
+    if (!apiAccessToken || !runningGroupId) return;
+    let mounted = true;
+    getGroup(apiAccessToken, runningGroupId)
+      .then((response) => {
+        if (mounted) setRunningGroupName(String(response?.group?.name ?? ''));
+      })
+      .catch(() => {
+        if (mounted) setRunningGroupName('');
+      });
+    return () => {
+      mounted = false;
+    };
+  }, [apiAccessToken, runningGroupId]);
+
+  useEffect(() => {
+    if (!clubModalVisible || !apiAccessToken) return;
+    let mounted = true;
+    const timeout = setTimeout(async () => {
+      setClubsLoading(true);
+      setClubsError(null);
+      try {
+        const res = await searchClubs(apiAccessToken, {
+          q: clubQuery.trim() || undefined,
+          focuses: clubSearchFocuses,
+          limit: 200,
+        });
+        if (!mounted) return;
+        const mapped = (res.clubs || []).map((club) => ({
+          id: String(club.club_id || ''),
+          title: String(club.name || club.code || '').trim(),
+          subtitle: String(club.city || club.federation || club.code || '').trim() || null,
+        })).filter((club) => club.id && club.title);
+        setClubOptions(mapped);
+      } catch (e: any) {
+        if (!mounted) return;
+        const message = e instanceof ApiError ? e.message : String(e?.message ?? e);
+        setClubsError(message);
+        setClubOptions([]);
+      } finally {
+        if (mounted) setClubsLoading(false);
+      }
+    }, 250);
+    return () => {
+      mounted = false;
+      clearTimeout(timeout);
+    };
+  }, [apiAccessToken, clubModalVisible, clubQuery, clubSearchFocuses]);
+
+  useEffect(() => {
+    if (!groupModalVisible || !apiAccessToken) return;
+    let mounted = true;
+    const timeout = setTimeout(async () => {
+      setGroupsLoading(true);
+      setGroupsError(null);
+      try {
+        const res = await searchGroups(apiAccessToken, {
+          q: groupQuery.trim() || undefined,
+          limit: 200,
+        });
+        if (!mounted) return;
+        const mapped = (res.groups || []).map((group) => ({
+          id: String(group.group_id || ''),
+          title: String(group.name || '').trim(),
+          subtitle: String(group.location || '').trim() || null,
+        })).filter((group) => group.id && group.title);
+        setGroupOptions(mapped);
+      } catch (e: any) {
+        if (!mounted) return;
+        const message = e instanceof ApiError ? e.message : String(e?.message ?? e);
+        setGroupsError(message);
+        setGroupOptions([]);
+      } finally {
+        if (mounted) setGroupsLoading(false);
+      }
+    }, 250);
+    return () => {
+      mounted = false;
+      clearTimeout(timeout);
+    };
+  }, [apiAccessToken, groupModalVisible, groupQuery]);
+
+  const disciplineOptions = useMemo(() => {
+    if (!disciplineFocusId) return [];
+    const normalizedQuery = disciplineQuery.trim().toLowerCase();
+    return buildDisciplineSearchOptions(disciplineFocusId, t).filter((option) => {
+      if (!normalizedQuery) return true;
+      const haystack = `${option.title} ${option.subtitle ?? ''}`.toLowerCase();
+      return haystack.includes(normalizedQuery);
+    });
+  }, [disciplineFocusId, disciplineQuery, t]);
 
   const handleSave = async () => {
-    const normalizedChest = String(chestInput ?? '').replace(/[^0-9]/g, '').trim();
-    const nextByYear = { ...chestByYear };
-    if (!normalizedChest) delete nextByYear[selectedYear];
-    else nextByYear[selectedYear] = normalizedChest;
-
-    const payloadChest = Object.entries(nextByYear).reduce((acc, [year, chest]) => {
+    const payloadChest = Object.entries(chestByYear).reduce((acc, [year, chest]) => {
       const parsed = Number(chest);
       if (/^\d{4}$/.test(year) && Number.isInteger(parsed) && parsed >= 0) acc[year] = parsed;
       return acc;
     }, {} as Record<string, number>);
+    const normalizedMainDisciplines = Object.entries(mainDisciplines).reduce((acc, [focusId, discipline]) => {
+      const safeFocus = String(focusId || '').trim();
+      const safeDiscipline = String(discipline || '').trim();
+      if (!safeFocus || !safeDiscipline) return acc;
+      acc[safeFocus] = safeDiscipline;
+      return acc;
+    }, {} as Record<string, string>);
 
     setIsSaving(true);
     try {
-      if (apiAccessToken) {
-        const updated = await updateProfileSummary(apiAccessToken, {
-          chest_numbers_by_year: payloadChest,
-          track_field_club: String(clubInput || '').trim() || null,
-          track_field_main_event: String(mainEventInput || '').trim() || null,
-          website: String(websiteInput || '').trim() || null,
-        });
-        const stored = normalizeChestByYear(updated?.profile?.chest_numbers_by_year ?? payloadChest);
-        setChestByYear(stored);
-      } else {
-        setChestByYear(nextByYear);
-      }
       await updateUserProfile({
-        chestNumbersByYear: nextByYear,
+        chestNumbersByYear: Object.entries(payloadChest).reduce((acc, [year, chest]) => {
+          acc[year] = String(chest);
+          return acc;
+        }, {} as Record<string, string>),
         trackFieldClub: String(clubInput || '').trim(),
-        trackFieldMainEvent: String(mainEventInput || '').trim(),
+        runningClub: String(clubInput || '').trim(),
+        runningClubGroupId: String(runningGroupId || '').trim(),
+        trackFieldMainEvent: normalizedMainDisciplines['track-field'] || '',
+        roadTrailMainEvent: normalizedMainDisciplines['road-events'] || '',
+        mainDisciplines: normalizedMainDisciplines,
         website: String(websiteInput || '').trim(),
-      } as any);
+      } as any, { persistLocally: false });
+      navigation.goBack();
     } catch (e: any) {
       const message = e instanceof ApiError ? e.message : String(e?.message ?? e);
       Alert.alert(t('Save failed'), message || t('Please try again'));
@@ -130,7 +287,7 @@ const TrackFieldSettings = ({ navigation }: any) => {
         <TouchableOpacity style={Styles.headerButton} onPress={() => navigation.goBack()}>
           <ArrowLeft2 size={24} color={colors.primaryColor} variant="Linear" />
         </TouchableOpacity>
-        <Text style={Styles.headerTitle}>{t('trackAndField')}</Text>
+        <Text style={Styles.headerTitle}>{screenTitle}</Text>
         <View style={Styles.headerSpacer} />
       </View>
 
@@ -140,135 +297,222 @@ const TrackFieldSettings = ({ navigation }: any) => {
           <ActivityIndicator color={colors.primaryColor} />
         ) : (
           <>
-            <View style={Styles.addCardInputGroup}>
-              <Text style={Styles.addCardLabel}>{t('year')}</Text>
-              <SizeBox height={8} />
-              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-                {quickYears.map((year) => {
-                  const active = selectedYear === year;
-                  return (
+            {selectedFocuses.length === 0 ? (
+              <>
+                <Text style={Styles.inlineHelperText}>{t('Add an athlete focus first to edit athlete details.')}</Text>
+                <SizeBox height={14} />
+              </>
+            ) : null}
+            {selectedFocuses.some((focusId) => focusUsesChestNumbers(focusId)) ? (
+              <>
+                <ChestNumbersByYearField
+                  currentYear={currentYear}
+                  values={chestByYear}
+                  onChange={setChestByYear}
+                  label={getChestNumberFieldLabel(currentYear, t)}
+                  helperText={t('Keep the current year up to date and add older years only when you want them shown on the profile.')}
+                  addYearLabel={t('Add year')}
+                  moreYearsLabel={t('More years')}
+                  inputPlaceholder={t('Enter chest number')}
+                />
+                <SizeBox height={14} />
+              </>
+            ) : null}
+
+            {showOfficialClubField ? (
+              <>
+                <View style={Styles.addCardInputGroup}>
+                  <Text style={Styles.addCardLabel}>{getOfficialClubFieldLabel(selectedFocuses, t)}</Text>
+                  <SizeBox height={8} />
+                  <View style={Styles.addCardInputContainer}>
                     <TouchableOpacity
-                      key={`quick-year-${year}`}
-                      style={{
-                        borderRadius: 999,
-                        borderWidth: 1,
-                        borderColor: active ? colors.primaryColor : colors.borderColor,
-                        backgroundColor: active ? colors.secondaryBlueColor : colors.btnBackgroundColor,
-                        paddingHorizontal: 12,
-                        paddingVertical: 7,
-                      }}
-                      onPress={() => setSelectedYear(year)}
+                      style={{ flex: 1, flexDirection: 'row', alignItems: 'center', gap: 12 }}
+                      activeOpacity={0.85}
+                      onPress={() => setClubModalVisible(true)}
                     >
-                      <Text style={{ color: active ? colors.primaryColor : colors.subTextColor, fontSize: 12 }}>{year}</Text>
+                      <Buildings size={20} color={colors.primaryColor} variant="Linear" />
+                      <Text style={[Styles.addCardPlaceholder, clubInput ? Styles.addCardInputText : null]}>
+                        {clubInput || getOfficialClubPlaceholder(selectedFocuses, t)}
+                      </Text>
                     </TouchableOpacity>
-                  );
-                })}
+                    {clubInput ? (
+                      <TouchableOpacity onPress={() => { setClubInput(''); setClubId(''); }}>
+                        <CloseCircle size={18} color={colors.grayColor} />
+                      </TouchableOpacity>
+                    ) : null}
+                  </View>
+                </View>
+                <SizeBox height={14} />
+              </>
+            ) : officialClubHelperText ? (
+              <>
+                <Text style={Styles.inlineHelperText}>{officialClubHelperText}</Text>
+                <SizeBox height={14} />
+              </>
+            ) : null}
+
+            <View style={Styles.addCardInputGroup}>
+              <Text style={Styles.addCardLabel}>{getTrainingGroupFieldLabel(selectedFocuses, t)}</Text>
+              <SizeBox height={8} />
+              <View style={Styles.addCardInputContainer}>
                 <TouchableOpacity
-                  style={{
-                    borderRadius: 999,
-                    borderWidth: 1,
-                    borderColor: colors.borderColor,
-                    backgroundColor: colors.btnBackgroundColor,
-                    paddingHorizontal: 12,
-                    paddingVertical: 7,
-                  }}
-                  onPress={() => setShowYearPicker(true)}
+                  style={{ flex: 1, flexDirection: 'row', alignItems: 'center', gap: 12 }}
+                  activeOpacity={0.85}
+                  onPress={() => setGroupModalVisible(true)}
                 >
-                  <Text style={{ color: colors.subTextColor, fontSize: 12 }}>{t('More years')}</Text>
+                  <Profile2User size={20} color={colors.primaryColor} variant="Linear" />
+                  <Text style={[Styles.addCardPlaceholder, runningGroupName ? Styles.addCardInputText : null]}>
+                    {runningGroupName || getTrainingGroupPlaceholder(selectedFocuses, t)}
+                  </Text>
                 </TouchableOpacity>
+                {runningGroupName ? (
+                  <TouchableOpacity onPress={() => { setRunningGroupName(''); setRunningGroupId(''); }}>
+                    <CloseCircle size={18} color={colors.grayColor} />
+                  </TouchableOpacity>
+                ) : null}
               </View>
             </View>
             <SizeBox height={14} />
+
+            {selectedFocuses.map((focusId) => {
+              const currentDiscipline = getMainDisciplineForFocus(mainDisciplines, focusId, {
+                trackFieldMainEvent: mainDisciplines['track-field'] ?? '',
+                roadTrailMainEvent: mainDisciplines['road-events'] ?? '',
+              });
+              const currentDisciplineLabel = currentDiscipline
+                ? getDisciplineLabel(focusId, currentDiscipline, t)
+                : '';
+              return (
+                <React.Fragment key={focusId}>
+                  <View style={Styles.addCardInputGroup}>
+                    <Text style={Styles.addCardLabel}>{getFocusMainDisciplineLabel(focusId, t)}</Text>
+                    <SizeBox height={8} />
+                    <View style={Styles.addCardInputContainer}>
+                      <TouchableOpacity
+                        style={{ flex: 1, flexDirection: 'row', alignItems: 'center', gap: 12 }}
+                        activeOpacity={0.85}
+                        onPress={() => {
+                          setDisciplineFocusId(focusId);
+                          setDisciplineQuery('');
+                          setDisciplineModalVisible(true);
+                        }}
+                      >
+                        <User size={20} color={colors.primaryColor} variant="Linear" />
+                        <Text style={[Styles.addCardPlaceholder, currentDiscipline ? Styles.addCardInputText : null]}>
+                          {currentDisciplineLabel || t('Choose main discipline')}
+                        </Text>
+                      </TouchableOpacity>
+                      {currentDiscipline ? (
+                        <TouchableOpacity onPress={() => setMainDisciplines((prev) => {
+                          const next = { ...prev };
+                          delete next[focusId];
+                          return next;
+                        })}>
+                          <CloseCircle size={18} color={colors.grayColor} />
+                        </TouchableOpacity>
+                      ) : null}
+                    </View>
+                  </View>
+                  <SizeBox height={14} />
+                </React.Fragment>
+              );
+            })}
+
             <View style={Styles.addCardInputGroup}>
-              <Text style={Styles.addCardLabel}>{t('chestNumber')}</Text>
+              <Text style={Styles.addCardLabel}>{t('Website (optional)')}</Text>
               <SizeBox height={8} />
               <View style={Styles.addCardInputContainer}>
-                <TextInput
-                  style={Styles.addCardInput}
-                  value={chestInput}
-                  onChangeText={(value) => setChestInput(String(value || '').replace(/[^0-9]/g, ''))}
-                  keyboardType="number-pad"
-                  placeholder={t('chestNumber')}
-                  placeholderTextColor={colors.grayColor}
-                />
-              </View>
-            </View>
-            <SizeBox height={14} />
-            <View style={Styles.addCardInputGroup}>
-              <Text style={Styles.addCardLabel}>{t('Represented Club')}</Text>
-              <SizeBox height={8} />
-              <View style={Styles.addCardInputContainer}>
-                <TextInput
-                  style={Styles.addCardInput}
-                  value={clubInput}
-                  onChangeText={setClubInput}
-                  placeholder={t('Represented Club')}
-                  placeholderTextColor={colors.grayColor}
-                />
-              </View>
-            </View>
-            <SizeBox height={14} />
-            <View style={Styles.addCardInputGroup}>
-              <Text style={Styles.addCardLabel}>{t('Main event')}</Text>
-              <SizeBox height={8} />
-              <View style={Styles.addCardInputContainer}>
-                <TextInput
-                  style={Styles.addCardInput}
-                  value={mainEventInput}
-                  onChangeText={setMainEventInput}
-                  placeholder={t('Main event')}
-                  placeholderTextColor={colors.grayColor}
-                />
-              </View>
-            </View>
-            <SizeBox height={14} />
-            <View style={Styles.addCardInputGroup}>
-              <Text style={Styles.addCardLabel}>{t('Website')}</Text>
-              <SizeBox height={8} />
-              <View style={Styles.addCardInputContainer}>
+                <Global size={20} color={colors.primaryColor} variant="Linear" />
                 <TextInput
                   style={Styles.addCardInput}
                   value={websiteInput}
                   onChangeText={setWebsiteInput}
-                  placeholder={t('Enter website link (optional)')}
+                  placeholder={t('Add website')}
                   placeholderTextColor={colors.grayColor}
                   autoCapitalize="none"
+                  autoCorrect={false}
                   keyboardType="url"
                 />
               </View>
-            </View>
-            <View style={Styles.editActionsRow}>
-              <TouchableOpacity style={[Styles.saveButton, { marginLeft: 'auto' }]} onPress={handleSave} disabled={isSaving}>
-                {isSaving ? <ActivityIndicator size="small" color={colors.pureWhite} /> : <Text style={Styles.saveButtonText}>{t('save')}</Text>}
-              </TouchableOpacity>
+              <Text style={Styles.inlineHelperText}>{t('Website appears at the bottom of the profile and stays optional.')}</Text>
             </View>
           </>
         )}
+
+        <SizeBox height={24} />
+        <TouchableOpacity
+          style={[Styles.continueBtn, isSaving && { opacity: 0.6 }]}
+          disabled={isSaving}
+          onPress={handleSave}
+        >
+          {isSaving ? (
+            <ActivityIndicator size="small" color={colors.pureWhite} />
+          ) : (
+            <Text style={Styles.continueBtnText}>{t('Save')}</Text>
+          )}
+        </TouchableOpacity>
         <SizeBox height={insets.bottom > 0 ? insets.bottom + 20 : 40} />
       </ScrollView>
 
-      <Modal visible={showYearPicker} transparent animationType="fade" onRequestClose={() => setShowYearPicker(false)}>
-        <View style={Styles.selectionModalOverlay}>
-          <Pressable style={{ position: 'absolute', top: 0, bottom: 0, left: 0, right: 0 }} onPress={() => setShowYearPicker(false)} />
-          <View style={Styles.selectionModalCard}>
-            <Text style={Styles.selectionModalTitle}>{t('year')}</Text>
-            <ScrollView>
-              {yearOptions.map((year) => (
-                <TouchableOpacity
-                  key={`tf-year-${year}`}
-                  style={Styles.selectionOption}
-                  onPress={() => {
-                    setSelectedYear(year);
-                    setShowYearPicker(false);
-                  }}
-                >
-                  <Text style={Styles.selectionOptionText}>{year}</Text>
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
-          </View>
-        </View>
-      </Modal>
+      <SearchPickerModal
+        visible={clubModalVisible}
+        title={getOfficialClubModalTitle(selectedFocuses, t)}
+        placeholder={getOfficialClubPlaceholder(selectedFocuses, t)}
+        query={clubQuery}
+        onChangeQuery={setClubQuery}
+        onClose={() => setClubModalVisible(false)}
+        options={clubOptions}
+        loading={clubsLoading}
+        error={clubsError}
+        emptyText={t('No clubs found.')}
+        selectedId={clubId}
+        onSelect={(option) => {
+          setClubId(option.id);
+          setClubInput(option.title);
+          setClubModalVisible(false);
+        }}
+      />
+
+      <SearchPickerModal
+        visible={groupModalVisible}
+        title={getTrainingGroupModalTitle(selectedFocuses, t)}
+        placeholder={getTrainingGroupPlaceholder(selectedFocuses, t)}
+        query={groupQuery}
+        onChangeQuery={setGroupQuery}
+        onClose={() => setGroupModalVisible(false)}
+        options={groupOptions}
+        loading={groupsLoading}
+        error={groupsError}
+        emptyText={t('No groups found.')}
+        selectedId={runningGroupId}
+        onSelect={(option) => {
+          setRunningGroupId(option.id);
+          setRunningGroupName(option.title);
+          setGroupModalVisible(false);
+        }}
+      />
+
+      <SearchPickerModal
+        visible={disciplineModalVisible}
+        title={disciplineFocusId ? getFocusDisciplineModalTitle(disciplineFocusId, t) : t('Disciplines')}
+        placeholder={t('Search discipline')}
+        query={disciplineQuery}
+        onChangeQuery={setDisciplineQuery}
+        onClose={() => setDisciplineModalVisible(false)}
+        options={disciplineOptions}
+        loading={false}
+        emptyText={t('No disciplines found.')}
+        selectedId={disciplineFocusId ? getMainDisciplineForFocus(mainDisciplines, disciplineFocusId) : null}
+        onSelect={(option) => {
+          if (disciplineFocusId) {
+            setMainDisciplines((prev) => ({
+              ...prev,
+              [disciplineFocusId]: option.id,
+            }));
+          }
+          setDisciplineModalVisible(false);
+        }}
+      />
     </View>
   );
 };

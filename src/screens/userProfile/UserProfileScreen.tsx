@@ -7,39 +7,48 @@ import Images from '../../constants/Images'
 import Icons from '../../constants/Icons'
 import { useTheme } from '../../context/ThemeContext'
 import { createStyles } from './UserProfileStyles'
-import { User, Edit2, Clock, ArrowRight, DocumentText, Gallery, DocumentDownload } from 'iconsax-react-nativejs'
+import { User, Edit2, Clock, ArrowRight, DocumentText, Gallery, DocumentDownload, Add } from 'iconsax-react-nativejs'
 import { launchImageLibrary } from 'react-native-image-picker'
-import AsyncStorage from '@react-native-async-storage/async-storage'
 import ProfileTimeline, { TimelineEntry } from '../../components/profileTimeline/ProfileTimeline'
 import { useAuth } from '../../context/AuthContext'
 import {
     deletePost,
     getDownloadsSummary,
-    getHubAppearanceMedia,
-    getHubAppearances,
+    getHomeOverview,
     getMyGroups,
     getPosts,
     getProfileCollectionByType,
     getProfileSummary,
     getProfileTimeline,
-    getSubscribedEvents,
     getUploadedCompetitions,
     updateProfileSummary,
     uploadMediaBatch,
-    type HubAppearanceSummary,
     type GroupSummary,
     type PostSummary,
     type ProfileCollectionItem,
     type ProfileGroupMembership,
     type ProfileSummaryResponse,
     type ProfileTimelineEntry,
-    type SubscribedEvent,
     type UploadedCompetition,
 } from '../../services/apiGateway'
 import { getApiBaseUrl } from '../../constants/RuntimeConfig'
 import { useFocusEffect } from '@react-navigation/native'
 import { useTranslation } from 'react-i18next'
 import ProfileNewsSection, { type ProfileNewsItem } from '../../components/profileNews/ProfileNewsSection'
+import SportFocusIcon from '../../components/profile/SportFocusIcon'
+import SupportProfileSummary, { getSupportProfileBadgeLabel } from '../../components/profile/SupportProfileSummary'
+import {
+    focusUsesChestNumbers,
+    getDisciplineLabel,
+    getMainDisciplineForFocus,
+    getProfileCollectionScopeKey,
+    getSportFocusLabel,
+    normalizeMainDisciplines,
+    normalizeProfileModeId,
+    normalizeSelectedEvents,
+    type ProfileModeId,
+    type SportFocusId,
+} from '../../utils/profileSelections'
 
 type ProfileMembershipItem = {
     group_id: string;
@@ -55,7 +64,7 @@ const UserProfileScreen = ({ navigation, route }: any) => {
     const { colors } = useTheme();
     const { t } = useTranslation();
     const Styles = createStyles(colors);
-    const { user, userProfile, apiAccessToken, updateUserProfile } = useAuth();
+    const { user, userProfile, authBootstrap, apiAccessToken, updateUserProfile } = useAuth();
     const defaultProfileImage = useMemo(() => {
         const googlePicture = String(user?.picture ?? '').trim();
         return googlePicture ? { uri: googlePicture } : Images.profilePic;
@@ -64,9 +73,8 @@ const UserProfileScreen = ({ navigation, route }: any) => {
     const [timelineItems, setTimelineItems] = useState<TimelineEntry[]>([]);
     const [profileTab, setProfileTab] = useState<'timeline' | 'activity' | 'collections' | 'downloads'>('timeline');
     const [blogEntries, setBlogEntries] = useState<any[]>([]);
-    const [subscribedEvents, setSubscribedEvents] = useState<SubscribedEvent[]>([]);
-    const [appearanceEvents, setAppearanceEvents] = useState<HubAppearanceSummary[]>([]);
-    const [profileCategory, setProfileCategory] = useState<'Track&Field' | 'Road&Trail' | null>(null);
+    const [linkedCompetitionItems, setLinkedCompetitionItems] = useState<ProfileNewsItem[]>([]);
+    const [profileCategory, setProfileCategory] = useState<ProfileModeId | null>(null);
     const [showProfileSwitcherModal, setShowProfileSwitcherModal] = useState(false);
     const [pendingDeleteBlog, setPendingDeleteBlog] = useState<ProfileNewsItem | null>(null);
     const [isDeletingBlog, setIsDeletingBlog] = useState(false);
@@ -83,6 +91,14 @@ const UserProfileScreen = ({ navigation, route }: any) => {
     const [uploadedCompetitions, setUploadedCompetitions] = useState<UploadedCompetition[]>([]);
     const [myGroups, setMyGroups] = useState<GroupSummary[]>([]);
     const [didLoadProfileData, setDidLoadProfileData] = useState(false);
+    const [isTimelineLoading, setIsTimelineLoading] = useState(false);
+    const [hasLoadedTimeline, setHasLoadedTimeline] = useState(false);
+    const [isActivityLoading, setIsActivityLoading] = useState(false);
+    const [hasLoadedActivity, setHasLoadedActivity] = useState(false);
+    const [isDownloadsLoading, setIsDownloadsLoading] = useState(false);
+    const [hasLoadedDownloads, setHasLoadedDownloads] = useState(false);
+    const [isCollectionsLoading, setIsCollectionsLoading] = useState(false);
+    const [hasLoadedCollections, setHasLoadedCollections] = useState(false);
     const [websiteEditVisible, setWebsiteEditVisible] = useState(false);
     const [websiteDraft, setWebsiteDraft] = useState('');
     const [websiteSaveBusy, setWebsiteSaveBusy] = useState(false);
@@ -90,11 +106,6 @@ const UserProfileScreen = ({ navigation, route }: any) => {
     const { width } = Dimensions.get('window');
     const showBackButton = Boolean(route?.params?.showBackButton) || String(route?.params?.origin || '').toLowerCase() === 'search';
     const imageWidth = Math.floor((width - 40 - 24 - 30) / 4);
-    const profileCategoryLabel = profileCategory === 'Road&Trail'
-        ? t('roadAndTrail')
-        : profileCategory === 'Track&Field'
-            ? t('trackAndField')
-            : '';
     const selectedEventProfiles = useMemo(() => {
         const serverEvents = profileSummary?.profile?.selected_events;
         if (Array.isArray(serverEvents) && serverEvents.length > 0) {
@@ -103,25 +114,41 @@ const UserProfileScreen = ({ navigation, route }: any) => {
         const localEvents = userProfile?.selectedEvents;
         return Array.isArray(localEvents) ? localEvents : [];
     }, [profileSummary?.profile?.selected_events, userProfile?.selectedEvents]);
-    const selectedEventProfilesNormalized = useMemo(
-        () =>
-            selectedEventProfiles
-                .map((entry: any) => String(
-                    typeof entry === 'string'
-                        ? entry
-                        : entry?.id ?? entry?.value ?? entry?.event_id ?? entry?.name ?? '',
-                ).trim().toLowerCase())
-                .filter(Boolean),
+    const selectedFocuses = useMemo(
+        () => normalizeSelectedEvents(selectedEventProfiles),
         [selectedEventProfiles],
     );
-    const hasTrackFieldProfile = selectedEventProfilesNormalized.some((entry) =>
-        entry === 'track-field' || entry === 'track&field' || entry === 'track_field' || entry.includes('track'),
+    const hasSupportProfile = useMemo(() => {
+        return (
+            String((profileSummary?.profile as any)?.support_role ?? (userProfile as any)?.supportRole ?? '').trim().length > 0 ||
+            (Array.isArray((profileSummary?.profile as any)?.support_club_codes) && (profileSummary?.profile as any)?.support_club_codes.length > 0) ||
+            (Array.isArray((profileSummary?.profile as any)?.support_group_ids) && (profileSummary?.profile as any)?.support_group_ids.length > 0) ||
+            (Array.isArray((profileSummary?.profile as any)?.support_athlete_profile_ids) && (profileSummary?.profile as any)?.support_athlete_profile_ids.length > 0) ||
+            (Array.isArray((profileSummary?.profile as any)?.support_focuses) && (profileSummary?.profile as any)?.support_focuses.length > 0) ||
+            (Array.isArray((userProfile as any)?.supportClubCodes) && (userProfile as any)?.supportClubCodes.length > 0) ||
+            (Array.isArray((userProfile as any)?.supportGroupIds) && (userProfile as any)?.supportGroupIds.length > 0) ||
+            (Array.isArray((userProfile as any)?.supportAthleteProfileIds) && (userProfile as any)?.supportAthleteProfileIds.length > 0) ||
+            (Array.isArray((userProfile as any)?.supportFocuses) && (userProfile as any)?.supportFocuses.length > 0) ||
+            userProfile?.category === 'support'
+        );
+    }, [profileSummary?.profile, userProfile]);
+    const serverDeclaresNoProfiles = authBootstrap?.has_profiles === false && !didLoadProfileData;
+    const hasAnyLinkedProfiles = serverDeclaresNoProfiles ? false : (selectedFocuses.length > 0 || myGroups.length > 0 || hasSupportProfile);
+    const shouldShowEmptyProfileState = serverDeclaresNoProfiles || (!hasAnyLinkedProfiles && didLoadProfileData);
+    const profileCategoryLabel = profileCategory ? (profileCategory === 'support' ? t('Support') : getSportFocusLabel(profileCategory, t)) : '';
+    const collectionScopeKey = useMemo(() => {
+        if (profileCategory) return getProfileCollectionScopeKey(profileCategory);
+        if (selectedFocuses.length > 0) return getProfileCollectionScopeKey(selectedFocuses[0]);
+        if (hasSupportProfile) return 'support';
+        return 'default';
+    }, [hasSupportProfile, profileCategory, selectedFocuses]);
+    const showDownloadsTab = true;
+    const renderFocusIcon = useCallback(
+        (focusId: ProfileModeId, size: number = 20) => (
+            <SportFocusIcon focusId={focusId} size={size} color={colors.primaryColor} />
+        ),
+        [colors.primaryColor],
     );
-    const hasRoadTrailProfile = selectedEventProfilesNormalized.some((entry) =>
-        entry === 'road-events' || entry === 'road&trail' || entry === 'road_trail' || entry.includes('road') || entry.includes('trail'),
-    );
-    const hasServerProfile = Boolean(profileSummary?.profile_id) || Boolean(profileSummary?.profile);
-    const hasAnyLinkedProfiles = hasTrackFieldProfile || hasRoadTrailProfile || myGroups.length > 0 || hasServerProfile;
 
     const normalizeChestByYear = useCallback((raw: any): Record<string, string> => {
         if (!raw || typeof raw !== 'object') return {};
@@ -196,10 +223,6 @@ const UserProfileScreen = ({ navigation, route }: any) => {
         const key = user?.sub || userProfile?.username || user?.email || 'self';
         return `@profile_timeline_${key}`;
     }, [user?.email, user?.sub, userProfile?.username]);
-    const categoryStorageKey = useMemo(() => {
-        const key = user?.sub || userProfile?.username || user?.email || 'self';
-        return `@profile_category_${key}`;
-    }, [user?.email, user?.sub, userProfile?.username]);
 
     const blogStorageKey = useMemo(() => {
         const key = user?.sub || userProfile?.username || user?.email || 'self';
@@ -207,35 +230,81 @@ const UserProfileScreen = ({ navigation, route }: any) => {
     }, [user?.email, user?.sub, userProfile?.username]);
 
     useEffect(() => {
-        const reconcileCategory = async () => {
-            if (!hasTrackFieldProfile && !hasRoadTrailProfile) {
-                setProfileCategory(null);
-                await AsyncStorage.removeItem(categoryStorageKey);
-                return;
-            }
-            if (profileCategory === 'Track&Field' && !hasTrackFieldProfile) {
-                const fallback = hasRoadTrailProfile ? 'Road&Trail' : null;
-                setProfileCategory(fallback);
-                if (fallback) await AsyncStorage.setItem(categoryStorageKey, fallback);
-                return;
-            }
-            if (profileCategory === 'Road&Trail' && !hasRoadTrailProfile) {
-                const fallback = hasTrackFieldProfile ? 'Track&Field' : null;
-                setProfileCategory(fallback);
-                if (fallback) await AsyncStorage.setItem(categoryStorageKey, fallback);
-                return;
-            }
-            if (!profileCategory) {
-                const fallback = hasTrackFieldProfile ? 'Track&Field' : 'Road&Trail';
-                setProfileCategory(fallback);
-                await AsyncStorage.setItem(categoryStorageKey, fallback);
-            }
-        };
-        reconcileCategory();
-    }, [categoryStorageKey, hasRoadTrailProfile, hasTrackFieldProfile, profileCategory]);
+        if (profileCategory === 'support' && hasSupportProfile) return;
+        if (profileCategory && profileCategory !== 'support' && selectedFocuses.includes(profileCategory)) return;
+        if (selectedFocuses.length > 0) {
+            setProfileCategory(selectedFocuses[0]);
+            return;
+        }
+        if (hasSupportProfile) {
+            setProfileCategory('support');
+            return;
+        }
+        if (profileCategory !== null) setProfileCategory(null);
+    }, [hasSupportProfile, profileCategory, selectedFocuses]);
 
-    const loadProfileData = useCallback(async () => {
-        // Timeline: server is the source of truth (no more device-local dummy timeline)
+    const loadProfileShell = useCallback(async () => {
+        const localChestByYear = normalizeChestByYear(userProfile?.chestNumbersByYear ?? {});
+        setChestNumbersByYear(localChestByYear);
+        setProfileImage(defaultProfileImage);
+        if (apiAccessToken) {
+            let shellReady = false;
+            try {
+                const summary = await getProfileSummary(apiAccessToken);
+                setProfileSummary(summary);
+                const serverChestByYear = normalizeChestByYear(summary?.profile?.chest_numbers_by_year ?? {});
+                setChestNumbersByYear(serverChestByYear);
+                const avatarMedia = summary?.profile?.avatar_media ?? null;
+                const avatarCandidate =
+                    avatarMedia?.thumbnail_url ||
+                    avatarMedia?.preview_url ||
+                    avatarMedia?.full_url ||
+                    avatarMedia?.raw_url ||
+                    avatarMedia?.original_url ||
+                    summary?.profile?.avatar_url ||
+                    null;
+                if (avatarCandidate) {
+                    const resolved = toAbsoluteUrl(String(avatarCandidate));
+                    const withToken = withAccessToken(resolved) || resolved;
+                    if (withToken) {
+                        setProfileImage({ uri: withToken });
+                    }
+                } else {
+                    setProfileImage(defaultProfileImage);
+                }
+                shellReady = true;
+            } catch {
+                setProfileSummary(null);
+                setProfileImage(defaultProfileImage);
+            }
+            if (!didLoadProfileData || shellReady) {
+                setDidLoadProfileData(true);
+            }
+            try {
+                const resp = await getMyGroups(apiAccessToken);
+                setMyGroups(Array.isArray((resp as any)?.groups) ? (resp as any).groups : []);
+            } catch {
+                setMyGroups([]);
+            }
+        } else {
+            setProfileSummary(null);
+            setProfileImage(defaultProfileImage);
+            setMyGroups([]);
+            setDidLoadProfileData(true);
+        }
+    }, [
+        apiAccessToken,
+        defaultProfileImage,
+        didLoadProfileData,
+        normalizeChestByYear,
+        toAbsoluteUrl,
+        userProfile?.chestNumbersByYear,
+        withAccessToken,
+    ]);
+
+    const loadTimelineTab = useCallback(async (force: boolean = false) => {
+        if (!force && (hasLoadedTimeline || isTimelineLoading)) return;
+        setIsTimelineLoading(true);
         if (apiAccessToken) {
             try {
                 const resp = await getProfileTimeline(apiAccessToken, 'me');
@@ -280,54 +349,57 @@ const UserProfileScreen = ({ navigation, route }: any) => {
         } else {
             setTimelineItems([]);
         }
+        setHasLoadedTimeline(true);
+        setIsTimelineLoading(false);
+    }, [
+        apiAccessToken,
+        hasLoadedTimeline,
+        isTimelineLoading,
+        resolveTimelineMediaThumb,
+        t,
+        toAbsoluteUrl,
+        withAccessToken,
+    ]);
 
-        const storedCategory = await AsyncStorage.getItem(categoryStorageKey);
-        if (storedCategory === 'Road&Trail' || storedCategory === 'Track&Field') {
-            setProfileCategory(storedCategory);
-        }
+    const loadActivityTab = useCallback(async (force: boolean = false) => {
+        if (!force && (hasLoadedActivity || isActivityLoading)) return;
+        setIsActivityLoading(true);
+        const postsProfileId = profileSummary?.profile_id ? String(profileSummary.profile_id) : null;
 
-        // Profile summary (bio + counts)
-        let summaryProfileId: string | null = null;
-        if (apiAccessToken) {
+        if (apiAccessToken && profileCategory === 'support') {
             try {
-                const summary = await getProfileSummary(apiAccessToken);
-                setProfileSummary(summary);
-                const serverChestByYear = normalizeChestByYear(summary?.profile?.chest_numbers_by_year ?? {});
-                setChestNumbersByYear(serverChestByYear);
-                summaryProfileId = summary?.profile_id ? String(summary.profile_id) : null;
-                const avatarMedia = summary?.profile?.avatar_media ?? null;
-                const avatarCandidate =
-                    avatarMedia?.thumbnail_url ||
-                    avatarMedia?.preview_url ||
-                    avatarMedia?.full_url ||
-                    avatarMedia?.raw_url ||
-                    avatarMedia?.original_url ||
-                    summary?.profile?.avatar_url ||
-                    null;
-                if (avatarCandidate) {
-                    const resolved = toAbsoluteUrl(String(avatarCandidate));
-                    const withToken = withAccessToken(resolved) || resolved;
-                    if (withToken) {
-                        setProfileImage({ uri: withToken });
-                    }
-                } else {
-                    setProfileImage(defaultProfileImage);
-                }
+                const overview = await getHomeOverview(apiAccessToken, 'me');
+                const feedPosts = Array.isArray(overview?.overview?.feed_posts) ? overview.overview.feed_posts : [];
+                const mapped = [...feedPosts]
+                    .sort((a: any, b: any) => {
+                        const aTime = Date.parse(String(a?.post?.created_at ?? ''));
+                        const bTime = Date.parse(String(b?.post?.created_at ?? ''));
+                        return (Number.isNaN(bTime) ? 0 : bTime) - (Number.isNaN(aTime) ? 0 : aTime);
+                    })
+                    .map((entry: any) => {
+                        const media = entry?.media ?? null;
+                        const coverCandidate = media?.thumbnail_url || media?.preview_url || media?.full_url || media?.raw_url || null;
+                        const resolved = coverCandidate ? toAbsoluteUrl(String(coverCandidate)) : null;
+                        return {
+                            id: String(entry?.post?.id ?? ''),
+                            title: String(entry?.post?.title ?? ''),
+                            createdAt: entry?.post?.created_at ? String(entry.post.created_at) : null,
+                            date: entry?.post?.created_at ? String(entry.post.created_at).slice(0, 10) : '',
+                            description: String(entry?.post?.summary ?? entry?.post?.description ?? ''),
+                            coverImage: resolved ? (withAccessToken(resolved) || resolved) : null,
+                        };
+                    })
+                    .filter((entry) => entry.id.length > 0);
+                setBlogEntries(mapped);
             } catch {
-                setProfileSummary(null);
-                const localChestByYear = normalizeChestByYear(userProfile?.chestNumbersByYear ?? {});
-                setChestNumbersByYear(localChestByYear);
-                setProfileImage(defaultProfileImage);
+                setBlogEntries([]);
             }
-        } else {
-            setProfileSummary(null);
-            const localChestByYear = normalizeChestByYear(userProfile?.chestNumbersByYear ?? {});
-            setChestNumbersByYear(localChestByYear);
-            setProfileImage(defaultProfileImage);
+            setLinkedCompetitionItems([]);
+            setHasLoadedActivity(true);
+            setIsActivityLoading(false);
+            return;
         }
 
-        // News/blogs: server-driven (no more local dummy list)
-        const postsProfileId = summaryProfileId;
         if (apiAccessToken && postsProfileId) {
             try {
                 const resp = await getPosts(apiAccessToken, { author_profile_id: String(postsProfileId), limit: 50 });
@@ -367,56 +439,57 @@ const UserProfileScreen = ({ navigation, route }: any) => {
             } catch {
                 setBlogEntries([]);
             }
+
+            try {
+                const resp = await getProfileTimeline(apiAccessToken, 'me');
+                const items = Array.isArray((resp as any)?.items) ? (resp as any)?.items : [];
+                const eventsMap = new Map<string, ProfileNewsItem>();
+                items.forEach((entry: ProfileTimelineEntry & { linked_events?: any[]; cover_thumbnail_url?: string | null; event_date?: string | null }) => {
+                    const linkedEvents = Array.isArray((entry as any)?.linked_events) ? (entry as any)?.linked_events : [];
+                    const coverCandidate = (entry as any)?.cover_thumbnail_url || null;
+                    const resolvedCover = coverCandidate ? toAbsoluteUrl(String(coverCandidate)) : null;
+                    linkedEvents.forEach((linkedEvent: any) => {
+                        const linkedEventId = String(linkedEvent?.event_id ?? '').trim();
+                        if (!linkedEventId) return;
+                        const eventDate = String(linkedEvent?.event_date ?? (entry as any)?.event_date ?? '').trim() || null;
+                        const current = eventsMap.get(linkedEventId);
+                        eventsMap.set(linkedEventId, {
+                            id: `event:${linkedEventId}`,
+                            kind: 'competition',
+                            eventId: linkedEventId,
+                            title: String(linkedEvent?.event_name ?? t('competition')),
+                            sortAt: eventDate,
+                            date: eventDate,
+                            description: String(linkedEvent?.event_location ?? '').trim(),
+                            coverImage: current?.coverImage ?? (resolvedCover ? (withAccessToken(resolvedCover) || resolvedCover) : null),
+                        });
+                    });
+                });
+                setLinkedCompetitionItems(Array.from(eventsMap.values()));
+            } catch {
+                setLinkedCompetitionItems([]);
+            }
         } else {
             setBlogEntries([]);
+            setLinkedCompetitionItems([]);
         }
 
-        if (apiAccessToken) {
-            try {
-                const resp = await getSubscribedEvents(apiAccessToken);
-                setSubscribedEvents(Array.isArray((resp as any)?.events) ? (resp as any).events : []);
-            } catch {
-                setSubscribedEvents([]);
-            }
-            try {
-                const resp = await getHubAppearances(apiAccessToken);
-                const appearances = Array.isArray((resp as any)?.appearances) ? (resp as any).appearances : [];
-                const mapped = appearances.map((entry: HubAppearanceSummary) => {
-                    const thumb = entry?.thumbnail_url ? toAbsoluteUrl(String(entry.thumbnail_url)) : null;
-                    return {
-                        ...entry,
-                        thumbnail_url: thumb ? (withAccessToken(thumb) || thumb) : null,
-                    } as HubAppearanceSummary;
-                });
-                setAppearanceEvents(mapped);
-            } catch {
-                setAppearanceEvents([]);
-            }
-        } else {
-            setSubscribedEvents([]);
-            setAppearanceEvents([]);
-        }
+        setHasLoadedActivity(true);
+        setIsActivityLoading(false);
+    }, [
+        apiAccessToken,
+        hasLoadedActivity,
+        isActivityLoading,
+        profileCategory,
+        profileSummary?.profile_id,
+        t,
+        toAbsoluteUrl,
+        withAccessToken,
+    ]);
 
-        // Collections by type
-        if (apiAccessToken) {
-            try {
-                const resp = await getProfileCollectionByType(apiAccessToken, 'image');
-                setPhotoCollectionItems(Array.isArray((resp as any)?.items) ? (resp as any).items : []);
-            } catch {
-                setPhotoCollectionItems([]);
-            }
-            try {
-                const resp = await getProfileCollectionByType(apiAccessToken, 'video');
-                setVideoCollectionItems(Array.isArray((resp as any)?.items) ? (resp as any).items : []);
-            } catch {
-                setVideoCollectionItems([]);
-            }
-        } else {
-            setPhotoCollectionItems([]);
-            setVideoCollectionItems([]);
-        }
-
-        // Downloads summary (server-side)
+    const loadDownloadsTab = useCallback(async (force: boolean = false) => {
+        if (!force && (hasLoadedDownloads || isDownloadsLoading)) return;
+        setIsDownloadsLoading(true);
         if (apiAccessToken) {
             try {
                 const summary = await getDownloadsSummary(apiAccessToken);
@@ -428,46 +501,89 @@ const UserProfileScreen = ({ navigation, route }: any) => {
             } catch {
                 setDownloadsSummary({ total_downloads: 0, total_views: 0, total_profit_cents: 0 });
             }
-        } else {
-            setDownloadsSummary(null);
-        }
-
-        // Competitions with uploads (server-side)
-        if (apiAccessToken) {
             try {
-                const resp = await getUploadedCompetitions(apiAccessToken, {limit: 200});
+                const resp = await getUploadedCompetitions(apiAccessToken, { limit: 200 });
                 setUploadedCompetitions(Array.isArray((resp as any)?.competitions) ? (resp as any).competitions : []);
             } catch {
                 setUploadedCompetitions([]);
             }
-            try {
-                const resp = await getMyGroups(apiAccessToken);
-                setMyGroups(Array.isArray((resp as any)?.groups) ? (resp as any).groups : []);
-            } catch {
-                setMyGroups([]);
-            }
         } else {
+            setDownloadsSummary(null);
             setUploadedCompetitions([]);
-            setMyGroups([]);
         }
-        setDidLoadProfileData(true);
-    }, [
-        apiAccessToken,
-        categoryStorageKey,
-        defaultProfileImage,
-        normalizeChestByYear,
-        resolveTimelineMediaThumb,
-        t,
-        toAbsoluteUrl,
-        userProfile?.chestNumbersByYear,
-        withAccessToken,
-    ]);
+        setHasLoadedDownloads(true);
+        setIsDownloadsLoading(false);
+    }, [apiAccessToken, hasLoadedDownloads, isDownloadsLoading]);
+
+    const loadCollections = useCallback(async (force: boolean = false) => {
+        if (!force && (hasLoadedCollections || isCollectionsLoading)) return;
+        setIsCollectionsLoading(true);
+        if (!apiAccessToken || !hasAnyLinkedProfiles) {
+            setPhotoCollectionItems([]);
+            setVideoCollectionItems([]);
+            setHasLoadedCollections(true);
+            setIsCollectionsLoading(false);
+            return;
+        }
+        try {
+            const resp = await getProfileCollectionByType(apiAccessToken, 'image', { scope_key: collectionScopeKey });
+            setPhotoCollectionItems(Array.isArray((resp as any)?.items) ? (resp as any).items : []);
+        } catch {
+            setPhotoCollectionItems([]);
+        }
+        try {
+            const resp = await getProfileCollectionByType(apiAccessToken, 'video', { scope_key: collectionScopeKey });
+            setVideoCollectionItems(Array.isArray((resp as any)?.items) ? (resp as any).items : []);
+        } catch {
+            setVideoCollectionItems([]);
+        }
+        setHasLoadedCollections(true);
+        setIsCollectionsLoading(false);
+    }, [apiAccessToken, collectionScopeKey, hasAnyLinkedProfiles, hasLoadedCollections, isCollectionsLoading]);
 
     useFocusEffect(
         useCallback(() => {
-            loadProfileData();
-        }, [loadProfileData]),
+            void loadProfileShell();
+            if (profileTab === 'timeline') setHasLoadedTimeline(false);
+            if (profileTab === 'activity') setHasLoadedActivity(false);
+            if (profileTab === 'downloads') setHasLoadedDownloads(false);
+            if (profileTab === 'collections') setHasLoadedCollections(false);
+        }, [loadProfileShell, profileTab]),
     );
+
+    useEffect(() => {
+        setPhotoCollectionItems([]);
+        setVideoCollectionItems([]);
+        setHasLoadedCollections(false);
+    }, [collectionScopeKey]);
+
+    useEffect(() => {
+        if (!didLoadProfileData || !hasAnyLinkedProfiles) return;
+        if (profileTab === 'timeline') {
+            void loadTimelineTab();
+            return;
+        }
+        if (profileTab === 'activity') {
+            void loadActivityTab();
+            return;
+        }
+        if (profileTab === 'downloads' && showDownloadsTab) {
+            void loadDownloadsTab();
+            return;
+        }
+        if (profileTab === 'collections') {
+            void loadCollections();
+        }
+    }, [
+        didLoadProfileData,
+        hasAnyLinkedProfiles,
+        loadActivityTab,
+        loadCollections,
+        loadDownloadsTab,
+        loadTimelineTab,
+        profileTab,
+        showDownloadsTab,
+    ]);
 
     const openAddTimeline = () => {
         navigation.navigate('ProfileTimelineEditScreen', {
@@ -475,6 +591,7 @@ const UserProfileScreen = ({ navigation, route }: any) => {
             storageKey: timelineStorageKey,
             blogStorageKey,
             competitionOptions,
+            collectionScopeKey,
         });
     };
 
@@ -485,6 +602,7 @@ const UserProfileScreen = ({ navigation, route }: any) => {
             item,
             blogStorageKey,
             competitionOptions,
+            collectionScopeKey,
         });
     };
 
@@ -500,19 +618,31 @@ const UserProfileScreen = ({ navigation, route }: any) => {
             mode: entry ? 'edit' : 'add',
             storageKey: blogStorageKey,
             entry,
+            collectionScopeKey,
         });
     };
 
-    const setCategory = useCallback(async (value: 'Track&Field' | 'Road&Trail') => {
-        if (value === 'Track&Field' && !hasTrackFieldProfile) return;
-        if (value === 'Road&Trail' && !hasRoadTrailProfile) return;
+    const setCategory = useCallback((value: ProfileModeId) => {
+        if (value === 'support') {
+            if (!hasSupportProfile) return;
+            setProfileCategory('support');
+            return;
+        }
+        if (!selectedFocuses.includes(value)) return;
         setProfileCategory(value);
-        await AsyncStorage.setItem(categoryStorageKey, value);
-    }, [categoryStorageKey, hasRoadTrailProfile, hasTrackFieldProfile]);
+    }, [hasSupportProfile, selectedFocuses]);
 
     const openProfileMenu = () => {
         setShowProfileSwitcherModal(true);
     };
+
+    const handleHeaderAction = useCallback(() => {
+        if (!hasAnyLinkedProfiles) {
+            navigation.navigate('CategorySelectionScreen', { fromAddFlow: true });
+            return;
+        }
+        openProfileMenu();
+    }, [hasAnyLinkedProfiles, navigation]);
 
     useEffect(() => {
         const shouldOpen = Boolean(route?.params?.openProfileSwitcher);
@@ -522,9 +652,9 @@ const UserProfileScreen = ({ navigation, route }: any) => {
     }, [navigation, route?.params?.openProfileSwitcher]);
 
     useEffect(() => {
-        const forcedCategory = String(route?.params?.forceProfileCategory || '').trim();
-        if (forcedCategory !== 'Track&Field' && forcedCategory !== 'Road&Trail') return;
-        setCategory(forcedCategory as 'Track&Field' | 'Road&Trail');
+        const forcedCategory = normalizeProfileModeId(route?.params?.forceProfileCategory);
+        if (!forcedCategory) return;
+        setCategory(forcedCategory);
         navigation.setParams?.({ forceProfileCategory: undefined });
     }, [navigation, route?.params?.forceProfileCategory, setCategory]);
 
@@ -532,6 +662,8 @@ const UserProfileScreen = ({ navigation, route }: any) => {
         const result = await launchImageLibrary({
             mediaType: 'photo',
             selectionLimit: 1,
+            presentationStyle: 'fullScreen',
+            assetRepresentationMode: 'current',
         });
         const asset = result?.assets?.[0];
         if (!asset?.uri) return;
@@ -549,6 +681,7 @@ const UserProfileScreen = ({ navigation, route }: any) => {
                         name: asset.fileName ?? `avatar-${Date.now()}.jpg`,
                     },
                 ],
+                skip_profile_collection: true,
             });
             const firstResult = Array.isArray(uploadResp?.results) ? uploadResp.results.find((r: any) => r?.media_id || r?.storage_key) : null;
             const mediaId = firstResult?.media_id ?? null;
@@ -584,7 +717,6 @@ const UserProfileScreen = ({ navigation, route }: any) => {
         }
     };
 
-    const showDownloadsTab = true;
     const currentChestNumber = useMemo(() => {
         const byYear = normalizeChestByYear(profileSummary?.profile?.chest_numbers_by_year ?? chestNumbersByYear);
         const thisYearChest = String(byYear[currentYear] ?? '').trim();
@@ -643,12 +775,12 @@ const UserProfileScreen = ({ navigation, route }: any) => {
         );
     }, [myGroups, normalizeMembership, profileSummary?.profile]);
 
-    const officialMemberships = useMemo(
-        () => profileMemberships.filter((entry) => entry.is_official_club),
-        [profileMemberships],
-    );
     const communityMemberships = useMemo(
         () => profileMemberships.filter((entry) => !entry.is_official_club),
+        [profileMemberships],
+    );
+    const officialMemberships = useMemo(
+        () => profileMemberships.filter((entry) => entry.is_official_club),
         [profileMemberships],
     );
     const trackFieldMainEvent = useMemo(() => {
@@ -666,6 +798,16 @@ const UserProfileScreen = ({ navigation, route }: any) => {
             '',
         ).trim();
     }, [profileSummary, userProfile]);
+    const profileMainDisciplines = useMemo(
+        () => normalizeMainDisciplines(
+            (profileSummary as any)?.profile?.main_disciplines ?? (userProfile as any)?.mainDisciplines ?? {},
+            {
+                trackFieldMainEvent,
+                roadTrailMainEvent,
+            },
+        ),
+        [profileSummary, roadTrailMainEvent, trackFieldMainEvent, userProfile],
+    );
     const profileWebsite = useMemo(() => {
         return String(
             (profileSummary as any)?.profile?.website ??
@@ -681,30 +823,165 @@ const UserProfileScreen = ({ navigation, route }: any) => {
             '',
         ).trim();
     }, [profileSummary, userProfile?.nationality]);
+    const supportRole = useMemo(
+        () => String((profileSummary?.profile as any)?.support_role ?? (userProfile as any)?.supportRole ?? '').trim(),
+        [profileSummary?.profile, userProfile],
+    );
+    const supportProfileBadgeLabel = useMemo(
+        () => getSupportProfileBadgeLabel(supportRole, t),
+        [supportRole, t],
+    );
+    const supportFocuses = useMemo(
+        () => normalizeSelectedEvents((profileSummary?.profile as any)?.support_focuses ?? (userProfile as any)?.supportFocuses ?? []),
+        [profileSummary?.profile, userProfile],
+    );
+    const supportClubs = useMemo(() => {
+        const hydrated = Array.isArray((profileSummary?.profile as any)?.support_clubs)
+            ? (profileSummary?.profile as any)?.support_clubs
+            : Array.isArray((userProfile as any)?.supportClubs)
+                ? (userProfile as any)?.supportClubs
+                : [];
+        return hydrated
+            .map((club: any) => {
+                const code = String(club?.code ?? '').trim().toUpperCase();
+                const name = String(club?.name ?? '').trim();
+                if (!code || !name) return null;
+                return {
+                    id: code,
+                    title: name,
+                    subtitle: [String(club?.city ?? '').trim(), String(club?.federation ?? '').trim()].filter(Boolean).join(' · '),
+                };
+            })
+            .filter(Boolean) as Array<{id: string; title: string; subtitle: string}>;
+    }, [profileSummary?.profile, userProfile]);
+    const supportGroups = useMemo(() => {
+        const hydrated = Array.isArray((profileSummary?.profile as any)?.support_groups)
+            ? (profileSummary?.profile as any)?.support_groups
+            : Array.isArray((userProfile as any)?.supportGroups)
+                ? (userProfile as any)?.supportGroups
+                : [];
+        return hydrated
+            .map((group: any) => {
+                const id = String(group?.group_id ?? '').trim();
+                const name = String(group?.name ?? '').trim();
+                if (!id || !name) return null;
+                return {
+                    id,
+                    title: name,
+                    subtitle: [String(group?.role ?? '').trim(), String(group?.location ?? '').trim()].filter(Boolean).join(' · '),
+                };
+            })
+            .filter(Boolean) as Array<{id: string; title: string; subtitle: string}>;
+    }, [profileSummary?.profile, userProfile]);
+    const directTrackFieldClub = useMemo(() => {
+        const hydrated = (profileSummary?.profile as any)?.track_field_club_detail ?? (userProfile as any)?.trackFieldClubDetail ?? null;
+        const hydratedName = String(hydrated?.name ?? '').trim();
+        const raw = String((profileSummary?.profile as any)?.track_field_club ?? userProfile?.trackFieldClub ?? '').trim();
+        const title = hydratedName || raw;
+        if (!title) return null;
+        return {
+            id: String(hydrated?.code ?? raw).trim() || title,
+            title,
+            subtitle: [String(hydrated?.city ?? '').trim(), String(hydrated?.federation ?? '').trim()].filter(Boolean).join(' · '),
+        };
+    }, [profileSummary?.profile, userProfile]);
+    const runningClubGroup = useMemo(() => {
+        const hydrated = (profileSummary?.profile as any)?.running_club_group ?? (userProfile as any)?.runningClubGroup ?? null;
+        const groupId = String(hydrated?.group_id ?? '').trim();
+        const name = String(hydrated?.name ?? '').trim();
+        if (!groupId || !name) return null;
+        return {
+            id: groupId,
+            title: name,
+            subtitle: [String(hydrated?.role ?? '').trim(), String(hydrated?.location ?? '').trim()].filter(Boolean).join(' · '),
+        };
+    }, [profileSummary?.profile, userProfile]);
 
     const profileDistance = useMemo(() => {
-        if (profileCategory === 'Track&Field') return String(trackFieldMainEvent || '').trim();
-        if (profileCategory === 'Road&Trail') return String(roadTrailMainEvent || '').trim();
-        return String(trackFieldMainEvent || roadTrailMainEvent || '').trim();
-    }, [profileCategory, roadTrailMainEvent, trackFieldMainEvent]);
+        const activeFocus = profileCategory && profileCategory !== 'support' ? profileCategory : selectedFocuses[0] ?? null;
+        if (!activeFocus) return '';
+        const disciplineKey = getMainDisciplineForFocus(profileMainDisciplines, activeFocus, {
+            trackFieldMainEvent,
+            roadTrailMainEvent,
+        });
+        if (!disciplineKey) return '';
+        return getDisciplineLabel(activeFocus, disciplineKey, t);
+    }, [profileCategory, profileMainDisciplines, roadTrailMainEvent, selectedFocuses, t, trackFieldMainEvent]);
+    const athleteProfileCategory = useMemo<SportFocusId | null>(
+        () => (profileCategory && profileCategory !== 'support' ? profileCategory : null),
+        [profileCategory],
+    );
     const formatMetaDisplayValue = useCallback((value: string) => {
         const trimmed = String(value || '').trim();
         if (trimmed.length <= 11) return trimmed;
         return `${trimmed.slice(0, 11)}...`;
     }, []);
 
+    const visibleOfficialClubs = useMemo(() => {
+        if (profileCategory === 'support') return supportClubs;
+        const merged = new Map<string, {id: string; title: string; subtitle: string}>();
+        const makeClubKey = (title: string, subtitle: string) =>
+            `${String(title || '').trim().toLowerCase()}|${String(subtitle || '').trim().toLowerCase()}`;
+        officialMemberships.forEach((entry) => {
+            const subtitle = [entry.role ?? '', entry.location].filter(Boolean).join(' · ');
+            merged.set(makeClubKey(entry.name, subtitle), {
+                id: entry.group_id,
+                title: entry.name,
+                subtitle,
+            });
+        });
+        if (directTrackFieldClub) {
+            const key = makeClubKey(directTrackFieldClub.title, directTrackFieldClub.subtitle);
+            if (!merged.has(key)) {
+                merged.set(key, directTrackFieldClub);
+            }
+        }
+        return Array.from(merged.values());
+    }, [directTrackFieldClub, officialMemberships, profileCategory, supportClubs]);
+    const visibleGroups = useMemo(() => {
+        if (profileCategory === 'support') return supportGroups;
+        const merged = new Map<string, {id: string; title: string; subtitle: string}>();
+        communityMemberships.forEach((entry) => {
+            merged.set(entry.group_id, {
+                id: entry.group_id,
+                title: entry.name,
+                subtitle: [entry.role ?? '', entry.location].filter(Boolean).join(' · '),
+            });
+        });
+        if (runningClubGroup) merged.set(runningClubGroup.id, runningClubGroup);
+        return Array.from(merged.values());
+    }, [communityMemberships, profileCategory, runningClubGroup, supportGroups]);
+    const singleOfficialClub = visibleOfficialClubs.length === 1 ? visibleOfficialClubs[0] : null;
+    const singleCommunityGroup = visibleGroups.length === 1 ? visibleGroups[0] : null;
     const profileMetaItems = useMemo(() => {
+        const baseItems = profileCategory === 'support'
+            ? []
+            : [
+                { key: 'nationality', value: profileNationality },
+                { key: 'chest', value: athleteProfileCategory && focusUsesChestNumbers(athleteProfileCategory) ? currentChestNumber : '' },
+                { key: 'distance', value: profileDistance },
+            ];
+
         return [
-            { key: 'nationality', value: profileNationality },
-            { key: 'chest', value: currentChestNumber },
-            { key: 'distance', value: profileDistance },
+            ...baseItems,
+            { key: 'singleClub', value: singleOfficialClub?.title ?? '' },
+            { key: 'singleGroup', value: singleCommunityGroup?.title ?? '' },
         ]
             .map((entry) => ({
                 ...entry,
                 value: formatMetaDisplayValue(String(entry.value || '').trim()),
             }))
             .filter((entry) => entry.value.length > 0);
-    }, [currentChestNumber, formatMetaDisplayValue, profileDistance, profileNationality]);
+    }, [
+        athleteProfileCategory,
+        currentChestNumber,
+        formatMetaDisplayValue,
+        profileCategory,
+        profileDistance,
+        profileNationality,
+        singleCommunityGroup?.title,
+        singleOfficialClub?.title,
+    ]);
 
     const openProfileWebsite = useCallback(async () => {
         const raw = String(profileWebsite || '').trim();
@@ -775,7 +1052,7 @@ const UserProfileScreen = ({ navigation, route }: any) => {
     }, [profileSummary, user?.email, user?.nickname, userProfile?.username]);
 
     const profileBioText = useMemo(() => {
-        const raw = String(profileSummary?.profile?.bio ?? '').trim();
+        const raw = String(profileSummary?.profile?.bio ?? userProfile?.bio ?? '').trim();
         if (!raw) return t('Write your bio...');
         const normalizedRaw = raw.replace(/^@+/, '').trim().toLowerCase();
         const normalizedHandle = profileHandle.trim().toLowerCase();
@@ -783,7 +1060,7 @@ const UserProfileScreen = ({ navigation, route }: any) => {
             return t('Write your bio...');
         }
         return raw;
-    }, [profileHandle, profileSummary?.profile?.bio, t]);
+    }, [profileHandle, profileSummary?.profile?.bio, t, userProfile?.bio]);
 
     const sortCollectionItems = useCallback((items: ProfileCollectionItem[]) => {
         const featured = items
@@ -825,8 +1102,8 @@ const UserProfileScreen = ({ navigation, route }: any) => {
     }, []);
 
     const formatMoney = useCallback((cents?: number | null) => {
-        if (cents == null || !Number.isFinite(Number(cents))) return 'â€”';
-        return `â‚¬${(Number(cents) / 100).toFixed(2)}`;
+        if (cents == null || !Number.isFinite(Number(cents))) return '-';
+        return `€${(Number(cents) / 100).toFixed(2)}`;
     }, []);
 
     const formatCount = useCallback((value?: number | null) => {
@@ -869,97 +1146,22 @@ const UserProfileScreen = ({ navigation, route }: any) => {
             coverImage: entry.coverImage ? String(entry.coverImage) : null,
         }));
 
-        const eventsMap = new Map<
-            string,
-            {
-                eventId: string;
-                eventName: string;
-                eventDate: string | null;
-                eventLocation: string | null;
-                coverImage: string | null;
-                isSubscribed: boolean;
-                photosCount: number;
-                videosCount: number;
-            }
-        >();
+        const eventItems = linkedCompetitionItems.map((event) => ({
+            ...event,
+            date: toDateLabel(event.sortAt ?? event.date ?? null),
+        }));
 
-        for (const event of subscribedEvents) {
-            const eventId = String(event?.event_id || '').trim();
-            if (!eventId) continue;
-            const current =
-                eventsMap.get(eventId) ??
-                {
-                    eventId,
-                    eventName: '',
-                    eventDate: null,
-                    eventLocation: null,
-                    coverImage: null,
-                    isSubscribed: false,
-                    photosCount: 0,
-                    videosCount: 0,
-                };
-            current.eventName = String(event?.event_name ?? event?.event_title ?? current.eventName ?? '').trim();
-            current.eventDate = event?.event_date ? String(event.event_date) : current.eventDate;
-            current.eventLocation = event?.event_location ? String(event.event_location) : current.eventLocation;
-            current.isSubscribed = true;
-            eventsMap.set(eventId, current);
-        }
+        const combinedItems = profileCategory === 'support'
+            ? blogItems
+            : [...blogItems, ...eventItems];
 
-        for (const appearance of appearanceEvents) {
-            const eventId = String(appearance?.event_id || '').trim();
-            if (!eventId) continue;
-            const current =
-                eventsMap.get(eventId) ??
-                {
-                    eventId,
-                    eventName: '',
-                    eventDate: null,
-                    eventLocation: null,
-                    coverImage: null,
-                    isSubscribed: false,
-                    photosCount: 0,
-                    videosCount: 0,
-                };
-            current.eventName = String(appearance?.event_name ?? current.eventName ?? '').trim();
-            current.eventDate = appearance?.event_date ? String(appearance.event_date) : current.eventDate;
-            current.eventLocation = appearance?.event_location ? String(appearance.event_location) : current.eventLocation;
-            current.coverImage =
-                appearance?.thumbnail_url && String(appearance.thumbnail_url).trim().length > 0
-                    ? String(appearance.thumbnail_url)
-                    : current.coverImage;
-            current.photosCount = Number(appearance?.photos_count ?? current.photosCount ?? 0);
-            current.videosCount = Number(appearance?.videos_count ?? current.videosCount ?? 0);
-            eventsMap.set(eventId, current);
-        }
-
-        const eventItems: ProfileNewsItem[] = Array.from(eventsMap.values()).map((event) => {
-            const details: string[] = [];
-            if (event.isSubscribed) details.push(t('Subscribed competition'));
-            const mediaParts: string[] = [];
-            if (event.photosCount > 0) mediaParts.push(`${event.photosCount} ${t('Photos')}`);
-            if (event.videosCount > 0) mediaParts.push(`${event.videosCount} ${t('Videos')}`);
-            if (mediaParts.length > 0) details.push(mediaParts.join(' | '));
-            if (event.eventLocation) details.push(String(event.eventLocation));
-
-            return {
-                id: `event:${event.eventId}`,
-                kind: 'competition',
-                eventId: event.eventId,
-                title: event.eventName || t('competition'),
-                sortAt: event.eventDate,
-                date: toDateLabel(event.eventDate),
-                description: details.join(' - '),
-                coverImage: event.coverImage,
-            };
-        });
-
-        return [...blogItems, ...eventItems].sort((a, b) => {
+        return combinedItems.sort((a, b) => {
             const aDate = toTimestamp(a.sortAt ?? a.date ?? null);
             const bDate = toTimestamp(b.sortAt ?? b.date ?? null);
             if (bDate !== aDate) return bDate - aDate;
             return String(b.id).localeCompare(String(a.id));
         });
-    }, [appearanceEvents, blogEntries, subscribedEvents, t]);
+    }, [blogEntries, linkedCompetitionItems, profileCategory]);
 
     const handleSwipeDeleteBlog = useCallback((item: ProfileNewsItem) => {
         if ((item.kind ?? 'blog') !== 'blog') return;
@@ -981,7 +1183,7 @@ const UserProfileScreen = ({ navigation, route }: any) => {
         }
     }, [apiAccessToken, isDeletingBlog, pendingDeleteBlog, t]);
 
-    const handlePressActivityItem = useCallback(async (item: ProfileNewsItem) => {
+    const handlePressActivityItem = useCallback((item: ProfileNewsItem) => {
         if ((item.kind ?? 'blog') === 'blog') {
             const postId = String(item.postId ?? item.id);
             navigation.navigate('ViewUserBlogDetailsScreen', {
@@ -997,31 +1199,23 @@ const UserProfileScreen = ({ navigation, route }: any) => {
         }
 
         const eventId = String(item.eventId || '').trim();
-        if (!apiAccessToken || !eventId) {
+        if (!eventId) {
             return;
         }
 
-        try {
-            const resp = await getHubAppearanceMedia(apiAccessToken, eventId);
-            const baseResults = Array.isArray((resp as any)?.results) ? (resp as any).results : [];
-            const results = baseResults.map((entry: any) => ({
-                ...entry,
-                event_name: entry?.event_name ?? item.title,
-            }));
-            navigation.navigate('AISearchResultsScreen', {
-                results,
-                matchedCount: results.length,
-                matchType: 'context',
-            });
-        } catch {
-            Alert.alert(t('Error'), t('Could not open this competition.'));
-        }
-    }, [apiAccessToken, navigation, t]);
+        navigation.navigate('CompetitionDetailsScreen', {
+            name: item.title,
+            eventId,
+            competitionId: eventId,
+            date: item.sortAt ?? item.date,
+            location: item.description ?? '',
+            showBackButton: true,
+        });
+    }, [navigation]);
 
-
-    if (didLoadProfileData && !hasAnyLinkedProfiles) {
+    if (shouldShowEmptyProfileState) {
         return (
-            <View style={Styles.mainContainer}>
+            <View style={Styles.mainContainer} testID="user-profile-empty-state">
                 <SizeBox height={insets.top} />
                 <View style={Styles.header}>
                     {showBackButton ? (
@@ -1032,8 +1226,8 @@ const UserProfileScreen = ({ navigation, route }: any) => {
                         <View style={Styles.headerSpacer} />
                     )}
                     <Text style={Styles.headerTitle}>{t('Profile')}</Text>
-                    <TouchableOpacity style={Styles.headerButton} onPress={openProfileMenu}>
-                        <User size={24} color={colors.primaryColor} variant="Linear" />
+                    <TouchableOpacity style={Styles.headerButton} onPress={handleHeaderAction}>
+                        <Add size={24} color={colors.primaryColor} variant="Linear" />
                     </TouchableOpacity>
                 </View>
                 <View style={Styles.emptyProfileContainer}>
@@ -1052,7 +1246,7 @@ const UserProfileScreen = ({ navigation, route }: any) => {
     }
 
     return (
-        <View style={Styles.mainContainer}>
+        <View style={Styles.mainContainer} testID="user-profile-screen">
             <SizeBox height={insets.top} />
 
             {/* Header */}
@@ -1065,8 +1259,12 @@ const UserProfileScreen = ({ navigation, route }: any) => {
                     <View style={Styles.headerSpacer} />
                 )}
                 <Text style={Styles.headerTitle}>{t('Profile')}</Text>
-                <TouchableOpacity style={Styles.headerButton} onPress={openProfileMenu}>
-                    <User size={24} color={colors.primaryColor} variant="Linear" />
+                <TouchableOpacity style={Styles.headerButton} onPress={handleHeaderAction}>
+                    {shouldShowEmptyProfileState ? (
+                        <Add size={24} color={colors.primaryColor} variant="Linear" />
+                    ) : (
+                        <User size={24} color={colors.primaryColor} variant="Linear" />
+                    )}
                 </TouchableOpacity>
             </View>
 
@@ -1104,8 +1302,8 @@ const UserProfileScreen = ({ navigation, route }: any) => {
                                     <>
                                         <View style={Styles.statDivider} />
                                         <View style={Styles.statItem}>
-                                            <Icons.TrackFieldLogo width={28} height={24} />
-                                            <Text style={Styles.statLabel}>{profileCategoryLabel}</Text>
+                                            {profileCategory ? renderFocusIcon(profileCategory, 24) : null}
+                                            <Text style={Styles.statLabel}>{profileCategory === 'support' ? supportProfileBadgeLabel : profileCategoryLabel}</Text>
                                         </View>
                                     </>
                                 ) : null}
@@ -1134,7 +1332,7 @@ const UserProfileScreen = ({ navigation, route }: any) => {
                     <View style={Styles.bioSection}>
                         <View style={Styles.bioHeader}>
                             <Text style={Styles.bioTitle}>{t('Bio')}</Text>
-                            <TouchableOpacity onPress={() => navigation.navigate('EditBioScreens')}>
+                            <TouchableOpacity testID="profile-edit-bio-button" onPress={() => navigation.navigate('EditBioScreens')}>
                                 <Edit2 size={16} color={colors.mainTextColor} variant="Linear" />
                             </TouchableOpacity>
                         </View>
@@ -1143,16 +1341,20 @@ const UserProfileScreen = ({ navigation, route }: any) => {
                         </Text>
                         <View style={Styles.bioDivider} />
                     </View>
+                    {profileCategory === 'support' ? (
+                        <View style={Styles.athleteMetaSection}>
+                            <SupportProfileSummary role={supportRole} focuses={supportFocuses} t={t} />
+                        </View>
+                    ) : null}
                     {profileMetaItems.length > 0 && (
                         <View style={Styles.athleteMetaSection}>
                             <View style={Styles.athleteMetaInlineBox}>
-                                {profileMetaItems.map((entry, index) => (
-                                    <React.Fragment key={`meta-${entry.key}-${index}`}>
-                                        <Text style={Styles.athleteMetaInlineValue}>{entry.value}</Text>
-                                        {index < profileMetaItems.length - 1 ? (
-                                            <Text style={Styles.athleteMetaInlineDot}>{' \u2022 '}</Text>
-                                        ) : null}
-                                    </React.Fragment>
+                                {profileMetaItems.map((entry) => (
+                                    <View key={entry.key} style={Styles.athleteMetaPill}>
+                                        <Text style={Styles.athleteMetaPillText}>
+                                            {entry.value}
+                                        </Text>
+                                    </View>
                                 ))}
                             </View>
                         </View>
@@ -1190,23 +1392,49 @@ const UserProfileScreen = ({ navigation, route }: any) => {
                             </TouchableOpacity>
                         </View>
                     ) : null}
-                    {communityMemberships.length > 0 ? (
+                    {visibleOfficialClubs.length > 1 ? (
                         <View style={Styles.membershipSection}>
-                            <Text style={Styles.membershipTitle}>{t('Community groups')}</Text>
+                            <Text style={Styles.membershipTitle}>{t('Official clubs')}</Text>
                             <View style={Styles.membershipWrap}>
-                                {communityMemberships.map((group) => (
-                                    <TouchableOpacity
-                                        key={group.group_id}
+                                {visibleOfficialClubs.map((club) => (
+                                    <View
+                                        key={club.id}
                                         style={Styles.membershipChip}
-                                        activeOpacity={0.85}
-                                        onPress={() => navigation.navigate('GroupProfileScreen', { groupId: group.group_id })}
                                     >
                                         <Text style={Styles.membershipChipTitle} numberOfLines={1}>
-                                            {group.name}
+                                            {club.title}
                                         </Text>
-                                        {group.location.length > 0 ? (
+                                        {club.subtitle.length > 0 ? (
                                             <Text style={Styles.membershipChipMeta} numberOfLines={1}>
-                                                {group.location}
+                                                {club.subtitle}
+                                            </Text>
+                                        ) : null}
+                                    </View>
+                                ))}
+                            </View>
+                        </View>
+                    ) : null}
+                    {visibleGroups.length > 1 ? (
+                        <View style={Styles.membershipSection}>
+                            <Text style={Styles.membershipTitle}>{t(profileCategory === 'support' ? 'Groups' : 'Community groups')}</Text>
+                            <View style={Styles.membershipWrap}>
+                                {visibleGroups.map((group) => (
+                                    <TouchableOpacity
+                                        key={group.id}
+                                        style={Styles.membershipChip}
+                                        activeOpacity={0.85}
+                                        onPress={() => navigation.navigate('GroupProfileScreen', {
+                                            groupId: group.id,
+                                            showBackButton: true,
+                                            origin: 'profile',
+                                        })}
+                                    >
+                                        <Text style={Styles.membershipChipTitle} numberOfLines={1}>
+                                            {group.title}
+                                        </Text>
+                                        {group.subtitle.length > 0 ? (
+                                            <Text style={Styles.membershipChipMeta} numberOfLines={1}>
+                                                {group.subtitle}
                                             </Text>
                                         ) : null}
                                     </TouchableOpacity>
@@ -1255,33 +1483,49 @@ const UserProfileScreen = ({ navigation, route }: any) => {
                 </View>
 
                 {profileTab === 'timeline' && (
-                    <ProfileTimeline
-                        title={t('Timeline')}
-                        items={timelineItems}
-                        editable
-                        onAdd={openAddTimeline}
-                        onEdit={(item) => {
-                            const original = timelineItems.find((entry) => entry.id === item.id) ?? item;
-                            openEditTimeline(original);
-                        }}
-                        onPressItem={openTimelineDetail}
-                    />
+                    !hasLoadedTimeline && timelineItems.length === 0 ? (
+                        <View style={Styles.tabLoadingContainer}>
+                            <ActivityIndicator size="small" color={colors.primaryColor} />
+                            <SizeBox height={12} />
+                            <Text style={Styles.emptyProfileSubtitle}>{t('Loading timeline...')}</Text>
+                        </View>
+                    ) : (
+                        <ProfileTimeline
+                            title={t('Timeline')}
+                            items={timelineItems}
+                            editable
+                            onAdd={openAddTimeline}
+                            onEdit={(item) => {
+                                const original = timelineItems.find((entry) => entry.id === item.id) ?? item;
+                                openEditTimeline(original);
+                            }}
+                            onPressItem={openTimelineDetail}
+                        />
+                    )
                 )}
 
                 {profileTab === 'activity' && (
-                    <ProfileNewsSection
-                        styles={Styles}
-                        sectionTitle={t('News')}
-                        actionLabel={t('Add blog')}
-                        onPressAction={() => openBlogEditor()}
-                        enableSwipeDelete
-                        onSwipeDelete={handleSwipeDeleteBlog}
-                        items={activityItems}
-                        emptyText={t('No news yet. Add your first blog to share updates.')}
-                        blogLabel={t('Blog')}
-                        eventLabel={t('competition')}
-                        onPressItem={handlePressActivityItem}
-                    />
+                    !hasLoadedActivity && activityItems.length === 0 ? (
+                        <View style={Styles.tabLoadingContainer}>
+                            <ActivityIndicator size="small" color={colors.primaryColor} />
+                            <SizeBox height={12} />
+                            <Text style={Styles.emptyProfileSubtitle}>{t('Loading news...')}</Text>
+                        </View>
+                    ) : (
+                        <ProfileNewsSection
+                            styles={Styles}
+                            sectionTitle={t('News')}
+                            actionLabel={profileCategory === 'support' ? undefined : t('Add blog')}
+                            onPressAction={profileCategory === 'support' ? undefined : (() => openBlogEditor())}
+                            enableSwipeDelete={profileCategory !== 'support'}
+                            onSwipeDelete={handleSwipeDeleteBlog}
+                            items={activityItems}
+                            emptyText={profileCategory === 'support' ? t('No news yet.') : t('No news yet. Add a competition to your profile or publish a blog.')}
+                            blogLabel={t('Blog')}
+                            eventLabel={t('competition')}
+                            onPressItem={handlePressActivityItem}
+                        />
+                    )
                 )}
 
                 {profileTab === 'collections' && (
@@ -1318,7 +1562,13 @@ const UserProfileScreen = ({ navigation, route }: any) => {
 
                             <SizeBox height={16} />
 
-                            {activeTab === 'photos' ? (
+                            {!hasLoadedCollections && photoCollectionItems.length === 0 && videoCollectionItems.length === 0 ? (
+                                <View style={Styles.tabLoadingContainer}>
+                                    <ActivityIndicator size="small" color={colors.primaryColor} />
+                                    <SizeBox height={12} />
+                                    <Text style={Styles.emptyProfileSubtitle}>{t('Loading collections...')}</Text>
+                                </View>
+                            ) : activeTab === 'photos' ? (
                                 <View style={Styles.collectionsCard}>
                                     <View style={Styles.collectionsGrid}>
                                         {visibleCollectionItems.map((item) => {
@@ -1397,9 +1647,9 @@ const UserProfileScreen = ({ navigation, route }: any) => {
 
                         <TouchableOpacity style={Styles.mainEditButton} onPress={() => {
                             if (activeTab === 'photos') {
-                                navigation.navigate('EditPhotoCollectionsScreen');
+                                navigation.navigate('EditPhotoCollectionsScreen', { collectionScopeKey });
                             } else {
-                                navigation.navigate('EditVideoCollectionsScreen');
+                                navigation.navigate('EditVideoCollectionsScreen', { collectionScopeKey });
                             }
                         }}>
                             <Text style={Styles.mainEditButtonText}>{t('Edit')}</Text>
@@ -1409,83 +1659,91 @@ const UserProfileScreen = ({ navigation, route }: any) => {
                 )}
 
                 {profileTab === 'downloads' && showDownloadsTab && (
-                    <View style={Styles.downloadsSection}>
-                        <Text style={Styles.sectionTitle}>{t('Downloads')}</Text>
-                        <TouchableOpacity
-                            style={Styles.downloadsCard}
-                            activeOpacity={0.8}
-                            onPress={() => navigation.navigate('DownloadsDetailsScreen', { mode: 'profit' })}
-                        >
-                            <View style={Styles.downloadsContent}>
-                                <View style={Styles.downloadsIconContainer}>
-                                    <Icons.DownloadColorful width={24} height={24} />
-                                </View>
-                                <Text>
-                                    <Text style={Styles.downloadsText}>{t('Total downloads')}: </Text>
-                                    <Text style={Styles.downloadsTextBold}>
-                                        {downloadsSummary ? String(downloadsSummary.total_downloads) : 'â€”'}
-                                    </Text>
-                                </Text>
-                            </View>
-                            <View style={Styles.downloadsDetailsButton}>
-                                <Text style={Styles.downloadsDetailsButtonText}>{t('Details')}</Text>
-                                <ArrowRight size={18} color="#9B9F9F" variant="Linear" />
-                            </View>
-                        </TouchableOpacity>
-                        <View style={Styles.earningsRow}>
-                            <View style={Styles.earningsCard}>
-                                <Text style={Styles.earningsLabel}>{t('Views')}</Text>
-                                <Text style={Styles.earningsValue}>
-                                    {downloadsSummary ? String(downloadsSummary.total_views) : 'â€”'}
-                                </Text>
-                            </View>
-                            <View style={Styles.earningsCard}>
-                                <Text style={Styles.earningsLabel}>{t('Profit')}</Text>
-                                <Text style={Styles.earningsValue}>
-                                    {downloadsSummary ? formatMoney(downloadsSummary.total_profit_cents ?? 0) : 'â€”'}
-                                </Text>
-                            </View>
+                    !hasLoadedDownloads && downloadsSummary === null && uploadedCompetitions.length === 0 ? (
+                        <View style={Styles.tabLoadingContainer}>
+                            <ActivityIndicator size="small" color={colors.primaryColor} />
+                            <SizeBox height={12} />
+                            <Text style={Styles.emptyProfileSubtitle}>{t('Loading downloads...')}</Text>
                         </View>
-                        <View style={Styles.downloadAnalyticsSection}>
-                            <View style={Styles.sectionHeader}>
-                                <Text style={Styles.downloadAnalyticsTitle}>{t('Competitions')}</Text>
-                                <TouchableOpacity
-                                    onPress={() => navigation.navigate('DownloadsDetailsScreen', { mode: 'competitions' })}
-                                >
-                                    <Text style={Styles.viewAllText}>{t('View more')}</Text>
-                                </TouchableOpacity>
-                            </View>
-                            {previewCompetitions.map((item) => (
-                                <TouchableOpacity
-                                    key={item.event_id}
-                                    style={Styles.competitionCard}
-                                    activeOpacity={0.85}
-                                    onPress={() =>
-                                        navigation.navigate('DownloadsDetailsScreen', {
-                                            mode: 'competition-media',
-                                            competition: item,
-                                        })
-                                    }
-                                >
-                                    {item.cover_thumbnail_url ? (
-                                        <FastImage source={{ uri: String(item.cover_thumbnail_url) }} style={Styles.competitionThumb} resizeMode="cover" />
-                                    ) : (
-                                        <View style={Styles.competitionThumbPlaceholder} />
-                                    )}
-                                    <View style={Styles.competitionInfo}>
-                                        <Text style={Styles.competitionTitle}>{item.event_name || t('competition')}</Text>
-                                        <Text style={Styles.competitionMeta}>
-                                            {Number(item.uploads_count ?? 0)} {t('uploads')} | {formatEventDate(item.event_date)}
-                                        </Text>
-                                        <Text style={Styles.competitionMetaSecondary}>{item.event_location ?? ''}</Text>
+                    ) : (
+                        <View style={Styles.downloadsSection}>
+                            <Text style={Styles.sectionTitle}>{t('Downloads')}</Text>
+                            <TouchableOpacity
+                                style={Styles.downloadsCard}
+                                activeOpacity={0.8}
+                                onPress={() => navigation.navigate('DownloadsDetailsScreen', { mode: 'profit' })}
+                            >
+                                <View style={Styles.downloadsContent}>
+                                    <View style={Styles.downloadsIconContainer}>
+                                        <Icons.DownloadColorful width={24} height={24} />
                                     </View>
-                                </TouchableOpacity>
-                            ))}
-                            {previewCompetitions.length === 0 && (
-                                <Text style={Styles.emptyText}>{t('No competitions found.')}</Text>
-                            )}
+                                    <Text>
+                                        <Text style={Styles.downloadsText}>{t('Total downloads')}: </Text>
+                                        <Text style={Styles.downloadsTextBold}>
+                                            {downloadsSummary ? String(downloadsSummary.total_downloads) : '-'}
+                                        </Text>
+                                    </Text>
+                                </View>
+                                <View style={Styles.downloadsDetailsButton}>
+                                    <Text style={Styles.downloadsDetailsButtonText}>{t('Details')}</Text>
+                                    <ArrowRight size={18} color="#9B9F9F" variant="Linear" />
+                                </View>
+                            </TouchableOpacity>
+                            <View style={Styles.earningsRow}>
+                                <View style={Styles.earningsCard}>
+                                    <Text style={Styles.earningsLabel}>{t('Views')}</Text>
+                                    <Text style={Styles.earningsValue}>
+                                        {downloadsSummary ? String(downloadsSummary.total_views) : '-'}
+                                    </Text>
+                                </View>
+                                <View style={Styles.earningsCard}>
+                                    <Text style={Styles.earningsLabel}>{t('Profit')}</Text>
+                                    <Text style={Styles.earningsValue}>
+                                        {downloadsSummary ? formatMoney(downloadsSummary.total_profit_cents ?? 0) : '-'}
+                                    </Text>
+                                </View>
+                            </View>
+                            <View style={Styles.downloadAnalyticsSection}>
+                                <View style={Styles.sectionHeader}>
+                                    <Text style={Styles.downloadAnalyticsTitle}>{t('Competitions')}</Text>
+                                    <TouchableOpacity
+                                        onPress={() => navigation.navigate('DownloadsDetailsScreen', { mode: 'competitions' })}
+                                    >
+                                        <Text style={Styles.viewAllText}>{t('View more')}</Text>
+                                    </TouchableOpacity>
+                                </View>
+                                {previewCompetitions.map((item) => (
+                                    <TouchableOpacity
+                                        key={item.event_id}
+                                        style={Styles.competitionCard}
+                                        activeOpacity={0.85}
+                                        onPress={() =>
+                                            navigation.navigate('DownloadsDetailsScreen', {
+                                                mode: 'competition-media',
+                                                competition: item,
+                                            })
+                                        }
+                                    >
+                                        {item.cover_thumbnail_url ? (
+                                            <FastImage source={{ uri: String(item.cover_thumbnail_url) }} style={Styles.competitionThumb} resizeMode="cover" />
+                                        ) : (
+                                            <View style={Styles.competitionThumbPlaceholder} />
+                                        )}
+                                        <View style={Styles.competitionInfo}>
+                                            <Text style={Styles.competitionTitle}>{item.event_name || t('competition')}</Text>
+                                            <Text style={Styles.competitionMeta}>
+                                                {Number(item.uploads_count ?? 0)} {t('uploads')} | {formatEventDate(item.event_date)}
+                                            </Text>
+                                            <Text style={Styles.competitionMetaSecondary}>{item.event_location ?? ''}</Text>
+                                        </View>
+                                    </TouchableOpacity>
+                                ))}
+                                {previewCompetitions.length === 0 && (
+                                    <Text style={Styles.emptyText}>{t('No competitions found.')}</Text>
+                                )}
+                            </View>
                         </View>
-                    </View>
+                    )
                 )}
 
                 <SizeBox height={insets.bottom > 0 ? insets.bottom + 20 : 40} />
@@ -1511,35 +1769,36 @@ const UserProfileScreen = ({ navigation, route }: any) => {
                         <Text style={Styles.profileSwitcherTitle}>{t('Switch profile')}</Text>
                         <SizeBox height={8} />
 
-                        {hasTrackFieldProfile ? (
+                        {selectedFocuses.map((focusId) => (
                             <TouchableOpacity
+                                key={focusId}
                                 style={Styles.profileSwitcherRow}
                                 onPress={() => {
-                                    setCategory('Track&Field');
+                                    setCategory(focusId);
                                     setShowProfileSwitcherModal(false);
                                 }}
                             >
                                 <View style={Styles.profileSwitcherAvatar}>
-                                    <Icons.TrackFieldLogo width={20} height={20} />
+                                    {renderFocusIcon(focusId, 20)}
                                 </View>
-                                <Text style={Styles.profileSwitcherLabel}>{t('trackAndField')}</Text>
-                                <Text style={Styles.profileSwitcherCheck}>{profileCategory === 'Track&Field' ? 'âœ“' : ''}</Text>
+                                <Text style={Styles.profileSwitcherLabel}>{getSportFocusLabel(focusId, t)}</Text>
+                                <Text style={Styles.profileSwitcherCheck}>{profileCategory === focusId ? '✓' : ''}</Text>
                             </TouchableOpacity>
-                        ) : null}
+                        ))}
 
-                        {hasRoadTrailProfile ? (
+                        {hasSupportProfile ? (
                             <TouchableOpacity
                                 style={Styles.profileSwitcherRow}
                                 onPress={() => {
-                                    setCategory('Road&Trail');
+                                    setCategory('support');
                                     setShowProfileSwitcherModal(false);
                                 }}
                             >
                                 <View style={Styles.profileSwitcherAvatar}>
-                                    <Icons.PersonRunningColorful width={20} height={20} />
+                                    {renderFocusIcon('support', 20)}
                                 </View>
-                                <Text style={Styles.profileSwitcherLabel}>{t('roadAndTrail')}</Text>
-                                <Text style={Styles.profileSwitcherCheck}>{profileCategory === 'Road&Trail' ? 'âœ“' : ''}</Text>
+                                <Text style={Styles.profileSwitcherLabel}>{t('Support')}</Text>
+                                <Text style={Styles.profileSwitcherCheck}>{profileCategory === 'support' ? '✓' : ''}</Text>
                             </TouchableOpacity>
                         ) : null}
 
@@ -1555,7 +1814,11 @@ const UserProfileScreen = ({ navigation, route }: any) => {
                                     style={Styles.profileSwitcherRow}
                                     onPress={() => {
                                         setShowProfileSwitcherModal(false);
-                                        navigation.navigate('GroupProfileScreen', { groupId: group.id });
+                                        navigation.navigate('GroupProfileScreen', {
+                                            groupId: group.id,
+                                            showBackButton: true,
+                                            origin: 'profile',
+                                        });
                                     }}
                                 >
                                     <View style={Styles.profileSwitcherAvatar}>
@@ -1743,5 +2006,3 @@ const UserProfileScreen = ({ navigation, route }: any) => {
 };
 
 export default UserProfileScreen;
-
-

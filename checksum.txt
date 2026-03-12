@@ -1,0 +1,1 @@
+sha256 -c a382bfbc0d2d0f8ec104a1a094d2ee2e72fbf07b577302e1eca46eda9eff62aa 'misp_227.tgz'

@@ -7,20 +7,35 @@ export const createStyles = (colors: ThemeColors) => StyleSheet.create({
         flex: 1,
         backgroundColor: colors.backgroundColor,
     },
-    scrollContent: {
-        flexGrow: 1,
+    screenContent: {
+        flex: 1,
+        paddingHorizontal: 20,
+    },
+    topBar: {
+        paddingTop: 12,
+        alignItems: 'flex-start',
+    },
+    backIconButton: {
+        width: 44,
+        height: 44,
+        borderRadius: 22,
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: colors.secondaryColor,
+    },
+    heroSection: {
+        paddingTop: 8,
     },
     imageContainer: {
         alignItems: 'center',
         justifyContent: 'center',
     },
-    headerImage: {
+    heroImage: {
         width: 190,
-        height: 141.59,
+        height: 136,
     },
     contentContainer: {
-        paddingHorizontal: 20,
-        flex: 1,
+        alignItems: 'center',
     },
     headingText: {
         ...Fonts.medium22,
@@ -35,64 +50,91 @@ export const createStyles = (colors: ThemeColors) => StyleSheet.create({
         color: colors.grayColor,
         textAlign: 'center',
     },
-    cardContainer: {
-        backgroundColor: colors.cardBackground,
-        borderWidth: 0.5,
-        borderColor: colors.lightGrayColor,
-        borderRadius: 10,
-        padding: 16,
-        gap: 20,
+    selectionSection: {
+        flex: 1,
+        paddingTop: 24,
+        minHeight: 0,
     },
-    eventItem: {
+    focusList: {
+        flex: 1,
+        minHeight: 0,
+    },
+    focusListContent: {
+        gap: 10,
+        paddingBottom: 8,
+    },
+    focusCard: {
+        minHeight: 74,
+        borderRadius: 18,
+        borderWidth: 1,
+        borderColor: colors.borderColor,
+        backgroundColor: colors.secondaryColor,
+        paddingHorizontal: 14,
+        paddingVertical: 12,
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
-        paddingVertical: 14,
-        paddingHorizontal: 16,
-        borderRadius: 10,
-        borderWidth: 0.5,
-        borderColor: colors.lightGrayColor,
-        backgroundColor: colors.btnBackgroundColor,
+        gap: 10,
     },
-    eventItemSelected: {
-        backgroundColor: 'rgba(60, 130, 246, 0.14)',
+    focusCardSelected: {
         borderColor: colors.primaryColor,
+        backgroundColor: colors.secondaryBlueColor,
     },
-    eventItemDisabled: {
-        backgroundColor: colors.btnBackgroundColor,
-    },
-    eventInfo: {
+    focusCardLeft: {
+        flex: 1,
         flexDirection: 'row',
         alignItems: 'center',
-        gap: 12,
+        gap: 10,
+    },
+    focusIconWrap: {
+        width: 40,
+        height: 40,
+        borderRadius: 20,
+        backgroundColor: colors.backgroundColor,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    focusTextWrap: {
         flex: 1,
+        gap: 2,
     },
-    eventIcon: {
-        width: 22,
-        height: 22,
-    },
-    eventName: {
-        ...Fonts.regular14,
-        lineHeight: 22,
-        color: colors.grayColor,
-        flex: 1,
-    },
-    eventNameSelected: {
+    focusCardTitle: {
+        ...Fonts.medium15,
         color: colors.mainTextColor,
     },
-    eventNameDisabled: {
+    focusCardSubtitle: {
+        ...Fonts.regular11,
         color: colors.grayColor,
+        lineHeight: 15,
     },
-    lockIcon: {
-        width: 16,
-        height: 16,
+    selectedSummaryCard: {
+        marginTop: 8,
+        borderRadius: 18,
+        borderWidth: 1,
+        borderColor: colors.borderColor,
+        backgroundColor: colors.cardBackground,
+        paddingHorizontal: 16,
+        paddingVertical: 14,
+        gap: 6,
+    },
+    selectedSummaryLabel: {
+        ...Fonts.medium12,
+        color: colors.subTextColor,
+        textTransform: 'uppercase',
+        letterSpacing: 0.6,
+    },
+    selectedSummaryValue: {
+        ...Fonts.medium15,
+        color: colors.mainTextColor,
+        lineHeight: 22,
     },
     buttonContainer: {
         flexDirection: 'row',
         paddingHorizontal: 20,
         gap: 16,
-        marginTop: 'auto',
-        paddingTop: 40,
+        paddingTop: 16,
+        paddingBottom: 14,
+        backgroundColor: colors.backgroundColor,
     },
     backButton: {
         flex: 1,
@@ -130,6 +172,5 @@ export const createStyles = (colors: ThemeColors) => StyleSheet.create({
     },
 });
 
-// Backward compatibility
 const Styles = createStyles(lightColors);
 export default Styles;

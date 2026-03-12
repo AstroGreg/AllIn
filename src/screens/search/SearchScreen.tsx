@@ -12,8 +12,10 @@ import { SearchNormal1, Calendar, Location, CloseCircle, Clock, ArrowDown2, Came
 import { useTranslation } from 'react-i18next'
 import { useAuth } from '../../context/AuthContext'
 import { ApiError, followProfile, getGroupMembers, getProfileSummary, getProfileSummaryById, searchEvents, searchGroups, searchProfiles, unfollowProfile } from '../../services/apiGateway'
+import SportFocusIcon from '../../components/profile/SportFocusIcon'
 import UnifiedSearchInput from '../../components/unifiedSearchInput/UnifiedSearchInput'
 import { getApiBaseUrl } from '../../constants/RuntimeConfig'
+import { getSportFocusLabel, normalizeSelectedEvents, type SportFocusId } from '../../utils/profileSelections'
  
 
 const FILTERS = ['Competition', 'Person', 'Group', 'Location'] as const
@@ -43,7 +45,7 @@ interface PersonResult {
     role: 'Athlete' | 'Photographer';
     activity: string;
     sportLabel?: string;
-    sportKind?: 'track' | 'road' | null;
+    sportFocusId?: SportFocusId | null;
     location: string;
     runningClub?: string;
     trackFieldMainEvent?: string;
@@ -362,31 +364,15 @@ const SearchScreen = ({ navigation }: any) => {
                             const trackFieldMainEvent = String(profile.track_field_main_event || '').trim();
                             const roadTrailMainEvent = String(profile.road_trail_main_event || '').trim();
                             const trackFieldClub = String(profile.track_field_club || '').trim();
-                            const hasTrackFieldProfile = selectedEventsNormalized.some((entry) =>
-                                entry === 'track-field' || entry === 'track&field' || entry === 'track_field' || entry.includes('track'),
-                            );
-                            const hasRoadTrailProfile = selectedEventsNormalized.some((entry) =>
-                                entry === 'road-events' || entry === 'road&trail' || entry === 'road_trail' || entry.includes('road') || entry.includes('trail'),
-                            );
-                            const sportKind: 'track' | 'road' | null = hasTrackFieldProfile
-                                ? 'track'
-                                : hasRoadTrailProfile
-                                    ? 'road'
-                                    : roadTrailMainEvent
-                                        ? 'road'
-                                        : (trackFieldMainEvent || trackFieldClub)
-                                    ? 'track'
-                                    : null;
-                            const sportLabel = sportKind === 'road'
-                                ? t('roadAndTrail')
-                                : sportKind === 'track'
-                                    ? t('trackAndField')
-                                    : '';
+                            const selectedFocuses = normalizeSelectedEvents(selectedEventsNormalized);
+                            const sportFocusId: SportFocusId | null = selectedFocuses[0]
+                                ?? (roadTrailMainEvent ? 'road-events' : (trackFieldMainEvent || trackFieldClub) ? 'track-field' : null);
+                            const sportLabel = sportFocusId ? getSportFocusLabel(sportFocusId, t) : '';
                             return {
                                 trackFieldMainEvent,
                                 roadTrailMainEvent,
                                 trackFieldClub,
-                                sportKind,
+                                sportFocusId,
                                 sportLabel,
                             };
                         })(),
@@ -452,7 +438,7 @@ const SearchScreen = ({ navigation }: any) => {
                             role: 'Athlete',
                             activity: '',
                             sportLabel: '',
-                            sportKind: null,
+                            sportFocusId: null,
                             location: '',
                         });
                     });
@@ -849,10 +835,8 @@ const SearchScreen = ({ navigation }: any) => {
                             <View style={Styles.userDetailsStack}>
                                 {String(person.sportLabel || '').trim().length > 0 ? (
                                     <View style={Styles.userDetailItem}>
-                                        {person.sportKind === 'track' ? (
-                                            <Icons.TrackFieldLogo width={16} height={16} />
-                                        ) : person.sportKind === 'road' ? (
-                                            <Icons.PersonRunningColorful width={16} height={16} />
+                                        {person.sportFocusId ? (
+                                            <SportFocusIcon focusId={person.sportFocusId} size={16} color={colors.primaryColor} />
                                         ) : person.role === 'Athlete' ? (
                                             <Icons.Run height={16} width={16} />
                                         ) : (

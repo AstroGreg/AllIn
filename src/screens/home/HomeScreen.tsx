@@ -12,12 +12,9 @@ import { useTranslation } from 'react-i18next'
 import {
     ApiError,
     createMediaIssueRequest,
-    getAllPhotos,
-    getAllVideos,
     getHomeOverview,
     getNotifications,
     getProfileSummaryById,
-    getPosts,
     getProfileSummary,
     recordDownload,
     togglePostLike,
@@ -42,26 +39,11 @@ import CameraRoll from '@react-native-camera-roll/camera-roll'
 import { translateText } from '../../i18n'
 import { useInstagramStoryImageComposer } from '../../components/share/InstagramStoryComposer'
 
-const HOME_CACHE_TTL_MS = 2 * 60 * 1000;
 const HOME_FEED_PAGE_SIZE = 8;
 const INSTAGRAM_APP_ID = String(AppConfig.INSTAGRAM_APP_ID ?? '').trim();
 type HomeFeedItem =
     | { kind: 'media'; created_at?: string | null; media: MediaViewAllItem }
     | { kind: 'post'; created_at?: string | null; post: PostSummary };
-
-const homeCache: {
-    overview: HomeOverviewResponse | null;
-    videos: MediaViewAllItem[];
-    photos: MediaViewAllItem[];
-    posts: PostSummary[];
-    fetchedAt: number;
-} = {
-    overview: null,
-    videos: [],
-    photos: [],
-    posts: [],
-    fetchedAt: 0,
-};
 
 const HomeScreen = ({ navigation }: any) => {
     const insets = useSafeAreaInsets();
@@ -101,7 +83,6 @@ const HomeScreen = ({ navigation }: any) => {
     const [refreshingFeed, setRefreshingFeed] = useState(false);
     const [allVideos, setAllVideos] = useState<MediaViewAllItem[]>([]);
     const [allPhotos, setAllPhotos] = useState<MediaViewAllItem[]>([]);
-    const [allPosts, setAllPosts] = useState<PostSummary[]>([]);
     const [uploaderMap, setUploaderMap] = useState<Record<string, { name: string; avatarUrl?: string | null }>>({});
     const [feedVisibleCount, setFeedVisibleCount] = useState(HOME_FEED_PAGE_SIZE);
     const feedLayoutsRef = useRef<Record<number, { x: number; y: number; width: number; height: number }>>({});
@@ -228,56 +209,20 @@ const HomeScreen = ({ navigation }: any) => {
             setOverviewError(t('Log in to load overview.'));
             return;
         }
-        const now = Date.now();
-        const cacheFresh = !force && homeCache.fetchedAt > 0 && now - homeCache.fetchedAt < HOME_CACHE_TTL_MS;
-        if (cacheFresh && homeCache.overview) {
-            if (overview) {
-                return;
-            }
-            setOverviewError(null);
-            setOverview(homeCache.overview);
-            setAllVideos(homeCache.videos);
-            setAllPhotos(homeCache.photos);
-            setAllPosts(homeCache.posts);
-            return;
-        }
         setIsLoadingOverview(true);
         setOverviewError(null);
         try {
             const data = await getHomeOverview(apiAccessToken, 'me');
             setOverview(data);
-            homeCache.overview = data;
-            homeCache.fetchedAt = Date.now();
-
-            // Load heavier lists in background so Home stays responsive and navigation is not blocked.
-            void Promise.allSettled([
-                getAllVideos(apiAccessToken),
-                getAllPhotos(apiAccessToken),
-                getPosts(apiAccessToken, { limit: 500 }),
-            ]).then((results) => {
-                const [videosRes, photosRes, postsRes] = results;
-                if (videosRes.status === 'fulfilled') {
-                    setAllVideos(videosRes.value);
-                    homeCache.videos = videosRes.value;
-                }
-                if (photosRes.status === 'fulfilled') {
-                    setAllPhotos(photosRes.value);
-                    homeCache.photos = photosRes.value;
-                }
-                if (postsRes.status === 'fulfilled') {
-                    const posts = Array.isArray(postsRes.value?.posts) ? postsRes.value.posts : [];
-                    setAllPosts(posts);
-                    homeCache.posts = posts;
-                }
-                homeCache.fetchedAt = Date.now();
-            });
+            setAllVideos([]);
+            setAllPhotos([]);
         } catch (e: any) {
             const msg = e instanceof ApiError ? e.message : String(e?.message ?? e);
             setOverviewError(msg);
         } finally {
             setIsLoadingOverview(false);
         }
-    }, [apiAccessToken, overview, t]);
+    }, [apiAccessToken, t]);
 
     const loadOverview = useCallback((force = false) => {
         if (!apiAccessToken) {
@@ -554,15 +499,22 @@ const HomeScreen = ({ navigation }: any) => {
                     next.overview.blog.post.likes_count = r.likes_count;
                     next.overview.blog.post.liked_by_me = r.liked;
                 }
+                if (Array.isArray(next?.overview?.feed_posts)) {
+                    next.overview.feed_posts = next.overview.feed_posts.map((entry: any) =>
+                        String(entry?.post?.id || '') === id
+                            ? {
+                                  ...entry,
+                                  post: {
+                                      ...entry.post,
+                                      likes_count: r.likes_count,
+                                      liked_by_me: r.liked,
+                                  },
+                              }
+                            : entry
+                    );
+                }
                 return next;
             });
-            setAllPosts((prev) =>
-                prev.map((post) =>
-                    String(post.id) === id
-                        ? { ...post, likes_count: r.likes_count, liked_by_me: r.liked }
-                        : post
-                )
-            );
         } catch (e: any) {
             const msg = e instanceof ApiError ? e.message : String(e?.message ?? e);
             Alert.alert(t('Like failed'), msg || t('Could not update like right now.'));
@@ -1063,103 +1015,49 @@ const HomeScreen = ({ navigation }: any) => {
     }, [allPhotos, sortByNewest]);
 
     const infiniteFeedItems = useMemo<HomeFeedItem[]>(() => {
-        const uniqueMedia: MediaViewAllItem[] = [];
-        const seenIds = new Set<string>();
-        const seenFingerprints = new Set<string>();
-
-        const overviewMediaCandidates: Array<HomeOverviewMedia | null | undefined> = [
-            overview?.overview?.video,
-            overview?.overview?.photo,
-            overview?.overview?.blog?.media,
-        ];
-        overviewMediaCandidates.forEach((item) => {
-            if (!item) return;
-            const id = String((item as any).media_id || '').trim();
-            const fingerprint = mediaDedupFingerprint(item as unknown as MediaViewAllItem);
-            if ((id && seenIds.has(id)) || (fingerprint && seenFingerprints.has(fingerprint))) return;
-            if (id) seenIds.add(id);
-            if (fingerprint) seenFingerprints.add(fingerprint);
-            uniqueMedia.push(item as unknown as MediaViewAllItem);
-        });
-
-        sortByNewest([...topVideos, ...topPhotos]).forEach((item) => {
-            const id = String(item.media_id || '').trim();
-            const fingerprint = mediaDedupFingerprint(item);
-            if (!id && !fingerprint) return;
-            if ((id && seenIds.has(id)) || (fingerprint && seenFingerprints.has(fingerprint))) return;
-            if (id) seenIds.add(id);
-            if (fingerprint) seenFingerprints.add(fingerprint);
-            uniqueMedia.push(item);
-        });
-        const mediaEntries: HomeFeedItem[] = uniqueMedia.map((media) => ({
-            kind: 'media',
-            created_at: media.created_at ?? null,
-            media,
-        }));
-
-        const seededBlogEntry: HomeFeedItem[] =
-            overview?.overview?.blog?.post && !allPosts.some((p) => String(p?.id || '') === String(overview.overview.blog?.post?.id || ''))
-                ? [{
-                    kind: 'post',
-                    created_at: overview.overview.blog.post.created_at ?? null,
-                    post: {
-                        id: overview.overview.blog.post.id,
-                        title: overview.overview.blog.post.title ?? '',
-                        summary: overview.overview.blog.post.summary ?? undefined,
-                        description: overview.overview.blog.post.description ?? undefined,
-                        created_at: overview.overview.blog.post.created_at ?? undefined,
-                        likes_count: overview.overview.blog.post.likes_count ?? 0,
-                        liked_by_me: overview.overview.blog.post.liked_by_me ?? false,
-                        reading_time_minutes: overview.overview.blog.post.reading_time_minutes ?? undefined,
-                        views_count: overview.overview.blog.post.views_count ?? 0,
-                        author: overview.overview.blog.author
-                            ? {
-                                  profile_id: overview.overview.blog.author.profile_id ?? '',
-                                  display_name: overview.overview.blog.author.display_name ?? undefined,
-                                  avatar_url: overview.overview.blog.author.avatar_url ?? undefined,
-                              }
-                            : undefined,
-                    } as PostSummary,
-                }]
+        const sourcePosts = Array.isArray(overview?.overview?.feed_posts) && overview?.overview?.feed_posts.length
+            ? overview.overview.feed_posts
+            : overview?.overview?.blog
+                ? [overview.overview.blog]
                 : [];
-
-        const seenPostKeys = new Set<string>();
-        const textOnlyPosts: HomeFeedItem[] = allPosts
-            .filter((post) => !post?.cover_media)
-            .filter((post) => {
-                const id = String(post?.id || '').trim();
-                const key = id || [
-                    String(post?.created_at || '').trim(),
-                    String(post?.title || '').trim().toLowerCase(),
-                    String(post?.summary || post?.description || '').trim().slice(0, 120).toLowerCase(),
-                ].join('|');
-                if (!key || seenPostKeys.has(key)) return false;
-                seenPostKeys.add(key);
-                return true;
-            })
-            .map((post) => ({
-                kind: 'post',
-                created_at: post?.created_at ?? null,
-                post,
-            }));
-        const sorted = [...seededBlogEntry, ...mediaEntries, ...textOnlyPosts].sort((a, b) => {
-            const aTs = new Date(String(a.created_at || '')).getTime();
-            const bTs = new Date(String(b.created_at || '')).getTime();
-            const safeA = Number.isFinite(aTs) ? aTs : 0;
-            const safeB = Number.isFinite(bTs) ? bTs : 0;
-            return safeB - safeA;
-        });
+        const sorted: HomeFeedItem[] = sourcePosts
+            .map((entry) => ({
+                kind: 'post' as const,
+                created_at: entry?.post?.created_at ?? null,
+                post: {
+                    id: entry.post.id,
+                    title: entry.post.title ?? '',
+                    summary: entry.post.summary ?? undefined,
+                    description: entry.post.description ?? undefined,
+                    created_at: entry.post.created_at ?? undefined,
+                    likes_count: entry.post.likes_count ?? 0,
+                    liked_by_me: entry.post.liked_by_me ?? false,
+                    reading_time_minutes: entry.post.reading_time_minutes ?? undefined,
+                    views_count: entry.post.views_count ?? 0,
+                    author: entry.author
+                        ? {
+                              profile_id: entry.author.profile_id ?? '',
+                              display_name: entry.author.display_name ?? undefined,
+                              avatar_url: entry.author.avatar_url ?? undefined,
+                          }
+                        : undefined,
+                } as PostSummary,
+            }))
+            .sort((a, b) => {
+                const aTs = new Date(String(a.created_at || '')).getTime();
+                const bTs = new Date(String(b.created_at || '')).getTime();
+                const safeA = Number.isFinite(aTs) ? aTs : 0;
+                const safeB = Number.isFinite(bTs) ? bTs : 0;
+                return safeB - safeA;
+            });
         const seenFeedKeys = new Set<string>();
         return sorted.filter((entry) => {
-            const key =
-                entry.kind === 'media'
-                    ? `media:${String(entry.media?.media_id || '').trim() || mediaDedupFingerprint(entry.media)}`
-                    : `post:${String(entry.post?.id || '').trim() || `${String(entry.post?.created_at || '')}|${String(entry.post?.title || '')}`}`;
+            const key = `post:${String(entry.post?.id || '').trim() || `${String(entry.post?.created_at || '')}|${String(entry.post?.title || '')}`}`;
             if (!key || seenFeedKeys.has(key)) return false;
             seenFeedKeys.add(key);
             return true;
         });
-    }, [allPosts, mediaDedupFingerprint, overview, sortByNewest, topPhotos, topVideos]);
+    }, [overview]);
 
     useEffect(() => {
         setFeedVisibleCount((prev) => {
@@ -1727,7 +1625,15 @@ const HomeScreen = ({ navigation }: any) => {
                 keyExtractor={keyExtractor}
                 ListHeaderComponent={ListHeader}
                 ListFooterComponent={
-                    hasMoreFeedItems ? (
+                    isLoadingOverview && visibleFeedItems.length === 0 ? (
+                        <View style={{ paddingVertical: 12 }}>
+                            <ActivityIndicator color={colors.primaryColor} />
+                        </View>
+                    ) : overviewError ? (
+                        <View style={{ paddingVertical: 16, paddingHorizontal: 20 }}>
+                            <Text style={{ color: colors.grayColor, textAlign: 'center' }}>{overviewError}</Text>
+                        </View>
+                    ) : hasMoreFeedItems ? (
                         <View style={{ paddingVertical: 12 }}>
                             <ActivityIndicator color={colors.primaryColor} />
                         </View>

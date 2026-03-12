@@ -1,5 +1,5 @@
 import React, {useCallback, useMemo, useState, useEffect, useRef} from 'react';
-import {ActivityIndicator, Alert, Image, Modal, Pressable, Share, Text, TouchableOpacity, View, TextInput} from 'react-native';
+import {ActivityIndicator, Alert, Image, Modal, Pressable, Share, Text, TouchableOpacity, View, TextInput, ScrollView} from 'react-native';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 // useFocusEffect not available in some runtime bundles; use navigation listeners instead.
 import FastImage from 'react-native-fast-image';
@@ -8,7 +8,7 @@ import SizeBox from '../../constants/SizeBox';
 import {useTheme} from '../../context/ThemeContext';
 import {useAuth} from '../../context/AuthContext';
 import {useEvents} from '../../context/EventsContext';
-import {ApiError, createMediaIssueRequest, getAiFeedbackLabel, getMediaById, postAiFeedbackLabel, recordDownload, recordMediaView, type MediaViewAllItem} from '../../services/apiGateway';
+import {ApiError, addProfileCollectionItems, createMediaIssueRequest, getAiFeedbackLabel, getMediaById, postAiFeedbackLabel, recordDownload, recordMediaView, type MediaViewAllItem} from '../../services/apiGateway';
 import Video from 'react-native-video';
 import ShimmerEffect from '../../components/shimmerEffect/ShimmerEffect';
 import {getApiBaseUrl, getHlsBaseUrl} from '../../constants/RuntimeConfig';
@@ -17,6 +17,8 @@ import Slider from '@react-native-community/slider';
 import Icons from '../../constants/Icons';
 import { useTranslation } from 'react-i18next'
 import { useInstagramStoryImageComposer } from '../../components/share/InstagramStoryComposer';
+import { usePreventMediaCapture } from '../../utils/usePreventMediaCapture';
+import { getProfileCollectionScopeKey } from '../../utils/profileSelections';
 
 type FeedbackChoice = 'yes' | 'no' | null;
 const INSTAGRAM_APP_ID = String(AppConfig.INSTAGRAM_APP_ID ?? '').trim();
@@ -26,10 +28,12 @@ const PhotoDetailScreen = ({navigation, route}: any) => {
     const insets = useSafeAreaInsets();
     const {colors} = useTheme();
     const Styles = createStyles(colors);
-    const moreDotsColor = colors.mainTextColor;
-    const {apiAccessToken} = useAuth();
+    const isDarkSurface = String(colors.backgroundColor || '').toLowerCase() !== '#ffffff';
+    const headerIconColor = isDarkSurface ? colors.pureWhite : colors.primaryColor;
+    const {apiAccessToken, userProfile} = useAuth();
     const {eventNameById} = useEvents();
     const {composeInstagramStoryImage, composerElement} = useInstagramStoryImageComposer();
+    usePreventMediaCapture(true);
 
     const eventTitle = route?.params?.eventTitle || '';
     const blogTitleFromRoute = route?.params?.blogTitle || route?.params?.postTitle || route?.params?.post?.title || '';
@@ -219,6 +223,12 @@ const PhotoDetailScreen = ({navigation, route}: any) => {
     const matchType: string | null = routeMedia.matchType;
     const effectiveMediaId = mediaId;
     const resolvedMediaId = mediaId;
+    const collectionScopeKey = useMemo(() => {
+        const explicit = String(route?.params?.collectionScopeKey ?? '').trim();
+        if (explicit) return explicit;
+        const derived = getProfileCollectionScopeKey(userProfile);
+        return String(derived || 'default');
+    }, [route?.params?.collectionScopeKey, userProfile]);
 
     useEffect(() => {
         if (!apiAccessToken) return;
@@ -309,6 +319,98 @@ const PhotoDetailScreen = ({navigation, route}: any) => {
         }
         return '';
     }, [eventId, eventNameById, eventTitle, normalizeHeaderLabel]);
+    const primaryMediaAsset = useMemo(() => {
+        const assets = Array.isArray(activeMedia?.assets) ? activeMedia.assets : [];
+        if (assets.length === 0) return null;
+        const variantRank = (variant?: string | null) => {
+            const key = String(variant ?? '').trim().toLowerCase();
+            switch (key) {
+                case 'raw':
+                    return 0;
+                case 'full':
+                    return 1;
+                case 'preview_watermark':
+                    return 2;
+                case 'thumbnail':
+                    return 3;
+                default:
+                    return 9;
+            }
+        };
+        const ranked = [...assets].sort((left, right) => {
+            const rankDiff = variantRank(left?.variant) - variantRank(right?.variant);
+            if (rankDiff !== 0) return rankDiff;
+            const leftArea = Number(left?.width ?? 0) * Number(left?.height ?? 0);
+            const rightArea = Number(right?.width ?? 0) * Number(right?.height ?? 0);
+            return rightArea - leftArea;
+        });
+        return ranked[0] ?? null;
+    }, [activeMedia?.assets]);
+    const mediaDimensions = useMemo(() => {
+        const width = Number(primaryMediaAsset?.width ?? 0);
+        const height = Number(primaryMediaAsset?.height ?? 0);
+        if (!Number.isFinite(width) || !Number.isFinite(height) || width <= 0 || height <= 0) {
+            return null;
+        }
+        return { width, height };
+    }, [primaryMediaAsset?.height, primaryMediaAsset?.width]);
+    const formatBytes = useCallback((bytes?: number | null) => {
+        const safeBytes = Number(bytes ?? 0);
+        if (!Number.isFinite(safeBytes) || safeBytes <= 0) return null;
+        const units = ['B', 'KB', 'MB', 'GB'];
+        let value = safeBytes;
+        let unitIndex = 0;
+        while (value >= 1024 && unitIndex < units.length - 1) {
+            value /= 1024;
+            unitIndex += 1;
+        }
+        const precision = value >= 10 || unitIndex === 0 ? 0 : 1;
+        return `${value.toFixed(precision)} ${units[unitIndex]}`;
+    }, []);
+    const mediaQualityText = useMemo(() => {
+        const parts: string[] = [];
+        if (mediaDimensions) {
+            const maxDimension = Math.max(mediaDimensions.width, mediaDimensions.height);
+            const qualityTier =
+                maxDimension >= 3840
+                    ? '4K'
+                    : maxDimension >= 2560
+                        ? '2K'
+                        : maxDimension >= 1920
+                            ? 'HD'
+                            : maxDimension >= 1280
+                                ? 'Web'
+                                : 'Standard';
+            parts.push(`${qualityTier} ${mediaDimensions.width}x${mediaDimensions.height}`);
+        }
+        const mimeSuffix = String(primaryMediaAsset?.mime_type ?? '').trim().split('/')[1];
+        if (mimeSuffix) {
+            parts.push(mimeSuffix.toUpperCase());
+        }
+        const fileSizeLabel = formatBytes(primaryMediaAsset?.file_size_bytes ?? null);
+        if (fileSizeLabel) {
+            parts.push(fileSizeLabel);
+        }
+        return parts.length > 0 ? parts.join(' • ') : null;
+    }, [formatBytes, mediaDimensions, primaryMediaAsset?.file_size_bytes, primaryMediaAsset?.mime_type]);
+    const headerMetaText = useMemo(() => {
+        const parts: string[] = [];
+        if (mediaQualityText) parts.push(mediaQualityText);
+        if (matchPercent != null) parts.push(`Match ${matchPercent.toFixed(0)}%`);
+        return parts.length > 0 ? parts.join(' • ') : null;
+    }, [matchPercent, mediaQualityText]);
+    const headerTitleText = useMemo(() => {
+        if (headerLabel) return headerLabel;
+        return String(activeMedia?.type ?? '').toLowerCase() === 'video' ? t('Video') : t('Photo');
+    }, [activeMedia?.type, headerLabel, t]);
+    const mediaStageStyle = useMemo(() => {
+        const isVideoType = String(activeMedia?.type ?? '').toLowerCase() === 'video';
+        if (isVideoType) return null;
+        return {
+            flex: 1,
+            minHeight: 0,
+        };
+    }, [activeMedia?.type]);
 
     const shouldFetchMedia = useMemo(() => {
         if (!apiAccessToken || !effectiveMediaId) return false;
@@ -534,7 +636,7 @@ const PhotoDetailScreen = ({navigation, route}: any) => {
         return /\.(mp4|mov|m4v|m3u8)(\\?|$)/.test(u) || u.includes('video');
     }, [bestImageUrl, bestVideoUrl, activeMedia?.type]);
 
-    const videoRef = useRef<Video>(null);
+    const videoRef = useRef<any>(null);
     const hasSeekedRef = useRef(false);
     const [isPlaying, setIsPlaying] = useState(true);
     const [duration, setDuration] = useState(0);
@@ -543,6 +645,7 @@ const PhotoDetailScreen = ({navigation, route}: any) => {
     const [videoError, setVideoError] = useState<string | null>(null);
     const [isVideoLoading, setIsVideoLoading] = useState(true);
     const [hasInitialTime, setHasInitialTime] = useState(false);
+    const [mediaViewportSize, setMediaViewportSize] = useState({width: 0, height: 0});
     const downloadInFlightRef = useRef(false);
     const [downloadVisible, setDownloadVisible] = useState(false);
     const [downloadProgress, setDownloadProgress] = useState<number | null>(null);
@@ -577,6 +680,33 @@ const PhotoDetailScreen = ({navigation, route}: any) => {
             t('Custom'),
         ],
         [t],
+    );
+
+    const computeDisplayFrame = useCallback(
+        (
+            container: { width: number; height: number },
+            media: { width: number; height: number } | null,
+        ) => {
+            const containerWidth = Number(container?.width || 0);
+            const containerHeight = Number(container?.height || 0);
+            if (containerWidth <= 0 || containerHeight <= 0) {
+                return { width: 0, height: 0 };
+            }
+            if (!media || media.width <= 0 || media.height <= 0) {
+                return { width: containerWidth, height: containerHeight };
+            }
+            const mediaRatio = media.width / media.height;
+            return {
+                width: containerWidth,
+                height: containerWidth / mediaRatio,
+            };
+        },
+        [],
+    );
+
+    const resolvedImageFrame = useMemo(
+        () => computeDisplayFrame(mediaViewportSize, mediaDimensions),
+        [computeDisplayFrame, mediaDimensions, mediaViewportSize],
     );
 
     const openReportIssuePopup = useCallback(() => {
@@ -816,7 +946,7 @@ const PhotoDetailScreen = ({navigation, route}: any) => {
                     showAppsToView: true,
                 });
             } else {
-                await Share.share({url: fileUrl, message: 'AllIn media'});
+                await Share.share({url: fileUrl, message: 'SpotMe media'});
             }
         } catch (err: any) {
             const msg = String(err?.message ?? err);
@@ -840,7 +970,7 @@ const PhotoDetailScreen = ({navigation, route}: any) => {
             return;
         }
         try {
-            await Share.share({message: 'AllIn media', url: localShareUrl});
+            await Share.share({message: 'SpotMe media', url: localShareUrl});
         } catch (e: any) {
             const msg = String(e?.message ?? e);
             Alert.alert(t('Share failed'), msg);
@@ -901,9 +1031,42 @@ const PhotoDetailScreen = ({navigation, route}: any) => {
         await handleShareNative();
     }, [composeInstagramStoryImage, ensureLocalFile, extensionFromUrl, getShareModule, handleShareNative, instagramStoryTitle, resolveShareUrl, t]);
 
+    const handleAddToProfile = useCallback(async () => {
+        if (!apiAccessToken) {
+            Alert.alert(t('Missing API token'), t('Log in or set a Dev API token to add media to your profile.'));
+            return;
+        }
+        if (!resolvedMediaId) {
+            Alert.alert(t('Missing media'), t('This item has no media_id to add.'));
+            return;
+        }
+        try {
+            const response = await addProfileCollectionItems(apiAccessToken, {
+                type: 'image',
+                media_ids: [resolvedMediaId],
+                scope_key: collectionScopeKey,
+            });
+            const added = Number(response?.added ?? 0);
+            const skipped = Number(response?.skipped ?? 0);
+            if (added > 0) {
+                showInfoPopup(t('Added to profile'), t('This photo is now in your collection.'));
+                return;
+            }
+            if (skipped > 0) {
+                showInfoPopup(t('Already saved'), t('This photo is already in your collection.'));
+                return;
+            }
+            showInfoPopup(t('Could not add'), t('Try again in a moment.'));
+        } catch (e: any) {
+            const message = e instanceof ApiError ? e.message : String(e?.message ?? e);
+            Alert.alert(t('Could not add'), message);
+        }
+    }, [apiAccessToken, collectionScopeKey, resolvedMediaId, showInfoPopup, t]);
+
     const openMoreMenu = useCallback(() => {
         const actions = [
             {label: t('Download'), onPress: handleDownload},
+            {label: t('Add to profile'), onPress: handleAddToProfile},
             {label: t('Share'), onPress: handleShareNative},
             {label: t('Share to Instagram Story'), onPress: handleShareInstagram},
             {label: t('Report an issue with this video/photo'), onPress: openReportIssuePopup},
@@ -936,7 +1099,7 @@ const PhotoDetailScreen = ({navigation, route}: any) => {
         ];
         setMoreMenuActions(actions);
         setMoreMenuVisible(true);
-    }, [eventId, handleDownload, handleShareInstagram, handleShareNative, headerLabel, navigation, openReportIssuePopup, t]);
+    }, [eventId, handleAddToProfile, handleDownload, handleShareInstagram, handleShareNative, headerLabel, navigation, openReportIssuePopup, t]);
 
     useEffect(() => {
         const parent = navigation.getParent?.();
@@ -1033,67 +1196,80 @@ const PhotoDetailScreen = ({navigation, route}: any) => {
                 <TouchableOpacity style={Styles.backButton} onPress={() => navigation.goBack()}>
                     <Icons.BackArrow height={24} width={24} />
                 </TouchableOpacity>
-                <Text style={Styles.headerTitle}>{headerLabel}</Text>
-                <View style={Styles.headerAction} />
+                <View style={Styles.headerCenter}>
+                    <Text style={Styles.headerTitle} numberOfLines={1}>{headerTitleText}</Text>
+                    {headerMetaText ? (
+                        <Text style={Styles.headerSubtitle} numberOfLines={1}>{headerMetaText}</Text>
+                    ) : null}
+                </View>
+                <View style={Styles.headerRight}>
+                    <View style={[Styles.headerMetricPill, !isDarkSurface && Styles.headerMetricPillLight]}>
+                        <Icons.Eye height={16} width={16} color={headerIconColor} />
+                        <Text style={Styles.headerMetricText}>{mediaViewsLabel}</Text>
+                    </View>
+                    <TouchableOpacity
+                        style={[
+                            Styles.headerAction,
+                            isDarkSurface ? Styles.headerActionDark : Styles.headerActionLight,
+                        ]}
+                        onPress={openMoreMenu}
+                    >
+                        <Icons.More height={22} width={22} color={headerIconColor} />
+                    </TouchableOpacity>
+                </View>
             </View>
 
             <View style={[Styles.content, isVideo && Styles.contentFull]}>
                 {/* Question Card */}
                 {!isVideo && !!resolvedMediaId && !!matchType && feedbackLoaded && feedback === null && (
-                    <View style={Styles.questionCard}>
-                        <Text style={Styles.questionText}>{t('Is this photo/video actually you?')}</Text>
-                        <View style={Styles.buttonsRow}>
-                            <TouchableOpacity
-                                style={[
-                                    Styles.noButton,
-                                    feedback === 'no' && {opacity: 0.85},
-                                    isSavingFeedback && {opacity: 0.6},
-                                ]}
-                                disabled={isSavingFeedback}
-                                onPress={() => submitFeedback('no')}
-                            >
-                                <Text style={Styles.noButtonText}>{feedback === 'no' ? t('Not me') : t('No')}</Text>
-                            </TouchableOpacity>
-                            <TouchableOpacity
-                                style={[
-                                    Styles.yesButton,
-                                    feedback === 'yes' && {opacity: 0.85},
-                                    isSavingFeedback && {opacity: 0.6},
-                                ]}
-                                disabled={isSavingFeedback}
-                                onPress={() => submitFeedback('yes')}
-                            >
-                                <Text style={Styles.buttonText}>{feedback === 'yes' ? t('This is me') : t('Yes')}</Text>
-                            </TouchableOpacity>
+                    <View style={Styles.contentInset}>
+                        <View style={Styles.questionCard}>
+                            <Text style={Styles.questionText}>{t('Is this photo/video actually you?')}</Text>
+                            <View style={Styles.buttonsRow}>
+                                <TouchableOpacity
+                                    style={[
+                                        Styles.noButton,
+                                        feedback === 'no' && {opacity: 0.85},
+                                        isSavingFeedback && {opacity: 0.6},
+                                    ]}
+                                    disabled={isSavingFeedback}
+                                    onPress={() => submitFeedback('no')}
+                                >
+                                    <Text style={Styles.noButtonText}>{feedback === 'no' ? t('Not me') : t('No')}</Text>
+                                </TouchableOpacity>
+                                <TouchableOpacity
+                                    style={[
+                                        Styles.yesButton,
+                                        feedback === 'yes' && {opacity: 0.85},
+                                        isSavingFeedback && {opacity: 0.6},
+                                    ]}
+                                    disabled={isSavingFeedback}
+                                    onPress={() => submitFeedback('yes')}
+                                >
+                                    <Text style={Styles.buttonText}>{feedback === 'yes' ? t('This is me') : t('Yes')}</Text>
+                                </TouchableOpacity>
+                            </View>
+                            {isSavingFeedback && (
+                                <>
+                                    <SizeBox height={10} />
+                                    <Text style={[Styles.questionText, {marginBottom: 0}]}>{t('Saving…')}</Text>
+                                </>
+                            )}
                         </View>
-                        {isSavingFeedback && (
-                            <>
-                                <SizeBox height={10} />
-                                <Text style={[Styles.questionText, {marginBottom: 0}]}>{t('Saving…')}</Text>
-                            </>
-                        )}
-                    </View>
-                )}
-
-                {!isVideo && <SizeBox height={18} />}
-
-                {!isVideo && (
-                    <View style={Styles.topRow}>
-                        <View style={Styles.viewsContainer}>
-                            <Icons.Eye height={22} width={22} />
-                            <Text style={Styles.viewsText}>{mediaViewsLabel}</Text>
-                            {matchPercent != null ? (
-                                <Text style={Styles.viewsText}>• {`Match ${matchPercent.toFixed(0)}%`}</Text>
-                            ) : null}
-                        </View>
-                        <TouchableOpacity onPress={openMoreMenu}>
-                            <Icons.More height={24} width={24} stroke={moreDotsColor} />
-                        </TouchableOpacity>
                     </View>
                 )}
 
                 {/* Photo Preview */}
-                <View style={[Styles.photoContainer, isVideo && Styles.photoContainerFull]}>
+                <View
+                    style={[Styles.mediaStage, mediaStageStyle]}
+                    onLayout={(event) => {
+                        const { width, height } = event.nativeEvent.layout;
+                        if (width !== mediaViewportSize.width || height !== mediaViewportSize.height) {
+                            setMediaViewportSize({ width, height });
+                        }
+                    }}
+                >
+                <View style={[Styles.photoContainer, Styles.photoContainerFullBleed, isVideo && Styles.photoContainerFull]}>
                     {isVideo && activeVideoUrl ? (
                         <>
                             {isVideoLoading && (
@@ -1110,7 +1286,7 @@ const PhotoDetailScreen = ({navigation, route}: any) => {
                                     headers: videoHeaders,
                                 }}
                                 style={Styles.photoImage}
-                                resizeMode="cover"
+                                resizeMode="contain"
                                 paused={!isPlaying}
                                 controls={false}
                                 onLoadStart={() => setIsVideoLoading(true)}
@@ -1142,7 +1318,8 @@ const PhotoDetailScreen = ({navigation, route}: any) => {
                                     setCurrentTime(0);
                                 }}
                                 onError={(err) => {
-                                    const msg = err?.error?.errorString || err?.errorString || 'Video failed to load';
+                                    const rawError = err as any;
+                                    const msg = rawError?.error?.errorString || rawError?.errorString || 'Video failed to load';
                                     setVideoError(msg);
                                     setCurrentTime(0);
                                     setIsPlaying(false);
@@ -1204,16 +1381,43 @@ const PhotoDetailScreen = ({navigation, route}: any) => {
                             )}
                         </>
                     ) : bestImageUrl ? (
-                        <FastImage
-                            source={{uri: bestImageUrl}}
-                            style={Styles.photoImage}
-                            resizeMode="cover"
-                        />
+                        <>
+                            <ScrollView
+                                style={Styles.photoZoomScroll}
+                                contentContainerStyle={[
+                                    Styles.photoZoomContent,
+                                    resolvedImageFrame.height > 0 && resolvedImageFrame.height < mediaViewportSize.height
+                                        ? { minHeight: mediaViewportSize.height }
+                                        : null,
+                                ]}
+                                minimumZoomScale={1}
+                                maximumZoomScale={4}
+                                showsHorizontalScrollIndicator={false}
+                                showsVerticalScrollIndicator={false}
+                                bouncesZoom={false}
+                                pinchGestureEnabled
+                            >
+                                <FastImage
+                                    source={{uri: bestImageUrl}}
+                                    style={[
+                                        Styles.zoomablePhoto,
+                                        resolvedImageFrame.width > 0 && resolvedImageFrame.height > 0
+                                            ? {
+                                                width: resolvedImageFrame.width,
+                                                height: resolvedImageFrame.height,
+                                            }
+                                            : Styles.photoImage,
+                                    ]}
+                                    resizeMode="cover"
+                                />
+                            </ScrollView>
+                        </>
                     ) : (
                         <View style={Styles.videoPlaceholder}>
                             <Text style={Styles.videoPlaceholderText}>{t('No preview available')}</Text>
                         </View>
                     )}
+                </View>
                 </View>
             </View>
 

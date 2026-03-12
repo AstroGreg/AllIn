@@ -1,4 +1,4 @@
-import {View, Text, ScrollView, TouchableOpacity, TextInput, Alert, Modal} from 'react-native';
+import {View, Text, ScrollView, TouchableOpacity, Alert, Modal} from 'react-native';
 import React, {useCallback, useEffect, useMemo, useState} from 'react';
 import SizeBox from '../../../constants/SizeBox';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
@@ -18,6 +18,12 @@ import {useEvents} from '../../../context/EventsContext';
 import {AI_GROUPS, AI_PEOPLE} from '../../../constants/AiFilterOptions';
 import { useTranslation } from 'react-i18next'
 import UnifiedSearchInput from '../../../components/unifiedSearchInput/UnifiedSearchInput';
+import {
+    buildSearchFilterChipLabel,
+    formatSearchDateRangeLabel,
+    getSearchFilterLabel,
+    type SearchFilterKey,
+} from '../../../utils/searchLabels';
 
 type AiFilterState = {
   competition?: string;
@@ -120,20 +126,20 @@ const FaceSearchScreen = ({navigation, route}: any) => {
 
     const filterChips = useMemo(() => {
         const chips: Array<{key: keyof AiFilterState; label: string}> = [];
-        if (localFilters.competition) chips.push({key: 'competition', label: `Competition: ${localFilters.competition}`});
-        if (localFilters.person) chips.push({key: 'person', label: `Person: ${localFilters.person}`});
-        if (localFilters.group) chips.push({key: 'group', label: `Group: ${localFilters.group}`});
-        if (localFilters.location) chips.push({key: 'location', label: `Location: ${localFilters.location}`});
+        if (localFilters.competition) chips.push({key: 'competition', label: buildSearchFilterChipLabel('Competition', String(localFilters.competition), t)});
+        if (localFilters.person) chips.push({key: 'person', label: buildSearchFilterChipLabel('Person', String(localFilters.person), t)});
+        if (localFilters.group) chips.push({key: 'group', label: buildSearchFilterChipLabel('Group', String(localFilters.group), t)});
+        if (localFilters.location) chips.push({key: 'location', label: buildSearchFilterChipLabel('Location', String(localFilters.location), t)});
         if (localFilters.timeRange?.start || localFilters.timeRange?.end) {
             const start = localFilters.timeRange?.start
                 ? new Date(localFilters.timeRange.start).toLocaleDateString()
                 : '';
             const end = localFilters.timeRange?.end ? new Date(localFilters.timeRange.end).toLocaleDateString() : '';
-            const rangeLabel = start && end ? `${start} – ${end}` : start ? `From ${start}` : `Until ${end}`;
-            chips.push({key: 'timeRange', label: `Date: ${rangeLabel}`});
+            const rangeLabel = formatSearchDateRangeLabel(t, start, end);
+            chips.push({key: 'timeRange', label: `${t('Date')}: ${rangeLabel}`});
         }
         return chips;
-    }, [localFilters]);
+    }, [localFilters, t]);
 
     type FilterOption = {id: string; label: string; sublabel?: string};
 
@@ -149,7 +155,7 @@ const FaceSearchScreen = ({navigation, route}: any) => {
 
     const filterOptions = useMemo<Record<keyof AiFilterState, FilterOption[]>>(() => {
         const competitions = events.map((event) => {
-            const name = String(event.event_name || event.event_title || 'Competition');
+            const name = String(event.event_name || event.event_title || t('Competition'));
             const date = event.event_date ? new Date(event.event_date).toLocaleDateString() : '';
             const location = event.event_location ? String(event.event_location) : '';
             const sublabel = [date, location].filter(Boolean).join(' • ');
@@ -165,7 +171,7 @@ const FaceSearchScreen = ({navigation, route}: any) => {
             competitionType: [],
             timeRange: [],
         };
-    }, [events, locationOptions]);
+    }, [events, locationOptions, t]);
 
     const openFilterModal = (key: keyof AiFilterState) => {
         setModalFilterKey(key);
@@ -197,7 +203,7 @@ const FaceSearchScreen = ({navigation, route}: any) => {
         }
 
         if (!localFilters.competition || !String(localFilters.competition).trim()) {
-            setErrorText('Select a competition first.');
+            setErrorText(t('Select a competition first.'));
             return;
         }
 
@@ -214,14 +220,14 @@ const FaceSearchScreen = ({navigation, route}: any) => {
                 localFilters?.timeRange,
             );
             if (hasFilterConstraints && filteredEventIds.length === 0) {
-                setErrorText('No events match the selected filters.');
+                setErrorText(t('No events match the selected filters.'));
                 return;
             }
             const event_ids: string[] = filteredEventIds.length > 0
                 ? filteredEventIds
                 : (Array.isArray(me?.event_ids) ? me.event_ids.map((v: any) => String(v)) : []);
             if (event_ids.length === 0) {
-                setErrorText('No subscribed events found for your profile. Subscribe to an event first.');
+                setErrorText(t('No subscribed events found for your profile. Subscribe to an event first.'));
                 return;
             }
 
@@ -236,18 +242,35 @@ const FaceSearchScreen = ({navigation, route}: any) => {
                 matchedCount: Array.isArray(res?.results) ? res.results.length : 0,
                 results: res?.results ?? [],
                 matchType: 'face',
+                refineContext: {
+                    date: localFilters?.timeRange?.start || localFilters?.timeRange?.end
+                        ? [
+                            localFilters?.timeRange?.start ? new Date(localFilters.timeRange.start).toLocaleDateString() : null,
+                            localFilters?.timeRange?.end ? new Date(localFilters.timeRange.end).toLocaleDateString() : null,
+                        ]
+                            .filter(Boolean)
+                            .join(' - ')
+                        : undefined,
+                },
+                manualBrowse: filteredEventIds.length === 1
+                    ? {
+                        eventId: filteredEventIds[0],
+                        competitionId: filteredEventIds[0],
+                        eventName: localFilters?.competition,
+                    }
+                    : undefined,
             });
         } catch (e: any) {
             if (e instanceof ApiError) {
                 const body = e.body ?? {};
                 if (e.status === 403 && String(e.message).toLowerCase().includes('consent')) {
                     setNeedsConsent(true);
-                    setErrorText('Face recognition consent is required.');
+                    setErrorText(t('Face recognition consent is required.'));
                     return;
                 }
                 if (e.status === 400 && Array.isArray(body?.missing_angles)) {
                     setMissingAngles(body.missing_angles.map(String));
-                    setErrorText('Face Search is not set up yet. Please enroll your face first.');
+                    setErrorText(t('Face Search is not set up yet. Please enroll your face first.'));
                     return;
                 }
                 setErrorText(`${e.message}`);
@@ -257,7 +280,7 @@ const FaceSearchScreen = ({navigation, route}: any) => {
         } finally {
             setIsSearching(false);
         }
-    }, [apiAccessToken, authMe, localFilters?.competition, localFilters?.timeRange, filteredEventIds, navigation]);
+    }, [apiAccessToken, authMe, filteredEventIds, localFilters?.competition, localFilters?.timeRange, navigation, t]);
 
     const handleGrantConsent = useCallback(async () => {
         if (!apiAccessToken) return;
@@ -323,7 +346,7 @@ const FaceSearchScreen = ({navigation, route}: any) => {
             const message = e instanceof ApiError ? e.message : String(e?.message ?? e);
             setErrorText(message);
         }
-    }, [apiAccessToken, eventIdInput, refreshMe]);
+    }, [apiAccessToken, eventIdInput, refreshMe, t]);
 
     return (
         <View style={styles.mainContainer}>
@@ -399,7 +422,9 @@ const FaceSearchScreen = ({navigation, route}: any) => {
                 >
                     <TouchableOpacity style={styles.filterModalOverlay} activeOpacity={1} onPress={() => setShowFilterModal(false)}>
                         <TouchableOpacity style={styles.filterModalCard} activeOpacity={1}>
-                            <Text style={styles.filterModalTitle}>{t('Select')} {t(modalFilterKey ?? 'filter')}</Text>
+                            <Text style={styles.filterModalTitle}>
+                                {t('Select')} {modalFilterKey ? getSearchFilterLabel(modalFilterKey.charAt(0).toUpperCase() + modalFilterKey.slice(1) as SearchFilterKey, t) : t('filter')}
+                            </Text>
                             <ScrollView style={styles.filterModalList} contentContainerStyle={styles.filterModalListContent}>
                                 {(modalFilterKey ? filterOptions[modalFilterKey] : []).map((option) => (
                                     <TouchableOpacity
@@ -520,7 +545,7 @@ const FaceSearchScreen = ({navigation, route}: any) => {
                     disabled={isSearching || !hasCompetition}
                 >
                     <Text style={styles.continueButtonText}>
-                        {needsConsent ? 'Enable Face Recognition' : isSearching ? 'Searching…' : 'Find My Photos'}
+                        {needsConsent ? t('Enable Face Recognition') : isSearching ? t('Searching…') : t('Find My Photos')}
                     </Text>
                     <ArrowRight size={24} color="#FFFFFF" variant="Linear" />
                 </TouchableOpacity>

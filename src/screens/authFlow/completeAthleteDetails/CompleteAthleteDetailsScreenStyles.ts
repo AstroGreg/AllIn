@@ -7,20 +7,37 @@ export const createStyles = (colors: ThemeColors) => StyleSheet.create({
         flex: 1,
         backgroundColor: colors.backgroundColor,
     },
-    scrollContent: {
-        flexGrow: 1,
+    screenContent: {
+        flex: 1,
+        minHeight: 0,
+    },
+    topBar: {
+        paddingHorizontal: 20,
+        paddingTop: 12,
+        alignItems: 'flex-start',
+    },
+    backButtonCircle: {
+        width: 44,
+        height: 44,
+        borderRadius: 22,
+        backgroundColor: colors.secondaryColor,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    heroSection: {
+        paddingHorizontal: 20,
+        paddingTop: 8,
     },
     imageContainer: {
         alignItems: 'center',
         justifyContent: 'center',
     },
     headerImage: {
-        width: 235.3,
-        height: 141.59,
+        width: 210,
+        height: 126,
     },
     contentContainer: {
-        paddingHorizontal: 20,
-        flex: 1,
+        alignItems: 'center',
     },
     headingText: {
         ...Fonts.medium22,
@@ -35,8 +52,51 @@ export const createStyles = (colors: ThemeColors) => StyleSheet.create({
         color: colors.grayColor,
         textAlign: 'center',
     },
+    helperTextLeft: {
+        ...Fonts.regular14,
+        lineHeight: 22,
+        color: colors.grayColor,
+        textAlign: 'left',
+    },
+    formViewport: {
+        flex: 1,
+        minHeight: 0,
+        paddingTop: 20,
+    },
+    formScroll: {
+        flex: 1,
+    },
+    formContent: {
+        paddingHorizontal: 20,
+        paddingBottom: 20,
+    },
     formContainer: {
         gap: 16,
+    },
+    reviewCard: {
+        borderWidth: 1,
+        borderColor: colors.borderColor,
+        borderRadius: 14,
+        backgroundColor: colors.secondaryColor,
+        padding: 18,
+        gap: 14,
+    },
+    reviewRow: {
+        gap: 6,
+    },
+    reviewLabel: {
+        ...Fonts.regular12,
+        color: colors.grayColor,
+    },
+    reviewValue: {
+        ...Fonts.medium14,
+        lineHeight: 22,
+        color: colors.mainTextColor,
+    },
+    reviewHint: {
+        ...Fonts.regular14,
+        lineHeight: 22,
+        color: colors.grayColor,
     },
     clubFieldLabel: {
         ...Fonts.regular14,
@@ -76,6 +136,10 @@ export const createStyles = (colors: ThemeColors) => StyleSheet.create({
         marginLeft: 10,
         alignItems: 'center',
         justifyContent: 'center',
+    },
+    websiteInput: {
+        flex: 1,
+        color: colors.mainTextColor,
     },
     modalBackdrop: {
         flex: 1,
@@ -137,8 +201,9 @@ export const createStyles = (colors: ThemeColors) => StyleSheet.create({
         flexDirection: 'row',
         paddingHorizontal: 20,
         gap: 16,
-        marginTop: 'auto',
-        paddingTop: 40,
+        paddingTop: 16,
+        paddingBottom: 14,
+        backgroundColor: colors.backgroundColor,
     },
     skipButton: {
         flex: 1,

@@ -26,6 +26,10 @@ export const createStyles = (colors: ThemeColors) => StyleSheet.create({
         ...Fonts.medium18,
         color: colors.mainTextColor,
     },
+    headerSpacer: {
+        width: 44,
+        height: 44,
+    },
     notificationButton: {
         width: 44,
         height: 44,
@@ -54,6 +58,7 @@ export const createStyles = (colors: ThemeColors) => StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
+        gap: 12,
     },
     detailLabel: {
         ...Fonts.regular14,
@@ -62,6 +67,8 @@ export const createStyles = (colors: ThemeColors) => StyleSheet.create({
     detailValue: {
         ...Fonts.medium14,
         color: colors.mainTextColor,
+        flex: 1,
+        textAlign: 'right',
     },
     divider: {
         height: 1,
@@ -120,6 +127,65 @@ export const createStyles = (colors: ThemeColors) => StyleSheet.create({
     confirmButtonText: {
         ...Fonts.medium16,
         color: colors.whiteColor,
+    },
+    errorText: {
+        ...Fonts.regular13,
+        color: '#E11D48',
+        textAlign: 'center',
+    },
+    feedbackOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0,0,0,0.45)',
+        justifyContent: 'flex-end',
+        paddingHorizontal: 20,
+        paddingBottom: 28,
+    },
+    feedbackSheet: {
+        backgroundColor: colors.backgroundColor,
+        borderRadius: 20,
+        padding: 20,
+        gap: 12,
+        borderWidth: 0.5,
+        borderColor: colors.lightGrayColor,
+    },
+    feedbackTitle: {
+        ...Fonts.medium18,
+        color: colors.mainTextColor,
+        textAlign: 'center',
+    },
+    feedbackBody: {
+        ...Fonts.regular14,
+        color: colors.subTextColor,
+        textAlign: 'center',
+        lineHeight: 20,
+    },
+    feedbackPrimaryButton: {
+        height: 48,
+        borderRadius: 12,
+        backgroundColor: colors.primaryColor,
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginTop: 4,
+    },
+    feedbackPrimaryButtonText: {
+        ...Fonts.medium14,
+        color: colors.whiteColor,
+    },
+    emptyState: {
+        flex: 1,
+        alignItems: 'center',
+        justifyContent: 'center',
+        paddingHorizontal: 24,
+    },
+    emptyStateTitle: {
+        ...Fonts.medium18,
+        color: colors.mainTextColor,
+    },
+    emptyStateBody: {
+        ...Fonts.regular14,
+        color: colors.subTextColor,
+        textAlign: 'center',
+        marginTop: 8,
     },
 });
 

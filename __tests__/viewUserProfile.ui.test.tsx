@@ -216,7 +216,7 @@ describe('ViewUserProfileScreen UI', () => {
     expect(screen.queryByText('Following')).toBeNull();
   });
 
-  test('opens club group profile from community groups', async () => {
+  test('renders official club inline without navigating to a group screen', async () => {
     mockGetProfileSummary.mockResolvedValue({profile_id: 'viewer-1'});
     mockGetProfileSummaryById.mockResolvedValue({
       profile_id: 'target-2',
@@ -248,13 +248,9 @@ describe('ViewUserProfileScreen UI', () => {
     );
 
     await waitFor(() => {
-      expect(screen.getByText('Leuven Athletics')).toBeTruthy();
+      expect(screen.getByText(/Leuven Athl/i)).toBeTruthy();
     });
 
-    fireEvent.press(screen.getByText('Leuven Athletics'));
-    expect(navigation.navigate).toHaveBeenCalledWith('GroupProfileScreen', {
-      groupId: 'group-9',
-      showBackButton: true,
-    });
+    expect(navigation.navigate).not.toHaveBeenCalledWith('GroupProfileScreen', expect.anything());
   });
 });

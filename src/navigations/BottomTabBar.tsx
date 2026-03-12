@@ -77,7 +77,6 @@ import UploadDetailsScreen from "../screens/upload/UploadDetailsScreen";
 import UploadAnonymouslyScreen from "../screens/upload/UploadAnonymouslyScreen";
 import SelectCompetitionScreen from "../screens/upload/SelectCompetitionScreen";
 import CompetitionDetailsScreen from "../screens/upload/CompetitionDetailsScreen";
-import WatermarkScreen from "../screens/upload/WatermarkScreen";
 import UploadSummaryScreen from "../screens/upload/UploadSummaryScreen";
 import UploadProgressScreen from "../screens/upload/UploadProgressScreen";
 import UploadActivityScreen from "../screens/upload/UploadActivityScreen";
@@ -118,10 +117,15 @@ const ProfileStack = createNativeStackNavigator();
 const UploadStack = createNativeStackNavigator();
 const MenuStack = createNativeStackNavigator();
 const SearchStack = createNativeStackNavigator();
+const nativeStackOptions = {
+    headerShown: false,
+    gestureEnabled: true,
+    fullScreenGestureEnabled: Platform.OS === 'ios',
+};
 
 const HomeStackNavigator = () => {
     return (
-        <HomeStack.Navigator screenOptions={{ headerShown: false }}>
+        <HomeStack.Navigator screenOptions={nativeStackOptions}>
             <HomeStack.Screen name="HomeScreen" component={HomeScreen} />
             <HomeStack.Screen name="HubScreen" component={HubScreen} />
             <HomeStack.Screen name="MyAllEventsScreen" component={MyAllEventsScreen} />
@@ -157,13 +161,12 @@ const HomeStackNavigator = () => {
 
 const UploadStackNavigator = () => {
     return (
-        <UploadStack.Navigator screenOptions={{ headerShown: false }}>
+        <UploadStack.Navigator screenOptions={nativeStackOptions}>
             <UploadStack.Screen name="UploadScreen" component={UploadScreen} />
             <UploadStack.Screen name="UploadDetailsScreen" component={UploadDetailsScreen} />
             <UploadStack.Screen name="UploadAnonymouslyScreen" component={UploadAnonymouslyScreen} />
             <UploadStack.Screen name="SelectCompetitionScreen" component={SelectCompetitionScreen} />
             <UploadStack.Screen name="CompetitionDetailsScreen" component={CompetitionDetailsScreen} />
-            <UploadStack.Screen name="WatermarkScreen" component={WatermarkScreen} />
             <UploadStack.Screen name="UploadSummaryScreen" component={UploadSummaryScreen} />
             <UploadStack.Screen name="UploadProgressScreen" component={UploadProgressScreen} />
             <UploadStack.Screen name="UploadActivityScreen" component={UploadActivityScreen} />
@@ -176,7 +179,7 @@ const UploadStackNavigator = () => {
 
 const ProfileStackNavigator = () => {
     return (
-        <ProfileStack.Navigator screenOptions={{ headerShown: false }}>
+        <ProfileStack.Navigator screenOptions={nativeStackOptions}>
             <ProfileStack.Screen name="UserProfileScreen" component={UserProfileScreen} />
             <ProfileStack.Screen name="ViewUserProfileScreen" component={ViewUserProfileScreen} />
             <ProfileStack.Screen name="ViewUserPostsViewAllScreen" component={ViewUserPostsViewAllScreen} />
@@ -213,6 +216,7 @@ const ProfileStackNavigator = () => {
             <ProfileStack.Screen name="GroupEventsViewAllScreen" component={GroupEventsViewAllScreen} />
             <ProfileStack.Screen name="GroupCollectionsManageScreen" component={GroupCollectionsManageScreen} />
             <ProfileStack.Screen name="CompetitionDetailsScreen" component={SearchCompetitionDetailsScreen} />
+            <ProfileStack.Screen name="EventSummaryScreen" component={EventSummaryScreen} />
             <ProfileStack.Screen name="CongratulationsScreen" component={CongratulationsScreen} />
             <ProfileStack.Screen name="AthleteProfileScreen" component={AthleteProfileScreen} />
             <ProfileStack.Screen name="ProfileTimelineDetailScreen" component={ProfileTimelineDetailScreen} />
@@ -224,7 +228,7 @@ const ProfileStackNavigator = () => {
 
 const MenuStackNavigator = () => {
     return (
-        <MenuStack.Navigator screenOptions={{ headerShown: false }}>
+        <MenuStack.Navigator screenOptions={nativeStackOptions}>
             <MenuStack.Screen name="MenuScreen" component={MenuScreen} />
             <MenuStack.Screen name="Language" component={Language} />
             <MenuStack.Screen name="DeleteAndPause" component={DeleteAndPause} />
@@ -258,7 +262,7 @@ const MenuStackNavigator = () => {
 
 const SearchStackNavigator = () => {
     return (
-        <SearchStack.Navigator screenOptions={{ headerShown: false }}>
+        <SearchStack.Navigator screenOptions={nativeStackOptions}>
             <SearchStack.Screen name="SearchScreen" component={SearchScreen} />
             {/* Profile screens accessible from search */}
             <SearchStack.Screen name="UserProfileScreen" component={UserProfileScreen} />
@@ -282,6 +286,7 @@ const SearchStackNavigator = () => {
             <SearchStack.Screen name="AllPhotosOfEvents" component={AllPhotosOfEvents} />
             <SearchStack.Screen name="AllVideosOfEvents" component={AllVideosOfEvents} />
             <SearchStack.Screen name="CompetitionDetailsScreen" component={SearchCompetitionDetailsScreen} />
+            <SearchStack.Screen name="EventSummaryScreen" component={EventSummaryScreen} />
             <SearchStack.Screen name="EventsScreen" component={EventsScreen} />
             {/* Face capture flow */}
             <SearchStack.Screen name="SearchFaceCaptureScreen" component={SearchFaceCaptureScreen} />
@@ -320,7 +325,7 @@ const BottomTabBar = () => {
         <Tab.Navigator
             backBehavior="history"
             screenOptions={({ route }) => ({
-                tabBarIcon: ({ focused, color, size }) => {
+                tabBarIcon: ({ focused, color: _color, size: _size }) => {
                     let iconName;
                     switch (route.name) {
                         case "Home":
@@ -364,7 +369,7 @@ const BottomTabBar = () => {
                     tabBarLabel: t("Home"),
                 })}
                 listeners={({ navigation }) => ({
-                    tabPress: (e) => {
+                    tabPress: (_e) => {
                         navigation.reset({
                             index: 0,
                             routes: [{ name: 'Home' }],
@@ -380,7 +385,7 @@ const BottomTabBar = () => {
                     tabBarLabel: t("Search"),
                 })}
                 listeners={({ navigation }) => ({
-                    tabPress: (e) => {
+                    tabPress: (_e) => {
                         navigation.reset({
                             index: 0,
                             routes: [{
@@ -399,8 +404,8 @@ const BottomTabBar = () => {
                     tabBarLabel: t("Upload"),
                 })}
                 listeners={({ navigation }) => ({
-                    tabPress: (e) => {
-                        e.preventDefault();
+                    tabPress: (_e) => {
+                        _e.preventDefault();
                         navigation.navigate('Upload', {
                             screen: 'UploadScreen',
                         });
@@ -415,7 +420,7 @@ const BottomTabBar = () => {
                     tabBarLabel: t("Profile"),
                 })}
                 listeners={({ navigation }) => ({
-                    tabPress: (e) => {
+                    tabPress: (_e) => {
                         navigation.reset({
                             index: 0,
                             routes: [{ name: 'Profile' }],
@@ -431,7 +436,7 @@ const BottomTabBar = () => {
                     tabBarLabel: t("Settings"),
                 })}
                 listeners={({ navigation }) => ({
-                    tabPress: (e) => {
+                    tabPress: (_e) => {
                         navigation.reset({
                             index: 0,
                             routes: [{ name: 'Menu' }],

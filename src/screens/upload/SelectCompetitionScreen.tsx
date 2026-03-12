@@ -48,6 +48,29 @@ const SelectCompetitionScreen = ({ navigation, route }: any) => {
     const { apiAccessToken } = useAuth();
     const anonymous = route?.params?.anonymous;
     const isAnonymous = !!anonymous;
+    const fixtureCompetitions = useMemo<Competition[]>(
+        () => Array.isArray(route?.params?.e2eCompetitions)
+            ? route.params.e2eCompetitions.map((entry: any) => ({
+                id: String(entry?.id ?? ''),
+                name: String(entry?.name ?? ''),
+                videoCount: Number(entry?.videoCount ?? 0),
+                location: String(entry?.location ?? ''),
+                date: String(entry?.date ?? ''),
+                thumbnailUrl: entry?.thumbnailUrl ? String(entry.thumbnailUrl) : null,
+                competitionType: String(entry?.competitionType).toLowerCase() === 'road' ? 'road' : 'track',
+                organizingClub: entry?.organizingClub ? String(entry.organizingClub) : undefined,
+            })).filter((entry: Competition) => entry.id.length > 0 && entry.name.length > 0)
+            : [],
+        [route?.params?.e2eCompetitions],
+    );
+    const fixtureSubscribedIds = useMemo(
+        () => Array.isArray(route?.params?.e2eSubscribedEventIds)
+            ? route.params.e2eSubscribedEventIds.map((entry: any) => String(entry ?? '').trim()).filter(Boolean)
+            : [],
+        [route?.params?.e2eSubscribedEventIds],
+    );
+    const competitionDetailsRouteName = String(route?.params?.e2eCompetitionDetailsRouteName ?? 'CompetitionDetailsScreen');
+    const isFixtureMode = fixtureCompetitions.length > 0;
 
     const [activeFilter, setActiveFilter] = useState<'Competition' | 'Location'>('Competition');
     const [filterValues, setFilterValues] = useState<{ Competition: string; Location: string }>({
@@ -210,10 +233,10 @@ const SelectCompetitionScreen = ({ navigation, route }: any) => {
 
     const formatDateRange = (start: Date, end: Date) => {
         const sameDay = start.toDateString() === end.toDateString();
-        const startText = start.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+        const startText = start.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
         if (sameDay) return startText;
-        const endText = end.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-        return `${startText} → ${endText}`;
+        const endText = end.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+        return `${startText} - ${endText}`;
     };
 
     const timeRangeLabel = timeRange.start && timeRange.end
@@ -314,6 +337,12 @@ const SelectCompetitionScreen = ({ navigation, route }: any) => {
 
     useEffect(() => {
         let mounted = true;
+        if (isFixtureMode) {
+            setSubscribedEventIds(new Set(fixtureSubscribedIds));
+            return () => {
+                mounted = false;
+            };
+        }
         if (!apiAccessToken) {
             setSubscribedEventIds(new Set());
             return () => {};
@@ -335,12 +364,17 @@ const SelectCompetitionScreen = ({ navigation, route }: any) => {
         return () => {
             mounted = false;
         };
-    }, [apiAccessToken]);
+    }, [apiAccessToken, fixtureSubscribedIds, isFixtureMode, t]);
 
     const loadCompetitions = useCallback(async (query: string) => {
+        if (isFixtureMode) {
+            setErrorText(null);
+            setIsLoading(false);
+            return;
+        }
         if (!apiAccessToken) {
             setRawEvents([]);
-            setErrorText('Log in to load competitions.');
+            setErrorText(t('Log in to load competitions.'));
             return;
         }
         setIsLoading(true);
@@ -356,15 +390,20 @@ const SelectCompetitionScreen = ({ navigation, route }: any) => {
         } finally {
             setIsLoading(false);
         }
-    }, [apiAccessToken]);
+    }, [apiAccessToken, isFixtureMode, t]);
 
     useEffect(() => {
+        if (isFixtureMode) {
+            setIsLoading(false);
+            setErrorText(null);
+            return;
+        }
         const handle = setTimeout(() => {
             const query = String(filterValues[activeFilter] ?? '').trim();
             loadCompetitions(query);
         }, 300);
         return () => clearTimeout(handle);
-    }, [loadCompetitions, filterValues, activeFilter]);
+    }, [activeFilter, filterValues, isFixtureMode, loadCompetitions]);
 
     useFocusEffect(
         useCallback(() => {
@@ -386,6 +425,9 @@ const SelectCompetitionScreen = ({ navigation, route }: any) => {
     );
 
     const competitions: Competition[] = useMemo(() => {
+        if (isFixtureMode) {
+            return fixtureCompetitions;
+        }
         return rawEvents.map((event) => {
             const eventId = String(event.event_id);
             const mediaInfo = mediaByEvent[eventId];
@@ -399,7 +441,7 @@ const SelectCompetitionScreen = ({ navigation, route }: any) => {
             const isRoad = /road|trail|marathon|city run/i.test(typeGuess);
             return {
                 id: eventId,
-                name: nameSource || 'Competition',
+                name: nameSource || t('Competition'),
                 location: event.event_location || '',
                 date: event.event_date || '',
                 videoCount: mediaInfo?.videoCount ?? 0,
@@ -414,7 +456,7 @@ const SelectCompetitionScreen = ({ navigation, route }: any) => {
                 ).trim(),
             };
         });
-    }, [mediaByEvent, rawEvents, toAbsoluteUrl, withAccessToken]);
+    }, [fixtureCompetitions, isFixtureMode, mediaByEvent, rawEvents, t, toAbsoluteUrl, withAccessToken]);
 
     const formatDisplayDate = useCallback((value: string) => {
         if (!value) return '—';
@@ -509,12 +551,12 @@ const SelectCompetitionScreen = ({ navigation, route }: any) => {
     }, [filteredCompetitions.length, hasMoreCompetitions, pageSize]);
 
     const continueToCompetition = useCallback((competition: Competition) => {
-        navigation.navigate('CompetitionDetailsScreen', {
+        navigation.navigate(competitionDetailsRouteName, {
             competition,
             anonymous,
             competitionType: competition.competitionType,
         });
-    }, [anonymous, navigation]);
+    }, [anonymous, competitionDetailsRouteName, navigation]);
 
     const handleUploadToCompetition = useCallback((competition: Competition) => {
         if (subscribedEventIds.has(String(competition.id))) {
@@ -527,6 +569,16 @@ const SelectCompetitionScreen = ({ navigation, route }: any) => {
 
     const handleConfirmSubscribe = useCallback(async () => {
         if (!pendingCompetition) return;
+        if (isFixtureMode && !apiAccessToken) {
+            setSubscribedEventIds((prev) => {
+                const next = new Set(prev);
+                next.add(String(pendingCompetition.id));
+                return next;
+            });
+            setSubscribePromptVisible(false);
+            continueToCompetition(pendingCompetition);
+            return;
+        }
         if (!apiAccessToken) {
             Alert.alert(t('Upload unavailable'), t('Log in to upload to a competition.'));
             return;
@@ -547,7 +599,7 @@ const SelectCompetitionScreen = ({ navigation, route }: any) => {
         } finally {
             setIsSubscribing(false);
         }
-    }, [apiAccessToken, continueToCompetition, pendingCompetition, t]);
+    }, [apiAccessToken, continueToCompetition, isFixtureMode, pendingCompetition, t]);
 
     const handleSkipSubscribe = useCallback(() => {
         if (!pendingCompetition) {
@@ -564,6 +616,7 @@ const SelectCompetitionScreen = ({ navigation, route }: any) => {
             style={Styles.competitionCard}
             activeOpacity={0.85}
             onPress={() => handleUploadToCompetition(competition)}
+            testID={`upload-competition-card-${competition.id}`}
         >
             <View style={Styles.competitionContent}>
                 <View style={Styles.thumbnailContainer}>
@@ -600,7 +653,7 @@ const SelectCompetitionScreen = ({ navigation, route }: any) => {
                     </View>
                     <View style={Styles.videoCountRow}>
                         <VideoSquare size={14} color={colors.grayColor} variant="Linear" />
-                        <Text style={Styles.videoCountText}>{competition.videoCount} media</Text>
+                        <Text style={Styles.videoCountText}>{competition.videoCount} {t('media')}</Text>
                     </View>
                     {competition.organizingClub ? (
                         <Text style={Styles.infoValue} numberOfLines={1}>{competition.organizingClub}</Text>
@@ -611,7 +664,7 @@ const SelectCompetitionScreen = ({ navigation, route }: any) => {
     );
 
     return (
-        <View style={Styles.mainContainer}>
+        <View style={Styles.mainContainer} testID="upload-select-competition-screen">
             <SizeBox height={insets.top} />
 
             {/* Header */}
@@ -630,6 +683,7 @@ const SelectCompetitionScreen = ({ navigation, route }: any) => {
             </View>
 
             <ScrollView
+                testID="upload-select-competition-scroll"
                 showsVerticalScrollIndicator={false}
                 contentContainerStyle={Styles.scrollContent}
                 onScroll={handleMainScroll}
@@ -705,12 +759,12 @@ const SelectCompetitionScreen = ({ navigation, route }: any) => {
                 <View style={Styles.activeChipsContainer}>
                     {filterValues.Competition.trim().length > 0 && (
                         <View style={Styles.activeChip}>
-                            <Text style={Styles.activeChipText}>Competition: {filterValues.Competition}</Text>
+                            <Text style={Styles.activeChipText}>{t('Competition')}: {filterValues.Competition}</Text>
                         </View>
                     )}
                     {filterValues.Location.trim().length > 0 && (
                         <View style={Styles.activeChip}>
-                            <Text style={Styles.activeChipText}>Location: {filterValues.Location}</Text>
+                            <Text style={Styles.activeChipText}>{t('Location')}: {filterValues.Location}</Text>
                         </View>
                     )}
                     <TouchableOpacity
@@ -787,6 +841,7 @@ const SelectCompetitionScreen = ({ navigation, route }: any) => {
                                 style={Styles.subscribeNoButton}
                                 disabled={isSubscribing}
                                 onPress={handleSkipSubscribe}
+                                testID="upload-subscribe-skip"
                             >
                                 <Text style={Styles.subscribeNoText}>{t('No')}</Text>
                             </TouchableOpacity>
@@ -794,6 +849,7 @@ const SelectCompetitionScreen = ({ navigation, route }: any) => {
                                 style={[Styles.subscribeYesButton, isSubscribing && Styles.modalSubmitButtonDisabled]}
                                 disabled={isSubscribing}
                                 onPress={handleConfirmSubscribe}
+                                testID="upload-subscribe-confirm"
                             >
                                 <Text style={Styles.subscribeYesText}>{isSubscribing ? t('Loading...') : t('Yes')}</Text>
                             </TouchableOpacity>

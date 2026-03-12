@@ -87,7 +87,7 @@ export async function apiRequest<T>(
     body,
   }: {
     method?: HttpMethod;
-    accessToken: string;
+    accessToken?: string;
     headers?: Record<string, string>;
     body?: any;
   },
@@ -95,9 +95,11 @@ export async function apiRequest<T>(
   const url = `${resolveApiBaseUrl()}${path.startsWith('/') ? path : `/${path}`}`;
   const requestHeaders: Record<string, string> = {
     ...(body instanceof FormData ? {} : {'Content-Type': 'application/json'}),
-    Authorization: `Bearer ${accessToken}`,
     ...(headers ?? {}),
   };
+  if (accessToken) {
+    requestHeaders.Authorization = `Bearer ${accessToken}`;
+  }
 
   let res: Response;
   try {
@@ -129,7 +131,6 @@ export async function apiRequest<T>(
         statusText: res.statusText,
         hasAccessToken: Boolean(accessToken),
         accessTokenMasked: maskBearerToken(accessToken),
-        accessToken,
         responseBody: data,
       });
     } else {
@@ -199,6 +200,33 @@ export interface AuthBootstrapResponse {
   missing_user_fields: string[];
 }
 
+export interface PrivacySummary {
+  user_records: number;
+  profile_records: number;
+  uploaded_media: number;
+  posts: number;
+  groups_owned: number;
+  group_memberships: number;
+  follow_edges: number;
+  face_templates: number;
+  consent_records: number;
+  appearances: number;
+  timeline_entries: number;
+  total_records: number;
+  has_external_auth_identity: boolean;
+}
+
+export interface PrivacySummaryResponse {
+  ok: boolean;
+  summary: PrivacySummary;
+  warnings?: string[];
+}
+
+export interface RightToBeForgottenResponse extends PrivacySummaryResponse {
+  deleted: boolean;
+  external_identity_deleted: boolean;
+}
+
 export interface UpdateUserMeInput {
   username?: string | null;
   first_name?: string | null;
@@ -211,8 +239,51 @@ export interface UpdateUserMeInput {
   is_guest?: boolean;
 }
 
+export type AccountAvailabilityProvider = 'google' | 'apple' | 'email' | 'unknown';
+
+export interface AccountAvailabilityField {
+  value?: string | null;
+  normalized?: string | null;
+  valid: boolean;
+  available: boolean;
+  reason?: string | null;
+  provider?: AccountAvailabilityProvider | null;
+}
+
+export interface AccountAvailabilityResponse {
+  ok: boolean;
+  username?: AccountAvailabilityField;
+  email?: AccountAvailabilityField;
+}
+
 export async function getAuthBootstrap(accessToken: string): Promise<AuthBootstrapResponse> {
   return apiRequest<AuthBootstrapResponse>('/auth/bootstrap', {method: 'GET', accessToken});
+}
+
+export async function getPrivacySummary(accessToken: string): Promise<PrivacySummaryResponse> {
+  return apiRequest<PrivacySummaryResponse>('/auth/privacy-summary', {method: 'GET', accessToken});
+}
+
+export async function deleteRightToBeForgotten(
+  accessToken: string,
+  body: {confirmation: string},
+): Promise<RightToBeForgottenResponse> {
+  return apiRequest<RightToBeForgottenResponse>('/auth/right-to-be-forgotten', {
+    method: 'DELETE',
+    accessToken,
+    body,
+  });
+}
+
+export async function checkAccountAvailability(
+  accessToken: string,
+  params: {username?: string | null; email?: string | null},
+): Promise<AccountAvailabilityResponse> {
+  const query = toQueryString({
+    username: String(params.username ?? '').trim() || undefined,
+    email: String(params.email ?? '').trim() || undefined,
+  });
+  return apiRequest<AccountAvailabilityResponse>(`/auth/availability${query}`, {method: 'GET', accessToken});
 }
 
 export async function getUserMe(accessToken: string): Promise<UserMeResponse> {
@@ -235,16 +306,25 @@ export interface ProfileSummary {
     support_base_location?: string | null;
     support_athletes?: string[] | null;
     support_athlete_profile_ids?: string[] | null;
+    support_club_codes?: string[] | null;
+    support_group_ids?: string[] | null;
+    support_focuses?: string[] | null;
+    support_clubs?: ClubSummary[] | null;
+    support_groups?: ProfileGroupMembership[] | null;
     bio?: string | null;
     website?: string | null;
     selected_events?: string[] | null;
+    main_disciplines?: Record<string, string> | null;
     chest_numbers_by_year?: Record<string, number> | null;
     nationality?: string | null;
     track_field_club?: string | null;
+    track_field_club_detail?: ClubSummary | null;
+    running_club_group?: ProfileGroupMembership | null;
     track_field_main_event?: string | null;
     road_trail_main_event?: string | null;
     document_uploaded?: boolean | null;
     face_verified?: boolean | null;
+    face_consent_granted?: boolean | null;
     avatar_url?: string | null;
     avatar_media_id?: string | null;
     avatar_media?: any;
@@ -318,6 +398,7 @@ export interface ProfileSearchResult {
   display_name?: string | null;
   avatar_url?: string | null;
   selected_events?: string[] | null;
+  main_disciplines?: Record<string, string> | null;
   track_field_club?: string | null;
   track_field_main_event?: string | null;
   road_trail_main_event?: string | null;
@@ -387,9 +468,31 @@ export interface GroupsResponse {
   groups: GroupSummary[];
 }
 
+export interface ClubSummary {
+  club_id: string;
+  code?: string | null;
+  name?: string | null;
+  city?: string | null;
+  website?: string | null;
+  federation?: string | null;
+  source_url?: string | null;
+  source_ref?: string | null;
+  focuses?: string[] | null;
+  is_official?: boolean;
+  is_system?: boolean;
+}
+
+export interface ClubsResponse {
+  ok: boolean;
+  count: number;
+  clubs: ClubSummary[];
+}
+
 export interface GroupMember {
   profile_id: string;
   role?: string | null;
+  permission_role?: string | null;
+  public_roles?: string[] | null;
   display_name?: string | null;
   avatar_url?: string | null;
   is_following?: boolean;
@@ -495,6 +598,24 @@ export async function searchGroups(
   });
 }
 
+export async function searchClubs(
+  accessToken: string,
+  params: {q?: string; limit?: number; offset?: number; focuses?: string[]},
+): Promise<ClubsResponse> {
+  const qs = toQueryString({
+    q: params.q ?? undefined,
+    focuses: Array.isArray(params.focuses)
+      ? Array.from(new Set(params.focuses.map((value) => String(value ?? '').trim()).filter(Boolean))).join(',')
+      : undefined,
+    limit: params.limit ?? undefined,
+    offset: params.offset ?? undefined,
+  });
+  return apiRequest<ClubsResponse>(`/clubs/search${qs}`, {
+    method: 'GET',
+    accessToken,
+  });
+}
+
 export async function getGroup(accessToken: string, groupId: string): Promise<GroupResponse> {
   const safeId = String(groupId || '').trim();
   if (!safeId) {
@@ -525,7 +646,7 @@ export async function getGroupMembers(
 export async function addGroupMember(
   accessToken: string,
   groupId: string,
-  payload: {profile_id: string; role?: string},
+  payload: {profile_id: string; role?: string; public_roles?: string[]},
 ): Promise<{ok: boolean}> {
   const safeId = String(groupId || '').trim();
   if (!safeId) {
@@ -543,15 +664,35 @@ export interface GroupMemberInvite {
   group_id: string;
   profile_id: string;
   role?: string | null;
+  public_roles?: string[] | null;
   status: 'pending' | 'accepted' | 'declined' | 'cancelled';
   created_at?: string | null;
   updated_at?: string | null;
 }
 
+export interface GroupInviteLink {
+  id?: string;
+  token: string;
+  group_id: string;
+  group_name?: string | null;
+  group_bio?: string | null;
+  group_location?: string | null;
+  avatar_media_id?: string | null;
+  permission_role: 'member' | 'admin';
+  public_roles?: string[] | null;
+  max_uses?: number | null;
+  use_count?: number | null;
+  expires_at?: string | null;
+  revoked_at?: string | null;
+  created_at?: string | null;
+  updated_at?: string | null;
+  status?: 'active' | 'revoked' | 'expired' | 'exhausted';
+}
+
 export async function inviteGroupMember(
   accessToken: string,
   groupId: string,
-  payload: {profile_id: string; role?: string},
+  payload: {profile_id: string; role?: string; public_roles?: string[]},
 ): Promise<{ok: boolean; invite: GroupMemberInvite}> {
   const safeId = String(groupId || '').trim();
   if (!safeId) {
@@ -599,6 +740,57 @@ export async function respondToGroupInvite(
   });
 }
 
+export async function createGroupInviteLink(
+  accessToken: string,
+  groupId: string,
+  payload?: {
+    role?: 'member' | 'admin';
+    public_roles?: string[];
+    max_uses?: number | null;
+    expires_in_days?: number | null;
+  },
+): Promise<{ok: boolean; invite_link: GroupInviteLink}> {
+  const safeId = String(groupId || '').trim();
+  if (!safeId) {
+    throw new ApiError({status: 400, message: 'Missing group_id'});
+  }
+  return apiRequest<{ok: boolean; invite_link: GroupInviteLink}>(`/groups/${encodeURIComponent(safeId)}/invite-links`, {
+    method: 'POST',
+    accessToken,
+    body: payload ?? {},
+  });
+}
+
+export async function getGroupInviteLink(
+  token: string,
+): Promise<{ok: boolean; invite_link: GroupInviteLink}> {
+  const safeToken = String(token || '').trim();
+  if (!safeToken) {
+    throw new ApiError({status: 400, message: 'Missing invite token'});
+  }
+  return apiRequest<{ok: boolean; invite_link: GroupInviteLink}>(`/groups/invite-links/${encodeURIComponent(safeToken)}`, {
+    method: 'GET',
+  });
+}
+
+export async function redeemGroupInviteLink(
+  accessToken: string,
+  token: string,
+): Promise<{ok: boolean; already_joined?: boolean; group_id: string; token: string; permission_role?: string; public_roles?: string[]}> {
+  const safeToken = String(token || '').trim();
+  if (!safeToken) {
+    throw new ApiError({status: 400, message: 'Missing invite token'});
+  }
+  return apiRequest<{ok: boolean; already_joined?: boolean; group_id: string; token: string; permission_role?: string; public_roles?: string[]}>(
+    `/groups/invite-links/${encodeURIComponent(safeToken)}/redeem`,
+    {
+      method: 'POST',
+      accessToken,
+      body: {},
+    },
+  );
+}
+
 export async function removeGroupMember(
   accessToken: string,
   groupId: string,
@@ -619,7 +811,7 @@ export async function updateGroupMemberRole(
   accessToken: string,
   groupId: string,
   profileId: string,
-  payload: {role: 'admin' | 'member' | 'athlete' | 'coach' | 'physio'},
+  payload: {role: 'admin' | 'member'},
 ): Promise<{ok: boolean; member: {group_id: string; profile_id: string; role: string}}> {
   const safeGroup = String(groupId || '').trim();
   const safeProfile = String(profileId || '').trim();
@@ -630,6 +822,27 @@ export async function updateGroupMemberRole(
     `/groups/${encodeURIComponent(safeGroup)}/members/${encodeURIComponent(safeProfile)}/role`,
     {
       method: 'PATCH',
+      accessToken,
+      body: payload,
+    },
+  );
+}
+
+export async function updateGroupMemberPublicRoles(
+  accessToken: string,
+  groupId: string,
+  profileId: string,
+  payload: {public_roles: string[]},
+): Promise<{ok: boolean; group_id: string; profile_id: string; public_roles: string[]}> {
+  const safeGroup = String(groupId || '').trim();
+  const safeProfile = String(profileId || '').trim();
+  if (!safeGroup || !safeProfile) {
+    throw new ApiError({status: 400, message: 'Missing ids'});
+  }
+  return apiRequest<{ok: boolean; group_id: string; profile_id: string; public_roles: string[]}>(
+    `/groups/${encodeURIComponent(safeGroup)}/members/${encodeURIComponent(safeProfile)}/public-roles`,
+    {
+      method: 'PUT',
       accessToken,
       body: payload,
     },
@@ -951,6 +1164,11 @@ export interface EventCompetition {
   competition_name?: string | null;
   competition_name_normalized?: string | null;
   competition_type?: string | null;
+  competition_focus?: string | null;
+  discipline_key?: string | null;
+  discipline_group?: string | null;
+  sort_order?: number | null;
+  media_count?: number | null;
 }
 
 export interface EventCompetitionsResponse {
@@ -990,12 +1208,16 @@ export async function searchEvents(
 export async function getEventCompetitions(
   accessToken: string,
   eventId: string,
+  options?: {onlyWithMedia?: boolean},
 ): Promise<EventCompetitionsResponse> {
   const safeId = String(eventId || '').trim();
   if (!safeId) {
     throw new ApiError({status: 400, message: 'Missing event_id'});
   }
-  const res = await apiRequest<any>(`/competitions/${encodeURIComponent(safeId)}/disciplines`, {
+  const query = toQueryString({
+    only_with_media: options?.onlyWithMedia ? 'true' : undefined,
+  });
+  const res = await apiRequest<any>(`/competitions/${encodeURIComponent(safeId)}/disciplines${query}`, {
     method: 'GET',
     accessToken,
   });
@@ -1006,6 +1228,11 @@ export async function getEventCompetitions(
     competition_name: row?.discipline_name ?? null,
     competition_name_normalized: row?.discipline_name_normalized ?? null,
     competition_type: row?.discipline_type ?? null,
+    competition_focus: row?.competition_focus ?? null,
+    discipline_key: row?.discipline_key ?? null,
+    discipline_group: row?.discipline_group ?? null,
+    sort_order: row?.sort_order == null ? null : Number(row.sort_order),
+    media_count: row?.media_count == null ? null : Number(row.media_count),
   }));
   return {ok: Boolean(res?.ok), count: Number(res?.count ?? competitions.length), competitions};
 }
@@ -1203,6 +1430,7 @@ export interface HomeOverviewResponse {
     video?: HomeOverviewMedia | null;
     photo?: HomeOverviewMedia | null;
     blog?: HomeOverviewBlog | null;
+    feed_posts?: HomeOverviewBlog[];
   };
 }
 
@@ -1385,16 +1613,46 @@ export async function getAiFeedbackLabel(
   return list.length > 0 ? (list[0] as AiFeedbackLabel) : null;
 }
 
-export async function subscribeToEvent(accessToken: string, eventId: string): Promise<{success: boolean; event_id: string; profile_id: string}> {
+export async function subscribeToEvent(
+  accessToken: string,
+  eventId: string,
+  payload?: {
+    discipline_ids?: string[];
+    category_labels?: string[];
+    chest_number?: string | null;
+    face_recognition_enabled?: boolean;
+  },
+): Promise<{
+  success: boolean;
+  event_id: string;
+  profile_id: string;
+  discipline_ids: string[];
+  category_labels: string[];
+  chest_number: string | null;
+  face_recognition_enabled: boolean;
+}> {
   const safeId = String(eventId || '').trim();
   if (!safeId) {
     throw new ApiError({status: 400, message: 'Missing event_id'});
   }
-  const res = await apiRequest<any>(`/competitions/${encodeURIComponent(safeId)}/subscribe`, {method: 'POST', accessToken, body: {}});
+  const res = await apiRequest<any>(`/competitions/${encodeURIComponent(safeId)}/subscribe`, {
+    method: 'POST',
+    accessToken,
+    body: {
+      discipline_ids: Array.isArray(payload?.discipline_ids) ? payload?.discipline_ids : [],
+      category_labels: Array.isArray(payload?.category_labels) ? payload?.category_labels : [],
+      chest_number: payload?.chest_number ?? null,
+      face_recognition_enabled: Boolean(payload?.face_recognition_enabled),
+    },
+  });
   return {
     success: Boolean(res?.success),
     event_id: String(res?.competition_id || safeId),
     profile_id: String(res?.profile_id || ''),
+    discipline_ids: Array.isArray(res?.discipline_ids) ? res.discipline_ids.map((value: unknown) => String(value)) : [],
+    category_labels: Array.isArray(res?.category_labels) ? res.category_labels.map((value: unknown) => String(value)) : [],
+    chest_number: res?.chest_number == null ? null : String(res.chest_number),
+    face_recognition_enabled: Boolean(res?.face_recognition_enabled ?? false),
   };
 }
 
@@ -1685,6 +1943,44 @@ export async function getDownloadsSummary(accessToken: string): Promise<Download
   return apiRequest<DownloadsSummaryResponse>('/downloads/summary', {method: 'GET', accessToken});
 }
 
+export type DownloadsDashboardPeriodKey = 'week' | 'month' | 'all';
+
+export interface DownloadsDashboardMetrics {
+  downloads: number;
+  views: number;
+  revenue_cents: number;
+}
+
+export interface DownloadsDashboardTrend {
+  direction: 'up' | 'down' | 'flat';
+  delta_downloads: number;
+  delta_views: number;
+  delta_revenue_cents: number;
+}
+
+export interface DownloadsDashboardCompetition {
+  event_id: string;
+  event_name?: string | null;
+  event_location?: string | null;
+  event_date?: string | null;
+  event_type?: string | null;
+  uploads_count: number;
+  cover_thumbnail_url?: string | null;
+  metrics: Record<DownloadsDashboardPeriodKey, DownloadsDashboardMetrics>;
+  trends: Record<DownloadsDashboardPeriodKey, DownloadsDashboardTrend>;
+}
+
+export interface DownloadsDashboardResponse {
+  ok: boolean;
+  profile_id: string;
+  periods: Record<DownloadsDashboardPeriodKey, DownloadsDashboardMetrics>;
+  competitions: DownloadsDashboardCompetition[];
+}
+
+export async function getDownloadsDashboard(accessToken: string): Promise<DownloadsDashboardResponse> {
+  return apiRequest<DownloadsDashboardResponse>('/downloads/dashboard', {method: 'GET', accessToken});
+}
+
 // -----------------------------
 // Profile Content (Timeline + Collections)
 // -----------------------------
@@ -1742,14 +2038,15 @@ export interface ProfileCollection {
   cover_media_id?: string | null;
   cover_thumbnail_url?: string | null;
   collection_type?: string | null;
+  scope_key?: string | null;
   item_count?: number;
   created_at?: string | null;
   updated_at?: string | null;
 }
 
-export async function getProfileCollections(accessToken: string, profileId: string, params?: {limit?: number}): Promise<{ok: boolean; profile_id: string; collections: ProfileCollection[]}> {
+export async function getProfileCollections(accessToken: string, profileId: string, params?: {limit?: number; scope_key?: string | null}): Promise<{ok: boolean; profile_id: string; collections: ProfileCollection[]}> {
   const safe = String(profileId || '').trim() || 'me';
-  const qs = toQueryString({limit: params?.limit});
+  const qs = toQueryString({limit: params?.limit, scope_key: String(params?.scope_key ?? '').trim() || undefined});
   return apiRequest(`/profiles/${encodeURIComponent(safe)}/collections${qs}`, {method: 'GET', accessToken});
 }
 
@@ -1768,20 +2065,22 @@ export interface ProfileCollectionByTypeResponse {
 export async function getProfileCollectionByType(
   accessToken: string,
   type: 'image' | 'video',
+  params?: {scope_key?: string | null},
 ): Promise<ProfileCollectionByTypeResponse> {
-  const qs = toQueryString({type});
+  const qs = toQueryString({type, scope_key: String(params?.scope_key ?? '').trim() || undefined});
   return apiRequest<ProfileCollectionByTypeResponse>(`/profiles/me/collections/by-type${qs}`, {method: 'GET', accessToken});
 }
 
 export async function addProfileCollectionItems(
   accessToken: string,
-  params: {type: 'image' | 'video'; media_ids: string[]},
+  params: {type: 'image' | 'video'; media_ids: string[]; scope_key?: string | null},
 ): Promise<{ok: boolean; added: number; skipped: number}> {
   return apiRequest(`/profiles/me/collections/by-type/items`, {
     method: 'POST',
     accessToken,
     body: {
       type: params.type,
+      scope_key: String(params.scope_key ?? '').trim() || undefined,
       media_ids: params.media_ids,
     },
   });
@@ -1789,13 +2088,14 @@ export async function addProfileCollectionItems(
 
 export async function removeProfileCollectionItems(
   accessToken: string,
-  params: {type: 'image' | 'video'; media_ids: string[]},
+  params: {type: 'image' | 'video'; media_ids: string[]; scope_key?: string | null},
 ): Promise<{ok: boolean; removed: number}> {
   return apiRequest(`/profiles/me/collections/by-type/items`, {
     method: 'DELETE',
     accessToken,
     body: {
       type: params.type,
+      scope_key: String(params.scope_key ?? '').trim() || undefined,
       media_ids: params.media_ids,
     },
   });
@@ -1803,13 +2103,14 @@ export async function removeProfileCollectionItems(
 
 export async function setProfileCollectionFeatured(
   accessToken: string,
-  params: {type: 'image' | 'video'; media_ids: string[]},
+  params: {type: 'image' | 'video'; media_ids: string[]; scope_key?: string | null},
 ): Promise<{ok: boolean; featured_count: number}> {
   return apiRequest(`/profiles/me/collections/by-type/featured`, {
     method: 'PUT',
     accessToken,
     body: {
       type: params.type,
+      scope_key: String(params.scope_key ?? '').trim() || undefined,
       media_ids: params.media_ids,
     },
   });
@@ -1817,13 +2118,14 @@ export async function setProfileCollectionFeatured(
 
 export async function updateProfileCollectionByType(
   accessToken: string,
-  params: {type: 'image' | 'video'; name?: string; description?: string | null},
+  params: {type: 'image' | 'video'; name?: string; description?: string | null; scope_key?: string | null},
 ): Promise<{ok: boolean; collection: ProfileCollection}> {
   return apiRequest(`/profiles/me/collections/by-type`, {
     method: 'PATCH',
     accessToken,
     body: {
       type: params.type,
+      scope_key: String(params.scope_key ?? '').trim() || undefined,
       name: params.name,
       description: params.description,
     },
@@ -1959,13 +2261,21 @@ export interface ProfileSummaryResponse {
     support_base_location?: string | null;
     support_athletes?: string[] | null;
     support_athlete_profile_ids?: string[] | null;
+    support_club_codes?: string[] | null;
+    support_group_ids?: string[] | null;
+    support_focuses?: string[] | null;
+    support_clubs?: ClubSummary[] | null;
+    support_groups?: ProfileGroupMembership[] | null;
     bio?: string | null;
     website?: string | null;
     selected_events?: string[] | null;
+    main_disciplines?: Record<string, string> | null;
     chest_numbers_by_year?: Record<string, number> | null;
     nationality?: string | null;
     track_field_club?: string | null;
+    track_field_club_detail?: ClubSummary | null;
     running_club_group_id?: string | null;
+    running_club_group?: ProfileGroupMembership | null;
     track_field_main_event?: string | null;
     road_trail_main_event?: string | null;
     document_uploaded?: boolean | null;
@@ -1998,9 +2308,17 @@ export async function updateProfileSummary(
     supportAthletes?: string[] | null;
     support_athlete_profile_ids?: string[] | null;
     supportAthleteProfileIds?: string[] | null;
+    support_club_codes?: string[] | null;
+    supportClubCodes?: string[] | null;
+    support_group_ids?: string[] | null;
+    supportGroupIds?: string[] | null;
+    support_focuses?: string[] | null;
+    supportFocuses?: string[] | null;
     bio?: string | null;
     selected_events?: string[] | null;
     selectedEvents?: string[] | null;
+    main_disciplines?: Record<string, string> | null;
+    mainDisciplines?: Record<string, string> | null;
     chest_numbers_by_year?: Record<string, number> | null;
     chestNumbersByYear?: Record<string, number> | null;
     track_field_club?: string | null;
@@ -2053,10 +2371,30 @@ export async function updateProfileSummary(
   } else if (Object.prototype.hasOwnProperty.call(params, 'supportAthleteProfileIds')) {
     body.support_athlete_profile_ids = params.supportAthleteProfileIds;
   }
+  if (Object.prototype.hasOwnProperty.call(params, 'support_club_codes')) {
+    body.support_club_codes = params.support_club_codes;
+  } else if (Object.prototype.hasOwnProperty.call(params, 'supportClubCodes')) {
+    body.support_club_codes = params.supportClubCodes;
+  }
+  if (Object.prototype.hasOwnProperty.call(params, 'support_group_ids')) {
+    body.support_group_ids = params.support_group_ids;
+  } else if (Object.prototype.hasOwnProperty.call(params, 'supportGroupIds')) {
+    body.support_group_ids = params.supportGroupIds;
+  }
+  if (Object.prototype.hasOwnProperty.call(params, 'support_focuses')) {
+    body.support_focuses = params.support_focuses;
+  } else if (Object.prototype.hasOwnProperty.call(params, 'supportFocuses')) {
+    body.support_focuses = params.supportFocuses;
+  }
   if (Object.prototype.hasOwnProperty.call(params, 'selected_events')) {
     body.selected_events = params.selected_events;
   } else if (Object.prototype.hasOwnProperty.call(params, 'selectedEvents')) {
     body.selected_events = params.selectedEvents;
+  }
+  if (Object.prototype.hasOwnProperty.call(params, 'main_disciplines')) {
+    body.main_disciplines = params.main_disciplines;
+  } else if (Object.prototype.hasOwnProperty.call(params, 'mainDisciplines')) {
+    body.main_disciplines = params.mainDisciplines;
   }
   if (Object.prototype.hasOwnProperty.call(params, 'chest_numbers_by_year')) {
     body.chest_numbers_by_year = params.chest_numbers_by_year;
@@ -2140,6 +2478,8 @@ export async function uploadMediaBatch(
     is_anonymous?: boolean;
     price_cents?: number;
     price_currency?: string;
+    collection_scope_key?: string | null;
+    skip_profile_collection?: boolean;
   },
 ): Promise<MediaUploadBatchResponse> {
   const form = new FormData();
@@ -2159,6 +2499,8 @@ export async function uploadMediaBatch(
   if (params.is_anonymous != null) form.append('is_anonymous', params.is_anonymous ? 'true' : 'false');
   if (params.price_cents != null) form.append('price_cents', String(Math.max(0, Number(params.price_cents) || 0)));
   if (params.price_currency) form.append('price_currency', String(params.price_currency));
+  if (params.collection_scope_key) form.append('collection_scope_key', String(params.collection_scope_key));
+  if (params.skip_profile_collection != null) form.append('skip_profile_collection', params.skip_profile_collection ? 'true' : 'false');
   if (params.is_anonymous) {
     form.append('strip_author_data', 'true');
     form.append('anonymous_mode', 'strict');
@@ -2184,6 +2526,8 @@ export async function uploadMediaBatchWatermark(
     is_anonymous?: boolean;
     price_cents?: number;
     price_currency?: string;
+    collection_scope_key?: string | null;
+    skip_profile_collection?: boolean;
   },
 ): Promise<MediaUploadBatchResponse> {
   const form = new FormData();
@@ -2204,6 +2548,8 @@ export async function uploadMediaBatchWatermark(
   if (params.is_anonymous != null) form.append('is_anonymous', params.is_anonymous ? 'true' : 'false');
   if (params.price_cents != null) form.append('price_cents', String(Math.max(0, Number(params.price_cents) || 0)));
   if (params.price_currency) form.append('price_currency', String(params.price_currency));
+  if (params.collection_scope_key) form.append('collection_scope_key', String(params.collection_scope_key));
+  if (params.skip_profile_collection != null) form.append('skip_profile_collection', params.skip_profile_collection ? 'true' : 'false');
   if (params.is_anonymous) {
     form.append('strip_author_data', 'true');
     form.append('anonymous_mode', 'strict');

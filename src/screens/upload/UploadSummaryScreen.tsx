@@ -250,7 +250,7 @@ const UploadSummaryScreen = ({ navigation, route }: any) => {
         setCategories((prev) =>
             prev.map((section) => {
                 if (section.name !== categoryName) return section;
-                const nextItems = section.items.map((item, idx) => {
+                const nextItems = section.items.map((item, _idx) => {
                     if (item.id !== itemId) return item;
                     return {
                         ...item,
@@ -304,7 +304,7 @@ const UploadSummaryScreen = ({ navigation, route }: any) => {
                     />
                 </View>
                 <Text style={Styles.resolutionText}>
-                    {item.resolution} · max €{(item.maxPriceCents / 100).toFixed(2)}
+                    {item.resolution === 'Original' ? t('Original') : item.resolution} {'·'} {t('max')} €{(item.maxPriceCents / 100).toFixed(2)}
                 </Text>
             </View>
         </View>

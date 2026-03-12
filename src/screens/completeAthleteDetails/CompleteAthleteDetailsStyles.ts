@@ -60,6 +60,32 @@ export const createStyles = (colors: ThemeColors) => StyleSheet.create({
     formContainer: {
         gap: 16,
     },
+    reviewCard: {
+        borderRadius: 14,
+        borderWidth: 0.5,
+        borderColor: colors.borderColor,
+        backgroundColor: colors.cardBackground,
+        paddingHorizontal: 16,
+        paddingVertical: 14,
+        gap: 12,
+    },
+    reviewRow: {
+        gap: 4,
+    },
+    reviewLabel: {
+        ...Fonts.medium14,
+        color: colors.subTextColor,
+    },
+    reviewValue: {
+        ...Fonts.regular14,
+        color: colors.mainTextColor,
+        lineHeight: 22,
+    },
+    reviewHint: {
+        ...Fonts.regular14,
+        color: colors.subTextColor,
+        lineHeight: 22,
+    },
     inputGroup: {
         gap: 8,
     },

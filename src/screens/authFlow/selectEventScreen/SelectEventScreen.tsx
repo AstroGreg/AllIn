@@ -1,209 +1,276 @@
 import React, { useMemo, useState } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, Image, ActivityIndicator, Alert } from 'react-native';
+import {
+    View,
+    Text,
+    TouchableOpacity,
+    ActivityIndicator,
+    Alert,
+    ScrollView,
+} from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import FastImage from 'react-native-fast-image';
+import { ArrowLeft2, TickCircle } from 'iconsax-react-nativejs';
+
 import { createStyles } from './SelectEventScreenStyles';
 import SizeBox from '../../../constants/SizeBox';
 import Images from '../../../constants/Images';
 import Icons from '../../../constants/Icons';
 import { useTheme } from '../../../context/ThemeContext';
 import { useAuth } from '../../../context/AuthContext';
-import { updateProfileSummary } from '../../../services/apiGateway';
 import { useTranslation } from 'react-i18next';
+import {
+    getSportFocusDefinitions,
+    getSportFocusLabel,
+    normalizeSelectedEvents,
+    type SportFocusId,
+} from '../../../utils/profileSelections';
+import SportFocusIcon from '../../../components/profile/SportFocusIcon';
 
 interface EventOption {
-    id: string;
+    id: SportFocusId;
     name: string;
-    icon: any;
-    isSvg?: boolean;
-    disabled?: boolean;
-    comingSoon?: boolean;
 }
-
-const events: EventOption[] = [
-    { id: 'track-field', name: 'Track and Field', icon: Images.trackAndField },
-    { id: 'road-events', name: 'Road events', icon: Icons.PersonRunningColorful, isSvg: true },
-    { id: 'boxing', name: 'Boxing (Coming in the near future)', icon: Images.boxing, disabled: true, comingSoon: true },
-];
 
 const SelectEventScreen = ({ navigation, route }: any) => {
     const { t } = useTranslation();
     const { colors } = useTheme();
     const Styles = createStyles(colors);
     const insets = useSafeAreaInsets();
-    const { updateUserProfile, userProfile, apiAccessToken } = useAuth();
-    const [selectedEvents, setSelectedEvents] = useState<string[]>([]);
+    const { userProfile } = useAuth();
+
+    const [selectedEvents, setSelectedEvents] = useState<SportFocusId[]>([]);
     const [isLoading, setIsLoading] = useState(false);
+
     const selectedCategory = String(route?.params?.selectedCategory || '').trim().toLowerCase();
     const fromAddFlow = Boolean(route?.params?.fromAddFlow);
-    const existingSelectedEvents = useMemo(() => {
-        const raw = userProfile?.selectedEvents;
-        return Array.isArray(raw) ? raw.map((entry) => String(entry || '').trim()).filter(Boolean) : [];
-    }, [userProfile?.selectedEvents]);
+    const existingSelectedEvents = useMemo(
+        () => normalizeSelectedEvents(userProfile?.selectedEvents ?? []),
+        [userProfile?.selectedEvents],
+    );
+    // Only athlete creation is single-focus. Support and group/admin stay multi-focus.
+    const allowsMultiSelect = selectedCategory === 'manage' || selectedCategory === 'support';
 
-    const toggleEvent = (eventId: string) => {
-        setSelectedEvents(prev => {
-            if (prev.includes(eventId)) {
-                return prev.filter(id => id !== eventId);
+    const events = useMemo<EventOption[]>(
+        () => getSportFocusDefinitions().map((focus) => ({
+            id: focus.id,
+            name: getSportFocusLabel(focus.id, t),
+        })),
+        [t],
+    );
+
+    const visibleEvents = useMemo(
+        () =>
+            events.filter((event) => {
+                if (!fromAddFlow || selectedCategory !== 'find') return true;
+                return !existingSelectedEvents.includes(event.id);
+            }),
+        [events, existingSelectedEvents, fromAddFlow, selectedCategory],
+    );
+
+    const selectedEventDetails = useMemo(
+        () => visibleEvents.filter((event) => selectedEvents.includes(event.id)),
+        [selectedEvents, visibleEvents],
+    );
+
+    const toggleEvent = (eventId: SportFocusId) => {
+        setSelectedEvents((prev) => {
+            if (allowsMultiSelect) {
+                if (prev.includes(eventId)) {
+                    return prev.filter((id) => id !== eventId);
+                }
+                return [...prev, eventId];
             }
-            return [...prev, eventId];
+            return prev[0] === eventId ? [] : [eventId];
         });
     };
 
-    const handleBack = () => {
-        navigation.goBack();
-    };
-
     const handleNext = async () => {
-        if (selectedEvents.length === 0) {
-            return;
-        }
+        if (selectedEvents.length === 0) return;
 
         setIsLoading(true);
         try {
-            const nextSelectedEvents = fromAddFlow
-                ? Array.from(new Set([...existingSelectedEvents, ...selectedEvents]))
-                : selectedEvents;
-            await updateUserProfile({ selectedEvents: nextSelectedEvents });
-            if (apiAccessToken && selectedCategory !== 'manage') {
-                await updateProfileSummary(apiAccessToken, { selected_events: nextSelectedEvents });
-            }
+            const nextSelectedEvents = allowsMultiSelect
+                ? selectedEvents
+                : selectedEvents.slice(0, 1);
 
-            if (selectedCategory === 'find') {
-                navigation.navigate('CompleteAthleteDetailsScreen', { selectedEvents: nextSelectedEvents });
-            } else if (selectedCategory === 'manage') {
-                navigation.navigate('CreateGroupProfileScreen', {
-                    selectedFocuses: nextSelectedEvents,
-                    selectedEvents: nextSelectedEvents,
-                    focusLocked: true,
-                });
-            } else if (selectedCategory === 'support') {
-                navigation.navigate('CompleteSupportDetailsScreen', { selectedEvents: nextSelectedEvents });
-            } else if (selectedCategory === 'sell') {
-                navigation.navigate('CreatePhotographerProfileScreen');
-            } else {
+            const nextRoute =
+                selectedCategory === 'find'
+                    ? {
+                        screen: 'CompleteAthleteDetailsScreen',
+                        params: {
+                            selectedCategory,
+                            selectedEvents: nextSelectedEvents,
+                            flowSelectedEvents: nextSelectedEvents,
+                        },
+                    }
+                    : selectedCategory === 'manage'
+                        ? {
+                            screen: 'CreateGroupProfileScreen',
+                            params: {
+                                selectedFocuses: nextSelectedEvents,
+                                selectedEvents: nextSelectedEvents,
+                                focusLocked: true,
+                            },
+                        }
+                        : selectedCategory === 'support'
+                            ? {
+                                screen: 'CompleteSupportDetailsScreen',
+                                params: {
+                                    selectedCategory,
+                                    selectedEvents: nextSelectedEvents,
+                                    flowSelectedEvents: nextSelectedEvents,
+                                },
+                            }
+                            : selectedCategory === 'sell'
+                                ? {
+                                    screen: 'CreatePhotographerProfileScreen',
+                                    params: {},
+                                }
+                                : null;
+
+            if (!nextRoute?.screen) {
                 navigation.reset({
                     index: 0,
                     routes: [{ name: 'BottomTabBar' }],
                 });
+                return;
             }
-        } catch (err: any) {
+
+            if (fromAddFlow || Boolean((userProfile as any)?.faceVerified)) {
+                navigation.navigate(nextRoute.screen, nextRoute.params);
+                return;
+            }
+
+            navigation.navigate('FaceVerificationScreen', {
+                afterVerification: nextRoute,
+            });
+        } catch {
             Alert.alert(t('Error'), t('Failed to save events. Please try again.'));
         } finally {
             setIsLoading(false);
         }
     };
 
-    return (
-        <View style={Styles.mainContainer}>
-            <SizeBox height={insets.top} />
-            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={Styles.scrollContent}>
-                <SizeBox height={30} />
+    const headingText = selectedCategory === 'find'
+        ? t('Choose your sport focus (Athlete)')
+        : selectedCategory === 'manage'
+            ? t('Choose your sport focus (Group/Admin)')
+            : selectedCategory === 'support'
+                ? t('Choose sports you follow (Support)')
+                : t('Choose your sport focus');
 
-                <View style={Styles.imageContainer}>
-                    <FastImage
-                        source={Images.signup3}
-                        style={Styles.headerImage}
-                        resizeMode="contain"
-                    />
+    const subHeadingText = allowsMultiSelect
+        ? t('Select one or more disciplines')
+        : t('Select one sport focus');
+
+    return (
+        <View style={Styles.mainContainer} testID="select-event-screen">
+            <SizeBox height={insets.top} />
+
+            <View style={Styles.screenContent}>
+                <View style={Styles.topBar}>
+                    <TouchableOpacity testID="select-event-back-button" style={Styles.backIconButton} activeOpacity={0.8} onPress={() => navigation.goBack()}>
+                        <ArrowLeft2 size={22} color={colors.primaryColor} variant="Linear" />
+                    </TouchableOpacity>
                 </View>
 
-                <SizeBox height={30} />
+                <View style={Styles.heroSection}>
+                    <View style={Styles.imageContainer}>
+                        <FastImage
+                            source={Images.signup3}
+                            style={Styles.heroImage}
+                            resizeMode="contain"
+                        />
+                    </View>
 
-                <View style={Styles.contentContainer}>
-                    <Text style={Styles.headingText}>
-                        {selectedCategory === 'find'
-                            ? t('Choose your sport focus (Athlete)')
-                            : selectedCategory === 'manage'
-                                ? t('Choose your sport focus (Group/Admin)')
-                                : selectedCategory === 'support'
-                                    ? t('Choose sports you follow (Support)')
-                                    : t('Choose your sport focus')}
-                    </Text>
-                    <SizeBox height={8} />
-                    <Text style={Styles.subHeadingText}>
-                        {t('Select one or more disciplines')}
-                    </Text>
+                    <SizeBox height={18} />
 
-                    <SizeBox height={24} />
+                    <View style={Styles.contentContainer}>
+                        <Text style={Styles.headingText}>{headingText}</Text>
+                        <SizeBox height={8} />
+                        <Text style={Styles.subHeadingText}>{subHeadingText}</Text>
+                    </View>
+                </View>
 
-                    <View style={Styles.cardContainer}>
-                        {events.map((event) => {
+                <View style={Styles.selectionSection}>
+                    <ScrollView
+                        style={Styles.focusList}
+                        contentContainerStyle={Styles.focusListContent}
+                        showsVerticalScrollIndicator={false}
+                    >
+                        {visibleEvents.map((event) => {
                             const isSelected = selectedEvents.includes(event.id);
                             return (
                                 <TouchableOpacity
                                     key={event.id}
-                                    style={[
-                                        Styles.eventItem,
-                                        isSelected && Styles.eventItemSelected,
-                                        event.disabled && Styles.eventItemDisabled,
-                                    ]}
-                                    activeOpacity={0.7}
-                                    onPress={() => !event.disabled && toggleEvent(event.id)}
-                                    disabled={event.disabled}
+                                    testID={`focus-card-${event.id}`}
+                                    style={[Styles.focusCard, isSelected && Styles.focusCardSelected]}
+                                    activeOpacity={0.85}
+                                    onPress={() => toggleEvent(event.id)}
                                 >
-                                    <View style={Styles.eventInfo}>
-                                        {event.isSvg ? (
-                                            <event.icon width={22} height={22} />
-                                        ) : (
-                                            <Image
-                                                source={event.icon}
-                                                style={Styles.eventIcon}
-                                            />
-                                        )}
-                                        <Text
-                                            style={[
-                                                Styles.eventName,
-                                                isSelected && Styles.eventNameSelected,
-                                                event.disabled && Styles.eventNameDisabled,
-                                            ]}
-                                        >
-                                            {event.name}
-                                        </Text>
+                                    <View style={Styles.focusCardLeft}>
+                                        <View style={Styles.focusIconWrap}>
+                                            <SportFocusIcon focusId={event.id} size={26} color={colors.primaryColor} />
+                                        </View>
+                                        <View style={Styles.focusTextWrap}>
+                                            <Text style={Styles.focusCardTitle}>{event.name}</Text>
+                                            <Text style={Styles.focusCardSubtitle}>
+                                                {allowsMultiSelect
+                                                    ? t('Tap to add or remove this sport')
+                                                    : t('Tap to continue with this sport')}
+                                            </Text>
+                                        </View>
                                     </View>
-                                    {event.disabled && (
-                                        <Image
-                                            source={Images.signupLock}
-                                            style={Styles.lockIcon}
-                                        />
-                                    )}
+                                    <TickCircle
+                                        size={24}
+                                        color={isSelected ? colors.primaryColor : colors.lightGrayColor}
+                                        variant={isSelected ? 'Bold' : 'Linear'}
+                                    />
                                 </TouchableOpacity>
                             );
                         })}
-                    </View>
+
+                        {selectedEventDetails.length > 0 ? (
+                            <View style={Styles.selectedSummaryCard}>
+                                <Text style={Styles.selectedSummaryLabel}>
+                                    {allowsMultiSelect ? t('Selected sports') : t('Selected sport')}
+                                </Text>
+                                <Text style={Styles.selectedSummaryValue}>
+                                    {selectedEventDetails.map((item) => item.name).join(' • ')}
+                                </Text>
+                            </View>
+                        ) : null}
+
+                        <SizeBox height={12} />
+                    </ScrollView>
                 </View>
+            </View>
 
-                <View style={Styles.buttonContainer}>
-                    <TouchableOpacity
-                        style={Styles.backButton}
-                        activeOpacity={0.7}
-                        onPress={handleBack}
-                    >
-                        <Text style={Styles.backButtonText}>{t('Back')}</Text>
-                    </TouchableOpacity>
+            <View style={[Styles.buttonContainer, { paddingBottom: insets.bottom + 14 }]}>
+                <TouchableOpacity style={Styles.backButton} activeOpacity={0.7} onPress={() => navigation.goBack()}>
+                    <Text style={Styles.backButtonText}>{t('Back')}</Text>
+                </TouchableOpacity>
 
-                    <TouchableOpacity
-                        style={[
-                            Styles.nextButton,
-                            (isLoading || selectedEvents.length === 0) && Styles.nextButtonDisabled,
-                        ]}
-                        activeOpacity={0.7}
-                        onPress={handleNext}
-                        disabled={isLoading || selectedEvents.length === 0}
-                    >
-                        {isLoading ? (
-                            <ActivityIndicator size="small" color="#fff" />
-                        ) : (
-                            <>
-                                <Text style={Styles.nextButtonText}>{t('Next')}</Text>
-                                <Icons.RightBtnIcon height={18} width={18} />
-                            </>
-                        )}
-                    </TouchableOpacity>
-                </View>
-
-                <SizeBox height={40} />
-            </ScrollView>
+                <TouchableOpacity
+                    testID="select-event-next-button"
+                    style={[
+                        Styles.nextButton,
+                        (isLoading || selectedEvents.length === 0) && Styles.nextButtonDisabled,
+                    ]}
+                    activeOpacity={0.7}
+                    onPress={handleNext}
+                    disabled={isLoading || selectedEvents.length === 0}
+                >
+                    {isLoading ? (
+                        <ActivityIndicator size="small" color="#fff" />
+                    ) : (
+                        <>
+                            <Text style={Styles.nextButtonText}>{t('Next')}</Text>
+                            <Icons.RightBtnIcon height={18} width={18} />
+                        </>
+                    )}
+                </TouchableOpacity>
+            </View>
         </View>
     );
 };

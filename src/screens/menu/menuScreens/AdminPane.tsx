@@ -16,6 +16,7 @@ import { useTheme } from '../../../context/ThemeContext';
 import { useAuth } from '../../../context/AuthContext';
 import { AuthBootstrapResponse, AuthMeResponse, getAuthMe } from '../../../services/apiGateway';
 import { createStyles } from '../MenuStyles';
+import { useTranslation } from 'react-i18next';
 
 interface ActionItem {
     icon: React.ReactNode;
@@ -25,6 +26,7 @@ interface ActionItem {
 }
 
 const AdminPane = ({ navigation }: any) => {
+    const { t } = useTranslation();
     const insets = useSafeAreaInsets();
     const { colors } = useTheme();
     const Styles = createStyles(colors);
@@ -79,7 +81,7 @@ const AdminPane = ({ navigation }: any) => {
             setAuthMe(meResponse);
             setBootstrapSnapshot(bootstrapResponse);
         } catch (err: any) {
-            setError(err?.message ?? 'Failed to load admin data.');
+            setError(err?.message ?? t('Failed to load admin data.'));
         } finally {
             if (silent) {
                 setIsRefreshing(false);
@@ -87,7 +89,7 @@ const AdminPane = ({ navigation }: any) => {
                 setIsLoading(false);
             }
         }
-    }, [apiAccessToken, authBootstrap, refreshAuthBootstrap]);
+    }, [apiAccessToken, authBootstrap, refreshAuthBootstrap, t]);
 
     useFocusEffect(
         useCallback(() => {
@@ -104,32 +106,32 @@ const AdminPane = ({ navigation }: any) => {
         navigation.navigate(screen);
     }, [navigation]);
 
-    const actionItems: ActionItem[] = [
+    const actionItems: ActionItem[] = useMemo(() => [
         {
             icon: <DocumentText size={20} color={colors.primaryColor} variant="Linear" />,
-            title: 'Hub',
-            subtitle: 'Operational dashboard and activity overview',
+            title: t('Hub'),
+            subtitle: t('Operational dashboard and activity overview'),
             onPress: () => openTabScreen('Home', 'HubScreen'),
         },
         {
             icon: <Profile2User size={20} color={colors.primaryColor} variant="Linear" />,
-            title: 'Manage Profiles',
-            subtitle: 'Open the profile management flow',
+            title: t('Manage Profiles'),
+            subtitle: t('Open the profile management flow'),
             onPress: () => navigation.navigate('ManageProfiles'),
         },
         {
             icon: <VideoSquare size={20} color={colors.primaryColor} variant="Linear" />,
-            title: 'Upload Activity',
-            subtitle: 'Review current and past uploads',
+            title: t('Upload Activity'),
+            subtitle: t('Review current and past uploads'),
             onPress: () => openTabScreen('Upload', 'UploadActivityScreen'),
         },
         {
             icon: <SearchNormal1 size={20} color={colors.primaryColor} variant="Linear" />,
-            title: 'AI Search',
-            subtitle: 'Jump into the search/admin workflow',
+            title: t('AI Search'),
+            subtitle: t('Jump into the search/admin workflow'),
             onPress: () => navigation.navigate('AISearchScreen'),
         },
-    ];
+    ], [colors.primaryColor, navigation, openTabScreen, t]);
 
     const activeBootstrap = bootstrapSnapshot ?? authBootstrap;
     const userSummary = activeBootstrap?.user ?? null;
@@ -138,7 +140,7 @@ const AdminPane = ({ navigation }: any) => {
         <View style={Styles.helpRow}>
             <View style={{ flex: 1 }}>
                 <Text style={Styles.helpLabel}>{label}</Text>
-                <Text style={Styles.helpValue}>{value == null || value === '' ? '-' : String(value)}</Text>
+                <Text style={Styles.helpValue}>{value == null || value === '' ? t('Not available') : String(value)}</Text>
             </View>
         </View>
     );
@@ -166,7 +168,7 @@ const AdminPane = ({ navigation }: any) => {
                     ))}
                 </View>
             ) : (
-                <Text style={Styles.helpValue}>-</Text>
+                <Text style={Styles.helpValue}>{t('Not available')}</Text>
             )}
         </View>
     );
@@ -179,7 +181,7 @@ const AdminPane = ({ navigation }: any) => {
                 <TouchableOpacity style={Styles.headerButton} onPress={() => navigation.goBack()}>
                     <ArrowLeft2 size={24} color={colors.primaryColor} variant="Linear" />
                 </TouchableOpacity>
-                <Text style={Styles.headerTitle}>Admin Pane</Text>
+                <Text style={Styles.headerTitle}>{t('Admin Pane')}</Text>
                 <View style={Styles.headerSpacer} />
             </View>
 
@@ -189,9 +191,9 @@ const AdminPane = ({ navigation }: any) => {
                 <View style={[Styles.helpCard, { gap: 12 }]}>
                     <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
                         <View style={{ flex: 1, paddingRight: 12 }}>
-                            <Text style={Styles.helpLabel}>Session status</Text>
+                            <Text style={Styles.helpLabel}>{t('Session status')}</Text>
                             <Text style={Styles.helpValue}>
-                                {isAuthenticated ? 'Authenticated' : 'Not authenticated'}
+                                {isAuthenticated ? t('Authenticated') : t('Not authenticated')}
                             </Text>
                         </View>
                         <TouchableOpacity
@@ -204,13 +206,13 @@ const AdminPane = ({ navigation }: any) => {
                             ) : (
                                 <>
                                     <Refresh size={14} color={colors.pureWhite} variant="Linear" />
-                                    <Text style={Styles.editActionText}>Refresh</Text>
+                                    <Text style={Styles.editActionText}>{t('Refresh')}</Text>
                                 </>
                             )}
                         </TouchableOpacity>
                     </View>
                     <Text style={[Styles.titlesText, { color: colors.subTextColor, lineHeight: 20 }]}>
-                        This pane is app-side only for now. If you want real admin access control, the backend still needs an explicit role or permission gate.
+                        {t('This pane is app-side only for now. If you want real admin access control, the backend still needs an explicit role or permission gate.')}
                     </Text>
                 </View>
 
@@ -218,7 +220,7 @@ const AdminPane = ({ navigation }: any) => {
                     <>
                         <SizeBox height={16} />
                         <View style={[Styles.helpCard, { borderColor: colors.errorColor || '#D32F2F' }]}>
-                            <Text style={[Styles.helpLabel, { color: colors.errorColor || '#D32F2F' }]}>Load error</Text>
+                            <Text style={[Styles.helpLabel, { color: colors.errorColor || '#D32F2F' }]}>{t('Load error')}</Text>
                             <SizeBox height={6} />
                             <Text style={Styles.helpValue}>{error}</Text>
                         </View>
@@ -231,7 +233,7 @@ const AdminPane = ({ navigation }: any) => {
                         <View style={[Styles.helpCard, { alignItems: 'center', justifyContent: 'center', minHeight: 120 }]}>
                             <ActivityIndicator size="small" color={colors.primaryColor} />
                             <SizeBox height={12} />
-                            <Text style={Styles.helpLabel}>Loading admin data...</Text>
+                            <Text style={Styles.helpLabel}>{t('Loading admin data...')}</Text>
                         </View>
                     </>
                 ) : null}
@@ -240,9 +242,9 @@ const AdminPane = ({ navigation }: any) => {
                     <>
                         <SizeBox height={24} />
                         <View style={Styles.helpCard}>
-                            <Text style={Styles.helpLabel}>Access</Text>
+                            <Text style={Styles.helpLabel}>{t('Access')}</Text>
                             <SizeBox height={6} />
-                            <Text style={Styles.helpValue}>Sign in to use the admin pane.</Text>
+                            <Text style={Styles.helpValue}>{t('Sign in to use the admin pane.')}</Text>
                         </View>
                     </>
                 ) : null}
@@ -250,7 +252,7 @@ const AdminPane = ({ navigation }: any) => {
                 {!isLoading && isAuthenticated ? (
                     <>
                         <SizeBox height={24} />
-                        <Text style={Styles.sectionTitle}>Quick actions</Text>
+                        <Text style={Styles.sectionTitle}>{t('Quick actions')}</Text>
                         <SizeBox height={16} />
                         {actionItems.map((item, index) => (
                             <React.Fragment key={item.title}>
@@ -275,62 +277,62 @@ const AdminPane = ({ navigation }: any) => {
                         ))}
 
                         <SizeBox height={24} />
-                        <Text style={Styles.sectionTitle}>Access summary</Text>
+                        <Text style={Styles.sectionTitle}>{t('Access summary')}</Text>
                         <SizeBox height={16} />
                         <View style={Styles.helpCard}>
-                            {renderLabelValueRow('Profile ID', authMe?.profile_id)}
+                            {renderLabelValueRow(t('Profile ID'), authMe?.profile_id)}
                             <SizeBox height={12} />
                             <View style={Styles.helpDivider} />
                             <SizeBox height={12} />
-                            {renderLabelValueRow('Auth subject', authMe?.sub)}
+                            {renderLabelValueRow(t('Auth subject'), authMe?.sub)}
                             <SizeBox height={12} />
                             <View style={Styles.helpDivider} />
                             <SizeBox height={12} />
-                            {renderLabelValueRow('Remaining AI tokens', authMe?.remaining_tokens)}
+                            {renderLabelValueRow(t('Remaining AI tokens'), authMe?.remaining_tokens)}
                             <SizeBox height={12} />
                             <View style={Styles.helpDivider} />
                             <SizeBox height={12} />
-                            {renderLabelValueRow('Permissions count', authMe?.permissions?.length ?? 0)}
+                            {renderLabelValueRow(t('Permissions count'), authMe?.permissions?.length ?? 0)}
                             <SizeBox height={12} />
                             <View style={Styles.helpDivider} />
                             <SizeBox height={12} />
-                            {renderLabelValueRow('Event access count', authMe?.event_ids?.length ?? 0)}
+                            {renderLabelValueRow(t('Event access count'), authMe?.event_ids?.length ?? 0)}
                         </View>
 
                         <SizeBox height={16} />
-                        {renderChipSection('Permissions', authMe?.permissions ?? [])}
+                        {renderChipSection(t('Permissions'), authMe?.permissions ?? [])}
                         <SizeBox height={16} />
-                        {renderChipSection('Scopes', authMe?.scopes ?? [])}
+                        {renderChipSection(t('Scopes'), authMe?.scopes ?? [])}
                         <SizeBox height={16} />
-                        {renderChipSection('Event IDs', authMe?.event_ids ?? [])}
+                        {renderChipSection(t('Event IDs'), authMe?.event_ids ?? [])}
 
                         <SizeBox height={24} />
-                        <Text style={Styles.sectionTitle}>Bootstrap summary</Text>
+                        <Text style={Styles.sectionTitle}>{t('Bootstrap summary')}</Text>
                         <SizeBox height={16} />
                         <View style={Styles.helpCard}>
-                            {renderLabelValueRow('Profiles count', activeBootstrap?.profiles_count)}
+                            {renderLabelValueRow(t('Profiles count'), activeBootstrap?.profiles_count)}
                             <SizeBox height={12} />
                             <View style={Styles.helpDivider} />
                             <SizeBox height={12} />
-                            {renderLabelValueRow('Needs onboarding', activeBootstrap?.needs_user_onboarding ? 'Yes' : 'No')}
+                            {renderLabelValueRow(t('Needs onboarding'), activeBootstrap?.needs_user_onboarding ? t('Yes') : t('No'))}
                             <SizeBox height={12} />
                             <View style={Styles.helpDivider} />
                             <SizeBox height={12} />
-                            {renderLabelValueRow('Username', userSummary?.username)}
+                            {renderLabelValueRow(t('Username'), userSummary?.username)}
                             <SizeBox height={12} />
                             <View style={Styles.helpDivider} />
                             <SizeBox height={12} />
-                            {renderLabelValueRow('Email', userSummary?.email)}
+                            {renderLabelValueRow(t('Email'), userSummary?.email)}
                             <SizeBox height={12} />
                             <View style={Styles.helpDivider} />
                             <SizeBox height={12} />
-                            {renderLabelValueRow('Full name', userSummary?.full_name)}
+                            {renderLabelValueRow(t('Full name'), userSummary?.full_name)}
                         </View>
 
                         <SizeBox height={16} />
-                        {renderChipSection('Missing fields', activeBootstrap?.missing_user_fields ?? [])}
+                        {renderChipSection(t('Missing fields'), activeBootstrap?.missing_user_fields ?? [])}
                         <SizeBox height={16} />
-                        {renderChipSection('Selected events', normalizedSelectedEvents)}
+                        {renderChipSection(t('Selected events'), normalizedSelectedEvents)}
                     </>
                 ) : null}
 

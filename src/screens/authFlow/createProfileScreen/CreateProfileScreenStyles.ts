@@ -31,6 +31,12 @@ export const createStyles = (colors: ThemeColors) => StyleSheet.create({
         color: colors.grayColor,
         textAlign: 'center',
     },
+    helperText: {
+        ...Fonts.regular12,
+        color: colors.subTextColor,
+        marginTop: 8,
+        marginLeft: 4,
+    },
     label: {
         ...Fonts.medium14,
         color: colors.mainTextColor,
@@ -44,6 +50,15 @@ export const createStyles = (colors: ThemeColors) => StyleSheet.create({
         paddingHorizontal: 16,
         flexDirection: 'row',
         alignItems: 'center',
+    },
+    nativeInputRow: {
+        minHeight: 58,
+    },
+    nativeInput: {
+        flex: 1,
+        paddingVertical: 0,
+        color: colors.mainTextColor,
+        fontSize: 16,
     },
     dateButton: {
         flexDirection: 'row',

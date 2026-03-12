@@ -3,7 +3,6 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import SizeBox from '../../constants/SizeBox';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import FastImage from 'react-native-fast-image';
-import Icons from '../../constants/Icons';
 import Images from '../../constants/Images';
 import { useTheme } from '../../context/ThemeContext';
 import { createStyles } from '../userProfile/UserProfileStyles';
@@ -27,6 +26,19 @@ import {
 import { getApiBaseUrl } from '../../constants/RuntimeConfig';
 import { useTranslation } from 'react-i18next';
 import ProfileNewsSection, { type ProfileNewsItem } from '../../components/profileNews/ProfileNewsSection';
+import SportFocusIcon from '../../components/profile/SportFocusIcon';
+import SupportProfileSummary, { getSupportProfileBadgeLabel } from '../../components/profile/SupportProfileSummary';
+import {
+    focusUsesChestNumbers,
+    getDisciplineLabel,
+    getMainDisciplineForFocus,
+    getProfileCollectionScopeKey,
+    getSportFocusLabel,
+    normalizeMainDisciplines,
+    normalizeProfileModeId,
+    normalizeSelectedEvents,
+    type SportFocusId,
+} from '../../utils/profileSelections';
 
 type PostSummaryWithCover = PostSummary & { coverImage?: string | null };
 type ProfileMembershipItem = {
@@ -68,6 +80,7 @@ const ViewUserProfileScreen = ({ navigation, route }: any) => {
             null;
         return resolved ? String(resolved) : null;
     }, [route?.params?.profileId, route?.params?.profile_id, route?.params?.user]);
+    const isInitialLoading = summary === null;
 
     const isSignedUrl = useCallback((value?: string | null) => {
         if (!value) return false;
@@ -129,8 +142,10 @@ const ViewUserProfileScreen = ({ navigation, route }: any) => {
                 }
                 return;
             }
+            let loadedSummary: ProfileSummary | null = null;
             try {
                 const info = await getProfileSummaryById(apiAccessToken, String(profileId));
+                loadedSummary = info;
                 if (mounted) setSummary(info);
             } catch {
                 if (mounted) setSummary(null);
@@ -156,7 +171,20 @@ const ViewUserProfileScreen = ({ navigation, route }: any) => {
             }
 
             try {
-                const c = await getProfileCollections(apiAccessToken, String(profileId), { limit: 50 });
+                const summaryProfile = (loadedSummary?.profile as any) ?? {};
+                const selectedEvents = normalizeSelectedEvents(summaryProfile?.selected_events ?? []);
+                const supportFocuses = normalizeSelectedEvents(summaryProfile?.support_focuses ?? []);
+                const supportExists =
+                    String(summaryProfile?.support_role ?? '').trim().length > 0 ||
+                    supportFocuses.length > 0 ||
+                    (Array.isArray(summaryProfile?.support_club_codes) && summaryProfile.support_club_codes.length > 0) ||
+                    (Array.isArray(summaryProfile?.support_group_ids) && summaryProfile.support_group_ids.length > 0) ||
+                    (Array.isArray(summaryProfile?.support_athlete_profile_ids) && summaryProfile.support_athlete_profile_ids.length > 0);
+                const scopeFocus = selectedEvents[0] ?? (supportExists ? 'support' : null);
+                const c = await getProfileCollections(apiAccessToken, String(profileId), {
+                    limit: 50,
+                    scope_key: scopeFocus ? getProfileCollectionScopeKey(scopeFocus) : 'default',
+                });
                 if (mounted) setCollections(Array.isArray((c as any)?.collections) ? (c as any).collections : []);
             } catch {
                 if (mounted) setCollections([]);
@@ -259,37 +287,28 @@ const ViewUserProfileScreen = ({ navigation, route }: any) => {
         return raw;
     }, [displayHandle, summary?.profile?.bio, t]);
 
-    const selectedEventProfilesNormalized = useMemo(() => {
-        const raw = summary?.profile?.selected_events;
-        const events = Array.isArray(raw) ? raw : [];
-        return events
-            .map((entry: any) =>
-                String(
-                    typeof entry === 'string'
-                        ? entry
-                        : entry?.id ?? entry?.value ?? entry?.event_id ?? entry?.name ?? '',
-                )
-                    .trim()
-                    .toLowerCase(),
-            )
-            .filter(Boolean);
+    const selectedFocuses = useMemo(
+        () => normalizeSelectedEvents(summary?.profile?.selected_events ?? []),
+        [summary?.profile?.selected_events],
+    );
+    const hasSupportProfile = useMemo(() => {
+        return (
+            String((summary?.profile as any)?.support_role ?? '').trim().length > 0 ||
+            (Array.isArray((summary?.profile as any)?.support_club_codes) && (summary?.profile as any)?.support_club_codes.length > 0) ||
+            (Array.isArray((summary?.profile as any)?.support_group_ids) && (summary?.profile as any)?.support_group_ids.length > 0) ||
+            (Array.isArray((summary?.profile as any)?.support_athlete_profile_ids) && (summary?.profile as any)?.support_athlete_profile_ids.length > 0) ||
+            (Array.isArray((summary?.profile as any)?.support_focuses) && (summary?.profile as any)?.support_focuses.length > 0)
+        );
     }, [summary?.profile]);
-    const hasTrackFieldProfile = selectedEventProfilesNormalized.some((entry) =>
-        entry === 'track-field' || entry === 'track&field' || entry === 'track_field' || entry.includes('track'),
-    );
-    const hasRoadTrailProfile = selectedEventProfilesNormalized.some((entry) =>
-        entry === 'road-events' || entry === 'road&trail' || entry === 'road_trail' || entry.includes('road') || entry.includes('trail'),
-    );
-    const profileSportKind = hasTrackFieldProfile
-        ? 'track'
-        : hasRoadTrailProfile
-            ? 'road'
-            : null;
-    const profileCategoryLabel = profileSportKind === 'track'
-        ? t('trackAndField')
-        : profileSportKind === 'road'
-            ? t('roadAndTrail')
-            : '';
+    const activeFocus = useMemo<SportFocusId | 'support' | null>(() => {
+        const forced = normalizeProfileModeId(route?.params?.forceProfileCategory);
+        if (forced === 'support' && hasSupportProfile) return 'support';
+        if (forced && forced !== 'support' && selectedFocuses.includes(forced)) return forced;
+        if (selectedFocuses.length > 0) return selectedFocuses[0];
+        if (hasSupportProfile) return 'support';
+        return null;
+    }, [hasSupportProfile, route?.params?.forceProfileCategory, selectedFocuses]);
+    const profileCategoryLabel = activeFocus ? (activeFocus === 'support' ? t('Support') : getSportFocusLabel(activeFocus, t)) : '';
     const currentYear = useMemo(() => String(new Date().getFullYear()), []);
     const currentChestNumber = useMemo(() => {
         const raw = (summary?.profile as any)?.chest_numbers_by_year;
@@ -331,12 +350,12 @@ const ViewUserProfileScreen = ({ navigation, route }: any) => {
             .filter((entry): entry is ProfileMembershipItem => Boolean(entry))
             .sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }));
     }, [normalizeMembership, summary?.profile]);
-    const officialMemberships = useMemo(
-        () => profileMemberships.filter((entry) => entry.is_official_club),
-        [profileMemberships],
-    );
     const communityMemberships = useMemo(
         () => profileMemberships.filter((entry) => !entry.is_official_club),
+        [profileMemberships],
+    );
+    const officialMemberships = useMemo(
+        () => profileMemberships.filter((entry) => entry.is_official_club),
         [profileMemberships],
     );
     const trackFieldMainEvent = useMemo(
@@ -355,29 +374,166 @@ const ViewUserProfileScreen = ({ navigation, route }: any) => {
         () => String((summary?.profile as any)?.website ?? '').trim(),
         [summary?.profile],
     );
+    const supportRole = useMemo(
+        () => String((summary?.profile as any)?.support_role ?? '').trim(),
+        [summary?.profile],
+    );
+    const supportProfileBadgeLabel = useMemo(
+        () => getSupportProfileBadgeLabel(supportRole, t),
+        [supportRole, t],
+    );
+    const supportFocuses = useMemo(
+        () => normalizeSelectedEvents((summary?.profile as any)?.support_focuses ?? []),
+        [summary?.profile],
+    );
+    const supportClubs = useMemo(() => {
+        const hydrated = Array.isArray((summary?.profile as any)?.support_clubs)
+            ? (summary?.profile as any)?.support_clubs
+            : [];
+        return hydrated
+            .map((club: any) => {
+                const code = String(club?.code ?? '').trim().toUpperCase();
+                const name = String(club?.name ?? '').trim();
+                if (!code || !name) return null;
+                return {
+                    id: code,
+                    title: name,
+                    subtitle: [String(club?.city ?? '').trim(), String(club?.federation ?? '').trim()].filter(Boolean).join(' · '),
+                };
+            })
+            .filter(Boolean) as Array<{id: string; title: string; subtitle: string}>;
+    }, [summary?.profile]);
+    const supportGroups = useMemo(() => {
+        const hydrated = Array.isArray((summary?.profile as any)?.support_groups)
+            ? (summary?.profile as any)?.support_groups
+            : [];
+        return hydrated
+            .map((group: any) => {
+                const id = String(group?.group_id ?? '').trim();
+                const name = String(group?.name ?? '').trim();
+                if (!id || !name) return null;
+                return {
+                    id,
+                    title: name,
+                    subtitle: [String(group?.role ?? '').trim(), String(group?.location ?? '').trim()].filter(Boolean).join(' · '),
+                };
+            })
+            .filter(Boolean) as Array<{id: string; title: string; subtitle: string}>;
+    }, [summary?.profile]);
+    const directTrackFieldClub = useMemo(() => {
+        const hydrated = (summary?.profile as any)?.track_field_club_detail ?? null;
+        const hydratedName = String(hydrated?.name ?? '').trim();
+        const raw = String((summary?.profile as any)?.track_field_club ?? '').trim();
+        const title = hydratedName || raw;
+        if (!title) return null;
+        return {
+            id: String(hydrated?.code ?? raw).trim() || title,
+            title,
+            subtitle: [String(hydrated?.city ?? '').trim(), String(hydrated?.federation ?? '').trim()].filter(Boolean).join(' · '),
+        };
+    }, [summary?.profile]);
+    const runningClubGroup = useMemo(() => {
+        const hydrated = (summary?.profile as any)?.running_club_group ?? null;
+        const groupId = String(hydrated?.group_id ?? '').trim();
+        const name = String(hydrated?.name ?? '').trim();
+        if (!groupId || !name) return null;
+        return {
+            id: groupId,
+            title: name,
+            subtitle: [String(hydrated?.role ?? '').trim(), String(hydrated?.location ?? '').trim()].filter(Boolean).join(' · '),
+        };
+    }, [summary?.profile]);
+    const mainDisciplines = useMemo(
+        () => normalizeMainDisciplines((summary?.profile as any)?.main_disciplines ?? {}, {
+            trackFieldMainEvent,
+            roadTrailMainEvent,
+        }),
+        [roadTrailMainEvent, summary?.profile, trackFieldMainEvent],
+    );
     const profileDistance = useMemo(() => {
-        if (profileSportKind === 'track') return String(trackFieldMainEvent || '').trim();
-        if (profileSportKind === 'road') return String(roadTrailMainEvent || '').trim();
-        return String(trackFieldMainEvent || roadTrailMainEvent || '').trim();
-    }, [profileSportKind, roadTrailMainEvent, trackFieldMainEvent]);
+        if (!activeFocus || activeFocus === 'support') return '';
+        const disciplineKey = getMainDisciplineForFocus(mainDisciplines, activeFocus, {
+            trackFieldMainEvent,
+            roadTrailMainEvent,
+        });
+        if (!disciplineKey) return '';
+        return getDisciplineLabel(activeFocus, disciplineKey, t);
+    }, [activeFocus, mainDisciplines, roadTrailMainEvent, t, trackFieldMainEvent]);
+    const athleteActiveFocus = useMemo<SportFocusId | null>(
+        () => (activeFocus && activeFocus !== 'support' ? activeFocus : null),
+        [activeFocus],
+    );
     const formatMetaDisplayValue = useCallback((value: string) => {
         const trimmed = String(value || '').trim();
         if (trimmed.length <= 11) return trimmed;
         return `${trimmed.slice(0, 11)}...`;
     }, []);
 
+    const visibleOfficialClubs = useMemo(() => {
+        if (activeFocus === 'support') return supportClubs;
+        const merged = new Map<string, {id: string; title: string; subtitle: string}>();
+        const makeClubKey = (title: string, subtitle: string) =>
+            `${String(title || '').trim().toLowerCase()}|${String(subtitle || '').trim().toLowerCase()}`;
+        officialMemberships.forEach((entry) => {
+            const subtitle = [entry.role ?? '', entry.location].filter(Boolean).join(' · ');
+            merged.set(makeClubKey(entry.name, subtitle), {
+                id: entry.group_id,
+                title: entry.name,
+                subtitle,
+            });
+        });
+        if (directTrackFieldClub) {
+            const key = makeClubKey(directTrackFieldClub.title, directTrackFieldClub.subtitle);
+            if (!merged.has(key)) {
+                merged.set(key, directTrackFieldClub);
+            }
+        }
+        return Array.from(merged.values());
+    }, [activeFocus, directTrackFieldClub, officialMemberships, supportClubs]);
+    const visibleGroups = useMemo(() => {
+        if (activeFocus === 'support') return supportGroups;
+        const merged = new Map<string, {id: string; title: string; subtitle: string}>();
+        communityMemberships.forEach((entry) => {
+            merged.set(entry.group_id, {
+                id: entry.group_id,
+                title: entry.name,
+                subtitle: [entry.role ?? '', entry.location].filter(Boolean).join(' · '),
+            });
+        });
+        if (runningClubGroup) merged.set(runningClubGroup.id, runningClubGroup);
+        return Array.from(merged.values());
+    }, [activeFocus, communityMemberships, runningClubGroup, supportGroups]);
+    const singleOfficialClub = visibleOfficialClubs.length === 1 ? visibleOfficialClubs[0] : null;
+    const singleCommunityGroup = visibleGroups.length === 1 ? visibleGroups[0] : null;
     const profileMetaItems = useMemo(() => {
+        const baseItems = activeFocus === 'support'
+            ? []
+            : [
+                { key: 'nationality', value: nationality },
+                { key: 'chest', value: athleteActiveFocus && focusUsesChestNumbers(athleteActiveFocus) ? currentChestNumber : '' },
+                { key: 'distance', value: profileDistance },
+            ];
+
         return [
-            { key: 'nationality', value: nationality },
-            { key: 'chest', value: currentChestNumber },
-            { key: 'distance', value: profileDistance },
+            ...baseItems,
+            { key: 'singleClub', value: singleOfficialClub?.title ?? '' },
+            { key: 'singleGroup', value: singleCommunityGroup?.title ?? '' },
         ]
             .map((entry) => ({
                 ...entry,
                 value: formatMetaDisplayValue(String(entry.value || '').trim()),
             }))
             .filter((entry) => entry.value.length > 0);
-    }, [currentChestNumber, formatMetaDisplayValue, nationality, profileDistance]);
+    }, [
+        activeFocus,
+        athleteActiveFocus,
+        currentChestNumber,
+        formatMetaDisplayValue,
+        nationality,
+        profileDistance,
+        singleCommunityGroup?.title,
+        singleOfficialClub?.title,
+    ]);
     const openProfileWebsite = useCallback(async () => {
         const raw = String(website || '').trim();
         if (!raw) return;
@@ -476,6 +632,26 @@ const ViewUserProfileScreen = ({ navigation, route }: any) => {
         [colors, summary?.is_following],
     );
 
+    if (isInitialLoading) {
+        return (
+            <View style={Styles.mainContainer}>
+                <SizeBox height={insets.top} />
+                <View style={Styles.header}>
+                    <TouchableOpacity style={Styles.headerButton} onPress={() => navigation.goBack()}>
+                        <ArrowLeft2 size={24} color={colors.primaryColor} variant="Linear" />
+                    </TouchableOpacity>
+                    <Text style={Styles.headerTitle}>{t('Profile')}</Text>
+                    <View style={{ width: 44, height: 44 }} />
+                </View>
+                <View style={Styles.emptyProfileContainer}>
+                    <ActivityIndicator size="large" color={colors.primaryColor} />
+                    <SizeBox height={16} />
+                    <Text style={Styles.emptyProfileTitle}>{t('Loading...')}</Text>
+                </View>
+            </View>
+        );
+    }
+
     return (
         <View style={Styles.mainContainer}>
             <SizeBox height={insets.top} />
@@ -520,13 +696,9 @@ const ViewUserProfileScreen = ({ navigation, route }: any) => {
                                 </View>
                                 <View style={Styles.statDivider} />
                                 {profileCategoryLabel.length > 0 ? (
-                                    <View style={localStyles.profileCategoryCompact}>
-                                        {profileSportKind === 'track' ? (
-                                            <Icons.TrackFieldLogo width={22} height={18} />
-                                        ) : (
-                                            <Icons.PersonRunningColorful width={20} height={20} />
-                                        )}
-                                        <Text style={localStyles.profileCategoryCompactText}>{profileCategoryLabel}</Text>
+                                <View style={localStyles.profileCategoryCompact}>
+                                        <SportFocusIcon focusId={activeFocus} size={20} color={colors.primaryColor} />
+                                        <Text style={localStyles.profileCategoryCompactText}>{activeFocus === 'support' ? supportProfileBadgeLabel : profileCategoryLabel}</Text>
                                     </View>
                                 ) : null}
                             </View>
@@ -552,16 +724,20 @@ const ViewUserProfileScreen = ({ navigation, route }: any) => {
                         <Text style={Styles.bioText}>{bioText}</Text>
                         <View style={Styles.bioDivider} />
                     </View>
+                    {activeFocus === 'support' ? (
+                        <View style={Styles.athleteMetaSection}>
+                            <SupportProfileSummary role={supportRole} focuses={supportFocuses} t={t} />
+                        </View>
+                    ) : null}
                     {profileMetaItems.length > 0 && (
                         <View style={Styles.athleteMetaSection}>
                             <View style={Styles.athleteMetaInlineBox}>
-                                {profileMetaItems.map((entry, index) => (
-                                    <React.Fragment key={`meta-${entry.key}-${index}`}>
-                                        <Text style={Styles.athleteMetaInlineValue}>{entry.value}</Text>
-                                        {index < profileMetaItems.length - 1 ? (
-                                            <Text style={Styles.athleteMetaInlineDot}>{' \u2022 '}</Text>
-                                        ) : null}
-                                    </React.Fragment>
+                                {profileMetaItems.map((entry) => (
+                                    <View key={entry.key} style={Styles.athleteMetaPill}>
+                                        <Text style={Styles.athleteMetaPillText}>
+                                            {entry.value}
+                                        </Text>
+                                    </View>
                                 ))}
                             </View>
                         </View>
@@ -575,23 +751,45 @@ const ViewUserProfileScreen = ({ navigation, route }: any) => {
                             </TouchableOpacity>
                         </View>
                     ) : null}
-                    {communityMemberships.length > 0 ? (
+                    {visibleOfficialClubs.length > 1 ? (
                         <View style={Styles.membershipSection}>
-                            <Text style={Styles.membershipTitle}>{t('Community groups')}</Text>
+                            <Text style={Styles.membershipTitle}>{t('Official clubs')}</Text>
                             <View style={Styles.membershipWrap}>
-                                {communityMemberships.map((group) => (
-                                    <TouchableOpacity
-                                        key={group.group_id}
+                                {visibleOfficialClubs.map((club) => (
+                                    <View
+                                        key={club.id}
                                         style={Styles.membershipChip}
-                                        activeOpacity={0.85}
-                                        onPress={() => navigation.navigate('GroupProfileScreen', { groupId: group.group_id, showBackButton: true })}
                                     >
                                         <Text style={Styles.membershipChipTitle} numberOfLines={1}>
-                                            {group.name}
+                                            {club.title}
                                         </Text>
-                                        {group.location.length > 0 ? (
+                                        {club.subtitle.length > 0 ? (
                                             <Text style={Styles.membershipChipMeta} numberOfLines={1}>
-                                                {group.location}
+                                                {club.subtitle}
+                                            </Text>
+                                        ) : null}
+                                    </View>
+                                ))}
+                            </View>
+                        </View>
+                    ) : null}
+                    {visibleGroups.length > 1 ? (
+                        <View style={Styles.membershipSection}>
+                            <Text style={Styles.membershipTitle}>{t(activeFocus === 'support' ? 'Groups' : 'Community groups')}</Text>
+                            <View style={Styles.membershipWrap}>
+                                {visibleGroups.map((group) => (
+                                    <TouchableOpacity
+                                        key={group.id}
+                                        style={Styles.membershipChip}
+                                        activeOpacity={0.85}
+                                        onPress={() => navigation.navigate('GroupProfileScreen', { groupId: group.id, showBackButton: true })}
+                                    >
+                                        <Text style={Styles.membershipChipTitle} numberOfLines={1}>
+                                            {group.title}
+                                        </Text>
+                                        {group.subtitle.length > 0 ? (
+                                            <Text style={Styles.membershipChipMeta} numberOfLines={1}>
+                                                {group.subtitle}
                                             </Text>
                                         ) : null}
                                     </TouchableOpacity>
@@ -750,5 +948,3 @@ const ViewUserProfileScreen = ({ navigation, route }: any) => {
 };
 
 export default ViewUserProfileScreen;
-
-

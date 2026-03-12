@@ -137,6 +137,10 @@ import quickDownload from '../assets/icons/quickDownload.svg';
 import quickAddMyself from '../assets/icons/quickAddMyself.svg';
 import quickChevron from '../assets/icons/quickChevron.svg';
 import trackFieldLogo from '../assets/icons/trackFieldLogo.svg';
+import triathlonColorful from '../assets/icons/triathlonColorful.svg';
+import hyroxColorful from '../assets/icons/hyroxColorful.svg';
+import ironmanColorful from '../assets/icons/ironmanColorful.svg';
+import cyclingColorful from '../assets/icons/cyclingColorful.svg';
 
 
 
@@ -278,6 +282,10 @@ const Icons = {
     QuickAddMyself: quickAddMyself,
     QuickChevron: quickChevron,
     TrackFieldLogo: trackFieldLogo,
+    TriathlonColorful: triathlonColorful,
+    HyroxColorful: hyroxColorful,
+    IronmanColorful: ironmanColorful,
+    CyclingColorful: cyclingColorful,
 }
 
 export default Icons;

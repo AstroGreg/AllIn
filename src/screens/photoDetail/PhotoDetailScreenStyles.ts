@@ -10,11 +10,11 @@ export const createStyles = (colors: ThemeColors) => StyleSheet.create({
     header: {
         flexDirection: 'row',
         alignItems: 'center',
-        justifyContent: 'space-between',
         paddingHorizontal: 20,
-        paddingVertical: 16,
+        paddingVertical: 14,
         borderBottomWidth: 0.5,
         borderBottomColor: colors.borderColor,
+        gap: 12,
     },
     backButton: {
         width: 44,
@@ -24,24 +24,79 @@ export const createStyles = (colors: ThemeColors) => StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'center',
     },
+    headerCenter: {
+        flex: 1,
+        minWidth: 0,
+        gap: 2,
+    },
+    headerRight: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 10,
+    },
     headerAction: {
         width: 44,
         height: 44,
         alignItems: 'center',
         justifyContent: 'center',
+        borderRadius: 22,
+        backgroundColor: colors.btnBackgroundColor,
+    },
+    headerActionDark: {
+        backgroundColor: 'rgba(255,255,255,0.10)',
+        borderWidth: 1,
+        borderColor: 'rgba(255,255,255,0.16)',
+    },
+    headerActionLight: {
+        backgroundColor: '#E5E7EB',
+        borderWidth: 1,
+        borderColor: '#D1D5DB',
     },
     headerTitle: {
         ...Fonts.medium14,
         color: colors.mainTextColor,
     },
+    headerSubtitle: {
+        ...Fonts.regular12,
+        color: colors.subTextColor,
+    },
+    headerMetricPill: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 6,
+        paddingHorizontal: 12,
+        height: 36,
+        borderRadius: 18,
+        backgroundColor: colors.btnBackgroundColor,
+    },
+    headerMetricPillLight: {
+        backgroundColor: '#F3F4F6',
+        borderWidth: 1,
+        borderColor: '#D1D5DB',
+    },
+    headerMetricText: {
+        ...Fonts.medium12,
+        color: colors.mainTextColor,
+    },
     content: {
         flex: 1,
-        paddingHorizontal: 20,
-        paddingTop: 16,
+        paddingHorizontal: 0,
+        paddingTop: 0,
     },
     contentFull: {
         paddingHorizontal: 0,
         paddingTop: 0,
+    },
+    contentInset: {
+        paddingHorizontal: 20,
+        paddingTop: 16,
+        paddingBottom: 18,
+    },
+    mediaStage: {
+        width: '100%',
+        flex: 1,
+        minHeight: 0,
+        justifyContent: 'center',
     },
     questionCard: {
         backgroundColor: colors.cardBackground,
@@ -106,14 +161,35 @@ export const createStyles = (colors: ThemeColors) => StyleSheet.create({
         overflow: 'hidden',
         marginBottom: 20,
         position: 'relative',
+        backgroundColor: colors.backgroundColor,
+        alignItems: 'stretch',
+        justifyContent: 'flex-start',
     },
     photoContainerFull: {
+        borderRadius: 0,
+        marginBottom: 0,
+    },
+    photoContainerFullBleed: {
         borderRadius: 0,
         marginBottom: 0,
     },
     photoImage: {
         width: '100%',
         height: '100%',
+        backgroundColor: 'transparent',
+    },
+    zoomablePhoto: {
+        backgroundColor: 'transparent',
+        alignSelf: 'center',
+    },
+    photoZoomScroll: {
+        flex: 1,
+        width: '100%',
+    },
+    photoZoomContent: {
+        flexGrow: 1,
+        alignItems: 'stretch',
+        justifyContent: 'flex-start',
     },
     videoSkeleton: {
         ...StyleSheet.absoluteFillObject,
@@ -166,7 +242,7 @@ export const createStyles = (colors: ThemeColors) => StyleSheet.create({
     },
     downloadProgressLabel: {
         ...Fonts.regular12,
-        color: colors.textSecondary,
+        color: colors.subTextColor,
     },
     videoTimeRow: {
         paddingHorizontal: 10,

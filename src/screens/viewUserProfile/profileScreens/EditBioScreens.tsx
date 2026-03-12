@@ -15,13 +15,18 @@ const EditBioScreens = ({ navigation }: any) => {
     const { colors } = useTheme();
     const { t } = useTranslation();
     const styles = createStyles(colors);
-    const { apiAccessToken } = useAuth();
+    const { apiAccessToken, updateUserProfile, userProfile } = useAuth();
     const [bio, setBio] = useState('');
 
     useEffect(() => {
         let mounted = true;
         const load = async () => {
-            if (!apiAccessToken) return;
+            if (!apiAccessToken) {
+                if (mounted) {
+                    setBio(String(userProfile?.bio ?? ''));
+                }
+                return;
+            }
             try {
                 const summary = await getProfileSummary(apiAccessToken);
                 if (!mounted) return;
@@ -36,12 +41,17 @@ const EditBioScreens = ({ navigation }: any) => {
         return () => {
             mounted = false;
         };
-    }, [apiAccessToken]);
+    }, [apiAccessToken, userProfile?.bio]);
 
     const handleSave = async () => {
-        if (!apiAccessToken) return;
+        if (!apiAccessToken) {
+            await updateUserProfile({ bio });
+            navigation.goBack();
+            return;
+        }
         try {
             await updateProfileSummary(apiAccessToken, { bio });
+            await updateUserProfile({ bio }, { persistLocally: false });
             navigation.goBack();
         } catch {
             // keep user on screen if save fails
@@ -49,7 +59,7 @@ const EditBioScreens = ({ navigation }: any) => {
     };
 
     return (
-        <View style={styles.mainContainer}>
+        <View style={styles.mainContainer} testID="edit-bio-screen">
             <SizeBox height={insets.top} />
             <View style={styles.header}>
                 <TouchableOpacity style={styles.headerButton} onPress={() => navigation.goBack()}>
@@ -61,10 +71,12 @@ const EditBioScreens = ({ navigation }: any) => {
 
             <ScrollView showsVerticalScrollIndicator={false}>
                 <View style={styles.container}>
+                    <SizeBox height={42} />
                     <Text style={styles.titleText}>{t('Bio')}</Text>
                     <SizeBox height={8} />
                     <View style={styles.bioContainer}>
                         <TextInput
+                            testID="edit-bio-input"
                             style={styles.textInput}
                             placeholder={t('Write your bio...')}
                             placeholderTextColor={colors.subTextColor}
@@ -80,7 +92,7 @@ const EditBioScreens = ({ navigation }: any) => {
                             <Text style={styles.eventBtnText}>{t('Cancel')}</Text>
                         </TouchableOpacity>
                         <View style={{ flex: 0.484 }}>
-                            <CustomButton title={t('Save')} onPress={handleSave} isSmall={true} />
+                            <CustomButton title={t('Save')} onPress={handleSave} isSmall={true} testID="edit-bio-save" />
                         </View>
                     </View>
 

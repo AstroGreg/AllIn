@@ -16,6 +16,11 @@ const hasSelectedEvents = (value: any): boolean => {
   return value.some((entry) => String(entry ?? '').trim().length > 0);
 };
 
+const hasSupportFocuses = (value: any): boolean => {
+  if (!Array.isArray(value)) return false;
+  return value.some((entry) => String(entry ?? '').trim().length > 0);
+};
+
 const hasRequiredAccountFields = (bootstrap: any): boolean => {
   const user = bootstrap?.user ?? {};
   const required = [
@@ -34,14 +39,15 @@ export const resolvePostAuthRoute = (
 ): RouteTarget => {
   const category = asCategory(userProfile?.category);
   const selectedEventsPresent = hasSelectedEvents(userProfile?.selectedEvents);
-  const needsEventSelection = category !== 'support';
+  const supportFocusesPresent = hasSupportFocuses(userProfile?.supportFocuses);
+  const needsEventSelection = category === 'support' ? !supportFocusesPresent : !selectedEventsPresent;
 
   // On cold reopen, bootstrap can fail transiently (network/server startup).
   // In that case, resume from local onboarding progress instead of forcing
   // users back to "Complete your account".
   if (!bootstrap) {
     if (!category) return { name: 'CategorySelectionScreen' };
-    if (needsEventSelection && !selectedEventsPresent) {
+    if (needsEventSelection) {
       return {
         name: 'SelectEventScreen',
         params: { selectedCategory: category },
@@ -63,7 +69,7 @@ export const resolvePostAuthRoute = (
       return { name: 'CreateProfileScreen' };
     }
     if (!category) return { name: 'CategorySelectionScreen' };
-    if (needsEventSelection && !selectedEventsPresent) {
+    if (needsEventSelection) {
       return {
         name: 'SelectEventScreen',
         params: { selectedCategory: category },
@@ -78,7 +84,7 @@ export const resolvePostAuthRoute = (
 
   if (!category) return { name: 'CategorySelectionScreen' };
 
-  if (needsEventSelection && !selectedEventsPresent) {
+  if (needsEventSelection) {
     return {
       name: 'SelectEventScreen',
       params: { selectedCategory: category },

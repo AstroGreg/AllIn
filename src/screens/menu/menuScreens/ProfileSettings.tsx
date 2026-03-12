@@ -7,6 +7,7 @@ import { useTheme } from '../../../context/ThemeContext'
 import { ArrowLeft2, Lock, User, Card, Calendar, ArrowRight2, Scan } from 'iconsax-react-nativejs'
 import { useTranslation } from 'react-i18next'
 import { useAuth } from '../../../context/AuthContext'
+import { normalizeSelectedEvents } from '../../../utils/profileSelections'
 
 interface SettingsItem {
     icon: React.ReactNode;
@@ -21,21 +22,15 @@ const ProfileSettings = ({ navigation }: any) => {
     const { colors } = useTheme();
     const Styles = createStyles(colors);
 
-    const selectedEventsRaw = userProfile?.selectedEvents;
-    const selectedEventsNormalized: string[] = Array.isArray(selectedEventsRaw)
-        ? selectedEventsRaw
-            .map((entry: any) => String(
-                typeof entry === 'string'
-                    ? entry
-                    : entry?.id ?? entry?.value ?? entry?.event_id ?? entry?.name ?? '',
-            ).trim().toLowerCase())
-            .filter(Boolean)
-        : [];
-    const hasTrackFieldProfile = selectedEventsNormalized.some((entry) =>
-        entry === 'track-field' || entry === 'track&field' || entry === 'track_field' || entry.includes('track'),
-    );
-    const hasRoadTrailProfile = selectedEventsNormalized.some((entry) =>
-        entry === 'road-events' || entry === 'road&trail' || entry === 'road_trail' || entry.includes('road') || entry.includes('trail'),
+    const selectedFocuses = normalizeSelectedEvents(userProfile?.selectedEvents ?? []);
+    const hasAthleteProfile = selectedFocuses.length > 0;
+    const hasSupportProfile = (
+        String((userProfile as any)?.supportRole ?? '').trim().length > 0 ||
+        (Array.isArray((userProfile as any)?.supportClubCodes) && (userProfile as any).supportClubCodes.length > 0) ||
+        (Array.isArray((userProfile as any)?.supportGroupIds) && (userProfile as any).supportGroupIds.length > 0) ||
+        (Array.isArray((userProfile as any)?.supportAthletes) && (userProfile as any).supportAthletes.length > 0) ||
+        (Array.isArray((userProfile as any)?.supportFocuses) && (userProfile as any).supportFocuses.length > 0) ||
+        userProfile?.category === 'support'
     );
     const authSubject = String(authBootstrap?.sub ?? user?.sub ?? '').trim().toLowerCase();
     const canChangePassword = !authSubject || authSubject.startsWith('auth0|');
@@ -48,37 +43,37 @@ const ProfileSettings = ({ navigation }: any) => {
         },
         ...(canChangePassword ? [{
             icon: <Lock size={20} color={colors.primaryColor} variant="Linear" />,
-            title: 'Change Password',
+            title: t('Change Password'),
             onPress: () => navigation.navigate('ChangePassword'),
         }] : []),
         {
             icon: <User size={20} color={colors.primaryColor} variant="Linear" />,
-            title: 'Change Username',
+            title: t('Change Username'),
             onPress: () => navigation.navigate('ChangeUsername'),
         },
         {
             icon: <Card size={20} color={colors.primaryColor} variant="Linear" />,
-            title: 'Change Nationality',
+            title: t('Change Nationality'),
             onPress: () => navigation.navigate('ChangeNationality'),
         },
         {
             icon: <Calendar size={20} color={colors.primaryColor} variant="Linear" />,
-            title: 'Date of Birth',
+            title: t('Date of Birth'),
             onPress: () => navigation.navigate('DateOfBirth'),
         },
-        ...(hasTrackFieldProfile ? [{
+        ...(hasAthleteProfile ? [{
             icon: <Card size={20} color={colors.primaryColor} variant="Linear" />,
-            title: t('trackAndField'),
-            onPress: () => navigation.navigate('TrackFieldSettings'),
+            title: t('Athlete details'),
+            onPress: () => navigation.navigate('AthleteDetailsHub'),
         }] : []),
-        ...(hasRoadTrailProfile ? [{
-            icon: <Card size={20} color={colors.primaryColor} variant="Linear" />,
-            title: t('roadAndTrail'),
-            onPress: () => navigation.navigate('RoadTrailSettings'),
+        ...(hasSupportProfile ? [{
+            icon: <User size={20} color={colors.primaryColor} variant="Linear" />,
+            title: t('Support details'),
+            onPress: () => navigation.navigate('CompleteSupportDetailsScreen', { editMode: true }),
         }] : []),
         {
             icon: <Scan size={20} color={colors.primaryColor} variant="Linear" />,
-            title: 'Facial Recognition',
+            title: t('Facial Recognition'),
             onPress: () => navigation.navigate('FacialRecognitionSettings'),
         },
         {
@@ -112,9 +107,15 @@ const ProfileSettings = ({ navigation }: any) => {
                                     {item.icon}
                                 </View>
                                 <SizeBox width={20} />
-                                <Text style={Styles.accountSettingsTitle}>{item.title}</Text>
+                                <View style={{ flex: 1, minWidth: 0, paddingRight: 12 }}>
+                                    <Text style={Styles.accountSettingsTitle} numberOfLines={2}>
+                                        {item.title}
+                                    </Text>
+                                </View>
                             </View>
-                            <ArrowRight2 size={24} color={colors.grayColor} variant="Linear" />
+                            <View style={Styles.accountSettingsArrowWrap}>
+                                <ArrowRight2 size={24} color={colors.grayColor} variant="Linear" />
+                            </View>
                         </TouchableOpacity>
                         {index < settingsItems.length - 1 && <SizeBox height={16} />}
                     </React.Fragment>

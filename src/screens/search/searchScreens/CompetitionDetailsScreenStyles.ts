@@ -97,6 +97,24 @@ export const createStyles = (colors: ThemeColors) => {
         alignItems: 'center',
         justifyContent: 'center',
     },
+    subscribeBenefitsRow: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        gap: 8,
+        marginTop: 10,
+    },
+    subscribeBenefitPill: {
+        paddingHorizontal: 10,
+        paddingVertical: 6,
+        borderRadius: 999,
+        backgroundColor: colors.cardBackground,
+        borderWidth: 1,
+        borderColor: colors.lightGrayColor,
+    },
+    subscribeBenefitText: {
+        ...Fonts.regular12,
+        color: colors.subTextColor,
+    },
     tabsContainer: {
         flexDirection: 'row',
         borderWidth: 0.5,
@@ -392,6 +410,57 @@ export const createStyles = (colors: ThemeColors) => {
         backgroundColor: colors.cardBackground,
         borderRadius: 16,
         padding: 20,
+    },
+    feedbackOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0,0,0,0.45)',
+        justifyContent: 'flex-end',
+        paddingHorizontal: 20,
+        paddingBottom: 28,
+    },
+    feedbackSheet: {
+        backgroundColor: colors.cardBackground,
+        borderRadius: 20,
+        padding: 20,
+        gap: 12,
+    },
+    feedbackTitle: {
+        ...Fonts.medium18,
+        color: colors.mainTextColor,
+    },
+    feedbackBody: {
+        ...Fonts.regular13,
+        color: colors.subTextColor,
+        lineHeight: 20,
+    },
+    feedbackBenefitsRow: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        gap: 8,
+    },
+    feedbackBenefitPill: {
+        paddingHorizontal: 10,
+        paddingVertical: 6,
+        borderRadius: 999,
+        backgroundColor: colors.secondaryBlueColor,
+        borderWidth: 1,
+        borderColor: colors.primaryColor,
+    },
+    feedbackBenefitText: {
+        ...Fonts.regular12,
+        color: colors.primaryColor,
+    },
+    feedbackPrimaryButton: {
+        height: 48,
+        borderRadius: 12,
+        backgroundColor: colors.primaryColor,
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginTop: 6,
+    },
+    feedbackPrimaryButtonText: {
+        ...Fonts.medium14,
+        color: colors.whiteColor,
     },
     modalTitle: {
         ...Fonts.medium16,

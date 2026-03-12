@@ -23,7 +23,7 @@ const AddToEventScreen = ({ navigation, route }: any) => {
     const [selectedEvents, setSelectedEvents] = useState<string[]>(['100m', '200m']);
     const [showEventPicker, setShowEventPicker] = useState(false);
     const [eventSearch, setEventSearch] = useState('');
-    const [useDefaultChest, setUseDefaultChest] = useState(true);
+    const [useDefaultChest, setUseDefaultChest] = useState(false);
 
     const suggestedEvents = useMemo(
         () => ['60m', '100m', '200m', '400m', '800m', '1500m', '5K', '10K', 'Long jump', 'Shot put'],
@@ -35,7 +35,7 @@ const AddToEventScreen = ({ navigation, route }: any) => {
         date: '2 Nov, 2025',
         location: 'Berlin, Germany',
     };
-    const defaultChestNumber = route?.params?.defaultChestNumber || '32';
+    const defaultChestNumber = String(route?.params?.defaultChestNumber || '').trim();
 
     const addEvent = (value: string) => {
         const cleaned = value.trim();
@@ -53,7 +53,7 @@ const AddToEventScreen = ({ navigation, route }: any) => {
             event: eventData,
             personal: {
                 name: 'James Ray',
-                chestNumber: useDefaultChest ? defaultChestNumber : (chestNumber || defaultChestNumber),
+                chestNumber: useDefaultChest ? (defaultChestNumber || null) : (chestNumber.trim() || null),
                 events: selectedEvents,
             },
         });
@@ -175,14 +175,19 @@ const AddToEventScreen = ({ navigation, route }: any) => {
                 </View>
                 <TouchableOpacity
                     style={styles.defaultChestRow}
-                    onPress={() => setUseDefaultChest((prev) => !prev)}
+                    onPress={() => {
+                        if (!defaultChestNumber) return;
+                        setUseDefaultChest((prev) => !prev);
+                    }}
                     activeOpacity={0.8}
                 >
                     <View style={[styles.defaultChestBox, useDefaultChest && styles.defaultChestBoxActive]}>
                         {useDefaultChest && <TickSquare size={14} color={colors.pureWhite} variant="Bold" />}
                     </View>
                     <Text style={styles.defaultChestText}>
-                        {t('Use default number')} ({defaultChestNumber})
+                        {defaultChestNumber
+                            ? `${t('Use default number')} (${defaultChestNumber})`
+                            : t('No saved chest number yet. Enter the chest number for this competition below.')}
                     </Text>
                 </TouchableOpacity>
 

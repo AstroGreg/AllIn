@@ -5,7 +5,6 @@ import {
   Modal,
   ScrollView,
   Text,
-  TextInput,
   TouchableOpacity,
   View,
 } from 'react-native';
@@ -181,7 +180,7 @@ const CombinedSearchScreen = ({navigation}: any) => {
   const fetchEvents = useCallback(
     async (query: string) => {
       if (!apiAccessToken) {
-        setEventsError('Missing API token.');
+        setEventsError(t('Missing API token.'));
         return;
       }
       const trimmedQuery = query.trim();
@@ -199,7 +198,7 @@ const CombinedSearchScreen = ({navigation}: any) => {
             .slice(0, isAutoload ? COMPETITION_AUTOLOAD_LIMIT : undefined)
             .map((event) => ({
               id: String(event.event_id),
-              name: String(event.event_name || event.event_title || 'Competition'),
+              name: String(event.event_name || event.event_title || t('Competition')),
               location: event.event_location ?? null,
               date: event.event_date ?? null,
             })),
@@ -211,7 +210,7 @@ const CombinedSearchScreen = ({navigation}: any) => {
         setIsLoadingEvents(false);
       }
     },
-    [apiAccessToken],
+    [apiAccessToken, t],
   );
 
   useEffect(() => {
@@ -373,7 +372,7 @@ const CombinedSearchScreen = ({navigation}: any) => {
     const wantsFace = includeFace;
 
     if (!wantsBib && !wantsContext && !wantsFace) {
-      setErrorText('Add a chest number, context, or enable face search.');
+      setErrorText(t('Add a chest number, context, or enable face search.'));
       return;
     }
 
@@ -420,7 +419,7 @@ const CombinedSearchScreen = ({navigation}: any) => {
             );
           } catch (e: any) {
             const msg = e instanceof ApiError ? e.message : String(e?.message ?? e);
-            errors.push(`Chest number: ${msg}`);
+            errors.push(`${t('Chest number')}: ${msg}`);
           }
         }
       }
@@ -444,7 +443,7 @@ const CombinedSearchScreen = ({navigation}: any) => {
             );
           } catch (e: any) {
             const msg = e instanceof ApiError ? e.message : String(e?.message ?? e);
-            errors.push(`Context: ${msg}`);
+            errors.push(`${t('Context')}: ${msg}`);
           }
         }
       }
@@ -472,25 +471,25 @@ const CombinedSearchScreen = ({navigation}: any) => {
             const body = e.body ?? {};
             if (e.status === 403 && String(e.message).toLowerCase().includes('consent')) {
               setNeedsConsent(true);
-              errors.push('Face: consent required.');
+              errors.push(t('Face: consent required.'));
             } else if (e.status === 400 && Array.isArray(body?.missing_angles)) {
               setMissingAngles(body.missing_angles.map(String));
               setFaceEnrollmentStatus('missing');
               setIncludeFace(false);
-              errors.push('Face: enrollment required.');
+              errors.push(t('Face: enrollment required.'));
               startFaceRegistrationGovIdFlow();
               return;
             } else {
-              errors.push(`Face: ${e.message}`);
+              errors.push(`${t('Face')}: ${e.message}`);
             }
           } else {
-            errors.push(`Face: ${String(e?.message ?? e)}`);
+            errors.push(`${t('Face')}: ${String(e?.message ?? e)}`);
           }
         }
       }
 
       if (collected.length === 0) {
-        setErrorText(errors[0] ?? 'No matches found. Try adjusting your inputs.');
+        setErrorText(errors[0] ?? t('No matches found. Try adjusting your inputs.'));
         return;
       }
 
@@ -502,6 +501,18 @@ const CombinedSearchScreen = ({navigation}: any) => {
         matchedCount: collected.length,
         results: collected,
         matchType: 'combined',
+        refineContext: {
+          bib: bib.trim() || undefined,
+          date: selectedEvents.length === 1 ? selectedEvents[0]?.date ?? undefined : undefined,
+        },
+        manualBrowse: selectedEventIds.length === 1
+          ? {
+              eventId: selectedEventIds[0],
+              competitionId: selectedEventIds[0],
+              eventName: selectedEvents[0]?.name,
+              eventDate: selectedEvents[0]?.date,
+            }
+          : undefined,
       });
     } finally {
       setIsSearching(false);
@@ -684,6 +695,14 @@ const CombinedSearchScreen = ({navigation}: any) => {
       matchedCount: fakeResults.length,
       results: fakeResults,
       matchType: 'combined',
+      refineContext: {
+        bib: '4455',
+      },
+      manualBrowse: {
+        eventId: 'tutorial-event',
+        competitionId: 'tutorial-event',
+        eventName: 'Tutorial Event',
+      },
     });
   }, [navigation]);
 
@@ -784,7 +803,7 @@ const CombinedSearchScreen = ({navigation}: any) => {
                   style={[styles.sectionAction, styles.inlineEditAction]}
                   onPress={() => setShowCompetitionModal(true)}
                 >
-                  <Text style={styles.sectionActionText}>Edit</Text>
+                  <Text style={styles.sectionActionText}>{t('Edit')}</Text>
                 </TouchableOpacity>
               </View>
             ) : (
@@ -809,7 +828,7 @@ const CombinedSearchScreen = ({navigation}: any) => {
             <View style={styles.modalOverlay}>
               <View style={styles.modalCard}>
                 <View style={styles.modalHeader}>
-                  <Text style={styles.modalTitle}>Choose one or more</Text>
+                  <Text style={styles.modalTitle}>{t('Choose one or more')}</Text>
                   <TouchableOpacity
                     style={styles.modalCloseButton}
                     onPress={() => setShowCompetitionModal(false)}
@@ -867,7 +886,7 @@ const CombinedSearchScreen = ({navigation}: any) => {
                   onPress={() => setShowCompetitionModal(false)}
                 >
                   <Text style={styles.modalDoneButtonText}>
-                    Done ({selectedEventIds.length} selected)
+                    {t('Done')} ({selectedEventIds.length} {t('selected')})
                   </Text>
                 </TouchableOpacity>
               </View>
@@ -892,7 +911,7 @@ const CombinedSearchScreen = ({navigation}: any) => {
                   </TouchableOpacity>
                 </View>
                 <Text style={styles.helperText}>
-                  We will compare your saved face and chest number to quickly find results in these competitions.
+                  {t('We will compare your saved face and chest number to quickly find results in these competitions.')}
                 </Text>
                 <SizeBox height={16} />
                 <TouchableOpacity style={styles.modalDoneButton} onPress={applyAutoCompare}>

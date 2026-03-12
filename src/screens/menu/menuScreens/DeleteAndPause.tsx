@@ -15,8 +15,6 @@ const DeleteAndPause = ({ navigation }: any) => {
     const insets = useSafeAreaInsets();
     const { colors } = useTheme();
     const Styles = createStyles(colors);
-    const [isDeleteSuggestionVisible, setIsDeleteSuggestionVisible] = useState(false);
-    const [isDeleteConfirmVisible, setIsDeleteConfirmVisible] = useState(false);
     const [isPauseVisible, setIsPauseVisible] = useState(false);
 
     return (
@@ -42,7 +40,7 @@ const DeleteAndPause = ({ navigation }: any) => {
                 <MenuContainers
                     icon={<Icons.DeleteAccount height={20} width={20} />}
                     title={t('Delete your account')}
-                    onPress={() => setIsDeleteSuggestionVisible(true)}
+                    onPress={() => navigation.navigate('RightToBeForgotten')}
                     isNext={true}
                 />
                 <SizeBox height={12} />
@@ -59,7 +57,7 @@ const DeleteAndPause = ({ navigation }: any) => {
                     <View style={Styles.pauseContent}>
                         <Text style={Styles.titlesText}>{t('Pause your account')}</Text>
                         <Text style={Styles.pauseDescription}>
-                            Pausing your account" means temporarily stopping access while keeping all your data safe
+                            {t('Pausing your account temporarily hides it while keeping your data safe.')}
                         </Text>
                     </View>
                     <View style={Styles.nextArrow}>
@@ -67,35 +65,6 @@ const DeleteAndPause = ({ navigation }: any) => {
                     </View>
                 </TouchableOpacity>
             </View>
-
-            {/* Delete Suggestion Modal */}
-            <ConfirmationModel
-                isVisible={isDeleteSuggestionVisible}
-                onClose={() => {
-                    setIsDeleteSuggestionVisible(false);
-                    setIsDeleteConfirmVisible(true);
-                }}
-                text={t("Did you know you can also pause your account? This way, others won't be able to find you, but you'll still be with us for a bit")}
-                icon={<Pause size={28} color={colors.pureWhite} variant="Bold" />}
-                onPressYes={() => {
-                    setIsDeleteSuggestionVisible(false);
-                    setIsPauseVisible(true);
-                }}
-                leftBtnText="Delete"
-                rightBtnText="Pause"
-                leftBtnTextColor="#FF4D4D"
-                leftBtnBorderColor="#FF4D4D"
-            />
-
-            {/* Final Delete Confirmation Modal */}
-            <ConfirmationModel
-                isVisible={isDeleteConfirmVisible}
-                onClose={() => setIsDeleteConfirmVisible(false)}
-                text={t('Are You Sure You Want to Delete Your Account?')}
-                icon={<Icons.DeleteRedBold height={32} width={32} />}
-                onPressYes={() => { }}
-                iconBgColor="rgba(237, 84, 84, 0.4)"
-            />
 
             {/* Pause Confirmation Modal */}
             <ConfirmationModel

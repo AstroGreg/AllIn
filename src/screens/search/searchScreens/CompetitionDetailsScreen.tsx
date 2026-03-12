@@ -6,12 +6,13 @@ import { ArrowLeft2, ArrowRight } from 'iconsax-react-nativejs'
 import Icons from '../../../constants/Icons'
 import { createStyles } from './CompetitionDetailsScreenStyles'
 import { useAuth } from '../../../context/AuthContext'
-import { ApiError, CompetitionMapCheckpoint, CompetitionMapSummary, MediaViewAllItem, getCompetitionMapById, getCompetitionMaps, getCompetitionPublicMedia, getEventCompetitions, getProfileSummary, searchEvents, searchFaceByEnrollment, searchMediaByBib, grantFaceRecognitionConsent, subscribeToEvent, unsubscribeToEvent } from '../../../services/apiGateway'
+import { ApiError, CompetitionMapCheckpoint, CompetitionMapSummary, getCompetitionMapById, getCompetitionMaps, getEventCompetitions, getProfileSummary, searchEvents, searchFaceByEnrollment, searchMediaByBib, grantFaceRecognitionConsent, unsubscribeToEvent } from '../../../services/apiGateway'
 import { useTheme } from '../../../context/ThemeContext'
 import { useTranslation } from 'react-i18next'
 import UnifiedSearchInput from '../../../components/unifiedSearchInput/UnifiedSearchInput';
 import { useEvents } from '../../../context/EventsContext'
 import { getApiBaseUrl } from '../../../constants/RuntimeConfig';
+import { getSportFocusLabel, normalizeFocusId, type SportFocusId } from '../../../utils/profileSelections';
 
 interface EventCategory {
     id: string | number;
@@ -19,6 +20,7 @@ interface EventCategory {
     badges?: string[];
     hasArrow?: boolean;
     thumbnailUrl: string | null;
+    group?: string | null;
 }
 
 interface Course {
@@ -40,6 +42,9 @@ const CompetitionDetailsScreen = ({ navigation, route }: any) => {
     const { t } = useTranslation();
     const { events: subscribedEvents, refresh: refreshSubscribed } = useEvents();
     const [selectedTab, setSelectedTab] = useState<'track' | 'field'>('track');
+    const [competitionFocusId, setCompetitionFocusId] = useState<SportFocusId | null>(
+        normalizeFocusId(route?.params?.competitionFocus ?? route?.params?.competitionType),
+    );
     const [selectedCourseId, setSelectedCourseId] = useState('');
     const [checkpointModalVisible, setCheckpointModalVisible] = useState(false);
     const [selectedCheckpoint, setSelectedCheckpoint] = useState<{ id: string; label: string } | null>(null);
@@ -54,12 +59,17 @@ const CompetitionDetailsScreen = ({ navigation, route }: any) => {
     const [mapLoadFailed, setMapLoadFailed] = useState(false);
     const [aiCompareModalVisible, setAiCompareModalVisible] = useState(false);
     const [quickChestNumber, setQuickChestNumber] = useState('');
+    const [quickUseDefaultChest, setQuickUseDefaultChest] = useState(false);
     const [quickSearchError, setQuickSearchError] = useState<string | null>(null);
     const [quickSearchLoading, setQuickSearchLoading] = useState(false);
     const [quickNeedsConsent, setQuickNeedsConsent] = useState(false);
     const [quickMissingAngles, setQuickMissingAngles] = useState<string[] | null>(null);
     const [quickUseFace, setQuickUseFace] = useState(true);
     const [isSubscriptionLoading, setIsSubscriptionLoading] = useState(false);
+    const [subscribeSheetVisible, setSubscribeSheetVisible] = useState(false);
+    const [subscribeChestNumber, setSubscribeChestNumber] = useState('');
+    const [subscribeUseDefaultChest, setSubscribeUseDefaultChest] = useState(true);
+    const [subscribeUseFace, setSubscribeUseFace] = useState(true);
     const [profileChestByYear, setProfileChestByYear] = useState<Record<string, string>>({});
 
     const competitionName = route?.params?.name || route?.params?.eventName || t('Competition');
@@ -93,10 +103,11 @@ const CompetitionDetailsScreen = ({ navigation, route }: any) => {
     ).trim();
     const competitionType: 'track' | 'marathon' = route?.params?.competitionType || 'track';
     const normalizedCompetitionType = String(competitionType || '').toLowerCase();
-    const isRoadTrailCompetition = normalizedCompetitionType === 'marathon' || normalizedCompetitionType === 'road' || normalizedCompetitionType === 'trail' || normalizedCompetitionType === 'roadtrail' || normalizedCompetitionType === 'road&trail';
+    const isRoadTrailCompetition = competitionFocusId === 'road-events' || normalizedCompetitionType === 'marathon' || normalizedCompetitionType === 'road' || normalizedCompetitionType === 'trail' || normalizedCompetitionType === 'roadtrail' || normalizedCompetitionType === 'road&trail';
+    const isTrackFieldCompetition = competitionFocusId === 'track-field' || (!competitionFocusId && !isRoadTrailCompetition);
     const competitionTypeLabel = useMemo(
-        () => (isRoadTrailCompetition ? t('roadAndTrail') : t('trackAndField')),
-        [isRoadTrailCompetition, t],
+        () => (competitionFocusId ? getSportFocusLabel(competitionFocusId, t) : (isRoadTrailCompetition ? t('roadAndTrail') : t('trackAndField'))),
+        [competitionFocusId, isRoadTrailCompetition, t],
     );
     const competitionMetaLine = useMemo(() => {
         const parts = [
@@ -161,6 +172,20 @@ const CompetitionDetailsScreen = ({ navigation, route }: any) => {
         }
         return '';
     }, [getYearFromDateLike, normalizeChestByYear, profileChestByYear, route?.params?.date, route?.params?.eventName, route?.params?.location, route?.params?.name, userProfile?.chestNumbersByYear]);
+    const competitionYear = useMemo(
+        () =>
+            getYearFromDateLike(String(route?.params?.date ?? '')) ||
+            getYearFromDateLike(competitionDate) ||
+            String(new Date().getFullYear()),
+        [competitionDate, getYearFromDateLike, route?.params?.date],
+    );
+    const activeSubscriptionChestNumber = useMemo(() => {
+        if (!isTrackFieldCompetition) return '';
+        return String((subscribeUseDefaultChest ? defaultChestNumber : subscribeChestNumber) ?? '').trim();
+    }, [defaultChestNumber, isTrackFieldCompetition, subscribeChestNumber, subscribeUseDefaultChest]);
+    const canConfirmSubscription = !isTrackFieldCompetition || /^\d+$/.test(activeSubscriptionChestNumber);
+    const hasFaceEnrollment = Boolean((userProfile as any)?.faceVerified);
+    const faceConsentGranted = Boolean((userProfile as any)?.faceConsentGranted);
 
     useEffect(() => {
         if (!apiAccessToken) return;
@@ -179,12 +204,10 @@ const CompetitionDetailsScreen = ({ navigation, route }: any) => {
         };
     }, [apiAccessToken, normalizeChestByYear]);
 
-    useEffect(() => {
-        const chest = String(defaultChestNumber || '').trim();
-        if (chest) setQuickChestNumber(chest);
-    }, [defaultChestNumber]);
-
-    const currentEvents = selectedTab === 'track' ? trackEvents : fieldEvents;
+    const currentEvents = useMemo(() => {
+        if (!isTrackFieldCompetition) return trackEvents;
+        return selectedTab === 'track' ? trackEvents : fieldEvents;
+    }, [fieldEvents, isTrackFieldCompetition, selectedTab, trackEvents]);
 
     const visibleCourses = courseOptions.length > 0 ? courseOptions : FALLBACK_COURSES;
     const showCoursesSection = isRoadTrailCompetition;
@@ -233,25 +256,6 @@ const CompetitionDetailsScreen = ({ navigation, route }: any) => {
         if (!base) return raw;
         return `${base.replace(/\/$/, '')}/${raw.replace(/^\//, '')}`;
     }, []);
-
-    const isVideoMedia = useCallback((item: MediaViewAllItem) => {
-        const mediaType = String(item?.type ?? '').toLowerCase();
-        if (mediaType === 'video') return true;
-        if (mediaType === 'image' || mediaType === 'photo') return false;
-        if (item?.hls_manifest_path) return true;
-        const hasVideoMime = Array.isArray(item?.assets)
-            && item.assets.some((asset) => String(asset?.mime_type ?? '').toLowerCase().startsWith('video/'));
-        if (hasVideoMime) return true;
-        const candidates = [item?.full_url, item?.original_url, item?.raw_url, item?.preview_url]
-            .filter(Boolean)
-            .map((value) => String(value));
-        return candidates.some((value) => /\.(mp4|mov|m4v|webm|m3u8)(\?|$)/i.test(value));
-    }, []);
-
-    const getPreferredMediaUrl = useCallback((item: MediaViewAllItem) => {
-        const candidate = item.thumbnail_url || item.preview_url || item.full_url || item.raw_url || item.original_url || null;
-        return withAccessToken(candidate);
-    }, [withAccessToken]);
 
     useEffect(() => {
         if (!isRoadTrailCompetition || !apiAccessToken || !resolvedEventId) {
@@ -323,61 +327,40 @@ const CompetitionDetailsScreen = ({ navigation, route }: any) => {
             setHasLoadedDisciplines(false);
             setIsDisciplinesLoading(true);
             try {
-                const comps = await getEventCompetitions(apiAccessToken, String(resolvedEventId));
+                const comps = await getEventCompetitions(apiAccessToken, String(resolvedEventId), { onlyWithMedia: true });
                 if (!isActive) return;
+                const rows = Array.isArray(comps.competitions) ? comps.competitions : [];
+                const resolvedFocus = normalizeFocusId(rows[0]?.competition_focus ?? competitionFocusId ?? competitionType);
+                setCompetitionFocusId(resolvedFocus);
 
-                const seen = new Set<string>();
-                const mapped = (comps.competitions || [])
-                    .filter((comp) => {
-                        const id = String(comp.id || '').trim();
-                        if (!id || seen.has(id)) return false;
-                        seen.add(id);
-                        return true;
-                    })
+                const mapped = rows
+                    .filter((comp) => Number(comp.media_count ?? 0) > 0)
                     .map((comp) => {
                         const name = String(comp.competition_name || comp.competition_name_normalized || t('Event'));
                         const type = String(comp.competition_type || '').toLowerCase();
+                        const group = String(comp.discipline_group || '').toLowerCase();
+                        const kind: 'track' | 'field' = resolvedFocus && resolvedFocus !== 'track-field'
+                            ? 'track'
+                            : (type.includes('field') || group === 'jumps' || group === 'throws' ? 'field' : 'track');
                         return {
                             id: String(comp.id),
                             name,
                             hasArrow: true,
-                            badges: type ? [type] : undefined,
+                            badges: comp.discipline_group ? [String(comp.discipline_group)] : undefined,
                             thumbnailUrl: null,
-                            _kind: type.includes('field') ? 'field' : 'track',
-                        } as EventCategory & {_kind: 'track' | 'field'};
+                            group: comp.discipline_group ?? null,
+                            _kind: kind,
+                        } as EventCategory & { _kind: 'track' | 'field' };
                     });
 
-                const enriched = await Promise.all(
-                    mapped.map(async (discipline) => {
-                        try {
-                            const media = await getCompetitionPublicMedia(apiAccessToken, String(resolvedEventId), {
-                                discipline_id: String(discipline.id),
-                                limit: 300,
-                            });
-                            const mediaItems = Array.isArray(media) ? media : [];
-                            const hasVideo = mediaItems.some((item) => isVideoMedia(item));
-                            if (!hasVideo) return null;
-                            const photos = mediaItems.filter((item) => !isVideoMedia(item));
-                            const topPhoto = photos.reduce<MediaViewAllItem | null>((best, current) => {
-                                if (!best) return current;
-                                return Number(current.views_count ?? 0) > Number(best.views_count ?? 0) ? current : best;
-                            }, null);
-                            return {
-                                ...discipline,
-                                thumbnailUrl: topPhoto ? getPreferredMediaUrl(topPhoto) : null,
-                            };
-                        } catch {
-                            return null;
-                        }
-                    }),
-                );
+                if (resolvedFocus && resolvedFocus !== 'track-field') {
+                    setTrackEvents(mapped.map(({ _kind, ...rest }) => rest));
+                    setFieldEvents([]);
+                    return;
+                }
 
-                const availableDisciplines = enriched.filter(
-                    (item): item is (EventCategory & { _kind: 'track' | 'field' }) => item !== null,
-                );
-
-                setTrackEvents(availableDisciplines.filter((e) => e._kind === 'track').map(({ _kind, ...rest }) => rest));
-                setFieldEvents(availableDisciplines.filter((e) => e._kind === 'field').map(({ _kind, ...rest }) => rest));
+                setTrackEvents(mapped.filter((e) => e._kind === 'track').map(({ _kind, ...rest }) => rest));
+                setFieldEvents(mapped.filter((e) => e._kind === 'field').map(({ _kind, ...rest }) => rest));
             } catch {
                 if (!isActive) return;
                 setTrackEvents([]);
@@ -394,7 +377,7 @@ const CompetitionDetailsScreen = ({ navigation, route }: any) => {
         return () => {
             isActive = false;
         };
-    }, [apiAccessToken, getPreferredMediaUrl, isRoadTrailCompetition, isVideoMedia, resolvedEventId, t]);
+    }, [apiAccessToken, competitionFocusId, competitionType, isRoadTrailCompetition, resolvedEventId, t]);
 
     useEffect(() => {
         if (!isRoadTrailCompetition) return;
@@ -521,7 +504,7 @@ const CompetitionDetailsScreen = ({ navigation, route }: any) => {
             setQuickSearchError(t('Could not resolve this competition.'));
             return;
         }
-        const bibValue = quickChestNumber.trim();
+        const bibValue = String((quickUseDefaultChest ? defaultChestNumber : quickChestNumber) ?? '').trim();
         const wantsBib = bibValue.length > 0;
         const wantsFace = quickUseFace;
         if (!wantsBib && !wantsFace) {
@@ -605,11 +588,27 @@ const CompetitionDetailsScreen = ({ navigation, route }: any) => {
                 matchedCount: collected.length,
                 results: collected,
                 matchType: 'combined',
+                refineContext: {
+                    bib: bibValue || undefined,
+                    discipline: selectedCourse?.label || undefined,
+                    checkpoint: selectedCheckpoint?.label || undefined,
+                    date: competitionDate || undefined,
+                },
+                manualBrowse: {
+                    eventId: eventId ?? competitionId,
+                    competitionId: competitionId ?? eventId,
+                    eventName: competitionName,
+                    eventDate: competitionDate || undefined,
+                    disciplineId: selectedCourse?.disciplineId ?? selectedCourse?.id ?? null,
+                    disciplineLabel: selectedCourse?.label ?? null,
+                    checkpointId: selectedCheckpoint?.id ?? null,
+                    checkpointLabel: selectedCheckpoint?.label ?? null,
+                },
             });
         } finally {
             setQuickSearchLoading(false);
         }
-    }, [apiAccessToken, competitionName, navigation, quickChestNumber, quickUseFace, resolveEventId, startFaceRegistrationGovIdFlow, t]);
+    }, [apiAccessToken, competitionDate, competitionId, competitionName, defaultChestNumber, eventId, navigation, quickChestNumber, quickUseDefaultChest, quickUseFace, resolveEventId, selectedCheckpoint?.id, selectedCheckpoint?.label, selectedCourse?.disciplineId, selectedCourse?.id, selectedCourse?.label, startFaceRegistrationGovIdFlow, t]);
 
     const handleGrantConsent = useCallback(async () => {
         if (!apiAccessToken) return;
@@ -631,23 +630,104 @@ const CompetitionDetailsScreen = ({ navigation, route }: any) => {
         });
     }, [navigation]);
 
+    const resetSubscribeSheet = useCallback(() => {
+        setSubscribeUseDefaultChest(false);
+        setSubscribeChestNumber('');
+        setSubscribeUseFace(Boolean((userProfile as any)?.faceVerified));
+    }, [userProfile]);
+
+    const openSubscribeSheet = useCallback(() => {
+        resetSubscribeSheet();
+        setSubscribeSheetVisible(true);
+    }, [resetSubscribeSheet]);
+
+    const closeSubscribeSheet = useCallback(() => {
+        setSubscribeSheetVisible(false);
+        resetSubscribeSheet();
+    }, [resetSubscribeSheet]);
+
+    const handleOpenSubscriptionSummary = useCallback(() => {
+        if (!canSubscribe || !resolvedEventId) return;
+        const safeChestNumber =
+            isTrackFieldCompetition && /^\d+$/.test(activeSubscriptionChestNumber)
+                ? activeSubscriptionChestNumber
+                : '';
+        closeSubscribeSheet();
+        navigation.navigate('EventSummaryScreen', {
+            mode: 'eventSubscription',
+            subscription: {
+                eventId: resolvedEventId,
+                eventTitle: competitionName,
+                eventDate: route?.params?.date ?? competitionDate,
+                eventLocation: competitionLocation || null,
+                eventTypeLabel: competitionTypeLabel,
+                organizingClub,
+                competitionYear,
+                isTrackCompetition: isTrackFieldCompetition,
+                chestNumber: safeChestNumber || null,
+                useFaceRecognition: hasFaceEnrollment ? subscribeUseFace : false,
+                hasFaceEnrollment,
+                faceConsentGranted,
+            },
+        });
+    }, [
+        activeSubscriptionChestNumber,
+        canSubscribe,
+        closeSubscribeSheet,
+        competitionDate,
+        competitionLocation,
+        competitionName,
+        competitionTypeLabel,
+        competitionYear,
+        faceConsentGranted,
+        hasFaceEnrollment,
+        isTrackFieldCompetition,
+        navigation,
+        organizingClub,
+        resolvedEventId,
+        route?.params?.date,
+        subscribeUseFace,
+    ]);
+
     const handleSubscriptionToggle = useCallback(async () => {
         if (!apiAccessToken || !canSubscribe || isSubscriptionLoading) return;
-        setIsSubscriptionLoading(true);
-        try {
-            if (isSubscribed) {
-                await unsubscribeToEvent(apiAccessToken, resolvedEventId);
-            } else {
-                await subscribeToEvent(apiAccessToken, resolvedEventId);
-            }
-            await refreshSubscribed();
-        } catch (e: any) {
-            const msg = e instanceof ApiError ? e.message : String(e?.message ?? e);
-            Alert.alert(isSubscribed ? t('Could not unsubscribe') : t('Could not subscribe'), msg);
-        } finally {
-            setIsSubscriptionLoading(false);
+        if (isSubscribed) {
+            Alert.alert(
+                t('Subscribed'),
+                t('Turn off competition updates for this event?'),
+                [
+                    { text: t('Cancel'), style: 'cancel' },
+                    {
+                        text: t('Unsubscribe'),
+                        style: 'destructive',
+                        onPress: async () => {
+                            setIsSubscriptionLoading(true);
+                            try {
+                                await unsubscribeToEvent(apiAccessToken, resolvedEventId);
+                                await refreshSubscribed();
+                            } catch (e: any) {
+                                const msg = e instanceof ApiError ? e.message : String(e?.message ?? e);
+                                Alert.alert(t('Could not unsubscribe'), msg);
+                            } finally {
+                                setIsSubscriptionLoading(false);
+                            }
+                        },
+                    },
+                ],
+            );
+            return;
         }
-    }, [apiAccessToken, canSubscribe, isSubscribed, isSubscriptionLoading, refreshSubscribed, resolvedEventId, t]);
+        openSubscribeSheet();
+    }, [apiAccessToken, canSubscribe, isSubscribed, isSubscriptionLoading, openSubscribeSheet, refreshSubscribed, resolvedEventId, t]);
+
+    const subscriptionButtonLabel = isSubscriptionLoading
+        ? t('Loading...')
+        : isSubscribed
+            ? t('Subscribed')
+            : t('Subscribe');
+    const subscriptionButtonHint = isSubscribed
+        ? t('Competition updates are enabled for this event.')
+        : t('Save chest number and face access before following this competition.');
 
     const renderMediaSection = () => (
         <>
@@ -746,12 +826,10 @@ const CompetitionDetailsScreen = ({ navigation, route }: any) => {
                                 <>
                                     <View style={styles.subscribeButtonContent}>
                                         <Text style={styles.subscribeButtonText}>
-                                            {isSubscribed ? t('Unsubscribe') : t('subscribeToEvent')}
+                                            {subscriptionButtonLabel}
                                         </Text>
                                         <Text style={styles.subscribeButtonHint}>
-                                            {isSubscribed
-                                                ? t('You are subscribed to this competition.')
-                                                : t('Get updates when new media is uploaded.')}
+                                            {subscriptionButtonHint}
                                         </Text>
                                     </View>
                                     <View style={styles.subscribeChevronWrap}>
@@ -848,38 +926,41 @@ const CompetitionDetailsScreen = ({ navigation, route }: any) => {
                     </>
                 ) : (
                     <>
-                        {/* Tabs */}
-                        <View style={styles.tabsContainer}>
-                            <TouchableOpacity
-                                style={[styles.tab, selectedTab === 'track' && styles.tabActive]}
-                                onPress={() => setSelectedTab('track')}
-                            >
-                                <Text style={[styles.tabText, selectedTab === 'track' && styles.tabTextActive]}>
-                                    {t('Track events')}
-                                </Text>
-                                <ArrowRight
-                                    size={16}
-                                    color={selectedTab === 'track' ? colors.mainTextColor : colors.subTextColor}
-                                    variant="Linear"
-                                />
-                            </TouchableOpacity>
+                        {isTrackFieldCompetition ? (
+                            <>
+                                <View style={styles.tabsContainer}>
+                                    <TouchableOpacity
+                                        style={[styles.tab, selectedTab === 'track' && styles.tabActive]}
+                                        onPress={() => setSelectedTab('track')}
+                                    >
+                                        <Text style={[styles.tabText, selectedTab === 'track' && styles.tabTextActive]}>
+                                            {t('Track events')}
+                                        </Text>
+                                        <ArrowRight
+                                            size={16}
+                                            color={selectedTab === 'track' ? colors.mainTextColor : colors.subTextColor}
+                                            variant="Linear"
+                                        />
+                                    </TouchableOpacity>
 
-                            <TouchableOpacity
-                                style={[styles.tab, selectedTab === 'field' && styles.tabActive]}
-                                onPress={() => setSelectedTab('field')}
-                            >
-                                <Text style={[styles.tabText, selectedTab === 'field' && styles.tabTextActive]}>
-                                    {t('Field events')}
-                                </Text>
-                                <ArrowRight
-                                    size={16}
-                                    color={selectedTab === 'field' ? colors.mainTextColor : colors.subTextColor}
-                                    variant="Linear"
-                                />
-                            </TouchableOpacity>
-                        </View>
+                                    <TouchableOpacity
+                                        style={[styles.tab, selectedTab === 'field' && styles.tabActive]}
+                                        onPress={() => setSelectedTab('field')}
+                                    >
+                                        <Text style={[styles.tabText, selectedTab === 'field' && styles.tabTextActive]}>
+                                            {t('Field events')}
+                                        </Text>
+                                        <ArrowRight
+                                            size={16}
+                                            color={selectedTab === 'field' ? colors.mainTextColor : colors.subTextColor}
+                                            variant="Linear"
+                                        />
+                                    </TouchableOpacity>
+                                </View>
 
-                        <SizeBox height={20} />
+                                <SizeBox height={20} />
+                            </>
+                        ) : null}
 
                         {/* Disciplines Section */}
                         <View style={styles.sectionHeader}>
@@ -887,6 +968,7 @@ const CompetitionDetailsScreen = ({ navigation, route }: any) => {
                             <TouchableOpacity
                                 style={styles.aiActionButton}
                                 onPress={() => {
+                                    setQuickUseDefaultChest(false);
                                     setQuickSearchError(null);
                                     setQuickNeedsConsent(false);
                                     setQuickMissingAngles(null);
@@ -967,13 +1049,14 @@ const CompetitionDetailsScreen = ({ navigation, route }: any) => {
                             <ArrowRight size={18} color={colors.primaryColor} variant="Linear" />
                         </TouchableOpacity>
                         <SizeBox height={12} />
-                        <TouchableOpacity
-                            style={styles.modalTertiaryButton}
-                            onPress={() => {
-                                setCheckpointModalVisible(false);
-                                setQuickSearchError(null);
-                                setQuickNeedsConsent(false);
-                                setQuickMissingAngles(null);
+                                <TouchableOpacity
+                                    style={styles.modalTertiaryButton}
+                                    onPress={() => {
+                                        setCheckpointModalVisible(false);
+                                        setQuickUseDefaultChest(false);
+                                        setQuickSearchError(null);
+                                        setQuickNeedsConsent(false);
+                                        setQuickMissingAngles(null);
                                 setAiCompareModalVisible(true);
                             }}
                         >
@@ -1003,15 +1086,34 @@ const CompetitionDetailsScreen = ({ navigation, route }: any) => {
                         </Text>
                         <SizeBox height={16} />
                         <Text style={styles.modalLabel}>{t('Chest number')}</Text>
-                        <UnifiedSearchInput
-                            containerStyle={styles.modalInputRow}
-                            inputStyle={styles.modalInput}
-                            placeholder={t('e.g. 1234')}
-                            placeholderTextColor="#9B9F9F"
-                            keyboardType="number-pad"
-                            value={quickChestNumber}
-                            onChangeText={setQuickChestNumber}
-                        />
+                        {!quickUseDefaultChest || !defaultChestNumber ? (
+                            <UnifiedSearchInput
+                                containerStyle={styles.modalInputRow}
+                                inputStyle={styles.modalInput}
+                                placeholder={t('e.g. 1234')}
+                                placeholderTextColor="#9B9F9F"
+                                keyboardType="number-pad"
+                                value={quickChestNumber}
+                                onChangeText={setQuickChestNumber}
+                            />
+                        ) : null}
+                        <View style={styles.toggleRow}>
+                            <View style={{ flex: 1, paddingRight: 12 }}>
+                                <Text style={styles.toggleLabel}>{t('Use saved chest number')}</Text>
+                                <Text style={styles.toggleHint}>
+                                    {defaultChestNumber
+                                        ? `${defaultChestNumber} · ${competitionYear}`
+                                        : t('No saved chest number yet. Enter the chest number for this competition below.')}
+                                </Text>
+                            </View>
+                            <Switch
+                                value={quickUseDefaultChest}
+                                onValueChange={setQuickUseDefaultChest}
+                                disabled={!defaultChestNumber}
+                                trackColor={{ false: colors.lightGrayColor, true: colors.primaryColor }}
+                                thumbColor={colors.pureWhite}
+                            />
+                        </View>
                         <SizeBox height={12} />
                         <Text style={styles.modalLabel}>{t('Face ID')}</Text>
                         <View style={styles.toggleRow}>
@@ -1073,6 +1175,102 @@ const CompetitionDetailsScreen = ({ navigation, route }: any) => {
                     </TouchableOpacity>
                 </TouchableOpacity>
             </Modal>
+
+            <Modal
+                visible={subscribeSheetVisible}
+                transparent
+                animationType="slide"
+                onRequestClose={closeSubscribeSheet}
+            >
+                <TouchableOpacity
+                    style={styles.feedbackOverlay}
+                    activeOpacity={1}
+                    onPress={closeSubscribeSheet}
+                >
+                    <TouchableOpacity style={styles.feedbackSheet} activeOpacity={1}>
+                        <>
+                                <Text style={styles.feedbackTitle}>{t('Subscribe')}</Text>
+                                <Text style={styles.feedbackBody}>
+                                    {t('Follow this competition to stay updated.')}
+                                </Text>
+
+                                {isTrackFieldCompetition ? (
+                                    <>
+                                        <Text style={styles.modalLabel}>{t('Chest number')}</Text>
+                                        {!subscribeUseDefaultChest || !defaultChestNumber ? (
+                                            <UnifiedSearchInput
+                                                containerStyle={styles.modalInputRow}
+                                                inputStyle={styles.modalInput}
+                                                placeholder={t('enterChestNumber')}
+                                                placeholderTextColor="#9B9F9F"
+                                                keyboardType="number-pad"
+                                                value={subscribeChestNumber}
+                                                onChangeText={setSubscribeChestNumber}
+                                            />
+                                        ) : null}
+                                        <View style={styles.toggleRow}>
+                                            <View style={{ flex: 1, paddingRight: 12 }}>
+                                                <Text style={styles.toggleLabel}>{t('Use saved chest number')}</Text>
+                                                <Text style={styles.toggleHint}>
+                                                    {defaultChestNumber
+                                                        ? `${defaultChestNumber} · ${competitionYear}`
+                                                        : t('No saved chest number yet. Enter the chest number for this competition below.')}
+                                                </Text>
+                                            </View>
+                                            <Switch
+                                                value={subscribeUseDefaultChest}
+                                                onValueChange={setSubscribeUseDefaultChest}
+                                                disabled={!defaultChestNumber}
+                                                trackColor={{ false: colors.lightGrayColor, true: colors.primaryColor }}
+                                                thumbColor={colors.pureWhite}
+                                            />
+                                        </View>
+                                    </>
+                                ) : null}
+
+                                <Text style={styles.modalLabel}>{t('Face')}</Text>
+                                <View style={styles.toggleRow}>
+                                    <View style={{ flex: 1, paddingRight: 12 }}>
+                                        <Text style={styles.toggleLabel}>{t('Allow face recognition for this competition')}</Text>
+                                        <Text style={styles.toggleHint}>
+                                            {!hasFaceEnrollment
+                                                ? t('Face: enrollment required.')
+                                                : faceConsentGranted
+                                                    ? t('Face recognition is already enabled on your profile.')
+                                                    : t('Permission will be requested when you confirm.')}
+                                        </Text>
+                                    </View>
+                                    <Switch
+                                        value={subscribeUseFace}
+                                        onValueChange={setSubscribeUseFace}
+                                        disabled={!hasFaceEnrollment}
+                                        trackColor={{ false: colors.lightGrayColor, true: colors.primaryColor }}
+                                        thumbColor={colors.pureWhite}
+                                    />
+                                </View>
+
+                                <TouchableOpacity
+                                    style={[
+                                        styles.modalPrimaryButton,
+                                        !canConfirmSubscription && styles.modalPrimaryButtonDisabled,
+                                    ]}
+                                    onPress={handleOpenSubscriptionSummary}
+                                    disabled={!canConfirmSubscription}
+                                    testID="competition-subscribe-confirm"
+                                >
+                                    <>
+                                        <Text style={styles.modalPrimaryButtonText}>{t('Review')}</Text>
+                                        <ArrowRight size={18} color={colors.pureWhite} variant="Linear" />
+                                    </>
+                                </TouchableOpacity>
+                                <TouchableOpacity style={styles.modalSecondaryButton} onPress={closeSubscribeSheet}>
+                                    <Text style={styles.modalSecondaryButtonText}>{t('Cancel')}</Text>
+                                </TouchableOpacity>
+                        </>
+                    </TouchableOpacity>
+                </TouchableOpacity>
+            </Modal>
+
         </View>
     )
 }

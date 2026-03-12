@@ -24,7 +24,8 @@ const ContextSearchLoadingScreen = ({ navigation, route }: any) => {
     const [errorText, setErrorText] = useState<string | null>(null);
 
     const contextSearch = route?.params?.contextSearch || '';
-    const filters = route?.params?.filters || [];
+    const rawFilters = route?.params?.filters;
+    const filters = useMemo(() => rawFilters ?? [], [rawFilters]);
     const filterState = route?.params?.filterState;
     const {events} = useEvents();
 
@@ -114,6 +115,23 @@ const ContextSearchLoadingScreen = ({ navigation, route }: any) => {
                 navigation.replace('AISearchResultsScreen', {
                     matchedCount: results.length,
                     results,
+                    refineContext: {
+                        date: filterState?.timeRange?.start || filterState?.timeRange?.end
+                            ? [
+                                filterState?.timeRange?.start ? new Date(filterState.timeRange.start).toLocaleDateString() : null,
+                                filterState?.timeRange?.end ? new Date(filterState.timeRange.end).toLocaleDateString() : null,
+                              ]
+                                .filter(Boolean)
+                                .join(' - ')
+                            : undefined,
+                    },
+                    manualBrowse: eventIdFromFilters
+                        ? {
+                            eventId: eventIdFromFilters,
+                            competitionId: eventIdFromFilters,
+                            eventName: filterState?.competition,
+                        }
+                        : undefined,
                 });
             } catch (e: any) {
                 if (cancelled) return;
@@ -130,7 +148,7 @@ const ContextSearchLoadingScreen = ({ navigation, route }: any) => {
         return () => {
             cancelled = true;
         };
-    }, [apiAccessToken, eventIdFromFilters, navigation, queryText, t]);
+    }, [apiAccessToken, eventIdFromFilters, filterState?.competition, filterState?.timeRange?.end, filterState?.timeRange?.start, navigation, queryText, t]);
 
     const spin = rotateAnim.interpolate({
         inputRange: [0, 1],

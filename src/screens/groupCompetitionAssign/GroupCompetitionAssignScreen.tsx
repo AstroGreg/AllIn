@@ -43,7 +43,13 @@ const GroupCompetitionAssignScreen = ({ navigation, route }: any) => {
   }, [apiAccessToken, groupId]);
 
   const athletes = useMemo(
-    () => members.filter((m) => String(m.role || '').toLowerCase() === 'athlete'),
+    () => members.filter((m) => {
+      const publicRoles = Array.isArray(m.public_roles)
+        ? m.public_roles.map((entry) => String(entry || '').toLowerCase())
+        : [];
+      if (publicRoles.includes('athlete')) return true;
+      return String(m.role || '').toLowerCase() === 'athlete';
+    }),
     [members],
   );
 

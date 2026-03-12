@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { View, Text, TouchableOpacity, Image, Modal, Alert, Pressable, TextInput } from 'react-native';
+import { View, Text, TouchableOpacity, Image, Modal, Alert, Pressable, TextInput, Share } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import FastImage from 'react-native-fast-image';
 import Video from 'react-native-video';
@@ -18,16 +18,19 @@ import Icons from '../../constants/Icons';
 import SubscriptionModal from '../../components/subscriptionModal/SubscriptionModal';
 import { useTheme } from '../../context/ThemeContext';
 import { useAuth } from '../../context/AuthContext';
-import { createMediaIssueRequest, getMediaById } from '../../services/apiGateway';
+import { addProfileCollectionItems, createMediaIssueRequest, getMediaById, recordDownload } from '../../services/apiGateway';
 import { getApiBaseUrl, getHlsBaseUrl } from '../../constants/RuntimeConfig';
 import { useTranslation } from 'react-i18next'
+import { usePreventMediaCapture } from '../../utils/usePreventMediaCapture';
+import { getProfileCollectionScopeKey } from '../../utils/profileSelections';
 
 const VideoPlayingScreen = ({ navigation, route }: any) => {
     const { t } = useTranslation();
     const insets = useSafeAreaInsets();
     const { colors } = useTheme();
     const Styles = createStyles(colors);
-    const { apiAccessToken } = useAuth();
+    const { apiAccessToken, userProfile } = useAuth();
+    usePreventMediaCapture(true);
     const showBuyModalOnLoad = route?.params?.showBuyModal || false;
     const videoPrice = route?.params?.video?.price || '€0,20';
     const fallbackVideo = useMemo(() => (
@@ -42,6 +45,14 @@ const VideoPlayingScreen = ({ navigation, route }: any) => {
         route?.params?.video?.id ||
         route?.params?.media_id ||
         route?.params?.media?.id ||
+        null;
+    const routeEventId =
+        route?.params?.video?.event_id ||
+        route?.params?.video?.eventId ||
+        route?.params?.event_id ||
+        route?.params?.eventId ||
+        route?.params?.media?.event_id ||
+        route?.params?.media?.eventId ||
         null;
     const [videoTitle, setVideoTitle] = useState(fallbackVideo.title);
     const [videoUrl, setVideoUrl] = useState<string | null>(fallbackVideo.uri || null);
@@ -77,6 +88,12 @@ const VideoPlayingScreen = ({ navigation, route }: any) => {
     const [infoPopupVisible, setInfoPopupVisible] = useState(false);
     const [infoPopupTitle, setInfoPopupTitle] = useState('');
     const [infoPopupMessage, setInfoPopupMessage] = useState('');
+    const collectionScopeKey = useMemo(() => {
+        const explicit = String(route?.params?.collectionScopeKey ?? '').trim();
+        if (explicit) return explicit;
+        const derived = getProfileCollectionScopeKey(userProfile);
+        return String(derived || 'default');
+    }, [route?.params?.collectionScopeKey, userProfile]);
 
     useEffect(() => {
         setVideoTitle(fallbackVideo.title);
@@ -188,10 +205,154 @@ const VideoPlayingScreen = ({ navigation, route }: any) => {
         setShowFailedModal(true);
     };
 
-    const handleDownload = () => {
+    const getShareModule = useCallback(() => {
+        try {
+            // eslint-disable-next-line @typescript-eslint/no-var-requires
+            return require('react-native-share');
+        } catch {
+            return null;
+        }
+    }, []);
+
+    const getFsModule = useCallback(() => {
+        try {
+            // eslint-disable-next-line @typescript-eslint/no-var-requires
+            return require('react-native-fs');
+        } catch {
+            return null;
+        }
+    }, []);
+
+    const extensionFromUrl = useCallback((value: string) => {
+        try {
+            const clean = value.split('?')[0].split('#')[0];
+            const dot = clean.lastIndexOf('.');
+            if (dot >= 0) return clean.slice(dot + 1);
+        } catch {
+            // ignore
+        }
+        return 'mp4';
+    }, []);
+
+    const resolveDownloadUrl = useCallback(() => {
+        const candidates = [
+            videoUrl,
+            route?.params?.video?.uri,
+            route?.params?.video?.preview_url,
+            route?.params?.video?.original_url,
+            route?.params?.video?.full_url,
+            route?.params?.video?.raw_url,
+            route?.params?.video?.hls_manifest_path ? toHlsUrl(route?.params?.video?.hls_manifest_path) : null,
+        ].filter(Boolean) as string[];
+        return candidates.find((value) => /\.(mp4|mov|m4v)(\?|$)/i.test(value)) ?? candidates[0] ?? null;
+    }, [route?.params?.video, toHlsUrl, videoUrl]);
+
+    const ensureLocalFile = useCallback(
+        async (remoteUrl: string, extensionHint: string) => {
+            const fsModule = getFsModule();
+            if (!fsModule?.downloadFile || !fsModule?.CachesDirectoryPath) {
+                return null;
+            }
+
+            const safeExt = extensionHint.startsWith('.') ? extensionHint : `.${extensionHint}`;
+            const baseName = routeMediaId ? `spotme-${routeMediaId}` : `spotme-${Date.now()}`;
+            const destPath = `${fsModule.CachesDirectoryPath}/${baseName}${safeExt}`;
+
+            try {
+                const result = await fsModule.downloadFile({
+                    fromUrl: remoteUrl,
+                    toFile: destPath,
+                    background: true,
+                }).promise;
+                if (result?.statusCode && result.statusCode >= 400) {
+                    return null;
+                }
+                return `file://${destPath}`;
+            } catch {
+                return null;
+            }
+        },
+        [getFsModule, routeMediaId],
+    );
+
+    const handleDownload = useCallback(async () => {
         setShowSuccessModal(false);
-        // Handle download logic here
-    };
+        if (!apiAccessToken) {
+            Alert.alert(t('Missing API token'), t('Log in or set a Dev API token to download.'));
+            return;
+        }
+        if (!routeMediaId) {
+            Alert.alert(t('Missing media'), t('This item has no media_id to download.'));
+            return;
+        }
+        const downloadUrl = resolveDownloadUrl();
+        if (!downloadUrl) {
+            Alert.alert(t('No download URL'), t('The API did not provide a downloadable URL for this media.'));
+            return;
+        }
+        const fileUrl = await ensureLocalFile(downloadUrl, extensionFromUrl(downloadUrl));
+        if (!fileUrl) {
+            Alert.alert(t('Download failed'), t('Unable to download the media file.'));
+            return;
+        }
+        try {
+            await recordDownload(apiAccessToken, {
+                media_id: String(routeMediaId),
+                event_id: routeEventId ? String(routeEventId) : undefined,
+            });
+        } catch {
+            // ignore
+        }
+        try {
+            const shareModule = getShareModule();
+            if (shareModule?.default?.open) {
+                await shareModule.default.open({
+                    urls: [fileUrl],
+                    type: 'video/mp4',
+                    filename: routeMediaId ? `spotme_${routeMediaId}` : `spotme_${Date.now()}`,
+                    failOnCancel: false,
+                    showAppsToView: true,
+                });
+            } else {
+                await Share.share({ url: fileUrl, message: 'SpotMe media' });
+            }
+        } catch (e: any) {
+            const msg = String(e?.message ?? e);
+            Alert.alert(t('Download failed'), msg);
+        }
+    }, [apiAccessToken, ensureLocalFile, extensionFromUrl, getShareModule, resolveDownloadUrl, routeEventId, routeMediaId, t]);
+
+    const handleAddToProfile = useCallback(async () => {
+        if (!apiAccessToken) {
+            Alert.alert(t('Missing API token'), t('Log in or set a Dev API token to add media to your profile.'));
+            return;
+        }
+        if (!routeMediaId) {
+            Alert.alert(t('Missing media'), t('This item has no media_id to add.'));
+            return;
+        }
+        try {
+            const response = await addProfileCollectionItems(apiAccessToken, {
+                type: 'video',
+                media_ids: [String(routeMediaId)],
+                scope_key: collectionScopeKey,
+            });
+            const added = Number(response?.added ?? 0);
+            const skipped = Number(response?.skipped ?? 0);
+            if (added > 0) {
+                showInfoPopup(t('Added to profile'), t('This video is now in your collection.'));
+                return;
+            }
+            if (skipped > 0) {
+                showInfoPopup(t('Already saved'), t('This video is already in your collection.'));
+                return;
+            }
+            showInfoPopup(t('Could not add'), t('Try again in a moment.'));
+        } catch (e: any) {
+            const message = String(e?.message ?? e);
+            Alert.alert(t('Could not add'), message);
+        }
+    }, [apiAccessToken, collectionScopeKey, routeMediaId, showInfoPopup, t]);
 
     const handleRecharge = () => {
         setShowFailedModal(false);
@@ -257,6 +418,8 @@ const VideoPlayingScreen = ({ navigation, route }: any) => {
 
     const openMoreMenu = useCallback(() => {
         const actions = [
+            {label: t('Download'), onPress: handleDownload},
+            {label: t('Add to profile'), onPress: handleAddToProfile},
             {label: t('Report an issue with this video/photo'), onPress: openReportIssuePopup},
             {label: t('Go to author profile'), onPress: handleGoToProfile},
             {label: t('Go to event'), onPress: handleGoToEvent},
@@ -265,7 +428,7 @@ const VideoPlayingScreen = ({ navigation, route }: any) => {
         ];
         setMoreMenuActions(actions);
         setMoreMenuVisible(true);
-    }, [handleGoToEvent, handleGoToProfile, handleMarkInappropriate, handleRequestRemoval, openReportIssuePopup, t]);
+    }, [handleAddToProfile, handleDownload, handleGoToEvent, handleGoToProfile, handleMarkInappropriate, handleRequestRemoval, openReportIssuePopup, t]);
 
     return (
         <View style={Styles.mainContainer}>
@@ -599,7 +762,7 @@ const VideoPlayingScreen = ({ navigation, route }: any) => {
                         </View>
                         <Text style={Styles.successTitle}>{t('Accepted')}</Text>
                         <Text style={Styles.successSubtitle}>
-                            Photo added to your account. Resale is prohibited.
+                            {t('Video added to your account. Resale is prohibited.')}
                         </Text>
                         <TouchableOpacity
                             style={Styles.downloadButton}
@@ -626,7 +789,7 @@ const VideoPlayingScreen = ({ navigation, route }: any) => {
                         </View>
                         <Text style={Styles.failedTitle}>{t('Failed')}</Text>
                         <Text style={Styles.failedSubtitle}>
-                            Insufficient balance. Please recharge.
+                            {t('Insufficient balance. Please recharge.')}
                         </Text>
                         <View style={Styles.failedButtonsRow}>
                             <TouchableOpacity

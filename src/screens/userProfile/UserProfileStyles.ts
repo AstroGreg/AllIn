@@ -2,7 +2,7 @@ import { StyleSheet, Dimensions } from "react-native";
 import Fonts from "../../constants/Fonts";
 import { ThemeColors, lightColors } from "../../constants/Theme";
 
-const { width } = Dimensions.get('window');
+const { width, height } = Dimensions.get('window');
 
 export const createStyles = (colors: ThemeColors) => StyleSheet.create({
     mainContainer: {
@@ -43,6 +43,14 @@ export const createStyles = (colors: ThemeColors) => StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'center',
         paddingHorizontal: 32,
+    },
+    tabLoadingContainer: {
+        minHeight: Math.max(420, height * 0.46),
+        width: '100%',
+        alignItems: 'center',
+        justifyContent: 'center',
+        paddingHorizontal: 24,
+        paddingVertical: 56,
     },
     emptyProfileAddButton: {
         width: 86,
@@ -340,7 +348,8 @@ export const createStyles = (colors: ThemeColors) => StyleSheet.create({
     athleteMetaInlineBox: {
         flexDirection: 'row',
         alignItems: 'center',
-        justifyContent: 'center',
+        flexWrap: 'wrap',
+        justifyContent: 'flex-start',
         width: '100%',
         minHeight: 48,
         backgroundColor: colors.btnBackgroundColor,
@@ -349,12 +358,32 @@ export const createStyles = (colors: ThemeColors) => StyleSheet.create({
         borderRadius: 12,
         paddingHorizontal: 14,
         paddingVertical: 12,
+        gap: 8,
     },
     athleteMetaInlineText: {
         ...Fonts.medium14,
         color: colors.mainTextColor,
         textAlign: 'center',
         width: '100%',
+        lineHeight: 22,
+        flexShrink: 1,
+    },
+    athleteMetaPill: {
+        maxWidth: '100%',
+        flexShrink: 1,
+        alignSelf: 'flex-start',
+        paddingHorizontal: 12,
+        paddingVertical: 7,
+        borderRadius: 999,
+        backgroundColor: colors.cardBackground,
+        borderWidth: 0.5,
+        borderColor: colors.lightGrayColor,
+    },
+    athleteMetaPillText: {
+        ...Fonts.medium13,
+        color: colors.mainTextColor,
+        flexShrink: 1,
+        flexWrap: 'wrap',
     },
     websiteInlineRow: {
         width: '100%',

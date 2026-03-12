@@ -110,25 +110,25 @@ const SubscriptionModal = ({ isVisible, onClose }: SubscriptionModalProps) => {
                     <Text style={Styles.popularBadgeText}>{t('Popular')}</Text>
                 </View>
             )}
-            <Text style={Styles.planName}>{plan.name}</Text>
+            <Text style={Styles.planName}>{t(plan.name)}</Text>
             <View style={Styles.priceRow}>
                 <Text style={Styles.planPrice}>{plan.price}</Text>
-                <Text style={Styles.planPeriod}>{plan.period}</Text>
+                <Text style={Styles.planPeriod}>{t(plan.period)}</Text>
             </View>
             {plan.credits && (
-                <Text style={Styles.planCredits}>{plan.credits}</Text>
+                <Text style={Styles.planCredits}>{t(plan.credits)}</Text>
             )}
             <View style={Styles.featuresContainer}>
                 {plan.features.map((feature, featureIndex) => (
                     <View key={featureIndex} style={Styles.featureRow}>
                         <TickCircle size={16} color={colors.primaryColor} variant="Bold" />
-                        <Text style={Styles.featureText}>{feature.text}</Text>
+                        <Text style={Styles.featureText}>{t(feature.text)}</Text>
                     </View>
                 ))}
             </View>
             <TouchableOpacity style={[Styles.getStartedButton, plan.isPopular && Styles.popularGetStartedButton]}>
                 <Text style={[Styles.getStartedButtonText, plan.isPopular && Styles.popularGetStartedButtonText]}>
-                    Get started
+                    {t('Get started')}
                 </Text>
             </TouchableOpacity>
         </View>

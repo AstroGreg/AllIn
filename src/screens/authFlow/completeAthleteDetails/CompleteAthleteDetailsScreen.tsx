@@ -1,52 +1,197 @@
-import React, { useEffect, useState } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, Alert, ActivityIndicator, Modal, TextInput, FlatList } from 'react-native';
+import React, { useEffect, useMemo, useState } from 'react';
+import { View, Text, ScrollView, TouchableOpacity, Alert, ActivityIndicator, TextInput } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { CommonActions } from '@react-navigation/native';
 import FastImage from 'react-native-fast-image';
+import { ArrowLeft2, Buildings, CloseCircle, Global, Profile2User, User } from 'iconsax-react-nativejs';
+
 import { createStyles } from './CompleteAthleteDetailsScreenStyles';
 import SizeBox from '../../../constants/SizeBox';
 import Images from '../../../constants/Images';
 import Icons from '../../../constants/Icons';
-import CustomTextInput from '../../../components/customTextInput/CustomTextInput';
+import ChestNumbersByYearField from '../../../components/profile/ChestNumbersByYearField';
+import SearchPickerModal, { type SearchPickerOption } from '../../../components/profile/SearchPickerModal';
 import { useTheme } from '../../../context/ThemeContext';
 import { useAuth } from '../../../context/AuthContext';
-import { Buildings, CloseCircle } from 'iconsax-react-nativejs';
-import { useTranslation } from 'react-i18next'
-import { ApiError, GroupSummary, searchGroups, updateProfileSummary } from '../../../services/apiGateway';
+import { useTranslation } from 'react-i18next';
+import {
+    ApiError,
+    getGroup,
+    searchClubs,
+    searchGroups,
+} from '../../../services/apiGateway';
+import {
+    buildDisciplineSearchOptions,
+    focusUsesChestNumbers,
+    getChestNumberFieldLabel,
+    getDisciplineLabel,
+    getFocusDisciplineModalTitle,
+    getFocusMainDisciplineLabel,
+    getOfficialClubFieldLabel,
+    getOfficialClubHelperText,
+    getOfficialClubModalTitle,
+    getOfficialClubPlaceholder,
+    getOfficialClubSearchFocuses,
+    getSportFocusLabel,
+    getTrainingGroupFieldLabel,
+    getTrainingGroupModalTitle,
+    getTrainingGroupPlaceholder,
+    normalizeMainDisciplines,
+    normalizeSelectedEvents,
+    type SportFocusId,
+} from '../../../utils/profileSelections';
+import { buildBottomTabUserProfileReset } from '../../../utils/navigationResets';
 
-const CompleteAthleteDetailsScreen = ({ navigation }: any) => {
+const CompleteAthleteDetailsScreen = ({ navigation, route }: any) => {
     const { t } = useTranslation();
     const { colors } = useTheme();
     const Styles = createStyles(colors);
     const insets = useSafeAreaInsets();
-    const { updateUserProfile, apiAccessToken } = useAuth();
+    const { updateUserProfile, apiAccessToken, userProfile } = useAuth();
 
-    const [chestNumber, setChestNumber] = useState('');
-    const [website, setWebsite] = useState('');
-    const [runningClub, setRunningClub] = useState('');
-    const [runningClubGroupId, setRunningClubGroupId] = useState<string>('');
-    const [isLoading, setIsLoading] = useState(false);
+    const persistedSelectedFocuses = useMemo(
+        () => normalizeSelectedEvents(route?.params?.selectedEvents ?? []),
+        [route?.params?.selectedEvents],
+    );
+    const existingSelectedFocuses = useMemo(
+        () => normalizeSelectedEvents(userProfile?.selectedEvents ?? []),
+        [userProfile?.selectedEvents],
+    );
+    const flowSelectedFocuses = useMemo(
+        () => normalizeSelectedEvents(route?.params?.flowSelectedEvents ?? route?.params?.selectedEvents ?? []),
+        [route?.params?.flowSelectedEvents, route?.params?.selectedEvents],
+    );
+    const selectedFocuses = flowSelectedFocuses.length > 0 ? flowSelectedFocuses : persistedSelectedFocuses;
+    const currentYear = useMemo(() => String(new Date().getFullYear()), []);
+    const showsChestNumbers = useMemo(
+        () => selectedFocuses.some((focusId) => focusUsesChestNumbers(focusId)),
+        [selectedFocuses],
+    );
+    const initialMainDisciplines = useMemo(
+        () => normalizeMainDisciplines((userProfile as any)?.mainDisciplines ?? {}, {
+            trackFieldMainEvent: (userProfile as any)?.trackFieldMainEvent ?? null,
+            roadTrailMainEvent: (userProfile as any)?.roadTrailMainEvent ?? null,
+        }),
+        [userProfile],
+    );
+    const clubSearchFocuses = useMemo(
+        () => getOfficialClubSearchFocuses(selectedFocuses),
+        [selectedFocuses],
+    );
+    const showOfficialClubField = clubSearchFocuses.length > 0;
+    const officialClubHelperText = useMemo(
+        () => getOfficialClubHelperText(selectedFocuses, t),
+        [selectedFocuses, t],
+    );
+
+    const [chestNumbersByYear, setChestNumbersByYear] = useState<Record<string, string>>(
+        (() => {
+            const raw = (userProfile as any)?.chestNumbersByYear;
+            if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return {};
+            const out: Record<string, string> = {};
+            Object.entries(raw).forEach(([year, chest]) => {
+                const safeYear = String(year || '').trim();
+                if (!/^\d{4}$/.test(safeYear)) return;
+                const parsed = Number(chest);
+                if (!Number.isInteger(parsed) || parsed < 0) return;
+                out[safeYear] = String(parsed);
+            });
+            return out;
+        })(),
+    );
+    const [website, setWebsite] = useState(String((userProfile as any)?.website ?? ''));
+    const [clubName, setClubName] = useState(String((userProfile as any)?.trackFieldClub ?? (userProfile as any)?.runningClub ?? ''));
+    const [clubId, setClubId] = useState('');
+    const [runningGroupName, setRunningGroupName] = useState('');
+    const [runningGroupId, setRunningGroupId] = useState(String((userProfile as any)?.runningClubGroupId ?? ''));
+    const [mainDisciplines, setMainDisciplines] = useState<Record<string, string>>(initialMainDisciplines);
+    const [isSaving, setIsSaving] = useState(false);
+    const [isReviewing, setIsReviewing] = useState(false);
+
     const [clubModalVisible, setClubModalVisible] = useState(false);
     const [clubQuery, setClubQuery] = useState('');
-    const [groupOptions, setGroupOptions] = useState<GroupSummary[]>([]);
+    const [clubOptions, setClubOptions] = useState<SearchPickerOption[]>([]);
+    const [clubsLoading, setClubsLoading] = useState(false);
+    const [clubsError, setClubsError] = useState<string | null>(null);
+
+    const [groupModalVisible, setGroupModalVisible] = useState(false);
+    const [groupQuery, setGroupQuery] = useState('');
+    const [groupOptions, setGroupOptions] = useState<SearchPickerOption[]>([]);
     const [groupsLoading, setGroupsLoading] = useState(false);
     const [groupsError, setGroupsError] = useState<string | null>(null);
 
+    const [disciplineModalVisible, setDisciplineModalVisible] = useState(false);
+    const [disciplineFocusId, setDisciplineFocusId] = useState<SportFocusId | null>(null);
+    const [disciplineQuery, setDisciplineQuery] = useState('');
+
+    useEffect(() => {
+        if (!apiAccessToken || !runningGroupId) return;
+        let mounted = true;
+        getGroup(apiAccessToken, runningGroupId)
+            .then((response) => {
+                if (mounted) setRunningGroupName(String(response?.group?.name ?? ''));
+            })
+            .catch(() => {
+                if (mounted) setRunningGroupName('');
+            });
+        return () => {
+            mounted = false;
+        };
+    }, [apiAccessToken, runningGroupId]);
+
     useEffect(() => {
         if (!clubModalVisible || !apiAccessToken) return;
+        let mounted = true;
+        const timeout = setTimeout(async () => {
+            setClubsLoading(true);
+            setClubsError(null);
+            try {
+                const res = await searchClubs(apiAccessToken, {
+                    q: clubQuery.trim() || undefined,
+                    focuses: clubSearchFocuses,
+                    limit: 200,
+                });
+                if (!mounted) return;
+                const mapped = (res.clubs || []).map((club) => ({
+                    id: String(club.club_id || ''),
+                    title: String(club.name || club.code || '').trim(),
+                    subtitle: String(club.city || club.federation || club.code || '').trim() || null,
+                })).filter((club) => club.id && club.title);
+                setClubOptions(mapped);
+            } catch (e: any) {
+                if (!mounted) return;
+                const msg = e instanceof ApiError ? e.message : String(e?.message ?? e);
+                setClubsError(msg);
+                setClubOptions([]);
+            } finally {
+                if (mounted) setClubsLoading(false);
+            }
+        }, 250);
+
+        return () => {
+            mounted = false;
+            clearTimeout(timeout);
+        };
+    }, [apiAccessToken, clubModalVisible, clubQuery, clubSearchFocuses]);
+
+    useEffect(() => {
+        if (!groupModalVisible || !apiAccessToken) return;
         let mounted = true;
         const timeout = setTimeout(async () => {
             setGroupsLoading(true);
             setGroupsError(null);
             try {
                 const res = await searchGroups(apiAccessToken, {
-                    q: clubQuery.trim() || undefined,
+                    q: groupQuery.trim() || undefined,
                     limit: 200,
                 });
                 if (!mounted) return;
-                const sorted = [...(res.groups || [])].sort((a, b) =>
-                    String(a.name || '').localeCompare(String(b.name || ''), undefined, { sensitivity: 'base' }),
-                );
-                setGroupOptions(sorted);
+                const mapped = (res.groups || []).map((group) => ({
+                    id: String(group.group_id || ''),
+                    title: String(group.name || '').trim(),
+                    subtitle: String(group.location || '').trim() || null,
+                })).filter((group) => group.id && group.title);
+                setGroupOptions(mapped);
             } catch (e: any) {
                 if (!mounted) return;
                 const msg = e instanceof ApiError ? e.message : String(e?.message ?? e);
@@ -61,228 +206,393 @@ const CompleteAthleteDetailsScreen = ({ navigation }: any) => {
             mounted = false;
             clearTimeout(timeout);
         };
-    }, [apiAccessToken, clubModalVisible, clubQuery]);
+    }, [apiAccessToken, groupModalVisible, groupQuery]);
+
+    const disciplineOptions = useMemo(() => {
+        if (!disciplineFocusId) return [];
+        const normalizedQuery = disciplineQuery.trim().toLowerCase();
+        return buildDisciplineSearchOptions(disciplineFocusId, t).filter((option) => {
+            if (!normalizedQuery) return true;
+            return `${option.title} ${option.subtitle ?? ''}`.toLowerCase().includes(normalizedQuery);
+        });
+    }, [disciplineFocusId, disciplineQuery, t]);
+
+    const reviewRows = useMemo(() => {
+        const rows: Array<{ label: string; value: string }> = [];
+        const focusValue = selectedFocuses.map((focusId) => getSportFocusLabel(focusId, t)).join(', ');
+        if (focusValue) rows.push({ label: t('Sport focus'), value: focusValue });
+        if (showsChestNumbers) {
+            const chestValue = Object.entries(chestNumbersByYear)
+                .sort(([a], [b]) => Number(b) - Number(a))
+                .map(([year, chest]) => `${year}: ${chest}`)
+                .join(' • ');
+            if (chestValue) rows.push({ label: t('Chest number'), value: chestValue });
+        }
+        if (clubName.trim()) rows.push({ label: getOfficialClubFieldLabel(selectedFocuses, t), value: clubName.trim() });
+        if (runningGroupName.trim()) rows.push({ label: getTrainingGroupFieldLabel(selectedFocuses, t), value: runningGroupName.trim() });
+        selectedFocuses.forEach((focusId) => {
+            const selectedDiscipline = String(mainDisciplines[focusId] || '').trim();
+            if (!selectedDiscipline) return;
+            rows.push({
+                label: getFocusMainDisciplineLabel(focusId, t),
+                value: getDisciplineLabel(focusId, selectedDiscipline, t),
+            });
+        });
+        if (website.trim()) rows.push({ label: t('Website'), value: website.trim() });
+        return rows;
+    }, [chestNumbersByYear, clubName, mainDisciplines, runningGroupName, selectedFocuses, showsChestNumbers, t, website]);
 
     const handleSkip = () => {
-        navigation.reset({
-            index: 0,
-            routes: [{ name: 'BottomTabBar' }],
-        });
+        setIsReviewing(true);
     };
 
     const handleFinish = async () => {
-        setIsLoading(true);
+        if (!isReviewing) {
+            setIsReviewing(true);
+            return;
+        }
+        setIsSaving(true);
         try {
-            const trimmedChest = String(chestNumber || '').trim();
-            const currentYear = String(new Date().getFullYear());
-            const chestNumbersByYear =
-                trimmedChest.length > 0
-                    ? { [currentYear]: trimmedChest }
-                    : {};
+            const nextSelectedEvents = Array.from(
+                new Set([
+                    ...existingSelectedFocuses,
+                    ...persistedSelectedFocuses,
+                    ...flowSelectedFocuses,
+                ]),
+            );
+            const normalizedChest = Object.entries(chestNumbersByYear).reduce((acc, [year, chest]) => {
+                const parsed = Number(chest);
+                if (/^\d{4}$/.test(String(year)) && Number.isInteger(parsed) && parsed >= 0) {
+                    acc[String(year)] = String(parsed);
+                }
+                return acc;
+            }, {} as Record<string, string>);
+            const normalizedMainDisciplines = Object.entries(mainDisciplines).reduce((acc, [focusId, discipline]) => {
+                const safeFocus = String(focusId || '').trim();
+                const safeDiscipline = String(discipline || '').trim();
+                if (!safeFocus || !safeDiscipline) return acc;
+                acc[safeFocus] = safeDiscipline;
+                return acc;
+            }, {} as Record<string, string>);
+
             await updateUserProfile({
-                chestNumbersByYear,
+                category: 'find',
+                selectedEvents: nextSelectedEvents,
+                chestNumbersByYear: normalizedChest,
                 website: String(website || '').trim(),
-                runningClub: String(runningClub || '').trim(),
-                trackFieldClub: String(runningClub || '').trim(),
-                runningClubGroupId: String(runningClubGroupId || '').trim(),
-            });
-            if (apiAccessToken) {
-                await updateProfileSummary(apiAccessToken, {
-                    chest_numbers_by_year: Object.entries(chestNumbersByYear).reduce((acc, [year, chest]) => {
-                        const parsed = Number(chest);
-                        if (/^\d{4}$/.test(String(year)) && Number.isInteger(parsed) && parsed >= 0) {
-                            acc[String(year)] = parsed;
-                        }
-                        return acc;
-                    }, {} as Record<string, number>),
-                    track_field_club: String(runningClub || '').trim() || null,
-                    running_club_group_id: String(runningClubGroupId || '').trim() || null,
-                    website: String(website || '').trim() || null,
-                });
-            }
-            navigation.reset({
-                index: 0,
-                routes: [{ name: 'BottomTabBar' }],
-            });
-        } catch (err: any) {
-            Alert.alert(t('Error'), t('Failed to save details. Please try again.'));
+                runningClub: String(clubName || '').trim(),
+                trackFieldClub: String(clubName || '').trim(),
+                runningClubGroupId: String(runningGroupId || '').trim(),
+                trackFieldMainEvent: String(normalizedMainDisciplines['track-field'] || '').trim(),
+                roadTrailMainEvent: String(normalizedMainDisciplines['road-events'] || '').trim(),
+                mainDisciplines: normalizedMainDisciplines,
+            }, { persistLocally: false });
+
+            const targetFocus = flowSelectedFocuses[0] ?? persistedSelectedFocuses[0] ?? nextSelectedEvents[0] ?? null;
+            navigation.dispatch(
+                CommonActions.reset(
+                    buildBottomTabUserProfileReset(
+                        targetFocus ? { forceProfileCategory: targetFocus } : undefined,
+                    ),
+                ),
+            );
+        } catch (e: any) {
+            Alert.alert(t('Error'), String(e?.message ?? t('Failed to save details. Please try again.')));
         } finally {
-            setIsLoading(false);
+            setIsSaving(false);
         }
     };
 
-    const handleSelectRunningClub = (group: GroupSummary) => {
-        setRunningClub(String(group.name || ''));
-        setRunningClubGroupId(String(group.group_id || ''));
-        setClubModalVisible(false);
+    const clearClub = () => {
+        setClubName('');
+        setClubId('');
     };
 
-    const handleClearRunningClub = () => {
-        setRunningClub('');
-        setRunningClubGroupId('');
+    const clearRunningGroup = () => {
+        setRunningGroupName('');
+        setRunningGroupId('');
     };
 
     return (
-        <View style={Styles.mainContainer}>
+        <View style={Styles.mainContainer} testID="complete-athlete-details-screen">
             <SizeBox height={insets.top} />
-            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={Styles.scrollContent}>
-                <SizeBox height={30} />
-
-                <View style={Styles.imageContainer}>
-                    <FastImage
-                        source={Images.signup4}
-                        style={Styles.headerImage}
-                        resizeMode="contain"
-                    />
+            <View style={Styles.screenContent}>
+                <View style={Styles.topBar}>
+                    <TouchableOpacity
+                        testID="complete-athlete-back-button"
+                        style={Styles.backButtonCircle}
+                        activeOpacity={0.8}
+                        onPress={() => {
+                            if (isReviewing) {
+                                setIsReviewing(false);
+                                return;
+                            }
+                            navigation.goBack();
+                        }}
+                    >
+                        <ArrowLeft2 size={22} color={colors.primaryColor} variant="Linear" />
+                    </TouchableOpacity>
                 </View>
 
-                <SizeBox height={30} />
+                <View style={Styles.heroSection}>
+                    <View style={Styles.imageContainer}>
+                        <FastImage source={Images.signup4} style={Styles.headerImage} resizeMode="contain" />
+                    </View>
 
-                <View style={Styles.contentContainer}>
-                    <Text style={Styles.headingText}>
-                        Complete Your Athlete Details
-                    </Text>
-                    <SizeBox height={8} />
-                    <Text style={Styles.subHeadingText}>
-                        Add your information and club details
-                    </Text>
+                    <SizeBox height={18} />
 
-                    <SizeBox height={24} />
+                    <View style={Styles.contentContainer}>
+                        <Text style={Styles.headingText}>{isReviewing ? t('Review your athlete profile') : t('Complete Your Athlete Details')}</Text>
+                        <SizeBox height={8} />
+                        <Text style={Styles.subHeadingText}>
+                            {isReviewing
+                                ? t('Check the final details once before creating this athlete profile.')
+                                : t('Add the optional details you want on your athlete profile.')}
+                        </Text>
+                    </View>
+                </View>
 
-                    <View style={Styles.formContainer}>
-                        <CustomTextInput
-                            label={t('Chest Number')}
-                            placeholder={t('Enter Chest Number')}
-                            icon={<Icons.User height={16} width={16} />}
-                            value={chestNumber}
-                            onChangeText={setChestNumber}
-                        />
-
-                        <CustomTextInput
-                            label={t('Website')}
-                            placeholder={t('Enter website link')}
-                            icon={<Icons.WebsiteBlue height={16} width={16} />}
-                            value={website}
-                            onChangeText={setWebsite}
-                            autoCapitalize="none"
-                        />
-
-                        <Text style={Styles.clubFieldLabel}>{t('Running Club')}</Text>
-                        <View style={Styles.clubFieldContainer}>
-                            <TouchableOpacity
-                                style={Styles.clubFieldTapArea}
-                                activeOpacity={0.8}
-                                onPress={() => setClubModalVisible(true)}
-                            >
-                                <View style={Styles.clubFieldLeft}>
-                                    <Buildings size={16} color={colors.primaryColor} />
-                                    <SizeBox width={10} />
-                                    <Text style={runningClub ? Styles.clubFieldText : Styles.clubFieldPlaceholder}>
-                                        {runningClub || t('Choose Running Club')}
-                                    </Text>
+                <View style={Styles.formViewport}>
+                    {isReviewing ? (
+                        <ScrollView
+                            style={Styles.formScroll}
+                            contentContainerStyle={Styles.formContent}
+                            showsVerticalScrollIndicator={false}
+                        >
+                            <View style={Styles.formContainer}>
+                                <View style={Styles.reviewCard} testID="athlete-review-card">
+                                    {reviewRows.length > 0 ? (
+                                        reviewRows.map((row) => (
+                                            <View key={`${row.label}-${row.value}`} style={Styles.reviewRow}>
+                                                <Text style={Styles.reviewLabel}>{row.label}</Text>
+                                                <Text style={Styles.reviewValue}>{row.value}</Text>
+                                            </View>
+                                        ))
+                                    ) : (
+                                        <Text style={Styles.reviewHint}>{t('No optional details were added. You can still create this athlete profile now.')}</Text>
+                                    )}
                                 </View>
-                                <Icons.Dropdown height={20} width={20} />
-                            </TouchableOpacity>
-                            {runningClub ? (
-                                <TouchableOpacity
-                                    style={Styles.clubClearButton}
-                                    activeOpacity={0.8}
-                                    onPress={handleClearRunningClub}
-                                >
-                                    <CloseCircle size={18} color={colors.grayColor} />
-                                </TouchableOpacity>
+                            </View>
+                        </ScrollView>
+                    ) : (
+                        <ScrollView
+                            style={Styles.formScroll}
+                            contentContainerStyle={Styles.formContent}
+                            showsVerticalScrollIndicator={false}
+                        >
+                            <View style={Styles.formContainer}>
+                            {showsChestNumbers ? (
+                                <ChestNumbersByYearField
+                                    currentYear={currentYear}
+                                    values={chestNumbersByYear}
+                                    onChange={setChestNumbersByYear}
+                                    label={getChestNumberFieldLabel(currentYear, t)}
+                                    helperText={t('Add your current bib now, then add other years if you want to keep the history complete.')}
+                                    addYearLabel={t('Add year')}
+                                    moreYearsLabel={t('More years')}
+                                    inputPlaceholder={t('Enter chest number')}
+                                />
                             ) : null}
-                        </View>
-                    </View>
-                </View>
 
-                <View style={Styles.buttonContainer}>
-                    <TouchableOpacity
-                        style={Styles.skipButton}
-                        activeOpacity={0.7}
-                        onPress={handleSkip}
-                    >
-                        <Text style={Styles.skipButtonText}>{t('Skip')}</Text>
-                        <Icons.RightBtnIconGrey height={18} width={18} />
-                    </TouchableOpacity>
-
-                    <TouchableOpacity
-                        style={[Styles.finishButton, isLoading && { opacity: 0.5 }]}
-                        activeOpacity={0.7}
-                        onPress={handleFinish}
-                        disabled={isLoading}
-                    >
-                        {isLoading ? (
-                            <ActivityIndicator size="small" color="#fff" />
-                        ) : (
-                            <>
-                                <Text style={Styles.finishButtonText}>{t('Finish')}</Text>
-                                <Icons.RightBtnIcon height={18} width={18} />
-                            </>
-                        )}
-                    </TouchableOpacity>
-                </View>
-
-                <SizeBox height={40} />
-            </ScrollView>
-
-            <Modal
-                visible={clubModalVisible}
-                transparent
-                animationType="fade"
-                onRequestClose={() => setClubModalVisible(false)}
-            >
-                <View style={Styles.modalBackdrop}>
-                    <View style={Styles.modalCard}>
-                        <View style={Styles.modalHeader}>
-                            <Text style={Styles.modalTitle}>{t('Select Running Club')}</Text>
-                            <TouchableOpacity onPress={() => setClubModalVisible(false)}>
-                                <CloseCircle size={22} color={colors.grayColor} />
-                            </TouchableOpacity>
-                        </View>
-                        <SizeBox height={12} />
-                        <TextInput
-                            style={Styles.searchInput}
-                            placeholder={t('Search club')}
-                            placeholderTextColor={colors.grayColor}
-                            value={clubQuery}
-                            onChangeText={setClubQuery}
-                        />
-                        <SizeBox height={10} />
-                        {groupsLoading ? (
-                            <ActivityIndicator size="small" color={colors.primaryColor} />
-                        ) : groupsError ? (
-                            <Text style={Styles.emptyText}>{groupsError}</Text>
-                        ) : (
-                            <FlatList
-                                data={groupOptions}
-                                keyExtractor={(item) => String(item.group_id)}
-                                renderItem={({ item }) => {
-                                    const isSelected = String(item.group_id || '') === runningClubGroupId;
-                                    return (
+                            {showOfficialClubField ? (
+                                <>
+                                    <Text style={Styles.clubFieldLabel}>{getOfficialClubFieldLabel(selectedFocuses, t)}</Text>
+                                    <View style={Styles.clubFieldContainer}>
                                         <TouchableOpacity
-                                            style={[Styles.groupItem, isSelected && Styles.groupItemSelected]}
-                                            onPress={() => {
-                                                if (isSelected) {
-                                                    handleClearRunningClub();
-                                                    setClubModalVisible(false);
-                                                    return;
-                                                }
-                                                handleSelectRunningClub(item);
-                                            }}
+                                            style={Styles.clubFieldTapArea}
+                                            activeOpacity={0.8}
+                                            onPress={() => setClubModalVisible(true)}
                                         >
-                                            <Text style={[Styles.groupItemText, isSelected && Styles.groupItemTextSelected]}>
-                                                {item.name}
-                                            </Text>
+                                            <View style={Styles.clubFieldLeft}>
+                                                <Buildings size={16} color={colors.primaryColor} />
+                                                <SizeBox width={10} />
+                                                <Text style={clubName ? Styles.clubFieldText : Styles.clubFieldPlaceholder}>
+                                                    {clubName || getOfficialClubPlaceholder(selectedFocuses, t)}
+                                                </Text>
+                                            </View>
+                                            <Icons.Dropdown height={20} width={20} />
                                         </TouchableOpacity>
-                                    );
-                                }}
-                                ListEmptyComponent={<Text style={Styles.emptyText}>{t('No groups found')}</Text>}
-                            />
-                        )}
-                    </View>
+                                        {clubName ? (
+                                            <TouchableOpacity style={Styles.clubClearButton} activeOpacity={0.8} onPress={clearClub}>
+                                                <CloseCircle size={18} color={colors.grayColor} />
+                                            </TouchableOpacity>
+                                        ) : null}
+                                    </View>
+                                </>
+                            ) : officialClubHelperText ? (
+                                <Text style={Styles.helperTextLeft}>{officialClubHelperText}</Text>
+                            ) : null}
+
+                            <Text style={Styles.clubFieldLabel}>{getTrainingGroupFieldLabel(selectedFocuses, t)}</Text>
+                            <View style={Styles.clubFieldContainer}>
+                                <TouchableOpacity
+                                    style={Styles.clubFieldTapArea}
+                                    activeOpacity={0.8}
+                                    onPress={() => setGroupModalVisible(true)}
+                                >
+                                    <View style={Styles.clubFieldLeft}>
+                                        <Profile2User size={16} color={colors.primaryColor} />
+                                        <SizeBox width={10} />
+                                        <Text style={runningGroupName ? Styles.clubFieldText : Styles.clubFieldPlaceholder}>
+                                            {runningGroupName || getTrainingGroupPlaceholder(selectedFocuses, t)}
+                                        </Text>
+                                    </View>
+                                    <Icons.Dropdown height={20} width={20} />
+                                </TouchableOpacity>
+                                {runningGroupName ? (
+                                    <TouchableOpacity style={Styles.clubClearButton} activeOpacity={0.8} onPress={clearRunningGroup}>
+                                        <CloseCircle size={18} color={colors.grayColor} />
+                                    </TouchableOpacity>
+                                ) : null}
+                            </View>
+
+                            {selectedFocuses.map((focusId) => {
+                                const selectedDiscipline = String(mainDisciplines[focusId] || '').trim();
+                                return (
+                                    <View key={focusId}>
+                                        <Text style={Styles.clubFieldLabel}>{getFocusMainDisciplineLabel(focusId, t)}</Text>
+                                        <View style={Styles.clubFieldContainer}>
+                                            <TouchableOpacity
+                                                style={Styles.clubFieldTapArea}
+                                                activeOpacity={0.8}
+                                                onPress={() => {
+                                                    setDisciplineFocusId(focusId);
+                                                    setDisciplineQuery('');
+                                                    setDisciplineModalVisible(true);
+                                                }}
+                                            >
+                                                <View style={Styles.clubFieldLeft}>
+                                                    <User size={16} color={colors.primaryColor} />
+                                                    <SizeBox width={10} />
+                                                    <Text style={selectedDiscipline ? Styles.clubFieldText : Styles.clubFieldPlaceholder}>
+                                                        {selectedDiscipline ? getDisciplineLabel(focusId, selectedDiscipline, t) : t('Choose main discipline')}
+                                                    </Text>
+                                                </View>
+                                                <Icons.Dropdown height={20} width={20} />
+                                            </TouchableOpacity>
+                                            {selectedDiscipline ? (
+                                                <TouchableOpacity
+                                                    style={Styles.clubClearButton}
+                                                    activeOpacity={0.8}
+                                                    onPress={() => setMainDisciplines((prev) => {
+                                                        const next = { ...prev };
+                                                        delete next[focusId];
+                                                        return next;
+                                                    })}
+                                                >
+                                                    <CloseCircle size={18} color={colors.grayColor} />
+                                                </TouchableOpacity>
+                                            ) : null}
+                                        </View>
+                                    </View>
+                                );
+                            })}
+
+                            <Text style={Styles.clubFieldLabel}>{t('Website (optional)')}</Text>
+                            <View style={Styles.clubFieldContainer}>
+                                <Global size={16} color={colors.primaryColor} />
+                                <SizeBox width={10} />
+                                <TextInput
+                                    testID="athlete-website-input"
+                                    style={Styles.websiteInput}
+                                    value={website}
+                                    onChangeText={setWebsite}
+                                    placeholder={t('Add website')}
+                                    placeholderTextColor={colors.grayColor}
+                                    keyboardType="url"
+                                    autoCapitalize="none"
+                                    autoCorrect={false}
+                                />
+                            </View>
+                            <Text style={Styles.helperTextLeft}>{t('Website appears at the bottom of the profile and stays optional.')}</Text>
+                            </View>
+                        </ScrollView>
+                    )}
                 </View>
-            </Modal>
+            </View>
+
+            <View style={[Styles.buttonContainer, { paddingBottom: insets.bottom > 0 ? insets.bottom : 20 }]}> 
+                <TouchableOpacity
+                    testID={isReviewing ? 'athlete-review-back-button' : 'athlete-skip-button'}
+                    style={Styles.skipButton}
+                    onPress={isReviewing ? () => setIsReviewing(false) : handleSkip}
+                >
+                    <Text style={Styles.skipButtonText}>{isReviewing ? t('Back') : t('Skip')}</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                    testID={isReviewing ? 'athlete-create-profile-button' : 'athlete-finish-button'}
+                    style={Styles.finishButton}
+                    onPress={handleFinish}
+                    disabled={isSaving}
+                >
+                    {isSaving ? (
+                        <ActivityIndicator size="small" color={colors.pureWhite} />
+                    ) : (
+                        <Text style={Styles.finishButtonText}>{isReviewing ? t('Create profile') : t('Review')}</Text>
+                    )}
+                </TouchableOpacity>
+            </View>
+
+            <SearchPickerModal
+                visible={clubModalVisible}
+                title={getOfficialClubModalTitle(selectedFocuses, t)}
+                placeholder={getOfficialClubPlaceholder(selectedFocuses, t)}
+                query={clubQuery}
+                onChangeQuery={setClubQuery}
+                onClose={() => setClubModalVisible(false)}
+                options={clubOptions}
+                loading={clubsLoading}
+                error={clubsError}
+                emptyText={t('No clubs found.')}
+                selectedId={clubId}
+                onSelect={(option) => {
+                    setClubId(option.id);
+                    setClubName(option.title);
+                    setClubModalVisible(false);
+                }}
+            />
+
+            <SearchPickerModal
+                visible={groupModalVisible}
+                title={getTrainingGroupModalTitle(selectedFocuses, t)}
+                placeholder={getTrainingGroupPlaceholder(selectedFocuses, t)}
+                query={groupQuery}
+                onChangeQuery={setGroupQuery}
+                onClose={() => setGroupModalVisible(false)}
+                options={groupOptions}
+                loading={groupsLoading}
+                error={groupsError}
+                emptyText={t('No groups found.')}
+                selectedId={runningGroupId}
+                onSelect={(option) => {
+                    setRunningGroupId(option.id);
+                    setRunningGroupName(option.title);
+                    setGroupModalVisible(false);
+                }}
+            />
+
+            <SearchPickerModal
+                visible={disciplineModalVisible}
+                title={disciplineFocusId ? getFocusDisciplineModalTitle(disciplineFocusId, t) : t('Disciplines')}
+                placeholder={t('Search discipline')}
+                query={disciplineQuery}
+                onChangeQuery={setDisciplineQuery}
+                onClose={() => setDisciplineModalVisible(false)}
+                options={disciplineOptions}
+                loading={false}
+                emptyText={t('No disciplines found.')}
+                selectedId={disciplineFocusId ? String(mainDisciplines[disciplineFocusId] || '') : ''}
+                onSelect={(option) => {
+                    if (disciplineFocusId) {
+                        setMainDisciplines((prev) => ({
+                            ...prev,
+                            [disciplineFocusId]: option.id,
+                        }));
+                    }
+                    setDisciplineModalVisible(false);
+                }}
+            />
         </View>
     );
 };

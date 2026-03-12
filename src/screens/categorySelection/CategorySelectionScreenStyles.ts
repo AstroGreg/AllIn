@@ -7,8 +7,9 @@ export const createStyles = (colors: ThemeColors) => StyleSheet.create({
         flex: 1,
         backgroundColor: colors.backgroundColor,
     },
-    scrollContent: {
-        flexGrow: 1,
+    contentShell: {
+        flex: 1,
+        minHeight: 0,
         paddingHorizontal: 20,
     },
     headerContainer: {
@@ -28,9 +29,17 @@ export const createStyles = (colors: ThemeColors) => StyleSheet.create({
         textAlign: 'center',
         marginTop: 8,
     },
+    optionsSection: {
+        flex: 1,
+        minHeight: 0,
+        marginTop: 12,
+    },
+    optionsScroll: {
+        flex: 1,
+    },
     optionsContainer: {
         gap: 12,
-        marginTop: 6,
+        paddingBottom: 8,
     },
     optionCard: {
         borderRadius: 10,
@@ -97,8 +106,9 @@ export const createStyles = (colors: ThemeColors) => StyleSheet.create({
     buttonContainer: {
         paddingHorizontal: 20,
         paddingBottom: 14,
-        marginTop: 'auto',
+        paddingTop: 16,
         gap: 10,
+        backgroundColor: colors.backgroundColor,
     },
     nextStepText: {
         ...Fonts.regular14,

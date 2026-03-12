@@ -47,7 +47,7 @@ const AuthenticatorSetup = ({ navigation }: any) => {
                     <Text style={styles.title}>{t('Set up authenticator app')}</Text>
                     <SizeBox height={6} />
                     <Text style={styles.description}>
-                        Scan this QR code using Google Authenticator or Authy.
+                        {t('Scan this QR code using Google Authenticator or Authy.')}
                     </Text>
                 </View>
 
