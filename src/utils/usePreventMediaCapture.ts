@@ -1,6 +1,6 @@
 import {useFocusEffect} from '@react-navigation/native';
 import {useCallback} from 'react';
-import {CaptureProtection} from 'react-native-capture-protection';
+import {allowMediaCapture, preventMediaCapture} from './nativeCaptureProtection';
 
 export function usePreventMediaCapture(enabled = true) {
   useFocusEffect(
@@ -8,7 +8,7 @@ export function usePreventMediaCapture(enabled = true) {
       if (!enabled) return () => {};
 
       let active = true;
-      void CaptureProtection.prevent({
+      void preventMediaCapture({
         screenshot: true,
         record: true,
         appSwitcher: true,
@@ -17,7 +17,7 @@ export function usePreventMediaCapture(enabled = true) {
       return () => {
         if (!active) return;
         active = false;
-        void CaptureProtection.allow().catch(() => {});
+        void allowMediaCapture().catch(() => {});
       };
     }, [enabled]),
   );

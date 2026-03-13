@@ -2,11 +2,11 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Alert, Modal, Pressable, ScrollView, Share, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Add, ArrowLeft2, Copy, Link21, Refresh2, Share as ShareIcon, Trash } from 'iconsax-react-nativejs';
-import Clipboard from '@react-native-clipboard/clipboard';
 import SizeBox from '../../constants/SizeBox';
 import { useTheme } from '../../context/ThemeContext';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../context/AuthContext';
+import { setClipboardString } from '../../utils/nativeClipboard';
 import {
   getGroup,
   getGroupMembers,
@@ -258,8 +258,13 @@ const GroupManageScreen = ({ navigation, route }: any) => {
 
   const handleCopyInviteLink = useCallback(() => {
     if (!inviteLinkUrl) return;
-    Clipboard.setString(inviteLinkUrl);
-    Alert.alert(t('Copied'), t('Invitation link copied to clipboard.'));
+    const copied = setClipboardString(inviteLinkUrl);
+    if (copied) {
+      Alert.alert(t('Copied'), t('Invitation link copied to clipboard.'));
+      return;
+    }
+
+    Alert.alert(t('Clipboard unavailable'), t('Clipboard is not available in this app build.'));
   }, [inviteLinkUrl, t]);
 
   const handleShareInviteLink = useCallback(async () => {
