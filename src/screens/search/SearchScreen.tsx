@@ -15,7 +15,7 @@ import { ApiError, followProfile, getGroupMembers, getProfileSummary, getProfile
 import SportFocusIcon from '../../components/profile/SportFocusIcon'
 import UnifiedSearchInput from '../../components/unifiedSearchInput/UnifiedSearchInput'
 import { getApiBaseUrl } from '../../constants/RuntimeConfig'
-import { getSportFocusLabel, normalizeSelectedEvents, type SportFocusId } from '../../utils/profileSelections'
+import { getSportFocusLabel, normalizeSelectedEvents, resolveCompetitionFocusId, type SportFocusId } from '../../utils/profileSelections'
  
 
 const FILTERS = ['Competition', 'Person', 'Group', 'Location'] as const
@@ -25,8 +25,16 @@ const DEFAULT_COMPETITIONS_INITIAL_LIMIT = 10;
 const SEARCH_RESULTS_INITIAL_LIMIT = 20;
 const SCROLL_LOAD_THRESHOLD_PX = 220;
 
-type CompetitionType = 'track' | 'road'
+type CompetitionType = SportFocusId
 type CompetitionTypeFilter = 'all' | CompetitionType
+const COMPETITION_FILTER_IDS: SportFocusId[] = [
+    'track-field',
+    'road-events',
+    'triathlon',
+    'ironman',
+    'cycling',
+    'hyrox',
+]
 
 interface EventResult {
     id: string;
@@ -146,11 +154,13 @@ const SearchScreen = ({ navigation }: any) => {
  
     const competitionTypeFilters = useMemo(
         () => ([
-            { key: 'all' as const, label: 'all' },
-            { key: 'track' as const, label: 'trackAndField' },
-            { key: 'road' as const, label: 'roadAndTrail' },
+            { key: 'all' as const, label: t('all') },
+            ...COMPETITION_FILTER_IDS.map((focusId) => ({
+                key: focusId,
+                label: getSportFocusLabel(focusId, t),
+            })),
         ]),
-        [],
+        [t],
     );
 
     const activeValue = filterValues[activeFilter] ?? '';
@@ -167,12 +177,9 @@ const SearchScreen = ({ navigation }: any) => {
         type?: string | null;
         name?: string | null;
         location?: string | null;
+        organizer?: string | null;
     }) => {
-        const token = `${params?.type || ''} ${params?.name || ''} ${params?.location || ''}`.toLowerCase();
-        if (/road|trail|marathon|veldloop|veldlopen|cross|5k|10k|half|ultra|city\s*run/.test(token)) {
-            return 'road' as const;
-        }
-        return 'track' as const;
+        return resolveCompetitionFocusId(params);
     }, []);
 
     useEffect(() => {
@@ -199,6 +206,7 @@ const SearchScreen = ({ navigation }: any) => {
                             type: event.competition_type,
                             name: event.event_name || event.event_title,
                             location: event.event_location,
+                            organizer: event.organizing_club,
                         }),
                         organizingClub: String(
                             event.organizing_club
@@ -744,8 +752,7 @@ const SearchScreen = ({ navigation }: any) => {
     ]);
 
     const getCompetitionTypeLabel = (type: CompetitionType) => {
-        if (type === 'road') return t('roadAndTrail');
-        return t('trackAndField');
+        return getSportFocusLabel(type, t);
     };
 
     const renderEventCard = (event: EventResult) => (
@@ -1177,7 +1184,7 @@ const SearchScreen = ({ navigation }: any) => {
                                         competitionTypeFilter === option.key && Styles.typeFilterChipTextActive,
                                     ]}
                                 >
-                                    {t(option.label)}
+                                    {option.label}
                                 </Text>
                             </TouchableOpacity>
                         ))}

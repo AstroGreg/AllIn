@@ -1,11 +1,46 @@
 # Resolve react_native_pods.rb with node to allow for hoisting
 ENV['RCT_NEW_ARCH_ENABLED'] = '0'
-$CODEGEN_OUTPUT_DIR = 'generated/ios'
+require 'json'
 require Pod::Executable.execute_command('node', ['-p',
   'require.resolve(
     "react-native/scripts/react_native_pods.rb",
     {paths: [process.argv[1]]},
   )', __dir__]).strip
+$CODEGEN_OUTPUT_DIR = '../build/generated/ios'
+
+# React Native 0.77 defaults Codegen output to ios/build/generated/ios.
+# This workspace also uses ios/build for product output, so a clean/archive can
+# wipe generated sources and break the next Release build. Keep Codegen in the
+# repo-root build/generated/ios folder for both pod-install and Xcode builds.
+def patch_react_native_codegen_paths!
+  rn_scripts_root = File.join(__dir__, '..', 'node_modules', 'react-native', 'scripts')
+
+  codegen_utils_path = File.join(rn_scripts_root, 'cocoapods', 'codegen_utils.rb')
+  if File.exist?(codegen_utils_path)
+    codegen_utils = File.read(codegen_utils_path)
+    updated_codegen_utils = codegen_utils.gsub(
+      %q{"-o", Pod::Config.instance.installation_root,},
+      %q{"-o", File.expand_path(app_path),}
+    )
+    if updated_codegen_utils != codegen_utils
+      File.write(codegen_utils_path, updated_codegen_utils)
+    end
+  end
+
+  script_phases_path = File.join(rn_scripts_root, 'react_native_pods_utils', 'script_phases.rb')
+  if File.exist?(script_phases_path)
+    script_phases = File.read(script_phases_path)
+    updated_script_phases = script_phases.gsub(
+      %q{'RCT_SCRIPT_OUTPUT_DIR' => "$RCT_SCRIPT_POD_INSTALLATION_ROOT",},
+      %q{'RCT_SCRIPT_OUTPUT_DIR' => "$RCT_SCRIPT_APP_PATH/build/generated/ios",}
+    )
+    if updated_script_phases != script_phases
+      File.write(script_phases_path, updated_script_phases)
+    end
+  end
+end
+
+patch_react_native_codegen_paths!
 
 platform :ios, min_ios_version_supported
 prepare_react_native_project!
@@ -55,6 +90,48 @@ target 'SpotMe' do
       content = File.read(hermes_script)
       if content.start_with?('#!/bin/sh')
         File.write(hermes_script, content.sub('#!/bin/sh', '#!/bin/bash'))
+      end
+    end
+
+    react_native_package_json = File.join(config[:reactNativePath], 'package.json')
+    react_native_version = JSON.parse(File.read(react_native_package_json)).fetch('version')
+    hermes_dsym_root = File.join(installer.sandbox.root.to_s, 'hermes-engine-dSYMs')
+    hermes_release_dsym_dir = File.join(hermes_dsym_root, 'release')
+    hermes_release_dsym_path = File.join(hermes_release_dsym_dir, 'iphoneos', 'hermes.framework.dSYM')
+
+    unless File.exist?(hermes_release_dsym_path)
+      release_dsym_url = "https://repo1.maven.org/maven2/com/facebook/react/react-native-artifacts/#{react_native_version}/react-native-artifacts-#{react_native_version}-hermes-framework-dSYM-release.tar.gz"
+      release_dsym_tarball = File.join(installer.sandbox.root.to_s, 'hermes-framework-dSYM-release.tar.gz')
+      FileUtils.rm_rf(hermes_release_dsym_dir)
+      FileUtils.mkdir_p(hermes_release_dsym_dir)
+
+      Pod::UI.puts "Downloading Hermes release dSYM from #{release_dsym_url}".green
+      download_ok = system('curl', '-L', '--fail', '-o', release_dsym_tarball, release_dsym_url)
+      raise "[Hermes] Failed to download release dSYM from #{release_dsym_url}" unless download_ok
+
+      extract_ok = system('tar', '-xzf', release_dsym_tarball, '-C', hermes_release_dsym_dir)
+      raise "[Hermes] Failed to extract release dSYM tarball #{release_dsym_tarball}" unless extract_ok
+    end
+
+    pods_frameworks_script = File.join(installer.sandbox.root.to_s, 'Target Support Files', 'Pods-SpotMe', 'Pods-SpotMe-frameworks.sh')
+    if File.exist?(pods_frameworks_script)
+      content = File.read(pods_frameworks_script)
+      release_dsym_snippet = <<~SH
+if [[ "$CONFIGURATION" == "Release" && "$PLATFORM_NAME" == "iphoneos" ]]; then
+  install_dsym "${PODS_ROOT}/hermes-engine-dSYMs/release/iphoneos/hermes.framework.dSYM" false
+fi
+      SH
+      unless content.include?('hermes-engine-dSYMs/release/iphoneos/hermes.framework.dSYM')
+        marker = <<~SH
+if [[ "$CONFIGURATION" == "Release" ]]; then
+  install_framework "${PODS_XCFRAMEWORKS_BUILD_DIR}/hermes-engine/Pre-built/hermes.framework"
+fi
+        SH
+        if content.include?(marker)
+          File.write(pods_frameworks_script, content.sub(marker, "#{marker}\n#{release_dsym_snippet}"))
+        else
+          raise '[Hermes] Could not patch Pods-SpotMe-frameworks.sh for Hermes dSYM installation'
+        end
       end
     end
   end

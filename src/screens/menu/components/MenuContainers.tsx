@@ -15,14 +15,20 @@ interface MenuContainersProps {
     isSwitch?: boolean;
     toggleSwitch?: any;
     isEnabled?: boolean;
+    testID?: string;
 }
 
-const MenuContainers = ({ title, icon, onPress, isNext = true, isSelected, isSwitch = false, isEnabled, toggleSwitch }: MenuContainersProps) => {
+const MenuContainers = ({ title, icon, onPress, isNext = true, isSelected, isSwitch = false, isEnabled, toggleSwitch, testID }: MenuContainersProps) => {
     const { colors } = useTheme();
     const Styles = createStyles(colors);
 
     return (
-        <TouchableOpacity disabled={isSwitch} activeOpacity={0.7} onPress={onPress} style={Styles.menuContainer}>
+        <TouchableOpacity
+            activeOpacity={0.7}
+            onPress={isSwitch ? toggleSwitch : onPress}
+            style={Styles.menuContainer}
+            testID={testID}
+        >
             <View style={Styles.iconCont}>
                 {icon}
             </View>

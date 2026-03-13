@@ -1,0 +1,15 @@
+<svg width="1080" height="1920" viewBox="0 0 1080 1920" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bgD" x1="120" y1="120" x2="960" y2="1840" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#D9E3EA"/>
+      <stop offset="0.6" stop-color="#B8C5D0"/>
+      <stop offset="1" stop-color="#566875"/>
+    </linearGradient>
+  </defs>
+  <rect width="1080" height="1920" fill="url(#bgD)"/>
+  <rect x="60" y="1358" width="960" height="360" rx="46" fill="rgba(250,251,253,0.94)"/>
+  <text x="112" y="1458" fill="#0F172A" font-size="68" font-family="Arial, sans-serif" font-weight="700">PK AC Dag 1</text>
+  <text x="112" y="1538" fill="#475569" font-size="38" font-family="Arial, sans-serif">Strong card for blogs only.</text>
+  <text x="112" y="1594" fill="#475569" font-size="38" font-family="Arial, sans-serif">No branding. Title + optional description.</text>
+  <text x="540" y="1776" text-anchor="middle" fill="rgba(255,255,255,0.84)" font-size="30" font-family="Arial, sans-serif">Style D: clean blog card, no brand</text>
+</svg>

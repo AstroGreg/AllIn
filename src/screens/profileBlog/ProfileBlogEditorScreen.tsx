@@ -559,7 +559,7 @@ const ProfileBlogEditorScreen = ({ navigation, route }: any) => {
     );
 
     return (
-        <View style={Styles.mainContainer}>
+        <View style={Styles.mainContainer} testID="profile-blog-editor-screen">
             <SizeBox height={insets.top} />
             <View style={Styles.header}>
                 <TouchableOpacity
@@ -600,8 +600,8 @@ const ProfileBlogEditorScreen = ({ navigation, route }: any) => {
                     <View style={Styles.fieldBlock}>
                         <Text style={Styles.fieldLabel}>{t('Date')}</Text>
                         <TouchableOpacity style={[Styles.dateButton, dateInvalid && Styles.fieldInputError]} onPress={openDateModal}>
+                            <Text testID="profile-blog-date-button" style={Styles.dateText}>{postDate ? postDate.toLocaleDateString() : t('Select date')}</Text>
                             <CalendarIcon size={16} color={colors.primaryColor} variant="Linear" />
-                            <Text style={Styles.dateText}>{postDate ? postDate.toLocaleDateString() : t('Select date')}</Text>
                         </TouchableOpacity>
                     </View>
                 )}
@@ -616,6 +616,7 @@ const ProfileBlogEditorScreen = ({ navigation, route }: any) => {
                                 placeholderTextColor="#9B9F9F"
                                 value={title}
                                 onChangeText={setTitle}
+                                testID="profile-blog-title-input"
                             />
                         </View>
                         <View style={Styles.fieldBlock}>
@@ -627,6 +628,7 @@ const ProfileBlogEditorScreen = ({ navigation, route }: any) => {
                                 value={description}
                                 onChangeText={setDescription}
                                 multiline
+                                testID="profile-blog-description-input"
                             />
                         </View>
                     </>
@@ -651,7 +653,7 @@ const ProfileBlogEditorScreen = ({ navigation, route }: any) => {
                     <>
                         <View style={Styles.mediaHeader}>
                             <Text style={Styles.fieldLabel}>{t('Media')}</Text>
-                            <TouchableOpacity style={Styles.mediaAddButton} onPress={pickMedia}>
+                        <TouchableOpacity style={Styles.mediaAddButton} onPress={pickMedia}>
                                 <Add size={14} color="#FFFFFF" variant="Linear" />
                                 <Text style={Styles.mediaAddText}>{t('Add media')}</Text>
                             </TouchableOpacity>
@@ -688,7 +690,7 @@ const ProfileBlogEditorScreen = ({ navigation, route }: any) => {
                     <View style={Styles.fieldBlock}>
                         <Text style={Styles.fieldLabel}>{t('Event')}</Text>
                         <TouchableOpacity style={Styles.dateButton} onPress={() => setShowEventModal(true)}>
-                            <Text style={Styles.dateText} numberOfLines={1}>{selectedEventLabel}</Text>
+                            <Text style={Styles.dateText} numberOfLines={1} testID="profile-blog-event-button">{selectedEventLabel}</Text>
                         </TouchableOpacity>
                     </View>
                 )}
@@ -704,6 +706,7 @@ const ProfileBlogEditorScreen = ({ navigation, route }: any) => {
                                 value={peopleQuery}
                                 onChangeText={setPeopleQuery}
                                 onSubmitEditing={() => addPerson(peopleQuery)}
+                                testID="profile-blog-people-input"
                             />
                         </View>
                         {peopleSearchLoading && <Text style={Styles.mediaEmptyText}>{t('Searching...')}</Text>}
@@ -741,11 +744,12 @@ const ProfileBlogEditorScreen = ({ navigation, route }: any) => {
                             style={[Styles.saveButton, !canGoNext && Styles.saveButtonDisabled]}
                             onPress={goNextStep}
                             disabled={!canGoNext}
+                            testID="profile-blog-next-button"
                         >
                             <Text style={Styles.saveText}>{t('Next')}</Text>
                         </TouchableOpacity>
                     ) : (
-                        <TouchableOpacity style={Styles.saveButton} onPress={saveEntry} disabled={isSaving}>
+                        <TouchableOpacity style={Styles.saveButton} onPress={saveEntry} disabled={isSaving} testID="profile-blog-save-button">
                             <Text style={Styles.saveText}>{isSaving ? t('Saving...') : t('Save')}</Text>
                         </TouchableOpacity>
                     )}
@@ -769,7 +773,7 @@ const ProfileBlogEditorScreen = ({ navigation, route }: any) => {
                 ) : null}
 
                 {mode === 'edit' && postId ? (
-                    <TouchableOpacity style={Styles.deleteButton} onPress={deleteEntry}>
+                    <TouchableOpacity style={Styles.deleteButton} onPress={deleteEntry} testID="profile-blog-delete-button">
                         <Trash size={16} color="#ED5454" variant="Linear" />
                         <Text style={Styles.deleteText}>{t('Delete blog')}</Text>
                     </TouchableOpacity>

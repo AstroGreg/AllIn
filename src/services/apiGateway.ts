@@ -1,4 +1,5 @@
 import { getApiBaseUrl as resolveApiBaseUrl } from '../constants/RuntimeConfig';
+import { resolveCompetitionFocusId, type SportFocusId } from '../utils/profileSelections';
 
 export type HttpMethod = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
 
@@ -36,13 +37,10 @@ function toQueryString(params: Record<string, any>): string {
   return s ? `?${s}` : '';
 }
 
-function normalizeCompetitionType(raw: any): 'track' | 'road' | null {
+function normalizeCompetitionType(raw: any): SportFocusId | null {
   const value = String(raw ?? '').trim().toLowerCase();
   if (!value) return null;
-  if (value.includes('road') || value.includes('trail') || value.includes('marathon') || value.includes('veldloop') || value.includes('veldlopen') || value === 'cross') {
-    return 'road';
-  }
-  return 'track';
+  return resolveCompetitionFocusId({ type: value });
 }
 
 function normalizeOrganizerClub(row: any): string | null {
@@ -1234,6 +1232,7 @@ export async function getEventCompetitions(
     discipline_group: row?.discipline_group ?? null,
     sort_order: row?.sort_order == null ? null : Number(row.sort_order),
     media_count: row?.media_count == null ? null : Number(row.media_count),
+    thumbnail_url: row?.thumbnail_url ?? null,
   }));
   return {ok: Boolean(res?.ok), count: Number(res?.count ?? competitions.length), competitions};
 }

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { View, Text, TouchableOpacity, Image, Modal, Alert, Pressable, TextInput, Share } from 'react-native';
+import { View, Text, TouchableOpacity, Image, Modal, Alert, Pressable, TextInput, Share, Linking, Platform } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import FastImage from 'react-native-fast-image';
 import Video from 'react-native-video';
@@ -22,6 +22,7 @@ import { ApiError, attachMediaToPost, createMediaIssueRequest, createPost, getMe
 import { getApiBaseUrl, getHlsBaseUrl } from '../../constants/RuntimeConfig';
 import { AppConfig } from '../../constants/AppConfig';
 import { useTranslation } from 'react-i18next'
+import { useInstagramStoryImageComposer } from '../../components/share/InstagramStoryComposer';
 import { usePreventMediaCapture } from '../../utils/usePreventMediaCapture';
 
 const INSTAGRAM_APP_ID = String(AppConfig.INSTAGRAM_APP_ID ?? '').trim();
@@ -32,6 +33,7 @@ const VideoPlayingScreen = ({ navigation, route }: any) => {
     const { colors } = useTheme();
     const Styles = createStyles(colors);
     const { apiAccessToken } = useAuth();
+    const {composeInstagramStoryImage, composerElement} = useInstagramStoryImageComposer();
     usePreventMediaCapture(true);
     const showBuyModalOnLoad = route?.params?.showBuyModal || false;
     const videoPrice = route?.params?.video?.price || '€0,20';
@@ -367,23 +369,30 @@ const VideoPlayingScreen = ({ navigation, route }: any) => {
         }
 
         try {
-            const pkg = await shareModule.default.isPackageInstalled?.('com.instagram.android');
-            if (pkg && !pkg.isInstalled) {
-                Alert.alert(t('Instagram unavailable'), t('Install Instagram to share to Stories.'));
-                return;
+            if (Platform.OS === 'android') {
+                const pkg = await shareModule.default.isPackageInstalled?.('com.instagram.android');
+                if (pkg && !pkg.isInstalled) {
+                    Alert.alert(t('Instagram unavailable'), t('Install Instagram to share to Stories.'));
+                    return;
+                }
+            } else {
+                const canOpen = await Linking.canOpenURL('instagram-stories://share');
+                if (!canOpen) {
+                    Alert.alert(t('Instagram unavailable'), t('Install Instagram to share to Stories.'));
+                    return;
+                }
             }
             const fileUrl = await ensureLocalFile(downloadUrl, extensionFromUrl(downloadUrl));
             if (!fileUrl) {
                 Alert.alert(t('Share failed'), t('Unable to download the media file.'));
                 return;
             }
-            const bannerUri = Image.resolveAssetSource(Images.advertisement).uri;
+            const stickerImage = await composeInstagramStoryImage(null, null, 'SpotMe', null, { mode: 'overlay' });
             await shareModule.default.shareSingle({
                 social: shareModule.default.Social.INSTAGRAM_STORIES,
                 appId: INSTAGRAM_APP_ID,
-                backgroundImage: bannerUri,
                 backgroundVideo: fileUrl,
-                stickerImage: bannerUri,
+                stickerImage,
                 backgroundTopColor: '#0D0F12',
                 backgroundBottomColor: '#0D0F12',
                 attributionURL: 'https://spot-me.ai',
@@ -395,7 +404,7 @@ const VideoPlayingScreen = ({ navigation, route }: any) => {
                 Alert.alert(t('Instagram Story failed'), msg);
             }
         }
-    }, [ensureLocalFile, extensionFromUrl, getShareModule, handleShareNative, resolveDownloadUrl, t]);
+    }, [composeInstagramStoryImage, ensureLocalFile, extensionFromUrl, getShareModule, handleShareNative, resolveDownloadUrl, t]);
 
     const showInfoPopup = useCallback((title: string, message: string) => {
         setInfoPopupTitle(title);
@@ -506,7 +515,7 @@ const VideoPlayingScreen = ({ navigation, route }: any) => {
     }, [handleAddToProfile, handleDownload, handleGoToEvent, handleGoToProfile, handleMarkInappropriate, handleRequestRemoval, handleShareInstagram, handleShareNative, openReportIssuePopup, t]);
 
     return (
-        <View style={Styles.mainContainer}>
+        <View style={Styles.mainContainer} testID="video-playing-screen">
             <SizeBox height={insets.top} />
 
             {/* Header */}
@@ -888,6 +897,7 @@ const VideoPlayingScreen = ({ navigation, route }: any) => {
                 isVisible={showSubscriptionModal}
                 onClose={() => setShowSubscriptionModal(false)}
             />
+            {composerElement}
         </View>
     );
 };

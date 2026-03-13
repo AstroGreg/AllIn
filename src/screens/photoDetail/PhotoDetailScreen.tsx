@@ -1,5 +1,5 @@
 import React, {useCallback, useMemo, useState, useEffect, useRef} from 'react';
-import {ActivityIndicator, Alert, Image, Modal, Pressable, Share, Text, TouchableOpacity, View, TextInput, ScrollView} from 'react-native';
+import {ActivityIndicator, Alert, Modal, Pressable, Share, Text, TouchableOpacity, View, TextInput, ScrollView, Linking, Platform} from 'react-native';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 // useFocusEffect not available in some runtime bundles; use navigation listeners instead.
 import FastImage from 'react-native-fast-image';
@@ -301,17 +301,6 @@ const PhotoDetailScreen = ({navigation, route}: any) => {
         if (resolvedEventName) return resolvedEventName;
         return '';
     }, [blogTitleFromRoute, eventId, eventNameById, eventTitle, normalizeHeaderLabel]);
-    const instagramStoryTitle = useMemo(() => {
-        const routeEventTitle = normalizeHeaderLabel(eventTitle);
-        if (routeEventTitle) {
-            return routeEventTitle;
-        }
-        const resolvedEventName = normalizeHeaderLabel(eventNameById(eventId));
-        if (resolvedEventName) {
-            return resolvedEventName;
-        }
-        return '';
-    }, [eventId, eventNameById, eventTitle, normalizeHeaderLabel]);
     const primaryMediaAsset = useMemo(() => {
         const assets = Array.isArray(activeMedia?.assets) ? activeMedia.assets : [];
         if (assets.length === 0) return null;
@@ -972,7 +961,6 @@ const PhotoDetailScreen = ({navigation, route}: any) => {
 
     const handleShareInstagram = useCallback(async () => {
         const shareModule = getShareModule();
-        const bannerUri = Image.resolveAssetSource(require('../../assets/imgs/advertisement.png')).uri;
         const shareUrl = await resolveShareUrl();
 
         if (shareModule?.default?.shareSingle) {
@@ -982,10 +970,18 @@ const PhotoDetailScreen = ({navigation, route}: any) => {
                     Alert.alert(t('Instagram Story failed'), t('INSTAGRAM_APP_ID is missing.'));
                     return;
                 }
-                const pkg = await ShareLib.isPackageInstalled?.('com.instagram.android');
-                if (pkg && !pkg.isInstalled) {
-                    Alert.alert(t('Instagram unavailable'), t('Install Instagram to share to Stories.'));
-                    return;
+                if (Platform.OS === 'android') {
+                    const pkg = await ShareLib.isPackageInstalled?.('com.instagram.android');
+                    if (pkg && !pkg.isInstalled) {
+                        Alert.alert(t('Instagram unavailable'), t('Install Instagram to share to Stories.'));
+                        return;
+                    }
+                } else {
+                    const canOpen = await Linking.canOpenURL('instagram-stories://share');
+                    if (!canOpen) {
+                        Alert.alert(t('Instagram unavailable'), t('Install Instagram to share to Stories.'));
+                        return;
+                    }
                 }
                 const localAsset = shareUrl
                     ? await ensureLocalFile(shareUrl, extensionFromUrl(shareUrl))
@@ -995,16 +991,13 @@ const PhotoDetailScreen = ({navigation, route}: any) => {
                     return;
                 }
                 const isLocalVideo = /\.(mp4|mov|m4v)(\?|$)/i.test(localAsset);
-                const composedAsset =
-                    isLocalVideo
-                        ? null
-                        : await composeInstagramStoryImage(localAsset, instagramStoryTitle, 'SpotMe');
+                const storyAssetUri = await composeInstagramStoryImage(null, null, 'SpotMe', null, { mode: 'overlay' });
                 await ShareLib.shareSingle({
                     social: ShareLib.Social.INSTAGRAM_STORIES,
                     appId: INSTAGRAM_APP_ID,
-                    backgroundImage: isLocalVideo ? bannerUri : composedAsset,
+                    backgroundImage: isLocalVideo ? undefined : localAsset,
                     backgroundVideo: isLocalVideo ? localAsset : undefined,
-                    stickerImage: isLocalVideo ? bannerUri : undefined,
+                    stickerImage: storyAssetUri,
                     backgroundTopColor: '#0D0F12',
                     backgroundBottomColor: '#0D0F12',
                     attributionURL: 'https://spot-me.ai',
@@ -1022,7 +1015,7 @@ const PhotoDetailScreen = ({navigation, route}: any) => {
             return;
         }
         await handleShareNative();
-    }, [composeInstagramStoryImage, ensureLocalFile, extensionFromUrl, getShareModule, handleShareNative, instagramStoryTitle, resolveShareUrl, t]);
+    }, [composeInstagramStoryImage, ensureLocalFile, extensionFromUrl, getShareModule, handleShareNative, resolveShareUrl, t]);
 
     const handleAddToProfile = useCallback(async () => {
         if (!apiAccessToken) {
@@ -1179,7 +1172,7 @@ const PhotoDetailScreen = ({navigation, route}: any) => {
     );
 
     return (
-        <View style={Styles.mainContainer}>
+        <View style={Styles.mainContainer} testID="photo-detail-screen">
             <SizeBox height={insets.top} />
 
             {/* Header */}

@@ -46,12 +46,12 @@ const ChestNumberSettings = ({ navigation }: any) => {
 
     useEffect(() => {
         let active = true;
+        const local = normalizeChestByYear(userProfile?.chestNumbersByYear ?? {});
+
+        setChestByYear(local);
+        setIsLoading(Boolean(apiAccessToken));
+
         (async () => {
-            const local = normalizeChestByYear(userProfile?.chestNumbersByYear ?? {});
-            if (active) {
-                setChestByYear(local);
-                setIsLoading(!apiAccessToken);
-            }
             if (!apiAccessToken) return;
 
             try {
@@ -59,7 +59,7 @@ const ChestNumberSettings = ({ navigation }: any) => {
                 if (!active) return;
                 const server = normalizeChestByYear(summary?.profile?.chest_numbers_by_year ?? {});
                 setChestByYear(server);
-                await updateUserProfile({ chestNumbersByYear: server });
+                await updateUserProfile({ chestNumbersByYear: server }, { persistLocally: false });
             } catch {
                 // keep local fallback
             } finally {
@@ -70,7 +70,7 @@ const ChestNumberSettings = ({ navigation }: any) => {
         return () => {
             active = false;
         };
-    }, [apiAccessToken, normalizeChestByYear, updateUserProfile, userProfile?.chestNumbersByYear]);
+    }, [apiAccessToken, normalizeChestByYear, updateUserProfile]);
 
     useEffect(() => {
         setChestInput(String(chestByYear[selectedYear] ?? ''));
@@ -140,7 +140,7 @@ const ChestNumberSettings = ({ navigation }: any) => {
     };
 
     return (
-        <View style={Styles.mainContainer}>
+        <View style={Styles.mainContainer} testID="chest-number-settings-screen">
             <SizeBox height={insets.top} />
 
             <View style={Styles.header}>
@@ -197,6 +197,7 @@ const ChestNumberSettings = ({ navigation }: any) => {
                                     editable={!isSaving}
                                     returnKeyType="done"
                                     onSubmitEditing={handleSave}
+                                    testID="chest-number-input"
                                 />
                             </View>
                         </View>
@@ -209,6 +210,7 @@ const ChestNumberSettings = ({ navigation }: any) => {
                                 style={[Styles.saveButton, !canSave && { opacity: 0.6 }]}
                                 disabled={!canSave}
                                 onPress={handleSave}
+                                testID="chest-number-save"
                             >
                                 {isSaving ? (
                                     <ActivityIndicator size="small" color={colors.pureWhite} />

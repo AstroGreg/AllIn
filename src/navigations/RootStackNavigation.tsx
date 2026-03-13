@@ -74,17 +74,31 @@ import VideoPlayingScreen from '../screens/videoPlaying/VideoPlayingScreen';
 import CreateNewPostScreen from '../screens/createNewPost/CreateNewPostScreen';
 import AdvertisementScreen from '../screens/advertisement/AdvertisementScreen';
 import CategorySelectionScreen from '../screens/categorySelection/CategorySelectionScreen';
-import DocumentUploadScreen from '../screens/documentUpload/DocumentUploadScreen';
 import FaceVerificationScreen from '../screens/faceVerification/FaceVerificationScreen';
 import CreateGroupProfileScreen from '../screens/createGroupProfile/CreateGroupProfileScreen';
 import CreatePhotographerProfileScreen from '../screens/createPhotographerProfile/CreatePhotographerProfileScreen';
 import SelectCompetitionScreen from '../screens/upload/SelectCompetitionScreen';
 import UploadCompetitionDetailsScreen from '../screens/upload/CompetitionDetailsScreen';
+import UploadDetailsScreen from '../screens/upload/UploadDetailsScreen';
+import UploadSummaryScreen from '../screens/upload/UploadSummaryScreen';
+import UploadProgressScreen from '../screens/upload/UploadProgressScreen';
 import EventSummaryScreen from '../screens/competitionSummary/CompetitionSummaryScreen';
 import ContextSearchLoadingScreen from '../screens/search/searchScreens/ContextSearchLoadingScreen';
 import AISearchResultsScreen from '../screens/search/searchScreens/AISearchResultsScreen';
+import CombinedSearchScreen from '../screens/search/searchScreens/CombinedSearchScreen';
+import SearchScreen from '../screens/search/SearchScreen';
 import FullPageImageViewerScreen from '../screens/fullPageImageViewer/FullPageImageViewerScreen';
 import GroupInviteLinkScreen from '../screens/groupInviteLink/GroupInviteLinkScreen';
+import E2ERegressionScenarioScreen from '../screens/e2e/E2ERegressionScenarioScreen';
+import HomeScreen from '../screens/home/HomeScreen';
+import HubScreen from '../screens/hub/HubScreen';
+import NotificationsScreen from '../screens/notifications/NotificationsScreen';
+import MenuScreen from '../screens/menu/MenuScreen';
+import GroupProfileScreen from '../screens/groupProfile/GroupProfileScreen';
+import GroupManageScreen from '../screens/groupManage/GroupManageScreen';
+import GroupCollectionsManageScreen from '../screens/groupCollectionsManage/GroupCollectionsManageScreen';
+import ProfileBlogEditorScreen from '../screens/profileBlog/ProfileBlogEditorScreen';
+import ProfileTimelineEditScreen from '../screens/profileTimeline/ProfileTimelineEditScreen';
 
 const Stack = createNativeStackNavigator();
 const RootStackNavigation = ({
@@ -120,7 +134,6 @@ const RootStackNavigation = ({
                 component={CategorySelectionScreen}
                 initialParams={getInitialParams('CategorySelectionScreen')}
             />
-            <Stack.Screen name="DocumentUploadScreen" component={DocumentUploadScreen} />
             <Stack.Screen name="FaceVerificationScreen" component={FaceVerificationScreen} />
             <Stack.Screen name="SelectLanguageScreen" component={SelectLanguageScreen} />
             <Stack.Screen name="LoginScreen" component={LoginScreen} />
@@ -214,6 +227,21 @@ const RootStackNavigation = ({
                 component={UploadCompetitionDetailsScreen}
                 initialParams={getInitialParams('RootUploadCompetitionDetailsScreen')}
             />
+            <Stack.Screen
+                name="UploadDetailsScreen"
+                component={UploadDetailsScreen}
+                initialParams={getInitialParams('UploadDetailsScreen')}
+            />
+            <Stack.Screen
+                name="UploadSummaryScreen"
+                component={UploadSummaryScreen}
+                initialParams={getInitialParams('UploadSummaryScreen')}
+            />
+            <Stack.Screen
+                name="UploadProgressScreen"
+                component={UploadProgressScreen}
+                initialParams={getInitialParams('UploadProgressScreen')}
+            />
             <Stack.Screen name="ViewUserProfileScreen" component={ViewUserProfileScreen} />
             <Stack.Screen name="ViewUserCollectionsPhotosScreen" component={ViewUserCollectionsPhotosScreen} />
             <Stack.Screen name="ViewUserCollectionsVideosScreen" component={ViewUserCollectionsVideosScreen} />
@@ -227,6 +255,61 @@ const RootStackNavigation = ({
             <Stack.Screen name="ContextSearchLoadingScreen" component={ContextSearchLoadingScreen} />
             <Stack.Screen name="AISearchResultsScreen" component={AISearchResultsScreen} />
             <Stack.Screen
+                name="AISearchScreen"
+                component={CombinedSearchScreen}
+                initialParams={getInitialParams('AISearchScreen')}
+            />
+            <Stack.Screen
+                name="SearchScreen"
+                component={SearchScreen}
+                initialParams={getInitialParams('SearchScreen')}
+            />
+            <Stack.Screen
+                name="HomeScreen"
+                component={HomeScreen}
+                initialParams={getInitialParams('HomeScreen')}
+            />
+            <Stack.Screen
+                name="HubScreen"
+                component={HubScreen}
+                initialParams={getInitialParams('HubScreen')}
+            />
+            <Stack.Screen
+                name="NotificationsScreen"
+                component={NotificationsScreen}
+                initialParams={getInitialParams('NotificationsScreen')}
+            />
+            <Stack.Screen
+                name="MenuScreen"
+                component={MenuScreen}
+                initialParams={getInitialParams('MenuScreen')}
+            />
+            <Stack.Screen
+                name="GroupProfileScreen"
+                component={GroupProfileScreen}
+                initialParams={getInitialParams('GroupProfileScreen')}
+            />
+            <Stack.Screen
+                name="GroupManageScreen"
+                component={GroupManageScreen}
+                initialParams={getInitialParams('GroupManageScreen')}
+            />
+            <Stack.Screen
+                name="GroupCollectionsManageScreen"
+                component={GroupCollectionsManageScreen}
+                initialParams={getInitialParams('GroupCollectionsManageScreen')}
+            />
+            <Stack.Screen
+                name="ProfileBlogEditorScreen"
+                component={ProfileBlogEditorScreen}
+                initialParams={getInitialParams('ProfileBlogEditorScreen')}
+            />
+            <Stack.Screen
+                name="ProfileTimelineEditScreen"
+                component={ProfileTimelineEditScreen}
+                initialParams={getInitialParams('ProfileTimelineEditScreen')}
+            />
+            <Stack.Screen
                 name="FullPageImageViewerScreen"
                 component={FullPageImageViewerScreen}
                 options={{
@@ -235,6 +318,11 @@ const RootStackNavigation = ({
                 }}
             />
             <Stack.Screen name="GroupInviteLinkScreen" component={GroupInviteLinkScreen} />
+            <Stack.Screen
+                name="E2ERegressionScenarioScreen"
+                component={E2ERegressionScenarioScreen}
+                initialParams={getInitialParams('E2ERegressionScenarioScreen')}
+            />
 
         </Stack.Navigator>
     )

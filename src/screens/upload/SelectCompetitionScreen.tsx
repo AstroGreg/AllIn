@@ -13,6 +13,7 @@ import DateTimePicker from '@react-native-community/datetimepicker'
 import { useTranslation } from 'react-i18next'
 import { useFocusEffect } from '@react-navigation/native'
 import AsyncStorage from '@react-native-async-storage/async-storage'
+import { getSportFocusLabel, normalizeFocusId, resolveCompetitionFocusId, type SportFocusId } from '../../utils/profileSelections'
 
 const UPLOAD_FLOW_RESET_KEY = '@upload_flow_reset_required';
 const UPLOAD_DEFAULT_INITIAL_LIMIT = 10;
@@ -26,9 +27,19 @@ interface Competition {
     location: string;
     date: string;
     thumbnailUrl?: string | null;
-    competitionType: 'track' | 'road';
+    competitionType: SportFocusId;
     organizingClub?: string;
 }
+
+type CompetitionTypeFilter = 'all' | SportFocusId;
+const COMPETITION_FILTER_IDS: SportFocusId[] = [
+    'track-field',
+    'road-events',
+    'triathlon',
+    'ironman',
+    'cycling',
+    'hyrox',
+];
 
 const SelectCompetitionScreen = ({ navigation, route }: any) => {
     const insets = useSafeAreaInsets();
@@ -57,7 +68,12 @@ const SelectCompetitionScreen = ({ navigation, route }: any) => {
                 location: String(entry?.location ?? ''),
                 date: String(entry?.date ?? ''),
                 thumbnailUrl: entry?.thumbnailUrl ? String(entry.thumbnailUrl) : null,
-                competitionType: String(entry?.competitionType).toLowerCase() === 'road' ? 'road' : 'track',
+                competitionType: normalizeFocusId(entry?.competitionType) ?? resolveCompetitionFocusId({
+                    type: entry?.competitionType,
+                    name: entry?.name,
+                    location: entry?.location,
+                    organizer: entry?.organizingClub,
+                }),
                 organizingClub: entry?.organizingClub ? String(entry.organizingClub) : undefined,
             })).filter((entry: Competition) => entry.id.length > 0 && entry.name.length > 0)
             : [],
@@ -77,7 +93,7 @@ const SelectCompetitionScreen = ({ navigation, route }: any) => {
         Competition: '',
         Location: '',
     });
-    const [eventTypeFilter, setEventTypeFilter] = useState<'all' | 'track' | 'road'>('all');
+    const [eventTypeFilter, setEventTypeFilter] = useState<CompetitionTypeFilter>('all');
     const [timeRange, setTimeRange] = useState<{ start: Date | null; end: Date | null }>({ start: null, end: null });
     const [showCalendar, setShowCalendar] = useState(false);
     const [calendarStart, setCalendarStart] = useState<string | null>(null);
@@ -435,10 +451,7 @@ const SelectCompetitionScreen = ({ navigation, route }: any) => {
             const eventThumb = rawEventThumb
                 ? (withAccessToken(toAbsoluteUrl(rawEventThumb)) || toAbsoluteUrl(rawEventThumb))
                 : null;
-            const rawType = String((event as any).event_type || (event as any).competition_type || (event as any).event_category || '');
             const nameSource = event.event_name || event.event_title || '';
-            const typeGuess = rawType || nameSource;
-            const isRoad = /road|trail|marathon|city run/i.test(typeGuess);
             return {
                 id: eventId,
                 name: nameSource || t('Competition'),
@@ -446,7 +459,12 @@ const SelectCompetitionScreen = ({ navigation, route }: any) => {
                 date: event.event_date || '',
                 videoCount: mediaInfo?.videoCount ?? 0,
                 thumbnailUrl: eventThumb ?? mediaInfo?.thumbUrl ?? null,
-                competitionType: isRoad ? 'road' : 'track',
+                competitionType: resolveCompetitionFocusId({
+                    type: (event as any).event_type || (event as any).competition_type || (event as any).event_category || '',
+                    name: nameSource,
+                    location: event.event_location || '',
+                    organizer: (event as any).organizing_club || (event as any).organizer_club || '',
+                }),
                 organizingClub: String(
                     (event as any).organizing_club
                     || (event as any).organizer_club
@@ -631,7 +649,7 @@ const SelectCompetitionScreen = ({ navigation, route }: any) => {
                         <Text style={Styles.competitionName} numberOfLines={2}>{competition.name}</Text>
                         <View style={Styles.typeBadge}>
                             <Text style={Styles.typeBadgeText}>
-                                {competition.competitionType === 'road' ? 'Road&Trail' : 'Track&Field'}
+                                {getSportFocusLabel(competition.competitionType, t)}
                             </Text>
                         </View>
                     </View>
@@ -737,14 +755,16 @@ const SelectCompetitionScreen = ({ navigation, route }: any) => {
                     <Text style={Styles.typeFilterLabel}>{t('competitionType')}</Text>
                     <View style={Styles.typeFilterChips}>
                         {[
-                            { key: 'all', label: t('all') },
-                            { key: 'track', label: t('trackAndField') },
-                            { key: 'road', label: t('roadAndTrail') },
+                            { key: 'all' as const, label: t('all') },
+                            ...COMPETITION_FILTER_IDS.map((focusId) => ({
+                                key: focusId,
+                                label: getSportFocusLabel(focusId, t),
+                            })),
                         ].map((tab) => (
                             <TouchableOpacity
                                 key={tab.key}
                                 style={[Styles.typeFilterChip, eventTypeFilter === tab.key && Styles.typeFilterChipActive]}
-                                onPress={() => setEventTypeFilter(tab.key as any)}
+                                onPress={() => setEventTypeFilter(tab.key)}
                             >
                                 <Text style={[Styles.typeFilterChipText, eventTypeFilter === tab.key && Styles.typeFilterChipTextActive]}>
                                     {tab.label}

@@ -1,4 +1,4 @@
-import {ActivityIndicator, FlatList, Text, TouchableOpacity, View, Share, Alert, Image, useWindowDimensions, Modal, Pressable, RefreshControl, TextInput, type ListRenderItemInfo, type ViewToken} from 'react-native'
+import {ActivityIndicator, FlatList, Text, TouchableOpacity, View, Share, Alert, useWindowDimensions, Modal, Pressable, RefreshControl, TextInput, Linking, Platform, type ListRenderItemInfo, type ViewToken} from 'react-native'
 import React, {useCallback, useMemo, useRef, useState, useEffect} from 'react'
 import { createStyles } from './HomeStyles'
 import Header from './components/Header'
@@ -14,6 +14,7 @@ import {
     createMediaIssueRequest,
     getHomeOverview,
     getNotifications,
+    getPostById,
     getProfileSummaryById,
     getProfileSummary,
     recordDownload,
@@ -636,21 +637,19 @@ const HomeScreen = ({ navigation }: any) => {
             return;
         }
 
-        const normalizedStoryTitle = (() => {
-            const resolvedEventName = media?.event_id
-                ? String(eventNameById(media.event_id) || '').trim()
-                : '';
-            if (!resolvedEventName || resolvedEventName.toLowerCase() === t('Event').toLowerCase()) {
-                return '';
-            }
-            return resolvedEventName;
-        })();
-
         try {
-            const pkg = await NativeShare.isPackageInstalled('com.instagram.android');
-            if (!pkg?.isInstalled) {
-                Alert.alert(t('Instagram unavailable'), t('Install Instagram to share to Stories.'));
-                return;
+            if (Platform.OS === 'android') {
+                const pkg = await NativeShare.isPackageInstalled('com.instagram.android');
+                if (!pkg?.isInstalled) {
+                    Alert.alert(t('Instagram unavailable'), t('Install Instagram to share to Stories.'));
+                    return;
+                }
+            } else {
+                const canOpen = await Linking.canOpenURL('instagram-stories://share');
+                if (!canOpen) {
+                    Alert.alert(t('Instagram unavailable'), t('Install Instagram to share to Stories.'));
+                    return;
+                }
             }
         } catch {
             Alert.alert(t('Instagram unavailable'), t('Could not verify Instagram installation.'));
@@ -684,21 +683,19 @@ const HomeScreen = ({ navigation }: any) => {
             }
 
             const fileUrl = `file://${localPath}`;
-            const bannerUri = Image.resolveAssetSource(Images.advertisement).uri;
-            const composedImageUri =
-                media.type === 'video'
-                    ? null
-                    : await composeInstagramStoryImage(
-                        fileUrl,
-                        normalizedStoryTitle,
-                        'SpotMe',
-                    );
+            const storyAssetUri = await composeInstagramStoryImage(
+                null,
+                null,
+                'SpotMe',
+                null,
+                { mode: 'overlay' },
+            );
             await NativeShare.shareSingle({
                 social: NativeShare.Social.INSTAGRAM_STORIES,
                 appId: INSTAGRAM_APP_ID,
-                backgroundImage: media.type === 'video' ? bannerUri : composedImageUri,
+                backgroundImage: media.type === 'video' ? undefined : fileUrl,
                 backgroundVideo: media.type === 'video' ? fileUrl : undefined,
-                stickerImage: media.type === 'video' ? bannerUri : undefined,
+                stickerImage: storyAssetUri,
                 backgroundTopColor: '#0D0F12',
                 backgroundBottomColor: '#0D0F12',
                 attributionURL: 'https://spot-me.ai',
@@ -714,7 +711,44 @@ const HomeScreen = ({ navigation }: any) => {
             setDownloadProgress(null);
             downloadInFlightRef.current = false;
         }
-    }, [buildDownloadPath, composeInstagramStoryImage, eventNameById, pickDownloadUrl, t]);
+    }, [buildDownloadPath, composeInstagramStoryImage, pickDownloadUrl, t]);
+
+    const resolvePostInstagramImage = useCallback(async (post?: PostSummary | null) => {
+        const pickMediaUrl = (media?: PostSummary['cover_media'] | Record<string, any> | null) => {
+            const candidate =
+                media?.type !== 'video'
+                    ? (
+                        media?.thumbnail_url ||
+                        media?.preview_url ||
+                        media?.original_url ||
+                        media?.full_url ||
+                        media?.raw_url ||
+                        null
+                    )
+                    : null;
+            if (!candidate) {
+                return null;
+            }
+            return withAccessToken(toAbsoluteUrl(String(candidate)) || '') || null;
+        };
+
+        if (apiAccessToken && post?.id) {
+            try {
+                const detail = await getPostById(apiAccessToken, String(post.id));
+                const firstImage = Array.isArray((detail as any)?.media)
+                    ? (detail as any).media.find((media: any) => String(media?.type ?? '').toLowerCase() !== 'video')
+                    : null;
+                const detailedUrl = pickMediaUrl(firstImage);
+                if (detailedUrl) {
+                    return detailedUrl;
+                }
+            } catch {
+                // fall back to summary cover media
+            }
+        }
+
+        return pickMediaUrl(post?.cover_media);
+    }, [apiAccessToken, toAbsoluteUrl, withAccessToken]);
 
     const getPostShareMessage = useCallback((post?: PostSummary | null) => {
         if (!post) return t('Latest blog');
@@ -743,10 +777,18 @@ const HomeScreen = ({ navigation }: any) => {
         }
 
         try {
-            const pkg = await NativeShare.isPackageInstalled('com.instagram.android');
-            if (!pkg?.isInstalled) {
-                Alert.alert(t('Instagram unavailable'), t('Install Instagram to share to Stories.'));
-                return;
+            if (Platform.OS === 'android') {
+                const pkg = await NativeShare.isPackageInstalled('com.instagram.android');
+                if (!pkg?.isInstalled) {
+                    Alert.alert(t('Instagram unavailable'), t('Install Instagram to share to Stories.'));
+                    return;
+                }
+            } else {
+                const canOpen = await Linking.canOpenURL('instagram-stories://share');
+                if (!canOpen) {
+                    Alert.alert(t('Instagram unavailable'), t('Install Instagram to share to Stories.'));
+                    return;
+                }
             }
         } catch {
             Alert.alert(t('Instagram unavailable'), t('Could not verify Instagram installation.'));
@@ -754,26 +796,13 @@ const HomeScreen = ({ navigation }: any) => {
         }
 
         try {
-            const coverImageCandidate =
-                post?.cover_media?.type !== 'video'
-                    ? (
-                        post?.cover_media?.thumbnail_url ||
-                        post?.cover_media?.preview_url ||
-                        post?.cover_media?.full_url ||
-                        post?.cover_media?.raw_url ||
-                        post?.cover_media?.original_url ||
-                        null
-                    )
-                    : null;
-            const resolvedCoverImage = coverImageCandidate
-                ? withAccessToken(toAbsoluteUrl(String(coverImageCandidate)) || '') || null
-                : null;
-            const bannerUri = Image.resolveAssetSource(Images.advertisement).uri;
-            const storyBackground = resolvedCoverImage || bannerUri;
+            const resolvedCoverImage = await resolvePostInstagramImage(post);
             const composedImageUri = await composeInstagramStoryImage(
-                storyBackground,
+                resolvedCoverImage,
                 getPostShareMessage(post),
                 'SpotMe',
+                pickDescription(post.title, post.summary, post.description),
+                { layout: 'blog_card' },
             );
 
             await NativeShare.shareSingle({
@@ -791,7 +820,7 @@ const HomeScreen = ({ navigation }: any) => {
                 Alert.alert(t('Instagram Story failed'), msg);
             }
         }
-    }, [composeInstagramStoryImage, getPostShareMessage, t, toAbsoluteUrl, withAccessToken]);
+    }, [composeInstagramStoryImage, getPostShareMessage, pickDescription, resolvePostInstagramImage, t]);
 
     const openPostShareOptions = useCallback((post?: PostSummary | null) => {
         if (!post) return;
@@ -1691,7 +1720,7 @@ const HomeScreen = ({ navigation }: any) => {
     );
 
     return (
-        <View style={Styles.mainContainer}>
+        <View style={Styles.mainContainer} testID="home-screen">
             <SizeBox height={insets.top} />
             <Header
                 userName={userName}

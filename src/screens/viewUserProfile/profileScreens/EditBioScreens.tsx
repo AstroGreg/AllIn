@@ -1,5 +1,5 @@
 import { View, Text, TextInput, ScrollView, TouchableOpacity } from 'react-native'
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import { createStyles } from '../ViewUserProfileStyles'
 import SizeBox from '../../../constants/SizeBox'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
@@ -17,21 +17,28 @@ const EditBioScreens = ({ navigation }: any) => {
     const styles = createStyles(colors);
     const { apiAccessToken, updateUserProfile, userProfile } = useAuth();
     const [bio, setBio] = useState('');
+    const bioRef = useRef('');
+    const [hasEditedBio, setHasEditedBio] = useState(false);
 
     useEffect(() => {
         let mounted = true;
         const load = async () => {
             if (!apiAccessToken) {
                 if (mounted) {
-                    setBio(String(userProfile?.bio ?? ''));
+                    const nextBio = String(userProfile?.bio ?? '');
+                    bioRef.current = nextBio;
+                    setBio(nextBio);
                 }
                 return;
             }
             try {
                 const summary = await getProfileSummary(apiAccessToken);
                 if (!mounted) return;
+                if (hasEditedBio) return;
                 if (summary?.profile?.bio != null) {
-                    setBio(String(summary.profile.bio || ''));
+                    const nextBio = String(summary.profile.bio || '');
+                    bioRef.current = nextBio;
+                    setBio(nextBio);
                 }
             } catch {
                 // ignore
@@ -41,17 +48,18 @@ const EditBioScreens = ({ navigation }: any) => {
         return () => {
             mounted = false;
         };
-    }, [apiAccessToken, userProfile?.bio]);
+    }, [apiAccessToken, hasEditedBio, userProfile?.bio]);
 
     const handleSave = async () => {
+        const nextBio = bioRef.current;
         if (!apiAccessToken) {
-            await updateUserProfile({ bio });
+            await updateUserProfile({ bio: nextBio });
             navigation.goBack();
             return;
         }
         try {
-            await updateProfileSummary(apiAccessToken, { bio });
-            await updateUserProfile({ bio }, { persistLocally: false });
+            await updateProfileSummary(apiAccessToken, { bio: nextBio });
+            await updateUserProfile({ bio: nextBio }, { persistLocally: false });
             navigation.goBack();
         } catch {
             // keep user on screen if save fails
@@ -82,7 +90,11 @@ const EditBioScreens = ({ navigation }: any) => {
                             placeholderTextColor={colors.subTextColor}
                             multiline
                             value={bio}
-                            onChangeText={setBio}
+                            onChangeText={(value) => {
+                                setHasEditedBio(true);
+                                bioRef.current = value;
+                                setBio(value);
+                            }}
                         />
                     </View>
                     <SizeBox height={16} />

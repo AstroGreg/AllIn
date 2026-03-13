@@ -27,7 +27,7 @@
 			<string>auth0</string>
 			<key>CFBundleURLSchemes</key>
 			<array>
-				<string>com.spotme.auth0</string>
+				<string>com.gregreynders.spotme.auth0</string>
 			</array>
 		</dict>
 		<dict>

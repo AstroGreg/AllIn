@@ -1,5 +1,5 @@
 import { View, Text, TouchableOpacity, ScrollView, Dimensions, TextInput, Alert } from 'react-native'
-import React, { useCallback, useMemo, useState } from 'react'
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import FastImage from 'react-native-fast-image'
 import { ArrowLeft2, ArrowRight, Add, Minus } from 'iconsax-react-nativejs'
@@ -27,6 +27,18 @@ const EditPhotoCollectionsScreen = ({ navigation, route }: any) => {
         () => String(route?.params?.collectionScopeKey ?? 'default').trim() || 'default',
         [route?.params?.collectionScopeKey],
     );
+    const e2eFixtureFiles = useMemo(
+        () => Array.isArray(route?.params?.e2eFixtureFiles)
+            ? route.params.e2eFixtureFiles
+                .map((entry: any) => ({
+                    uri: String(entry?.uri || '').trim(),
+                    type: String(entry?.type || 'image/jpeg').trim(),
+                    name: String(entry?.name || `photo-${Date.now()}`).trim(),
+                }))
+                .filter((entry: { uri: string }) => entry.uri.length > 0)
+            : [],
+        [route?.params?.e2eFixtureFiles],
+    );
 
     const [selectionMode, setSelectionMode] = useState<SelectionMode>('none');
     const [selectedPhotoIds, setSelectedPhotoIds] = useState<string[]>([]);
@@ -34,6 +46,7 @@ const EditPhotoCollectionsScreen = ({ navigation, route }: any) => {
     const [isUploading, setIsUploading] = useState(false);
     const [collectionName, setCollectionName] = useState('');
     const [isSavingName, setIsSavingName] = useState(false);
+    const e2eFixturesAppliedRef = useRef(false);
 
     const isSignedUrl = useCallback((value?: string | null) => {
         if (!value) return false;
@@ -110,6 +123,29 @@ const EditPhotoCollectionsScreen = ({ navigation, route }: any) => {
         setSelectedPhotoIds(featuredIds);
     };
 
+    const uploadFilesToCollection = useCallback(async (files: Array<{ uri: string; type: string; name: string }>) => {
+        if (!apiAccessToken || files.length === 0) return;
+        setIsUploading(true);
+        try {
+            await uploadMediaBatch(apiAccessToken, {
+                files,
+                collection_scope_key: collectionScopeKey,
+            });
+            await loadData();
+        } catch (e: any) {
+            Alert.alert(t('Upload failed'), String(e?.message ?? e ?? t('Please try again.')));
+        } finally {
+            setIsUploading(false);
+        }
+    }, [apiAccessToken, collectionScopeKey, loadData, t]);
+
+    useEffect(() => {
+        if (e2eFixturesAppliedRef.current) return;
+        if (e2eFixtureFiles.length === 0) return;
+        e2eFixturesAppliedRef.current = true;
+        void uploadFilesToCollection(e2eFixtureFiles);
+    }, [e2eFixtureFiles, uploadFilesToCollection]);
+
     const handleAddPhotos = async () => {
         if (!apiAccessToken) return;
         const res = await launchImageLibrary({
@@ -128,18 +164,7 @@ const EditPhotoCollectionsScreen = ({ navigation, route }: any) => {
                 name: asset.fileName ?? `photo-${Date.now()}`,
             }));
         if (files.length === 0) return;
-        setIsUploading(true);
-        try {
-            await uploadMediaBatch(apiAccessToken, {
-                files,
-                collection_scope_key: collectionScopeKey,
-            });
-            await loadData();
-        } catch (e: any) {
-            Alert.alert(t('Upload failed'), String(e?.message ?? e ?? t('Please try again.')));
-        } finally {
-            setIsUploading(false);
-        }
+        await uploadFilesToCollection(files);
     };
 
     const handleDeletePhotos = () => {
@@ -233,7 +258,7 @@ const EditPhotoCollectionsScreen = ({ navigation, route }: any) => {
     const isDeleteMode = selectionMode === 'delete';
 
     return (
-        <View style={styles.mainContainer}>
+        <View style={styles.mainContainer} testID="edit-photo-collections-screen">
             <SizeBox height={insets.top} />
 
             {/* Header */}

@@ -84,7 +84,7 @@ const ProfileSettings = ({ navigation }: any) => {
     ];
 
     return (
-        <View style={Styles.mainContainer}>
+        <View style={Styles.mainContainer} testID="profile-settings-screen">
             <SizeBox height={insets.top} />
 
             {/* Header */}

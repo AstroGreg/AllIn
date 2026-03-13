@@ -1,36 +1,31 @@
 import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {Image as RNImage, StyleSheet, View} from 'react-native';
 import RNFS from 'react-native-fs';
-import Svg, {
-    ClipPath,
-    Defs,
-    Image as SvgImage,
-    Path,
-    Rect,
-    Text as SvgText,
-    TSpan,
-} from 'react-native-svg';
-import Images from '../../constants/Images';
+import Svg, {Image as SvgImage, Rect, Text as SvgText, TSpan} from 'react-native-svg';
 
 const STORY_WIDTH = 1080;
 const STORY_HEIGHT = 1920;
-const STORY_PADDING_X = 52;
-const STORY_PADDING_TOP = 74;
-const TITLE_FONT_SIZE = 50;
-const TITLE_LINE_HEIGHT = 60;
-const BADGE_HEIGHT = 120;
-const BADGE_RADIUS = 60;
-const BADGE_TEXT_INSET_X = 40;
-const BADGE_FONT_SIZE = 60;
-const BADGE_ICON_SIZE = 68;
-const BADGE_ICON_GAP = 20;
+const OVERLAY_BRAND_FONT_SIZE = 58;
+const OVERLAY_BRAND_Y = STORY_HEIGHT - 132;
+const OVERLAY_BRAND_LOGO_SIZE = 60;
+const OVERLAY_BRAND_GAP = 18;
+
+type StoryComposeMode = 'background' | 'overlay';
+type StoryComposeLayout = 'badge' | 'blog_card';
+
+export type InstagramStoryComposeOptions = {
+    mode?: StoryComposeMode;
+    layout?: StoryComposeLayout;
+};
 
 export type InstagramStoryComposeRequest = {
     id: string;
-    imageUri: string;
+    imageUri?: string | null;
     title?: string | null;
     subtitle?: string | null;
     appName?: string | null;
+    mode: StoryComposeMode;
+    layout: StoryComposeLayout;
 };
 
 type ComposerProps = {
@@ -75,8 +70,14 @@ function splitWordToFit(word: string, maxWidth: number, fontSize: number) {
     return chunks;
 }
 
+function normalizeText(text?: string | null) {
+    return String(text ?? '')
+        .replace(/\s+/g, ' ')
+        .trim();
+}
+
 function stripDateText(text: string) {
-    let output = String(text || '').trim();
+    let output = normalizeText(text);
     if (!output) {
         return '';
     }
@@ -98,7 +99,23 @@ function stripDateText(text: string) {
         .trim();
 }
 
-function wrapTitleLines(text: string, maxWidth: number, fontSize: number) {
+function trimLineToWidth(text: string, maxWidth: number, fontSize: number) {
+    const normalized = normalizeText(text);
+    if (!normalized) {
+        return '';
+    }
+    if (estimateTextWidth(normalized, fontSize) <= maxWidth) {
+        return normalized;
+    }
+
+    let value = normalized;
+    while (value.length > 1 && estimateTextWidth(`${value}...`, fontSize) > maxWidth) {
+        value = value.slice(0, -1).trimEnd();
+    }
+    return `${value.replace(/[.,;:!?-]+$/, '').trimEnd()}...`;
+}
+
+function wrapTextLines(text: string, maxWidth: number, fontSize: number, maxLines?: number) {
     const trimmed = stripDateText(text);
     if (!trimmed) {
         return [];
@@ -125,8 +142,8 @@ function wrapTitleLines(text: string, maxWidth: number, fontSize: number) {
         }
 
         if (estimateTextWidth(word, fontSize) > maxWidth) {
-            const wordChunks = splitWordToFit(word, maxWidth, fontSize);
-            lines.push(...wordChunks);
+            const chunks = splitWordToFit(word, maxWidth, fontSize);
+            lines.push(...chunks);
             continue;
         }
         current = word;
@@ -136,25 +153,25 @@ function wrapTitleLines(text: string, maxWidth: number, fontSize: number) {
         lines.push(current);
     }
 
-    return lines;
+    if (!maxLines || lines.length <= maxLines) {
+        return lines;
+    }
+
+    const clamped = lines.slice(0, maxLines);
+    clamped[maxLines - 1] = trimLineToWidth(lines.slice(maxLines - 1).join(' '), maxWidth, fontSize);
+    return clamped;
 }
 
-function buildRightRoundedRectPath(x: number, y: number, width: number, height: number, radius: number) {
-    const safeRadius = Math.max(0, Math.min(radius, height / 2, width));
-    const right = x + width;
-    const bottom = y + height;
-    if (safeRadius <= 0) {
-        return `M ${x} ${y} H ${right} V ${bottom} H ${x} Z`;
+function dedupeSubtitle(title?: string | null, subtitle?: string | null) {
+    const safeTitle = normalizeText(title).toLowerCase();
+    const safeSubtitle = normalizeText(subtitle);
+    if (!safeSubtitle) {
+        return '';
     }
-    return [
-        `M ${x} ${y}`,
-        `H ${right - safeRadius}`,
-        `A ${safeRadius} ${safeRadius} 0 0 1 ${right} ${y + safeRadius}`,
-        `V ${bottom - safeRadius}`,
-        `A ${safeRadius} ${safeRadius} 0 0 1 ${right - safeRadius} ${bottom}`,
-        `H ${x}`,
-        'Z',
-    ].join(' ');
+    if (safeTitle && safeTitle === safeSubtitle.toLowerCase()) {
+        return '';
+    }
+    return safeSubtitle;
 }
 
 async function writeBase64Png(base64: string, requestId: string) {
@@ -166,60 +183,50 @@ async function writeBase64Png(base64: string, requestId: string) {
 
 const InstagramStoryComposer = ({request, onComplete, onError}: ComposerProps) => {
     const svgRef = useRef<Svg | null>(null);
-    const [imageSize, setImageSize] = useState<{width: number; height: number} | null>(null);
-    const [imageLoaded, setImageLoaded] = useState(false);
-    const [captureStarted, setCaptureStarted] = useState(false);
+    const [backgroundLoaded, setBackgroundLoaded] = useState(false);
+    const [backgroundFailed, setBackgroundFailed] = useState(false);
     const capturedRequestIdRef = useRef<string | null>(null);
 
     useEffect(() => {
         capturedRequestIdRef.current = null;
-        setImageLoaded(false);
-        setImageSize(null);
-        setCaptureStarted(false);
+        setBackgroundFailed(false);
+        setBackgroundLoaded(Boolean(!request?.imageUri || request?.mode === 'overlay'));
+    }, [request?.id, request?.imageUri, request?.mode]);
 
-        if (!request?.imageUri) {
-            return;
-        }
-
-        RNImage.getSize(
-            request.imageUri,
-            (width, height) => {
-                setImageSize({width, height});
-            },
-            () => {
-                setImageSize({width: STORY_WIDTH, height: STORY_HEIGHT});
-            },
-        );
-    }, [request?.id, request?.imageUri]);
+    const canvas = useMemo(
+        () =>
+            request?.mode === 'overlay'
+                ? {width: STORY_WIDTH, height: STORY_HEIGHT}
+                : {width: STORY_WIDTH, height: STORY_HEIGHT},
+        [request?.mode],
+    );
+    const appName = normalizeText(request?.appName || 'SpotMe') || 'SpotMe';
+    const splashLogoUri = useMemo(
+        () => RNImage.resolveAssetSource(
+            require('../../../android/app/src/main/res/drawable-nodpi/spotme_mark.png'),
+        ).uri,
+        [],
+    );
+    const titleText = normalizeText(request?.title);
+    const subtitleText = dedupeSubtitle(request?.title, request?.subtitle);
 
     const titleLines = useMemo(() => {
-        return wrapTitleLines(
-            String(request?.title || ''),
-            STORY_WIDTH / 2 - STORY_PADDING_X,
-            TITLE_FONT_SIZE,
-        );
-    }, [request?.title]);
-    const titleFirstLineY = STORY_PADDING_TOP * 2 + TITLE_FONT_SIZE;
+        if (request?.layout !== 'blog_card') {
+            return [];
+        }
+        return wrapTextLines(titleText, 960 - 96, 58, 2);
+    }, [request?.layout, titleText]);
 
-    const appName = String(request?.appName || 'SpotMe').trim() || 'SpotMe';
-    const appLogoUri = useMemo(() => RNImage.resolveAssetSource(Images.logo).uri, []);
-    const badgeWidth = useMemo(() => {
-        return estimateTextWidth(appName, BADGE_FONT_SIZE)
-            + BADGE_TEXT_INSET_X * 2
-            + BADGE_ICON_GAP
-            + BADGE_ICON_SIZE;
-    }, [appName]);
-    const badgeX = 0;
-    const badgeY = (STORY_HEIGHT - BADGE_HEIGHT) / 2 + BADGE_HEIGHT;
-    const badgeIconX = badgeX + badgeWidth - BADGE_TEXT_INSET_X - BADGE_ICON_SIZE;
-    const badgeIconY = badgeY + (BADGE_HEIGHT - BADGE_ICON_SIZE) / 2;
-    const badgePath = useMemo(
-        () => buildRightRoundedRectPath(badgeX, badgeY, badgeWidth, BADGE_HEIGHT, BADGE_RADIUS),
-        [badgeX, badgeY, badgeWidth],
-    );
+    const subtitleLines = useMemo(() => {
+        if (request?.layout !== 'blog_card') {
+            return [];
+        }
+        return wrapTextLines(subtitleText, 960 - 96, 36, 3);
+    }, [request?.layout, subtitleText]);
+    const hasSubtitle = subtitleLines.length > 0;
 
     const exportStoryImage = useCallback(async () => {
-        if (!request || !svgRef.current || captureStarted) {
+        if (!request || !svgRef.current) {
             return;
         }
         if (capturedRequestIdRef.current === request.id) {
@@ -227,7 +234,6 @@ const InstagramStoryComposer = ({request, onComplete, onError}: ComposerProps) =
         }
 
         capturedRequestIdRef.current = request.id;
-        setCaptureStarted(true);
 
         try {
             const base64 = await new Promise<string>((resolve, reject) => {
@@ -242,20 +248,19 @@ const InstagramStoryComposer = ({request, onComplete, onError}: ComposerProps) =
                         return;
                     }
                     resolve(value);
-                }, {width: STORY_WIDTH, height: STORY_HEIGHT});
+                }, {width: canvas.width, height: canvas.height});
             });
 
             const fileUri = await writeBase64Png(base64, request.id);
             onComplete(fileUri);
         } catch (error: any) {
             capturedRequestIdRef.current = null;
-            setCaptureStarted(false);
             onError(error instanceof Error ? error : new Error(String(error ?? 'Instagram Story composition failed')));
         }
-    }, [captureStarted, onComplete, onError, request]);
+    }, [canvas.height, canvas.width, onComplete, onError, request]);
 
     useEffect(() => {
-        if (!request || !imageLoaded || !imageSize) {
+        if (!request || !backgroundLoaded) {
             return;
         }
 
@@ -263,83 +268,150 @@ const InstagramStoryComposer = ({request, onComplete, onError}: ComposerProps) =
             exportStoryImage().catch((error) => {
                 onError(error instanceof Error ? error : new Error(String(error ?? 'Instagram Story composition failed')));
             });
-        }, 120);
+        }, 90);
 
         return () => clearTimeout(timer);
-    }, [exportStoryImage, imageLoaded, imageSize, onError, request]);
+    }, [backgroundLoaded, exportStoryImage, onError, request]);
 
     if (!request) {
         return null;
     }
 
+    const isOverlay = request.mode === 'overlay';
+    const isBlogCard = request.layout === 'blog_card';
+    const cardHeight = hasSubtitle ? 420 : 270;
+    const cardX = 60;
+    const cardY = STORY_HEIGHT - cardHeight - 88;
+    const cardWidth = STORY_WIDTH - 120;
+    const cardInnerX = cardX + 48;
+    const cardInnerY = cardY + 54;
+    const overlayTextWidth = estimateTextWidth(appName, OVERLAY_BRAND_FONT_SIZE);
+    const overlayBrandWidth = overlayTextWidth + OVERLAY_BRAND_GAP + OVERLAY_BRAND_LOGO_SIZE;
+    const overlayBrandStartX = (STORY_WIDTH - overlayBrandWidth) / 2;
+    const overlayLogoY = OVERLAY_BRAND_Y - OVERLAY_BRAND_LOGO_SIZE + 8;
+
     return (
         <View pointerEvents="none" style={styles.hiddenHost}>
             <Svg
                 ref={svgRef}
-                width={STORY_WIDTH}
-                height={STORY_HEIGHT}
-                viewBox={`0 0 ${STORY_WIDTH} ${STORY_HEIGHT}`}
+                width={canvas.width}
+                height={canvas.height}
+                viewBox={`0 0 ${canvas.width} ${canvas.height}`}
             >
-                <Defs>
-                    <ClipPath id="storyMediaClip">
-                        <Rect x={0} y={0} width={STORY_WIDTH} height={STORY_HEIGHT} />
-                    </ClipPath>
-                </Defs>
+                {!isOverlay ? (
+                    <>
+                        <Rect x={0} y={0} width={STORY_WIDTH} height={STORY_HEIGHT} fill={backgroundFailed ? '#0D0F12' : '#09111A'} />
+                        {request.imageUri && !backgroundFailed ? (
+                            <SvgImage
+                                x={0}
+                                y={0}
+                                width={STORY_WIDTH}
+                                height={STORY_HEIGHT}
+                                href={{uri: request.imageUri}}
+                                preserveAspectRatio="xMidYMid slice"
+                                onLoad={() => setBackgroundLoaded(true)}
+                                onError={() => {
+                                    setBackgroundFailed(true);
+                                    setBackgroundLoaded(true);
+                                }}
+                            />
+                        ) : null}
+                        {isBlogCard ? (
+                            <Rect
+                                x={0}
+                                y={0}
+                                width={STORY_WIDTH}
+                                height={STORY_HEIGHT}
+                                fill="rgba(5,10,16,0.20)"
+                            />
+                        ) : null}
+                    </>
+                ) : (
+                    <Rect x={0} y={0} width={STORY_WIDTH} height={STORY_HEIGHT} fill="rgba(0,0,0,0)" />
+                )}
 
-                <SvgImage
-                    x={0}
-                    y={0}
-                    width={STORY_WIDTH}
-                    height={STORY_HEIGHT}
-                    href={{uri: request.imageUri}}
-                    preserveAspectRatio="xMidYMid slice"
-                    clipPath="url(#storyMediaClip)"
-                    onLoad={() => setImageLoaded(true)}
-                    onError={() => onError(new Error('Could not load image for Instagram Story sharing.'))}
-                />
-
-                {titleLines.length > 0 ? (
+                {isOverlay ? (
+                    <>
                     <SvgText
-                        x={STORY_WIDTH - STORY_PADDING_X}
-                        y={titleFirstLineY}
+                        x={overlayBrandStartX}
+                        y={OVERLAY_BRAND_Y}
                         fill="#FFFFFF"
-                        fontSize={TITLE_FONT_SIZE}
+                        fontSize={OVERLAY_BRAND_FONT_SIZE}
                         fontWeight="700"
-                        fontFamily="Anton"
-                        stroke="rgba(0,0,0,0.45)"
+                        stroke="rgba(0,0,0,0.40)"
                         strokeWidth={2}
-                        textAnchor="end"
                     >
-                        {titleLines.map((line, index) => (
-                            <TSpan
-                                key={`${request.id}-title-${index}`}
-                                x={STORY_WIDTH - STORY_PADDING_X}
-                                dy={index === 0 ? 0 : TITLE_LINE_HEIGHT}
-                            >
-                                {line}
-                            </TSpan>
-                        ))}
+                        {appName}
                     </SvgText>
+                    <SvgImage
+                        x={overlayBrandStartX + overlayTextWidth + OVERLAY_BRAND_GAP}
+                        y={overlayLogoY}
+                        width={OVERLAY_BRAND_LOGO_SIZE}
+                        height={OVERLAY_BRAND_LOGO_SIZE}
+                        href={{uri: splashLogoUri}}
+                        preserveAspectRatio="xMidYMid meet"
+                    />
+                    </>
                 ) : null}
 
-                <Path d={badgePath} fill="rgba(60,130,246,0.50)" />
-                <SvgText
-                    x={badgeX + BADGE_TEXT_INSET_X}
-                    y={badgeY + BADGE_HEIGHT / 2 + BADGE_FONT_SIZE * 0.34}
-                    fill="#FFFFFF"
-                    fontSize={BADGE_FONT_SIZE}
-                    fontWeight="700"
-                >
-                    {appName}
-                </SvgText>
-                <SvgImage
-                    x={badgeIconX}
-                    y={badgeIconY}
-                    width={BADGE_ICON_SIZE}
-                    height={BADGE_ICON_SIZE}
-                    href={{uri: appLogoUri}}
-                    preserveAspectRatio="xMidYMid meet"
-                />
+                {isBlogCard ? (
+                    <>
+                        <Rect
+                            x={cardX}
+                            y={cardY}
+                            width={cardWidth}
+                            height={cardHeight}
+                            rx={42}
+                            fill="rgba(8,14,21,0.18)"
+                        />
+                        <Rect
+                            x={cardX}
+                            y={cardY - 8}
+                            width={cardWidth}
+                            height={cardHeight}
+                            rx={42}
+                            fill="rgba(250,251,253,0.96)"
+                        />
+                        {titleLines.length > 0 ? (
+                            <SvgText
+                                x={cardInnerX}
+                                y={cardInnerY + 62}
+                                fill="#0F172A"
+                                fontSize={58}
+                                fontWeight="700"
+                            >
+                                {titleLines.map((line, index) => (
+                                    <TSpan
+                                        key={`${request.id}-title-${index}`}
+                                        x={cardInnerX}
+                                        dy={index === 0 ? 0 : 70}
+                                    >
+                                        {line}
+                                    </TSpan>
+                                ))}
+                            </SvgText>
+                        ) : null}
+                        {subtitleLines.length > 0 ? (
+                            <SvgText
+                                x={cardInnerX}
+                                y={cardInnerY + 188}
+                                fill="#334155"
+                                fontSize={36}
+                                fontWeight="400"
+                            >
+                                {subtitleLines.map((line, index) => (
+                                    <TSpan
+                                        key={`${request.id}-subtitle-${index}`}
+                                        x={cardInnerX}
+                                        dy={index === 0 ? 0 : 48}
+                                    >
+                                        {line}
+                                    </TSpan>
+                                ))}
+                            </SvgText>
+                        ) : null}
+                    </>
+                ) : null}
             </Svg>
         </View>
     );
@@ -352,21 +424,32 @@ export function useInstagramStoryImageComposer() {
         reject: (reason?: any) => void;
     } | null>(null);
 
-    const composeInstagramStoryImage = useCallback((imageUri: string, title?: string | null, appName = 'SpotMe', subtitle?: string | null) => {
-        return new Promise<string>((resolve, reject) => {
-            if (pendingRef.current) {
-                pendingRef.current.reject(new Error('Instagram Story composition was interrupted.'));
-            }
-            pendingRef.current = {resolve, reject};
-            setRequest({
-                id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
-                imageUri,
-                title,
-                subtitle,
-                appName,
+    const composeInstagramStoryImage = useCallback(
+        (
+            imageUri?: string | null,
+            title?: string | null,
+            appName = 'SpotMe',
+            subtitle?: string | null,
+            options?: InstagramStoryComposeOptions,
+        ) => {
+            return new Promise<string>((resolve, reject) => {
+                if (pendingRef.current) {
+                    pendingRef.current.reject(new Error('Instagram Story composition was interrupted.'));
+                }
+                pendingRef.current = {resolve, reject};
+                setRequest({
+                    id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
+                    imageUri: imageUri ?? null,
+                    title,
+                    subtitle,
+                    appName,
+                    mode: options?.mode === 'overlay' ? 'overlay' : 'background',
+                    layout: options?.layout === 'blog_card' ? 'blog_card' : 'badge',
+                });
             });
-        });
-    }, []);
+        },
+        [],
+    );
 
     const handleComplete = useCallback((uri: string) => {
         pendingRef.current?.resolve(uri);

@@ -1,0 +1,22 @@
+<svg width="1080" height="1920" viewBox="0 0 1080 1920" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bgA" x1="120" y1="80" x2="960" y2="1840" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#DDE6F0"/>
+      <stop offset="0.6" stop-color="#B7C4CF"/>
+      <stop offset="1" stop-color="#51616E"/>
+    </linearGradient>
+  </defs>
+  <rect width="1080" height="1920" fill="url(#bgA)"/>
+  <rect y="1280" width="1080" height="640" fill="url(#bgA)" opacity="0.35"/>
+  <circle cx="540" cy="760" r="270" fill="#1F2937" opacity="0.22"/>
+  <rect x="305" y="470" width="470" height="980" rx="235" fill="#111827" opacity="0.18"/>
+  <rect x="332" y="1528" width="416" height="108" rx="54" fill="rgba(15,23,42,0.42)"/>
+  <text x="505" y="1598" text-anchor="end" fill="white" font-size="60" font-family="Arial, sans-serif" font-weight="700">SpotMe</text>
+  <circle cx="555" cy="1582" r="0" fill="none"/>
+  <g transform="translate(582 1548)">
+    <rect width="68" height="68" rx="22" fill="#0A5CFF"/>
+    <circle cx="34" cy="34" r="17" fill="white"/>
+    <circle cx="47" cy="21" r="8" fill="#FF7A00"/>
+  </g>
+  <text x="540" y="1716" text-anchor="middle" fill="rgba(255,255,255,0.84)" font-size="30" font-family="Arial, sans-serif">Style A: bottom center wordmark</text>
+</svg>

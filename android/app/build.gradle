@@ -84,19 +84,19 @@ android {
     buildToolsVersion rootProject.ext.buildToolsVersion
     compileSdk rootProject.ext.compileSdkVersion
 
-    namespace "com.spotme"
+    namespace "com.gregreynders.spotme"
     defaultConfig {
-        applicationId "com.spotme"
+        applicationId "com.gregreynders.spotme"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1
         versionName "1.0"
-        resValue "string", "build_config_package", "com.spotme"
+        resValue "string", "build_config_package", "com.gregreynders.spotme"
         missingDimensionStrategy "react-native-capture-protection", "base"
         manifestPlaceholders = [
             auth0Domain: "auth.spot-me.ai",
-            auth0Scheme: "com.spotme.auth0",
-            auth0PathPrefix: "/android/com.spotme/callback"
+            auth0Scheme: "com.gregreynders.spotme.auth0",
+            auth0PathPrefix: "/android/com.gregreynders.spotme/callback"
         ]
     }
     signingConfigs {

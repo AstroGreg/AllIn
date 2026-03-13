@@ -76,7 +76,9 @@ function resolveAuditedFiles() {
     });
   }
 
-  return [...audited].sort();
+  return [...audited]
+    .filter((filePath) => !filePath.includes(`${path.sep}src${path.sep}screens${path.sep}e2e${path.sep}`))
+    .sort();
 }
 
 describe('routed screen translations', () => {

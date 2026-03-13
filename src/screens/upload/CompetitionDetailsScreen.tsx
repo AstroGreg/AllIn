@@ -436,6 +436,7 @@ const CompetitionDetailsScreen = ({ navigation, route }: any) => {
             competition_map_id: selectedMap?.id ?? null,
             checkpoint_id: selectedCheckpoint?.id ?? null,
             checkpoint_label: selectedCheckpoint?.label ?? null,
+            e2eFixtureFiles: Array.isArray(route?.params?.e2eFixtureFiles) ? route.params.e2eFixtureFiles : undefined,
         });
         setCategoryModalVisible(false);
     };
@@ -456,6 +457,7 @@ const CompetitionDetailsScreen = ({ navigation, route }: any) => {
                 style={[Styles.eventCard, hasUploads && Styles.eventCardActive]}
                 activeOpacity={0.85}
                 onPress={() => openCategoryModal(category)}
+                testID={`upload-discipline-card-${category.id}`}
             >
                 <View style={Styles.eventText}>
                     <Text style={Styles.eventName}>{category.name}</Text>
@@ -614,6 +616,7 @@ const CompetitionDetailsScreen = ({ navigation, route }: any) => {
                                             key={gender}
                                             style={[Styles.choiceChip, active && Styles.choiceChipActive]}
                                             onPress={() => setSelectedGender(gender as 'Men' | 'Women')}
+                                            testID={`upload-gender-${String(gender).toLowerCase()}`}
                                         >
                                             <Text style={[Styles.choiceChipText, active && Styles.choiceChipTextActive]}>
                                                 {gender}
@@ -633,6 +636,7 @@ const CompetitionDetailsScreen = ({ navigation, route }: any) => {
                                             key={division}
                                             style={[Styles.choiceChip, active && Styles.choiceChipActive]}
                                             onPress={() => setSelectedDivision(division)}
+                                            testID={`upload-division-${String(division).toLowerCase()}`}
                                         >
                                             <Text style={[Styles.choiceChipText, active && Styles.choiceChipTextActive]}>
                                                 {division}
@@ -650,6 +654,7 @@ const CompetitionDetailsScreen = ({ navigation, route }: any) => {
                                 style={[Styles.modalPrimary, (!selectedGender || !selectedDivision) && Styles.modalPrimaryDisabled]}
                                 disabled={!selectedGender || !selectedDivision}
                                 onPress={handleContinue}
+                                testID="upload-discipline-continue"
                             >
                                 <Text style={Styles.modalPrimaryText}>{t('Continue')}</Text>
                             </TouchableOpacity>

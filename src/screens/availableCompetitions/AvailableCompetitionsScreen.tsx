@@ -28,15 +28,20 @@ import {
     toggleSubscriptionDiscipline,
     type SubscriptionDisciplineOption,
 } from '../../utils/eventSubscription';
+import { getSportFocusLabel, resolveCompetitionFocusId, type SportFocusId } from '../../utils/profileSelections';
 
 const EVENT_FILTERS = ['Competition', 'Location'] as const;
 type EventFilterKey = typeof EVENT_FILTERS[number];
-type CompetitionType = 'track' | 'road';
+type CompetitionType = SportFocusId;
 type CompetitionTypeFilter = 'all' | CompetitionType;
-const COMPETITION_TYPE_FILTERS: Array<{ key: CompetitionTypeFilter; labelKey: string }> = [
+const COMPETITION_TYPE_FILTERS: Array<{ key: CompetitionTypeFilter; focusId?: SportFocusId; labelKey?: string }> = [
     { key: 'all', labelKey: 'all' },
-    { key: 'track', labelKey: 'trackAndField' },
-    { key: 'road', labelKey: 'roadAndTrail' },
+    { key: 'track-field', focusId: 'track-field' },
+    { key: 'road-events', focusId: 'road-events' },
+    { key: 'triathlon', focusId: 'triathlon' },
+    { key: 'ironman', focusId: 'ironman' },
+    { key: 'cycling', focusId: 'cycling' },
+    { key: 'hyrox', focusId: 'hyrox' },
 ];
 const DEFAULT_EVENTS_INITIAL_LIMIT = 10;
 const SEARCH_EVENTS_INITIAL_LIMIT = 20;
@@ -121,20 +126,16 @@ const AvailableEventsScreen = ({ navigation }: any) => {
     const faceConsentGranted = profileFaceConsentGranted ?? Boolean((userProfile as any)?.faceConsentGranted);
 
     const getCompetitionTypeLabel = useCallback((type: CompetitionType) => {
-        if (type === 'road') return t('roadAndTrail');
-        return t('trackAndField');
+        return getSportFocusLabel(type, t);
     }, [t]);
 
     const resolveCompetitionType = useCallback((params?: {
         type?: string | null;
         name?: string | null;
         location?: string | null;
+        organizer?: string | null;
     }) => {
-        const token = `${params?.type || ''} ${params?.name || ''} ${params?.location || ''}`.toLowerCase();
-        if (/road|trail|marathon|veldloop|veldlopen|cross|5k|10k|half|ultra|city\s*run/.test(token)) {
-            return 'road' as const;
-        }
-        return 'track' as const;
+        return resolveCompetitionFocusId(params);
     }, []);
 
     const toDateString = (date: Date) => {
@@ -311,6 +312,7 @@ const AvailableEventsScreen = ({ navigation }: any) => {
                         type: event.competition_type,
                         name: event.event_name || event.event_title,
                         location: event.event_location,
+                        organizer: event.organizing_club || event.organizer_club || null,
                     }),
                     organizingClub: String(
                         event.organizing_club
@@ -466,7 +468,20 @@ const AvailableEventsScreen = ({ navigation }: any) => {
                                     try {
                                         await grantFaceRecognitionConsent(apiAccessToken);
                                         setProfileFaceConsentGranted(true);
-                                        setAllowFaceRecognition(true);
+                                        const latest = await refreshProfileFaceState();
+                                        if (latest.hasFaceEnrollment) {
+                                            setAllowFaceRecognition(true);
+                                            return;
+                                        }
+                                        setAllowFaceRecognition(false);
+                                        Alert.alert(
+                                            t('Face setup required'),
+                                            t('Set up your face scan to use face recognition for this competition.'),
+                                            [
+                                                { text: t('Cancel'), style: 'cancel' },
+                                                { text: t('Set up face'), onPress: startFaceEnrollment },
+                                            ],
+                                        );
                                     } catch (consentError: any) {
                                         const msg = consentError instanceof ApiError ? consentError.message : String(consentError?.message ?? consentError);
                                         Alert.alert(t('Consent failed'), msg);
@@ -822,7 +837,7 @@ const AvailableEventsScreen = ({ navigation }: any) => {
                                         competitionTypeFilter === option.key && Styles.typeFilterChipTextActive,
                                     ]}
                                 >
-                                    {t(option.labelKey)}
+                                    {option.focusId ? getSportFocusLabel(option.focusId, t) : t(option.labelKey!)}
                                 </Text>
                             </TouchableOpacity>
                         ))}

@@ -1,5 +1,6 @@
 import React, { createContext, useCallback, useContext, useState, useEffect, ReactNode } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Platform } from 'react-native';
 import { AppConfig } from '../constants/AppConfig';
 import {
     getAuthBootstrap,
@@ -25,7 +26,22 @@ const requireConfig = (key: string, value: any) => {
 const AUTH0_DOMAIN = requireConfig('AUTH0_DOMAIN', AppConfig.AUTH0_DOMAIN);
 const AUTH0_CLIENT_ID = requireConfig('AUTH0_CLIENT_ID', AppConfig.AUTH0_CLIENT_ID);
 const AUTH0_AUDIENCE = requireConfig('AUTH0_AUDIENCE', AppConfig.AUTH0_AUDIENCE);
-const AUTH0_REDIRECT_URI = requireConfig('AUTH0_REDIRECT_URI', AppConfig.AUTH0_REDIRECT_URI);
+const AUTH0_REDIRECT_URI_RAW = requireConfig('AUTH0_REDIRECT_URI', AppConfig.AUTH0_REDIRECT_URI);
+const AUTH0_REDIRECT_URI = (() => {
+    const raw = String(AUTH0_REDIRECT_URI_RAW).trim();
+    const match = raw.match(/^([a-z][a-z0-9+.-]*):\/\/([^/]+)(?:\/.*)?$/i);
+    if (!match) return raw;
+
+    const scheme = match[1];
+    const host = match[2];
+    if (!scheme.toLowerCase().endsWith('.auth0')) {
+        return raw;
+    }
+
+    const nativeAppId = scheme.replace(/\.auth0$/i, '');
+    const platformPath = Platform.OS === 'android' ? 'android' : 'ios';
+    return `${scheme}://${host}/${platformPath}/${nativeAppId}/callback`;
+})();
 const AUTH0_CUSTOM_SCHEME = (() => {
     const match = AUTH0_REDIRECT_URI.match(/^([a-z][a-z0-9+.-]*):\/\//i);
     return match?.[1] ?? null;
@@ -675,7 +691,6 @@ export const AuthProvider = ({
         profileData: Partial<UserProfile>,
         options?: { persistLocally?: boolean },
     ) => {
-        void options;
         try {
             const currentProfile = userProfile || {};
             const updatedProfile: UserProfile = {
@@ -690,6 +705,11 @@ export const AuthProvider = ({
 
             const hasOwn = (key: keyof UserProfile) =>
                 Object.prototype.hasOwnProperty.call(profileData, key);
+
+            if (options?.persistLocally === false) {
+                setUserProfile(updatedProfile);
+                return;
+            }
 
             if (accessToken) {
                 const userPatch: UpdateUserMeInput = {};

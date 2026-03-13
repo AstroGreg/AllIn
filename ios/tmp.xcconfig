@@ -1,0 +1,6 @@
+API_GATEWAY_URL=https:/$()/spot-me.ai
+AUTH0_DOMAIN=auth.spot-me.ai
+AUTH0_CLIENT_ID=9hoAMRZsk87vtZi3rA2HPP9W5wMlPNGp
+AUTH0_AUDIENCE=https:/$()/spotme.ai/
+AUTH0_REDIRECT_URI=com.gregreynders.spotme.auth0:/$()/auth.spot-me.ai/ios/com.gregreynders.spotme/callback
+INSTAGRAM_APP_ID=927191286450323

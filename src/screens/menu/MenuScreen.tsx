@@ -1,5 +1,5 @@
 import { View, Text, ScrollView, TouchableOpacity, Modal, Pressable, Alert } from 'react-native'
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { createStyles } from './MenuStyles'
 import SizeBox from '../../constants/SizeBox'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
@@ -20,6 +20,31 @@ const MenuScreen = ({ navigation }: any) => {
     const [ghostMode, setGhostMode] = useState(true);
     const [showLogoutModal, setShowLogoutModal] = useState(false);
     const { t } = useTranslation();
+    const pushPrefKey = '@push_notifications_enabled';
+
+    useEffect(() => {
+        let mounted = true;
+        AsyncStorage.getItem(pushPrefKey)
+            .then((value) => {
+                if (!mounted) return;
+                if (value === '0') setPushNotifications(false);
+                if (value === '1') setPushNotifications(true);
+            })
+            .catch(() => {});
+        return () => {
+            mounted = false;
+        };
+    }, []);
+
+    const togglePushNotifications = async () => {
+        const next = !pushNotifications;
+        setPushNotifications(next);
+        try {
+            await AsyncStorage.setItem(pushPrefKey, next ? '1' : '0');
+        } catch {
+            // ignore persistence failures for now
+        }
+    };
 
     const handleClearAuth = async () => {
         await AsyncStorage.removeItem('@auth_credentials');
@@ -29,7 +54,7 @@ const MenuScreen = ({ navigation }: any) => {
     };
 
     return (
-        <View style={Styles.mainContainer}>
+        <View style={Styles.mainContainer} testID="menu-screen">
             <SizeBox height={insets.top} />
 
             {/* Header */}
@@ -53,6 +78,7 @@ const MenuScreen = ({ navigation }: any) => {
                     onPress={() => setTheme('light')}
                     isNext={false}
                     isSelected={mode === 'light'}
+                    testID="menu-light-mode"
                 />
                 <SizeBox height={12} />
                 <MenuContainers
@@ -61,6 +87,7 @@ const MenuScreen = ({ navigation }: any) => {
                     onPress={() => setTheme('dark')}
                     isNext={false}
                     isSelected={mode === 'dark'}
+                    testID="menu-dark-mode"
                 />
 
                 <SizeBox height={24} />
@@ -74,8 +101,9 @@ const MenuScreen = ({ navigation }: any) => {
                     onPress={() => { }}
                     isSwitch={true}
                     isNext={false}
-                    toggleSwitch={() => setPushNotifications(prev => !prev)}
+                    toggleSwitch={togglePushNotifications}
                     isEnabled={pushNotifications}
+                    testID="menu-push-notifications-toggle"
                 />
                 <SizeBox height={12} />
                 <MenuContainers

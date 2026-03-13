@@ -679,7 +679,7 @@ const GroupProfileScreen = ({ navigation, route }: any) => {
     );
 
     return (
-        <View style={styles.mainContainer}>
+        <View style={styles.mainContainer} testID="group-profile-screen">
             <SizeBox height={insets.top} />
 
                 <View style={styles.header}>
@@ -709,6 +709,7 @@ const GroupProfileScreen = ({ navigation, route }: any) => {
                                 <TouchableOpacity
                                     style={styles.manageShortcutButton}
                                     onPress={() => navigation.navigate('GroupManageScreen', { groupId: group?.group_id })}
+                                    testID="group-profile-manage-button"
                                 >
                                     <Text style={styles.manageShortcutText}>{t('Manage')}</Text>
                                 </TouchableOpacity>
@@ -916,6 +917,7 @@ const GroupProfileScreen = ({ navigation, route }: any) => {
                                 <TouchableOpacity
                                     style={localStyles.newsAddButton}
                                     onPress={() => navigation.navigate('ProfileBlogEditorScreen', { mode: 'add', groupId: String(group.group_id) })}
+                                    testID="group-profile-add-blog"
                                 >
                                     <Text style={localStyles.newsAddButtonText}>{t('Add blog')}</Text>
                                 </TouchableOpacity>
@@ -927,7 +929,7 @@ const GroupProfileScreen = ({ navigation, route }: any) => {
                             </View>
                         ) : (
                             groupNews.map((post) => (
-                                <View key={String(post.id)} style={localStyles.eventListCard}>
+                                <View key={String(post.id)} style={localStyles.eventListCard} testID={`group-post-card-${String(post.id)}`}>
                                     <TouchableOpacity
                                         style={localStyles.postCardPressable}
                                         activeOpacity={0.85}
@@ -972,6 +974,7 @@ const GroupProfileScreen = ({ navigation, route }: any) => {
                                                         style={localStyles.postDeleteButton}
                                                         onPress={() => handleDeleteNewsPost(String(post.id))}
                                                         disabled={Boolean(deletingPostById[String(post.id)])}
+                                                        testID={`group-post-delete-${String(post.id)}`}
                                                     >
                                                         {deletingPostById[String(post.id)] ? (
                                                             <ActivityIndicator size="small" color={colors.errorColor || '#E14B4B'} />

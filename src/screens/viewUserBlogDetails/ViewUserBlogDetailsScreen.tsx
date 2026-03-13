@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, Image, Alert } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, Image, Alert, Linking, Platform } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import FastImage from 'react-native-fast-image';
 import { ArrowLeft2, Heart, Edit2, Trash } from 'iconsax-react-nativejs';
@@ -119,12 +119,17 @@ const ViewUserBlogDetailsScreen = ({ navigation, route }: any) => {
     const [selectedIndex, setSelectedIndex] = useState(0);
     const [showTranslation, setShowTranslation] = useState(false);
     const selectedItem = galleryItems[selectedIndex] ?? galleryItems[0];
+    const firstBlogImageUri = useMemo(() => {
+        const firstImage = galleryItems.find((item: any) => item?.type === 'image' && item?.image?.uri);
+        if (firstImage?.image?.uri) {
+            return String(firstImage.image.uri);
+        }
+        return selectedItem?.image?.uri ? String(selectedItem.image.uri) : null;
+    }, [galleryItems, selectedItem?.image?.uri]);
 
     const translatedDescription = useMemo(() => {
         return translateText(postData?.description ?? '', i18n.language);
     }, [i18n.language, postData?.description]);
-    const createdLabel = postData?.created_at ? String(postData.created_at).slice(0, 10) : (postPreview?.date || '');
-    const readTimeLabel = postData?.reading_time_minutes ? `${postData.reading_time_minutes} ${t('min')}` : '';
     const titleTimeAgo = useMemo(() => {
         const raw = postData?.created_at || postPreview?.date;
         if (!raw) return '';
@@ -225,10 +230,18 @@ const ViewUserBlogDetailsScreen = ({ navigation, route }: any) => {
         }
 
         try {
-            const pkg = await NativeShare.isPackageInstalled('com.instagram.android');
-            if (!pkg?.isInstalled) {
-                Alert.alert(t('Instagram unavailable'), t('Install Instagram to share to Stories.'));
-                return;
+            if (Platform.OS === 'android') {
+                const pkg = await NativeShare.isPackageInstalled('com.instagram.android');
+                if (!pkg?.isInstalled) {
+                    Alert.alert(t('Instagram unavailable'), t('Install Instagram to share to Stories.'));
+                    return;
+                }
+            } else {
+                const canOpen = await Linking.canOpenURL('instagram-stories://share');
+                if (!canOpen) {
+                    Alert.alert(t('Instagram unavailable'), t('Install Instagram to share to Stories.'));
+                    return;
+                }
             }
         } catch {
             Alert.alert(t('Instagram unavailable'), t('Could not verify Instagram installation.'));
@@ -236,14 +249,12 @@ const ViewUserBlogDetailsScreen = ({ navigation, route }: any) => {
         }
 
         try {
-            const selectedImageUri =
-                selectedItem?.type === 'image' && selectedItem?.image?.uri
-                    ? String(selectedItem.image.uri)
-                    : Image.resolveAssetSource(Images.advertisement).uri;
             const composedImageUri = await composeInstagramStoryImage(
-                selectedImageUri,
-                blogShareMessage,
+                firstBlogImageUri,
+                postData?.title ? String(postData.title) : blogShareMessage,
                 'SpotMe',
+                postData?.summary || postData?.description || null,
+                { layout: 'blog_card' },
             );
 
             await NativeShare.shareSingle({
@@ -261,7 +272,7 @@ const ViewUserBlogDetailsScreen = ({ navigation, route }: any) => {
                 Alert.alert(t('Instagram Story failed'), msg);
             }
         }
-    }, [blogShareMessage, composeInstagramStoryImage, selectedItem?.image?.uri, selectedItem?.type, t]);
+    }, [blogShareMessage, composeInstagramStoryImage, firstBlogImageUri, postData?.description, postData?.summary, postData?.title, t]);
 
     const openShareOptions = useCallback(() => {
         Alert.alert(
@@ -279,7 +290,7 @@ const ViewUserBlogDetailsScreen = ({ navigation, route }: any) => {
     }, [handleShareBlog, handleShareBlogInstagram, t]);
 
     return (
-        <View style={Styles.mainContainer}>
+        <View style={Styles.mainContainer} testID="view-user-blog-details-screen">
             <SizeBox height={insets.top} />
 
             {/* Header */}

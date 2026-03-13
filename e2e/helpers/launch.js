@@ -56,6 +56,8 @@ const launchApp = async ({
   routeName,
   routeParams = {},
   authState = {},
+  apiBaseUrl,
+  hlsBaseUrl,
   deleteApp = true,
 } = {}) => {
   await device.launchApp({
@@ -65,6 +67,8 @@ const launchApp = async ({
       e2eInitialRouteName: routeName,
       e2eInitialRouteParams: JSON.stringify(routeParams),
       e2eAuthState: JSON.stringify(buildAuthState(authState)),
+      ...(apiBaseUrl ? { e2eApiBaseUrl: apiBaseUrl } : {}),
+      ...(hlsBaseUrl ? { e2eHlsBaseUrl: hlsBaseUrl } : {}),
     },
   });
 };

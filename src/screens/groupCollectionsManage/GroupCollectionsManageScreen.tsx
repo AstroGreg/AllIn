@@ -1,5 +1,5 @@
 import { View, Text, TouchableOpacity, ScrollView, Dimensions, Alert } from 'react-native';
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import FastImage from 'react-native-fast-image';
 import { ArrowLeft2, ArrowRight, Add, Minus, TickCircle } from 'iconsax-react-nativejs';
@@ -33,10 +33,23 @@ const GroupCollectionsManageScreen = ({ navigation, route }: any) => {
 
   const groupId = String(route?.params?.groupId || '').trim();
   const type: 'image' | 'video' = String(route?.params?.type || '').toLowerCase() === 'video' ? 'video' : 'image';
+  const e2eFixtureFiles = useMemo(
+    () => Array.isArray(route?.params?.e2eFixtureFiles)
+      ? route.params.e2eFixtureFiles
+          .map((entry: any) => ({
+            uri: String(entry?.uri || '').trim(),
+            type: String(entry?.type || (type === 'video' ? 'video/mp4' : 'image/jpeg')).trim(),
+            name: String(entry?.name || `${type}-${Date.now()}`).trim(),
+          }))
+          .filter((entry: { uri: string }) => entry.uri.length > 0)
+      : [],
+    [route?.params?.e2eFixtureFiles, type],
+  );
   const [selectionMode, setSelectionMode] = useState<SelectionMode>('none');
   const [selectedMediaIds, setSelectedMediaIds] = useState<string[]>([]);
   const [collectionItems, setCollectionItems] = useState<GroupCollectionItem[]>([]);
   const [isUploading, setIsUploading] = useState(false);
+  const e2eFixturesAppliedRef = useRef(false);
 
   const isSignedUrl = useCallback((value?: string | null) => {
     if (!value) return false;
@@ -113,6 +126,33 @@ const GroupCollectionsManageScreen = ({ navigation, route }: any) => {
     setSelectedMediaIds(featuredIds);
   };
 
+  const uploadFilesToCollection = useCallback(async (files: Array<{ uri: string; type: string; name: string }>) => {
+    if (!apiAccessToken || !groupId || files.length === 0) return;
+    setIsUploading(true);
+    try {
+      const uploaded = await uploadMediaBatch(apiAccessToken, {
+        files,
+        skip_profile_collection: true,
+      });
+      const mediaIds = Array.isArray(uploaded?.results) ? uploaded.results.map((r: any) => r.media_id).filter(Boolean) : [];
+      if (mediaIds.length > 0) {
+        await addGroupCollectionItems(apiAccessToken, { group_id: groupId, type, media_ids: mediaIds });
+      }
+      await loadData();
+    } catch (e: any) {
+      Alert.alert(t('Upload failed'), String(e?.message ?? e ?? t('Please try again')));
+    } finally {
+      setIsUploading(false);
+    }
+  }, [apiAccessToken, groupId, loadData, t, type]);
+
+  useEffect(() => {
+    if (e2eFixturesAppliedRef.current) return;
+    if (e2eFixtureFiles.length === 0) return;
+    e2eFixturesAppliedRef.current = true;
+    void uploadFilesToCollection(e2eFixtureFiles);
+  }, [e2eFixtureFiles, uploadFilesToCollection]);
+
   const handleAdd = async () => {
     if (!apiAccessToken || !groupId) return;
     const res = await launchImageLibrary({
@@ -131,22 +171,7 @@ const GroupCollectionsManageScreen = ({ navigation, route }: any) => {
         name: asset.fileName ?? `${type}-${Date.now()}`,
       }));
     if (files.length === 0) return;
-    setIsUploading(true);
-    try {
-      const uploaded = await uploadMediaBatch(apiAccessToken, {
-        files,
-        skip_profile_collection: true,
-      });
-      const mediaIds = Array.isArray(uploaded?.results) ? uploaded.results.map((r: any) => r.media_id).filter(Boolean) : [];
-      if (mediaIds.length > 0) {
-        await addGroupCollectionItems(apiAccessToken, { group_id: groupId, type, media_ids: mediaIds });
-      }
-      await loadData();
-    } catch (e: any) {
-      Alert.alert(t('Upload failed'), String(e?.message ?? e ?? t('Please try again')));
-    } finally {
-      setIsUploading(false);
-    }
+    await uploadFilesToCollection(files);
   };
 
   const handleDelete = () => {
@@ -200,7 +225,7 @@ const GroupCollectionsManageScreen = ({ navigation, route }: any) => {
   const isDeleteMode = selectionMode === 'delete';
 
   return (
-    <View style={styles.mainContainer}>
+    <View style={styles.mainContainer} testID={`group-collections-manage-screen-${type}`}>
       <SizeBox height={insets.top} />
 
       <View style={styles.header}>
@@ -241,7 +266,7 @@ const GroupCollectionsManageScreen = ({ navigation, route }: any) => {
         {!isInSelectionMode && (
           <>
             <View style={styles.actionRow}>
-              <TouchableOpacity style={styles.addButton} onPress={handleAdd} disabled={isUploading}>
+              <TouchableOpacity style={styles.addButton} onPress={handleAdd} disabled={isUploading} testID={`group-collections-add-${type}`}>
                 <Add size={20} color={colors.whiteColor} variant="Linear" />
                 <Text style={styles.addButtonText}>{isUploading ? t('Uploading...') : type === 'video' ? t('Add Videos') : t('Add Photos')}</Text>
               </TouchableOpacity>
@@ -282,7 +307,7 @@ const GroupCollectionsManageScreen = ({ navigation, route }: any) => {
               const selectionNumber = getSelectionNumber(mediaId);
               const thumb = resolveThumbUrl(item);
               return (
-                <TouchableOpacity key={mediaId} activeOpacity={0.8} onPress={() => toggleSelection(mediaId)}>
+                <TouchableOpacity key={mediaId} activeOpacity={0.8} onPress={() => toggleSelection(mediaId)} testID={`group-collection-item-${mediaId}`}>
                   <View
                     style={[
                       styles.photoImageContainer,

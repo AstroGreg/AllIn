@@ -1,5 +1,5 @@
 import { View, Text, TouchableOpacity, TextInput, ActivityIndicator, InteractionManager } from 'react-native'
-import React, { useMemo, useState } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next';
 import { createStyles } from './UploadDetailsStyles'
 import SizeBox from '../../constants/SizeBox'
@@ -78,6 +78,34 @@ const UploadDetailsScreen = ({ navigation, route }: any) => {
         category?.checkpoint_label ??
         '',
     ).trim() || null;
+    const e2eFixtureFiles = useMemo(
+        () => Array.isArray(route?.params?.e2eFixtureFiles) ? route.params.e2eFixtureFiles : [],
+        [route?.params?.e2eFixtureFiles],
+    );
+
+    useEffect(() => {
+        if (!Array.isArray(e2eFixtureFiles) || e2eFixtureFiles.length === 0) return;
+        const mapped = e2eFixtureFiles
+            .map((entry: any, index: number) => {
+                const uri = normalizeFileUri(String(entry?.uri || ''));
+                if (!uri) return null;
+                const type = String(entry?.type || '').trim() || undefined;
+                const fileName = String(entry?.fileName || entry?.name || `e2e-upload-${index + 1}`).trim() || `e2e-upload-${index + 1}`;
+                return {
+                    uri,
+                    type,
+                    fileName,
+                    width: Number(entry?.width || 0) || undefined,
+                    height: Number(entry?.height || 0) || undefined,
+                    price_cents: defaultPriceCentsForType(type),
+                    price_currency: 'EUR',
+                };
+            })
+            .filter(Boolean) as any[];
+        if (mapped.length > 0) {
+            setSelectedAssets(mapped);
+        }
+    }, [e2eFixtureFiles]);
 
     const handleFilePicker = async () => {
         const options: any = {
@@ -215,7 +243,7 @@ const UploadDetailsScreen = ({ navigation, route }: any) => {
     const buttonLabel = useMemo(() => (selectedCount > 0 ? t('Next') : t('Select files')), [selectedCount, t]);
 
     return (
-        <View style={Styles.mainContainer}>
+        <View style={Styles.mainContainer} testID="upload-details-screen">
             <SizeBox height={insets.top} />
             <View style={Styles.header}>
                 <TouchableOpacity style={Styles.headerButton} onPress={() => navigation.goBack()}>
@@ -247,6 +275,7 @@ const UploadDetailsScreen = ({ navigation, route }: any) => {
                     style={[Styles.uploadContainer, isPreparingAssets && Styles.uploadContainerDisabled]}
                     onPress={handleFilePicker}
                     disabled={isPreparingAssets}
+                    testID="upload-browse-files-button"
                 >
                     <Text style={Styles.uploadText}>{t('Browse files')}</Text>
                 </TouchableOpacity>
@@ -295,6 +324,7 @@ const UploadDetailsScreen = ({ navigation, route }: any) => {
                     ]}
                     onPress={handleUpload}
                     disabled={selectedCount === 0 || isPreparingAssets}
+                    testID="upload-details-next-button"
                 >
                     <Text style={Styles.btnText}>{buttonLabel}</Text>
                 </TouchableOpacity>

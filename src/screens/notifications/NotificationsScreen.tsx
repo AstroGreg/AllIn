@@ -13,6 +13,7 @@ import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../context/AuthContext';
 import { ApiError, getNotifications, markNotificationRead, type AppNotification } from '../../services/apiGateway';
 import { useFocusEffect } from '@react-navigation/native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const SwipeToReadCard = ({
     enabled,
@@ -99,8 +100,42 @@ const NotificationsScreen = ({ navigation }: any) => {
     const [errorText, setErrorText] = useState<string | null>(null);
     const [markingId, setMarkingId] = useState<string | null>(null);
     const [markingAll, setMarkingAll] = useState(false);
+    const [pushNotificationsEnabled, setPushNotificationsEnabled] = useState<boolean | null>(null);
+
+    useFocusEffect(
+        useCallback(() => {
+            let mounted = true;
+            AsyncStorage.getItem('@push_notifications_enabled')
+                .then((value) => {
+                    if (!mounted) return;
+                    const enabled = value !== '0';
+                    setPushNotificationsEnabled(enabled);
+                    if (!enabled) {
+                        setItems([]);
+                        setErrorText(null);
+                    }
+                })
+                .catch(() => {
+                    if (!mounted) return;
+                    setPushNotificationsEnabled(true);
+                });
+            return () => {
+                mounted = false;
+            };
+        }, []),
+    );
 
     const loadNotifications = useCallback(async (isRefresh = false) => {
+        if (pushNotificationsEnabled == null) {
+            return;
+        }
+        if (!pushNotificationsEnabled) {
+            setItems([]);
+            setErrorText(null);
+            setLoading(false);
+            setRefreshing(false);
+            return;
+        }
         if (!apiAccessToken) {
             setItems([]);
             setErrorText(t('Log in to load notifications.'));
@@ -123,10 +158,11 @@ const NotificationsScreen = ({ navigation }: any) => {
             setLoading(false);
             setRefreshing(false);
         }
-    }, [apiAccessToken, t]);
+    }, [apiAccessToken, pushNotificationsEnabled, t]);
 
     useFocusEffect(
         useCallback(() => {
+            if (pushNotificationsEnabled == null) return;
             loadNotifications(false);
         }, [loadNotifications]),
     );
@@ -205,7 +241,12 @@ const NotificationsScreen = ({ navigation }: any) => {
             enabled={!item.read_at && markingId !== item.id}
             onSwipeRight={() => handleMarkRead(item)}
         >
-            <TouchableOpacity style={Styles.notificationCard} activeOpacity={0.9} onPress={() => handleOpenNotification(item)}>
+            <TouchableOpacity
+                style={Styles.notificationCard}
+                activeOpacity={0.9}
+                onPress={() => handleOpenNotification(item)}
+                testID={`notification-card-${item.id}`}
+            >
                 <View style={Styles.notificationLeft}>
                     <View style={Styles.iconContainer}>
                         <NotificationBing size={24} color={colors.primaryColor} variant="Bold" />
@@ -241,7 +282,7 @@ const NotificationsScreen = ({ navigation }: any) => {
     );
 
     return (
-        <View style={Styles.mainContainer}>
+        <View style={Styles.mainContainer} testID="notifications-screen">
             <SizeBox height={insets.top} />
 
             {/* Header */}
@@ -279,6 +320,10 @@ const NotificationsScreen = ({ navigation }: any) => {
                     <ActivityIndicator color={colors.primaryColor} />
                 ) : errorText ? (
                     <Text style={[Styles.notificationDescription, { color: '#ED5454' }]}>{errorText}</Text>
+                ) : !pushNotificationsEnabled ? (
+                    <View style={{ alignItems: 'center', paddingTop: 8 }}>
+                        <Text style={Styles.notificationDescription}>{t('Push notifications are off')}</Text>
+                    </View>
                 ) : items.length === 0 ? (
                     <View style={{ alignItems: 'center', paddingTop: 8 }}>
                         <Text style={Styles.notificationDescription}>{t('No notifications yet')}</Text>

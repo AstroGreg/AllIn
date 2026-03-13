@@ -1,4 +1,15 @@
 import { AppConfig } from './AppConfig';
+let apiBaseUrlOverride: string | null = null;
+let hlsBaseUrlOverride: string | null = null;
+
+export const setRuntimeUrlOverrides = (overrides: {
+    apiBaseUrl?: string | null;
+    hlsBaseUrl?: string | null;
+}) => {
+    apiBaseUrlOverride = String(overrides.apiBaseUrl ?? '').trim() || null;
+    hlsBaseUrlOverride = String(overrides.hlsBaseUrl ?? '').trim() || null;
+};
+
 const requireEnv = (key: string, value: any): string => {
     const out = String(value ?? process.env[key] ?? '').trim();
     if (!out) {
@@ -8,10 +19,12 @@ const requireEnv = (key: string, value: any): string => {
 };
 
 export const getApiBaseUrl = () => {
+    if (apiBaseUrlOverride) return apiBaseUrlOverride;
     return requireEnv('API_GATEWAY_URL', AppConfig.API_GATEWAY_URL);
 };
 
 export const getHlsBaseUrl = () => {
+    if (hlsBaseUrlOverride) return hlsBaseUrlOverride;
     const raw = String(
         AppConfig.HLS_BASE_URL ??
         AppConfig.MEDIA_BASE_URL ??

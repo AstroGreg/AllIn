@@ -178,16 +178,24 @@ const GroupManageScreen = ({ navigation, route }: any) => {
     const value = String(manualCoachName || '').trim();
     if (!apiAccessToken || !groupId || !canManageGroup || !value || isSavingManualCoach) return;
     setIsSavingManualCoach(true);
+    const next = Array.from(new Set([...manualCoachNames, value]));
+    setGroup((prev) => {
+      if (!prev) return prev;
+      return { ...prev, coaches: next };
+    });
+    setManualCoachName('');
     try {
-      const next = Array.from(new Set([...manualCoachNames, value]));
       const updated = await updateGroup(apiAccessToken, groupId, { coaches: next });
       setGroup((prev) => {
         if (!prev) return updated?.group ?? prev;
-        return updated?.group ? { ...prev, ...updated.group } : prev;
+        return updated?.group ? { ...prev, ...updated.group, coaches: Array.isArray(updated.group?.coaches) ? updated.group.coaches : next } : { ...prev, coaches: next };
       });
-      setManualCoachName('');
     } catch {
-      // ignore
+      setGroup((prev) => {
+        if (!prev) return prev;
+        return { ...prev, coaches: manualCoachNames };
+      });
+      setManualCoachName(value);
     } finally {
       setIsSavingManualCoach(false);
     }
@@ -196,15 +204,22 @@ const GroupManageScreen = ({ navigation, route }: any) => {
   const handleRemoveManualCoach = useCallback(async (name: string) => {
     const value = String(name || '').trim();
     if (!apiAccessToken || !groupId || !canManageGroup || !value) return;
+    const next = manualCoachNames.filter((entry) => String(entry || '').trim().toLowerCase() !== value.toLowerCase());
+    setGroup((prev) => {
+      if (!prev) return prev;
+      return { ...prev, coaches: next };
+    });
     try {
-      const next = manualCoachNames.filter((entry) => String(entry || '').trim().toLowerCase() !== value.toLowerCase());
       const updated = await updateGroup(apiAccessToken, groupId, { coaches: next });
       setGroup((prev) => {
         if (!prev) return updated?.group ?? prev;
-        return updated?.group ? { ...prev, ...updated.group } : prev;
+        return updated?.group ? { ...prev, ...updated.group, coaches: Array.isArray(updated.group?.coaches) ? updated.group.coaches : next } : { ...prev, coaches: next };
       });
     } catch {
-      // ignore
+      setGroup((prev) => {
+        if (!prev) return prev;
+        return { ...prev, coaches: manualCoachNames };
+      });
     }
   }, [apiAccessToken, canManageGroup, groupId, manualCoachNames]);
 
@@ -499,7 +514,7 @@ const GroupManageScreen = ({ navigation, route }: any) => {
   }
 
   return (
-    <View style={styles.container}>
+    <View style={styles.container} testID="group-manage-screen">
       <SizeBox height={insets.top} />
       <View style={styles.header}>
         <TouchableOpacity style={styles.headerButton} onPress={() => navigation.goBack()}>
@@ -519,7 +534,7 @@ const GroupManageScreen = ({ navigation, route }: any) => {
             <View style={styles.sectionCard}>
               <Text style={styles.sectionTitle}>{t('Invitation link')}</Text>
               <Text style={styles.hint}>{t('Generate a shareable link so people can join this group directly in the app')}</Text>
-              <TouchableOpacity style={styles.inviteLinkButton} onPress={openInviteLinkModal}>
+              <TouchableOpacity style={styles.inviteLinkButton} onPress={openInviteLinkModal} testID="group-manage-open-invite-link">
                 <Link21 size={16} color={colors.primaryColor} variant="Linear" />
                 <Text style={styles.inviteLinkButtonText}>{t('Generate invitation link')}</Text>
               </TouchableOpacity>
@@ -633,8 +648,9 @@ const GroupManageScreen = ({ navigation, route }: any) => {
                   placeholderTextColor={colors.subTextColor}
                   value={manualCoachName}
                   onChangeText={setManualCoachName}
+                  testID="group-manage-coach-input"
                 />
-                <TouchableOpacity style={styles.actionButton} onPress={handleAddManualCoach} disabled={isSavingManualCoach || !manualCoachName.trim()}>
+                <TouchableOpacity style={styles.actionButton} onPress={handleAddManualCoach} disabled={isSavingManualCoach || !manualCoachName.trim()} testID="group-manage-coach-add">
                   {isSavingManualCoach ? (
                     <ActivityIndicator size="small" color={colors.whiteColor} />
                   ) : (
@@ -652,6 +668,7 @@ const GroupManageScreen = ({ navigation, route }: any) => {
                       key={`manual-coach-${coachName}`}
                       style={styles.manualCoachChip}
                       onPress={() => handleRemoveManualCoach(coachName)}
+                      testID={`group-manage-coach-chip-${coachName}`}
                     >
                       <Text style={styles.manualCoachChipText}>{coachName}</Text>
                       <Trash size={14} color={colors.errorColor || '#E14B4B'} variant="Linear" />
@@ -673,7 +690,12 @@ const GroupManageScreen = ({ navigation, route }: any) => {
         onRequestClose={closeInviteLinkModal}
       >
         <Pressable style={styles.modalBackdrop} onPress={closeInviteLinkModal}>
-          <Pressable style={styles.modalCard} onPress={() => {}}>
+          <Pressable
+            style={styles.modalCard}
+            onPress={(event) => {
+              event.stopPropagation();
+            }}
+          >
             <Text style={styles.modalTitle}>{t('Invitation link')}</Text>
             <Text style={styles.modalHint}>{t('Choose the public role tags for people joining through this link, then generate and share it.')}</Text>
 
@@ -711,7 +733,7 @@ const GroupManageScreen = ({ navigation, route }: any) => {
             </View>
 
             {inviteLinkUrl ? (
-              <View style={styles.linkValueCard}>
+              <View style={styles.linkValueCard} testID="group-manage-invite-link-card">
                 <Text style={styles.linkValueText}>{inviteLinkUrl}</Text>
               </View>
             ) : null}
@@ -724,6 +746,7 @@ const GroupManageScreen = ({ navigation, route }: any) => {
                 style={[styles.modalAction, styles.modalActionPrimary]}
                 onPress={handleGenerateInviteLink}
                 disabled={inviteLinkBusy || inviteLinkPublicRoles.length === 0}
+                testID="group-manage-generate-invite-link"
               >
                 {inviteLinkBusy ? (
                   <ActivityIndicator size="small" color={colors.whiteColor} />

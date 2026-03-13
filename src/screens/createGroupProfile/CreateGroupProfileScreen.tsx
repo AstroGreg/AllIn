@@ -500,10 +500,6 @@ const CreateGroupProfileScreen = ({ navigation, route }: any) => {
         if (nextMissingRequiredFields.groupName || nextMissingRequiredFields.groupDescription) {
             return;
         }
-        if (groupNameStatus.state === 'checking') {
-            Alert.alert(t('Checking name'), t('Please wait until the group name check finishes.'));
-            return;
-        }
         if (groupNameStatus.state === 'group' || groupNameStatus.state === 'club') {
             Alert.alert(t('Choose a different name'), groupNameStatus.message || t('This name is not available.'));
             return;
@@ -601,7 +597,7 @@ const CreateGroupProfileScreen = ({ navigation, route }: any) => {
     };
 
     return (
-        <View style={styles.mainContainer}>
+        <View style={styles.mainContainer} testID="create-group-screen">
             <SizeBox height={insets.top} />
 
             <View style={styles.header}>
@@ -612,7 +608,7 @@ const CreateGroupProfileScreen = ({ navigation, route }: any) => {
 
             <ScrollView
                 showsVerticalScrollIndicator={false}
-                keyboardShouldPersistTaps="handled"
+                keyboardShouldPersistTaps="always"
                 contentContainerStyle={styles.scrollContent}
             >
                 <View style={styles.titleSection}>
@@ -661,6 +657,7 @@ const CreateGroupProfileScreen = ({ navigation, route }: any) => {
                                         setMissingRequiredFields((prev) => ({ ...prev, groupName: false }));
                                     }
                                 }}
+                                testID="create-group-name-input"
                             />
                         </View>
                         {groupNameStatus.state === 'checking' ? (
@@ -698,6 +695,7 @@ const CreateGroupProfileScreen = ({ navigation, route }: any) => {
                                     onBlur={() => {
                                         setTimeout(() => setIsBaseLocationFocused(false), 120);
                                     }}
+                                    testID="create-group-city-input"
                                 />
                             </View>
                             {showCitySuggestions ? (
@@ -731,6 +729,7 @@ const CreateGroupProfileScreen = ({ navigation, route }: any) => {
                                 onChangeText={setGroupWebsite}
                                 autoCapitalize="none"
                                 keyboardType="url"
+                                testID="create-group-website-input"
                             />
                         </View>
                     </View>
@@ -885,6 +884,7 @@ const CreateGroupProfileScreen = ({ navigation, route }: any) => {
                     style={[styles.continueButton, isSaving && { opacity: 0.5 }]}
                     onPress={handleCreateGroup}
                     disabled={isSaving}
+                    testID="create-group-submit"
                 >
                     {isSaving ? (
                         <ActivityIndicator size="small" color={colors.whiteColor} />

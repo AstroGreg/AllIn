@@ -637,14 +637,35 @@ const UserProfileScreen = ({ navigation, route }: any) => {
         navigation.setParams?.({ forceProfileCategory: undefined });
     }, [navigation, route?.params?.forceProfileCategory, setCategory]);
 
+    const e2eAvatarFixtureFile = useMemo(() => {
+        const raw = route?.params?.e2eAvatarFixtureFile;
+        if (!raw || typeof raw !== 'object') return null;
+        const uri = String((raw as any)?.uri || '').trim();
+        if (!uri) return null;
+        return {
+            uri,
+            type: String((raw as any)?.type || 'image/jpeg').trim(),
+            name: String((raw as any)?.name || `avatar-${Date.now()}.jpg`).trim(),
+        };
+    }, [route?.params?.e2eAvatarFixtureFile]);
+
     const handleProfileImageChange = async () => {
-        const result = await launchImageLibrary({
-            mediaType: 'photo',
-            selectionLimit: 1,
-            presentationStyle: 'fullScreen',
-            assetRepresentationMode: 'current',
-        });
-        const asset = result?.assets?.[0];
+        let asset: { uri: string; type?: string; fileName?: string } | null = null;
+        if (e2eAvatarFixtureFile) {
+            asset = {
+                uri: e2eAvatarFixtureFile.uri,
+                type: e2eAvatarFixtureFile.type,
+                fileName: e2eAvatarFixtureFile.name,
+            };
+        } else {
+            const result = await launchImageLibrary({
+                mediaType: 'photo',
+                selectionLimit: 1,
+                presentationStyle: 'fullScreen',
+                assetRepresentationMode: 'current',
+            });
+            asset = result?.assets?.[0] ?? null;
+        }
         if (!asset?.uri) return;
 
         setProfileImage({ uri: asset.uri });
@@ -1257,6 +1278,7 @@ const UserProfileScreen = ({ navigation, route }: any) => {
                                 style={Styles.profileImageContainer}
                                 activeOpacity={0.8}
                                 onPress={handleProfileImageChange}
+                                testID="profile-avatar-button"
                             >
                                 <View style={Styles.profileImageInner}>
                                     <FastImage source={profileImage} style={Styles.profileImage} />

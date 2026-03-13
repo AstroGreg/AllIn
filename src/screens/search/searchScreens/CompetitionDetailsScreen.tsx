@@ -506,27 +506,8 @@ const CompetitionDetailsScreen = ({ navigation, route }: any) => {
         }
     }, [apiAccessToken, competitionName, eventId]);
 
-    const startFaceRegistrationGovIdFlow = useCallback(() => {
+    const startFaceRegistrationFlow = useCallback(() => {
         setAiCompareModalVisible(false);
-        const rootNav = navigation.getParent?.()?.getParent?.();
-        if (rootNav) {
-            rootNav.navigate('DocumentUploadScreen', {
-                afterVerification: {
-                    screen: 'BottomTabBar',
-                    params: {
-                        screen: 'Search',
-                        params: {
-                            screen: 'SearchFaceCaptureScreen',
-                            params: {
-                                mode: 'enrolFace',
-                                afterEnroll: {screen: 'AISearchScreen'},
-                            },
-                        },
-                    },
-                },
-            });
-            return;
-        }
         navigation.navigate('SearchFaceCaptureScreen', {
             mode: 'enrolFace',
             afterEnroll: {screen: 'AISearchScreen'},
@@ -606,7 +587,14 @@ const CompetitionDetailsScreen = ({ navigation, route }: any) => {
                         } else if (e.status === 400 && Array.isArray(body?.missing_angles)) {
                             setQuickMissingAngles(body.missing_angles.map(String));
                             errors.push(t('Face: enrollment required.'));
-                            startFaceRegistrationGovIdFlow();
+                            Alert.alert(
+                                t('Face setup required'),
+                                t('Set up your face scan to use face recognition for this competition.'),
+                                [
+                                    { text: t('Cancel'), style: 'cancel' },
+                                    { text: t('Set up face'), onPress: startFaceRegistrationFlow },
+                                ],
+                            );
                             return;
                         } else {
                             errors.push(`${t('Face')}: ${e.message}`);
@@ -647,7 +635,7 @@ const CompetitionDetailsScreen = ({ navigation, route }: any) => {
         } finally {
             setQuickSearchLoading(false);
         }
-    }, [apiAccessToken, competitionDate, competitionId, competitionName, defaultChestNumber, eventId, navigation, quickChestNumber, quickUseDefaultChest, quickUseFace, resolveEventId, selectedCheckpoint?.id, selectedCheckpoint?.label, selectedCourse?.disciplineId, selectedCourse?.id, selectedCourse?.label, startFaceRegistrationGovIdFlow, t]);
+    }, [apiAccessToken, competitionDate, competitionId, competitionName, defaultChestNumber, eventId, navigation, quickChestNumber, quickUseDefaultChest, quickUseFace, resolveEventId, selectedCheckpoint?.id, selectedCheckpoint?.label, selectedCourse?.disciplineId, selectedCourse?.id, selectedCourse?.label, startFaceRegistrationFlow, t]);
 
     const handleGrantConsent = useCallback(async () => {
         if (!apiAccessToken) return;
@@ -768,7 +756,20 @@ const CompetitionDetailsScreen = ({ navigation, route }: any) => {
                                     try {
                                         await grantFaceRecognitionConsent(apiAccessToken);
                                         setProfileFaceConsentGranted(true);
-                                        setSubscribeUseFace(true);
+                                        const latest = await refreshProfileFaceState();
+                                        if (latest.hasFaceEnrollment) {
+                                            setSubscribeUseFace(true);
+                                            return;
+                                        }
+                                        setSubscribeUseFace(false);
+                                        Alert.alert(
+                                            t('Face setup required'),
+                                            t('Set up your face scan to use face recognition for this competition.'),
+                                            [
+                                                { text: t('Cancel'), style: 'cancel' },
+                                                { text: t('Set up face'), onPress: startSubscriptionFaceEnrollment },
+                                            ],
+                                        );
                                     } catch (consentError: any) {
                                         const msg = consentError instanceof ApiError ? consentError.message : String(consentError?.message ?? consentError);
                                         Alert.alert(t('Consent failed'), msg);
@@ -973,7 +974,7 @@ const CompetitionDetailsScreen = ({ navigation, route }: any) => {
     );
 
     return (
-        <View style={styles.mainContainer}>
+        <View style={styles.mainContainer} testID="competition-details-screen">
             <SizeBox height={insets.top} />
 
             {/* Header */}

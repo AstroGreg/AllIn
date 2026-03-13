@@ -427,7 +427,13 @@ const HubScreen = ({ navigation }: any) => {
     const renderHubCard = (card: any) => {
         if (card.cardType === 'appearance') {
             return (
-                <TouchableOpacity key={`appearance-${card.id}`} style={Styles.hubCard} activeOpacity={0.8} onPress={() => handleCardPress(card)}>
+                <TouchableOpacity
+                    key={`appearance-${card.id}`}
+                    style={Styles.hubCard}
+                    activeOpacity={0.8}
+                    onPress={() => handleCardPress(card)}
+                    testID={`hub-appearance-card-${String(card.id)}`}
+                >
                     <View style={Styles.hubCardRow}>
                         {card.thumbnail ? (
                             <FastImage source={card.thumbnail} style={Styles.squareThumbnail} resizeMode="cover" />
@@ -472,7 +478,13 @@ const HubScreen = ({ navigation }: any) => {
 
         if (card.cardType === 'subscription') {
             return (
-                <TouchableOpacity key={`event-${card.id}`} style={Styles.hubCard} activeOpacity={0.8} onPress={() => handleCardPress(card)}>
+                <TouchableOpacity
+                    key={`event-${card.id}`}
+                    style={Styles.hubCard}
+                    activeOpacity={0.8}
+                    onPress={() => handleCardPress(card)}
+                    testID={`hub-subscription-card-${String(card.id)}`}
+                >
                     <View style={Styles.hubCardRow}>
                         {card.thumbnail ? (
                             <FastImage source={card.thumbnail} style={Styles.squareThumbnail} resizeMode="cover" />
@@ -514,7 +526,13 @@ const HubScreen = ({ navigation }: any) => {
         }
 
         return (
-            <TouchableOpacity key={`upload-${card.id}`} style={Styles.hubCard} activeOpacity={0.8} onPress={() => handleCardPress(card)}>
+            <TouchableOpacity
+                key={`upload-${card.id}`}
+                style={Styles.hubCard}
+                activeOpacity={0.8}
+                onPress={() => handleCardPress(card)}
+                testID={`hub-upload-card-${String(card.mediaId ?? card.id)}`}
+            >
                 <View style={Styles.hubCardRow}>
                     {card.thumbnail ? (
                         <FastImage source={card.thumbnail} style={Styles.squareThumbnail} resizeMode="cover" />
@@ -548,7 +566,7 @@ const HubScreen = ({ navigation }: any) => {
     };
 
     return (
-        <View style={Styles.mainContainer}>
+        <View style={Styles.mainContainer} testID="hub-screen">
             <SizeBox height={insets.top} />
 
             <View style={Styles.header}>

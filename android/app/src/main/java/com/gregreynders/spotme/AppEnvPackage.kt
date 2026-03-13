@@ -1,4 +1,4 @@
-package com.spotme
+package com.gregreynders.spotme
 
 import com.facebook.react.ReactPackage
 import com.facebook.react.bridge.NativeModule

@@ -1,0 +1,18 @@
+<svg width="1080" height="1920" viewBox="0 0 1080 1920" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bgC" x1="120" y1="40" x2="960" y2="1840" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#D7E0E8"/>
+      <stop offset="0.52" stop-color="#C2CED8"/>
+      <stop offset="1" stop-color="#4B5A66"/>
+    </linearGradient>
+  </defs>
+  <rect width="1080" height="1920" fill="url(#bgC)"/>
+  <rect x="66" y="1336" width="948" height="166" rx="48" fill="rgba(255,255,255,0.55)" stroke="rgba(255,255,255,0.28)"/>
+  <text x="490" y="1438" text-anchor="end" fill="#0F172A" font-size="72" font-family="Arial, sans-serif" font-weight="700">SpotMe</text>
+  <g transform="translate(522 1380)">
+    <rect width="78" height="78" rx="26" fill="#0A5CFF"/>
+    <circle cx="39" cy="39" r="19" fill="white"/>
+    <circle cx="54" cy="24" r="9" fill="#FF7A00"/>
+  </g>
+  <text x="540" y="1570" text-anchor="middle" fill="rgba(255,255,255,0.84)" font-size="30" font-family="Arial, sans-serif">Style C: glass footer</text>
+</svg>

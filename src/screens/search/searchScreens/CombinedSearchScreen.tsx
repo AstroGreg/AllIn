@@ -311,41 +311,15 @@ const CombinedSearchScreen = ({navigation}: any) => {
     setPendingAutoRun(true);
   };
 
-  const startFaceRegistrationGovIdFlow = useCallback(() => {
+  const startFaceEnrollmentFlow = useCallback(() => {
     const resumePayload: ResumeCombinedSearchPayload = {
       selectedEvents,
       bib,
       useSavedBib: useDefaultBib,
       contextText,
-      includeFace,
+      includeFace: true,
       autoRun: true,
     };
-    const targetParams = {
-      screen: 'Search',
-      params: {
-        screen: 'SearchFaceCaptureScreen',
-        params: {
-          mode: 'enrolFace',
-          afterEnroll: {
-            screen: 'AISearchScreen',
-            params: {
-              ...(origin ? {origin} : {}),
-              resumeCombinedSearch: resumePayload,
-            },
-          },
-        },
-      },
-    };
-    const rootNav = navigation.getParent?.()?.getParent?.();
-    if (rootNav) {
-      rootNav.navigate('DocumentUploadScreen', {
-        afterVerification: {
-          screen: 'BottomTabBar',
-          params: targetParams,
-        },
-      });
-      return;
-    }
     navigation.navigate('SearchFaceCaptureScreen', {
       mode: 'enrolFace',
       afterEnroll: {
@@ -357,6 +331,45 @@ const CombinedSearchScreen = ({navigation}: any) => {
       },
     });
   }, [bib, contextText, includeFace, navigation, origin, selectedEvents]);
+
+  const verifyFaceSearchReady = useCallback(async (): Promise<'ready' | 'consent' | 'missing' | 'error'> => {
+    if (!apiAccessToken || selectedEventIds.length === 0) {
+      return 'error';
+    }
+    const requestAccessToken = apiAccessToken ?? '';
+    try {
+      await searchFaceByEnrollment(requestAccessToken, {
+        event_ids: [selectedEventIds[0]],
+        label: 'default',
+        limit: 1,
+        top: 1,
+        save: false,
+      });
+      setNeedsConsent(false);
+      setMissingAngles(null);
+      setFaceEnrollmentStatus('ready');
+      return 'ready';
+    } catch (e: any) {
+      if (e instanceof ApiError) {
+        const body = e.body ?? {};
+        if (e.status === 403 && String(e.message).toLowerCase().includes('consent')) {
+          setNeedsConsent(true);
+          setMissingAngles(null);
+          return 'consent';
+        }
+        if (e.status === 400 && Array.isArray(body?.missing_angles)) {
+          setMissingAngles(body.missing_angles.map(String));
+          setFaceEnrollmentStatus('missing');
+          setNeedsConsent(false);
+          return 'missing';
+        }
+        setErrorText(e.message);
+        return 'error';
+      }
+      setErrorText(String(e?.message ?? e));
+      return 'error';
+    }
+  }, [apiAccessToken, selectedEventIds]);
 
   const runCombinedSearch = useCallback(async () => {
     if (selectedEventIds.length === 0) {
@@ -476,7 +489,7 @@ const CombinedSearchScreen = ({navigation}: any) => {
               setFaceEnrollmentStatus('missing');
               setIncludeFace(false);
               errors.push(t('Face: enrollment required.'));
-              startFaceRegistrationGovIdFlow();
+              setErrorText(t('Face: enrollment required.'));
               return;
             } else {
               errors.push(`${t('Face')}: ${e.message}`);
@@ -522,7 +535,6 @@ const CombinedSearchScreen = ({navigation}: any) => {
     contextText,
     includeFace,
     navigation,
-    startFaceRegistrationGovIdFlow,
     t,
     selectedEvents,
     selectedEventIds,
@@ -543,20 +555,32 @@ const CombinedSearchScreen = ({navigation}: any) => {
       await grantFaceRecognitionConsent(apiAccessToken);
       setNeedsConsent(false);
       await refreshMe();
+      const status = await verifyFaceSearchReady();
+      if (status === 'ready') {
+        setIncludeFace(true);
+        return;
+      }
+      if (status === 'missing') {
+        Alert.alert(
+          t('Face setup required'),
+          t('Please enroll your face before enabling face search.'),
+          [
+            {text: t('Not now'), style: 'cancel'},
+            {text: t('Set up face'), onPress: startFaceEnrollmentFlow},
+          ],
+        );
+      }
     } catch (e: any) {
       const message = e instanceof ApiError ? e.message : String(e?.message ?? e);
       setErrorText(message);
     }
-  }, [apiAccessToken, refreshMe]);
+  }, [apiAccessToken, refreshMe, startFaceEnrollmentFlow, t, verifyFaceSearchReady]);
 
   const handleEnroll = useCallback(() => {
     setIncludeFace(false);
     setFaceEnrollmentStatus('unknown');
-    navigation.navigate('SearchFaceCaptureScreen', {
-      mode: 'enrolFace',
-      afterEnroll: {screen: 'AISearchScreen', params: origin ? {origin} : undefined},
-    });
-  }, [navigation, origin]);
+    startFaceEnrollmentFlow();
+  }, [startFaceEnrollmentFlow]);
 
   const handleToggleFaceSearch = useCallback(async () => {
     if (includeFace) {
@@ -598,52 +622,71 @@ const CombinedSearchScreen = ({navigation}: any) => {
     setErrorText(null);
     setNeedsConsent(false);
     setMissingAngles(null);
-    const requestAccessToken = apiAccessToken ?? '';
     try {
-      await searchFaceByEnrollment(requestAccessToken, {
-        event_ids: [selectedEventIds[0]],
-        label: 'default',
-        limit: 1,
-        top: 1,
-        save: false,
-      });
-      setFaceEnrollmentStatus('ready');
-      setIncludeFace(true);
-    } catch (e: any) {
-      if (e instanceof ApiError) {
-        const body = e.body ?? {};
-        if (e.status === 403 && String(e.message).toLowerCase().includes('consent')) {
-          setNeedsConsent(true);
-          setIncludeFace(true);
-          return;
-        }
-        if (e.status === 400 && Array.isArray(body?.missing_angles)) {
-          setMissingAngles(body.missing_angles.map(String));
-          setFaceEnrollmentStatus('missing');
-          setIncludeFace(false);
-          Alert.alert(
-            t('Face setup required'),
-            t('Please enroll your face before enabling face search.'),
-            [
-              {text: t('Not now'), style: 'cancel'},
-              {text: t('Set up face'), onPress: handleEnroll},
-            ],
-          );
-          return;
-        }
+      const status = await verifyFaceSearchReady();
+      if (status === 'ready') {
+        setIncludeFace(true);
+        return;
       }
-      const message = e instanceof ApiError ? e.message : String(e?.message ?? e);
-      setErrorText(message);
+      if (status === 'consent') {
+        Alert.alert(
+          t('Face recognition consent'),
+          t('Allow face recognition for AI search?'),
+          [
+            {text: t('Cancel'), style: 'cancel'},
+            {
+              text: t('Allow'),
+              onPress: async () => {
+                try {
+                  await grantFaceRecognitionConsent(apiAccessToken ?? '');
+                  setNeedsConsent(false);
+                  const retryStatus = await verifyFaceSearchReady();
+                  if (retryStatus === 'ready') {
+                    setIncludeFace(true);
+                    return;
+                  }
+                  if (retryStatus === 'missing') {
+                    Alert.alert(
+                      t('Face setup required'),
+                      t('Please enroll your face before enabling face search.'),
+                      [
+                        {text: t('Not now'), style: 'cancel'},
+                        {text: t('Set up face'), onPress: startFaceEnrollmentFlow},
+                      ],
+                    );
+                  }
+                } catch (consentError: any) {
+                  const message = consentError instanceof ApiError ? consentError.message : String(consentError?.message ?? consentError);
+                  setErrorText(message);
+                }
+              },
+            },
+          ],
+        );
+        return;
+      }
+      if (status === 'missing') {
+        setIncludeFace(false);
+        Alert.alert(
+          t('Face setup required'),
+          t('Please enroll your face before enabling face search.'),
+          [
+            {text: t('Not now'), style: 'cancel'},
+            {text: t('Set up face'), onPress: startFaceEnrollmentFlow},
+          ],
+        );
+      }
     } finally {
       setIsCheckingFaceSetup(false);
     }
   }, [
     apiAccessToken,
     faceEnrollmentStatus,
-    handleEnroll,
     includeFace,
     selectedEventIds,
+    startFaceEnrollmentFlow,
     t,
+    verifyFaceSearchReady,
   ]);
 
   const handleBack = useCallback(() => {

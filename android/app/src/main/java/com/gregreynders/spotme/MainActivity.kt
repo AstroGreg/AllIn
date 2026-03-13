@@ -1,4 +1,4 @@
-package com.spotme
+package com.gregreynders.spotme
 
 import android.os.Bundle
 import com.facebook.react.ReactActivity

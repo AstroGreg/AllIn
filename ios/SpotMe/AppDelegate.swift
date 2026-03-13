@@ -11,6 +11,8 @@ class AppDelegate: RCTAppDelegate {
       "e2eInitialRouteName",
       "e2eInitialRouteParams",
       "e2eAuthState",
+      "e2eApiBaseUrl",
+      "e2eHlsBaseUrl",
     ])
     var props: [AnyHashable: Any] = [:]
     var index = 0

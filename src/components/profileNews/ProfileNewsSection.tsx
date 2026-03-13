@@ -133,6 +133,7 @@ const ProfileNewsSection = ({
             style={styles.activityCard}
             activeOpacity={0.85}
             onPress={() => onPressItem(item)}
+            testID={`profile-news-item-${item.id}`}
         >
             <View style={styles.activityCardRow}>
                 <View style={styles.activityThumbWrap}>
@@ -147,7 +148,10 @@ const ProfileNewsSection = ({
                         <Text style={styles.activityTitle} numberOfLines={2}>
                             {item.title}
                         </Text>
-                        <View style={[styles.activityBadge, isBlog ? styles.activityBadgeBlog : styles.activityBadgeEvent]}>
+                        <View
+                            style={[styles.activityBadge, isBlog ? styles.activityBadgeBlog : styles.activityBadgeEvent]}
+                            testID={`profile-news-badge-${item.id}`}
+                        >
                             <Text style={isBlog ? styles.activityBadgeTextBlog : styles.activityBadgeText}>{badgeLabel}</Text>
                         </View>
                     </View>

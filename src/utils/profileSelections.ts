@@ -213,6 +213,37 @@ export function normalizeFocusId(raw: any): SportFocusId | null {
   return null;
 }
 
+export function resolveCompetitionFocusId(params?: {
+  type?: any;
+  name?: any;
+  location?: any;
+  organizer?: any;
+}): SportFocusId {
+  const token = [
+    params?.type,
+    params?.name,
+    params?.location,
+    params?.organizer,
+  ]
+    .map((value) => String(value ?? '').trim().toLowerCase())
+    .filter(Boolean)
+    .join(' ');
+
+  if (!token) return 'track-field';
+
+  if (/\bironman\b|70\.3|140\.6|\b5150\b/.test(token)) return 'ironman';
+  if (/\btriathlon\b|\bduathlon\b|\baquathlon\b|\baquabike\b|\bmultisport\b/.test(token)) return 'triathlon';
+  if (/\bhyrox\b/.test(token)) return 'hyrox';
+  if (/\bcycling\b|\bcyclocross\b|\bgravel\b|\bmtb\b|mountain bike|\bbmx\b|\bvelo\b|\bbike\b|\bcriterium\b/.test(token)) {
+    return 'cycling';
+  }
+  if (/\broad\b|\btrail\b|\bmarathon\b|\bveldloop\b|\bveldlopen\b|cross country|\b5k\b|\b10k\b|\b15k\b|\b20k\b|half marathon|\bultra\b|city\s*run/.test(token)) {
+    return 'road-events';
+  }
+
+  return normalizeFocusId(token) ?? 'track-field';
+}
+
 export function normalizeProfileModeId(raw: any): ProfileModeId | null {
   const normalized = String(
     typeof raw === 'string'

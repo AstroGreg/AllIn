@@ -1903,8 +1903,8 @@ DEPENDENCIES:
   - React-runtimescheduler (from `../node_modules/react-native/ReactCommon/react/renderer/runtimescheduler`)
   - React-timing (from `../node_modules/react-native/ReactCommon/react/timing`)
   - React-utils (from `../node_modules/react-native/ReactCommon/react/utils`)
-  - ReactAppDependencyProvider (from `build/generated/ios`)
-  - ReactCodegen (from `build/generated/ios`)
+  - ReactAppDependencyProvider (from `../build/generated/ios`)
+  - ReactCodegen (from `../build/generated/ios`)
   - ReactCommon/turbomodule/core (from `../node_modules/react-native/ReactCommon`)
   - "RNCAsyncStorage (from `../node_modules/@react-native-async-storage/async-storage`)"
   - "RNCClipboard (from `../node_modules/@react-native-clipboard/clipboard`)"
@@ -2088,9 +2088,9 @@ EXTERNAL SOURCES:
   React-utils:
     :path: "../node_modules/react-native/ReactCommon/react/utils"
   ReactAppDependencyProvider:
-    :path: build/generated/ios
+    :path: "../build/generated/ios"
   ReactCodegen:
-    :path: build/generated/ios
+    :path: "../build/generated/ios"
   ReactCommon:
     :path: "../node_modules/react-native/ReactCommon"
   RNCAsyncStorage:
@@ -2207,7 +2207,7 @@ SPEC CHECKSUMS:
   React-timing: 0d0263a5d8ab6fc8c325efb54cee1d6a6f01d657
   React-utils: 8905cd01f46755ea42268875d04c614a0d46431e
   ReactAppDependencyProvider: 6e8d68583f39dc31ee65235110287277eb8556ef
-  ReactCodegen: c08a5113d9c9c895fe10f3c296f74c6b705a60a9
+  ReactCodegen: 85e6c9492d866776e99c12512b18a3e7c3126115
   ReactCommon: 1bd2dc684d7992acbf0dfee887b89a57a1ead86d
   RNCAsyncStorage: b9f5f78da5d16a853fe3dc22e8268d932fc45a83
   RNCClipboard: f6679d470d0da2bce2a37b0af7b9e0bf369ecda5
@@ -2226,6 +2226,6 @@ SPEC CHECKSUMS:
   VisionCameraFaceDetector: 8ddb9cf838945b8df2cc31ec847adfc88dd8405a
   Yoga: 78d74e245ed67bb94275a1316cdc170b9b7fe884
 
-PODFILE CHECKSUM: d454c3cbf8c52fbb635193923af992fb798f9bd4
+PODFILE CHECKSUM: c2a9a968dd9786bb9a86a1c6391deb9545d800e2
 
 COCOAPODS: 1.16.2

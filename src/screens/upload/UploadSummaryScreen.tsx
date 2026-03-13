@@ -268,7 +268,7 @@ const UploadSummaryScreen = ({ navigation, route }: any) => {
     const renderUploadItem = (item: UploadItem, categoryName: string) => {
         const isVideo = String(item.type || '').toLowerCase().includes('video');
         return (
-        <View key={item.id} style={Styles.uploadItem}>
+        <View key={item.id} style={Styles.uploadItem} testID={`upload-summary-item-${categoryName}-${item.id}`}>
             <View style={Styles.thumbnailContainer}>
                 {isVideo && item.uri ? (
                     <Video
@@ -322,7 +322,7 @@ const UploadSummaryScreen = ({ navigation, route }: any) => {
     );
 
     return (
-        <View style={Styles.mainContainer}>
+        <View style={Styles.mainContainer} testID="upload-summary-screen">
             <SizeBox height={insets.top} />
 
             {/* Header */}
@@ -351,7 +351,7 @@ const UploadSummaryScreen = ({ navigation, route }: any) => {
                 <SizeBox height={30} />
 
                 {/* Confirm Button */}
-                <TouchableOpacity style={Styles.confirmButton} onPress={handleConfirm}>
+                <TouchableOpacity style={Styles.confirmButton} onPress={handleConfirm} testID="upload-start-button">
                     <Text style={Styles.confirmButtonText}>{t('Start upload')}</Text>
                     <ArrowRight size={18} color={colors.pureWhite} variant="Linear" />
                 </TouchableOpacity>

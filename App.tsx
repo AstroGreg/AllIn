@@ -5,6 +5,7 @@ import RootStackNavigation from './src/navigations/RootStackNavigation'
 import { ThemeProvider, useTheme } from './src/context/ThemeContext'
 import { AuthProvider } from './src/context/AuthContext'
 import { EventsProvider } from './src/context/EventsContext'
+import { setRuntimeUrlOverrides } from './src/constants/RuntimeConfig'
 import './src/i18n'
 
 const parseJsonProp = <T,>(value: unknown): T | undefined => {
@@ -94,6 +95,13 @@ const App = (props: any) => {
     () => parseJsonProp<Record<string, any>>(props?.e2eAuthState),
     [props?.e2eAuthState],
   );
+
+  useEffect(() => {
+    setRuntimeUrlOverrides({
+      apiBaseUrl: typeof props?.e2eApiBaseUrl === 'string' ? props.e2eApiBaseUrl : null,
+      hlsBaseUrl: typeof props?.e2eHlsBaseUrl === 'string' ? props.e2eHlsBaseUrl : null,
+    });
+  }, [props?.e2eApiBaseUrl, props?.e2eHlsBaseUrl]);
 
   return (
     <AuthProvider initialE2EAuth={initialE2EAuth}>
