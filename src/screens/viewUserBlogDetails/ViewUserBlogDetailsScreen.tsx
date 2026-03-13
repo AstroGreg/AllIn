@@ -14,7 +14,11 @@ import { translateText } from '../../i18n';
 import { useAuth } from '../../context/AuthContext';
 import NativeShare from 'react-native-share';
 import { deletePost, getPostById, recordPostView, togglePostLike } from '../../services/apiGateway';
+import { AppConfig } from '../../constants/AppConfig';
 import { getApiBaseUrl } from '../../constants/RuntimeConfig';
+import { useInstagramStoryImageComposer } from '../../components/share/InstagramStoryComposer';
+
+const INSTAGRAM_APP_ID = String(AppConfig.INSTAGRAM_APP_ID ?? '').trim();
 
 const ViewUserBlogDetailsScreen = ({ navigation, route }: any) => {
     const insets = useSafeAreaInsets();
@@ -23,6 +27,7 @@ const ViewUserBlogDetailsScreen = ({ navigation, route }: any) => {
     const Styles = createStyles(colors);
     const { eventNameById } = useEvents();
     const { apiAccessToken } = useAuth();
+    const { composeInstagramStoryImage, composerElement } = useInstagramStoryImageComposer();
     const postPreview = route?.params?.postPreview || route?.params?.post || null;
     const postId = route?.params?.postId || postPreview?.id || null;
     const [postData, setPostData] = useState<any>(postPreview);
@@ -196,6 +201,83 @@ const ViewUserBlogDetailsScreen = ({ navigation, route }: any) => {
         });
     }, [eventNameById, navigation, postData?.title, t]);
 
+    const blogShareMessage = useMemo(() => {
+        return postData?.title
+            ? String(postData.title)
+            : String(postData?.summary || postData?.description || t('blogDetails'));
+    }, [postData?.description, postData?.summary, postData?.title, t]);
+
+    const handleShareBlog = useCallback(async () => {
+        try {
+            await NativeShare.open({
+                message: blogShareMessage,
+                subject: postData?.title ? String(postData.title) : undefined,
+            });
+        } catch {
+            // ignore
+        }
+    }, [blogShareMessage, postData?.title]);
+
+    const handleShareBlogInstagram = useCallback(async () => {
+        if (!INSTAGRAM_APP_ID) {
+            Alert.alert(t('Instagram Story failed'), t('INSTAGRAM_APP_ID is missing.'));
+            return;
+        }
+
+        try {
+            const pkg = await NativeShare.isPackageInstalled('com.instagram.android');
+            if (!pkg?.isInstalled) {
+                Alert.alert(t('Instagram unavailable'), t('Install Instagram to share to Stories.'));
+                return;
+            }
+        } catch {
+            Alert.alert(t('Instagram unavailable'), t('Could not verify Instagram installation.'));
+            return;
+        }
+
+        try {
+            const selectedImageUri =
+                selectedItem?.type === 'image' && selectedItem?.image?.uri
+                    ? String(selectedItem.image.uri)
+                    : Image.resolveAssetSource(Images.advertisement).uri;
+            const composedImageUri = await composeInstagramStoryImage(
+                selectedImageUri,
+                blogShareMessage,
+                'SpotMe',
+            );
+
+            await NativeShare.shareSingle({
+                social: NativeShare.Social.INSTAGRAM_STORIES,
+                appId: INSTAGRAM_APP_ID,
+                backgroundImage: composedImageUri,
+                backgroundTopColor: '#0D0F12',
+                backgroundBottomColor: '#0D0F12',
+                attributionURL: 'https://spot-me.ai',
+                failOnCancel: false,
+            });
+        } catch (e: any) {
+            const msg = String(e?.message ?? t('Instagram Story failed'));
+            if (!/cancel/i.test(msg)) {
+                Alert.alert(t('Instagram Story failed'), msg);
+            }
+        }
+    }, [blogShareMessage, composeInstagramStoryImage, selectedItem?.image?.uri, selectedItem?.type, t]);
+
+    const openShareOptions = useCallback(() => {
+        Alert.alert(
+            t('Share'),
+            undefined,
+            [
+                { text: t('Cancel'), style: 'cancel' },
+                { text: t('Share'), onPress: () => { handleShareBlog().catch(() => {}); } },
+                {
+                    text: t('Share to Instagram Story'),
+                    onPress: () => { handleShareBlogInstagram().catch(() => {}); },
+                },
+            ],
+        );
+    }, [handleShareBlog, handleShareBlogInstagram, t]);
+
     return (
         <View style={Styles.mainContainer}>
             <SizeBox height={insets.top} />
@@ -294,16 +376,7 @@ const ViewUserBlogDetailsScreen = ({ navigation, route }: any) => {
                         </TouchableOpacity>
                         <TouchableOpacity
                             style={[Styles.blogActionButton, Styles.blogActionButtonCompact]}
-                            onPress={async () => {
-                                try {
-                                    await NativeShare.open({
-                                        message: postData?.title ? String(postData.title) : 'SpotMe',
-                                        subject: postData?.title ? String(postData.title) : undefined,
-                                    });
-                                } catch {
-                                    // ignore
-                                }
-                            }}
+                            onPress={openShareOptions}
                         >
                             <Image source={Icons.ShareBlue} style={[Styles.blogActionIcon, Styles.blogActionIconCompact]} />
                         </TouchableOpacity>
@@ -373,6 +446,7 @@ const ViewUserBlogDetailsScreen = ({ navigation, route }: any) => {
 
                 <SizeBox height={insets.bottom > 0 ? insets.bottom + 16 : 32} />
             </ScrollView>
+            {composerElement}
         </View>
     );
 };

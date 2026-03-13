@@ -1,4 +1,6 @@
 /** @type {import('detox').DetoxConfig} */
+const androidAvdName = process.env.DETOX_ANDROID_AVD || 'Pixel_8_API_35';
+
 module.exports = {
   testRunner: {
     args: {
@@ -15,6 +17,13 @@ module.exports = {
       binaryPath: 'ios/build/Debug-iphonesimulator/SpotMe.app',
       build: 'xcodebuild -workspace ios/SpotMe.xcworkspace -scheme SpotMe -configuration Debug -sdk iphonesimulator -derivedDataPath ios/build',
     },
+    'android.debug': {
+      type: 'android.apk',
+      binaryPath: 'android/app/build/outputs/apk/debug/app-debug.apk',
+      testBinaryPath: 'android/app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk',
+      build: 'cd android && ./gradlew assembleDebug assembleAndroidTest -DtestBuildType=debug',
+      reversePorts: [8081],
+    },
   },
   devices: {
     simulator: {
@@ -23,11 +32,21 @@ module.exports = {
         type: 'iPhone 16',
       },
     },
+    emulator: {
+      type: 'android.emulator',
+      device: {
+        avdName: androidAvdName,
+      },
+    },
   },
   configurations: {
     'ios.sim.debug': {
       device: 'simulator',
       app: 'ios.debug',
+    },
+    'android.emu.debug': {
+      device: 'emulator',
+      app: 'android.debug',
     },
   },
 };

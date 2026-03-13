@@ -11,6 +11,17 @@ jest.mock('react-native-safe-area-context', () => ({
   useSafeAreaInsets: () => ({top: 0, bottom: 0, left: 0, right: 0}),
 }));
 
+jest.mock('react-native-config', () => ({
+  AUTH0_DOMAIN: 'tenant.auth0.com',
+  AUTH0_CLIENT_ID: 'client-id',
+  AUTH0_AUDIENCE: 'https://api.example.com',
+  AUTH0_REDIRECT_URI: 'spotme://auth/callback',
+  API_GATEWAY_URL: 'https://api.example.com',
+  HLS_BASE_URL: 'https://api.example.com',
+  MEDIA_BASE_URL: 'https://api.example.com',
+  INSTAGRAM_APP_ID: '',
+}));
+
 jest.mock('react-i18next', () => ({
   useTranslation: () => ({
     t: (value: string) => value,
@@ -124,6 +135,13 @@ jest.mock('../src/services/apiGateway', () => ({
   recordPostView: (...args: any[]) => mockRecordPostView(...args),
   togglePostLike: (...args: any[]) => mockTogglePostLike(...args),
   deletePost: (...args: any[]) => mockDeletePost(...args),
+}));
+
+jest.mock('../src/components/share/InstagramStoryComposer', () => ({
+  useInstagramStoryImageComposer: () => ({
+    composeInstagramStoryImage: jest.fn().mockResolvedValue(null),
+    composerElement: null,
+  }),
 }));
 
 const ViewUserBlogDetailsScreen = require('../src/screens/viewUserBlogDetails/ViewUserBlogDetailsScreen').default;

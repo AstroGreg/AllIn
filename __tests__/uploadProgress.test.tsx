@@ -78,6 +78,7 @@ jest.mock('../src/constants/SizeBox', () => {
 });
 
 jest.mock('../src/services/uploadSessions', () => ({
+  ...jest.requireActual('../src/services/uploadSessions'),
   getUploadSession: (...args: any[]) => mockGetUploadSession(...args),
   upsertUploadSession: (...args: any[]) => mockUpsertUploadSession(...args),
 }));

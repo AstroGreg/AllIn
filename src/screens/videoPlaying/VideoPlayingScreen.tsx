@@ -20,8 +20,11 @@ import { useTheme } from '../../context/ThemeContext';
 import { useAuth } from '../../context/AuthContext';
 import { ApiError, attachMediaToPost, createMediaIssueRequest, createPost, getMediaById, recordDownload } from '../../services/apiGateway';
 import { getApiBaseUrl, getHlsBaseUrl } from '../../constants/RuntimeConfig';
+import { AppConfig } from '../../constants/AppConfig';
 import { useTranslation } from 'react-i18next'
 import { usePreventMediaCapture } from '../../utils/usePreventMediaCapture';
+
+const INSTAGRAM_APP_ID = String(AppConfig.INSTAGRAM_APP_ID ?? '').trim();
 
 const VideoPlayingScreen = ({ navigation, route }: any) => {
     const { t } = useTranslation();
@@ -315,6 +318,85 @@ const VideoPlayingScreen = ({ navigation, route }: any) => {
         }
     }, [apiAccessToken, ensureLocalFile, extensionFromUrl, getShareModule, resolveDownloadUrl, routeEventId, routeMediaId, t]);
 
+    const handleShareNative = useCallback(async () => {
+        const downloadUrl = resolveDownloadUrl();
+        if (!downloadUrl) {
+            Alert.alert(t('No media available'), t('There is no media to share.'));
+            return;
+        }
+
+        const fileUrl = await ensureLocalFile(downloadUrl, extensionFromUrl(downloadUrl));
+        if (!fileUrl) {
+            Alert.alert(t('Share failed'), t('Unable to download the media file.'));
+            return;
+        }
+
+        try {
+            const shareModule = getShareModule();
+            if (shareModule?.default?.open) {
+                await shareModule.default.open({
+                    urls: [fileUrl],
+                    type: 'video/mp4',
+                    filename: routeMediaId ? `spotme_${routeMediaId}` : `spotme_${Date.now()}`,
+                    failOnCancel: false,
+                    showAppsToView: true,
+                });
+            } else {
+                await Share.share({ url: fileUrl, message: 'SpotMe media' });
+            }
+        } catch (e: any) {
+            const msg = String(e?.message ?? e);
+            Alert.alert(t('Share failed'), msg);
+        }
+    }, [ensureLocalFile, extensionFromUrl, getShareModule, resolveDownloadUrl, routeMediaId, t]);
+
+    const handleShareInstagram = useCallback(async () => {
+        const shareModule = getShareModule();
+        const downloadUrl = resolveDownloadUrl();
+        if (!downloadUrl) {
+            Alert.alert(t('No media available'), t('There is no media to share.'));
+            return;
+        }
+        if (!INSTAGRAM_APP_ID) {
+            Alert.alert(t('Instagram Story failed'), t('INSTAGRAM_APP_ID is missing.'));
+            return;
+        }
+        if (!shareModule?.default?.shareSingle) {
+            await handleShareNative();
+            return;
+        }
+
+        try {
+            const pkg = await shareModule.default.isPackageInstalled?.('com.instagram.android');
+            if (pkg && !pkg.isInstalled) {
+                Alert.alert(t('Instagram unavailable'), t('Install Instagram to share to Stories.'));
+                return;
+            }
+            const fileUrl = await ensureLocalFile(downloadUrl, extensionFromUrl(downloadUrl));
+            if (!fileUrl) {
+                Alert.alert(t('Share failed'), t('Unable to download the media file.'));
+                return;
+            }
+            const bannerUri = Image.resolveAssetSource(Images.advertisement).uri;
+            await shareModule.default.shareSingle({
+                social: shareModule.default.Social.INSTAGRAM_STORIES,
+                appId: INSTAGRAM_APP_ID,
+                backgroundImage: bannerUri,
+                backgroundVideo: fileUrl,
+                stickerImage: bannerUri,
+                backgroundTopColor: '#0D0F12',
+                backgroundBottomColor: '#0D0F12',
+                attributionURL: 'https://spot-me.ai',
+                failOnCancel: false,
+            });
+        } catch (e: any) {
+            const msg = String(e?.message ?? e);
+            if (!/cancel/i.test(msg)) {
+                Alert.alert(t('Instagram Story failed'), msg);
+            }
+        }
+    }, [ensureLocalFile, extensionFromUrl, getShareModule, handleShareNative, resolveDownloadUrl, t]);
+
     const showInfoPopup = useCallback((title: string, message: string) => {
         setInfoPopupTitle(title);
         setInfoPopupMessage(message);
@@ -410,6 +492,8 @@ const VideoPlayingScreen = ({ navigation, route }: any) => {
     const openMoreMenu = useCallback(() => {
         const actions = [
             {label: t('Download'), onPress: handleDownload},
+            {label: t('Share'), onPress: handleShareNative},
+            {label: t('Share to Instagram Story'), onPress: handleShareInstagram},
             {label: t('Add to news'), onPress: handleAddToProfile},
             {label: t('Report an issue with this video/photo'), onPress: openReportIssuePopup},
             {label: t('Go to author profile'), onPress: handleGoToProfile},
@@ -419,7 +503,7 @@ const VideoPlayingScreen = ({ navigation, route }: any) => {
         ];
         setMoreMenuActions(actions);
         setMoreMenuVisible(true);
-    }, [handleAddToProfile, handleDownload, handleGoToEvent, handleGoToProfile, handleMarkInappropriate, handleRequestRemoval, openReportIssuePopup, t]);
+    }, [handleAddToProfile, handleDownload, handleGoToEvent, handleGoToProfile, handleMarkInappropriate, handleRequestRemoval, handleShareInstagram, handleShareNative, openReportIssuePopup, t]);
 
     return (
         <View style={Styles.mainContainer}>

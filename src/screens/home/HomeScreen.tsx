@@ -716,6 +716,99 @@ const HomeScreen = ({ navigation }: any) => {
         }
     }, [buildDownloadPath, composeInstagramStoryImage, eventNameById, pickDownloadUrl, t]);
 
+    const getPostShareMessage = useCallback((post?: PostSummary | null) => {
+        if (!post) return t('Latest blog');
+        return post.title
+            ? String(post.title)
+            : String(post.summary || post.description || t('Latest blog'));
+    }, [t]);
+
+    const handleSharePost = useCallback(async (post?: PostSummary | null) => {
+        if (!post) return;
+        try {
+            await NativeShare.open({
+                message: getPostShareMessage(post),
+                subject: post?.title ? String(post.title) : undefined,
+            });
+        } catch {
+            // ignore
+        }
+    }, [getPostShareMessage]);
+
+    const handleSharePostInstagram = useCallback(async (post?: PostSummary | null) => {
+        if (!post) return;
+        if (!INSTAGRAM_APP_ID) {
+            Alert.alert(t('Instagram Story failed'), t('INSTAGRAM_APP_ID is missing.'));
+            return;
+        }
+
+        try {
+            const pkg = await NativeShare.isPackageInstalled('com.instagram.android');
+            if (!pkg?.isInstalled) {
+                Alert.alert(t('Instagram unavailable'), t('Install Instagram to share to Stories.'));
+                return;
+            }
+        } catch {
+            Alert.alert(t('Instagram unavailable'), t('Could not verify Instagram installation.'));
+            return;
+        }
+
+        try {
+            const coverImageCandidate =
+                post?.cover_media?.type !== 'video'
+                    ? (
+                        post?.cover_media?.thumbnail_url ||
+                        post?.cover_media?.preview_url ||
+                        post?.cover_media?.full_url ||
+                        post?.cover_media?.raw_url ||
+                        post?.cover_media?.original_url ||
+                        null
+                    )
+                    : null;
+            const resolvedCoverImage = coverImageCandidate
+                ? withAccessToken(toAbsoluteUrl(String(coverImageCandidate)) || '') || null
+                : null;
+            const bannerUri = Image.resolveAssetSource(Images.advertisement).uri;
+            const storyBackground = resolvedCoverImage || bannerUri;
+            const composedImageUri = await composeInstagramStoryImage(
+                storyBackground,
+                getPostShareMessage(post),
+                'SpotMe',
+            );
+
+            await NativeShare.shareSingle({
+                social: NativeShare.Social.INSTAGRAM_STORIES,
+                appId: INSTAGRAM_APP_ID,
+                backgroundImage: composedImageUri,
+                backgroundTopColor: '#0D0F12',
+                backgroundBottomColor: '#0D0F12',
+                attributionURL: 'https://spot-me.ai',
+                failOnCancel: false,
+            });
+        } catch (e: any) {
+            const msg = String(e?.message ?? t('Instagram Story failed'));
+            if (!/cancel/i.test(msg)) {
+                Alert.alert(t('Instagram Story failed'), msg);
+            }
+        }
+    }, [composeInstagramStoryImage, getPostShareMessage, t, toAbsoluteUrl, withAccessToken]);
+
+    const openPostShareOptions = useCallback((post?: PostSummary | null) => {
+        if (!post) return;
+        Alert.alert(
+            t('Share'),
+            undefined,
+            [
+                { text: t('Cancel'), style: 'cancel' },
+                { text: t('Share'), onPress: () => { handleSharePost(post).catch(() => {}); } },
+                {
+                    text: t('Share to Instagram Story'),
+                    onPress: () => { handleSharePostInstagram(post).catch(() => {}); },
+                },
+            ],
+        );
+    }, [handleSharePost, handleSharePostInstagram, t]);
+
     const handleDownloadMedia = useCallback(async (media?: HomeOverviewMedia | MediaViewAllItem | null) => {
         if (!media?.media_id) {
             Alert.alert(t('Download unavailable'), t('No media available yet.'));
@@ -1391,18 +1484,7 @@ const HomeScreen = ({ navigation }: any) => {
                                 [String(post.id)]: !prev[String(post.id)],
                             }))
                         }
-                        onShare={async () => {
-                            try {
-                                await NativeShare.open({
-                                    message: post?.title
-                                        ? String(post.title)
-                                        : String(post?.description ?? post?.summary ?? t('Latest blog')),
-                                    subject: post?.title ? String(post.title) : undefined,
-                                });
-                            } catch {
-                                // ignore
-                            }
-                        }}
+                        onShare={() => openPostShareOptions(post)}
                         onPress={() => {
                             navigation.navigate('ViewUserBlogDetailsScreen', {
                                 postId: post.id,
@@ -1503,6 +1585,7 @@ const HomeScreen = ({ navigation }: any) => {
             isFocused,
             navigation,
             openFeedMenu,
+            openPostShareOptions,
             openProfileFromId,
             overlayVisible,
             overview?.profile_id,
