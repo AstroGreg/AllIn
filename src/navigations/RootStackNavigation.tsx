@@ -128,7 +128,14 @@ const RootStackNavigation = ({
                 gestureEnabled: true,
                 fullScreenGestureEnabled: Platform.OS === 'ios',
             }}>
-            <Stack.Screen name="SplashScreen" component={SplashScreen} />
+            <Stack.Screen
+                name="SplashScreen"
+                component={SplashScreen}
+                options={{
+                    statusBarStyle: 'light',
+                    statusBarBackgroundColor: colors.primaryColor,
+                }}
+            />
             <Stack.Screen name="AdvertisementScreen" component={AdvertisementScreen} />
             <Stack.Screen
                 name="CategorySelectionScreen"

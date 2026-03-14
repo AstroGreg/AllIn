@@ -51,8 +51,13 @@ const VideoPlayingScreen = ({ navigation, route }: any) => {
     ), [route?.params?.video, t]);
     const routeMediaId =
         route?.params?.video?.media_id ||
+        route?.params?.video?.mediaId ||
         route?.params?.video?.id ||
+        route?.params?.mediaId ||
         route?.params?.media_id ||
+        route?.params?.id ||
+        route?.params?.media?.media_id ||
+        route?.params?.media?.mediaId ||
         route?.params?.media?.id ||
         null;
     const routeEventId =

@@ -1,5 +1,6 @@
 const Images = {
     logo: require('../assets/imgs/logo.png'),
+    spotmeMark: require('../assets/imgs/spotme-mark.png'),
     splashForeground: require('../assets/imgs/splash-foreground.png'),
     englishFlag: require('../assets/imgs/english-flag.png'),
     dutchFlag: require('../assets/imgs/dutch-flag.png'),

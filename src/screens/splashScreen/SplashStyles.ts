@@ -8,9 +8,9 @@ export const createStyles = (colors: ThemeColors) => StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'center',
     },
-    foreground: {
-        width: 320,
-        height: 372,
+    logo: {
+        width: 300,
+        height: 360,
     },
 });
 
