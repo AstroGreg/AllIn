@@ -9,15 +9,22 @@ class AppEnvModule(reactContext: ReactApplicationContext) : ReactContextBaseJava
     override fun getConstants(): MutableMap<String, Any> {
         val out = HashMap<String, Any>()
 
-        putIfNotBlank(out, "AUTH0_DOMAIN", BuildConfig.AUTH0_DOMAIN)
-        putIfNotBlank(out, "AUTH0_CLIENT_ID", BuildConfig.AUTH0_CLIENT_ID)
-        putIfNotBlank(out, "AUTH0_AUDIENCE", BuildConfig.AUTH0_AUDIENCE)
-        putIfNotBlank(out, "AUTH0_REDIRECT_URI", BuildConfig.AUTH0_REDIRECT_URI)
-        putIfNotBlank(out, "API_GATEWAY_URL", BuildConfig.API_GATEWAY_URL)
-        putIfNotBlank(out, "HLS_BASE_URL", BuildConfig.HLS_BASE_URL)
-        putIfNotBlank(out, "INSTAGRAM_APP_ID", BuildConfig.INSTAGRAM_APP_ID)
+        putBuildConfigValue(out, "AUTH0_DOMAIN")
+        putBuildConfigValue(out, "AUTH0_CLIENT_ID")
+        putBuildConfigValue(out, "AUTH0_AUDIENCE")
+        putBuildConfigValue(out, "AUTH0_REDIRECT_URI")
+        putBuildConfigValue(out, "API_GATEWAY_URL")
+        putBuildConfigValue(out, "HLS_BASE_URL")
+        putBuildConfigValue(out, "INSTAGRAM_APP_ID")
 
         return out
+    }
+
+    private fun putBuildConfigValue(target: MutableMap<String, Any>, key: String) {
+        val value = runCatching {
+            BuildConfig::class.java.getField(key).get(null) as? String
+        }.getOrNull()
+        putIfNotBlank(target, key, value)
     }
 
     private fun putIfNotBlank(target: MutableMap<String, Any>, key: String, value: String?) {

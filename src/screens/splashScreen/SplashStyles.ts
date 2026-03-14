@@ -8,18 +8,9 @@ export const createStyles = (colors: ThemeColors) => StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'center',
     },
-    logo: {
+    foreground: {
         width: 320,
-        height: 320,
-        // The logo asset has large transparent padding at the bottom.
-        marginBottom: -80,
-    },
-    wordmark: {
-        marginTop: 0,
-        color: '#FFFFFF',
-        fontSize: 40,
-        fontWeight: '800',
-        letterSpacing: 0.6,
+        height: 372,
     },
 });
 

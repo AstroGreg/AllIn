@@ -4,6 +4,6 @@
     <item>
         <bitmap
             android:gravity="center"
-            android:src="@drawable/spotme_mark" />
+            android:src="@drawable/splash_foreground" />
     </item>
 </layer-list>
