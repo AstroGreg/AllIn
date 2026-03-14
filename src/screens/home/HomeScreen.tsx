@@ -13,6 +13,7 @@ import {
     ApiError,
     createMediaIssueRequest,
     getHomeOverview,
+    getMediaViewAll,
     getNotifications,
     getPostById,
     getProfileSummaryById,
@@ -209,16 +210,41 @@ const HomeScreen = ({ navigation }: any) => {
     const performLoadOverview = useCallback(async (force = false) => {
         if (!apiAccessToken) {
             setOverview(null);
+            setAllVideos([]);
+            setAllPhotos([]);
             setOverviewError(t('Log in to load overview.'));
             return;
         }
         setIsLoadingOverview(true);
         setOverviewError(null);
         try {
-            const data = await getHomeOverview(apiAccessToken, 'me');
-            setOverview(data);
-            setAllVideos([]);
-            setAllPhotos([]);
+            const [overviewResult, mediaResult] = await Promise.allSettled([
+                getHomeOverview(apiAccessToken, 'me'),
+                getMediaViewAll(apiAccessToken),
+            ]);
+
+            let firstError: unknown = null;
+
+            if (overviewResult.status === 'fulfilled') {
+                setOverview(overviewResult.value);
+            } else {
+                setOverview(null);
+                firstError = overviewResult.reason;
+            }
+
+            if (mediaResult.status === 'fulfilled') {
+                const mediaItems = Array.isArray(mediaResult.value) ? mediaResult.value : [];
+                setAllVideos(mediaItems.filter((item) => String(item?.type || '').toLowerCase() === 'video'));
+                setAllPhotos(mediaItems.filter((item) => String(item?.type || '').toLowerCase() !== 'video'));
+            } else {
+                setAllVideos([]);
+                setAllPhotos([]);
+                firstError = firstError ?? mediaResult.reason;
+            }
+
+            if (firstError && overviewResult.status !== 'fulfilled' && mediaResult.status !== 'fulfilled') {
+                throw firstError;
+            }
         } catch (e: any) {
             const msg = e instanceof ApiError ? e.message : String(e?.message ?? e);
             setOverviewError(msg);
@@ -458,6 +484,47 @@ const HomeScreen = ({ navigation }: any) => {
         const count = Number.isFinite(raw) && raw > 0 ? raw : 0;
         return count.toLocaleString();
     }, []);
+    const getInstagramStoryMatchLabel = useCallback((media?: HomeOverviewMedia | MediaViewAllItem | null) => {
+        if (!media) return '';
+
+        const tokens = new Set<string>();
+        const ingest = (value: any) => {
+            const normalized = String(value ?? '').trim().toLowerCase();
+            if (!normalized) return;
+            if (normalized.includes('face')) tokens.add('face');
+            if (normalized.includes('bib') || normalized.includes('chest') || normalized.includes('number')) tokens.add('bib');
+            if (normalized.includes('context')) tokens.add('context');
+        };
+
+        const rawMatchTypes = Array.isArray((media as any)?.match_types)
+            ? (media as any).match_types
+            : [];
+        rawMatchTypes.forEach(ingest);
+        ingest((media as any)?.match_type);
+        ingest((media as any)?.matchType);
+
+        if (tokens.has('face') && tokens.has('bib')) return 'Face + Chest';
+        if (tokens.has('face')) return 'Face';
+        if (tokens.has('bib')) return 'Chest';
+        if (tokens.has('context')) return 'Context';
+        return '';
+    }, []);
+    const getInstagramStoryEventLabel = useCallback((media?: HomeOverviewMedia | MediaViewAllItem | null) => {
+        return String(
+            (media as any)?.event_name
+            || (media as any)?.competition_name
+            || (media?.event_id ? eventNameById(media.event_id) : '')
+            || '',
+        ).trim();
+    }, [eventNameById]);
+    const buildInstagramMediaStoryTitle = useCallback((media?: HomeOverviewMedia | MediaViewAllItem | null) => {
+        const eventLabel = getInstagramStoryEventLabel(media);
+        return eventLabel ? `Event: ${eventLabel}` : 'SpotMe race photos';
+    }, [getInstagramStoryEventLabel]);
+    const buildInstagramMediaStorySubtitle = useCallback((media?: HomeOverviewMedia | MediaViewAllItem | null) => {
+        const matchLabel = getInstagramStoryMatchLabel(media);
+        return matchLabel ? `Match: ${matchLabel}` : '';
+    }, [getInstagramStoryMatchLabel]);
 
     const handleToggleLike = useCallback(async (mediaId?: string | null) => {
         const id = String(mediaId || '').trim();
@@ -685,19 +752,28 @@ const HomeScreen = ({ navigation }: any) => {
             }
 
             const fileUrl = `file://${localPath}`;
-            const storyAssetUri = await composeInstagramStoryImage(
-                null,
-                null,
-                'SpotMe',
-                null,
-                { mode: 'overlay' },
-            );
+            const isVideoShare = String(media.type || '').toLowerCase() === 'video';
+            const storyAssetUri = isVideoShare
+                ? await composeInstagramStoryImage(
+                    null,
+                    buildInstagramMediaStoryTitle(media),
+                    'SpotMe',
+                    buildInstagramMediaStorySubtitle(media),
+                    { mode: 'overlay', layout: 'home_video_card' },
+                )
+                : await composeInstagramStoryImage(
+                    fileUrl,
+                    buildInstagramMediaStoryTitle(media),
+                    'SpotMe',
+                    buildInstagramMediaStorySubtitle(media),
+                    { layout: 'home_media_card' },
+                );
             await NativeShare.shareSingle({
                 social: NativeShare.Social.INSTAGRAM_STORIES,
                 appId: INSTAGRAM_APP_ID,
-                backgroundImage: media.type === 'video' ? undefined : fileUrl,
-                backgroundVideo: media.type === 'video' ? fileUrl : undefined,
-                stickerImage: storyAssetUri,
+                backgroundImage: isVideoShare ? undefined : storyAssetUri,
+                backgroundVideo: isVideoShare ? fileUrl : undefined,
+                stickerImage: isVideoShare ? storyAssetUri : undefined,
                 backgroundTopColor: '#0D0F12',
                 backgroundBottomColor: '#0D0F12',
                 attributionURL: 'https://spot-me.ai',
@@ -713,7 +789,7 @@ const HomeScreen = ({ navigation }: any) => {
             setDownloadProgress(null);
             downloadInFlightRef.current = false;
         }
-    }, [buildDownloadPath, composeInstagramStoryImage, pickDownloadUrl, t]);
+    }, [buildDownloadPath, buildInstagramMediaStorySubtitle, buildInstagramMediaStoryTitle, composeInstagramStoryImage, pickDownloadUrl, t]);
 
     const resolvePostInstagramImage = useCallback(async (post?: PostSummary | null) => {
         const pickMediaUrl = (media?: PostSummary['cover_media'] | Record<string, any> | null) => {
@@ -1144,7 +1220,7 @@ const HomeScreen = ({ navigation }: any) => {
             : overview?.overview?.blog
                 ? [overview.overview.blog]
                 : [];
-        const sorted: HomeFeedItem[] = sourcePosts
+        const postItems: HomeFeedItem[] = sourcePosts
             .map((entry) => ({
                 kind: 'post' as const,
                 created_at: entry?.post?.created_at ?? null,
@@ -1164,24 +1240,32 @@ const HomeScreen = ({ navigation }: any) => {
                               display_name: entry.author.display_name ?? undefined,
                               avatar_url: entry.author.avatar_url ?? undefined,
                           }
-                        : undefined,
+                      : undefined,
                 } as PostSummary,
-            }))
-            .sort((a, b) => {
-                const aTs = new Date(String(a.created_at || '')).getTime();
-                const bTs = new Date(String(b.created_at || '')).getTime();
-                const safeA = Number.isFinite(aTs) ? aTs : 0;
-                const safeB = Number.isFinite(bTs) ? bTs : 0;
-                return safeB - safeA;
-            });
+            }));
+        const mediaItems: HomeFeedItem[] = [...allVideos, ...allPhotos].map((media) => ({
+            kind: 'media' as const,
+            created_at: media?.created_at ?? null,
+            media,
+        }));
+        const sorted: HomeFeedItem[] = [...postItems, ...mediaItems].sort((a, b) => {
+            const aTs = new Date(String(a.created_at || '')).getTime();
+            const bTs = new Date(String(b.created_at || '')).getTime();
+            const safeA = Number.isFinite(aTs) ? aTs : 0;
+            const safeB = Number.isFinite(bTs) ? bTs : 0;
+            return safeB - safeA;
+        });
         const seenFeedKeys = new Set<string>();
         return sorted.filter((entry) => {
-            const key = `post:${String(entry.post?.id || '').trim() || `${String(entry.post?.created_at || '')}|${String(entry.post?.title || '')}`}`;
+            const key =
+                entry.kind === 'media'
+                    ? `media:${String(entry.media?.media_id || '').trim() || mediaDedupFingerprint(entry.media)}`
+                    : `post:${String(entry.post?.id || '').trim() || `${String(entry.post?.created_at || '')}|${String(entry.post?.title || '')}`}`;
             if (!key || seenFeedKeys.has(key)) return false;
             seenFeedKeys.add(key);
             return true;
         });
-    }, [overview]);
+    }, [allPhotos, allVideos, mediaDedupFingerprint, overview]);
 
     useEffect(() => {
         setFeedVisibleCount((prev) => {

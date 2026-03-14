@@ -5,4 +5,8 @@ rootProject.name = 'SpotMe'
 include ':app'
 include ':react-native-config'
 project(':react-native-config').projectDir = new File(rootProject.projectDir, '../node_modules/react-native-config/android')
+include ':react-native-clipboard_clipboard'
+project(':react-native-clipboard_clipboard').projectDir = new File(rootProject.projectDir, '../node_modules/@react-native-clipboard/clipboard/android')
+include ':react-native-capture-protection'
+project(':react-native-capture-protection').projectDir = new File(rootProject.projectDir, '../node_modules/react-native-capture-protection/android')
 includeBuild('../node_modules/@react-native/gradle-plugin')
