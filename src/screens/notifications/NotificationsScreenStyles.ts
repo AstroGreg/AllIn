@@ -84,6 +84,12 @@ export const createStyles = (colors: ThemeColors) => StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'center',
     },
+    thumbnail: {
+        width: 40,
+        height: 40,
+        borderRadius: 6,
+        backgroundColor: colors.btnBackgroundColor,
+    },
     notificationContent: {
         flex: 1,
         gap: 4,

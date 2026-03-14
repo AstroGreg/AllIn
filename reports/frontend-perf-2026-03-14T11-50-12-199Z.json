@@ -1,0 +1,444 @@
+{
+  "generated_at": "2026-03-14T11:50:12.199Z",
+  "api_base_url": "http://127.0.0.1:3000",
+  "target_ms": 1000,
+  "max_ms": 2000,
+  "iterations": 3,
+  "backend_baselines_ms": {
+    "home": 216.4,
+    "hub": 164.8,
+    "search": 250.6,
+    "profile": 297.4,
+    "upload_select": 154.4,
+    "upload_competition": 179.4,
+    "competition": 179.4
+  },
+  "dataset_validation": {
+    "home_empty": {
+      "has_video": false,
+      "has_photo": false,
+      "feed_posts": 0
+    },
+    "home_rich": {
+      "has_video": false,
+      "has_photo": true,
+      "has_blog": true,
+      "feed_posts": 60,
+      "media_total": 61
+    },
+    "hub": {
+      "appearances": 5,
+      "uploads": 80
+    },
+    "search": {
+      "competitions": 10,
+      "thumbnails": 10
+    },
+    "competition": {
+      "competition_id": "d178de13-6c93-44f3-8465-4298fe62702f",
+      "disciplines": 27
+    },
+    "profile_rich": {
+      "posts": 20,
+      "uploads": 80
+    },
+    "onboarding": {
+      "clubs": 50,
+      "groups": 1,
+      "disciplines": 27
+    }
+  },
+  "results": [
+    {
+      "name": "home_empty",
+      "routeName": "HomeScreen",
+      "ready_test_id": "e2e-perf-ready-home",
+      "cold_ms": 556,
+      "cold_wall_clock_ms": 18178,
+      "cold_launch_overhead_ms": 17622,
+      "warm_samples_ms": [
+        379,
+        371
+      ],
+      "warm_wall_clock_samples_ms": [
+        10456,
+        11717
+      ],
+      "warm_p50_ms": 371,
+      "warm_p95_ms": 379,
+      "warm_max_ms": 379,
+      "target_ms": 1000,
+      "max_ms": 2000,
+      "backend_baseline_ms": 216.4,
+      "estimated_frontend_overhead_ms": 162.6,
+      "dominant_layer": "backend",
+      "failures": [],
+      "target_met": true,
+      "pass": true
+    },
+    {
+      "name": "home_rich",
+      "routeName": "HomeScreen",
+      "ready_test_id": "e2e-perf-ready-home",
+      "cold_ms": 1376,
+      "cold_wall_clock_ms": 9702,
+      "cold_launch_overhead_ms": 8326,
+      "warm_samples_ms": [
+        1195,
+        1052
+      ],
+      "warm_wall_clock_samples_ms": [
+        9680,
+        9440
+      ],
+      "warm_p50_ms": 1052,
+      "warm_p95_ms": 1195,
+      "warm_max_ms": 1195,
+      "target_ms": 1000,
+      "max_ms": 2000,
+      "backend_baseline_ms": 216.4,
+      "estimated_frontend_overhead_ms": 978.6,
+      "dominant_layer": "frontend",
+      "failures": [],
+      "target_met": false,
+      "pass": true
+    },
+    {
+      "name": "hub",
+      "routeName": "HubScreen",
+      "ready_test_id": "e2e-perf-ready-hub",
+      "cold_ms": 569,
+      "cold_wall_clock_ms": 9576,
+      "cold_launch_overhead_ms": 9007,
+      "warm_samples_ms": [
+        567,
+        559
+      ],
+      "warm_wall_clock_samples_ms": [
+        9644,
+        10302
+      ],
+      "warm_p50_ms": 559,
+      "warm_p95_ms": 567,
+      "warm_max_ms": 567,
+      "target_ms": 1000,
+      "max_ms": 2000,
+      "backend_baseline_ms": 164.8,
+      "estimated_frontend_overhead_ms": 402.2,
+      "dominant_layer": "frontend",
+      "failures": [],
+      "target_met": true,
+      "pass": true
+    },
+    {
+      "name": "search",
+      "routeName": "SearchScreen",
+      "ready_test_id": "e2e-perf-ready-search",
+      "cold_ms": 714,
+      "cold_wall_clock_ms": 9249,
+      "cold_launch_overhead_ms": 8535,
+      "warm_samples_ms": [
+        734,
+        751
+      ],
+      "warm_wall_clock_samples_ms": [
+        9253,
+        9606
+      ],
+      "warm_p50_ms": 734,
+      "warm_p95_ms": 751,
+      "warm_max_ms": 751,
+      "target_ms": 1000,
+      "max_ms": 2000,
+      "backend_baseline_ms": 250.6,
+      "estimated_frontend_overhead_ms": 500.4,
+      "dominant_layer": "frontend",
+      "failures": [],
+      "target_met": true,
+      "pass": true
+    },
+    {
+      "name": "upload_select",
+      "routeName": "RootUploadSelectCompetitionScreen",
+      "ready_test_id": "e2e-perf-ready-upload-select",
+      "cold_ms": 1126,
+      "cold_wall_clock_ms": 9626,
+      "cold_launch_overhead_ms": 8500,
+      "warm_samples_ms": [
+        1100,
+        1316
+      ],
+      "warm_wall_clock_samples_ms": [
+        9582,
+        9905
+      ],
+      "warm_p50_ms": 1100,
+      "warm_p95_ms": 1316,
+      "warm_max_ms": 1316,
+      "target_ms": 1000,
+      "max_ms": 2000,
+      "backend_baseline_ms": 154.4,
+      "estimated_frontend_overhead_ms": 1161.6,
+      "dominant_layer": "frontend",
+      "failures": [],
+      "target_met": false,
+      "pass": true
+    },
+    {
+      "name": "upload_competition",
+      "routeName": "RootUploadCompetitionDetailsScreen",
+      "ready_test_id": "e2e-perf-ready-upload-competition",
+      "cold_ms": 654,
+      "cold_wall_clock_ms": 9200,
+      "cold_launch_overhead_ms": 8546,
+      "warm_samples_ms": [
+        582,
+        601
+      ],
+      "warm_wall_clock_samples_ms": [
+        9284,
+        9390
+      ],
+      "warm_p50_ms": 582,
+      "warm_p95_ms": 601,
+      "warm_max_ms": 601,
+      "target_ms": 1000,
+      "max_ms": 2000,
+      "backend_baseline_ms": 179.4,
+      "estimated_frontend_overhead_ms": 421.6,
+      "dominant_layer": "frontend",
+      "failures": [],
+      "target_met": true,
+      "pass": true
+    },
+    {
+      "name": "profile_sparse",
+      "routeName": "UserProfileScreen",
+      "ready_test_id": "e2e-perf-ready-profile",
+      "cold_ms": 365,
+      "cold_wall_clock_ms": 9487,
+      "cold_launch_overhead_ms": 9122,
+      "warm_samples_ms": [
+        376,
+        364
+      ],
+      "warm_wall_clock_samples_ms": [
+        9519,
+        9446
+      ],
+      "warm_p50_ms": 364,
+      "warm_p95_ms": 376,
+      "warm_max_ms": 376,
+      "target_ms": 1000,
+      "max_ms": 2000,
+      "backend_baseline_ms": 297.4,
+      "estimated_frontend_overhead_ms": 78.6,
+      "dominant_layer": "backend",
+      "failures": [],
+      "target_met": true,
+      "pass": true
+    },
+    {
+      "name": "profile_rich",
+      "routeName": "UserProfileScreen",
+      "ready_test_id": "e2e-perf-ready-profile",
+      "cold_ms": 376,
+      "cold_wall_clock_ms": 9562,
+      "cold_launch_overhead_ms": 9186,
+      "warm_samples_ms": [
+        368,
+        367
+      ],
+      "warm_wall_clock_samples_ms": [
+        9838,
+        10744
+      ],
+      "warm_p50_ms": 367,
+      "warm_p95_ms": 368,
+      "warm_max_ms": 368,
+      "target_ms": 1000,
+      "max_ms": 2000,
+      "backend_baseline_ms": 297.4,
+      "estimated_frontend_overhead_ms": 70.6,
+      "dominant_layer": "backend",
+      "failures": [],
+      "target_met": true,
+      "pass": true
+    },
+    {
+      "name": "competition",
+      "routeName": "CompetitionDetailsScreen",
+      "ready_test_id": "e2e-perf-ready-competition",
+      "cold_ms": 398,
+      "cold_wall_clock_ms": 9346,
+      "cold_launch_overhead_ms": 8948,
+      "warm_samples_ms": [
+        422,
+        408
+      ],
+      "warm_wall_clock_samples_ms": [
+        9355,
+        9291
+      ],
+      "warm_p50_ms": 408,
+      "warm_p95_ms": 422,
+      "warm_max_ms": 422,
+      "target_ms": 1000,
+      "max_ms": 2000,
+      "backend_baseline_ms": 179.4,
+      "estimated_frontend_overhead_ms": 242.6,
+      "dominant_layer": "frontend",
+      "failures": [],
+      "target_met": true,
+      "pass": true
+    },
+    {
+      "name": "onboarding_focus_select",
+      "routeName": "SelectEventScreen",
+      "cold_ms": 5,
+      "warm_samples_ms": [
+        7,
+        5
+      ],
+      "warm_p50_ms": 5,
+      "warm_p95_ms": 7,
+      "warm_max_ms": 7,
+      "target_ms": 1000,
+      "max_ms": 2000,
+      "backend_baseline_ms": null,
+      "estimated_frontend_overhead_ms": null,
+      "dominant_layer": "frontend",
+      "failures": [],
+      "target_met": true,
+      "pass": true
+    },
+    {
+      "name": "onboarding_club_picker",
+      "routeName": "CompleteAthleteDetailsScreen",
+      "cold_ms": 2000,
+      "warm_samples_ms": [
+        2000,
+        2000
+      ],
+      "warm_p50_ms": 2000,
+      "warm_p95_ms": 2000,
+      "warm_max_ms": 2000,
+      "target_ms": 1000,
+      "max_ms": 2000,
+      "backend_baseline_ms": null,
+      "estimated_frontend_overhead_ms": null,
+      "dominant_layer": "frontend",
+      "failures": [
+        {
+          "attempt": 1,
+          "error": "Test Failed: Timed out while waiting for expectation: TOEXIST WITH MATCHER(id == “profile-complete-athlete-details-screen”) TIMEOUT(2s)\n\nHINT: To print view hierarchy on failed actions/matches, use log-level verbose or higher."
+        },
+        {
+          "attempt": 2,
+          "error": "Test Failed: Timed out while waiting for expectation: TOEXIST WITH MATCHER(id == “profile-complete-athlete-details-screen”) TIMEOUT(2s)\n\nHINT: To print view hierarchy on failed actions/matches, use log-level verbose or higher."
+        },
+        {
+          "attempt": 3,
+          "error": "Test Failed: Timed out while waiting for expectation: TOEXIST WITH MATCHER(id == “profile-complete-athlete-details-screen”) TIMEOUT(2s)\n\nHINT: To print view hierarchy on failed actions/matches, use log-level verbose or higher."
+        }
+      ],
+      "target_met": false,
+      "pass": false
+    },
+    {
+      "name": "onboarding_group_picker",
+      "routeName": "CompleteAthleteDetailsScreen",
+      "cold_ms": 2000,
+      "warm_samples_ms": [
+        2000,
+        2000
+      ],
+      "warm_p50_ms": 2000,
+      "warm_p95_ms": 2000,
+      "warm_max_ms": 2000,
+      "target_ms": 1000,
+      "max_ms": 2000,
+      "backend_baseline_ms": null,
+      "estimated_frontend_overhead_ms": null,
+      "dominant_layer": "frontend",
+      "failures": [
+        {
+          "attempt": 1,
+          "error": "Test Failed: Timed out while waiting for expectation: TOEXIST WITH MATCHER(id == “profile-complete-athlete-details-screen”) TIMEOUT(2s)\n\nHINT: To print view hierarchy on failed actions/matches, use log-level verbose or higher."
+        },
+        {
+          "attempt": 2,
+          "error": "Test Failed: Timed out while waiting for expectation: TOEXIST WITH MATCHER(id == “profile-complete-athlete-details-screen”) TIMEOUT(2s)\n\nHINT: To print view hierarchy on failed actions/matches, use log-level verbose or higher."
+        },
+        {
+          "attempt": 3,
+          "error": "Test Failed: Timed out while waiting for expectation: TOEXIST WITH MATCHER(id == “profile-complete-athlete-details-screen”) TIMEOUT(2s)\n\nHINT: To print view hierarchy on failed actions/matches, use log-level verbose or higher."
+        }
+      ],
+      "target_met": false,
+      "pass": false
+    },
+    {
+      "name": "onboarding_discipline_picker",
+      "routeName": "CompleteAthleteDetailsScreen",
+      "cold_ms": 2000,
+      "warm_samples_ms": [
+        2000,
+        2000
+      ],
+      "warm_p50_ms": 2000,
+      "warm_p95_ms": 2000,
+      "warm_max_ms": 2000,
+      "target_ms": 1000,
+      "max_ms": 2000,
+      "backend_baseline_ms": null,
+      "estimated_frontend_overhead_ms": null,
+      "dominant_layer": "frontend",
+      "failures": [
+        {
+          "attempt": 1,
+          "error": "Test Failed: Timed out while waiting for expectation: TOEXIST WITH MATCHER(id == “profile-complete-athlete-details-screen”) TIMEOUT(2s)\n\nHINT: To print view hierarchy on failed actions/matches, use log-level verbose or higher."
+        },
+        {
+          "attempt": 2,
+          "error": "Test Failed: Timed out while waiting for expectation: TOEXIST WITH MATCHER(id == “profile-complete-athlete-details-screen”) TIMEOUT(2s)\n\nHINT: To print view hierarchy on failed actions/matches, use log-level verbose or higher."
+        },
+        {
+          "attempt": 3,
+          "error": "Test Failed: Timed out while waiting for expectation: TOEXIST WITH MATCHER(id == “profile-complete-athlete-details-screen”) TIMEOUT(2s)\n\nHINT: To print view hierarchy on failed actions/matches, use log-level verbose or higher."
+        }
+      ],
+      "target_met": false,
+      "pass": false
+    }
+  ],
+  "all_passed": false,
+  "target_met": false,
+  "target_warnings": [
+    {
+      "name": "home_rich",
+      "warm_p95_ms": 1195,
+      "target_ms": 1000
+    },
+    {
+      "name": "upload_select",
+      "warm_p95_ms": 1316,
+      "target_ms": 1000
+    },
+    {
+      "name": "onboarding_club_picker",
+      "warm_p95_ms": 2000,
+      "target_ms": 1000
+    },
+    {
+      "name": "onboarding_group_picker",
+      "warm_p95_ms": 2000,
+      "target_ms": 1000
+    },
+    {
+      "name": "onboarding_discipline_picker",
+      "warm_p95_ms": 2000,
+      "target_ms": 1000
+    }
+  ]
+}

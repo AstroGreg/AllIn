@@ -1,0 +1,99 @@
+{
+  "generated_at": "2026-03-14T16:19:32.842Z",
+  "api_base_url": "http://127.0.0.1:3000",
+  "iterations": 2,
+  "target_ms": 1000,
+  "hard_cap_ms": 2000,
+  "results": [
+    {
+      "name": "notification_fetch_ms",
+      "category": "flow",
+      "enforced": false,
+      "cold_ms": 308,
+      "warm_p95_ms": 156,
+      "target_ms": 1000,
+      "hard_cap_ms": 2000,
+      "samples_ms": [
+        308,
+        156
+      ],
+      "target_met": true,
+      "pass": true
+    },
+    {
+      "name": "app_launch_to_hub_ms",
+      "category": "launch",
+      "enforced": false,
+      "cold_ms": 24972,
+      "warm_p95_ms": 19947,
+      "target_ms": 1000,
+      "hard_cap_ms": 2000,
+      "samples_ms": [
+        24972,
+        19947
+      ],
+      "target_met": false,
+      "pass": false
+    },
+    {
+      "name": "hub_search_in_app_ms",
+      "category": "flow",
+      "enforced": false,
+      "cold_ms": 3787,
+      "warm_p95_ms": 3579,
+      "target_ms": 1000,
+      "hard_cap_ms": 2000,
+      "samples_ms": [
+        3787,
+        3579
+      ],
+      "target_met": false,
+      "pass": false
+    },
+    {
+      "name": "manage_open_ms",
+      "category": "flow",
+      "enforced": false,
+      "cold_ms": 3221,
+      "warm_p95_ms": 3104,
+      "target_ms": 1000,
+      "hard_cap_ms": 2000,
+      "samples_ms": [
+        3221,
+        3104
+      ],
+      "target_met": false,
+      "pass": false
+    },
+    {
+      "name": "title_save_ms",
+      "category": "flow",
+      "enforced": false,
+      "cold_ms": 3555,
+      "warm_p95_ms": 3559,
+      "target_ms": 1000,
+      "hard_cap_ms": 2000,
+      "samples_ms": [
+        3555,
+        3559
+      ],
+      "target_met": false,
+      "pass": false
+    },
+    {
+      "name": "resolve_issue_ms",
+      "category": "flow",
+      "enforced": false,
+      "cold_ms": 3367,
+      "warm_p95_ms": 3013,
+      "target_ms": 1000,
+      "hard_cap_ms": 2000,
+      "samples_ms": [
+        3367,
+        3013
+      ],
+      "target_met": false,
+      "pass": false
+    }
+  ]
+}

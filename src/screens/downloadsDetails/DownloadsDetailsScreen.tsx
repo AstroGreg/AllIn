@@ -37,6 +37,8 @@ import {createStyles} from './DownloadsDetailsStyles';
 import {useFocusEffect} from '@react-navigation/native';
 import {useTranslation} from 'react-i18next';
 
+const COMPETITION_MEDIA_PAGE_SIZE = 60;
+
 const PERIOD_OPTIONS: Array<{key: DownloadsDashboardPeriodKey; label: string}> = [
   {key: 'week', label: 'This week'},
   {key: 'month', label: 'This month'},
@@ -81,6 +83,8 @@ const DownloadsDetailsScreen = ({navigation, route}: any) => {
   const [competitions, setCompetitions] = useState<UploadedCompetition[]>([]);
   const [competitionMediaItems, setCompetitionMediaItems] = useState<MediaViewAllItem[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [isCompetitionMediaLoadingMore, setIsCompetitionMediaLoadingMore] = useState(false);
+  const [hasMoreCompetitionMedia, setHasMoreCompetitionMedia] = useState(true);
   const [errorText, setErrorText] = useState<string | null>(null);
   const [competitionSearch, setCompetitionSearch] = useState('');
 
@@ -252,26 +256,53 @@ const DownloadsDetailsScreen = ({navigation, route}: any) => {
     }
   }, [apiAccessToken]);
 
+  const mergeCompetitionMediaItems = useCallback((current: MediaViewAllItem[], incoming: MediaViewAllItem[]) => {
+    const seen = new Set<string>();
+    return [...current, ...incoming].filter((item) => {
+      const key = String(item?.media_id ?? '');
+      if (!key || seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+  }, []);
+
   const loadCompetitionMedia = useCallback(
-    async (eventId?: string | null) => {
+    async (eventId?: string | null, opts?: {offset?: number; append?: boolean}) => {
       if (!apiAccessToken || !eventId) {
         setCompetitionMediaItems([]);
+        setHasMoreCompetitionMedia(false);
         return;
       }
-      setIsLoading(true);
+      const offset = Math.max(0, Number(opts?.offset ?? 0));
+      const append = Boolean(opts?.append);
+      if (append) {
+        setIsCompetitionMediaLoadingMore(true);
+      } else {
+        setIsLoading(true);
+      }
       setErrorText(null);
       try {
-        const resp = await getCompetitionMedia(apiAccessToken, String(eventId), {limit: 500});
-        setCompetitionMediaItems(Array.isArray(resp?.items) ? resp.items : []);
+        const resp = await getCompetitionMedia(apiAccessToken, String(eventId), {
+          limit: COMPETITION_MEDIA_PAGE_SIZE,
+          offset,
+          include_original: false,
+        });
+        const incoming = Array.isArray(resp?.items) ? resp.items : [];
+        setCompetitionMediaItems((prev) => append ? mergeCompetitionMediaItems(prev, incoming) : incoming);
+        setHasMoreCompetitionMedia(incoming.length === COMPETITION_MEDIA_PAGE_SIZE);
       } catch (e: any) {
         const msg = e instanceof ApiError ? e.message : String(e?.message ?? e);
-        setCompetitionMediaItems([]);
+        if (!append) {
+          setCompetitionMediaItems([]);
+          setHasMoreCompetitionMedia(false);
+        }
         setErrorText(msg);
       } finally {
         setIsLoading(false);
+        setIsCompetitionMediaLoadingMore(false);
       }
     },
-    [apiAccessToken],
+    [apiAccessToken, mergeCompetitionMediaItems],
   );
 
   useFocusEffect(
@@ -294,7 +325,7 @@ const DownloadsDetailsScreen = ({navigation, route}: any) => {
       }
       if (isCompetitionMedia) {
         const eventId = route?.params?.competition?.event_id ?? route?.params?.competitionId ?? null;
-        loadCompetitionMedia(eventId);
+        loadCompetitionMedia(eventId, {offset: 0, append: false});
       }
     }, [
       isCompetitionList,
@@ -855,9 +886,24 @@ const DownloadsDetailsScreen = ({navigation, route}: any) => {
           refreshControl={
             <RefreshControl
               refreshing={isLoading}
-              onRefresh={() => loadCompetitionMedia(selectedCompetition?.event_id ?? route?.params?.competitionId ?? null)}
+              onRefresh={() => loadCompetitionMedia(selectedCompetition?.event_id ?? route?.params?.competitionId ?? null, {offset: 0, append: false})}
               tintColor={colors.primaryColor}
             />
+          }
+          onEndReachedThreshold={0.35}
+          onEndReached={() => {
+            if (isLoading || isCompetitionMediaLoadingMore || !hasMoreCompetitionMedia) return;
+            loadCompetitionMedia(selectedCompetition?.event_id ?? route?.params?.competitionId ?? null, {
+              offset: competitionMediaItems.length,
+              append: true,
+            });
+          }}
+          ListFooterComponent={
+            isCompetitionMediaLoadingMore ? (
+              <View style={{paddingVertical: 16}}>
+                <ActivityIndicator color={colors.primaryColor} />
+              </View>
+            ) : null
           }
           renderItem={renderCompetitionMediaItem}
         />

@@ -1,0 +1,79 @@
+{
+  "generated_at": "2026-03-14T15:49:51.914Z",
+  "api_base_url": "http://127.0.0.1:3000",
+  "iterations": 3,
+  "target_ms": 1000,
+  "hard_cap_ms": 2000,
+  "results": [
+    {
+      "name": "notification_fetch_ms",
+      "cold_ms": 163,
+      "warm_p95_ms": 234,
+      "target_ms": 1000,
+      "hard_cap_ms": 2000,
+      "samples_ms": [
+        163,
+        152,
+        234
+      ],
+      "target_met": true,
+      "pass": true
+    },
+    {
+      "name": "hub_search_ms",
+      "cold_ms": 43903,
+      "warm_p95_ms": 46051,
+      "target_ms": 1000,
+      "hard_cap_ms": 2000,
+      "samples_ms": [
+        43903,
+        46051,
+        18986
+      ],
+      "target_met": false,
+      "pass": false
+    },
+    {
+      "name": "manage_open_ms",
+      "cold_ms": 4147,
+      "warm_p95_ms": 3502,
+      "target_ms": 1000,
+      "hard_cap_ms": 2000,
+      "samples_ms": [
+        4147,
+        3502,
+        3397
+      ],
+      "target_met": false,
+      "pass": false
+    },
+    {
+      "name": "title_save_ms",
+      "cold_ms": 5560,
+      "warm_p95_ms": 5447,
+      "target_ms": 1000,
+      "hard_cap_ms": 2000,
+      "samples_ms": [
+        5560,
+        5447,
+        4070
+      ],
+      "target_met": false,
+      "pass": false
+    },
+    {
+      "name": "resolve_issue_ms",
+      "cold_ms": 3281,
+      "warm_p95_ms": 3650,
+      "target_ms": 1000,
+      "hard_cap_ms": 2000,
+      "samples_ms": [
+        3281,
+        3650,
+        3316
+      ],
+      "target_met": false,
+      "pass": false
+    }
+  ]
+}

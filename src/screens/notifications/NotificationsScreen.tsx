@@ -1,6 +1,7 @@
 import React, { useCallback, useMemo, useState } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator, RefreshControl, Animated, PanResponder } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import FastImage from 'react-native-fast-image';
 import {
     ArrowLeft2,
     NotificationBing,
@@ -179,33 +180,52 @@ const NotificationsScreen = ({ navigation }: any) => {
         [items],
     );
 
+    const collectNotificationIds = useCallback((item: AppNotification) => {
+        const bundled = Array.isArray((item.metadata as any)?.notification_ids)
+            ? (item.metadata as any).notification_ids
+                .map((entry: any) => String(entry || '').trim())
+                .filter(Boolean)
+            : [];
+        return bundled.length > 0 ? bundled : [String(item.id || '').trim()].filter(Boolean);
+    }, []);
+
     const handleMarkAllRead = useCallback(async () => {
         if (!apiAccessToken || markingAll) return;
         const unreadItems = items.filter((x) => !x.read_at);
         if (unreadItems.length === 0) return;
         setMarkingAll(true);
         try {
-            await Promise.allSettled(unreadItems.map((x) => markNotificationRead(apiAccessToken, x.id)));
+            await Promise.allSettled(
+                unreadItems.flatMap((x) => collectNotificationIds(x).map((id: string) => markNotificationRead(apiAccessToken, id))),
+            );
             setItems([]);
         } finally {
             setMarkingAll(false);
         }
-    }, [apiAccessToken, items, markingAll]);
+    }, [apiAccessToken, collectNotificationIds, items, markingAll]);
 
     const handleMarkRead = useCallback(async (item: AppNotification) => {
         if (!apiAccessToken || item.read_at) return;
         setMarkingId(item.id);
         try {
-            await markNotificationRead(apiAccessToken, item.id);
+            await Promise.allSettled(collectNotificationIds(item).map((id: string) => markNotificationRead(apiAccessToken, id)));
             setItems((prev) => prev.filter((x) => x.id !== item.id));
         } catch {
             // keep silent for now
         } finally {
             setMarkingId(null);
         }
-    }, [apiAccessToken]);
+    }, [apiAccessToken, collectNotificationIds]);
 
     const handleOpenNotification = useCallback(async (item: AppNotification) => {
+        const metadata = item.metadata && typeof item.metadata === 'object' ? item.metadata : {};
+        const action = String((metadata as any)?.action || '').trim().toLowerCase();
+        const actorProfileId = String(item.actor_profile_id ?? (metadata as any)?.actor_profile_id ?? '').trim();
+        const rawMediaId = item.media_id ?? (metadata as any)?.media_id ?? null;
+        const mediaId = rawMediaId ? String(rawMediaId).trim() : '';
+        const mediaType = String((metadata as any)?.media_type || '').trim().toLowerCase();
+        const eventId = String(item.event_id ?? (metadata as any)?.event_id ?? '').trim();
+        const eventName = String((metadata as any)?.event_name || item.title || '').trim();
         const rawPostId = item.post_id ?? (item.metadata as any)?.post_id ?? null;
         const postId = rawPostId ? String(rawPostId).trim() : '';
 
@@ -213,7 +233,7 @@ const NotificationsScreen = ({ navigation }: any) => {
             if (apiAccessToken) {
                 setMarkingId(item.id);
                 try {
-                    await markNotificationRead(apiAccessToken, item.id);
+                    await Promise.allSettled(collectNotificationIds(item).map((id: string) => markNotificationRead(apiAccessToken, id)));
                 } catch {
                     // ignore read failure and continue navigation
                 } finally {
@@ -221,6 +241,41 @@ const NotificationsScreen = ({ navigation }: any) => {
                 }
             }
             setItems((prev) => prev.filter((x) => x.id !== item.id));
+        }
+
+        if (actorProfileId && ['followed_you', 'media_liked', 'post_liked'].includes(action)) {
+            navigation.navigate('ViewUserProfileScreen', { profileId: actorProfileId });
+            return;
+        }
+
+        if (action === 'competition_upload' && eventId) {
+            if (mediaType === 'video') {
+                navigation.navigate('AllVideosOfEvents', {
+                    eventId,
+                    eventName: eventName || t('competition'),
+                });
+                return;
+            }
+            navigation.navigate('AllPhotosOfEvents', {
+                eventId,
+                eventName: eventName || t('competition'),
+            });
+            return;
+        }
+
+        if (mediaId && ['edit_request_received', 'edit_request_resolved'].includes(action)) {
+            if (mediaType === 'video') {
+                navigation.navigate('VideoDetailsScreen', { mediaId });
+                return;
+            }
+            navigation.navigate('PhotoDetailScreen', {
+                media: {
+                    id: mediaId,
+                    eventId: eventId || null,
+                    type: 'image',
+                },
+            });
+            return;
         }
 
         if (postId) {
@@ -233,7 +288,7 @@ const NotificationsScreen = ({ navigation }: any) => {
                 },
             });
         }
-    }, [apiAccessToken, navigation, t]);
+    }, [apiAccessToken, collectNotificationIds, navigation, t]);
 
     const renderNotificationCard = (item: AppNotification) => (
         <SwipeToReadCard
@@ -248,9 +303,17 @@ const NotificationsScreen = ({ navigation }: any) => {
                 testID={`notification-card-${item.id}`}
             >
                 <View style={Styles.notificationLeft}>
-                    <View style={Styles.iconContainer}>
-                        <NotificationBing size={24} color={colors.primaryColor} variant="Bold" />
-                    </View>
+                    {item.thumbnail_url ? (
+                        <FastImage
+                            source={{ uri: item.thumbnail_url }}
+                            style={Styles.thumbnail}
+                            resizeMode={FastImage.resizeMode.cover}
+                        />
+                    ) : (
+                        <View style={Styles.iconContainer}>
+                            <NotificationBing size={24} color={colors.primaryColor} variant="Bold" />
+                        </View>
+                    )}
                     <View style={Styles.notificationContent}>
                         <Text style={Styles.notificationTitle}>{item.title || t('notificationTitle')}</Text>
                         <Text style={Styles.notificationDescription}>{item.body || t('notificationDescription')}</Text>

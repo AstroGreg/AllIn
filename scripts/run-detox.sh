@@ -39,9 +39,47 @@ ensure_gateway_ready() {
   (
     cd "${GATEWAY_ROOT}"
     npm run build >/dev/null
+    if [ -z "${TEST_AZURE_STORAGE_CONNECTION_STRING:-}" ] && [ -n "${TEST_AZURE_STORAGE_ACCOUNT_NAME:-}" ] && [ -n "${TEST_AZURE_STORAGE_ACCOUNT_KEY:-}" ]; then
+      export TEST_AZURE_STORAGE_CONNECTION_STRING="DefaultEndpointsProtocol=https;AccountName=${TEST_AZURE_STORAGE_ACCOUNT_NAME};AccountKey=${TEST_AZURE_STORAGE_ACCOUNT_KEY};EndpointSuffix=core.windows.net"
+    fi
+    if [ -n "${TEST_DATABASE_URL:-}" ]; then
+      export DATABASE_URL="${TEST_DATABASE_URL}"
+    fi
+    if [ -n "${TEST_AZURE_STORAGE_CONNECTION_STRING:-}" ]; then
+      export AZURE_STORAGE_CONNECTION_STRING="${TEST_AZURE_STORAGE_CONNECTION_STRING}"
+    fi
+    if [ -n "${TEST_AZURE_STORAGE_ACCOUNT_NAME:-}" ]; then
+      export AZURE_STORAGE_ACCOUNT_NAME="${TEST_AZURE_STORAGE_ACCOUNT_NAME}"
+    fi
+    if [ -n "${TEST_AZURE_STORAGE_ACCOUNT_KEY:-}" ]; then
+      export AZURE_STORAGE_ACCOUNT_KEY="${TEST_AZURE_STORAGE_ACCOUNT_KEY}"
+    fi
+    if [ -n "${TEST_AZURE_STORAGE_CONTAINER_NAME:-}" ]; then
+      export AZURE_STORAGE_CONTAINER_NAME="${TEST_AZURE_STORAGE_CONTAINER_NAME}"
+    fi
+    if [ -n "${TEST_SERVICEBUS_CONNECTION_STRING:-}" ]; then
+      export SERVICEBUS_CONNECTION_STRING="${TEST_SERVICEBUS_CONNECTION_STRING}"
+    fi
+    if [ -n "${TEST_SERVICEBUS_MEDIA_QUEUE_NAME:-}" ]; then
+      export SERVICEBUS_MEDIA_QUEUE_NAME="${TEST_SERVICEBUS_MEDIA_QUEUE_NAME}"
+    fi
+    if [ -n "${TEST_SERVICEBUS_AI_QUEUE_NAME:-}" ]; then
+      export SERVICEBUS_AI_QUEUE_NAME="${TEST_SERVICEBUS_AI_QUEUE_NAME}"
+    fi
+    if [ -n "${TEST_SERVICEBUS_SEARCH_QUEUE_NAME:-}" ]; then
+      export SERVICEBUS_SEARCH_QUEUE_NAME="${TEST_SERVICEBUS_SEARCH_QUEUE_NAME}"
+    fi
+    if [ -n "${TEST_SERVICEBUS_TOPIC_NAME:-}" ]; then
+      export SERVICEBUS_TOPIC_NAME="${TEST_SERVICEBUS_TOPIC_NAME}"
+    fi
+    if [ -n "${TEST_SERVICEBUS_SUBSCRIPTION_NAME:-}" ]; then
+      export SERVICEBUS_SUBSCRIPTION_NAME="${TEST_SERVICEBUS_SUBSCRIPTION_NAME}"
+    fi
+    export DATABASE_ACTIVE_SCHEMA=testing
+    node --input-type=module -e "import pg from 'pg'; const schema = process.env.DATABASE_ACTIVE_SCHEMA || 'testing'; const url = process.env.DATABASE_URL || ''; if (!url) process.exit(0); const pool = new pg.Pool({ connectionString: url, ssl: { rejectUnauthorized: false } }); try { await pool.query(\`ALTER TABLE \\\"\${schema}\\\".media ADD COLUMN IF NOT EXISTS title text\`); } finally { await pool.end().catch(() => {}); }" >/dev/null 2>&1 || true
     NODE_ENV=test \
     ENABLE_E2E_TEST_AUTH=1 \
-    DATABASE_ACTIVE_SCHEMA=testing \
+    DATABASE_ACTIVE_SCHEMA="${DATABASE_ACTIVE_SCHEMA}" \
     DATABASE_POOL_MAX="${DATABASE_POOL_MAX:-2}" \
     SKIP_REDIS_INIT=YES \
     SKIP_SEARCH_INDEX_INIT=YES \

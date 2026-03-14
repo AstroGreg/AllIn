@@ -34,6 +34,21 @@ export const createStyles = (colors: ThemeColors) => StyleSheet.create({
         justifyContent: 'center',
         backgroundColor: 'transparent',
     },
+    headerActions: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 4,
+    },
+    headerViews: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 4,
+        paddingHorizontal: 8,
+    },
+    headerViewsText: {
+        ...Fonts.regular12,
+        color: colors.grayColor,
+    },
     headerTitleCentered: {
         ...Fonts.medium16,
         color: colors.mainTextColor,

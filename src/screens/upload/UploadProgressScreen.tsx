@@ -79,6 +79,7 @@ type UploadItem = {
   uri: string;
   type?: string | null;
   fileName?: string | null;
+  title?: string | null;
   category?: string | null;
   discipline_id?: string | null;
   competition_map_id?: string | null;
@@ -184,6 +185,7 @@ const UploadProgressScreen = ({navigation, route}: any) => {
             uri,
             type: asset?.type ?? null,
             fileName: asset?.fileName ?? null,
+            title: asset?.title ? String(asset.title) : null,
             category: String(category),
             discipline_id: asset?.discipline_id ? String(asset.discipline_id) : null,
             competition_map_id: asset?.competition_map_id ? String(asset.competition_map_id) : null,
@@ -255,6 +257,7 @@ const UploadProgressScreen = ({navigation, route}: any) => {
             uri,
             type: b.type || undefined,
             name: b.fileName || `upload-${i + j + 1}`,
+            title: b.title || null,
           });
         }
 

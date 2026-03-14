@@ -142,18 +142,24 @@ const ViewUserProfileScreen = ({ navigation, route }: any) => {
                 }
                 return;
             }
-            let loadedSummary: ProfileSummary | null = null;
-            try {
-                const info = await getProfileSummaryById(apiAccessToken, String(profileId));
-                loadedSummary = info;
-                if (mounted) setSummary(info);
-            } catch {
-                if (mounted) setSummary(null);
+            const [summaryResult, timelineResult, postsResult] = await Promise.allSettled([
+                getProfileSummaryById(apiAccessToken, String(profileId)),
+                getProfileTimeline(apiAccessToken, String(profileId)),
+                getPosts(apiAccessToken, {
+                    author_profile_id: String(profileId),
+                    limit: 50,
+                    include_original: false,
+                }),
+            ]);
+
+            const loadedSummary: ProfileSummary | null =
+                summaryResult.status === 'fulfilled' ? summaryResult.value : null;
+            if (mounted) {
+                setSummary(loadedSummary);
             }
 
-            try {
-                const tl = await getProfileTimeline(apiAccessToken, String(profileId));
-                const items = Array.isArray((tl as any)?.items) ? (tl as any).items : [];
+            if (timelineResult.status === 'fulfilled') {
+                const items = Array.isArray((timelineResult.value as any)?.items) ? (timelineResult.value as any).items : [];
                 const mapped: TimelineEntry[] = items.map((it: ProfileTimelineEntry) => ({
                     id: String(it.id),
                     year: String((it as any)?.year ?? ''),
@@ -166,33 +172,12 @@ const ViewUserProfileScreen = ({ navigation, route }: any) => {
                     coverImage: (it as any)?.cover_thumbnail_url ?? null,
                 }));
                 if (mounted) setTimelineItems(mapped);
-            } catch {
-                if (mounted) setTimelineItems([]);
+            } else if (mounted) {
+                setTimelineItems([]);
             }
 
-            try {
-                const summaryProfile = (loadedSummary?.profile as any) ?? {};
-                const selectedEvents = normalizeSelectedEvents(summaryProfile?.selected_events ?? []);
-                const supportFocuses = normalizeSelectedEvents(summaryProfile?.support_focuses ?? []);
-                const supportExists =
-                    String(summaryProfile?.support_role ?? '').trim().length > 0 ||
-                    supportFocuses.length > 0 ||
-                    (Array.isArray(summaryProfile?.support_club_codes) && summaryProfile.support_club_codes.length > 0) ||
-                    (Array.isArray(summaryProfile?.support_group_ids) && summaryProfile.support_group_ids.length > 0) ||
-                    (Array.isArray(summaryProfile?.support_athlete_profile_ids) && summaryProfile.support_athlete_profile_ids.length > 0);
-                const scopeFocus = selectedEvents[0] ?? (supportExists ? 'support' : null);
-                const c = await getProfileCollections(apiAccessToken, String(profileId), {
-                    limit: 50,
-                    scope_key: scopeFocus ? getProfileCollectionScopeKey(scopeFocus) : 'default',
-                });
-                if (mounted) setCollections(Array.isArray((c as any)?.collections) ? (c as any).collections : []);
-            } catch {
-                if (mounted) setCollections([]);
-            }
-
-            try {
-                const p = await getPosts(apiAccessToken, { author_profile_id: String(profileId), limit: 50 });
-                const rawPosts = Array.isArray((p as any)?.posts) ? (p as any).posts : [];
+            if (postsResult.status === 'fulfilled') {
+                const rawPosts = Array.isArray((postsResult.value as any)?.posts) ? (postsResult.value as any).posts : [];
                 const sortedPosts = [...rawPosts].sort((a: PostSummary, b: PostSummary) => {
                     const aTime = Date.parse(String(a?.created_at ?? ''));
                     const bTime = Date.parse(String(b?.created_at ?? ''));
@@ -218,8 +203,28 @@ const ViewUserProfileScreen = ({ navigation, route }: any) => {
                     };
                 });
                 if (mounted) setPosts(mapped);
+            } else if (mounted) {
+                setPosts([]);
+            }
+
+            try {
+                const summaryProfile = (loadedSummary?.profile as any) ?? {};
+                const selectedEvents = normalizeSelectedEvents(summaryProfile?.selected_events ?? []);
+                const supportFocuses = normalizeSelectedEvents(summaryProfile?.support_focuses ?? []);
+                const supportExists =
+                    String(summaryProfile?.support_role ?? '').trim().length > 0 ||
+                    supportFocuses.length > 0 ||
+                    (Array.isArray(summaryProfile?.support_club_codes) && summaryProfile.support_club_codes.length > 0) ||
+                    (Array.isArray(summaryProfile?.support_group_ids) && summaryProfile.support_group_ids.length > 0) ||
+                    (Array.isArray(summaryProfile?.support_athlete_profile_ids) && summaryProfile.support_athlete_profile_ids.length > 0);
+                const scopeFocus = selectedEvents[0] ?? (supportExists ? 'support' : null);
+                const c = await getProfileCollections(apiAccessToken, String(profileId), {
+                    limit: 50,
+                    scope_key: scopeFocus ? getProfileCollectionScopeKey(scopeFocus) : 'default',
+                });
+                if (mounted) setCollections(Array.isArray((c as any)?.collections) ? (c as any).collections : []);
             } catch {
-                if (mounted) setPosts([]);
+                if (mounted) setCollections([]);
             }
         };
         load();
@@ -665,7 +670,10 @@ const ViewUserProfileScreen = ({ navigation, route }: any) => {
     }
 
     return (
-        <View style={Styles.mainContainer}>
+        <View style={Styles.mainContainer} testID="view-user-profile-screen">
+            {!isInitialLoading ? (
+                <View testID="e2e-perf-ready-view-user-profile" style={{ position: 'absolute', width: 1, height: 1, opacity: 0 }} />
+            ) : null}
             <SizeBox height={insets.top} />
 
             <View style={Styles.header}>

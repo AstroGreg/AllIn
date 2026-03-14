@@ -1,47 +1,78 @@
 const DEFAULT_API_BASE_URL = process.env.E2E_API_BASE_URL || process.env.API_GATEWAY_URL || 'http://127.0.0.1:3000';
 const DEFAULT_E2E_KEY = process.env.E2E_TEST_KEY || 'spotme-e2e-local';
 const fs = require('fs');
+const http = require('http');
+const https = require('https');
 const path = require('path');
+const E2E_REQUEST_TIMEOUT_MS = Number(process.env.E2E_FETCH_TIMEOUT_MS || 900000);
+
+function rawJsonRequest(pathname, { method = 'GET', body, headers = {} } = {}) {
+  return new Promise((resolve, reject) => {
+    const url = new URL(`${DEFAULT_API_BASE_URL.replace(/\/$/, '')}${pathname.startsWith('/') ? pathname : `/${pathname}`}`);
+    const transport = url.protocol === 'https:' ? https : http;
+    const bodyText = body == null ? null : JSON.stringify(body);
+    const req = transport.request(
+      url,
+      {
+        method,
+        headers: {
+          ...(bodyText == null ? {} : { 'Content-Type': 'application/json' }),
+          ...headers,
+        },
+      },
+      (res) => {
+        const chunks = [];
+        res.on('data', (chunk) => chunks.push(chunk));
+        res.on('end', () => {
+          const rawText = Buffer.concat(chunks).toString('utf8');
+          const payload = rawText ? JSON.parse(rawText) : null;
+          if (res.statusCode && res.statusCode >= 200 && res.statusCode < 300) {
+            resolve(payload);
+            return;
+          }
+          const details = payload && typeof payload === 'object'
+            ? (payload.error || payload.details || payload.message || JSON.stringify(payload))
+            : res.statusMessage;
+          reject(new Error(`HTTP request failed (${res.statusCode}): ${details}`));
+        });
+      },
+    );
+    req.setTimeout(E2E_REQUEST_TIMEOUT_MS, () => {
+      req.destroy(new Error(`HTTP request timed out after ${E2E_REQUEST_TIMEOUT_MS}ms`));
+    });
+    req.on('error', reject);
+    if (bodyText != null) req.write(bodyText);
+    req.end();
+  });
+}
 
 async function e2eBootstrap(body = {}) {
-  const res = await fetch(`${DEFAULT_API_BASE_URL.replace(/\/$/, '')}/e2e/bootstrap`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-e2e-key': DEFAULT_E2E_KEY,
-    },
-    body: JSON.stringify(body),
-  });
-
-  const payload = await res.json().catch(() => null);
-  if (!res.ok) {
-    const details = payload && typeof payload === 'object'
-      ? (payload.error || payload.details || JSON.stringify(payload))
-      : res.statusText;
-    throw new Error(`E2E bootstrap failed (${res.status}): ${details}`);
+  try {
+    return await rawJsonRequest('/e2e/bootstrap', {
+      method: 'POST',
+      body,
+      headers: {
+        'Content-Type': 'application/json',
+        'x-e2e-key': DEFAULT_E2E_KEY,
+      },
+    });
+  } catch (error) {
+    throw new Error(`E2E bootstrap failed: ${String(error?.message || error)}`);
   }
-
-  return payload;
 }
 
 async function e2eResetSeed() {
-  const res = await fetch(`${DEFAULT_API_BASE_URL.replace(/\/$/, '')}/e2e/reset-seed`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-e2e-key': DEFAULT_E2E_KEY,
-    },
-  });
-
-  const payload = await res.json().catch(() => null);
-  if (!res.ok) {
-    const details = payload && typeof payload === 'object'
-      ? (payload.error || payload.details || JSON.stringify(payload))
-      : res.statusText;
-    throw new Error(`E2E reset seed failed (${res.status}): ${details}`);
+  try {
+    return await rawJsonRequest('/e2e/reset-seed', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-e2e-key': DEFAULT_E2E_KEY,
+      },
+    });
+  } catch (error) {
+    throw new Error(`E2E reset seed failed: ${String(error?.message || error)}`);
   }
-
-  return payload;
 }
 
 async function bootstrapSeedUser(seedSub, profile = {}) {
@@ -73,42 +104,31 @@ async function apiRequest(path, { method = 'GET', accessToken, body, headers } =
 }
 
 async function getCatalog() {
-  const res = await fetch(`${DEFAULT_API_BASE_URL.replace(/\/$/, '')}/e2e/catalog`, {
-    method: 'GET',
-    headers: {
-      'x-e2e-key': DEFAULT_E2E_KEY,
-    },
-  });
-
-  const payload = await res.json().catch(() => null);
-  if (!res.ok) {
-    const details = payload && typeof payload === 'object'
-      ? (payload.error || payload.details || JSON.stringify(payload))
-      : res.statusText;
-    throw new Error(`E2E catalog failed (${res.status}): ${details}`);
+  try {
+    return await rawJsonRequest('/e2e/catalog', {
+      method: 'GET',
+      headers: {
+        'x-e2e-key': DEFAULT_E2E_KEY,
+      },
+    });
+  } catch (error) {
+    throw new Error(`E2E catalog failed: ${String(error?.message || error)}`);
   }
-
-  return payload;
 }
 
 async function e2eMutation(pathSuffix, body = {}) {
-  const res = await fetch(`${DEFAULT_API_BASE_URL.replace(/\/$/, '')}/e2e/${pathSuffix.replace(/^\//, '')}`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-e2e-key': DEFAULT_E2E_KEY,
-    },
-    body: JSON.stringify(body),
-  });
-
-  const payload = await res.json().catch(() => null);
-  if (!res.ok) {
-    const details = payload && typeof payload === 'object'
-      ? (payload.error || payload.details || JSON.stringify(payload))
-      : res.statusText;
-    throw new Error(`E2E mutation failed (${res.status}): ${details}`);
+  try {
+    return await rawJsonRequest(`/e2e/${pathSuffix.replace(/^\//, '')}`, {
+      method: 'POST',
+      body,
+      headers: {
+        'Content-Type': 'application/json',
+        'x-e2e-key': DEFAULT_E2E_KEY,
+      },
+    });
+  } catch (error) {
+    throw new Error(`E2E mutation failed: ${String(error?.message || error)}`);
   }
-  return payload;
 }
 
 async function uploadFixtureMedia(accessToken, params = {}) {
@@ -117,6 +137,7 @@ async function uploadFixtureMedia(accessToken, params = {}) {
     throw new Error('uploadFixtureMedia requires at least one file');
   }
   const form = new FormData();
+  const fileTitles = [];
   const uploadSalt = typeof params.upload_salt === 'string' && params.upload_salt.trim().length > 0
     ? params.upload_salt.trim()
     : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
@@ -131,6 +152,7 @@ async function uploadFixtureMedia(accessToken, params = {}) {
       Buffer.from(`\nspotme-e2e-upload:${uploadSalt}:${name}`),
     ]);
     form.append('files', new Blob([saltedContent], { type }), name);
+    fileTitles.push(file.title == null ? '' : String(file.title));
   }
 
   const scalarEntries = [
@@ -154,6 +176,9 @@ async function uploadFixtureMedia(accessToken, params = {}) {
   }
   if (params.is_anonymous != null) {
     form.append('is_anonymous', params.is_anonymous ? 'true' : 'false');
+  }
+  if (fileTitles.some((entry) => entry.trim().length > 0)) {
+    form.append('file_titles_json', JSON.stringify(fileTitles));
   }
 
   const res = await fetch(`${DEFAULT_API_BASE_URL.replace(/\/$/, '')}/media/upload`, {

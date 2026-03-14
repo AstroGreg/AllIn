@@ -83,6 +83,9 @@ export const createStyles = (colors: ThemeColors) =>
       flex: 1,
       paddingHorizontal: 20,
     },
+    listContent: {
+      paddingBottom: 24,
+    },
     resultsHeader: {
       flexDirection: 'row',
       alignItems: 'flex-start',
@@ -151,10 +154,9 @@ export const createStyles = (colors: ThemeColors) =>
       color: colors.subTextColor,
       paddingVertical: 12,
     },
-    grid: {
-      flexDirection: 'row',
-      flexWrap: 'wrap',
-      gap: CARD_GAP,
+    gridRow: {
+      justifyContent: 'space-between',
+      marginBottom: CARD_GAP,
     },
     resultCard: {
       width: CARD_WIDTH,

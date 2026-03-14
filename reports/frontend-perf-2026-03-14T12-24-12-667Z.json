@@ -1,0 +1,133 @@
+{
+  "generated_at": "2026-03-14T12:24:12.669Z",
+  "api_base_url": "http://127.0.0.1:3000",
+  "target_ms": 1000,
+  "max_ms": 2000,
+  "iterations": 3,
+  "backend_baselines_ms": {
+    "home": 216.4,
+    "hub": 164.8,
+    "search": 250.6,
+    "profile": 297.4,
+    "upload_select": 154.4,
+    "upload_competition": 179.4,
+    "competition": 179.4
+  },
+  "dataset_validation": {
+    "home_empty": {
+      "has_video": false,
+      "has_photo": false,
+      "feed_posts": 0
+    },
+    "home_rich": {
+      "has_video": false,
+      "has_photo": true,
+      "has_blog": true,
+      "feed_posts": 60,
+      "media_total": 61,
+      "photo_posts": 60,
+      "video_posts": 0
+    },
+    "hub": {
+      "appearances": 5,
+      "uploads": 200
+    },
+    "search": {
+      "competitions": 10,
+      "thumbnails": 10
+    },
+    "competition": {
+      "competition_id": "d178de13-6c93-44f3-8465-4298fe62702f",
+      "disciplines": 27
+    },
+    "profile_rich": {
+      "posts": 20,
+      "uploads": 200
+    },
+    "onboarding": {
+      "clubs": 50,
+      "groups": 1,
+      "disciplines": 27
+    }
+  },
+  "results": [
+    {
+      "name": "onboarding_club_picker",
+      "routeName": "CompleteAthleteDetailsScreen",
+      "prepare_samples_ms": [
+        322,
+        321
+      ],
+      "prepare_p95_ms": 322,
+      "cold_ms": 1089,
+      "warm_samples_ms": [
+        981,
+        1000
+      ],
+      "warm_p50_ms": 981,
+      "warm_p95_ms": 1000,
+      "warm_max_ms": 1000,
+      "target_ms": 1000,
+      "max_ms": 2000,
+      "backend_baseline_ms": null,
+      "estimated_frontend_overhead_ms": null,
+      "dominant_layer": "frontend",
+      "failures": [],
+      "target_met": true,
+      "pass": true
+    },
+    {
+      "name": "onboarding_group_picker",
+      "routeName": "CompleteAthleteDetailsScreen",
+      "prepare_samples_ms": [
+        326,
+        337
+      ],
+      "prepare_p95_ms": 337,
+      "cold_ms": 837,
+      "warm_samples_ms": [
+        868,
+        836
+      ],
+      "warm_p50_ms": 836,
+      "warm_p95_ms": 868,
+      "warm_max_ms": 868,
+      "target_ms": 1000,
+      "max_ms": 2000,
+      "backend_baseline_ms": null,
+      "estimated_frontend_overhead_ms": null,
+      "dominant_layer": "frontend",
+      "failures": [],
+      "target_met": true,
+      "pass": true
+    },
+    {
+      "name": "onboarding_discipline_picker",
+      "routeName": "CompleteAthleteDetailsScreen",
+      "prepare_samples_ms": [
+        2483,
+        2557
+      ],
+      "prepare_p95_ms": 2557,
+      "cold_ms": 926,
+      "warm_samples_ms": [
+        932,
+        964
+      ],
+      "warm_p50_ms": 932,
+      "warm_p95_ms": 964,
+      "warm_max_ms": 964,
+      "target_ms": 1000,
+      "max_ms": 2000,
+      "backend_baseline_ms": null,
+      "estimated_frontend_overhead_ms": null,
+      "dominant_layer": "frontend",
+      "failures": [],
+      "target_met": true,
+      "pass": true
+    }
+  ],
+  "all_passed": true,
+  "target_met": true,
+  "target_warnings": []
+}

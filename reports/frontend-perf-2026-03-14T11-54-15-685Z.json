@@ -1,0 +1,171 @@
+{
+  "generated_at": "2026-03-14T11:54:15.687Z",
+  "api_base_url": "http://127.0.0.1:3000",
+  "target_ms": 1000,
+  "max_ms": 2000,
+  "iterations": 3,
+  "backend_baselines_ms": {
+    "home": 216.4,
+    "hub": 164.8,
+    "search": 250.6,
+    "profile": 297.4,
+    "upload_select": 154.4,
+    "upload_competition": 179.4,
+    "competition": 179.4
+  },
+  "dataset_validation": {
+    "home_empty": {
+      "has_video": false,
+      "has_photo": false,
+      "feed_posts": 0
+    },
+    "home_rich": {
+      "has_video": false,
+      "has_photo": true,
+      "has_blog": true,
+      "feed_posts": 60,
+      "media_total": 61
+    },
+    "hub": {
+      "appearances": 5,
+      "uploads": 100
+    },
+    "search": {
+      "competitions": 10,
+      "thumbnails": 10
+    },
+    "competition": {
+      "competition_id": "d178de13-6c93-44f3-8465-4298fe62702f",
+      "disciplines": 27
+    },
+    "profile_rich": {
+      "posts": 20,
+      "uploads": 100
+    },
+    "onboarding": {
+      "clubs": 50,
+      "groups": 1,
+      "disciplines": 27
+    }
+  },
+  "results": [
+    {
+      "name": "onboarding_club_picker",
+      "routeName": "CompleteAthleteDetailsScreen",
+      "cold_ms": 2000,
+      "warm_samples_ms": [
+        2000,
+        2000
+      ],
+      "warm_p50_ms": 2000,
+      "warm_p95_ms": 2000,
+      "warm_max_ms": 2000,
+      "target_ms": 1000,
+      "max_ms": 2000,
+      "backend_baseline_ms": null,
+      "estimated_frontend_overhead_ms": null,
+      "dominant_layer": "frontend",
+      "failures": [
+        {
+          "attempt": 1,
+          "error": "Test Failed: Timed out while waiting for expectation: TOEXIST WITH MATCHER(id == “profile-complete-athlete-details-screen”) TIMEOUT(2s)\n\nHINT: To print view hierarchy on failed actions/matches, use log-level verbose or higher."
+        },
+        {
+          "attempt": 2,
+          "error": "Test Failed: Timed out while waiting for expectation: TOEXIST WITH MATCHER(id == “profile-complete-athlete-details-screen”) TIMEOUT(2s)\n\nHINT: To print view hierarchy on failed actions/matches, use log-level verbose or higher."
+        },
+        {
+          "attempt": 3,
+          "error": "Test Failed: Timed out while waiting for expectation: TOEXIST WITH MATCHER(id == “profile-complete-athlete-details-screen”) TIMEOUT(2s)\n\nHINT: To print view hierarchy on failed actions/matches, use log-level verbose or higher."
+        }
+      ],
+      "target_met": false,
+      "pass": false
+    },
+    {
+      "name": "onboarding_group_picker",
+      "routeName": "CompleteAthleteDetailsScreen",
+      "cold_ms": 2000,
+      "warm_samples_ms": [
+        2000,
+        2000
+      ],
+      "warm_p50_ms": 2000,
+      "warm_p95_ms": 2000,
+      "warm_max_ms": 2000,
+      "target_ms": 1000,
+      "max_ms": 2000,
+      "backend_baseline_ms": null,
+      "estimated_frontend_overhead_ms": null,
+      "dominant_layer": "frontend",
+      "failures": [
+        {
+          "attempt": 1,
+          "error": "Test Failed: Timed out while waiting for expectation: TOEXIST WITH MATCHER(id == “profile-complete-athlete-details-screen”) TIMEOUT(2s)\n\nHINT: To print view hierarchy on failed actions/matches, use log-level verbose or higher."
+        },
+        {
+          "attempt": 2,
+          "error": "Test Failed: Timed out while waiting for expectation: TOEXIST WITH MATCHER(id == “profile-complete-athlete-details-screen”) TIMEOUT(2s)\n\nHINT: To print view hierarchy on failed actions/matches, use log-level verbose or higher."
+        },
+        {
+          "attempt": 3,
+          "error": "Test Failed: Timed out while waiting for expectation: TOEXIST WITH MATCHER(id == “profile-complete-athlete-details-screen”) TIMEOUT(2s)\n\nHINT: To print view hierarchy on failed actions/matches, use log-level verbose or higher."
+        }
+      ],
+      "target_met": false,
+      "pass": false
+    },
+    {
+      "name": "onboarding_discipline_picker",
+      "routeName": "CompleteAthleteDetailsScreen",
+      "cold_ms": 2000,
+      "warm_samples_ms": [
+        2000,
+        2000
+      ],
+      "warm_p50_ms": 2000,
+      "warm_p95_ms": 2000,
+      "warm_max_ms": 2000,
+      "target_ms": 1000,
+      "max_ms": 2000,
+      "backend_baseline_ms": null,
+      "estimated_frontend_overhead_ms": null,
+      "dominant_layer": "frontend",
+      "failures": [
+        {
+          "attempt": 1,
+          "error": "Test Failed: Timed out while waiting for expectation: TOEXIST WITH MATCHER(id == “profile-complete-athlete-details-screen”) TIMEOUT(2s)\n\nHINT: To print view hierarchy on failed actions/matches, use log-level verbose or higher."
+        },
+        {
+          "attempt": 2,
+          "error": "Test Failed: Timed out while waiting for expectation: TOEXIST WITH MATCHER(id == “profile-complete-athlete-details-screen”) TIMEOUT(2s)\n\nHINT: To print view hierarchy on failed actions/matches, use log-level verbose or higher."
+        },
+        {
+          "attempt": 3,
+          "error": "Test Failed: Timed out while waiting for expectation: TOEXIST WITH MATCHER(id == “profile-complete-athlete-details-screen”) TIMEOUT(2s)\n\nHINT: To print view hierarchy on failed actions/matches, use log-level verbose or higher."
+        }
+      ],
+      "target_met": false,
+      "pass": false
+    }
+  ],
+  "all_passed": false,
+  "target_met": false,
+  "target_warnings": [
+    {
+      "name": "onboarding_club_picker",
+      "warm_p95_ms": 2000,
+      "target_ms": 1000
+    },
+    {
+      "name": "onboarding_group_picker",
+      "warm_p95_ms": 2000,
+      "target_ms": 1000
+    },
+    {
+      "name": "onboarding_discipline_picker",
+      "warm_p95_ms": 2000,
+      "target_ms": 1000
+    }
+  ]
+}

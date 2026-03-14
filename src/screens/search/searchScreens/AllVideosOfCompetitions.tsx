@@ -12,6 +12,8 @@ import Images from '../../../constants/Images'
 import { useTheme } from '../../../context/ThemeContext'
 import { useTranslation } from 'react-i18next'
 
+const PAGE_SIZE = 60;
+
 const AllVideosOfEvents = ({ navigation, route }: any) => {
     const insets = useSafeAreaInsets();
     const eventName = route?.params?.eventName || 'Event';
@@ -125,6 +127,9 @@ const AllVideosOfEvents = ({ navigation, route }: any) => {
 
     const [items, setItems] = useState<MediaViewAllItem[]>([]);
     const [isLoading, setIsLoading] = useState(false);
+    const [isRefreshing, setIsRefreshing] = useState(false);
+    const [isFetchingMore, setIsFetchingMore] = useState(false);
+    const [hasMore, setHasMore] = useState(true);
     const targetCompetitionId = competitionId ?? eventId;
     const helperCopy = useMemo(() => {
         if (checkpointId) return t('Shows videos tagged to this checkpoint.');
@@ -211,42 +216,75 @@ const AllVideosOfEvents = ({ navigation, route }: any) => {
         });
     };
 
+    const mergeItems = useCallback((current: MediaViewAllItem[], incoming: MediaViewAllItem[]) => {
+        const seen = new Set<string>();
+        return [...current, ...incoming].filter((item) => {
+            const key = String(item?.media_id ?? '');
+            if (!key || seen.has(key)) return false;
+            seen.add(key);
+            return true;
+        });
+    }, []);
+
+    const loadPage = useCallback(async (offset: number, append: boolean) => {
+        if (!apiAccessToken) return;
+        if (append) {
+            setIsFetchingMore(true);
+        } else if (offset === 0 && items.length > 0) {
+            setIsRefreshing(true);
+        } else {
+            setIsLoading(true);
+        }
+        try {
+            let list: MediaViewAllItem[] = [];
+            if (appearanceOnly && (eventId || competitionId)) {
+                const res = await getHubAppearanceMedia(apiAccessToken, String(eventId ?? competitionId), {
+                    include_original: false,
+                    limit: PAGE_SIZE,
+                    offset,
+                });
+                list = Array.isArray(res?.results) ? res.results : [];
+            } else if (targetCompetitionId) {
+                const res = await getCompetitionPublicMedia(apiAccessToken, String(targetCompetitionId), {
+                    type: 'video',
+                    discipline_id: disciplineId ? String(disciplineId) : undefined,
+                    checkpoint_id: checkpointId ? String(checkpointId) : undefined,
+                    limit: PAGE_SIZE,
+                    offset,
+                    include_original: false,
+                });
+                list = Array.isArray(res) ? res : [];
+            }
+            const filtered = list.filter((item) => isVideoMedia(item));
+            setItems((prev) => append ? mergeItems(prev, filtered) : filtered);
+            setHasMore(filtered.length === PAGE_SIZE);
+        } catch {
+            if (!append) {
+                setItems([]);
+                setHasMore(false);
+            }
+        } finally {
+            setIsLoading(false);
+            setIsRefreshing(false);
+            setIsFetchingMore(false);
+        }
+    }, [apiAccessToken, appearanceOnly, checkpointId, competitionId, disciplineId, eventId, isVideoMedia, items.length, mergeItems, targetCompetitionId]);
+
     useEffect(() => {
         let mounted = true;
         if (!apiAccessToken) return () => {};
         const load = async () => {
-            setIsLoading(true);
             try {
-                let list: MediaViewAllItem[] = [];
-                if (appearanceOnly && (eventId || competitionId)) {
-                    const res = await getHubAppearanceMedia(apiAccessToken, String(eventId ?? competitionId));
-                    list = Array.isArray(res?.results) ? res.results : [];
-                } else if (targetCompetitionId) {
-                    const res = await getCompetitionPublicMedia(apiAccessToken, String(targetCompetitionId), {
-                        type: 'video',
-                        discipline_id: disciplineId ? String(disciplineId) : undefined,
-                        checkpoint_id: checkpointId ? String(checkpointId) : undefined,
-                        limit: 500,
-                    });
-                    list = Array.isArray(res) ? res : [];
-                } else {
-                    list = [];
-                }
-                if (!mounted) return;
-                const filtered = list.filter((item) => isVideoMedia(item));
-                setItems(filtered);
-            } catch {
-                if (!mounted) return;
-                setItems([]);
+                await loadPage(0, false);
             } finally {
-                if (mounted) setIsLoading(false);
+                if (!mounted) return;
             }
         };
         load();
         return () => {
             mounted = false;
         };
-    }, [apiAccessToken, appearanceOnly, checkpointId, competitionId, disciplineId, eventId, isVideoMedia, targetCompetitionId]);
+    }, [apiAccessToken, loadPage]);
 
     const data = useMemo(() => {
         return items.map((item) => {
@@ -272,7 +310,7 @@ const AllVideosOfEvents = ({ navigation, route }: any) => {
     }, [items, toHlsUrl, withAccessToken]);
 
     return (
-        <View style={styles.mainContainer}>
+        <View style={styles.mainContainer} testID="all-videos-events-screen">
             <SizeBox height={insets.top} />
             <CustomHeader title={t('All Videos')} onBackPress={() => navigation.goBack()} isSetting={false} />
 
@@ -284,6 +322,13 @@ const AllVideosOfEvents = ({ navigation, route }: any) => {
                     { paddingBottom: insets.bottom > 0 ? insets.bottom + 30 : 30 },
                 ]}
                 showsVerticalScrollIndicator={false}
+                onRefresh={() => loadPage(0, false)}
+                refreshing={isRefreshing}
+                onEndReachedThreshold={0.35}
+                onEndReached={() => {
+                    if (isLoading || isRefreshing || isFetchingMore || !hasMore) return;
+                    loadPage(items.length, true);
+                }}
                 renderItem={({ item }) => (
                     <TouchableOpacity
                         activeOpacity={0.9}
@@ -342,6 +387,13 @@ const AllVideosOfEvents = ({ navigation, route }: any) => {
                             <Text style={styles.subText}>{emptyCopy}</Text>
                         )}
                     </View>
+                }
+                ListFooterComponent={
+                    isFetchingMore ? (
+                        <View style={{ paddingVertical: 16 }}>
+                            <ActivityIndicator color={colors.primaryColor} />
+                        </View>
+                    ) : null
                 }
             />
         </View>

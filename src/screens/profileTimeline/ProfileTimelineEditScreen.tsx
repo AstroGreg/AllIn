@@ -288,7 +288,11 @@ const ProfileTimelineEditScreen = ({ navigation, route }: any) => {
 
             try {
                 const summary = await getProfileSummary(apiAccessToken);
-                const postsResp = await getPosts(apiAccessToken, { author_profile_id: summary.profile_id, limit: 200 });
+                const postsResp = await getPosts(apiAccessToken, {
+                    author_profile_id: summary.profile_id,
+                    limit: 200,
+                    include_original: false,
+                });
                 const posts = Array.isArray(postsResp?.posts) ? postsResp.posts : [];
                 setAvailableBlogs(posts.map((p: PostSummary) => ({ id: String(p.id), title: String(p.title || 'Blog') })));
             } catch {

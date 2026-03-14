@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState, useCallback, useRef } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, Modal, TextInput } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, Modal, TextInput, Keyboard, InteractionManager } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import FastImage from 'react-native-fast-image';
 import {
@@ -18,6 +18,8 @@ import { useEvents } from '../../context/EventsContext';
 import { getHubAppearances, getHubUploads, getMediaViewAll } from '../../services/apiGateway';
 import { getApiBaseUrl } from '../../constants/RuntimeConfig';
 import { useTranslation } from 'react-i18next';
+import E2EPerfReady from '../../components/e2e/E2EPerfReady';
+import { isE2ELaunchEnabled } from '../../constants/E2EConfig';
 
 const HUB_DEFAULT_INITIAL_LIMIT = 10;
 const HUB_SEARCH_INITIAL_LIMIT = 20;
@@ -30,6 +32,7 @@ const HubScreen = ({ navigation }: any) => {
     const Styles = createStyles(colors);
     const { apiAccessToken } = useAuth();
     const { events } = useEvents();
+    const perfStartedAtRef = useRef(Date.now());
 
     const [filterType, setFilterType] = useState<'all' | 'appearance' | 'subscription' | 'upload'>('all');
     const [lastAppliedFilterType, setLastAppliedFilterType] = useState<'appearance' | 'subscription' | 'upload'>('appearance');
@@ -44,6 +47,7 @@ const HubScreen = ({ navigation }: any) => {
     const [appearanceCardsData, setAppearanceCardsData] = useState<any[]>([]);
     const [uploadCardsData, setUploadCardsData] = useState<any[]>([]);
     const [mediaByEvent, setMediaByEvent] = useState<Record<string, { thumbUrl?: string; videoCount: number }>>({});
+    const [e2eManageUploadState, setE2EManageUploadState] = useState('idle');
 
     const resolveCompetitionType = useCallback((params?: {
         type?: string | null;
@@ -149,7 +153,7 @@ const HubScreen = ({ navigation }: any) => {
     useEffect(() => {
         let mounted = true;
         if (!apiAccessToken) return () => {};
-        getMediaViewAll(apiAccessToken)
+        getMediaViewAll(apiAccessToken, { include_original: false })
             .then((items) => {
                 if (!mounted) return;
                 const map: Record<string, { thumbUrl?: string; videoCount: number }> = {};
@@ -179,7 +183,7 @@ const HubScreen = ({ navigation }: any) => {
         if (!apiAccessToken) return () => {};
         const load = async () => {
             try {
-                const res = await getHubUploads(apiAccessToken);
+                const res = await getHubUploads(apiAccessToken, { include_original: false });
                 if (!mounted) return;
                 const list = Array.isArray(res?.results) ? res.results : [];
                 setUploadCardsData(
@@ -187,7 +191,10 @@ const HubScreen = ({ navigation }: any) => {
                         id: item.media_id,
                         mediaId: item.media_id,
                         eventId: item.event_id ?? null,
-                        title: item.event_name || t('upload'),
+                        title:
+                            String(item.type || '').toLowerCase() === 'video'
+                                ? (item.title || item.event_name || t('upload'))
+                                : (item.event_name || t('upload')),
                         location: item.event_location ?? '-',
                         date: formatDateOnly(item.event_date ?? '-'),
                         likes: Number(item.likes_count ?? 0),
@@ -260,6 +267,7 @@ const HubScreen = ({ navigation }: any) => {
     const hubCards = useMemo(() => {
         return [...appearanceCardsData, ...myCompetitions, ...uploadCardsData];
     }, [appearanceCardsData, myCompetitions, uploadCardsData]);
+    const perfReady = hubCards.length > 0;
 
     const filteredCards = useMemo(() => {
         const normalizedQuery = query.trim().toLowerCase();
@@ -350,6 +358,10 @@ const HubScreen = ({ navigation }: any) => {
     const openUploadManage = (card: any) => {
         const mediaId = String(card.mediaId ?? card.id ?? '').trim();
         if (!mediaId) return;
+        if (isE2ELaunchEnabled()) {
+            setE2EManageUploadState(`opening:${mediaId}`);
+        }
+        Keyboard.dismiss();
         const thumbnailUri = card.thumbnail?.uri ? String(card.thumbnail.uri) : undefined;
         const fallbackUri =
             card.previewUrl ||
@@ -357,7 +369,7 @@ const HubScreen = ({ navigation }: any) => {
             card.fullUrl ||
             card.rawUrl ||
             undefined;
-        navigation.navigate('VideoDetailsScreen', {
+        const params = {
             mediaId,
             video: {
                 media_id: mediaId,
@@ -369,6 +381,12 @@ const HubScreen = ({ navigation }: any) => {
                 thumbnail: thumbnailUri ? { uri: thumbnailUri } : undefined,
                 uri: fallbackUri,
             },
+        };
+        InteractionManager.runAfterInteractions(() => {
+            if (isE2ELaunchEnabled()) {
+                setE2EManageUploadState(`navigating:${mediaId}`);
+            }
+            navigation.navigate('VideoDetailsScreen', params);
         });
     };
 
@@ -396,6 +414,10 @@ const HubScreen = ({ navigation }: any) => {
     };
 
     const handleCardPress = (card: any) => {
+        if (isE2ELaunchEnabled()) {
+            openCardAction(card);
+            return;
+        }
         const hideInfo = hiddenCardInfo[card.cardType];
         if (hideInfo) {
             openCardAction(card);
@@ -407,13 +429,17 @@ const HubScreen = ({ navigation }: any) => {
     };
 
     const handleInfoContinue = async () => {
-        if (infoCard && neverShowAgain) {
-            await AsyncStorage.setItem(`hub_card_info_hidden_${infoCard.cardType}`, 'true');
-            setHiddenCardInfo((prev) => ({ ...prev, [infoCard.cardType]: true }));
+        const nextCard = infoCard;
+        if (nextCard && neverShowAgain) {
+            await AsyncStorage.setItem(`hub_card_info_hidden_${nextCard.cardType}`, 'true');
+            setHiddenCardInfo((prev) => ({ ...prev, [nextCard.cardType]: true }));
         }
         setInfoModalVisible(false);
-        if (infoCard) {
-            openCardAction(infoCard);
+        setInfoCard(null);
+        if (nextCard) {
+            requestAnimationFrame(() => {
+                openCardAction(nextCard);
+            });
         }
     };
 
@@ -553,8 +579,9 @@ const HubScreen = ({ navigation }: any) => {
                             style={Styles.feedbackButton}
                             onPress={(e: any) => {
                                 if (e?.stopPropagation) e.stopPropagation();
-                                handleCardPress(card);
+                                openUploadManage(card);
                             }}
+                            testID={`hub-manage-upload-${String(card.mediaId ?? card.id)}`}
                         >
                             <Text style={Styles.feedbackButtonText}>{t('Manage upload')}</Text>
                             <Icons.RightBtnIcon height={16} width={16} />
@@ -567,6 +594,12 @@ const HubScreen = ({ navigation }: any) => {
 
     return (
         <View style={Styles.mainContainer} testID="hub-screen">
+            <E2EPerfReady screen="hub" ready={perfReady} startedAtMs={perfStartedAtRef.current} />
+            {isE2ELaunchEnabled() ? (
+                <Text testID="hub-manage-upload-state" style={{ position: 'absolute', left: -9999, top: -9999 }}>
+                    {e2eManageUploadState}
+                </Text>
+            ) : null}
             <SizeBox height={insets.top} />
 
             <View style={Styles.header}>
@@ -582,6 +615,7 @@ const HubScreen = ({ navigation }: any) => {
                 contentContainerStyle={Styles.scrollContent}
                 onScroll={handleMainScroll}
                 scrollEventThrottle={16}
+                keyboardShouldPersistTaps="always"
             >
                 <View style={Styles.sectionBlock}>
                     <Text style={Styles.sectionTitle}>{t('Competitions')}</Text>
@@ -625,14 +659,23 @@ const HubScreen = ({ navigation }: any) => {
                     <View style={Styles.searchField}>
                         <Icons.Search width={16} height={16} />
                         <TextInput
+                            testID="hub-search-input"
                             placeholder={t('Search competitions, appearances, uploads')}
                             placeholderTextColor={colors.grayColor}
                             value={query}
-                            onChangeText={setQuery}
+                            onChangeText={(text) => {
+                                setQuery(text);
+                                if (isE2ELaunchEnabled()) {
+                                    Keyboard.dismiss();
+                                }
+                            }}
                             style={Styles.searchInput}
                             returnKeyType="search"
+                            blurOnSubmit
+                            onSubmitEditing={() => Keyboard.dismiss()}
                             autoCapitalize="none"
                             autoCorrect={false}
+                            showSoftInputOnFocus={!isE2ELaunchEnabled()}
                         />
                     </View>
                 </View>
@@ -663,7 +706,7 @@ const HubScreen = ({ navigation }: any) => {
             </ScrollView>
 
             <Modal visible={infoModalVisible} transparent animationType="fade" onRequestClose={() => setInfoModalVisible(false)}>
-                <View style={Styles.infoBackdrop}>
+                <View style={Styles.infoBackdrop} testID="hub-info-modal">
                     <View style={Styles.infoCard}>
                         <Text style={Styles.infoTitle}>{t('About this card')}</Text>
                         <Text style={Styles.infoText}>
@@ -678,10 +721,10 @@ const HubScreen = ({ navigation }: any) => {
                             <Text style={Styles.infoCheckText}>{t('Never show again')}</Text>
                         </TouchableOpacity>
                         <View style={Styles.infoButtonsRow}>
-                            <TouchableOpacity style={Styles.infoCancelButton} onPress={() => setInfoModalVisible(false)}>
+                            <TouchableOpacity style={Styles.infoCancelButton} onPress={() => setInfoModalVisible(false)} testID="hub-info-close">
                                 <Text style={Styles.infoCancelText}>{t('Close')}</Text>
                             </TouchableOpacity>
-                            <TouchableOpacity style={Styles.infoConfirmButton} onPress={handleInfoContinue}>
+                            <TouchableOpacity style={Styles.infoConfirmButton} onPress={handleInfoContinue} testID="hub-info-continue">
                                 <Text style={Styles.infoConfirmText}>{t('Continue')}</Text>
                             </TouchableOpacity>
                         </View>

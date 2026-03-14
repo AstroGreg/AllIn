@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, ActivityIndicator, Alert, TextInput } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import FastImage from 'react-native-fast-image';
@@ -112,6 +112,76 @@ const CompleteAthleteDetailsScreen = ({ navigation, route }: any) => {
     const [disciplineModalVisible, setDisciplineModalVisible] = useState(false);
     const [disciplineFocusId, setDisciplineFocusId] = useState<SportFocusId | null>(null);
     const [disciplineQuery, setDisciplineQuery] = useState('');
+    const clubOptionsCacheRef = useRef<Record<string, SearchPickerOption[]>>({});
+    const groupOptionsCacheRef = useRef<Record<string, SearchPickerOption[]>>({});
+    const clubOptionsPromiseCacheRef = useRef<Record<string, Promise<SearchPickerOption[]>>>({});
+    const groupOptionsPromiseCacheRef = useRef<Record<string, Promise<SearchPickerOption[]>>>({});
+
+    const getClubCacheKey = (queryValue: string) =>
+        JSON.stringify({
+            q: String(queryValue || '').trim().toLowerCase(),
+            focuses: [...clubSearchFocuses].sort(),
+        });
+    const getGroupCacheKey = (queryValue: string) => String(queryValue || '').trim().toLowerCase();
+    const mapClubOptions = (clubs: any[] = []) =>
+        clubs.map((club) => ({
+            id: String(club.club_id || ''),
+            title: String(club.name || club.code || '').trim(),
+            subtitle: String(club.city || club.federation || club.code || '').trim() || null,
+        })).filter((club) => club.id && club.title);
+    const mapGroupOptions = (groups: any[] = []) =>
+        groups.map((group) => ({
+            id: String(group.group_id || ''),
+            title: String(group.name || '').trim(),
+            subtitle: String(group.location || '').trim() || null,
+        })).filter((group) => group.id && group.title);
+
+    const fetchClubOptions = async (queryValue: string, limit = 50) => {
+        const normalizedQuery = String(queryValue || '').trim();
+        const cacheKey = getClubCacheKey(normalizedQuery);
+        const cached = clubOptionsCacheRef.current[cacheKey];
+        if (cached) return cached;
+        const inFlight = clubOptionsPromiseCacheRef.current[cacheKey];
+        if (inFlight) return inFlight;
+        const pending = searchClubs(apiAccessToken!, {
+            q: normalizedQuery || undefined,
+            focuses: clubSearchFocuses,
+            limit,
+        })
+            .then((res) => {
+                const mapped = mapClubOptions(res.clubs || []);
+                clubOptionsCacheRef.current[cacheKey] = mapped;
+                return mapped;
+            })
+            .finally(() => {
+                delete clubOptionsPromiseCacheRef.current[cacheKey];
+            });
+        clubOptionsPromiseCacheRef.current[cacheKey] = pending;
+        return pending;
+    };
+
+    const fetchGroupOptions = async (queryValue: string, limit = 50) => {
+        const normalizedQuery = String(queryValue || '').trim();
+        const cacheKey = getGroupCacheKey(normalizedQuery);
+        const cached = groupOptionsCacheRef.current[cacheKey];
+        if (cached) return cached;
+        const inFlight = groupOptionsPromiseCacheRef.current[cacheKey];
+        if (inFlight) return inFlight;
+        const pending = searchGroups(apiAccessToken!, {
+            q: normalizedQuery || undefined,
+            limit,
+        })
+            .then((res) => {
+                const mapped = mapGroupOptions(res.groups || []);
+                groupOptionsCacheRef.current[cacheKey] = mapped;
+                return mapped;
+            })
+            .finally(() => {
+                delete groupOptionsPromiseCacheRef.current[cacheKey];
+            });
+        groupOptionsPromiseCacheRef.current[cacheKey] = pending;
+        return pending;
+    };
 
     useEffect(() => {
         if (!apiAccessToken || !runningGroupId) return;
@@ -129,23 +199,59 @@ const CompleteAthleteDetailsScreen = ({ navigation, route }: any) => {
     }, [apiAccessToken, runningGroupId]);
 
     useEffect(() => {
+        if (!apiAccessToken || clubSearchFocuses.length === 0) return;
+        const cacheKey = getClubCacheKey('');
+        if (clubOptionsCacheRef.current[cacheKey]) return;
+        let mounted = true;
+        fetchClubOptions('', 50)
+            .then((mapped) => {
+                if (!mounted) return;
+                if (!clubModalVisible && !clubQuery.trim()) setClubOptions(mapped);
+            })
+            .catch(() => {
+                // Best-effort prefetch only.
+            });
+        return () => {
+            mounted = false;
+        };
+    }, [apiAccessToken, clubModalVisible, clubQuery, clubSearchFocuses]);
+
+    useEffect(() => {
+        if (!apiAccessToken) return;
+        const cacheKey = getGroupCacheKey('');
+        if (groupOptionsCacheRef.current[cacheKey]) return;
+        let mounted = true;
+        fetchGroupOptions('', 50)
+            .then((mapped) => {
+                if (!mounted) return;
+                if (!groupModalVisible && !groupQuery.trim()) setGroupOptions(mapped);
+            })
+            .catch(() => {
+                // Best-effort prefetch only.
+            });
+        return () => {
+            mounted = false;
+        };
+    }, [apiAccessToken, groupModalVisible, groupQuery]);
+
+    useEffect(() => {
         if (!clubModalVisible || !apiAccessToken) return;
+        const normalizedQuery = clubQuery.trim();
+        const cacheKey = getClubCacheKey(normalizedQuery);
+        const cached = clubOptionsCacheRef.current[cacheKey];
+        if (cached) {
+            setClubOptions(cached);
+            setClubsError(null);
+            setClubsLoading(false);
+            return;
+        }
         let mounted = true;
         const timeout = setTimeout(async () => {
             setClubsLoading(true);
             setClubsError(null);
             try {
-                const res = await searchClubs(apiAccessToken, {
-                    q: clubQuery.trim() || undefined,
-                    focuses: clubSearchFocuses,
-                    limit: 200,
-                });
+                const mapped = await fetchClubOptions(normalizedQuery, 50);
                 if (!mounted) return;
-                const mapped = (res.clubs || []).map((club) => ({
-                    id: String(club.club_id || ''),
-                    title: String(club.name || club.code || '').trim(),
-                    subtitle: String(club.city || club.federation || club.code || '').trim() || null,
-                })).filter((club) => club.id && club.title);
                 setClubOptions(mapped);
             } catch (e: any) {
                 if (!mounted) return;
@@ -155,7 +261,7 @@ const CompleteAthleteDetailsScreen = ({ navigation, route }: any) => {
             } finally {
                 if (mounted) setClubsLoading(false);
             }
-        }, 250);
+        }, normalizedQuery ? 120 : 0);
         return () => {
             mounted = false;
             clearTimeout(timeout);
@@ -164,21 +270,22 @@ const CompleteAthleteDetailsScreen = ({ navigation, route }: any) => {
 
     useEffect(() => {
         if (!groupModalVisible || !apiAccessToken) return;
+        const normalizedQuery = groupQuery.trim();
+        const cacheKey = getGroupCacheKey(normalizedQuery);
+        const cached = groupOptionsCacheRef.current[cacheKey];
+        if (cached) {
+            setGroupOptions(cached);
+            setGroupsError(null);
+            setGroupsLoading(false);
+            return;
+        }
         let mounted = true;
         const timeout = setTimeout(async () => {
             setGroupsLoading(true);
             setGroupsError(null);
             try {
-                const res = await searchGroups(apiAccessToken, {
-                    q: groupQuery.trim() || undefined,
-                    limit: 200,
-                });
+                const mapped = await fetchGroupOptions(normalizedQuery, 50);
                 if (!mounted) return;
-                const mapped = (res.groups || []).map((group) => ({
-                    id: String(group.group_id || ''),
-                    title: String(group.name || '').trim(),
-                    subtitle: String(group.location || '').trim() || null,
-                })).filter((group) => group.id && group.title);
                 setGroupOptions(mapped);
             } catch (e: any) {
                 if (!mounted) return;
@@ -188,21 +295,28 @@ const CompleteAthleteDetailsScreen = ({ navigation, route }: any) => {
             } finally {
                 if (mounted) setGroupsLoading(false);
             }
-        }, 250);
+        }, normalizedQuery ? 120 : 0);
         return () => {
             mounted = false;
             clearTimeout(timeout);
         };
     }, [apiAccessToken, groupModalVisible, groupQuery]);
 
+    const disciplineOptionsByFocus = useMemo(() => {
+        return selectedFocuses.reduce((acc, focusId) => {
+            acc[focusId] = buildDisciplineSearchOptions(focusId, t);
+            return acc;
+        }, {} as Record<string, SearchPickerOption[]>);
+    }, [selectedFocuses, t]);
+
     const disciplineOptions = useMemo(() => {
         if (!disciplineFocusId) return [];
         const normalizedQuery = disciplineQuery.trim().toLowerCase();
-        return buildDisciplineSearchOptions(disciplineFocusId, t).filter((option) => {
+        return (disciplineOptionsByFocus[disciplineFocusId] || []).filter((option) => {
             if (!normalizedQuery) return true;
             return `${option.title} ${option.subtitle ?? ''}`.toLowerCase().includes(normalizedQuery);
         });
-    }, [disciplineFocusId, disciplineQuery, t]);
+    }, [disciplineFocusId, disciplineOptionsByFocus, disciplineQuery]);
 
     const reviewRows = useMemo(() => {
         const rows: Array<{ label: string; value: string }> = [];
@@ -289,7 +403,11 @@ const CompleteAthleteDetailsScreen = ({ navigation, route }: any) => {
                 </TouchableOpacity>
             </View>
 
-            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={Styles.scrollContent}>
+            <ScrollView
+                testID="profile-complete-athlete-details-scroll"
+                showsVerticalScrollIndicator={false}
+                contentContainerStyle={Styles.scrollContent}
+            >
                 <View style={Styles.illustrationContainer}>
                     <FastImage source={Images.signup4} style={Styles.illustration} resizeMode="contain" />
                 </View>
@@ -338,6 +456,7 @@ const CompleteAthleteDetailsScreen = ({ navigation, route }: any) => {
                                 <Text style={Styles.inputLabel}>{getOfficialClubFieldLabel(selectedFocuses, t)}</Text>
                                 <View style={Styles.inputContainer}>
                                     <TouchableOpacity
+                                        testID="profile-athlete-club-picker-open"
                                         style={{ flex: 1, flexDirection: 'row', alignItems: 'center', gap: 10 }}
                                         activeOpacity={0.85}
                                         onPress={() => setClubModalVisible(true)}
@@ -362,6 +481,7 @@ const CompleteAthleteDetailsScreen = ({ navigation, route }: any) => {
                             <Text style={Styles.inputLabel}>{getTrainingGroupFieldLabel(selectedFocuses, t)}</Text>
                             <View style={Styles.inputContainer}>
                                 <TouchableOpacity
+                                    testID="profile-athlete-group-picker-open"
                                     style={{ flex: 1, flexDirection: 'row', alignItems: 'center', gap: 10 }}
                                     activeOpacity={0.85}
                                     onPress={() => setGroupModalVisible(true)}
@@ -386,6 +506,7 @@ const CompleteAthleteDetailsScreen = ({ navigation, route }: any) => {
                                     <Text style={Styles.inputLabel}>{getFocusMainDisciplineLabel(focusId, t)}</Text>
                                     <View style={Styles.inputContainer}>
                                         <TouchableOpacity
+                                            testID={`profile-athlete-discipline-picker-open-${focusId}`}
                                             style={{ flex: 1, flexDirection: 'row', alignItems: 'center', gap: 10 }}
                                             activeOpacity={0.85}
                                             onPress={() => {
@@ -465,10 +586,32 @@ const CompleteAthleteDetailsScreen = ({ navigation, route }: any) => {
                 </TouchableOpacity>
             </View>
 
+            {clubModalVisible && !clubsLoading && (clubOptions.length > 0 || Boolean(clubsError)) ? (
+                <View testID="profile-athlete-club-picker-ready" style={{ position: 'absolute', width: 1, height: 1, opacity: 0 }} />
+            ) : null}
+            {!clubModalVisible && !clubsLoading && clubOptions.length > 0 ? (
+                <View testID="profile-athlete-club-prefetch-ready" style={{ position: 'absolute', width: 1, height: 1, opacity: 0 }} />
+            ) : null}
+
+            {groupModalVisible && !groupsLoading && (groupOptions.length > 0 || Boolean(groupsError)) ? (
+                <View testID="profile-athlete-group-picker-ready" style={{ position: 'absolute', width: 1, height: 1, opacity: 0 }} />
+            ) : null}
+            {!groupModalVisible && !groupsLoading && groupOptions.length > 0 ? (
+                <View testID="profile-athlete-group-prefetch-ready" style={{ position: 'absolute', width: 1, height: 1, opacity: 0 }} />
+            ) : null}
+
+            {disciplineModalVisible && disciplineOptions.length > 0 ? (
+                <View testID="profile-athlete-discipline-picker-ready" style={{ position: 'absolute', width: 1, height: 1, opacity: 0 }} />
+            ) : null}
+            {!disciplineModalVisible && Object.keys(disciplineOptionsByFocus).length > 0 ? (
+                <View testID="profile-athlete-discipline-prefetch-ready" style={{ position: 'absolute', width: 1, height: 1, opacity: 0 }} />
+            ) : null}
+
             <SearchPickerModal
                 visible={clubModalVisible}
                 title={getOfficialClubModalTitle(selectedFocuses, t)}
                 placeholder={getOfficialClubPlaceholder(selectedFocuses, t)}
+                testIDPrefix="profile-athlete-club-picker"
                 query={clubQuery}
                 onChangeQuery={setClubQuery}
                 onClose={() => setClubModalVisible(false)}
@@ -488,6 +631,7 @@ const CompleteAthleteDetailsScreen = ({ navigation, route }: any) => {
                 visible={groupModalVisible}
                 title={getTrainingGroupModalTitle(selectedFocuses, t)}
                 placeholder={getTrainingGroupPlaceholder(selectedFocuses, t)}
+                testIDPrefix="profile-athlete-group-picker"
                 query={groupQuery}
                 onChangeQuery={setGroupQuery}
                 onClose={() => setGroupModalVisible(false)}
@@ -507,6 +651,7 @@ const CompleteAthleteDetailsScreen = ({ navigation, route }: any) => {
                 visible={disciplineModalVisible}
                 title={disciplineFocusId ? getFocusDisciplineModalTitle(disciplineFocusId, t) : t('Disciplines')}
                 placeholder={t('Search discipline')}
+                testIDPrefix="profile-athlete-discipline-picker"
                 query={disciplineQuery}
                 onChangeQuery={setDisciplineQuery}
                 onClose={() => setDisciplineModalVisible(false)}

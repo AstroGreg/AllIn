@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, TextInput, Modal } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import FastImage from 'react-native-fast-image';
@@ -40,6 +40,9 @@ const VideoDetailsScreen = ({ navigation, route }: any) => {
     const [issueRequests, setIssueRequests] = useState<any[]>([]);
     const [isSavingStatus, setIsSavingStatus] = useState(false);
     const [eventIdDraft, setEventIdDraft] = useState(String(route?.params?.video?.event_id || '').trim());
+    const [titleDraft, setTitleDraft] = useState(String(route?.params?.video?.title || '').trim());
+    const eventIdDraftRef = useRef(String(route?.params?.video?.event_id || '').trim());
+    const titleDraftRef = useRef(String(route?.params?.video?.title || '').trim());
 
     const routeVideo = route?.params?.video;
     const mediaId = String(route?.params?.mediaId || routeVideo?.media_id || '').trim();
@@ -106,7 +109,12 @@ const VideoDetailsScreen = ({ navigation, route }: any) => {
                 if (!mounted) return;
                 const hls = media.hls_manifest_path ? toHlsUrl(media.hls_manifest_path) : null;
                 setMediaType(String(media?.type || routeVideo?.type || 'image').toLowerCase() === 'video' ? 'video' : 'image');
-                setEventIdDraft(String(media?.event_id || routeVideo?.event_id || '').trim());
+                const nextEventIdDraft = String(media?.event_id || routeVideo?.event_id || '').trim();
+                const nextTitleDraft = String(media?.title || routeVideo?.title || '').trim();
+                eventIdDraftRef.current = nextEventIdDraft;
+                titleDraftRef.current = nextTitleDraft;
+                setEventIdDraft(nextEventIdDraft);
+                setTitleDraft(nextTitleDraft);
                 const candidates = [
                     media.preview_url,
                     media.original_url,
@@ -122,6 +130,7 @@ const VideoDetailsScreen = ({ navigation, route }: any) => {
                 const resolvedPoster = thumbCandidate ? toAbsoluteUrl(String(thumbCandidate)) : null;
                 setVideoData((prev) => ({
                     ...prev,
+                    title: String(media?.title || prev.title || '').trim() || prev.title,
                     videoUri: withAccessToken(resolvedVideo) || resolvedVideo,
                     thumbnail: resolvedPoster ? { uri: withAccessToken(resolvedPoster) || resolvedPoster } : prev.thumbnail,
                 }));
@@ -171,8 +180,8 @@ const VideoDetailsScreen = ({ navigation, route }: any) => {
 
         try {
             const [hubResult, mediaResult] = await Promise.allSettled([
-                getMyMediaIssueRequests(apiAccessToken, { limit: 500, offset: 0 }),
-                getMediaIssueRequests(apiAccessToken, mediaId, { limit: 500, offset: 0 }),
+                getMyMediaIssueRequests(apiAccessToken, { limit: 100, offset: 0 }),
+                getMediaIssueRequests(apiAccessToken, mediaId, { limit: 100, offset: 0 }),
             ]);
 
             const hubRows =
@@ -297,10 +306,23 @@ const VideoDetailsScreen = ({ navigation, route }: any) => {
     const saveMediaEventChange = useCallback(async () => {
         if (!apiAccessToken || !mediaId) return;
         try {
-            await updateMedia(apiAccessToken, mediaId, { event_id: eventIdDraft.trim() || null });
+            const nextEventIdDraft = eventIdDraftRef.current.trim();
+            const nextTitleDraft = titleDraftRef.current.trim();
+            const payload = {
+                event_id: nextEventIdDraft || null,
+                ...(mediaType === 'video' ? { title: nextTitleDraft || null } : {}),
+            };
+            const updated = await updateMedia(apiAccessToken, mediaId, payload);
+            const nextTitle = String(updated?.media?.title || nextTitleDraft || videoData.title || '').trim();
+            setVideoData((prev) => ({
+                ...prev,
+                title: nextTitle || prev.title,
+            }));
+            titleDraftRef.current = nextTitle;
+            setTitleDraft(nextTitle);
             setShowManageModal(false);
         } catch {}
-    }, [apiAccessToken, eventIdDraft, mediaId]);
+    }, [apiAccessToken, mediaId, mediaType, videoData.title]);
 
     const handleDeleteMedia = useCallback(async () => {
         if (!apiAccessToken || !mediaId) return;
@@ -327,7 +349,13 @@ const VideoDetailsScreen = ({ navigation, route }: any) => {
     }, [apiAccessToken, navigation, routePostId]);
 
     const renderEditRequestCard = (item: any) => (
-        <TouchableOpacity key={item.id} style={Styles.editRequestCard} onPress={() => openStatusModal(item)} activeOpacity={0.8}>
+        <TouchableOpacity
+            key={item.id}
+            style={Styles.editRequestCard}
+            onPress={() => openStatusModal(item)}
+            activeOpacity={0.8}
+            testID={`video-details-edit-request-${item.id}`}
+        >
             <View style={Styles.editRequestHeader}>
                 <View style={Styles.receiptIconContainer}>
                     <Icons.ReceiptEdit height={22} width={22} />
@@ -366,7 +394,7 @@ const VideoDetailsScreen = ({ navigation, route }: any) => {
     );
 
     return (
-        <View style={Styles.mainContainer}>
+        <View style={Styles.mainContainer} testID="video-details-screen">
             <SizeBox height={insets.top} />
 
             {/* Header */}
@@ -455,6 +483,7 @@ const VideoDetailsScreen = ({ navigation, route }: any) => {
                 <TouchableOpacity
                     style={Styles.primaryButton}
                     onPress={() => setShowManageModal(true)}
+                    testID="video-details-manage-upload-button"
                 >
                     <Text style={Styles.primaryButtonText}>{t('Manage upload')}</Text>
                 </TouchableOpacity>
@@ -464,7 +493,7 @@ const VideoDetailsScreen = ({ navigation, route }: any) => {
 
             <Modal visible={showManageModal} transparent animationType="fade" onRequestClose={() => setShowManageModal(false)}>
                 <View style={Styles.modalBackdrop}>
-                    <View style={Styles.modalCard}>
+                    <View style={Styles.modalCard} testID="video-details-manage-modal">
                         <Text style={Styles.modalTitle}>{t('Edit upload')}</Text>
                         <Text style={Styles.modalSubtitle}>{t('Update your media details.')}</Text>
 
@@ -489,15 +518,25 @@ const VideoDetailsScreen = ({ navigation, route }: any) => {
                                         {uploadFileName ? (
                                             <Text style={Styles.modalFileName}>{t('Selected:')} {uploadFileName}</Text>
                                         ) : null}
+                                        <Text style={Styles.modalLabel}>{t('Title')}</Text>
+                                        <TextInput
+                                            testID="video-details-title-input"
+                                            style={Styles.modalInput}
+                                            value={titleDraft}
+                                            onChangeText={(value) => {
+                                                titleDraftRef.current = value;
+                                                setTitleDraft(value);
+                                            }}
+                                            placeholder={t('video title')}
+                                            placeholderTextColor="#9B9F9F"
+                                        />
                                     </>
                                 ) : null}
-                                <Text style={Styles.modalLabel}>{t('Competition event id')}</Text>
-                                <TextInput style={Styles.modalInput} value={eventIdDraft} onChangeText={setEventIdDraft} placeholder={t('event id')} placeholderTextColor="#9B9F9F" />
                                 <View style={Styles.modalButtonRow}>
                                     <TouchableOpacity style={Styles.modalCancelButton} onPress={() => setShowManageModal(false)}>
                                         <Text style={Styles.modalCancelText}>{t('Cancel')}</Text>
                                     </TouchableOpacity>
-                                    <TouchableOpacity style={Styles.modalSaveButton} onPress={saveMediaEventChange}>
+                                    <TouchableOpacity testID="video-details-save-button" style={Styles.modalSaveButton} onPress={saveMediaEventChange}>
                                         <Text style={Styles.modalSaveText}>{t('Save')}</Text>
                                     </TouchableOpacity>
                                 </View>
@@ -517,6 +556,7 @@ const VideoDetailsScreen = ({ navigation, route }: any) => {
                         <Text style={Styles.modalSubtitle}>{selectedRequest?.title}</Text>
 
                         <TouchableOpacity
+                            testID="video-details-status-fixed"
                             style={[Styles.statusOption, statusChoice === 'fixed' && Styles.statusOptionActive]}
                             onPress={() => setStatusChoice('fixed')}
                         >
@@ -524,6 +564,7 @@ const VideoDetailsScreen = ({ navigation, route }: any) => {
                         </TouchableOpacity>
 
                         <TouchableOpacity
+                            testID="video-details-status-wont-fix"
                             style={[Styles.statusOption, statusChoice === 'wont_fix' && Styles.statusOptionActive]}
                             onPress={() => setStatusChoice('wont_fix')}
                         >
@@ -534,6 +575,7 @@ const VideoDetailsScreen = ({ navigation, route }: any) => {
                             <>
                                 <Text style={Styles.modalLabel}>{t('Reason')}</Text>
                                 <TextInput
+                                    testID="video-details-status-reason-input"
                                     style={Styles.modalInput}
                                     placeholder={t('Explain why')}
                                     placeholderTextColor="#9B9F9F"
@@ -548,6 +590,7 @@ const VideoDetailsScreen = ({ navigation, route }: any) => {
                                 <Text style={Styles.modalCancelText}>{t('Cancel')}</Text>
                             </TouchableOpacity>
                             <TouchableOpacity
+                                testID="video-details-status-save-button"
                                 style={[
                                     Styles.modalSaveButton,
                                     statusChoice === 'wont_fix' && !wontFixReason.trim() && Styles.modalSaveButtonDisabled,

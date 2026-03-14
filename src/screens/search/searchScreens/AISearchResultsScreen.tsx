@@ -1,5 +1,5 @@
 import React, {useCallback, useMemo} from 'react';
-import {Alert, ScrollView, Share, Text, TouchableOpacity, View} from 'react-native';
+import {Alert, FlatList, ScrollView, Share, Text, TouchableOpacity, View} from 'react-native';
 import SizeBox from '../../../constants/SizeBox';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import {useTheme} from '../../../context/ThemeContext';
@@ -60,6 +60,9 @@ const AISearchResultsScreen = ({navigation, route}: any) => {
 
   const parsedResults: ResultItem[] = useMemo(() => {
     return results.map((r: any, idx: number) => ({
+      ...(Number.isFinite(Number(r.match_time_seconds))
+        ? {matchTimeSeconds: Number(r.match_time_seconds)}
+        : {}),
       id: String(r.media_id ?? r.id ?? idx),
       imageUrl: String(r.thumbnail_url ?? r.preview_url ?? r.original_url ?? ''),
       type: r.type === 'video' || r.type === 'image' ? r.type : undefined,
@@ -69,7 +72,6 @@ const AISearchResultsScreen = ({navigation, route}: any) => {
       eventName: r.event_name ? String(r.event_name) : undefined,
       matchType: r.match_type ? String(r.match_type) : r.bib_number ? 'bib' : defaultMatchType,
       bibNumber: r.bib_number ? String(r.bib_number) : undefined,
-      matchTimeSeconds: typeof r.match_time_seconds === 'number' ? r.match_time_seconds : undefined,
       createdAt: r.created_at ? String(r.created_at) : undefined,
       confidencePercent: parseConfidencePercent(r),
     }));
@@ -118,6 +120,14 @@ const AISearchResultsScreen = ({navigation, route}: any) => {
     [t],
   );
 
+  const formatMatchTime = useCallback((value?: number) => {
+    if (!Number.isFinite(value)) return null;
+    const safe = Math.max(0, Math.floor(Number(value)));
+    const minutes = Math.floor(safe / 60);
+    const seconds = safe % 60;
+    return `${minutes}:${seconds < 10 ? `0${seconds}` : seconds}`;
+  }, []);
+
   const downloadOne = useCallback(
     async (item: ResultItem) => {
       if (!apiAccessToken) {
@@ -159,8 +169,31 @@ const AISearchResultsScreen = ({navigation, route}: any) => {
   );
 
   const openMedia = useCallback(
-    (item: ResultItem) => {
-      const url = item.previewUrl ?? item.originalUrl ?? item.imageUrl;
+    async (item: ResultItem) => {
+      let resolvedThumbnail = item.imageUrl;
+      let resolvedPreview = item.previewUrl;
+      let resolvedOriginal = item.originalUrl;
+
+      if (!resolvedThumbnail && !resolvedPreview && !resolvedOriginal) {
+        if (!apiAccessToken) {
+          Alert.alert(t('Missing URL'), t('No preview/original URL was provided for this result.'));
+          return;
+        }
+        try {
+          const fresh = await getMediaById(apiAccessToken, item.id);
+          resolvedThumbnail = String(fresh.thumbnail_url ?? '') || resolvedThumbnail;
+          resolvedPreview = String(fresh.preview_url ?? '') || resolvedPreview;
+          resolvedOriginal = String(
+            fresh.original_url ?? fresh.full_url ?? fresh.raw_url ?? '',
+          ) || resolvedOriginal;
+        } catch (e: any) {
+          const msg = e instanceof ApiError ? e.message : String(e?.message ?? e);
+          Alert.alert(t('Open failed'), msg);
+          return;
+        }
+      }
+
+      const url = resolvedPreview ?? resolvedOriginal ?? resolvedThumbnail;
       if (!url) {
         Alert.alert(t('Missing URL'), t('No preview/original URL was provided for this result.'));
         return;
@@ -171,8 +204,8 @@ const AISearchResultsScreen = ({navigation, route}: any) => {
           startAt: item.matchTimeSeconds ?? 0,
           video: {
             title: item.eventName || eventNameById(item.eventId),
-            thumbnail: item.imageUrl,
-            uri: item.originalUrl ?? item.previewUrl ?? item.imageUrl,
+            thumbnail: resolvedThumbnail,
+            uri: resolvedOriginal ?? resolvedPreview ?? resolvedThumbnail,
           },
         });
         return;
@@ -183,16 +216,16 @@ const AISearchResultsScreen = ({navigation, route}: any) => {
         media: {
           id: item.id,
           eventId: item.eventId,
-          thumbnailUrl: item.imageUrl,
-          previewUrl: item.previewUrl,
-          originalUrl: item.originalUrl,
+          thumbnailUrl: resolvedThumbnail,
+          previewUrl: resolvedPreview,
+          originalUrl: resolvedOriginal,
           type: item.type,
           matchType: item.matchType,
           bibNumber: item.bibNumber,
         },
       });
     },
-    [eventNameById, navigation, t],
+    [apiAccessToken, eventNameById, navigation, t],
   );
 
   const renderResultCard = useCallback(
@@ -202,6 +235,7 @@ const AISearchResultsScreen = ({navigation, route}: any) => {
         style={styles.resultCard}
         onPress={() => openMedia(item)}
         activeOpacity={0.85}
+        testID={`ai-search-result-${item.id}`}
       >
         <FastImage
           source={{uri: item.imageUrl}}
@@ -226,16 +260,22 @@ const AISearchResultsScreen = ({navigation, route}: any) => {
           <View>
             {item.bibNumber ? <Text style={styles.resultMeta}>{t('Chest number')}: {item.bibNumber}</Text> : null}
             {item.type === 'video' ? <Text style={styles.resultMeta}>{t('Video')}</Text> : null}
+            {item.type === 'video' && item.matchTimeSeconds != null ? (
+              <Text style={styles.resultMeta}>{t('Match time')}: {formatMatchTime(item.matchTimeSeconds)}</Text>
+            ) : null}
           </View>
         </View>
       </TouchableOpacity>
     ),
-    [confidenceLabel, downloadOne, eventNameById, matchLabel, openMedia, styles, t],
+    [confidenceLabel, downloadOne, eventNameById, formatMatchTime, matchLabel, openMedia, styles, t],
   );
 
   return (
-    <View style={styles.mainContainer}>
+    <View style={styles.mainContainer} testID="ai-search-results-screen">
       <SizeBox height={insets.top} />
+      {sortedResults.length > 0 ? (
+        <View testID="ai-search-results-ready" style={{ position: 'absolute', width: 1, height: 1, opacity: 0 }} />
+      ) : null}
 
       <View style={styles.header}>
         <TouchableOpacity style={styles.headerButton} onPress={() => navigation.goBack()}>
@@ -258,29 +298,40 @@ const AISearchResultsScreen = ({navigation, route}: any) => {
         </TouchableOpacity>
       </View>
 
-      <ScrollView style={styles.container} contentContainerStyle={{paddingBottom: insets.bottom > 0 ? insets.bottom + 20 : 40}} showsVerticalScrollIndicator={false}>
-        <SizeBox height={16} />
-
-        <View style={styles.resultsHeader}>
-          <View>
-            <Text style={styles.resultsTitle}>{t('Possible matches')}</Text>
-            <Text style={styles.resultsSubtitle}>{t('Possible matches are sorted by chance so the strongest candidates appear first.')}</Text>
-          </View>
-          <View style={styles.resultsBadge}>
-            <Text style={styles.resultsBadgeText}>{matchedCount} {t('found')}</Text>
-          </View>
-        </View>
-
-        <SizeBox height={18} />
-
-        <View style={styles.section}>
-          {sortedResults.length === 0 ? (
+      <FlatList
+        data={sortedResults}
+        keyExtractor={(item) => item.id}
+        numColumns={2}
+        style={styles.container}
+        contentContainerStyle={[styles.listContent, {paddingBottom: insets.bottom > 0 ? insets.bottom + 20 : 40}]}
+        columnWrapperStyle={sortedResults.length > 0 ? styles.gridRow : undefined}
+        showsVerticalScrollIndicator={false}
+        initialNumToRender={6}
+        maxToRenderPerBatch={8}
+        windowSize={4}
+        removeClippedSubviews
+        renderItem={({item}) => renderResultCard(item)}
+        ListHeaderComponent={(
+          <>
+            <SizeBox height={16} />
+            <View style={styles.resultsHeader}>
+              <View>
+                <Text style={styles.resultsTitle}>{t('Possible matches')}</Text>
+                <Text style={styles.resultsSubtitle}>{t('Possible matches are sorted by chance so the strongest candidates appear first.')}</Text>
+              </View>
+              <View style={styles.resultsBadge}>
+                <Text style={styles.resultsBadgeText}>{matchedCount} {t('found')}</Text>
+              </View>
+            </View>
+            <SizeBox height={18} />
+          </>
+        )}
+        ListEmptyComponent={(
+          <View style={styles.section}>
             <Text style={styles.emptySectionText}>{t('No possible matches to review.')}</Text>
-          ) : (
-            <View style={styles.grid}>{sortedResults.map(renderResultCard)}</View>
-          )}
-        </View>
-      </ScrollView>
+          </View>
+        )}
+      />
     </View>
   );
 };

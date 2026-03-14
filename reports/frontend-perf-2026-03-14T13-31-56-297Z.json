@@ -1,0 +1,101 @@
+{
+  "generated_at": "2026-03-14T13:31:56.300Z",
+  "api_base_url": "http://127.0.0.1:3000",
+  "target_ms": 1000,
+  "max_ms": 2000,
+  "iterations": 3,
+  "backend_baselines_ms": {
+    "home": 216.4,
+    "hub": 164.8,
+    "search": 250.6,
+    "profile": 297.4,
+    "upload_select": 154.4,
+    "upload_competition": 179.4,
+    "competition": 179.4
+  },
+  "dataset_validation": {
+    "home_empty": {
+      "has_video": false,
+      "has_photo": false,
+      "feed_posts": 0
+    },
+    "home_rich": {
+      "has_video": false,
+      "has_photo": true,
+      "has_blog": true,
+      "feed_posts": 60,
+      "media_total": 61,
+      "photo_posts": 60,
+      "video_posts": 0
+    },
+    "hub": {
+      "appearances": 5,
+      "uploads": 420
+    },
+    "search": {
+      "competitions": 10,
+      "thumbnails": 10
+    },
+    "competition": {
+      "competition_id": "d178de13-6c93-44f3-8465-4298fe62702f",
+      "disciplines": 27
+    },
+    "profile_rich": {
+      "posts": 20,
+      "uploads": 420
+    },
+    "onboarding": {
+      "clubs": 50,
+      "groups": 1,
+      "disciplines": 27
+    },
+    "ai_bib": {
+      "selected_competitions": 5,
+      "seeded_media_per_competition": [
+        5,
+        5,
+        5,
+        5,
+        5
+      ],
+      "single_competition_results": 5,
+      "five_competition_results": 25
+    }
+  },
+  "results": [
+    {
+      "name": "ai_competition_selector",
+      "routeName": "AISearchScreen",
+      "prepare_samples_ms": [
+        9,
+        24
+      ],
+      "prepare_p95_ms": 24,
+      "cold_ms": 2569,
+      "warm_samples_ms": [
+        2622,
+        2522
+      ],
+      "warm_p50_ms": 2522,
+      "warm_p95_ms": 2622,
+      "warm_max_ms": 2622,
+      "target_ms": 1000,
+      "max_ms": 2000,
+      "backend_baseline_ms": null,
+      "estimated_frontend_overhead_ms": null,
+      "dominant_layer": "frontend",
+      "failures": [],
+      "target_met": false,
+      "pass": false
+    }
+  ],
+  "all_passed": false,
+  "target_met": false,
+  "target_warnings": [
+    {
+      "name": "ai_competition_selector",
+      "warm_p95_ms": 2622,
+      "target_ms": 1000
+    }
+  ]
+}

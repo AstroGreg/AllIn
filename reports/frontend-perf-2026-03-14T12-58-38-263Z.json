@@ -1,0 +1,218 @@
+{
+  "generated_at": "2026-03-14T12:58:38.264Z",
+  "api_base_url": "http://127.0.0.1:3000",
+  "target_ms": 1000,
+  "max_ms": 2000,
+  "iterations": 3,
+  "backend_baselines_ms": {
+    "home": 216.4,
+    "hub": 164.8,
+    "search": 250.6,
+    "profile": 297.4,
+    "upload_select": 154.4,
+    "upload_competition": 179.4,
+    "competition": 179.4
+  },
+  "dataset_validation": {
+    "home_empty": {
+      "has_video": false,
+      "has_photo": false,
+      "feed_posts": 0
+    },
+    "home_rich": {
+      "has_video": false,
+      "has_photo": true,
+      "has_blog": true,
+      "feed_posts": 60,
+      "media_total": 61,
+      "photo_posts": 60,
+      "video_posts": 0
+    },
+    "hub": {
+      "appearances": 5,
+      "uploads": 295
+    },
+    "search": {
+      "competitions": 10,
+      "thumbnails": 10
+    },
+    "competition": {
+      "competition_id": "d178de13-6c93-44f3-8465-4298fe62702f",
+      "disciplines": 27
+    },
+    "profile_rich": {
+      "posts": 20,
+      "uploads": 295
+    },
+    "onboarding": {
+      "clubs": 50,
+      "groups": 1,
+      "disciplines": 27
+    },
+    "ai_bib": {
+      "selected_competitions": 5,
+      "seeded_media_per_competition": [
+        5,
+        5,
+        5,
+        5,
+        5
+      ],
+      "single_competition_results": 5,
+      "five_competition_results": 25
+    }
+  },
+  "results": [
+    {
+      "name": "onboarding_discipline_picker",
+      "routeName": "CompleteAthleteDetailsScreen",
+      "prepare_samples_ms": [
+        3930,
+        2585
+      ],
+      "prepare_p95_ms": 3930,
+      "cold_ms": 929,
+      "warm_samples_ms": [
+        886,
+        925
+      ],
+      "warm_p50_ms": 886,
+      "warm_p95_ms": 925,
+      "warm_max_ms": 925,
+      "target_ms": 1000,
+      "max_ms": 2000,
+      "backend_baseline_ms": null,
+      "estimated_frontend_overhead_ms": null,
+      "dominant_layer": "frontend",
+      "failures": [],
+      "target_met": true,
+      "pass": true
+    },
+    {
+      "name": "ai_competition_selector",
+      "routeName": "AISearchScreen",
+      "prepare_samples_ms": [
+        2,
+        7
+      ],
+      "prepare_p95_ms": 7,
+      "cold_ms": 1166,
+      "warm_samples_ms": [
+        1843,
+        1428
+      ],
+      "warm_p50_ms": 1428,
+      "warm_p95_ms": 1843,
+      "warm_max_ms": 1843,
+      "target_ms": 1000,
+      "max_ms": 2000,
+      "backend_baseline_ms": null,
+      "estimated_frontend_overhead_ms": null,
+      "dominant_layer": "frontend",
+      "failures": [],
+      "target_met": false,
+      "pass": true
+    },
+    {
+      "name": "ai_bib_single_competition",
+      "routeName": "AISearchScreen",
+      "prepare_samples_ms": [
+        2000,
+        402,
+        2000,
+        307,
+        2000
+      ],
+      "prepare_p95_ms": 2000,
+      "cold_ms": 2000,
+      "warm_samples_ms": [
+        2000,
+        2000
+      ],
+      "warm_p50_ms": 2000,
+      "warm_p95_ms": 2000,
+      "warm_max_ms": 2000,
+      "target_ms": 1000,
+      "max_ms": 2000,
+      "backend_baseline_ms": 161,
+      "estimated_frontend_overhead_ms": 1839,
+      "dominant_layer": "frontend",
+      "failures": [
+        {
+          "attempt": 1,
+          "error": "Test Failed: Timed out while waiting for expectation: TOEXIST WITH MATCHER(id == “ai-search-results-ready”) TIMEOUT(2s)\n\nHINT: To print view hierarchy on failed actions/matches, use log-level verbose or higher."
+        },
+        {
+          "attempt": 2,
+          "error": "Test Failed: Timed out while waiting for expectation: TOEXIST WITH MATCHER(id == “ai-search-results-ready”) TIMEOUT(2s)\n\nHINT: To print view hierarchy on failed actions/matches, use log-level verbose or higher."
+        },
+        {
+          "attempt": 3,
+          "error": "Test Failed: Timed out while waiting for expectation: TOEXIST WITH MATCHER(id == “ai-search-results-ready”) TIMEOUT(2s)\n\nHINT: To print view hierarchy on failed actions/matches, use log-level verbose or higher."
+        }
+      ],
+      "target_met": false,
+      "pass": false
+    },
+    {
+      "name": "ai_bib_five_competitions",
+      "routeName": "AISearchScreen",
+      "prepare_samples_ms": [
+        2000,
+        509,
+        2000,
+        341,
+        2000
+      ],
+      "prepare_p95_ms": 2000,
+      "cold_ms": 2000,
+      "warm_samples_ms": [
+        2000,
+        2000
+      ],
+      "warm_p50_ms": 2000,
+      "warm_p95_ms": 2000,
+      "warm_max_ms": 2000,
+      "target_ms": 1000,
+      "max_ms": 2000,
+      "backend_baseline_ms": 222,
+      "estimated_frontend_overhead_ms": 1778,
+      "dominant_layer": "frontend",
+      "failures": [
+        {
+          "attempt": 1,
+          "error": "Test Failed: Timed out while waiting for expectation: TOEXIST WITH MATCHER(id == “ai-search-results-ready”) TIMEOUT(2s)\n\nHINT: To print view hierarchy on failed actions/matches, use log-level verbose or higher."
+        },
+        {
+          "attempt": 2,
+          "error": "Test Failed: Timed out while waiting for expectation: TOEXIST WITH MATCHER(id == “ai-search-results-ready”) TIMEOUT(2s)\n\nHINT: To print view hierarchy on failed actions/matches, use log-level verbose or higher."
+        },
+        {
+          "attempt": 3,
+          "error": "Test Failed: Timed out while waiting for expectation: TOEXIST WITH MATCHER(id == “ai-search-results-ready”) TIMEOUT(2s)\n\nHINT: To print view hierarchy on failed actions/matches, use log-level verbose or higher."
+        }
+      ],
+      "target_met": false,
+      "pass": false
+    }
+  ],
+  "all_passed": false,
+  "target_met": false,
+  "target_warnings": [
+    {
+      "name": "ai_competition_selector",
+      "warm_p95_ms": 1843,
+      "target_ms": 1000
+    },
+    {
+      "name": "ai_bib_single_competition",
+      "warm_p95_ms": 2000,
+      "target_ms": 1000
+    },
+    {
+      "name": "ai_bib_five_competitions",
+      "warm_p95_ms": 2000,
+      "target_ms": 1000
+    }
+  ]
+}

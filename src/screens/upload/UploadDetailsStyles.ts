@@ -141,6 +141,15 @@ export const createStyles = (colors: ThemeColors) => StyleSheet.create({
         color: colors.grayColor,
         marginBottom: 10,
     },
+    videoTitleCard: {
+        marginTop: 10,
+        gap: 8,
+    },
+    videoTitleLabel: {
+        ...Fonts.regular12,
+        color: colors.mainTextColor,
+        fontWeight: '500',
+    },
     bottomBtn: {
         height: 90, position: 'absolute', bottom: 10, width: '100%', paddingHorizontal: 20
     },

@@ -7,6 +7,7 @@ import Slider from '@react-native-community/slider';
 import {
     ArrowLeft2,
     ArrowRight,
+    Eye,
     More,
     TickCircle,
     CloseCircle,
@@ -24,8 +25,10 @@ import { AppConfig } from '../../constants/AppConfig';
 import { useTranslation } from 'react-i18next'
 import { useInstagramStoryImageComposer } from '../../components/share/InstagramStoryComposer';
 import { usePreventMediaCapture } from '../../utils/usePreventMediaCapture';
+import { isE2ELaunchEnabled } from '../../constants/E2EConfig';
 
 const INSTAGRAM_APP_ID = String(AppConfig.INSTAGRAM_APP_ID ?? '').trim();
+const E2E_HIDDEN_TEXT_STYLE = { position: 'absolute' as const, left: -1000, top: -1000, width: 1, height: 1, opacity: 0.01 };
 
 const VideoPlayingScreen = ({ navigation, route }: any) => {
     const { t } = useTranslation();
@@ -35,6 +38,8 @@ const VideoPlayingScreen = ({ navigation, route }: any) => {
     const { apiAccessToken } = useAuth();
     const {composeInstagramStoryImage, composerElement} = useInstagramStoryImageComposer();
     usePreventMediaCapture(true);
+    const perfStartedAtRef = useRef(Date.now());
+    const [perfReadyElapsedMs, setPerfReadyElapsedMs] = useState<number | null>(null);
     const showBuyModalOnLoad = route?.params?.showBuyModal || false;
     const videoPrice = route?.params?.video?.price || '€0,20';
     const fallbackVideo = useMemo(() => (
@@ -58,7 +63,13 @@ const VideoPlayingScreen = ({ navigation, route }: any) => {
         route?.params?.media?.event_id ||
         route?.params?.media?.eventId ||
         null;
+    const startAt = Number(route?.params?.startAt ?? 0);
+    const e2eLaunchEnabled = isE2ELaunchEnabled();
+    const hasInitialSeekedRef = useRef(false);
     const [videoTitle, setVideoTitle] = useState(fallbackVideo.title);
+    const [videoViewsCount, setVideoViewsCount] = useState(
+        Number(route?.params?.video?.views_count ?? route?.params?.video?.views ?? 0) || 0,
+    );
     const [videoUrl, setVideoUrl] = useState<string | null>(fallbackVideo.uri || null);
     const fallbackPoster = useCallback(() => {
         if (!fallbackVideo.thumbnail) return null;
@@ -81,6 +92,7 @@ const VideoPlayingScreen = ({ navigation, route }: any) => {
     const [currentTime, setCurrentTime] = useState(0);
     const [isSeeking, setIsSeeking] = useState(false);
     const [pendingSeek, setPendingSeek] = useState(0);
+    const [initialSeekSeconds, setInitialSeekSeconds] = useState<number | null>(null);
     const videoRef = useRef<any>(null);
     const [sliderWidth, setSliderWidth] = useState(0);
     const [moreMenuVisible, setMoreMenuVisible] = useState(false);
@@ -92,12 +104,26 @@ const VideoPlayingScreen = ({ navigation, route }: any) => {
     const [infoPopupVisible, setInfoPopupVisible] = useState(false);
     const [infoPopupTitle, setInfoPopupTitle] = useState('');
     const [infoPopupMessage, setInfoPopupMessage] = useState('');
+    const hasRoutePlayableUrl = Boolean(
+        fallbackVideo.uri ||
+        route?.params?.video?.preview_url ||
+        route?.params?.video?.original_url ||
+        route?.params?.video?.full_url ||
+        route?.params?.video?.raw_url ||
+        route?.params?.video?.hls_manifest_path
+    );
+    const shouldRenderNativePlayer = Boolean(videoUrl) && !(e2eLaunchEnabled && !hasRoutePlayableUrl);
 
     useEffect(() => {
         setVideoTitle(fallbackVideo.title);
+        setVideoViewsCount(Number(route?.params?.video?.views_count ?? route?.params?.video?.views ?? 0) || 0);
         setVideoUrl(fallbackVideo.uri || null);
         setPosterUrl(fallbackPoster());
-    }, [fallbackPoster, fallbackVideo.title, fallbackVideo.uri]);
+        perfStartedAtRef.current = Date.now();
+        setPerfReadyElapsedMs(null);
+        setInitialSeekSeconds(Number.isFinite(startAt) && startAt > 0 ? startAt : null);
+        hasInitialSeekedRef.current = false;
+    }, [fallbackPoster, fallbackVideo.title, fallbackVideo.uri, route?.params?.video?.views, route?.params?.video?.views_count, startAt]);
 
     const formatTime = useCallback((value: number) => {
         const safe = Number.isFinite(value) ? Math.max(0, value) : 0;
@@ -161,6 +187,7 @@ const VideoPlayingScreen = ({ navigation, route }: any) => {
                 if (!mounted) return;
                 const title = (media as any)?.title || (media as any)?.description || fallbackVideo.title;
                 setVideoTitle(title);
+                setVideoViewsCount(Number((media as any)?.views_count ?? 0) || 0);
                 const hls = media.hls_manifest_path ? toHlsUrl(media.hls_manifest_path) : null;
                 const candidates = [
                     media.preview_url,
@@ -526,9 +553,17 @@ const VideoPlayingScreen = ({ navigation, route }: any) => {
                 <Text style={Styles.headerTitleCentered} numberOfLines={1}>
                     {videoTitle}
                 </Text>
-                <TouchableOpacity onPress={openMoreMenu} style={Styles.headerMore}>
-                    <More size={24} color={colors.mainTextColor} variant="Linear" style={{ transform: [{ rotate: '90deg' }] }} />
-                </TouchableOpacity>
+                <View style={Styles.headerActions}>
+                    <View style={Styles.headerViews}>
+                        <Eye size={18} color={colors.grayColor} variant="Linear" />
+                        <Text style={Styles.headerViewsText} numberOfLines={1}>
+                            {videoViewsCount}
+                        </Text>
+                    </View>
+                    <TouchableOpacity onPress={openMoreMenu} style={Styles.headerMore}>
+                        <More size={24} color={colors.mainTextColor} variant="Linear" style={{ transform: [{ rotate: '90deg' }] }} />
+                    </TouchableOpacity>
+                </View>
             </View>
 
             {/* Video Container */}
@@ -537,7 +572,7 @@ const VideoPlayingScreen = ({ navigation, route }: any) => {
                 activeOpacity={0.9}
                 onPress={() => setIsPlaying((prev) => !prev)}
             >
-                {videoUrl ? (
+                {shouldRenderNativePlayer ? (
                     <Video
                         ref={videoRef}
                         source={{ uri: videoUrl, type: String(videoUrl).includes('.m3u8') ? 'm3u8' : undefined }}
@@ -550,7 +585,16 @@ const VideoPlayingScreen = ({ navigation, route }: any) => {
                         ignoreSilentSwitch="ignore"
                         repeat={false}
                         onLoad={(meta) => {
-                            setDuration(meta.duration || 0);
+                            const nextDuration = meta.duration || 0;
+                            setDuration(nextDuration);
+                            if (!hasInitialSeekedRef.current && Number.isFinite(startAt) && startAt > 0) {
+                                const seekToTime = Math.min(startAt, nextDuration || startAt);
+                                hasInitialSeekedRef.current = true;
+                                videoRef.current?.seek(seekToTime);
+                                setCurrentTime(seekToTime);
+                                setInitialSeekSeconds(seekToTime);
+                            }
+                            setPerfReadyElapsedMs(Date.now() - perfStartedAtRef.current);
                         }}
                         onProgress={(progress) => {
                             if (!isSeeking) {
@@ -563,8 +607,20 @@ const VideoPlayingScreen = ({ navigation, route }: any) => {
                         source={posterUrl ? { uri: posterUrl } : Images.photo1}
                         style={Styles.videoImage}
                         resizeMode="cover"
+                        onLoadEnd={() => setPerfReadyElapsedMs(Date.now() - perfStartedAtRef.current)}
                     />
                 )}
+
+                {perfReadyElapsedMs != null ? (
+                    <Text style={E2E_HIDDEN_TEXT_STYLE} testID="e2e-perf-ready-video-viewer">
+                        {`ready:${perfReadyElapsedMs}`}
+                    </Text>
+                ) : null}
+                {initialSeekSeconds != null ? (
+                    <Text style={E2E_HIDDEN_TEXT_STYLE} testID="video-playing-initial-seek-time">
+                        {formatTime(initialSeekSeconds)}
+                    </Text>
+                ) : null}
 
                 {!isPlaying && (
                     <View style={Styles.playButtonOverlay}>
@@ -596,7 +652,9 @@ const VideoPlayingScreen = ({ navigation, route }: any) => {
                                     : undefined,
                             ]}
                         >
-                            <Text style={Styles.videoSliderTime}>{formatTime(isSeeking ? pendingSeek : currentTime)}</Text>
+                            <Text style={Styles.videoSliderTime} testID="video-playing-current-time">
+                                {formatTime(isSeeking ? pendingSeek : currentTime)}
+                            </Text>
                         </View>
                         <Slider
                             minimumValue={0}

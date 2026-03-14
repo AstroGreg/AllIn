@@ -41,6 +41,13 @@ function defaultPriceCentsForType(type?: string | null) {
     return isVideoAssetType(type) ? 500 : 100;
 }
 
+function deriveVideoTitleFromFileName(fileName?: string | null) {
+    const raw = String(fileName || '').trim();
+    if (!raw) return '';
+    const withoutExtension = raw.replace(/\.[^.]+$/, '');
+    return withoutExtension.replace(/[_\-]+/g, ' ').replace(/\s+/g, ' ').trim();
+}
+
 const UploadDetailsScreen = ({ navigation, route }: any) => {
     const insets = useSafeAreaInsets();
     const { colors } = useTheme();
@@ -95,6 +102,7 @@ const UploadDetailsScreen = ({ navigation, route }: any) => {
                     uri,
                     type,
                     fileName,
+                    title: isVideoAssetType(type) ? deriveVideoTitleFromFileName(fileName) : '',
                     width: Number(entry?.width || 0) || undefined,
                     height: Number(entry?.height || 0) || undefined,
                     price_cents: defaultPriceCentsForType(type),
@@ -156,6 +164,7 @@ const UploadDetailsScreen = ({ navigation, route }: any) => {
                         ...a,
                         uri: finalUri,
                         fileName: safeName,
+                        title: isVideoAssetType(a?.type) ? deriveVideoTitleFromFileName(safeName) : '',
                         price_cents: defaultPriceCentsForType(a?.type),
                         price_currency: 'EUR',
                     });
@@ -202,6 +211,17 @@ const UploadDetailsScreen = ({ navigation, route }: any) => {
         );
     };
 
+    const setVideoTitleAtIndex = (index: number, nextTitle: string) => {
+        setSelectedAssets((prev) => prev.map((asset, assetIndex) => {
+            if (assetIndex !== index) return asset;
+            if (!isVideoAssetType(asset?.type)) return asset;
+            return {
+                ...asset,
+                title: nextTitle,
+            };
+        }));
+    };
+
     const handleUpload = async () => {
         if (selectedAssets.length === 0) return;
         const competitionId = String(competition?.id || competition?.event_id || competition?.eventId || 'competition');
@@ -215,6 +235,7 @@ const UploadDetailsScreen = ({ navigation, route }: any) => {
                 uri: asset?.uri,
                 type: asset?.type,
                 fileName: asset?.fileName,
+                title: isVideoAssetType(asset?.type) ? String(asset?.title || '').trim() : '',
                 width: asset?.width,
                 height: asset?.height,
                 price_cents: Number(asset?.price_cents ?? defaultPriceCentsForType(asset?.type)),
@@ -316,6 +337,33 @@ const UploadDetailsScreen = ({ navigation, route }: any) => {
                     </>
                 ) : null}
                 <SizeBox height={20} />
+
+                {selectedAssets.some((asset) => isVideoAssetType(asset?.type)) ? (
+                    <>
+                        <View style={Styles.bulkPriceCard}>
+                            <Text style={Styles.bulkPriceTitle}>{t('Video titles')}</Text>
+                            {selectedAssets.map((asset, index) => {
+                                if (!isVideoAssetType(asset?.type)) return null;
+                                return (
+                                    <View key={`${asset?.fileName || 'video'}-${index}`} style={Styles.videoTitleCard}>
+                                        <Text style={Styles.videoTitleLabel} numberOfLines={1}>
+                                            {asset?.fileName || t('Video')}
+                                        </Text>
+                                        <TextInput
+                                            style={Styles.bulkPriceInput}
+                                            value={String(asset?.title || '')}
+                                            onChangeText={(value) => setVideoTitleAtIndex(index, value)}
+                                            placeholder={t('Give this video a title')}
+                                            placeholderTextColor={colors.grayColor}
+                                            testID={`upload-video-title-input-${index}`}
+                                        />
+                                    </View>
+                                );
+                            })}
+                        </View>
+                        <SizeBox height={20} />
+                    </>
+                ) : null}
 
                 <TouchableOpacity
                     style={[

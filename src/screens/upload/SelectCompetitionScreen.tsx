@@ -14,6 +14,7 @@ import { useTranslation } from 'react-i18next'
 import { useFocusEffect } from '@react-navigation/native'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import { getSportFocusLabel, normalizeFocusId, resolveCompetitionFocusId, type SportFocusId } from '../../utils/profileSelections'
+import E2EPerfReady from '../../components/e2e/E2EPerfReady'
 
 const UPLOAD_FLOW_RESET_KEY = '@upload_flow_reset_required';
 const UPLOAD_DEFAULT_INITIAL_LIMIT = 10;
@@ -57,6 +58,7 @@ const SelectCompetitionScreen = ({ navigation, route }: any) => {
             : {}
     ), [colors.primaryColor, isLightTheme]);
     const { apiAccessToken } = useAuth();
+    const perfStartedAtRef = useRef(Date.now());
     const anonymous = route?.params?.anonymous;
     const isAnonymous = !!anonymous;
     const fixtureCompetitions = useMemo<Competition[]>(
@@ -111,6 +113,7 @@ const SelectCompetitionScreen = ({ navigation, route }: any) => {
     const [isSubscribing, setIsSubscribing] = useState(false);
     const [visibleCompetitionCount, setVisibleCompetitionCount] = useState(UPLOAD_DEFAULT_INITIAL_LIMIT);
     const loadMoreLockedRef = useRef(false);
+    const perfReady = !isLoading && (rawEvents.length > 0 || errorText !== null);
 
     const resetFilters = useCallback(() => {
         setActiveFilter('Competition');
@@ -327,7 +330,7 @@ const SelectCompetitionScreen = ({ navigation, route }: any) => {
     useEffect(() => {
         let mounted = true;
         if (!apiAccessToken) return () => {};
-        getMediaViewAll(apiAccessToken)
+        getMediaViewAll(apiAccessToken, { include_original: false })
             .then((items) => {
                 if (!mounted) return;
                 const map: Record<string, { thumbUrl?: string; videoCount: number }> = {};
@@ -683,6 +686,7 @@ const SelectCompetitionScreen = ({ navigation, route }: any) => {
 
     return (
         <View style={Styles.mainContainer} testID="upload-select-competition-screen">
+            <E2EPerfReady screen="upload-select" ready={perfReady} startedAtMs={perfStartedAtRef.current} />
             <SizeBox height={insets.top} />
 
             {/* Header */}

@@ -1,7 +1,9 @@
-import React, {useCallback, useEffect, useMemo, useState} from 'react';
+import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {
   ActivityIndicator,
   Alert,
+  FlatList,
+  InteractionManager,
   Modal,
   ScrollView,
   Text,
@@ -78,6 +80,8 @@ const CombinedSearchScreen = ({navigation}: any) => {
   const [eventOptions, setEventOptions] = useState<EventOption[]>([]);
   const [isLoadingEvents, setIsLoadingEvents] = useState(false);
   const [eventsError, setEventsError] = useState<string | null>(null);
+  const [competitionPrefetchReady, setCompetitionPrefetchReady] = useState(false);
+  const [screenInteractionReady, setScreenInteractionReady] = useState(false);
 
   const [isSearching, setIsSearching] = useState(false);
   const [errorText, setErrorText] = useState<string | null>(null);
@@ -90,6 +94,8 @@ const CombinedSearchScreen = ({navigation}: any) => {
   const [profileChestByYear, setProfileChestByYear] = useState<Record<string, string>>({});
   const [competitionRequiredError, setCompetitionRequiredError] = useState(false);
   const [tutorialDemoRan, setTutorialDemoRan] = useState(false);
+  const competitionOptionsCacheRef = useRef<Record<string, EventOption[]>>({});
+  const competitionInflightRef = useRef<Record<string, Promise<EventOption[]>>>({});
 
   const normalizeChestByYear = useCallback((raw: any): Record<string, string> => {
     if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return {};
@@ -113,6 +119,11 @@ const CombinedSearchScreen = ({navigation}: any) => {
         date: event.date ?? event.event_date ?? null,
       }))
       .filter((event: EventOption) => Boolean(event.id && event.name));
+  }, []);
+
+  const sameEventSelection = useCallback((left: EventOption[], right: EventOption[]) => {
+    if (left.length !== right.length) return false;
+    return left.every((event, index) => String(event.id) === String(right[index]?.id));
   }, []);
 
   const selectedEventIds = useMemo(() => selectedEvents.map((event) => event.id), [selectedEvents]);
@@ -187,30 +198,53 @@ const CombinedSearchScreen = ({navigation}: any) => {
   const fetchEvents = useCallback(
     async (query: string) => {
       const trimmedQuery = query.trim();
+      const cacheKey = trimmedQuery.toLowerCase();
       const isAutoload = trimmedQuery.length === 0;
+      const cached = competitionOptionsCacheRef.current[cacheKey];
+      if (cached) {
+        setEventsError(null);
+        setEventOptions(cached);
+        setIsLoadingEvents(false);
+        if (cacheKey === '' && cached.length > 0) {
+          setCompetitionPrefetchReady(true);
+        }
+        return;
+      }
+
       setIsLoadingEvents(true);
       setEventsError(null);
       const requestAccessToken = apiAccessToken ?? '';
       try {
-        const res = await searchEvents(requestAccessToken, {
-          q: trimmedQuery,
-          limit: isAutoload ? COMPETITION_AUTOLOAD_LIMIT : COMPETITION_SEARCH_LIMIT,
-        });
-        const list = Array.isArray(res?.events) ? res.events : [];
-        setEventOptions(
-          list
-            .slice(0, isAutoload ? COMPETITION_AUTOLOAD_LIMIT : undefined)
-            .map((event) => ({
-              id: String(event.event_id),
-              name: String(event.event_name || event.event_title || t('Competition')),
-              location: event.event_location ?? null,
-              date: event.event_date ?? null,
-            })),
-        );
+        let request = competitionInflightRef.current[cacheKey];
+        if (!request) {
+          request = searchEvents(requestAccessToken, {
+            q: trimmedQuery,
+            limit: isAutoload ? COMPETITION_AUTOLOAD_LIMIT : COMPETITION_SEARCH_LIMIT,
+          }).then((res) => {
+            const list = Array.isArray(res?.events) ? res.events : [];
+            return list
+              .slice(0, isAutoload ? COMPETITION_AUTOLOAD_LIMIT : undefined)
+              .map((event) => ({
+                id: String(event.event_id),
+                name: String(event.event_name || event.event_title || t('Competition')),
+                location: event.event_location ?? null,
+                date: event.event_date ?? null,
+              }));
+          });
+          competitionInflightRef.current[cacheKey] = request;
+        }
+
+        const options = await request;
+        competitionOptionsCacheRef.current[cacheKey] = options;
+        setEventOptions(options);
+        if (cacheKey === '' && options.length > 0) {
+          setCompetitionPrefetchReady(true);
+        }
       } catch (e: any) {
         const msg = e instanceof ApiError ? e.message : String(e?.message ?? e);
         setEventsError(msg);
       } finally {
+        delete competitionInflightRef.current[cacheKey];
         setIsLoadingEvents(false);
       }
     },
@@ -218,10 +252,30 @@ const CombinedSearchScreen = ({navigation}: any) => {
   );
 
   useEffect(() => {
+    fetchEvents('').catch(() => {
+      // fall back to loading on modal open
+    });
+  }, [fetchEvents]);
+
+  useEffect(() => {
+    let cancelled = false;
+    const task = InteractionManager.runAfterInteractions(() => {
+      if (!cancelled) {
+        setScreenInteractionReady(true);
+      }
+    });
+    return () => {
+      cancelled = true;
+      setScreenInteractionReady(false);
+      task.cancel?.();
+    };
+  }, []);
+
+  useEffect(() => {
     if (!showCompetitionModal) return;
     const handle = setTimeout(() => {
       fetchEvents(competitionQuery.trim());
-    }, 250);
+    }, competitionQuery.trim().length === 0 ? 0 : 120);
     return () => clearTimeout(handle);
   }, [competitionQuery, fetchEvents, showCompetitionModal]);
 
@@ -233,17 +287,16 @@ const CombinedSearchScreen = ({navigation}: any) => {
   }, [showCompetitionModal]);
 
   useEffect(() => {
-    if (selectedEvents.length > 0) return;
     if (preselectedEventsParam.length > 0) {
       const normalized = normalizeEventOptions(preselectedEventsParam);
-      if (normalized.length > 0) {
+      if (normalized.length > 0 && !sameEventSelection(selectedEvents, normalized)) {
         setSelectedEvents(normalized);
       }
-    } else if (prefillCompetitionName) {
+    } else if (selectedEvents.length === 0 && prefillCompetitionName) {
       setCompetitionQuery(String(prefillCompetitionName));
       setShowCompetitionModal(true);
     }
-  }, [normalizeEventOptions, prefillCompetitionName, preselectedEventsParam, selectedEvents.length]);
+  }, [normalizeEventOptions, prefillCompetitionName, preselectedEventsParam, sameEventSelection, selectedEvents]);
 
   useEffect(() => {
     if (!resumeCombinedSearch) return;
@@ -402,10 +455,22 @@ const CombinedSearchScreen = ({navigation}: any) => {
         if (!id || seen.has(id)) continue;
         seen.add(id);
         const eventId = String(item.event_id ?? '').trim();
+        const matchTimeSeconds = Number(item.match_time_seconds);
         collected.push({
-          ...item,
+          media_id: id,
+          event_id: eventId || undefined,
           match_type: matchType,
           event_name: item.event_name ?? eventNameLookup.get(eventId),
+          type: item.type === 'video' ? 'video' : 'image',
+          thumbnail_url: item.thumbnail_url ?? item.preview_url ?? item.original_url ?? '',
+          preview_url: item.preview_url ?? item.thumbnail_url ?? item.original_url ?? '',
+          original_url: item.original_url ?? '',
+          bib_number: item.bib_number ?? undefined,
+          match_time_seconds: Number.isFinite(matchTimeSeconds) ? matchTimeSeconds : undefined,
+          created_at: item.created_at ?? undefined,
+          confidence: item.confidence ?? undefined,
+          match_percent: item.match_percent ?? undefined,
+          score: item.score ?? undefined,
         });
       }
     };
@@ -414,49 +479,66 @@ const CombinedSearchScreen = ({navigation}: any) => {
 
     try {
       if (wantsBib) {
-        for (const eventId of selectedEventIds) {
-          try {
-            const res = await searchMediaByBib(requestAccessToken, {
-              event_id: eventId,
-              bib: activeBib,
-            });
-            const results = Array.isArray(res?.results) ? res.results : [];
-            addResults(
-              results.map((r: any) => ({
-                ...r,
+        const bibResponses = await Promise.all(
+          selectedEventIds.map(async (eventId) => {
+            try {
+              const res = await searchMediaByBib(requestAccessToken, {
                 event_id: eventId,
-                event_name: eventNameLookup.get(eventId),
-              })),
-              'bib',
-            );
-          } catch (e: any) {
-            const msg = e instanceof ApiError ? e.message : String(e?.message ?? e);
-            errors.push(`${t('Chest number')}: ${msg}`);
+                bib: activeBib,
+                include_original: false,
+              });
+              return {eventId, results: Array.isArray(res?.results) ? res.results : [], error: null};
+            } catch (e: any) {
+              const msg = e instanceof ApiError ? e.message : String(e?.message ?? e);
+              return {eventId, results: [], error: `${t('Chest number')}: ${msg}`};
+            }
+          }),
+        );
+        for (const response of bibResponses) {
+          if (response.error) {
+            errors.push(response.error);
+            continue;
           }
+          addResults(
+            response.results.map((r: any) => ({
+              ...r,
+              event_id: response.eventId,
+              event_name: eventNameLookup.get(response.eventId),
+            })),
+            'bib',
+          );
         }
       }
 
       if (wantsContext) {
-        for (const eventId of selectedEventIds) {
-          try {
-            const results = await searchObject(requestAccessToken, {
-              q: contextText.trim(),
-              top: 150,
-              event_id: eventId,
-            });
-            const list = Array.isArray(results) ? results : [];
-            addResults(
-              list.map((r: any) => ({
-                ...r,
+        const contextResponses = await Promise.all(
+          selectedEventIds.map(async (eventId) => {
+            try {
+              const results = await searchObject(requestAccessToken, {
+                q: contextText.trim(),
+                top: 150,
                 event_id: eventId,
-                event_name: eventNameLookup.get(eventId),
-              })),
-              'context',
-            );
-          } catch (e: any) {
-            const msg = e instanceof ApiError ? e.message : String(e?.message ?? e);
-            errors.push(`${t('Context')}: ${msg}`);
+              });
+              return {eventId, results: Array.isArray(results) ? results : [], error: null};
+            } catch (e: any) {
+              const msg = e instanceof ApiError ? e.message : String(e?.message ?? e);
+              return {eventId, results: [], error: `${t('Context')}: ${msg}`};
+            }
+          }),
+        );
+        for (const response of contextResponses) {
+          if (response.error) {
+            errors.push(response.error);
+            continue;
           }
+          addResults(
+            response.results.map((r: any) => ({
+              ...r,
+              event_id: response.eventId,
+              event_name: eventNameLookup.get(response.eventId),
+            })),
+            'context',
+          );
         }
       }
 
@@ -745,7 +827,7 @@ const CombinedSearchScreen = ({navigation}: any) => {
   }, [navigation]);
 
   return (
-    <View style={styles.mainContainer}>
+    <View style={styles.mainContainer} testID="ai-search-screen">
       <SizeBox height={insets.top} />
 
       <View style={styles.header}>
@@ -846,6 +928,7 @@ const CombinedSearchScreen = ({navigation}: any) => {
               </View>
             ) : (
               <TouchableOpacity
+                testID="ai-search-open-competition-selector"
                 style={[
                   styles.emptyCompetitionCard,
                   competitionRequiredError && styles.emptyCompetitionCardError,
@@ -856,80 +939,6 @@ const CombinedSearchScreen = ({navigation}: any) => {
               </TouchableOpacity>
             )}
           </View>
-
-          <Modal
-            visible={showCompetitionModal}
-            transparent
-            animationType="fade"
-            onRequestClose={() => setShowCompetitionModal(false)}
-          >
-            <View style={styles.modalOverlay}>
-              <View style={styles.modalCard}>
-                <View style={styles.modalHeader}>
-                  <Text style={styles.modalTitle}>{t('Choose one or more')}</Text>
-                  <TouchableOpacity
-                    style={styles.modalCloseButton}
-                    onPress={() => setShowCompetitionModal(false)}
-                  >
-                    <CloseCircle size={22} color={colors.subTextColor} variant="Linear" />
-                  </TouchableOpacity>
-                </View>
-
-                <UnifiedSearchInput
-                  containerStyle={styles.modalSearchRow}
-                  left={<SearchNormal1 size={18} color={colors.subTextColor} variant="Linear" />}
-                  inputStyle={styles.modalSearchInput}
-                  placeholder={t('Search competitions')}
-                  placeholderTextColor={colors.subTextColor}
-                  value={competitionQuery}
-                  onChangeText={setCompetitionQuery}
-                />
-
-                {eventsError && <Text style={styles.modalErrorText}>{eventsError}</Text>}
-
-                <ScrollView style={styles.modalList} contentContainerStyle={styles.modalListContent} keyboardShouldPersistTaps="handled">
-                  {isLoadingEvents ? (
-                    <View style={styles.modalLoadingRow}>
-                      <ActivityIndicator color={colors.primaryColor} />
-                    </View>
-                  ) : eventOptions.length > 0 ? (
-                    eventOptions.map((event) => {
-                      const selected = selectedEventIds.includes(event.id);
-                      const meta = [event.date ? new Date(event.date).toLocaleDateString() : null, event.location]
-                        .filter(Boolean)
-                        .join(' • ');
-                      return (
-                        <TouchableOpacity
-                          key={event.id}
-                          style={[styles.modalOption, selected && styles.modalOptionSelected]}
-                          onPress={() => toggleEvent(event)}
-                        >
-                          <View style={styles.modalOptionTextWrap}>
-                            <Text style={styles.modalOptionTitle}>{event.name}</Text>
-                            {!!meta && <Text style={styles.modalOptionSubtext}>{meta}</Text>}
-                          </View>
-                          {selected && (
-                            <TickCircle size={22} color={colors.primaryColor} variant="Bold" />
-                          )}
-                        </TouchableOpacity>
-                      );
-                    })
-                  ) : (
-                    <Text style={styles.modalEmptyText}>{t('No competitions found.')}</Text>
-                  )}
-                </ScrollView>
-
-                <TouchableOpacity
-                  style={styles.modalDoneButton}
-                  onPress={() => setShowCompetitionModal(false)}
-                >
-                  <Text style={styles.modalDoneButtonText}>
-                    {t('Done')} ({selectedEventIds.length} {t('selected')})
-                  </Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-          </Modal>
 
           <Modal
             visible={showAutoCompareModal}
@@ -999,6 +1008,7 @@ const CombinedSearchScreen = ({navigation}: any) => {
           <Text style={styles.sectionTitle}>{t('Chest number')}</Text>
           {!useDefaultBib || !defaultBib ? (
             <UnifiedSearchInput
+              testID="ai-search-bib-input"
               containerStyle={styles.inputContainer}
               left={<SearchNormal1 size={20} color={colors.grayColor} variant="Linear" />}
               inputStyle={styles.input}
@@ -1031,6 +1041,7 @@ const CombinedSearchScreen = ({navigation}: any) => {
           <SizeBox height={20} />
           <Text style={styles.sectionTitle}>{t('Context')}</Text>
           <UnifiedSearchInput
+            testID="ai-search-context-input"
             containerStyle={styles.inputContainer}
             left={<SearchNormal1 size={20} color={colors.grayColor} variant="Linear" />}
             inputStyle={styles.input}
@@ -1044,6 +1055,7 @@ const CombinedSearchScreen = ({navigation}: any) => {
 
           <SizeBox height={20} />
           <TouchableOpacity
+            testID="ai-search-run-button"
             style={[styles.primaryButton, (!hasCompetition || isSearching) && styles.primaryButtonDisabled]}
             onPress={runCombinedSearch}
             disabled={!hasCompetition || isSearching}
@@ -1051,9 +1063,107 @@ const CombinedSearchScreen = ({navigation}: any) => {
                         <Text style={styles.primaryButtonText}>{isSearching ? t('Searching…') : t('Run AI search')}</Text>
           </TouchableOpacity>
 
+          {!showCompetitionModal && competitionPrefetchReady ? (
+            <View testID="ai-search-competition-prefetch-ready" style={{ position: 'absolute', width: 1, height: 1, opacity: 0 }} />
+          ) : null}
+          {screenInteractionReady ? (
+            <View testID="ai-search-screen-idle-ready" style={{ position: 'absolute', width: 1, height: 1, opacity: 0 }} />
+          ) : null}
+          {showCompetitionModal && !isLoadingEvents && eventOptions.length > 0 ? (
+            <View testID="ai-search-competition-modal-ready" style={{ position: 'absolute', width: 1, height: 1, opacity: 0 }} />
+          ) : null}
+
           <SizeBox height={insets.bottom > 0 ? insets.bottom + 20 : 40} />
         </View>
       </KeyboardAvoidingContainer>
+      <View
+        pointerEvents={showCompetitionModal ? 'auto' : 'none'}
+        style={[
+          styles.modalOverlay,
+          styles.modalOverlayAbsolute,
+          !showCompetitionModal ? { opacity: 0 } : null,
+        ]}
+        testID="ai-search-competition-modal-overlay"
+      >
+          <View style={styles.modalCard} testID="ai-search-competition-modal-card">
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>{t('Choose one or more')}</Text>
+              <TouchableOpacity
+                testID="ai-search-competition-modal-close"
+                style={styles.modalCloseButton}
+                onPress={() => setShowCompetitionModal(false)}
+              >
+                <CloseCircle size={22} color={colors.subTextColor} variant="Linear" />
+              </TouchableOpacity>
+            </View>
+
+            <UnifiedSearchInput
+              testID="ai-search-competition-modal-input"
+              containerStyle={styles.modalSearchRow}
+              left={<SearchNormal1 size={18} color={colors.subTextColor} variant="Linear" />}
+              inputStyle={styles.modalSearchInput}
+              placeholder={t('Search competitions')}
+              placeholderTextColor={colors.subTextColor}
+              value={competitionQuery}
+              onChangeText={setCompetitionQuery}
+            />
+
+            {eventsError && <Text style={styles.modalErrorText}>{eventsError}</Text>}
+
+            {isLoadingEvents ? (
+              <View style={styles.modalLoadingRow}>
+                <ActivityIndicator color={colors.primaryColor} />
+              </View>
+            ) : (
+              <FlatList
+                data={eventOptions}
+                keyExtractor={(item) => item.id}
+                style={styles.modalList}
+                contentContainerStyle={styles.modalListContent}
+                keyboardShouldPersistTaps="handled"
+                initialNumToRender={8}
+                maxToRenderPerBatch={8}
+                windowSize={4}
+                removeClippedSubviews
+                renderItem={({item: event}) => {
+                  const selected = selectedEventIds.includes(event.id);
+                  const meta = [event.date ? new Date(event.date).toLocaleDateString() : null, event.location]
+                    .filter(Boolean)
+                    .join(' • ');
+                  return (
+                    <TouchableOpacity
+                      key={event.id}
+                      testID={`ai-search-competition-option-${event.id}`}
+                      style={[styles.modalOption, selected && styles.modalOptionSelected]}
+                      onPress={() => toggleEvent(event)}
+                    >
+                      <View style={styles.modalOptionTextWrap}>
+                        <Text style={styles.modalOptionTitle}>{event.name}</Text>
+                        {!!meta && <Text style={styles.modalOptionSubtext}>{meta}</Text>}
+                      </View>
+                      {selected && (
+                        <TickCircle size={22} color={colors.primaryColor} variant="Bold" />
+                      )}
+                    </TouchableOpacity>
+                  );
+                }}
+                ListEmptyComponent={
+                  <Text style={styles.modalEmptyText}>{t('No competitions found.')}</Text>
+                }
+              />
+            )}
+
+            <TouchableOpacity
+              testID="ai-search-competition-modal-done"
+              style={styles.modalDoneButton}
+              onPress={() => setShowCompetitionModal(false)}
+            >
+              <Text style={styles.modalDoneButtonText}>
+                {t('Done')} ({selectedEventIds.length} {t('selected')})
+              </Text>
+            </TouchableOpacity>
+          </View>
+      </View>
     </View>
   );
 };

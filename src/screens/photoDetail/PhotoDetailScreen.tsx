@@ -33,6 +33,8 @@ const PhotoDetailScreen = ({navigation, route}: any) => {
     const {eventNameById} = useEvents();
     const {composeInstagramStoryImage, composerElement} = useInstagramStoryImageComposer();
     usePreventMediaCapture(true);
+    const perfStartedAtRef = useRef(Date.now());
+    const [perfReadyElapsedMs, setPerfReadyElapsedMs] = useState<number | null>(null);
 
     const eventTitle = route?.params?.eventTitle || '';
     const blogTitleFromRoute = route?.params?.blogTitle || route?.params?.postTitle || route?.params?.post?.title || '';
@@ -230,6 +232,13 @@ const PhotoDetailScreen = ({navigation, route}: any) => {
         recordMediaView(apiAccessToken, id).catch(() => {});
     }, [apiAccessToken, resolvedMediaId]);
 
+    useEffect(() => {
+        perfStartedAtRef.current = Date.now();
+        setPerfReadyElapsedMs(null);
+        setIsImageLoading(!isVideo);
+        setIsFullImageLoaded(false);
+    }, [resolvedMediaId, isVideo]);
+
     const apiBaseUrl = useMemo(() => getApiBaseUrl(), []);
     const hlsBaseUrl = useMemo(() => getHlsBaseUrl(), []);
 
@@ -396,15 +405,13 @@ const PhotoDetailScreen = ({navigation, route}: any) => {
 
     const shouldFetchMedia = useMemo(() => {
         if (!apiAccessToken || !effectiveMediaId) return false;
-        const hasUrls =
-            Boolean(routeMedia.previewUrl || routeMedia.preview_url) ||
+        const hasHighResMedia =
             Boolean(routeMedia.originalUrl || routeMedia.original_url) ||
             Boolean(routeMedia.fullUrl || routeMedia.full_url) ||
             Boolean(routeMedia.rawUrl || routeMedia.raw_url) ||
-            Boolean(routeMedia.thumbnailUrl || routeMedia.thumbnail_url) ||
             Boolean(routeMedia.hlsManifestPath || routeMedia.hls_manifest_path);
         const hasAssets = Array.isArray((routeMedia as any).assets) && (routeMedia as any).assets.length > 0;
-        return !(hasUrls || hasAssets);
+        return !hasAssets && !hasHighResMedia;
     }, [apiAccessToken, effectiveMediaId, routeMedia]);
 
     useEffect(() => {
@@ -495,6 +502,51 @@ const PhotoDetailScreen = ({navigation, route}: any) => {
         activeMedia?.raw_url,
         activeMedia?.thumbnailUrl,
         activeMedia?.thumbnail_url,
+        toAbsoluteUrl,
+        withAccessToken,
+    ]);
+    const thumbnailImageUrl = useMemo(() => {
+        const candidates = [
+            activeMedia?.thumbnailUrl,
+            activeMedia?.thumbnail_url,
+            activeMedia?.previewUrl,
+            activeMedia?.preview_url,
+            bestImageUrl,
+        ].filter(Boolean);
+        if (candidates.length === 0) return null;
+        return withAccessToken(String(candidates[0])) || toAbsoluteUrl(String(candidates[0]));
+    }, [
+        activeMedia?.previewUrl,
+        activeMedia?.preview_url,
+        activeMedia?.thumbnailUrl,
+        activeMedia?.thumbnail_url,
+        bestImageUrl,
+        toAbsoluteUrl,
+        withAccessToken,
+    ]);
+    const highResImageUrl = useMemo(() => {
+        const candidates = [
+            activeMedia?.previewUrl,
+            activeMedia?.preview_url,
+            activeMedia?.originalUrl,
+            activeMedia?.original_url,
+            activeMedia?.fullUrl,
+            activeMedia?.full_url,
+            activeMedia?.rawUrl,
+            activeMedia?.raw_url,
+        ].filter(Boolean);
+        if (candidates.length === 0) return thumbnailImageUrl;
+        return withAccessToken(String(candidates[0])) || toAbsoluteUrl(String(candidates[0])) || thumbnailImageUrl;
+    }, [
+        activeMedia?.fullUrl,
+        activeMedia?.full_url,
+        activeMedia?.originalUrl,
+        activeMedia?.original_url,
+        activeMedia?.previewUrl,
+        activeMedia?.preview_url,
+        activeMedia?.rawUrl,
+        activeMedia?.raw_url,
+        thumbnailImageUrl,
         toAbsoluteUrl,
         withAccessToken,
     ]);
@@ -626,6 +678,8 @@ const PhotoDetailScreen = ({navigation, route}: any) => {
     const [isSeeking, setIsSeeking] = useState(false);
     const [videoError, setVideoError] = useState<string | null>(null);
     const [isVideoLoading, setIsVideoLoading] = useState(true);
+    const [isImageLoading, setIsImageLoading] = useState(true);
+    const [isFullImageLoaded, setIsFullImageLoaded] = useState(false);
     const [hasInitialTime, setHasInitialTime] = useState(false);
     const [mediaViewportSize, setMediaViewportSize] = useState({width: 0, height: 0});
     const downloadInFlightRef = useRef(false);
@@ -645,6 +699,10 @@ const PhotoDetailScreen = ({navigation, route}: any) => {
         setInfoPopupTitle(title);
         setInfoPopupMessage(message);
         setInfoPopupVisible(true);
+    }, []);
+
+    const markPerfReady = useCallback(() => {
+        setPerfReadyElapsedMs((prev) => prev ?? (Date.now() - perfStartedAtRef.current));
     }, []);
 
     useEffect(() => {
@@ -1287,6 +1345,7 @@ const PhotoDetailScreen = ({navigation, route}: any) => {
                                         setHasInitialTime(false);
                                     }
                                     setIsVideoLoading(false);
+                                    setPerfReadyElapsedMs(Date.now() - perfStartedAtRef.current);
                                 }}
                                 onProgress={(progress) => {
                                     const nextTime = progress.currentTime || 0;
@@ -1364,7 +1423,7 @@ const PhotoDetailScreen = ({navigation, route}: any) => {
                                 </>
                             )}
                         </>
-                    ) : bestImageUrl ? (
+                    ) : (thumbnailImageUrl || highResImageUrl) ? (
                         <>
                             <ScrollView
                                 style={Styles.photoZoomScroll}
@@ -1381,8 +1440,7 @@ const PhotoDetailScreen = ({navigation, route}: any) => {
                                 bouncesZoom={false}
                                 pinchGestureEnabled
                             >
-                                <FastImage
-                                    source={{uri: bestImageUrl}}
+                                <View
                                     style={[
                                         Styles.zoomablePhoto,
                                         resolvedImageFrame.width > 0 && resolvedImageFrame.height > 0
@@ -1392,8 +1450,39 @@ const PhotoDetailScreen = ({navigation, route}: any) => {
                                             }
                                             : Styles.photoImage,
                                     ]}
-                                    resizeMode="cover"
-                                />
+                                >
+                                    <FastImage
+                                        source={{uri: thumbnailImageUrl || highResImageUrl!}}
+                                        onLoadStart={() => setIsImageLoading(true)}
+                                        onLoadEnd={() => {
+                                            setIsImageLoading(false);
+                                            markPerfReady();
+                                        }}
+                                        style={Styles.photoImage}
+                                        resizeMode="cover"
+                                    />
+                                    {highResImageUrl && highResImageUrl !== thumbnailImageUrl ? (
+                                        <FastImage
+                                            source={{uri: highResImageUrl}}
+                                            onLoadEnd={() => {
+                                                setIsFullImageLoaded(true);
+                                                markPerfReady();
+                                            }}
+                                            style={[
+                                                Styles.photoImage,
+                                                {
+                                                    position: 'absolute',
+                                                    top: 0,
+                                                    left: 0,
+                                                    right: 0,
+                                                    bottom: 0,
+                                                    opacity: isFullImageLoaded ? 1 : 0.01,
+                                                },
+                                            ]}
+                                            resizeMode="cover"
+                                        />
+                                    ) : null}
+                                </View>
                             </ScrollView>
                         </>
                     ) : (
@@ -1404,6 +1493,12 @@ const PhotoDetailScreen = ({navigation, route}: any) => {
                 </View>
                 </View>
             </View>
+
+            {perfReadyElapsedMs != null && (
+                <Text style={{height: 0, width: 0, opacity: 0}} testID="e2e-perf-ready-photo-viewer">
+                    {`ready:${perfReadyElapsedMs}`}
+                </Text>
+            )}
 
             {downloadVisible && (
                 <View style={Styles.downloadOverlay} pointerEvents="auto">

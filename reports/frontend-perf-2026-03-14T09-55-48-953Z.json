@@ -1,0 +1,209 @@
+{
+  "generated_at": "2026-03-14T09:55:48.955Z",
+  "api_base_url": "http://127.0.0.1:3000",
+  "target_ms": 1000,
+  "max_ms": 2000,
+  "iterations": 3,
+  "backend_baselines_ms": {
+    "home": 216.4,
+    "hub": 164.8,
+    "search": 250.6,
+    "profile": 297.4,
+    "upload_select": 154.4,
+    "upload_competition": 179.4,
+    "competition": 179.4
+  },
+  "results": [
+    {
+      "name": "home",
+      "routeName": "HomeScreen",
+      "ready_test_id": "e2e-perf-ready-home",
+      "cold_ms": 521,
+      "cold_wall_clock_ms": 19983,
+      "cold_launch_overhead_ms": 19462,
+      "warm_samples_ms": [
+        383,
+        406
+      ],
+      "warm_wall_clock_samples_ms": [
+        7791,
+        7563
+      ],
+      "warm_p50_ms": 383,
+      "warm_p95_ms": 406,
+      "warm_max_ms": 406,
+      "target_ms": 1000,
+      "max_ms": 2000,
+      "backend_baseline_ms": 216.4,
+      "estimated_frontend_overhead_ms": 189.6,
+      "dominant_layer": "backend",
+      "failures": [],
+      "target_met": true,
+      "pass": true
+    },
+    {
+      "name": "hub",
+      "routeName": "HubScreen",
+      "ready_test_id": "e2e-perf-ready-hub",
+      "cold_ms": 430,
+      "cold_wall_clock_ms": 10202,
+      "cold_launch_overhead_ms": 9772,
+      "warm_samples_ms": [
+        413,
+        408
+      ],
+      "warm_wall_clock_samples_ms": [
+        8915,
+        8531
+      ],
+      "warm_p50_ms": 408,
+      "warm_p95_ms": 413,
+      "warm_max_ms": 413,
+      "target_ms": 1000,
+      "max_ms": 2000,
+      "backend_baseline_ms": 164.8,
+      "estimated_frontend_overhead_ms": 248.2,
+      "dominant_layer": "frontend",
+      "failures": [],
+      "target_met": true,
+      "pass": true
+    },
+    {
+      "name": "search",
+      "routeName": "SearchScreen",
+      "ready_test_id": "e2e-perf-ready-search",
+      "cold_ms": 923,
+      "cold_wall_clock_ms": 19446,
+      "cold_launch_overhead_ms": 18523,
+      "warm_samples_ms": [
+        806,
+        793
+      ],
+      "warm_wall_clock_samples_ms": [
+        9503,
+        8765
+      ],
+      "warm_p50_ms": 793,
+      "warm_p95_ms": 806,
+      "warm_max_ms": 806,
+      "target_ms": 1000,
+      "max_ms": 2000,
+      "backend_baseline_ms": 250.6,
+      "estimated_frontend_overhead_ms": 555.4,
+      "dominant_layer": "frontend",
+      "failures": [],
+      "target_met": true,
+      "pass": true
+    },
+    {
+      "name": "upload_select",
+      "routeName": "RootUploadSelectCompetitionScreen",
+      "ready_test_id": "e2e-perf-ready-upload-select",
+      "cold_ms": 1088,
+      "cold_wall_clock_ms": 8613,
+      "cold_launch_overhead_ms": 7525,
+      "warm_samples_ms": [
+        1071,
+        1233
+      ],
+      "warm_wall_clock_samples_ms": [
+        8541,
+        8576
+      ],
+      "warm_p50_ms": 1071,
+      "warm_p95_ms": 1233,
+      "warm_max_ms": 1233,
+      "target_ms": 1000,
+      "max_ms": 2000,
+      "backend_baseline_ms": 154.4,
+      "estimated_frontend_overhead_ms": 1078.6,
+      "dominant_layer": "frontend",
+      "failures": [],
+      "target_met": false,
+      "pass": true
+    },
+    {
+      "name": "upload_competition",
+      "routeName": "RootUploadCompetitionDetailsScreen",
+      "ready_test_id": "e2e-perf-ready-upload-competition",
+      "cold_ms": 632,
+      "cold_wall_clock_ms": 8634,
+      "cold_launch_overhead_ms": 8002,
+      "warm_samples_ms": [
+        554,
+        802
+      ],
+      "warm_wall_clock_samples_ms": [
+        8795,
+        8642
+      ],
+      "warm_p50_ms": 554,
+      "warm_p95_ms": 802,
+      "warm_max_ms": 802,
+      "target_ms": 1000,
+      "max_ms": 2000,
+      "backend_baseline_ms": 179.4,
+      "estimated_frontend_overhead_ms": 622.6,
+      "dominant_layer": "frontend",
+      "failures": [],
+      "target_met": true,
+      "pass": true
+    },
+    {
+      "name": "profile",
+      "routeName": "UserProfileScreen",
+      "ready_test_id": "e2e-perf-ready-profile",
+      "cold_ms": 713,
+      "cold_wall_clock_ms": 8698,
+      "cold_launch_overhead_ms": 7985,
+      "warm_samples_ms": [
+        646,
+        2084
+      ],
+      "warm_wall_clock_samples_ms": [
+        8728,
+        11047
+      ],
+      "warm_p50_ms": 646,
+      "warm_p95_ms": 2084,
+      "warm_max_ms": 2084,
+      "target_ms": 1000,
+      "max_ms": 2000,
+      "backend_baseline_ms": 297.4,
+      "estimated_frontend_overhead_ms": 1786.6,
+      "dominant_layer": "frontend",
+      "failures": [],
+      "target_met": false,
+      "pass": false
+    },
+    {
+      "name": "competition",
+      "routeName": "CompetitionDetailsScreen",
+      "ready_test_id": "e2e-perf-ready-competition",
+      "cold_ms": 422,
+      "cold_wall_clock_ms": 14272,
+      "cold_launch_overhead_ms": 13850,
+      "warm_samples_ms": [
+        406,
+        420
+      ],
+      "warm_wall_clock_samples_ms": [
+        9355,
+        9380
+      ],
+      "warm_p50_ms": 406,
+      "warm_p95_ms": 420,
+      "warm_max_ms": 420,
+      "target_ms": 1000,
+      "max_ms": 2000,
+      "backend_baseline_ms": 179.4,
+      "estimated_frontend_overhead_ms": 240.6,
+      "dominant_layer": "frontend",
+      "failures": [],
+      "target_met": true,
+      "pass": true
+    }
+  ],
+  "all_passed": false,
+  "target_met": false
+}

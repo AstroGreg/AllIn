@@ -12,6 +12,8 @@ import Images from '../../../constants/Images'
 import { useTheme } from '../../../context/ThemeContext'
 import { useTranslation } from 'react-i18next'
 
+const PAGE_SIZE = 60;
+
 const VideosForEvent = ({ navigation, route }: any) => {
     const insets = useSafeAreaInsets();
     const eventName = route?.params?.eventName || 'Event';
@@ -27,6 +29,9 @@ const VideosForEvent = ({ navigation, route }: any) => {
     const { t } = useTranslation();
     const styles = createStyles(colors);
     const [items, setItems] = useState<MediaViewAllItem[]>([]);
+    const [isLoading, setIsLoading] = useState(false);
+    const [isFetchingMore, setIsFetchingMore] = useState(false);
+    const [hasMore, setHasMore] = useState(true);
     const targetCompetitionId = competitionId ?? eventId;
 
     const isSignedUrl = useCallback((value?: string | null) => {
@@ -92,39 +97,65 @@ const VideosForEvent = ({ navigation, route }: any) => {
         return `${minutes}:${paddedSeconds}`;
     };
 
+    const mergeItems = useCallback((current: MediaViewAllItem[], incoming: MediaViewAllItem[]) => {
+        const seen = new Set<string>();
+        return [...current, ...incoming].filter((item) => {
+            const key = String(item?.media_id ?? '');
+            if (!key || seen.has(key)) return false;
+            seen.add(key);
+            return true;
+        });
+    }, []);
+
+    const loadPage = useCallback(async (offset: number, append: boolean) => {
+        if (!apiAccessToken) return;
+        if (append) {
+            setIsFetchingMore(true);
+        } else {
+            setIsLoading(true);
+        }
+        try {
+            let list: MediaViewAllItem[] = [];
+            if (appearanceOnly && targetCompetitionId) {
+                const res = await getHubAppearanceMedia(apiAccessToken, String(targetCompetitionId), {
+                    include_original: false,
+                    limit: PAGE_SIZE,
+                    offset,
+                });
+                list = Array.isArray(res?.results) ? res.results : [];
+            } else if (targetCompetitionId) {
+                const res = await getCompetitionPublicMedia(apiAccessToken, String(targetCompetitionId), {
+                    type: 'video',
+                    discipline_id: disciplineId ? String(disciplineId) : undefined,
+                    checkpoint_id: checkpointId ? String(checkpointId) : undefined,
+                    limit: PAGE_SIZE,
+                    offset,
+                    include_original: false,
+                });
+                list = Array.isArray(res) ? res : [];
+            }
+            const filtered = list.filter((item) => isVideoMedia(item));
+            setItems((prev) => append ? mergeItems(prev, filtered) : filtered);
+            setHasMore(filtered.length === PAGE_SIZE);
+        } catch {
+            if (!append) {
+                setItems([]);
+                setHasMore(false);
+            }
+        } finally {
+            setIsLoading(false);
+            setIsFetchingMore(false);
+        }
+    }, [apiAccessToken, appearanceOnly, checkpointId, disciplineId, isVideoMedia, mergeItems, targetCompetitionId]);
+
     useEffect(() => {
-        let mounted = true;
         if (!apiAccessToken) return () => {};
         const load = async () => {
-            try {
-                let list: MediaViewAllItem[] = [];
-                if (appearanceOnly && targetCompetitionId) {
-                    const res = await getHubAppearanceMedia(apiAccessToken, String(targetCompetitionId));
-                    list = Array.isArray(res?.results) ? res.results : [];
-                } else if (targetCompetitionId) {
-                    const res = await getCompetitionPublicMedia(apiAccessToken, String(targetCompetitionId), {
-                        type: 'video',
-                        discipline_id: disciplineId ? String(disciplineId) : undefined,
-                        checkpoint_id: checkpointId ? String(checkpointId) : undefined,
-                        limit: 500,
-                    });
-                    list = Array.isArray(res) ? res : [];
-                } else {
-                    list = [];
-                }
-                if (!mounted) return;
-                const filtered = list.filter((item) => isVideoMedia(item));
-                setItems(filtered);
-            } catch {
-                if (!mounted) return;
-                setItems([]);
-            }
+            await loadPage(0, false);
         };
         load();
-        return () => {
-            mounted = false;
-        };
-    }, [apiAccessToken, appearanceOnly, checkpointId, disciplineId, isVideoMedia, targetCompetitionId]);
+        return () => {};
+    }, [apiAccessToken, loadPage]);
 
     const data = useMemo(() => {
         return items.map((item) => {
@@ -193,6 +224,11 @@ const VideosForEvent = ({ navigation, route }: any) => {
                 renderItem={renderItem}
                 keyExtractor={(item, index) => index.toString()}
                 showsVerticalScrollIndicator={false}
+                onEndReachedThreshold={0.35}
+                onEndReached={() => {
+                    if (isLoading || isFetchingMore || !hasMore) return;
+                    loadPage(items.length, true);
+                }}
                 ListHeaderComponent={
                     <>
                         <SizeBox height={24} />
@@ -208,6 +244,7 @@ const VideosForEvent = ({ navigation, route }: any) => {
                         <SizeBox height={27} />
                     </>
                 }
+                ListFooterComponent={isFetchingMore ? <SizeBox height={20} /> : null}
             />
         </View>
     )

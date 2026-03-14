@@ -16,6 +16,7 @@ import SportFocusIcon from '../../components/profile/SportFocusIcon'
 import UnifiedSearchInput from '../../components/unifiedSearchInput/UnifiedSearchInput'
 import { getApiBaseUrl } from '../../constants/RuntimeConfig'
 import { getSportFocusLabel, normalizeSelectedEvents, resolveCompetitionFocusId, type SportFocusId } from '../../utils/profileSelections'
+import E2EPerfReady from '../../components/e2e/E2EPerfReady'
  
 
 const FILTERS = ['Competition', 'Person', 'Group', 'Location'] as const
@@ -82,6 +83,7 @@ const SearchScreen = ({ navigation }: any) => {
     const { colors } = useTheme();
     const { t } = useTranslation();
     const { apiAccessToken, user } = useAuth();
+    const perfStartedAtRef = useRef(Date.now());
     const Styles = createStyles(colors);
     const isLightTheme = String(colors.backgroundColor || '').toLowerCase() === '#ffffff';
     const pickerVisualProps = useMemo<any>(() => (
@@ -99,6 +101,12 @@ const SearchScreen = ({ navigation }: any) => {
     const [activeFilter, setActiveFilter] = useState<FilterKey>('Competition');
     const [filterOrder, setFilterOrder] = useState<FilterKey[]>([]);
     const [filterValues, setFilterValues] = useState<Record<FilterKey, string>>({
+        Competition: '',
+        Person: '',
+        Group: '',
+        Location: '',
+    });
+    const [debouncedFilterValues, setDebouncedFilterValues] = useState<Record<FilterKey, string>>({
         Competition: '',
         Person: '',
         Group: '',
@@ -151,6 +159,13 @@ const SearchScreen = ({ navigation }: any) => {
         const absolute = toAbsoluteUrl(value);
         return withAccessToken(absolute) || absolute;
     }, [toAbsoluteUrl, withAccessToken]);
+
+    useEffect(() => {
+        const handle = setTimeout(() => {
+            setDebouncedFilterValues(filterValues);
+        }, 120);
+        return () => clearTimeout(handle);
+    }, [filterValues]);
  
     const competitionTypeFilters = useMemo(
         () => ([
@@ -164,6 +179,7 @@ const SearchScreen = ({ navigation }: any) => {
     );
 
     const activeValue = filterValues[activeFilter] ?? '';
+    const perfReady = !isLoadingEvents && (eventResults.length > 0 || eventsError !== null);
     const formatEventDate = useCallback((value?: string | null) => {
         if (!value) return '';
         const d = new Date(String(value));
@@ -274,10 +290,10 @@ const SearchScreen = ({ navigation }: any) => {
         navigation.navigate('GroupProfileScreen', { showBackButton: true, origin: 'search' });
     }, [navigation]);
 
-    const competitionQuery = filterValues.Competition.trim().toLowerCase();
-    const personQuery = filterValues.Person.trim().toLowerCase();
-    const groupQuery = filterValues.Group.trim().toLowerCase();
-    const locationQuery = filterValues.Location.trim().toLowerCase();
+    const competitionQuery = debouncedFilterValues.Competition.trim().toLowerCase();
+    const personQuery = debouncedFilterValues.Person.trim().toLowerCase();
+    const groupQuery = debouncedFilterValues.Group.trim().toLowerCase();
+    const locationQuery = debouncedFilterValues.Location.trim().toLowerCase();
     const hasTypedQuery = Object.values(filterValues).some((value) => value.trim().length > 0);
     const hasActiveFilters = hasTypedQuery ||
         !!timeRange.start ||
@@ -293,7 +309,7 @@ const SearchScreen = ({ navigation }: any) => {
 
     const matchValue = (value: string, q: string) => (q ? value.toLowerCase().includes(q) : true);
 
-    const shouldShowPeople = hasTypedQuery && (personQuery.length > 0 || locationQuery.length > 0 || groupQuery.length > 0);
+    const shouldShowPeople = hasTypedQuery && (personQuery.length > 0 || locationQuery.length > 0);
     const shouldShowGroups = hasTypedQuery && groupQuery.length > 0;
 
     useEffect(() => {
@@ -305,8 +321,8 @@ const SearchScreen = ({ navigation }: any) => {
         }
 
         setGroupsError(null);
-        const query = filterValues.Group.trim();
-        searchGroups(apiAccessToken, { q: query || '', limit: 100, offset: 0 })
+        const query = debouncedFilterValues.Group.trim();
+        searchGroups(apiAccessToken, { q: query || '', limit: 20, offset: 0 })
             .then((res) => {
                 if (!mounted) return;
                 const rows = Array.isArray(res?.groups) ? res.groups : [];
@@ -342,7 +358,7 @@ const SearchScreen = ({ navigation }: any) => {
         return () => {
             mounted = false;
         };
-    }, [apiAccessToken, filterValues.Group, hasTypedQuery, shouldShowGroups, t]);
+    }, [apiAccessToken, debouncedFilterValues.Group, hasTypedQuery, shouldShowGroups, t]);
 
     useEffect(() => {
         let mounted = true;
@@ -357,7 +373,7 @@ const SearchScreen = ({ navigation }: any) => {
             setPeopleResults([]);
             return () => {};
         }
-        searchProfiles(apiAccessToken, { q, limit: 80, offset: 0 })
+        searchProfiles(apiAccessToken, { q, limit: 20, offset: 0 })
             .then((res) => {
                 if (!mounted) return;
                 const rows = Array.isArray(res?.profiles) ? res.profiles : [];
@@ -758,6 +774,7 @@ const SearchScreen = ({ navigation }: any) => {
     const renderEventCard = (event: EventResult) => (
         <TouchableOpacity
             key={event.id}
+            testID={`search-event-card-${event.id}`}
             style={Styles.eventCard}
             onPress={() => navigation.navigate('CompetitionDetailsScreen', {
                 eventId: event.id,
@@ -824,6 +841,7 @@ const SearchScreen = ({ navigation }: any) => {
         return (
             <TouchableOpacity
                 key={person.profile_id ?? String(person.id)}
+                testID={`search-person-card-${String(person.profile_id ?? person.id)}`}
                 style={Styles.userCard}
                 onPress={() => openProfileFromSearch(person.profile_id ?? null)}
             >
@@ -915,6 +933,7 @@ const SearchScreen = ({ navigation }: any) => {
     const renderGroupCard = (group: GroupResult) => (
         <TouchableOpacity
             key={group.id}
+            testID={`search-group-card-${String(group.group_id || group.id)}`}
             style={Styles.userCard}
             onPress={() => openGroupFromSearch(group.group_id)}
         >
@@ -1095,7 +1114,8 @@ const SearchScreen = ({ navigation }: any) => {
     })();
 
     return (
-        <View style={Styles.mainContainer}>
+        <View style={Styles.mainContainer} testID="search-screen">
+            <E2EPerfReady screen="search" ready={perfReady} startedAtMs={perfStartedAtRef.current} />
             <SizeBox height={insets.top} />
 
             <View style={Styles.header}>
@@ -1115,6 +1135,7 @@ const SearchScreen = ({ navigation }: any) => {
 
                 <View style={Styles.searchRow}>
                     <UnifiedSearchInput
+                        testID="search-input"
                         ref={searchInputRef}
                         containerStyle={Styles.searchInputContainer}
                         contentStyle={{ gap: 8 }}
@@ -1147,6 +1168,7 @@ const SearchScreen = ({ navigation }: any) => {
                         {FILTERS.map((filter) => (
                             <TouchableOpacity
                                 key={filter}
+                                testID={`search-filter-${String(filter).toLowerCase()}`}
                                 style={[
                                     Styles.filterTab,
                                     activeFilter === filter && Styles.filterTabActive

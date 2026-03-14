@@ -1,5 +1,5 @@
 import { View, Text, TouchableOpacity, ScrollView, Switch, Modal, Image, ActivityIndicator, Alert, InteractionManager } from 'react-native'
-import React, { useCallback, useEffect, useMemo, useState } from 'react'
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import SizeBox from '../../../constants/SizeBox'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { ArrowLeft2, ArrowRight } from 'iconsax-react-nativejs'
@@ -14,6 +14,7 @@ import { useEvents } from '../../../context/EventsContext'
 import { getApiBaseUrl } from '../../../constants/RuntimeConfig';
 import { getSportFocusLabel, normalizeFocusId, type SportFocusId } from '../../../utils/profileSelections';
 import { buildSubscriptionDisciplineOptions, normalizeSubscriptionCategories, SUBSCRIPTION_ALL_DISCIPLINE_ID, SUBSCRIPTION_CATEGORY_OPTIONS, toggleSubscriptionCategory, toggleSubscriptionDiscipline } from '../../../utils/eventSubscription';
+import E2EPerfReady from '../../../components/e2e/E2EPerfReady';
 
 interface EventCategory {
     id: string | number;
@@ -42,6 +43,7 @@ const CompetitionDetailsScreen = ({ navigation, route }: any) => {
     const styles = createStyles(colors);
     const { t } = useTranslation();
     const { events: subscribedEvents, refresh: refreshSubscribed } = useEvents();
+    const perfStartedAtRef = useRef(Date.now());
     const [selectedTab, setSelectedTab] = useState<'track' | 'field'>('track');
     const [competitionFocusId, setCompetitionFocusId] = useState<SportFocusId | null>(
         normalizeFocusId(route?.params?.competitionFocus ?? route?.params?.competitionType),
@@ -218,6 +220,7 @@ const CompetitionDetailsScreen = ({ navigation, route }: any) => {
 
     const visibleCourses = courseOptions.length > 0 ? courseOptions : FALLBACK_COURSES;
     const showCoursesSection = isRoadTrailCompetition;
+    const perfReady = !isDisciplinesLoading && !isMapLoading && (hasLoadedDisciplines || hasLoadedMaps);
     const subscriptionDisciplineOptions = useMemo(() => {
         const rows = showCoursesSection
             ? visibleCourses.map((course) => ({
@@ -975,6 +978,7 @@ const CompetitionDetailsScreen = ({ navigation, route }: any) => {
 
     return (
         <View style={styles.mainContainer} testID="competition-details-screen">
+            <E2EPerfReady screen="competition" ready={perfReady} startedAtMs={perfStartedAtRef.current} />
             <SizeBox height={insets.top} />
 
             {/* Header */}

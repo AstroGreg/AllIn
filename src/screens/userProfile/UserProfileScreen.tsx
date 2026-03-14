@@ -1,5 +1,5 @@
 ﻿import { View, Text, TouchableOpacity, ScrollView, Dimensions, Modal, ActivityIndicator, Alert, Linking, TextInput } from 'react-native'
-import React, { useCallback, useEffect, useMemo, useState } from 'react'
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import SizeBox from '../../constants/SizeBox'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import FastImage from 'react-native-fast-image'
@@ -37,6 +37,7 @@ import { useTranslation } from 'react-i18next'
 import ProfileNewsSection, { type ProfileNewsItem } from '../../components/profileNews/ProfileNewsSection'
 import SportFocusIcon from '../../components/profile/SportFocusIcon'
 import SupportProfileSummary, { getSupportProfileBadgeLabel } from '../../components/profile/SupportProfileSummary'
+import E2EPerfReady from '../../components/e2e/E2EPerfReady'
 import {
     focusUsesChestNumbers,
     getDisciplineLabel,
@@ -65,6 +66,7 @@ const UserProfileScreen = ({ navigation, route }: any) => {
     const { t } = useTranslation();
     const Styles = createStyles(colors);
     const { user, userProfile, authBootstrap, apiAccessToken, updateUserProfile } = useAuth();
+    const perfStartedAtRef = useRef(Date.now());
     const defaultProfileImage = useMemo(() => {
         const googlePicture = String(user?.picture ?? '').trim();
         return googlePicture ? { uri: googlePicture } : Images.profilePic;
@@ -134,6 +136,7 @@ const UserProfileScreen = ({ navigation, route }: any) => {
     const serverDeclaresNoProfiles = authBootstrap?.has_profiles === false && !didLoadProfileData;
     const hasAnyLinkedProfiles = serverDeclaresNoProfiles ? false : (selectedFocuses.length > 0 || myGroups.length > 0 || hasSupportProfile);
     const shouldShowEmptyProfileState = serverDeclaresNoProfiles || (!hasAnyLinkedProfiles && didLoadProfileData);
+    const perfReady = Boolean(profileImage) || (didLoadProfileData && (profileSummary !== null || shouldShowEmptyProfileState));
     const profileCategoryLabel = profileCategory ? (profileCategory === 'support' ? t('Support') : getSportFocusLabel(profileCategory, t)) : '';
     const collectionScopeKey = useMemo(() => {
         if (profileCategory) return getProfileCollectionScopeKey(profileCategory);
@@ -406,7 +409,11 @@ const UserProfileScreen = ({ navigation, route }: any) => {
 
         if (apiAccessToken && postsProfileId) {
             try {
-                const resp = await getPosts(apiAccessToken, { author_profile_id: String(postsProfileId), limit: 50 });
+                const resp = await getPosts(apiAccessToken, {
+                    author_profile_id: String(postsProfileId),
+                    limit: 50,
+                    include_original: false,
+                });
                 const posts = Array.isArray((resp as any)?.posts) ? (resp as any).posts : [];
                 const sortedPosts = [...posts].sort((a: PostSummary, b: PostSummary) => {
                     const aCreated = (a as any)?.created_at ?? (a as any)?.createdAt ?? null;
@@ -505,13 +512,19 @@ const UserProfileScreen = ({ navigation, route }: any) => {
             return;
         }
         try {
-            const resp = await getProfileCollectionByType(apiAccessToken, 'image', { scope_key: collectionScopeKey });
+            const resp = await getProfileCollectionByType(apiAccessToken, 'image', {
+                scope_key: collectionScopeKey,
+                include_original: false,
+            });
             setPhotoCollectionItems(Array.isArray((resp as any)?.items) ? (resp as any).items : []);
         } catch {
             setPhotoCollectionItems([]);
         }
         try {
-            const resp = await getProfileCollectionByType(apiAccessToken, 'video', { scope_key: collectionScopeKey });
+            const resp = await getProfileCollectionByType(apiAccessToken, 'video', {
+                scope_key: collectionScopeKey,
+                include_original: false,
+            });
             setVideoCollectionItems(Array.isArray((resp as any)?.items) ? (resp as any).items : []);
         } catch {
             setVideoCollectionItems([]);
@@ -1245,6 +1258,7 @@ const UserProfileScreen = ({ navigation, route }: any) => {
 
     return (
         <View style={Styles.mainContainer} testID="user-profile-screen">
+            <E2EPerfReady screen="profile" ready={perfReady} startedAtMs={perfStartedAtRef.current} />
             <SizeBox height={insets.top} />
 
             {/* Header */}

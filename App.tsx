@@ -6,6 +6,7 @@ import { ThemeProvider, useTheme } from './src/context/ThemeContext'
 import { AuthProvider } from './src/context/AuthContext'
 import { EventsProvider } from './src/context/EventsContext'
 import { setRuntimeUrlOverrides } from './src/constants/RuntimeConfig'
+import { setE2ELaunchEnabled } from './src/constants/E2EConfig'
 import './src/i18n'
 
 const parseJsonProp = <T,>(value: unknown): T | undefined => {
@@ -95,6 +96,15 @@ const App = (props: any) => {
     () => parseJsonProp<Record<string, any>>(props?.e2eAuthState),
     [props?.e2eAuthState],
   );
+  const e2eLaunchEnabled = Boolean(
+    initialRouteName ||
+    initialRouteParams ||
+    initialE2EAuth ||
+    props?.e2eApiBaseUrl ||
+    props?.e2eHlsBaseUrl
+  );
+
+  setE2ELaunchEnabled(e2eLaunchEnabled);
 
   useEffect(() => {
     setRuntimeUrlOverrides({

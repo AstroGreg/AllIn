@@ -1,0 +1,41 @@
+{
+  "generated_at": "2026-03-14T09:51:36.123Z",
+  "api_base_url": "http://127.0.0.1:3000",
+  "target_ms": 1000,
+  "max_ms": 5000,
+  "iterations": 1,
+  "backend_baselines_ms": {
+    "home": 216.4,
+    "hub": 164.8,
+    "search": 250.6,
+    "profile": 297.4,
+    "upload_select": 154.4,
+    "upload_competition": 179.4,
+    "competition": 179.4
+  },
+  "results": [
+    {
+      "name": "competition",
+      "routeName": "CompetitionDetailsScreen",
+      "ready_test_id": "e2e-perf-ready-competition",
+      "cold_ms": 397,
+      "cold_wall_clock_ms": 21205,
+      "cold_launch_overhead_ms": 20808,
+      "warm_samples_ms": [],
+      "warm_wall_clock_samples_ms": [],
+      "warm_p50_ms": 0,
+      "warm_p95_ms": 0,
+      "warm_max_ms": null,
+      "target_ms": 1000,
+      "max_ms": 5000,
+      "backend_baseline_ms": 179.4,
+      "estimated_frontend_overhead_ms": 0,
+      "dominant_layer": "backend",
+      "failures": [],
+      "target_met": true,
+      "pass": true
+    }
+  ],
+  "all_passed": true,
+  "target_met": true
+}

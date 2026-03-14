@@ -100,7 +100,9 @@ const GroupCollectionsManageScreen = ({ navigation, route }: any) => {
       return;
     }
     try {
-      const collection = await getGroupCollectionByType(apiAccessToken, groupId, type);
+      const collection = await getGroupCollectionByType(apiAccessToken, groupId, type, {
+        include_original: false,
+      });
       setCollectionItems(Array.isArray(collection?.items) ? collection.items : []);
     } catch (e: any) {
       Alert.alert(t('Error'), String(e?.message ?? e ?? t('Could not load collection')));

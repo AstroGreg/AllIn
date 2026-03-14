@@ -8,6 +8,7 @@
     "preios": "test -d ios/Pods || npm run pods",
     "e2e:build:ios": "detox build -c ios.sim.debug",
     "e2e:test:ios": "bash ./scripts/run-detox.sh ios.sim.debug",
+    "e2e:test:ios:perf": "bash ./scripts/run-detox.sh ios.sim.debug --testPathPattern e2e/perf-benchmark.e2e.js",
     "e2e:build:android": "detox build -c android.emu.debug",
     "e2e:test:android": "bash ./scripts/run-detox.sh android.emu.debug",
     "lint": "eslint .",

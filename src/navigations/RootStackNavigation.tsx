@@ -70,6 +70,7 @@ import ViewUserBlogDetailsScreen from '../screens/viewUserBlogDetails/ViewUserBl
 import EditPhotoCollectionsScreen from '../screens/editPhotoCollections/EditPhotoCollectionsScreen';
 import EditVideoCollectionsScreen from '../screens/editVideoCollections/EditVideoCollectionsScreen';
 import PhotoDetailScreen from '../screens/photoDetail/PhotoDetailScreen';
+import VideoDetailsScreen from '../screens/videoDetails/VideoDetailsScreen';
 import VideoPlayingScreen from '../screens/videoPlaying/VideoPlayingScreen';
 import CreateNewPostScreen from '../screens/createNewPost/CreateNewPostScreen';
 import AdvertisementScreen from '../screens/advertisement/AdvertisementScreen';
@@ -250,6 +251,11 @@ const RootStackNavigation = ({
             <Stack.Screen name="EditPhotoCollectionsScreen" component={EditPhotoCollectionsScreen} />
             <Stack.Screen name="EditVideoCollectionsScreen" component={EditVideoCollectionsScreen} />
             <Stack.Screen name="PhotoDetailScreen" component={PhotoDetailScreen} />
+            <Stack.Screen
+                name="VideoDetailsScreen"
+                component={VideoDetailsScreen}
+                initialParams={getInitialParams('VideoDetailsScreen')}
+            />
             <Stack.Screen name="VideoPlayingScreen" component={VideoPlayingScreen} />
             <Stack.Screen name="CreateNewPostScreen" component={CreateNewPostScreen} />
             <Stack.Screen name="ContextSearchLoadingScreen" component={ContextSearchLoadingScreen} />

@@ -1,0 +1,203 @@
+{
+  "generated_at": "2026-03-14T13:58:09.142Z",
+  "api_base_url": "http://127.0.0.1:3000",
+  "target_ms": 1000,
+  "max_ms": 2000,
+  "iterations": 3,
+  "backend_baselines_ms": {
+    "home": 216.4,
+    "hub": 164.8,
+    "search": 250.6,
+    "profile": 297.4,
+    "upload_select": 154.4,
+    "upload_competition": 179.4,
+    "competition": 179.4
+  },
+  "dataset_validation": {
+    "home_empty": {
+      "has_video": false,
+      "has_photo": false,
+      "feed_posts": 0
+    },
+    "home_rich": {
+      "has_video": false,
+      "has_photo": true,
+      "has_blog": true,
+      "feed_posts": 60,
+      "media_total": 41,
+      "photo_posts": 40,
+      "video_posts": 0
+    },
+    "hub": {
+      "appearances": 5,
+      "uploads": 480
+    },
+    "search": {
+      "competitions": 10,
+      "thumbnails": 10
+    },
+    "competition": {
+      "competition_id": "d178de13-6c93-44f3-8465-4298fe62702f",
+      "disciplines": 27
+    },
+    "profile_rich": {
+      "posts": 20,
+      "uploads": 480
+    },
+    "onboarding": {
+      "clubs": 50,
+      "groups": 4,
+      "disciplines": 27
+    },
+    "search_entities": {
+      "person_query": "2245191902",
+      "group_query": "3224514421",
+      "person_results": 1,
+      "group_results": 1
+    },
+    "ai_bib": {
+      "selected_competitions": 5,
+      "seeded_media_per_competition": [
+        5,
+        5,
+        5,
+        5,
+        5
+      ],
+      "single_competition_results": 5,
+      "five_competition_results": 25
+    }
+  },
+  "results": [
+    {
+      "name": "search_person",
+      "routeName": "SearchScreen",
+      "prepare_samples_ms": [
+        344,
+        368
+      ],
+      "prepare_p95_ms": 368,
+      "cold_ms": 3344,
+      "warm_samples_ms": [
+        2741,
+        2797
+      ],
+      "warm_p50_ms": 2741,
+      "warm_p95_ms": 2797,
+      "warm_max_ms": 2797,
+      "target_ms": 1000,
+      "max_ms": 2000,
+      "backend_baseline_ms": null,
+      "estimated_frontend_overhead_ms": null,
+      "dominant_layer": "frontend",
+      "failures": [],
+      "target_met": false,
+      "pass": false
+    },
+    {
+      "name": "search_group",
+      "routeName": "SearchScreen",
+      "prepare_samples_ms": [
+        344,
+        369
+      ],
+      "prepare_p95_ms": 369,
+      "cold_ms": 2847,
+      "warm_samples_ms": [
+        3620,
+        2755
+      ],
+      "warm_p50_ms": 2755,
+      "warm_p95_ms": 3620,
+      "warm_max_ms": 3620,
+      "target_ms": 1000,
+      "max_ms": 2000,
+      "backend_baseline_ms": null,
+      "estimated_frontend_overhead_ms": null,
+      "dominant_layer": "frontend",
+      "failures": [],
+      "target_met": false,
+      "pass": false
+    },
+    {
+      "name": "search_person_open_profile",
+      "routeName": "SearchScreen",
+      "prepare_samples_ms": [
+        366,
+        1488
+      ],
+      "prepare_p95_ms": 1488,
+      "cold_ms": 4655,
+      "warm_samples_ms": [
+        6721,
+        5818
+      ],
+      "warm_p50_ms": 5818,
+      "warm_p95_ms": 6721,
+      "warm_max_ms": 6721,
+      "target_ms": 1000,
+      "max_ms": 2000,
+      "backend_baseline_ms": null,
+      "estimated_frontend_overhead_ms": null,
+      "dominant_layer": "frontend",
+      "failures": [],
+      "target_met": false,
+      "pass": false
+    },
+    {
+      "name": "search_group_open_profile",
+      "routeName": "SearchScreen",
+      "prepare_samples_ms": [
+        2301,
+        2613,
+        2000
+      ],
+      "prepare_p95_ms": 2613,
+      "cold_ms": 4248,
+      "warm_samples_ms": [
+        15761,
+        2000
+      ],
+      "warm_p50_ms": 2000,
+      "warm_p95_ms": 15761,
+      "warm_max_ms": 15761,
+      "target_ms": 1000,
+      "max_ms": 2000,
+      "backend_baseline_ms": null,
+      "estimated_frontend_overhead_ms": null,
+      "dominant_layer": "frontend",
+      "failures": [
+        {
+          "attempt": 3,
+          "error": "Test Failed: Timed out while waiting for expectation: TOBEVISIBLE WITH MATCHER(id == “search-group-card-9ea8d1a7-43e1-4d67-b7fe-307071a71646”) TIMEOUT(2s)\n\nHINT: To print view hierarchy on failed actions/matches, use log-level verbose or higher."
+        }
+      ],
+      "target_met": false,
+      "pass": false
+    }
+  ],
+  "all_passed": false,
+  "target_met": false,
+  "target_warnings": [
+    {
+      "name": "search_person",
+      "warm_p95_ms": 2797,
+      "target_ms": 1000
+    },
+    {
+      "name": "search_group",
+      "warm_p95_ms": 3620,
+      "target_ms": 1000
+    },
+    {
+      "name": "search_person_open_profile",
+      "warm_p95_ms": 6721,
+      "target_ms": 1000
+    },
+    {
+      "name": "search_group_open_profile",
+      "warm_p95_ms": 15761,
+      "target_ms": 1000
+    }
+  ]
+}

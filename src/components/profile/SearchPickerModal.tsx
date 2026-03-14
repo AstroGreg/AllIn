@@ -24,6 +24,7 @@ type SearchPickerModalProps = {
   visible: boolean;
   title: string;
   placeholder: string;
+  testIDPrefix?: string;
   query: string;
   onChangeQuery: (value: string) => void;
   onClose: () => void;
@@ -39,6 +40,7 @@ const SearchPickerModal = ({
   visible,
   title,
   placeholder,
+  testIDPrefix,
   query,
   onChangeQuery,
   onClose,
@@ -121,12 +123,12 @@ const SearchPickerModal = ({
   );
 
   return (
-    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
-      <View style={styles.backdrop}>
-        <View style={styles.card}>
+    <Modal visible={visible} transparent animationType="none" onRequestClose={onClose}>
+      <View style={styles.backdrop} testID={testIDPrefix ? `${testIDPrefix}-backdrop` : undefined}>
+        <View style={styles.card} testID={testIDPrefix ? `${testIDPrefix}-card` : undefined}>
           <View style={styles.header}>
             <Text style={styles.title}>{title}</Text>
-            <TouchableOpacity onPress={onClose}>
+            <TouchableOpacity onPress={onClose} testID={testIDPrefix ? `${testIDPrefix}-close` : undefined}>
               <CloseCircle size={22} color={colors.grayColor} />
             </TouchableOpacity>
           </View>
@@ -135,6 +137,7 @@ const SearchPickerModal = ({
 
           <TextInput
             style={styles.searchInput}
+            testID={testIDPrefix ? `${testIDPrefix}-search-input` : undefined}
             placeholder={placeholder}
             placeholderTextColor={colors.grayColor}
             value={query}
@@ -146,18 +149,28 @@ const SearchPickerModal = ({
           <View style={{ height: 10 }} />
 
           {loading ? (
-            <ActivityIndicator size="small" color={colors.primaryColor} />
+            <ActivityIndicator
+              size="small"
+              color={colors.primaryColor}
+              testID={testIDPrefix ? `${testIDPrefix}-loading` : undefined}
+            />
           ) : error ? (
-            <Text style={styles.emptyText}>{error}</Text>
+            <Text style={styles.emptyText} testID={testIDPrefix ? `${testIDPrefix}-error` : undefined}>{error}</Text>
           ) : (
             <FlatList
               data={options}
               keyExtractor={(item) => item.id}
+              testID={testIDPrefix ? `${testIDPrefix}-list` : undefined}
               keyboardShouldPersistTaps="handled"
+              initialNumToRender={12}
+              maxToRenderPerBatch={12}
+              windowSize={4}
+              removeClippedSubviews
               renderItem={({ item }) => {
                 const isSelected = item.id === String(selectedId || '');
                 return (
                   <TouchableOpacity
+                    testID={testIDPrefix ? `${testIDPrefix}-option-${item.id}` : undefined}
                     style={[styles.optionRow, isSelected ? styles.optionRowSelected : null]}
                     activeOpacity={0.8}
                     onPress={() => onSelect(item)}
@@ -169,7 +182,11 @@ const SearchPickerModal = ({
                   </TouchableOpacity>
                 );
               }}
-              ListEmptyComponent={<Text style={styles.emptyText}>{emptyText ?? 'No results found.'}</Text>}
+              ListEmptyComponent={
+                <Text style={styles.emptyText} testID={testIDPrefix ? `${testIDPrefix}-empty` : undefined}>
+                  {emptyText ?? 'No results found.'}
+                </Text>
+              }
             />
           )}
         </View>

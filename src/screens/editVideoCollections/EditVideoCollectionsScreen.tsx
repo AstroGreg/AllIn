@@ -97,7 +97,10 @@ const EditVideoCollectionsScreen = ({ navigation, route }: any) => {
             return;
         }
         try {
-            const collection = await getProfileCollectionByType(apiAccessToken, 'video', { scope_key: collectionScopeKey });
+            const collection = await getProfileCollectionByType(apiAccessToken, 'video', {
+                scope_key: collectionScopeKey,
+                include_original: false,
+            });
             setCollectionVideos(Array.isArray(collection?.items) ? collection.items : []);
             setCollectionName(String(collection?.collection?.name ?? t('My Video Collections')));
         } catch {

@@ -96,7 +96,10 @@ const EditPhotoCollectionsScreen = ({ navigation, route }: any) => {
             return;
         }
         try {
-            const collection = await getProfileCollectionByType(apiAccessToken, 'image', { scope_key: collectionScopeKey });
+            const collection = await getProfileCollectionByType(apiAccessToken, 'image', {
+                scope_key: collectionScopeKey,
+                include_original: false,
+            });
             setCollectionPhotos(Array.isArray(collection?.items) ? collection.items : []);
             setCollectionName(String(collection?.collection?.name ?? t('My Photo Collections')));
         } catch {

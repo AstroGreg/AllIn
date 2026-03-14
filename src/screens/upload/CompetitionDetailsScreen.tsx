@@ -1,5 +1,5 @@
 import { View, Text, TouchableOpacity, ScrollView, Modal, Pressable, Alert, ActivityIndicator } from 'react-native'
-import React, { useCallback, useEffect, useMemo, useState } from 'react'
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { ArrowLeft2, Ghost, Trash } from 'iconsax-react-nativejs'
 import { createStyles } from './CompetitionDetailsStyles'
@@ -13,6 +13,7 @@ import FastImage from 'react-native-fast-image'
 import { ApiError, CompetitionMapSummary, getCompetitionMaps, getEventCompetitions } from '../../services/apiGateway'
 import { getApiBaseUrl } from '../../constants/RuntimeConfig'
 import { getSportFocusLabel, normalizeFocusId, type SportFocusId } from '../../utils/profileSelections'
+import E2EPerfReady from '../../components/e2e/E2EPerfReady'
 
 interface EventCategory {
     id: string;
@@ -61,6 +62,7 @@ const CompetitionDetailsScreen = ({ navigation, route }: any) => {
     const { colors } = useTheme();
     const { apiAccessToken } = useAuth();
     const Styles = createStyles(colors);
+    const perfStartedAtRef = useRef(Date.now());
     const competition = route?.params?.competition;
     const account = route?.params?.account;
     const anonymous = route?.params?.anonymous;
@@ -88,6 +90,7 @@ const CompetitionDetailsScreen = ({ navigation, route }: any) => {
     const [roadCourseMaps, setRoadCourseMaps] = useState<RoadCourseMap[]>([]);
     const [selectedRoadCourseMapId, setSelectedRoadCourseMapId] = useState<string>('');
     const [isLoadingRoadCourseMaps, setIsLoadingRoadCourseMaps] = useState(false);
+    const perfReady = !isLoadingDisciplines && !isLoadingRoadCourseMaps && (trackEvents.length + fieldEvents.length + roadEvents.length + roadCourseMaps.length > 0 || disciplinesError !== null);
 
     const competitionId = useMemo(
         () => String(competition?.id || competition?.event_id || competition?.eventId || '').trim(),
@@ -469,6 +472,7 @@ const CompetitionDetailsScreen = ({ navigation, route }: any) => {
 
     return (
         <View style={Styles.mainContainer} testID="upload-competition-details-screen">
+            <E2EPerfReady screen="upload-competition" ready={perfReady} startedAtMs={perfStartedAtRef.current} />
             <SizeBox height={insets.top} />
 
             <View style={Styles.header}>

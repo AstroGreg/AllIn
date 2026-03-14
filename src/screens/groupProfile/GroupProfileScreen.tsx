@@ -304,7 +304,11 @@ const GroupProfileScreen = ({ navigation, route }: any) => {
         }
         (async () => {
             try {
-                const resp = await getPosts(apiAccessToken, { group_id: String(group.group_id), limit: 50 });
+                const resp = await getPosts(apiAccessToken, {
+                    group_id: String(group.group_id),
+                    limit: 50,
+                    include_original: false,
+                });
                 if (!mounted) return;
                 setGroupNews(Array.isArray(resp?.posts) ? resp.posts : []);
             } catch {
@@ -335,8 +339,8 @@ const GroupProfileScreen = ({ navigation, route }: any) => {
         setCollectionsLoading(true);
         try {
             const [photos, videos] = await Promise.all([
-                getGroupCollectionByType(apiAccessToken, String(group.group_id), 'image'),
-                getGroupCollectionByType(apiAccessToken, String(group.group_id), 'video'),
+                getGroupCollectionByType(apiAccessToken, String(group.group_id), 'image', { include_original: false }),
+                getGroupCollectionByType(apiAccessToken, String(group.group_id), 'video', { include_original: false }),
             ]);
             setPhotoCollection({
                 collection: photos?.collection ?? null,
@@ -680,6 +684,9 @@ const GroupProfileScreen = ({ navigation, route }: any) => {
 
     return (
         <View style={styles.mainContainer} testID="group-profile-screen">
+            {!loading && group ? (
+                <View testID="e2e-perf-ready-group-profile" style={{ position: 'absolute', width: 1, height: 1, opacity: 0 }} />
+            ) : null}
             <SizeBox height={insets.top} />
 
                 <View style={styles.header}>

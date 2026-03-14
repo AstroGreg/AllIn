@@ -81,8 +81,8 @@ const ViewUserCollectionsPhotosScreen = ({ navigation, route }: any) => {
         }
         try {
             const [photos, videos] = await Promise.all([
-                getProfileCollectionByType(apiAccessToken, 'image'),
-                getProfileCollectionByType(apiAccessToken, 'video'),
+                getProfileCollectionByType(apiAccessToken, 'image', { include_original: false }),
+                getProfileCollectionByType(apiAccessToken, 'video', { include_original: false }),
             ]);
             setPhotoItems(Array.isArray(photos?.items) ? photos.items : []);
             setVideoItems(Array.isArray(videos?.items) ? videos.items : []);

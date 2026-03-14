@@ -1,0 +1,197 @@
+{
+  "generated_at": "2026-03-14T13:52:03.955Z",
+  "api_base_url": "http://127.0.0.1:3000",
+  "target_ms": 1000,
+  "max_ms": 2000,
+  "iterations": 3,
+  "backend_baselines_ms": {
+    "home": 216.4,
+    "hub": 164.8,
+    "search": 250.6,
+    "profile": 297.4,
+    "upload_select": 154.4,
+    "upload_competition": 179.4,
+    "competition": 179.4
+  },
+  "dataset_validation": {
+    "home_empty": {
+      "has_video": false,
+      "has_photo": false,
+      "feed_posts": 0
+    },
+    "home_rich": {
+      "has_video": false,
+      "has_photo": true,
+      "has_blog": true,
+      "feed_posts": 60,
+      "media_total": 61,
+      "photo_posts": 60,
+      "video_posts": 0
+    },
+    "hub": {
+      "appearances": 5,
+      "uploads": 460
+    },
+    "search": {
+      "competitions": 10,
+      "thumbnails": 10
+    },
+    "competition": {
+      "competition_id": "d178de13-6c93-44f3-8465-4298fe62702f",
+      "disciplines": 27
+    },
+    "profile_rich": {
+      "posts": 20,
+      "uploads": 460
+    },
+    "onboarding": {
+      "clubs": 50,
+      "groups": 3,
+      "disciplines": 27
+    },
+    "search_entities": {
+      "person_query": "5480267650",
+      "group_query": "5480211608",
+      "person_results": 1,
+      "group_results": 1
+    },
+    "ai_bib": {
+      "selected_competitions": 5,
+      "seeded_media_per_competition": [
+        5,
+        5,
+        5,
+        5,
+        5
+      ],
+      "single_competition_results": 5,
+      "five_competition_results": 25
+    }
+  },
+  "results": [
+    {
+      "name": "search_person",
+      "routeName": "SearchScreen",
+      "prepare_samples_ms": [
+        1991,
+        1968
+      ],
+      "prepare_p95_ms": 1991,
+      "cold_ms": 3940,
+      "warm_samples_ms": [
+        3465,
+        3523
+      ],
+      "warm_p50_ms": 3465,
+      "warm_p95_ms": 3523,
+      "warm_max_ms": 3523,
+      "target_ms": 1000,
+      "max_ms": 2000,
+      "backend_baseline_ms": null,
+      "estimated_frontend_overhead_ms": null,
+      "dominant_layer": "frontend",
+      "failures": [],
+      "target_met": false,
+      "pass": false
+    },
+    {
+      "name": "search_group",
+      "routeName": "SearchScreen",
+      "prepare_samples_ms": [
+        437,
+        436
+      ],
+      "prepare_p95_ms": 437,
+      "cold_ms": 3821,
+      "warm_samples_ms": [
+        2870,
+        2801
+      ],
+      "warm_p50_ms": 2801,
+      "warm_p95_ms": 2870,
+      "warm_max_ms": 2870,
+      "target_ms": 1000,
+      "max_ms": 2000,
+      "backend_baseline_ms": null,
+      "estimated_frontend_overhead_ms": null,
+      "dominant_layer": "frontend",
+      "failures": [],
+      "target_met": false,
+      "pass": false
+    },
+    {
+      "name": "search_person_open_profile",
+      "routeName": "SearchScreen",
+      "prepare_samples_ms": [
+        436,
+        443
+      ],
+      "prepare_p95_ms": 443,
+      "cold_ms": 5644,
+      "warm_samples_ms": [
+        4626,
+        5735
+      ],
+      "warm_p50_ms": 4626,
+      "warm_p95_ms": 5735,
+      "warm_max_ms": 5735,
+      "target_ms": 1000,
+      "max_ms": 2000,
+      "backend_baseline_ms": null,
+      "estimated_frontend_overhead_ms": null,
+      "dominant_layer": "frontend",
+      "failures": [],
+      "target_met": false,
+      "pass": false
+    },
+    {
+      "name": "search_group_open_profile",
+      "routeName": "SearchScreen",
+      "prepare_samples_ms": [
+        2069,
+        1885
+      ],
+      "prepare_p95_ms": 2069,
+      "cold_ms": 5821,
+      "warm_samples_ms": [
+        5292,
+        5121
+      ],
+      "warm_p50_ms": 5121,
+      "warm_p95_ms": 5292,
+      "warm_max_ms": 5292,
+      "target_ms": 1000,
+      "max_ms": 2000,
+      "backend_baseline_ms": null,
+      "estimated_frontend_overhead_ms": null,
+      "dominant_layer": "frontend",
+      "failures": [],
+      "target_met": false,
+      "pass": false
+    }
+  ],
+  "all_passed": false,
+  "target_met": false,
+  "target_warnings": [
+    {
+      "name": "search_person",
+      "warm_p95_ms": 3523,
+      "target_ms": 1000
+    },
+    {
+      "name": "search_group",
+      "warm_p95_ms": 2870,
+      "target_ms": 1000
+    },
+    {
+      "name": "search_person_open_profile",
+      "warm_p95_ms": 5735,
+      "target_ms": 1000
+    },
+    {
+      "name": "search_group_open_profile",
+      "warm_p95_ms": 5292,
+      "target_ms": 1000
+    }
+  ]
+}

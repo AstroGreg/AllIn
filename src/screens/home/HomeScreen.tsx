@@ -38,6 +38,7 @@ import NativeShare from 'react-native-share'
 import RNFS from 'react-native-fs'
 import CameraRoll from '@react-native-camera-roll/camera-roll'
 import { translateText } from '../../i18n'
+import E2EPerfReady from '../../components/e2e/E2EPerfReady'
 import { useInstagramStoryImageComposer } from '../../components/share/InstagramStoryComposer'
 
 const HOME_FEED_PAGE_SIZE = 8;
@@ -55,6 +56,7 @@ const HomeScreen = ({ navigation }: any) => {
     const { user, userProfile, apiAccessToken } = useAuth();
     const { eventNameById } = useEvents();
     const isFocused = useIsFocused();
+    const perfStartedAtRef = useRef(Date.now());
 
     const userName = (() => {
         const profileFullName = [userProfile?.firstName, userProfile?.lastName].filter(Boolean).join(' ').trim();
@@ -1195,6 +1197,13 @@ const HomeScreen = ({ navigation }: any) => {
     );
 
     const hasMoreFeedItems = feedVisibleCount < infiniteFeedItems.length;
+    const hasOverviewContent = Boolean(
+        overview?.overview?.video
+        || overview?.overview?.photo
+        || overview?.overview?.blog
+        || ((overview?.overview?.feed_posts?.length ?? 0) > 0),
+    );
+    const perfReady = !isLoadingOverview && (overview !== null || overviewError !== null);
 
     const loadMoreFeedItems = useCallback(() => {
         if (!hasMoreFeedItems) return;
@@ -1721,6 +1730,7 @@ const HomeScreen = ({ navigation }: any) => {
 
     return (
         <View style={Styles.mainContainer} testID="home-screen">
+            <E2EPerfReady screen="home" ready={perfReady} startedAtMs={perfStartedAtRef.current} />
             <SizeBox height={insets.top} />
             <Header
                 userName={userName}

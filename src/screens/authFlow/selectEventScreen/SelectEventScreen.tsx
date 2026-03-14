@@ -136,14 +136,7 @@ const SelectEventScreen = ({ navigation, route }: any) => {
                 return;
             }
 
-            if (fromAddFlow || Boolean((userProfile as any)?.faceVerified)) {
-                navigation.navigate(nextRoute.screen, nextRoute.params);
-                return;
-            }
-
-            navigation.navigate('FaceVerificationScreen', {
-                afterVerification: nextRoute,
-            });
+            navigation.navigate(nextRoute.screen, nextRoute.params);
         } catch {
             Alert.alert(t('Error'), t('Failed to save events. Please try again.'));
         } finally {

@@ -988,12 +988,18 @@ export interface HubAppearanceMediaResponse {
 export async function getHubAppearanceMedia(
   accessToken: string,
   eventId: string,
+  params?: {include_original?: boolean; limit?: number; offset?: number},
 ): Promise<HubAppearanceMediaResponse> {
   const safeId = String(eventId || '').trim();
   if (!safeId) {
     throw new ApiError({status: 400, message: 'Missing event_id'});
   }
-  return apiRequest<HubAppearanceMediaResponse>(`/hub/appearances/${encodeURIComponent(safeId)}/media`, {
+  const qs = toQueryString({
+    include_original: params?.include_original,
+    limit: params?.limit,
+    offset: params?.offset,
+  });
+  return apiRequest<HubAppearanceMediaResponse>(`/hub/appearances/${encodeURIComponent(safeId)}/media${qs}`, {
     method: 'GET',
     accessToken,
   });
@@ -1014,8 +1020,12 @@ export interface HubUploadsResponse {
   results: HubUploadItem[];
 }
 
-export async function getHubUploads(accessToken: string): Promise<HubUploadsResponse> {
-  return apiRequest<HubUploadsResponse>('/hub/uploads', {method: 'GET', accessToken});
+export async function getHubUploads(
+  accessToken: string,
+  params?: {include_original?: boolean},
+): Promise<HubUploadsResponse> {
+  const qs = toQueryString({include_original: params?.include_original});
+  return apiRequest<HubUploadsResponse>(`/hub/uploads${qs}`, {method: 'GET', accessToken});
 }
 
 export type MediaIssueType = 'wrong_competition' | 'wrong_heat' | 'custom';
@@ -1121,7 +1131,7 @@ export async function updateMediaIssueRequest(
 export async function updateMedia(
   accessToken: string,
   mediaId: string,
-  params: {event_id?: string | null},
+  params: {event_id?: string | null; title?: string | null},
 ): Promise<{ok: boolean; media: MediaViewAllItem}> {
   const safeId = String(mediaId || '').trim();
   if (!safeId) {
@@ -1132,6 +1142,7 @@ export async function updateMedia(
     accessToken,
     body: {
       event_id: params.event_id ?? undefined,
+      title: params.title ?? undefined,
     },
   });
 }
@@ -1280,6 +1291,8 @@ export async function searchFaceByEnrollment(
 export interface ObjectSearchResult {
   media_id: string;
   confidence: number;
+  type?: 'image' | 'video';
+  event_id?: string | null;
   query?: string;
   model?: string;
   created_at?: string;
@@ -1349,8 +1362,11 @@ export async function searchCompetitionAi(
 
 export interface BibSearchResult {
   media_id: string;
+  type?: 'image' | 'video';
+  event_id?: string | null;
   bib_number?: string;
   confidence: number;
+  match_time_seconds?: number | null;
   created_at?: string;
   thumbnail_url?: string | null;
   preview_url?: string | null;
@@ -1371,14 +1387,14 @@ export interface BibSearchResponse {
 
 export async function searchMediaByBib(
   accessToken: string,
-  params: {event_id: string; bib: string},
+  params: {event_id: string; bib: string; include_original?: boolean},
 ): Promise<BibSearchResponse> {
   const event_id = String(params.event_id || '').trim();
   const bib = String(params.bib || '').trim();
   if (!event_id || !bib) {
     throw new ApiError({status: 400, message: 'event_id and bib are required'});
   }
-  const qs = toQueryString({event_id, bib});
+  const qs = toQueryString({event_id, bib, include_original: params.include_original});
   return apiRequest<BibSearchResponse>(`/media/search/bib${qs}`, {method: 'GET', accessToken});
 }
 
@@ -1686,6 +1702,7 @@ export interface MediaAsset {
 export interface MediaViewAllItem {
   media_id: string;
   type: 'image' | 'video';
+  title?: string | null;
   uploader_profile_id?: string;
   event_id?: string | null;
   competition_id?: string | null;
@@ -1707,8 +1724,12 @@ export interface MediaViewAllItem {
   assets?: MediaAsset[];
 }
 
-export async function getMediaViewAll(accessToken: string): Promise<MediaViewAllItem[]> {
-  return apiRequest<MediaViewAllItem[]>('/media/view_all', {method: 'GET', accessToken});
+export async function getMediaViewAll(
+  accessToken: string,
+  params?: {include_original?: boolean},
+): Promise<MediaViewAllItem[]> {
+  const qs = toQueryString({include_original: params?.include_original});
+  return apiRequest<MediaViewAllItem[]>(`/media/view_all${qs}`, {method: 'GET', accessToken});
 }
 
 export async function getCompetitionPublicMedia(
@@ -1720,6 +1741,7 @@ export async function getCompetitionPublicMedia(
     checkpoint_id?: string;
     limit?: number;
     offset?: number;
+    include_original?: boolean;
   },
 ): Promise<MediaViewAllItem[]> {
   const safeId = String(competitionId || '').trim();
@@ -1732,6 +1754,7 @@ export async function getCompetitionPublicMedia(
     checkpoint_id: params?.checkpoint_id,
     limit: params?.limit,
     offset: params?.offset,
+    include_original: params?.include_original,
   });
   const res = await apiRequest<any>(`/competitions/${encodeURIComponent(safeId)}/media${qs}`, {
     method: 'GET',
@@ -1918,13 +1941,17 @@ export async function getUploadedCompetitions(
 export async function getCompetitionMedia(
   accessToken: string,
   eventId: string,
-  params?: {limit?: number},
+  params?: {limit?: number; offset?: number; include_original?: boolean},
 ): Promise<CompetitionMediaResponse> {
   const safeId = String(eventId || '').trim();
   if (!safeId) {
     throw new ApiError({status: 400, message: 'Missing event_id'});
   }
-  const qs = toQueryString({limit: params?.limit});
+  const qs = toQueryString({
+    limit: params?.limit,
+    offset: params?.offset,
+    include_original: params?.include_original,
+  });
   return apiRequest<CompetitionMediaResponse>(
     `/downloads/competitions/${encodeURIComponent(safeId)}/media${qs}`,
     {method: 'GET', accessToken},
@@ -2065,9 +2092,13 @@ export interface ProfileCollectionByTypeResponse {
 export async function getProfileCollectionByType(
   accessToken: string,
   type: 'image' | 'video',
-  params?: {scope_key?: string | null},
+  params?: {scope_key?: string | null; include_original?: boolean},
 ): Promise<ProfileCollectionByTypeResponse> {
-  const qs = toQueryString({type, scope_key: String(params?.scope_key ?? '').trim() || undefined});
+  const qs = toQueryString({
+    type,
+    scope_key: String(params?.scope_key ?? '').trim() || undefined,
+    include_original: params?.include_original,
+  });
   return apiRequest<ProfileCollectionByTypeResponse>(`/profiles/me/collections/by-type${qs}`, {method: 'GET', accessToken});
 }
 
@@ -2160,12 +2191,13 @@ export async function getGroupCollectionByType(
   accessToken: string,
   groupId: string,
   type: 'image' | 'video',
+  params?: {include_original?: boolean},
 ): Promise<GroupCollectionByTypeResponse> {
   const safeGroup = String(groupId || '').trim();
   if (!safeGroup) {
     throw new ApiError({status: 400, message: 'Missing group_id'});
   }
-  const qs = toQueryString({type});
+  const qs = toQueryString({type, include_original: params?.include_original});
   return apiRequest<GroupCollectionByTypeResponse>(`/groups/${encodeURIComponent(safeGroup)}/collections/by-type${qs}`, {
     method: 'GET',
     accessToken,
@@ -2469,7 +2501,7 @@ export interface MediaUploadBatchResponse {
 export async function uploadMediaBatch(
   accessToken: string,
   params: {
-    files: Array<{uri: string; type?: string | null; name?: string | null}>;
+    files: Array<{uri: string; type?: string | null; name?: string | null; title?: string | null}>;
     event_id?: string | null;
     discipline_id?: string | null;
     competition_map_id?: string | null;
@@ -2491,6 +2523,10 @@ export async function uploadMediaBatch(
       name: f.name || `upload-${i + 1}`,
       type: f.type || 'application/octet-stream',
     } as any);
+  }
+  const fileTitles = params.files.map((file) => String(file?.title || '').trim());
+  if (fileTitles.some((value) => value.length > 0)) {
+    form.append('file_titles_json', JSON.stringify(fileTitles));
   }
   if (params.event_id) form.append('event_id', String(params.event_id));
   if (params.discipline_id) form.append('discipline_id', String(params.discipline_id));
@@ -2518,7 +2554,7 @@ export async function uploadMediaBatch(
 export async function uploadMediaBatchWatermark(
   accessToken: string,
   params: {
-    files: Array<{uri: string; type?: string | null; name?: string | null}>;
+    files: Array<{uri: string; type?: string | null; name?: string | null; title?: string | null}>;
     watermark_text: string;
     event_id?: string | null;
     discipline_id?: string | null;
@@ -2542,6 +2578,10 @@ export async function uploadMediaBatchWatermark(
       name: f.name || `upload-${i + 1}`,
       type: f.type || 'application/octet-stream',
     } as any);
+  }
+  const fileTitles = params.files.map((file) => String(file?.title || '').trim());
+  if (fileTitles.some((value) => value.length > 0)) {
+    form.append('file_titles_json', JSON.stringify(fileTitles));
   }
   if (params.event_id) form.append('event_id', String(params.event_id));
   if (params.discipline_id) form.append('discipline_id', String(params.discipline_id));
@@ -2644,12 +2684,13 @@ export interface PostSummary {
 
 export async function getPosts(
   accessToken: string,
-  params?: {author_profile_id?: string | null; group_id?: string | null; limit?: number},
+  params?: {author_profile_id?: string | null; group_id?: string | null; limit?: number; include_original?: boolean},
 ): Promise<{ok: boolean; posts: PostSummary[]}> {
   const qs = toQueryString({
     author_profile_id: params?.author_profile_id ?? undefined,
     group_id: params?.group_id ?? undefined,
     limit: params?.limit,
+    include_original: params?.include_original,
   });
   return apiRequest(`/posts${qs}`, {method: 'GET', accessToken});
 }
@@ -2721,11 +2762,14 @@ export async function deletePost(
 export interface AppNotification {
   id: string;
   type: string;
+  actor_profile_id?: string | null;
+  media_id?: string | null;
   title: string;
   body: string;
   event_id?: string | null;
   post_id?: string | null;
   metadata?: Record<string, any>;
+  thumbnail_url?: string | null;
   read_at?: string | null;
   created_at?: string | null;
 }

@@ -1,0 +1,417 @@
+{
+  "generated_at": "2026-03-14T12:32:39.789Z",
+  "api_base_url": "http://127.0.0.1:3000",
+  "target_ms": 1000,
+  "max_ms": 2000,
+  "iterations": 3,
+  "backend_baselines_ms": {
+    "home": 216.4,
+    "hub": 164.8,
+    "search": 250.6,
+    "profile": 297.4,
+    "upload_select": 154.4,
+    "upload_competition": 179.4,
+    "competition": 179.4
+  },
+  "dataset_validation": {
+    "home_empty": {
+      "has_video": false,
+      "has_photo": false,
+      "feed_posts": 0
+    },
+    "home_rich": {
+      "has_video": false,
+      "has_photo": true,
+      "has_blog": true,
+      "feed_posts": 60,
+      "media_total": 61,
+      "photo_posts": 60,
+      "video_posts": 0
+    },
+    "hub": {
+      "appearances": 5,
+      "uploads": 220
+    },
+    "search": {
+      "competitions": 10,
+      "thumbnails": 10
+    },
+    "competition": {
+      "competition_id": "d178de13-6c93-44f3-8465-4298fe62702f",
+      "disciplines": 27
+    },
+    "profile_rich": {
+      "posts": 20,
+      "uploads": 220
+    },
+    "onboarding": {
+      "clubs": 50,
+      "groups": 1,
+      "disciplines": 27
+    }
+  },
+  "results": [
+    {
+      "name": "home_empty",
+      "routeName": "HomeScreen",
+      "ready_test_id": "e2e-perf-ready-home",
+      "cold_ms": 375,
+      "cold_wall_clock_ms": 17215,
+      "cold_launch_overhead_ms": 16840,
+      "warm_samples_ms": [
+        357,
+        334
+      ],
+      "warm_wall_clock_samples_ms": [
+        9184,
+        8793
+      ],
+      "warm_p50_ms": 334,
+      "warm_p95_ms": 357,
+      "warm_max_ms": 357,
+      "target_ms": 1000,
+      "max_ms": 2000,
+      "backend_baseline_ms": 216.4,
+      "estimated_frontend_overhead_ms": 140.6,
+      "dominant_layer": "backend",
+      "failures": [],
+      "target_met": true,
+      "pass": true
+    },
+    {
+      "name": "home_rich",
+      "routeName": "HomeScreen",
+      "ready_test_id": "e2e-perf-ready-home",
+      "cold_ms": 1125,
+      "cold_wall_clock_ms": 8947,
+      "cold_launch_overhead_ms": 7822,
+      "warm_samples_ms": [
+        1023,
+        1022
+      ],
+      "warm_wall_clock_samples_ms": [
+        8873,
+        9006
+      ],
+      "warm_p50_ms": 1022,
+      "warm_p95_ms": 1023,
+      "warm_max_ms": 1023,
+      "target_ms": 1000,
+      "max_ms": 2000,
+      "backend_baseline_ms": 216.4,
+      "estimated_frontend_overhead_ms": 806.6,
+      "dominant_layer": "frontend",
+      "failures": [],
+      "target_met": false,
+      "pass": true
+    },
+    {
+      "name": "hub",
+      "routeName": "HubScreen",
+      "ready_test_id": "e2e-perf-ready-hub",
+      "cold_ms": 551,
+      "cold_wall_clock_ms": 9011,
+      "cold_launch_overhead_ms": 8460,
+      "warm_samples_ms": [
+        508,
+        517
+      ],
+      "warm_wall_clock_samples_ms": [
+        9120,
+        9934
+      ],
+      "warm_p50_ms": 508,
+      "warm_p95_ms": 517,
+      "warm_max_ms": 517,
+      "target_ms": 1000,
+      "max_ms": 2000,
+      "backend_baseline_ms": 164.8,
+      "estimated_frontend_overhead_ms": 352.2,
+      "dominant_layer": "frontend",
+      "failures": [],
+      "target_met": true,
+      "pass": true
+    },
+    {
+      "name": "search",
+      "routeName": "SearchScreen",
+      "ready_test_id": "e2e-perf-ready-search",
+      "cold_ms": 690,
+      "cold_wall_clock_ms": 8967,
+      "cold_launch_overhead_ms": 8277,
+      "warm_samples_ms": [
+        697,
+        694
+      ],
+      "warm_wall_clock_samples_ms": [
+        9327,
+        8717
+      ],
+      "warm_p50_ms": 694,
+      "warm_p95_ms": 697,
+      "warm_max_ms": 697,
+      "target_ms": 1000,
+      "max_ms": 2000,
+      "backend_baseline_ms": 250.6,
+      "estimated_frontend_overhead_ms": 446.4,
+      "dominant_layer": "frontend",
+      "failures": [],
+      "target_met": true,
+      "pass": true
+    },
+    {
+      "name": "upload_select",
+      "routeName": "RootUploadSelectCompetitionScreen",
+      "ready_test_id": "e2e-perf-ready-upload-select",
+      "cold_ms": 1054,
+      "cold_wall_clock_ms": 9654,
+      "cold_launch_overhead_ms": 8600,
+      "warm_samples_ms": [
+        1117,
+        1030
+      ],
+      "warm_wall_clock_samples_ms": [
+        9406,
+        8711
+      ],
+      "warm_p50_ms": 1030,
+      "warm_p95_ms": 1117,
+      "warm_max_ms": 1117,
+      "target_ms": 1000,
+      "max_ms": 2000,
+      "backend_baseline_ms": 154.4,
+      "estimated_frontend_overhead_ms": 962.6,
+      "dominant_layer": "frontend",
+      "failures": [],
+      "target_met": false,
+      "pass": true
+    },
+    {
+      "name": "upload_competition",
+      "routeName": "RootUploadCompetitionDetailsScreen",
+      "ready_test_id": "e2e-perf-ready-upload-competition",
+      "cold_ms": 620,
+      "cold_wall_clock_ms": 8508,
+      "cold_launch_overhead_ms": 7888,
+      "warm_samples_ms": [
+        530,
+        551
+      ],
+      "warm_wall_clock_samples_ms": [
+        8607,
+        8419
+      ],
+      "warm_p50_ms": 530,
+      "warm_p95_ms": 551,
+      "warm_max_ms": 551,
+      "target_ms": 1000,
+      "max_ms": 2000,
+      "backend_baseline_ms": 179.4,
+      "estimated_frontend_overhead_ms": 371.6,
+      "dominant_layer": "frontend",
+      "failures": [],
+      "target_met": true,
+      "pass": true
+    },
+    {
+      "name": "profile_sparse",
+      "routeName": "UserProfileScreen",
+      "ready_test_id": "e2e-perf-ready-profile",
+      "cold_ms": 325,
+      "cold_wall_clock_ms": 8620,
+      "cold_launch_overhead_ms": 8295,
+      "warm_samples_ms": [
+        336,
+        360
+      ],
+      "warm_wall_clock_samples_ms": [
+        8675,
+        9043
+      ],
+      "warm_p50_ms": 336,
+      "warm_p95_ms": 360,
+      "warm_max_ms": 360,
+      "target_ms": 1000,
+      "max_ms": 2000,
+      "backend_baseline_ms": 297.4,
+      "estimated_frontend_overhead_ms": 62.6,
+      "dominant_layer": "backend",
+      "failures": [],
+      "target_met": true,
+      "pass": true
+    },
+    {
+      "name": "profile_rich",
+      "routeName": "UserProfileScreen",
+      "ready_test_id": "e2e-perf-ready-profile",
+      "cold_ms": 351,
+      "cold_wall_clock_ms": 10728,
+      "cold_launch_overhead_ms": 10377,
+      "warm_samples_ms": [
+        374,
+        334
+      ],
+      "warm_wall_clock_samples_ms": [
+        18319,
+        13516
+      ],
+      "warm_p50_ms": 334,
+      "warm_p95_ms": 374,
+      "warm_max_ms": 374,
+      "target_ms": 1000,
+      "max_ms": 2000,
+      "backend_baseline_ms": 297.4,
+      "estimated_frontend_overhead_ms": 76.6,
+      "dominant_layer": "backend",
+      "failures": [],
+      "target_met": true,
+      "pass": true
+    },
+    {
+      "name": "competition",
+      "routeName": "CompetitionDetailsScreen",
+      "ready_test_id": "e2e-perf-ready-competition",
+      "cold_ms": 419,
+      "cold_wall_clock_ms": 10466,
+      "cold_launch_overhead_ms": 10047,
+      "warm_samples_ms": [
+        375,
+        396
+      ],
+      "warm_wall_clock_samples_ms": [
+        11083,
+        8683
+      ],
+      "warm_p50_ms": 375,
+      "warm_p95_ms": 396,
+      "warm_max_ms": 396,
+      "target_ms": 1000,
+      "max_ms": 2000,
+      "backend_baseline_ms": 179.4,
+      "estimated_frontend_overhead_ms": 216.6,
+      "dominant_layer": "frontend",
+      "failures": [],
+      "target_met": true,
+      "pass": true
+    },
+    {
+      "name": "onboarding_focus_select",
+      "routeName": "SelectEventScreen",
+      "prepare_samples_ms": [
+        0,
+        0
+      ],
+      "prepare_p95_ms": 0,
+      "cold_ms": 4,
+      "warm_samples_ms": [
+        4,
+        5
+      ],
+      "warm_p50_ms": 4,
+      "warm_p95_ms": 5,
+      "warm_max_ms": 5,
+      "target_ms": 1000,
+      "max_ms": 2000,
+      "backend_baseline_ms": null,
+      "estimated_frontend_overhead_ms": null,
+      "dominant_layer": "frontend",
+      "failures": [],
+      "target_met": true,
+      "pass": true
+    },
+    {
+      "name": "onboarding_club_picker",
+      "routeName": "CompleteAthleteDetailsScreen",
+      "prepare_samples_ms": [
+        607,
+        292
+      ],
+      "prepare_p95_ms": 607,
+      "cold_ms": 1007,
+      "warm_samples_ms": [
+        942,
+        926
+      ],
+      "warm_p50_ms": 926,
+      "warm_p95_ms": 942,
+      "warm_max_ms": 942,
+      "target_ms": 1000,
+      "max_ms": 2000,
+      "backend_baseline_ms": null,
+      "estimated_frontend_overhead_ms": null,
+      "dominant_layer": "frontend",
+      "failures": [],
+      "target_met": true,
+      "pass": true
+    },
+    {
+      "name": "onboarding_group_picker",
+      "routeName": "CompleteAthleteDetailsScreen",
+      "prepare_samples_ms": [
+        329,
+        292
+      ],
+      "prepare_p95_ms": 329,
+      "cold_ms": 877,
+      "warm_samples_ms": [
+        852,
+        849
+      ],
+      "warm_p50_ms": 849,
+      "warm_p95_ms": 852,
+      "warm_max_ms": 852,
+      "target_ms": 1000,
+      "max_ms": 2000,
+      "backend_baseline_ms": null,
+      "estimated_frontend_overhead_ms": null,
+      "dominant_layer": "frontend",
+      "failures": [],
+      "target_met": true,
+      "pass": true
+    },
+    {
+      "name": "onboarding_discipline_picker",
+      "routeName": "CompleteAthleteDetailsScreen",
+      "prepare_samples_ms": [
+        3729,
+        4197
+      ],
+      "prepare_p95_ms": 4197,
+      "cold_ms": 965,
+      "warm_samples_ms": [
+        968,
+        1086
+      ],
+      "warm_p50_ms": 968,
+      "warm_p95_ms": 1086,
+      "warm_max_ms": 1086,
+      "target_ms": 1000,
+      "max_ms": 2000,
+      "backend_baseline_ms": null,
+      "estimated_frontend_overhead_ms": null,
+      "dominant_layer": "frontend",
+      "failures": [],
+      "target_met": false,
+      "pass": true
+    }
+  ],
+  "all_passed": true,
+  "target_met": false,
+  "target_warnings": [
+    {
+      "name": "home_rich",
+      "warm_p95_ms": 1023,
+      "target_ms": 1000
+    },
+    {
+      "name": "upload_select",
+      "warm_p95_ms": 1117,
+      "target_ms": 1000
+    },
+    {
+      "name": "onboarding_discipline_picker",
+      "warm_p95_ms": 1086,
+      "target_ms": 1000
+    }
+  ]
+}
