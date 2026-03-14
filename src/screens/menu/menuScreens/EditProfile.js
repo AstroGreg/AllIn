@@ -1,0 +1,23 @@
+import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
+import { View, Text, ScrollView, TouchableOpacity } from 'react-native';
+import { useState } from 'react';
+import { createStyles } from '../MenuStyles';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import SizeBox from '../../../constants/SizeBox';
+import CustomHeader from '../../../components/customHeader/CustomHeader';
+import CustomTextInput from '../../../components/customTextInput/CustomTextInput';
+import Icons from '../../../constants/Icons';
+import FastImage from 'react-native-fast-image';
+import CustomButton from '../../../components/customButton/CustomButton';
+import AddSocialLink from '../components/AddSocialLink';
+import { useTheme } from '../../../context/ThemeContext';
+import { useTranslation } from 'react-i18next';
+const EditProfile = ({ navigation }) => {
+    const { t } = useTranslation();
+    const insets = useSafeAreaInsets();
+    const { colors } = useTheme();
+    const Styles = createStyles(colors);
+    const [modalVisible, setModalVisible] = useState(false);
+    return (_jsxs(View, Object.assign({ style: Styles.mainContainer }, { children: [_jsx(SizeBox, { height: insets.top }), _jsx(CustomHeader, { title: t('Edit Profile'), onBackPress: () => navigation.goBack(), isSetting: false }), _jsxs(ScrollView, Object.assign({ style: Styles.container, showsVerticalScrollIndicator: false }, { children: [_jsx(SizeBox, { height: 24 }), _jsx(Text, Object.assign({ style: Styles.containerTitle }, { children: t('Profile Settings') })), _jsx(SizeBox, { height: 20 }), _jsx(CustomTextInput, { label: t('Change username'), icon: _jsx(Icons.User, { height: 16, width: 16 }), placeholder: t('Change username') }), _jsx(SizeBox, { height: 20 }), _jsx(CustomTextInput, { label: t('Change email'), icon: _jsx(Icons.Email, { height: 16, width: 16 }), placeholder: t('Change email') }), _jsx(SizeBox, { height: 20 }), _jsx(CustomTextInput, { label: t('Password'), icon: _jsx(Icons.Password, { height: 16, width: 16 }), placeholder: t('Password'), isPass: true }), _jsx(SizeBox, { height: 20 }), _jsx(CustomTextInput, { label: t('Website'), icon: _jsx(Icons.WebsiteBlue, { height: 16, width: 16 }), placeholder: t('www.demo365.com') }), _jsx(SizeBox, { height: 24 }), _jsxs(View, Object.assign({ style: Styles.row }, { children: [_jsx(Text, Object.assign({ style: Styles.containerTitle }, { children: t('Social links') })), _jsxs(TouchableOpacity, Object.assign({ activeOpacity: 0.3, style: [Styles.nextArrow, { right: 0, }, Styles.row], onPress: () => setModalVisible(true) }, { children: [_jsx(Icons.AddCircle, { height: 16, width: 16 }), _jsx(SizeBox, { width: 4 }), _jsx(Text, Object.assign({ style: Styles.btnText }, { children: t('Add More') }))] }))] })), _jsx(SizeBox, { height: 16 }), _jsxs(View, Object.assign({ style: Styles.talentContainer }, { children: [_jsx(SizeBox, { height: 16 }), _jsxs(TouchableOpacity, Object.assign({ style: Styles.socialLinks }, { children: [_jsx(FastImage, { source: Icons.Strava, style: Styles.icons }), _jsx(SizeBox, { width: 12 }), _jsx(Text, Object.assign({ style: Styles.titlesText }, { children: t('Strava') })), _jsx(View, Object.assign({ style: [Styles.nextArrow, { right: 0 }] }, { children: _jsx(Icons.ArrowNext, { height: 20, width: 20 }) }))] })), _jsx(SizeBox, { height: 14 }), _jsx(View, { style: Styles.separator }), _jsx(SizeBox, { height: 14 }), _jsxs(TouchableOpacity, Object.assign({ style: Styles.socialLinks }, { children: [_jsx(FastImage, { source: Icons.Facebook, style: Styles.icons }), _jsx(SizeBox, { width: 12 }), _jsx(Text, Object.assign({ style: Styles.titlesText }, { children: t('Facebook') })), _jsx(View, Object.assign({ style: [Styles.nextArrow, { right: 0 }] }, { children: _jsx(Icons.ArrowNext, { height: 20, width: 20 }) }))] })), _jsx(SizeBox, { height: 14 }), _jsx(View, { style: Styles.separator }), _jsx(SizeBox, { height: 14 }), _jsxs(TouchableOpacity, Object.assign({ style: Styles.socialLinks }, { children: [_jsx(FastImage, { source: Icons.Instagram, style: Styles.icons }), _jsx(SizeBox, { width: 12 }), _jsx(Text, Object.assign({ style: Styles.titlesText }, { children: t('Instagram') })), _jsx(View, Object.assign({ style: [Styles.nextArrow, { right: 0 }] }, { children: _jsx(Icons.ArrowNext, { height: 20, width: 20 }) }))] })), _jsx(SizeBox, { height: 16 })] })), _jsx(SizeBox, { height: 30 }), _jsx(CustomButton, { title: t('Save'), onPress: () => navigation.goBack(), isSmall: true }), _jsx(SizeBox, { height: 30 }), _jsx(AddSocialLink, { isVisible: modalVisible, onClose: () => setModalVisible(false), onYesPress: () => setModalVisible(false) })] }))] })));
+};
+export default EditProfile;

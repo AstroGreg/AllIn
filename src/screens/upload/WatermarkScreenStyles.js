@@ -1,0 +1,179 @@
+import { StyleSheet } from "react-native";
+import Fonts from "../../constants/Fonts";
+import { lightColors } from "../../constants/Theme";
+export const createStyles = (colors) => StyleSheet.create({
+    mainContainer: {
+        flex: 1,
+        backgroundColor: colors.backgroundColor,
+    },
+    header: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        paddingHorizontal: 20,
+        paddingVertical: 16,
+        borderBottomWidth: 0.5,
+        borderBottomColor: colors.lightGrayColor,
+    },
+    headerButton: {
+        width: 44,
+        height: 44,
+        borderRadius: 22,
+        backgroundColor: colors.btnBackgroundColor,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    headerSpacer: {
+        width: 44,
+        height: 44,
+    },
+    headerGhost: {
+        width: 44,
+        height: 44,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    headerTitle: Object.assign(Object.assign({}, Fonts.medium18), { color: colors.mainTextColor }),
+    scrollContent: {
+        paddingHorizontal: 20,
+        paddingTop: 24,
+    },
+    defaultWatermarkContainer: {
+        alignItems: 'center',
+        justifyContent: 'center',
+        paddingVertical: 60,
+    },
+    defaultWatermarkImage: {
+        width: 193,
+        height: 193,
+    },
+    sectionHeader: {
+        gap: 2,
+    },
+    sectionTitle: Object.assign(Object.assign({}, Fonts.medium16), { color: colors.mainTextColor }),
+    sectionSubtitle: Object.assign(Object.assign({}, Fonts.regular12), { color: colors.grayColor }),
+    textInput: Object.assign(Object.assign({ borderWidth: 1, borderColor: colors.lightGrayColor, borderRadius: 12, paddingHorizontal: 12, paddingVertical: 12 }, Fonts.regular14), { color: colors.mainTextColor, backgroundColor: colors.btnBackgroundColor }),
+    noWatermarkRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 10,
+    },
+    noWatermarkCheck: {
+        width: 22,
+        height: 22,
+        borderRadius: 6,
+        borderWidth: 1,
+        borderColor: colors.lightGrayColor,
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: colors.whiteColor,
+    },
+    noWatermarkCheckActive: {
+        backgroundColor: colors.primaryColor,
+        borderColor: colors.primaryColor,
+    },
+    noWatermarkCheckMark: Object.assign(Object.assign({}, Fonts.medium12), { color: colors.pureWhite }),
+    noWatermarkText: Object.assign(Object.assign({}, Fonts.regular14), { color: colors.mainTextColor }),
+    previewCard: {
+        borderRadius: 12,
+        borderWidth: 0.5,
+        borderColor: colors.lightGrayColor,
+        padding: 16,
+        backgroundColor: colors.cardBackground,
+    },
+    previewLabel: Object.assign(Object.assign({}, Fonts.medium14), { color: colors.mainTextColor, marginBottom: 10 }),
+    previewBox: {
+        height: 120,
+        borderRadius: 10,
+        backgroundColor: colors.secondaryColor,
+        alignItems: 'center',
+        justifyContent: 'center',
+        borderWidth: 1,
+        borderColor: colors.borderColor,
+        overflow: 'hidden',
+    },
+    previewPage: {
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    previewDotsRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 6,
+        marginTop: 10,
+    },
+    previewDot: {
+        width: 7,
+        height: 7,
+        borderRadius: 4,
+        backgroundColor: colors.lightGrayColor,
+        opacity: 0.9,
+    },
+    previewDotActive: {
+        width: 20,
+        backgroundColor: colors.primaryColor,
+    },
+    previewMediaFrame: {
+        position: 'relative',
+        alignItems: 'center',
+        justifyContent: 'center',
+        overflow: 'hidden',
+    },
+    previewImage: {
+        width: '100%',
+        height: '100%',
+    },
+    previewText: Object.assign(Object.assign({}, Fonts.medium16), { color: colors.primaryColor }),
+    previewWatermarkOverlay: Object.assign(Object.assign({}, StyleSheet.absoluteFillObject), { justifyContent: 'space-around', transform: [{ rotate: '-18deg' }], paddingVertical: 4 }),
+    previewWatermarkRow: Object.assign(Object.assign({}, Fonts.medium12), { color: colors.primaryColor, opacity: 0.48, letterSpacing: 0.5 }),
+    previewButton: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: colors.primaryColor,
+        borderRadius: 10,
+        height: 54,
+        gap: 8,
+    },
+    previewButtonText: Object.assign(Object.assign({}, Fonts.medium16), { color: colors.pureWhite }),
+    skipButton: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: colors.grayColor,
+        borderRadius: 10,
+        height: 54,
+    },
+    skipButtonText: Object.assign(Object.assign({}, Fonts.medium16), { color: colors.pureWhite }),
+    previewModalOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0,0,0,0.85)',
+        justifyContent: 'center',
+        alignItems: 'center',
+        paddingHorizontal: 16,
+        paddingVertical: 20,
+    },
+    previewModalBackdrop: Object.assign({}, StyleSheet.absoluteFillObject),
+    previewModalContent: {
+        width: '100%',
+        height: '82%',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    previewModalImage: {
+        width: '100%',
+        height: '100%',
+    },
+    previewModalFrame: {
+        borderRadius: 12,
+    },
+    previewModalPage: {
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    previewModalWatermarkOverlay: Object.assign(Object.assign({}, StyleSheet.absoluteFillObject), { justifyContent: 'space-around', transform: [{ rotate: '-18deg' }], paddingVertical: 4 }),
+});
+// Backward compatibility
+const Styles = createStyles(lightColors);
+export default Styles;

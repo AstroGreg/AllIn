@@ -1,0 +1,10 @@
+
+> api-gateway@1.0.0 start
+> node dist/index.js
+
+[dotenv@17.2.3] injecting env (0) from .env -- tip: 👥 sync secrets across teammates & machines: https://dotenvx.com/ops
+2026-03-14 22:59:38.984694: I tensorflow/core/platform/cpu_feature_guard.cc:193] This TensorFlow binary is optimized with oneAPI Deep Neural Network Library (oneDNN) to use the following CPU instructions in performance-critical operations:  AVX2
+To enable them in other operations, rebuild TensorFlow with the appropriate compiler flags.
+Skipping Redis init (SKIP_REDIS_INIT=YES)
+Skipping Azure Search index init (SKIP_SEARCH_INDEX_INIT=YES)
+API listening on port 3001
