@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { View, Text, TouchableOpacity, Image, Modal, Alert, Pressable, TextInput, Share, Linking, Platform } from 'react-native';
+import { View, Text, TouchableOpacity, Image, Modal, Alert, Pressable, TextInput, Share } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import FastImage from 'react-native-fast-image';
 import Video from 'react-native-video';
@@ -21,13 +21,12 @@ import { useTheme } from '../../context/ThemeContext';
 import { useAuth } from '../../context/AuthContext';
 import { ApiError, attachMediaToPost, createMediaIssueRequest, createPost, getMediaById, recordDownload } from '../../services/apiGateway';
 import { getApiBaseUrl, getHlsBaseUrl } from '../../constants/RuntimeConfig';
-import { AppConfig } from '../../constants/AppConfig';
 import { useTranslation } from 'react-i18next'
 import { useInstagramStoryImageComposer } from '../../components/share/InstagramStoryComposer';
+import { shareMediaToInstagramStory } from '../../components/share/instagramStoryShare';
 import { usePreventMediaCapture } from '../../utils/usePreventMediaCapture';
 import { isE2ELaunchEnabled } from '../../constants/E2EConfig';
 
-const INSTAGRAM_APP_ID = String(AppConfig.INSTAGRAM_APP_ID ?? '').trim();
 const E2E_HIDDEN_TEXT_STYLE = { position: 'absolute' as const, left: -1000, top: -1000, width: 1, height: 1, opacity: 0.01 };
 
 const VideoPlayingScreen = ({ navigation, route }: any) => {
@@ -68,6 +67,11 @@ const VideoPlayingScreen = ({ navigation, route }: any) => {
         route?.params?.media?.event_id ||
         route?.params?.media?.eventId ||
         null;
+    const blogTitleFromRoute =
+        route?.params?.blogTitle ||
+        route?.params?.postTitle ||
+        route?.params?.post?.title ||
+        '';
     const startAt = Number(route?.params?.startAt ?? 0);
     const e2eLaunchEnabled = isE2ELaunchEnabled();
     const hasInitialSeekedRef = useRef(false);
@@ -87,6 +91,14 @@ const VideoPlayingScreen = ({ navigation, route }: any) => {
         return fallbackVideo.thumbnail?.uri ?? null;
     }, [fallbackVideo.thumbnail]);
     const [posterUrl, setPosterUrl] = useState<string | null>(() => fallbackPoster());
+    const instagramStoryTitle = useMemo(() => {
+        const blogTitle = String(blogTitleFromRoute || '').trim();
+        return blogTitle || null;
+    }, [blogTitleFromRoute]);
+    const shouldUseStaticBlogMediaStory = useMemo(
+        () => Boolean(String(blogTitleFromRoute || '').trim() && String(posterUrl || '').trim()),
+        [blogTitleFromRoute, posterUrl],
+    );
 
     const [showBuyModal, setShowBuyModal] = useState(false);
     const [showSuccessModal, setShowSuccessModal] = useState(false);
@@ -391,52 +403,37 @@ const VideoPlayingScreen = ({ navigation, route }: any) => {
             Alert.alert(t('No media available'), t('There is no media to share.'));
             return;
         }
-        if (!INSTAGRAM_APP_ID) {
-            Alert.alert(t('Instagram Story failed'), t('INSTAGRAM_APP_ID is missing.'));
-            return;
-        }
         if (!shareModule?.default?.shareSingle) {
             await handleShareNative();
             return;
         }
 
         try {
-            if (Platform.OS === 'android') {
-                const pkg = await shareModule.default.isPackageInstalled?.('com.instagram.android');
-                if (pkg && !pkg.isInstalled) {
-                    Alert.alert(t('Instagram unavailable'), t('Install Instagram to share to Stories.'));
-                    return;
-                }
-            } else {
-                const canOpen = await Linking.canOpenURL('instagram-stories://share');
-                if (!canOpen) {
-                    Alert.alert(t('Instagram unavailable'), t('Install Instagram to share to Stories.'));
-                    return;
-                }
-            }
             const fileUrl = await ensureLocalFile(downloadUrl, extensionFromUrl(downloadUrl));
             if (!fileUrl) {
                 Alert.alert(t('Share failed'), t('Unable to download the media file.'));
                 return;
             }
-            const stickerImage = await composeInstagramStoryImage(null, null, 'SpotMe', null, { mode: 'overlay' });
-            await shareModule.default.shareSingle({
-                social: shareModule.default.Social.INSTAGRAM_STORIES,
-                appId: INSTAGRAM_APP_ID,
-                backgroundVideo: fileUrl,
-                stickerImage,
-                backgroundTopColor: '#0D0F12',
-                backgroundBottomColor: '#0D0F12',
-                attributionURL: 'https://spot-me.ai',
-                failOnCancel: false,
+            const result = await shareMediaToInstagramStory({
+                t,
+                composeInstagramStoryImage,
+                localAssetUrl: fileUrl,
+                isVideo: true,
+                title: instagramStoryTitle,
+                composeImageUri: shouldUseStaticBlogMediaStory ? posterUrl : null,
+                preferComposedBackground: shouldUseStaticBlogMediaStory,
+                shareModule: shareModule.default,
             });
+            if (result === 'unsupported') {
+                await handleShareNative();
+            }
         } catch (e: any) {
             const msg = String(e?.message ?? e);
             if (!/cancel/i.test(msg)) {
                 Alert.alert(t('Instagram Story failed'), msg);
             }
         }
-    }, [composeInstagramStoryImage, ensureLocalFile, extensionFromUrl, getShareModule, handleShareNative, resolveDownloadUrl, t]);
+    }, [composeInstagramStoryImage, ensureLocalFile, extensionFromUrl, getShareModule, handleShareNative, instagramStoryTitle, posterUrl, resolveDownloadUrl, shouldUseStaticBlogMediaStory, t]);
 
     const showInfoPopup = useCallback((title: string, message: string) => {
         setInfoPopupTitle(title);

@@ -1,5 +1,5 @@
 import React, {useCallback, useMemo, useState, useEffect, useRef} from 'react';
-import {ActivityIndicator, Alert, Modal, Pressable, Share, Text, TouchableOpacity, View, TextInput, ScrollView, Linking, Platform} from 'react-native';
+import {ActivityIndicator, Alert, Modal, Pressable, Share, Text, TouchableOpacity, View, TextInput, ScrollView} from 'react-native';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 // useFocusEffect not available in some runtime bundles; use navigation listeners instead.
 import FastImage from 'react-native-fast-image';
@@ -12,15 +12,14 @@ import {ApiError, attachMediaToPost, createMediaIssueRequest, createPost, getAiF
 import Video from 'react-native-video';
 import ShimmerEffect from '../../components/shimmerEffect/ShimmerEffect';
 import {getApiBaseUrl, getHlsBaseUrl} from '../../constants/RuntimeConfig';
-import {AppConfig} from '../../constants/AppConfig';
 import Slider from '@react-native-community/slider';
 import Icons from '../../constants/Icons';
 import { useTranslation } from 'react-i18next'
 import { useInstagramStoryImageComposer } from '../../components/share/InstagramStoryComposer';
+import { shareMediaToInstagramStory } from '../../components/share/instagramStoryShare';
 import { usePreventMediaCapture } from '../../utils/usePreventMediaCapture';
 
 type FeedbackChoice = 'yes' | 'no' | null;
-const INSTAGRAM_APP_ID = String(AppConfig.INSTAGRAM_APP_ID ?? '').trim();
 
 const PhotoDetailScreen = ({navigation, route}: any) => {
     const { t } = useTranslation();
@@ -310,6 +309,33 @@ const PhotoDetailScreen = ({navigation, route}: any) => {
         if (resolvedEventName) return resolvedEventName;
         return '';
     }, [blogTitleFromRoute, eventId, eventNameById, eventTitle, normalizeHeaderLabel]);
+    const getInstagramShareMatchLabel = useCallback((rawMatchType?: string | null) => {
+        const key = String(rawMatchType ?? '').trim().toLowerCase();
+        if (!key) return null;
+        if (key === 'combined') return t('Face + Chest');
+        if (key === 'face' || key === 'facial') return t('Face');
+        if (key === 'bib' || key === 'chest') return t('Chest');
+        if (key === 'context') return t('Context');
+        return null;
+    }, [t]);
+    const instagramStoryTitle = useMemo(() => {
+        const normalizedHeader = String(headerLabel || '').trim();
+        if (normalizedHeader) {
+            return normalizedHeader;
+        }
+        const mediaTitle = String((activeMedia as any)?.title ?? '').trim();
+        return mediaTitle || null;
+    }, [activeMedia, headerLabel]);
+    const shouldPreferLocalStoryImage = useMemo(
+        () => Boolean(String(blogTitleFromRoute || '').trim()),
+        [blogTitleFromRoute],
+    );
+    const instagramStorySubtitle = useMemo(
+        () => getInstagramShareMatchLabel(
+            String((activeMedia as any)?.matchType ?? (activeMedia as any)?.match_type ?? matchType ?? '').trim(),
+        ),
+        [activeMedia, getInstagramShareMatchLabel, matchType],
+    );
     const primaryMediaAsset = useMemo(() => {
         const assets = Array.isArray(activeMedia?.assets) ? activeMedia.assets : [];
         if (assets.length === 0) return null;
@@ -831,9 +857,8 @@ const PhotoDetailScreen = ({navigation, route}: any) => {
 
     const extensionFromUrl = useCallback((value: string) => {
         const base = value.split('?')[0];
-        const match = base.match(/\.(mp4|mov|m4v|jpg|jpeg|png)$/i);
-        if (match?.[1]) return match[1].toLowerCase();
-        return 'mp4';
+        const match = base.match(/\.(mp4|mov|m4v|jpg|jpeg|png|webp|heic)$/i);
+        return match?.[1] ? match[1].toLowerCase() : '';
     }, []);
 
     const resolveDownloadUrl = useCallback(async () => {
@@ -962,7 +987,11 @@ const PhotoDetailScreen = ({navigation, route}: any) => {
         downloadInFlightRef.current = true;
         setDownloadProgress(null);
         setDownloadVisible(true);
-        const fileUrl = await ensureLocalFile(downloadUrl, extensionFromUrl(downloadUrl), setDownloadProgress);
+        const fileUrl = await ensureLocalFile(
+            downloadUrl,
+            extensionFromUrl(downloadUrl) || (String(activeMedia?.type ?? '').toLowerCase() === 'video' ? 'mp4' : 'jpg'),
+            setDownloadProgress,
+        );
         if (!fileUrl) {
             Alert.alert(t('Download failed'), t('Unable to download the media file.'));
             setDownloadVisible(false);
@@ -996,7 +1025,7 @@ const PhotoDetailScreen = ({navigation, route}: any) => {
             setDownloadProgress(null);
             downloadInFlightRef.current = false;
         }
-    }, [apiAccessToken, ensureLocalFile, eventId, extensionFromUrl, getShareModule, resolveDownloadUrl, resolvedMediaId, t]);
+    }, [activeMedia?.type, apiAccessToken, ensureLocalFile, eventId, extensionFromUrl, getShareModule, resolveDownloadUrl, resolvedMediaId, t]);
 
     const handleShareNative = useCallback(async () => {
         const shareUrl = await resolveShareUrl();
@@ -1004,7 +1033,10 @@ const PhotoDetailScreen = ({navigation, route}: any) => {
             Alert.alert(t('No media available'), t('There is no media to share.'));
             return;
         }
-        const localShareUrl = await ensureLocalFile(shareUrl, extensionFromUrl(shareUrl));
+        const localShareUrl = await ensureLocalFile(
+            shareUrl,
+            extensionFromUrl(shareUrl) || (String(activeMedia?.type ?? '').toLowerCase() === 'video' ? 'mp4' : 'jpg'),
+        );
         if (!localShareUrl) {
             Alert.alert(t('Share failed'), t('Unable to download the media file.'));
             return;
@@ -1015,7 +1047,7 @@ const PhotoDetailScreen = ({navigation, route}: any) => {
             const msg = String(e?.message ?? e);
             Alert.alert(t('Share failed'), msg);
         }
-    }, [ensureLocalFile, extensionFromUrl, resolveShareUrl, t]);
+    }, [activeMedia?.type, ensureLocalFile, extensionFromUrl, resolveShareUrl, t]);
 
     const handleShareInstagram = useCallback(async () => {
         const shareModule = getShareModule();
@@ -1024,46 +1056,37 @@ const PhotoDetailScreen = ({navigation, route}: any) => {
         if (shareModule?.default?.shareSingle) {
             const ShareLib = shareModule.default;
             try {
-                if (!INSTAGRAM_APP_ID) {
-                    Alert.alert(t('Instagram Story failed'), t('INSTAGRAM_APP_ID is missing.'));
-                    return;
-                }
-                if (Platform.OS === 'android') {
-                    const pkg = await ShareLib.isPackageInstalled?.('com.instagram.android');
-                    if (pkg && !pkg.isInstalled) {
-                        Alert.alert(t('Instagram unavailable'), t('Install Instagram to share to Stories.'));
-                        return;
-                    }
-                } else {
-                    const canOpen = await Linking.canOpenURL('instagram-stories://share');
-                    if (!canOpen) {
-                        Alert.alert(t('Instagram unavailable'), t('Install Instagram to share to Stories.'));
-                        return;
-                    }
-                }
                 const localAsset = shareUrl
-                    ? await ensureLocalFile(shareUrl, extensionFromUrl(shareUrl))
+                    ? await ensureLocalFile(
+                        shareUrl,
+                        extensionFromUrl(shareUrl) || (String(activeMedia?.type ?? '').toLowerCase() === 'video' ? 'mp4' : 'jpg'),
+                    )
                     : null;
                 if (!localAsset) {
                     Alert.alert(t('Share failed'), t('Unable to download the media file.'));
                     return;
                 }
                 const isLocalVideo = /\.(mp4|mov|m4v)(\?|$)/i.test(localAsset);
-                const storyAssetUri = await composeInstagramStoryImage(null, null, 'SpotMe', null, { mode: 'overlay' });
-                await ShareLib.shareSingle({
-                    social: ShareLib.Social.INSTAGRAM_STORIES,
-                    appId: INSTAGRAM_APP_ID,
-                    backgroundImage: isLocalVideo ? undefined : localAsset,
-                    backgroundVideo: isLocalVideo ? localAsset : undefined,
-                    stickerImage: storyAssetUri,
-                    backgroundTopColor: '#0D0F12',
-                    backgroundBottomColor: '#0D0F12',
-                    attributionURL: 'https://spot-me.ai',
+                const result = await shareMediaToInstagramStory({
+                    t,
+                    composeInstagramStoryImage,
+                    localAssetUrl: localAsset,
+                    isVideo: isLocalVideo,
+                    title: isLocalVideo ? null : instagramStoryTitle,
+                    subtitle: isLocalVideo ? null : instagramStorySubtitle,
+                    composeImageUri: isLocalVideo
+                        ? null
+                        : (shouldPreferLocalStoryImage ? localAsset : (highResImageUrl || bestImageUrl || localAsset)),
+                    shareModule: ShareLib,
                 });
-                return;
+                if (result !== 'unsupported') {
+                    return;
+                }
             } catch (e: any) {
                 const msg = String(e?.message ?? e);
-                Alert.alert(t('Instagram Story failed'), msg);
+                if (!/cancel/i.test(msg)) {
+                    Alert.alert(t('Instagram Story failed'), msg);
+                }
                 return;
             }
         }
@@ -1073,7 +1096,7 @@ const PhotoDetailScreen = ({navigation, route}: any) => {
             return;
         }
         await handleShareNative();
-    }, [composeInstagramStoryImage, ensureLocalFile, extensionFromUrl, getShareModule, handleShareNative, resolveShareUrl, t]);
+    }, [activeMedia?.type, bestImageUrl, composeInstagramStoryImage, ensureLocalFile, extensionFromUrl, getShareModule, handleShareNative, highResImageUrl, instagramStorySubtitle, instagramStoryTitle, resolveShareUrl, shouldPreferLocalStoryImage, t]);
 
     const handleAddToProfile = useCallback(async () => {
         if (!apiAccessToken) {

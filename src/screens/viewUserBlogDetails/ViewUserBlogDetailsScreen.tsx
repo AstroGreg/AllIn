@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, Image, Alert, Linking, Platform } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, Image, Alert } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import FastImage from 'react-native-fast-image';
 import { ArrowLeft2, Heart, Edit2, Trash } from 'iconsax-react-nativejs';
@@ -14,11 +14,9 @@ import { translateText } from '../../i18n';
 import { useAuth } from '../../context/AuthContext';
 import NativeShare from 'react-native-share';
 import { deletePost, getPostById, recordPostView, togglePostLike } from '../../services/apiGateway';
-import { AppConfig } from '../../constants/AppConfig';
 import { getApiBaseUrl } from '../../constants/RuntimeConfig';
 import { useInstagramStoryImageComposer } from '../../components/share/InstagramStoryComposer';
-
-const INSTAGRAM_APP_ID = String(AppConfig.INSTAGRAM_APP_ID ?? '').trim();
+import { shareBlogToInstagramStory } from '../../components/share/instagramStoryShare';
 
 const ViewUserBlogDetailsScreen = ({ navigation, route }: any) => {
     const insets = useSafeAreaInsets();
@@ -178,8 +176,15 @@ const ViewUserBlogDetailsScreen = ({ navigation, route }: any) => {
     const openMediaDetail = useCallback((item: any) => {
         const media = item?.media;
         if (!media) return;
+        const mediaHeaderTitle =
+            String(eventNameById(media.event_id) || '').trim()
+            || String(postData?.title || '').trim()
+            || (media.type === 'video' ? t('Video') : t('Photo'));
         if (media.type === 'video') {
             navigation.navigate('VideoPlayingScreen', {
+                eventTitle: mediaHeaderTitle,
+                blogTitle: postData?.title ? String(postData.title) : undefined,
+                postTitle: postData?.title ? String(postData.title) : undefined,
                 video: {
                     media_id: media.media_id,
                     title: postData?.title || t('Video'),
@@ -190,7 +195,9 @@ const ViewUserBlogDetailsScreen = ({ navigation, route }: any) => {
             return;
         }
         navigation.navigate('PhotoDetailScreen', {
-            eventTitle: eventNameById(media.event_id),
+            eventTitle: mediaHeaderTitle,
+            blogTitle: postData?.title ? String(postData.title) : undefined,
+            postTitle: postData?.title ? String(postData.title) : undefined,
             media: {
                 id: media.media_id,
                 eventId: media.event_id,
@@ -224,47 +231,13 @@ const ViewUserBlogDetailsScreen = ({ navigation, route }: any) => {
     }, [blogShareMessage, postData?.title]);
 
     const handleShareBlogInstagram = useCallback(async () => {
-        if (!INSTAGRAM_APP_ID) {
-            Alert.alert(t('Instagram Story failed'), t('INSTAGRAM_APP_ID is missing.'));
-            return;
-        }
-
         try {
-            if (Platform.OS === 'android') {
-                const pkg = await NativeShare.isPackageInstalled('com.instagram.android');
-                if (!pkg?.isInstalled) {
-                    Alert.alert(t('Instagram unavailable'), t('Install Instagram to share to Stories.'));
-                    return;
-                }
-            } else {
-                const canOpen = await Linking.canOpenURL('instagram-stories://share');
-                if (!canOpen) {
-                    Alert.alert(t('Instagram unavailable'), t('Install Instagram to share to Stories.'));
-                    return;
-                }
-            }
-        } catch {
-            Alert.alert(t('Instagram unavailable'), t('Could not verify Instagram installation.'));
-            return;
-        }
-
-        try {
-            const composedImageUri = await composeInstagramStoryImage(
-                firstBlogImageUri,
-                postData?.title ? String(postData.title) : blogShareMessage,
-                'AllIn',
-                postData?.summary || postData?.description || null,
-                { layout: 'blog_detail_card' },
-            );
-
-            await NativeShare.shareSingle({
-                social: NativeShare.Social.INSTAGRAM_STORIES,
-                appId: INSTAGRAM_APP_ID,
-                backgroundImage: composedImageUri,
-                backgroundTopColor: '#0D0F12',
-                backgroundBottomColor: '#0D0F12',
-                attributionURL: 'https://spot-me.ai',
-                failOnCancel: false,
+            await shareBlogToInstagramStory({
+                t,
+                composeInstagramStoryImage,
+                imageUri: firstBlogImageUri,
+                title: postData?.title ? String(postData.title) : blogShareMessage,
+                subtitle: postData?.summary || postData?.description || null,
             });
         } catch (e: any) {
             const msg = String(e?.message ?? t('Instagram Story failed'));
