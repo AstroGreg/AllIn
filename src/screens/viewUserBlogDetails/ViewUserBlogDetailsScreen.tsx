@@ -252,9 +252,9 @@ const ViewUserBlogDetailsScreen = ({ navigation, route }: any) => {
             const composedImageUri = await composeInstagramStoryImage(
                 firstBlogImageUri,
                 postData?.title ? String(postData.title) : blogShareMessage,
-                'SpotMe',
+                'AllIn',
                 postData?.summary || postData?.description || null,
-                { layout: 'blog_card' },
+                { layout: 'blog_detail_card' },
             );
 
             await NativeShare.shareSingle({
