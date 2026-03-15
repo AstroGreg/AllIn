@@ -81,3 +81,7 @@ redis.env
 !.yarn/versions
 CLAUDE.md
 pnpm-lock.yaml
+
+# Metro and e2e
+metro.clean.out
+tmp/gateway-device-e2e.log
