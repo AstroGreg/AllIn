@@ -818,6 +818,10 @@ const HomeScreen = ({ navigation }: any) => {
         if (apiAccessToken && post?.id) {
             try {
                 const detail = await getPostById(apiAccessToken, String(post.id));
+                const detailedCoverUrl = pickMediaUrl((detail as any)?.post?.cover_media);
+                if (detailedCoverUrl) {
+                    return detailedCoverUrl;
+                }
                 const firstImage = Array.isArray((detail as any)?.media)
                     ? (detail as any).media.find((media: any) => String(media?.type ?? '').toLowerCase() !== 'video')
                     : null;

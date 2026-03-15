@@ -118,12 +118,45 @@ const ViewUserBlogDetailsScreen = ({ navigation, route }: any) => {
     const [showTranslation, setShowTranslation] = useState(false);
     const selectedItem = galleryItems[selectedIndex] ?? galleryItems[0];
     const firstBlogImageUri = useMemo(() => {
-        const firstImage = galleryItems.find((item: any) => item?.type === 'image' && item?.image?.uri);
-        if (firstImage?.image?.uri) {
-            return String(firstImage.image.uri);
+        const firstImage = galleryItems.find((item: any) => item?.type === 'image' && (item?.media || item?.image?.uri));
+        const candidateItem = firstImage || selectedItem;
+        const media = candidateItem?.media;
+
+        if (media) {
+            const candidates = [
+                media.raw_url,
+                media.rawUrl,
+                media.original_url,
+                media.originalUrl,
+                media.full_url,
+                media.fullUrl,
+                media.preview_url,
+                media.previewUrl,
+                media.thumbnail_url,
+                media.thumbnailUrl,
+            ].filter(Boolean);
+
+            const resolved = candidates
+                .map((value: any) => {
+                    const abs = toAbsoluteUrl(String(value));
+                    if (!abs) return null;
+                    return withAccessToken(abs) || abs;
+                })
+                .filter(Boolean) as string[];
+
+            const bitmapImage = resolved.find((value) => /\.(jpg|jpeg|png|heic)(\?|$)/i.test(value));
+            if (bitmapImage) return bitmapImage;
+            const webpImage = resolved.find((value) => /\.(webp)(\?|$)/i.test(value));
+            if (webpImage) return webpImage;
+            if (resolved[0]) return resolved[0];
         }
-        return selectedItem?.image?.uri ? String(selectedItem.image.uri) : null;
-    }, [galleryItems, selectedItem?.image?.uri]);
+
+        if (candidateItem?.image?.uri) {
+            return String(candidateItem.image.uri);
+        }
+
+        return null;
+    }, [galleryItems, selectedItem, toAbsoluteUrl, withAccessToken]);
 
     const translatedDescription = useMemo(() => {
         return translateText(postData?.description ?? '', i18n.language);

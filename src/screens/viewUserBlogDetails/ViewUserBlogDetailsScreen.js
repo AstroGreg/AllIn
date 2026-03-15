@@ -131,12 +131,47 @@ const ViewUserBlogDetailsScreen = ({ navigation, route }) => {
     const selectedItem = (_f = galleryItems[selectedIndex]) !== null && _f !== void 0 ? _f : galleryItems[0];
     const firstBlogImageUri = useMemo(() => {
         var _a, _b;
-        const firstImage = galleryItems.find((item) => { var _a; return (item === null || item === void 0 ? void 0 : item.type) === 'image' && ((_a = item === null || item === void 0 ? void 0 : item.image) === null || _a === void 0 ? void 0 : _a.uri); });
-        if ((_a = firstImage === null || firstImage === void 0 ? void 0 : firstImage.image) === null || _a === void 0 ? void 0 : _a.uri) {
-            return String(firstImage.image.uri);
+        const firstImage = galleryItems.find((item) => {
+            var _a, _b;
+            return (item === null || item === void 0 ? void 0 : item.type) === 'image' && ((item === null || item === void 0 ? void 0 : item.media) || ((_b = (_a = item === null || item === void 0 ? void 0 : item.image) === null || _a === void 0 ? void 0 : _a.uri) !== null && _b !== void 0 ? _b : null));
+        });
+        const candidateItem = firstImage || selectedItem;
+        const media = candidateItem === null || candidateItem === void 0 ? void 0 : candidateItem.media;
+        if (media) {
+            const candidates = [
+                media.raw_url,
+                media.rawUrl,
+                media.original_url,
+                media.originalUrl,
+                media.full_url,
+                media.fullUrl,
+                media.preview_url,
+                media.previewUrl,
+                media.thumbnail_url,
+                media.thumbnailUrl,
+            ].filter(Boolean);
+            const resolved = candidates
+                .map((value) => {
+                const abs = toAbsoluteUrl(String(value));
+                if (!abs)
+                    return null;
+                return withAccessToken(abs) || abs;
+            })
+                .filter(Boolean);
+            const bitmapImage = resolved.find((value) => /\.(jpg|jpeg|png|heic)(\?|$)/i.test(value));
+            if (bitmapImage)
+                return bitmapImage;
+            const webpImage = resolved.find((value) => /\.(webp)(\?|$)/i.test(value));
+            if (webpImage)
+                return webpImage;
+            if (resolved[0])
+                return resolved[0];
         }
-        return ((_b = selectedItem === null || selectedItem === void 0 ? void 0 : selectedItem.image) === null || _b === void 0 ? void 0 : _b.uri) ? String(selectedItem.image.uri) : null;
-    }, [galleryItems, (_g = selectedItem === null || selectedItem === void 0 ? void 0 : selectedItem.image) === null || _g === void 0 ? void 0 : _g.uri]);
+        if ((_a = candidateItem === null || candidateItem === void 0 ? void 0 : candidateItem.image) === null || _a === void 0 ? void 0 : _a.uri) {
+            return String(candidateItem.image.uri);
+        }
+        return null;
+    }, [galleryItems, selectedItem, toAbsoluteUrl, withAccessToken]);
     const translatedDescription = useMemo(() => {
         var _a;
         return translateText((_a = postData === null || postData === void 0 ? void 0 : postData.description) !== null && _a !== void 0 ? _a : '', i18n.language);
