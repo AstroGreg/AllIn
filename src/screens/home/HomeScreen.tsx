@@ -624,6 +624,27 @@ const HomeScreen = ({ navigation }: any) => {
         return image || candidates[0] || null;
     }, [toAbsoluteUrl, withAccessToken]);
 
+    const pickInstagramStoryImageUrl = useCallback((media?: HomeOverviewMedia | MediaViewAllItem | null) => {
+        if (!media || media.type === 'video') return null;
+        const candidates = [
+            media.raw_url,
+            media.original_url,
+            media.full_url,
+            media.preview_url,
+            media.thumbnail_url,
+        ]
+            .filter(Boolean)
+            .map((value) => {
+                const absolute = toAbsoluteUrl(String(value));
+                return withAccessToken(absolute || '') || absolute || '';
+            })
+            .filter(Boolean);
+        const bitmapImage = candidates.find((value) => /\.(jpg|jpeg|png|heic)(\?|$)/i.test(value));
+        if (bitmapImage) return bitmapImage;
+        const webpImage = candidates.find((value) => /\.(webp)(\?|$)/i.test(value));
+        return webpImage || candidates[0] || null;
+    }, [toAbsoluteUrl, withAccessToken]);
+
     const buildDownloadPath = useCallback((media: HomeOverviewMedia | MediaViewAllItem, sourceUrl: string) => {
         const ext = getFileExtension(sourceUrl) || (media.type === 'video' ? 'mp4' : 'jpg');
         const safeId = String(media.media_id || 'media').replace(/[^a-z0-9_-]/gi, '');
@@ -698,7 +719,9 @@ const HomeScreen = ({ navigation }: any) => {
         if (downloadInFlightRef.current) {
             return;
         }
-        const sourceUrl = pickDownloadUrl(media);
+        const sourceUrl = media.type === 'video'
+            ? pickDownloadUrl(media)
+            : (pickInstagramStoryImageUrl(media) || pickDownloadUrl(media));
         if (!sourceUrl) {
             Alert.alert(t('Share unavailable'), t('This media is not ready to share.'));
             return;
@@ -755,7 +778,7 @@ const HomeScreen = ({ navigation }: any) => {
             setDownloadProgress(null);
             downloadInFlightRef.current = false;
         }
-    }, [buildDownloadPath, composeInstagramStoryImage, getInstagramShareEventTitle, getInstagramShareMatchLabel, pickDownloadUrl, t]);
+    }, [buildDownloadPath, composeInstagramStoryImage, getInstagramShareEventTitle, getInstagramShareMatchLabel, pickDownloadUrl, pickInstagramStoryImageUrl, t]);
 
     const resolvePostInstagramImage = useCallback(async (post?: PostSummary | null) => {
         const pickMediaUrl = (media?: PostSummary['cover_media'] | Record<string, any> | null) => {

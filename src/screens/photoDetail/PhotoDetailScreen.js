@@ -262,7 +262,6 @@ const PhotoDetailScreen = ({ navigation, route }) => {
         const mediaTitle = String((_a = activeMedia === null || activeMedia === void 0 ? void 0 : activeMedia.title) !== null && _a !== void 0 ? _a : '').trim();
         return mediaTitle || null;
     }, [activeMedia, headerLabel]);
-    const shouldPreferLocalStoryImage = useMemo(() => Boolean(String(blogTitleFromRoute || '').trim()), [blogTitleFromRoute]);
     const instagramStorySubtitle = useMemo(() => {
         var _a, _b, _c;
         return getInstagramShareMatchLabel(String((_c = (_b = (_a = activeMedia === null || activeMedia === void 0 ? void 0 : activeMedia.matchType) !== null && _a !== void 0 ? _a : activeMedia === null || activeMedia === void 0 ? void 0 : activeMedia.match_type) !== null && _b !== void 0 ? _b : matchType) !== null && _c !== void 0 ? _c : '').trim());
@@ -523,6 +522,43 @@ const PhotoDetailScreen = ({ navigation, route }) => {
         activeMedia === null || activeMedia === void 0 ? void 0 : activeMedia.rawUrl,
         activeMedia === null || activeMedia === void 0 ? void 0 : activeMedia.raw_url,
         thumbnailImageUrl,
+        toAbsoluteUrl,
+        withAccessToken,
+    ]);
+    const instagramStoryImageUrl = useMemo(() => {
+        const candidates = [
+            activeMedia === null || activeMedia === void 0 ? void 0 : activeMedia.rawUrl,
+            activeMedia === null || activeMedia === void 0 ? void 0 : activeMedia.raw_url,
+            activeMedia === null || activeMedia === void 0 ? void 0 : activeMedia.originalUrl,
+            activeMedia === null || activeMedia === void 0 ? void 0 : activeMedia.original_url,
+            activeMedia === null || activeMedia === void 0 ? void 0 : activeMedia.fullUrl,
+            activeMedia === null || activeMedia === void 0 ? void 0 : activeMedia.full_url,
+            activeMedia === null || activeMedia === void 0 ? void 0 : activeMedia.previewUrl,
+            activeMedia === null || activeMedia === void 0 ? void 0 : activeMedia.preview_url,
+            activeMedia === null || activeMedia === void 0 ? void 0 : activeMedia.thumbnailUrl,
+            activeMedia === null || activeMedia === void 0 ? void 0 : activeMedia.thumbnail_url,
+        ].filter(Boolean);
+        if (candidates.length === 0)
+            return null;
+        const resolved = candidates
+            .map((value) => withAccessToken(String(value)) || toAbsoluteUrl(String(value)))
+            .filter(Boolean);
+        const bitmapImage = resolved.find((value) => /\.(jpg|jpeg|png|heic)(\?|$)/i.test(value));
+        if (bitmapImage)
+            return bitmapImage;
+        const webpImage = resolved.find((value) => /\.(webp)(\?|$)/i.test(value));
+        return webpImage || resolved[0] || null;
+    }, [
+        activeMedia === null || activeMedia === void 0 ? void 0 : activeMedia.fullUrl,
+        activeMedia === null || activeMedia === void 0 ? void 0 : activeMedia.full_url,
+        activeMedia === null || activeMedia === void 0 ? void 0 : activeMedia.originalUrl,
+        activeMedia === null || activeMedia === void 0 ? void 0 : activeMedia.original_url,
+        activeMedia === null || activeMedia === void 0 ? void 0 : activeMedia.previewUrl,
+        activeMedia === null || activeMedia === void 0 ? void 0 : activeMedia.preview_url,
+        activeMedia === null || activeMedia === void 0 ? void 0 : activeMedia.rawUrl,
+        activeMedia === null || activeMedia === void 0 ? void 0 : activeMedia.raw_url,
+        activeMedia === null || activeMedia === void 0 ? void 0 : activeMedia.thumbnailUrl,
+        activeMedia === null || activeMedia === void 0 ? void 0 : activeMedia.thumbnail_url,
         toAbsoluteUrl,
         withAccessToken,
     ]);
@@ -967,20 +1003,36 @@ const PhotoDetailScreen = ({ navigation, route }) => {
         }
     }), [activeMedia === null || activeMedia === void 0 ? void 0 : activeMedia.type, ensureLocalFile, extensionFromUrl, resolveShareUrl, t]);
     const handleShareInstagram = useCallback(() => __awaiter(void 0, void 0, void 0, function* () {
-        var _19, _20, _21;
+        var _19, _20, _21, _22, _23;
         const shareModule = getShareModule();
-        const shareUrl = yield resolveShareUrl();
-        if ((_19 = shareModule === null || shareModule === void 0 ? void 0 : shareModule.default) === null || _19 === void 0 ? void 0 : _19.shareSingle) {
+        const shareUrl = String((_19 = activeMedia === null || activeMedia === void 0 ? void 0 : activeMedia.type) !== null && _19 !== void 0 ? _19 : '').toLowerCase() === 'video'
+            ? yield resolveShareUrl()
+            : (instagramStoryImageUrl || (yield resolveShareUrl()));
+        console.log('[IGStoryScreen] handleShareInstagram.start', {
+            mediaId: resolvedMediaId,
+            mediaType: String((_20 = activeMedia === null || activeMedia === void 0 ? void 0 : activeMedia.type) !== null && _20 !== void 0 ? _20 : ''),
+            shareUrl,
+            instagramStoryImageUrl,
+            title: instagramStoryTitle,
+            subtitle: instagramStorySubtitle,
+        });
+        if ((_21 = shareModule === null || shareModule === void 0 ? void 0 : shareModule.default) === null || _21 === void 0 ? void 0 : _21.shareSingle) {
             const ShareLib = shareModule.default;
             try {
                 const localAsset = shareUrl
-                    ? yield ensureLocalFile(shareUrl, extensionFromUrl(shareUrl) || (String((_20 = activeMedia === null || activeMedia === void 0 ? void 0 : activeMedia.type) !== null && _20 !== void 0 ? _20 : '').toLowerCase() === 'video' ? 'mp4' : 'jpg'))
+                    ? yield ensureLocalFile(shareUrl, extensionFromUrl(shareUrl) || (String((_22 = activeMedia === null || activeMedia === void 0 ? void 0 : activeMedia.type) !== null && _22 !== void 0 ? _22 : '').toLowerCase() === 'video' ? 'mp4' : 'jpg'))
                     : null;
                 if (!localAsset) {
                     Alert.alert(t('Share failed'), t('Unable to download the media file.'));
                     return;
                 }
                 const isLocalVideo = /\.(mp4|mov|m4v)(\?|$)/i.test(localAsset);
+                console.log('[IGStoryScreen] handleShareInstagram.localAsset', {
+                    mediaId: resolvedMediaId,
+                    shareUrl,
+                    localAsset,
+                    isLocalVideo,
+                });
                 const result = yield shareMediaToInstagramStory({
                     t,
                     composeInstagramStoryImage,
@@ -990,15 +1042,23 @@ const PhotoDetailScreen = ({ navigation, route }) => {
                     subtitle: isLocalVideo ? null : instagramStorySubtitle,
                     composeImageUri: isLocalVideo
                         ? null
-                        : (shouldPreferLocalStoryImage ? localAsset : (highResImageUrl || bestImageUrl || localAsset)),
+                        : localAsset,
                     shareModule: ShareLib,
+                });
+                console.log('[IGStoryScreen] handleShareInstagram.result', {
+                    mediaId: resolvedMediaId,
+                    result,
                 });
                 if (result !== 'unsupported') {
                     return;
                 }
             }
             catch (e) {
-                const msg = String((_21 = e === null || e === void 0 ? void 0 : e.message) !== null && _21 !== void 0 ? _21 : e);
+                const msg = String((_23 = e === null || e === void 0 ? void 0 : e.message) !== null && _23 !== void 0 ? _23 : e);
+                console.log('[IGStoryScreen] handleShareInstagram.failed', {
+                    mediaId: resolvedMediaId,
+                    message: msg,
+                });
                 if (!/cancel/i.test(msg)) {
                     Alert.alert(t('Instagram Story failed'), msg);
                 }
@@ -1010,7 +1070,7 @@ const PhotoDetailScreen = ({ navigation, route }) => {
             return;
         }
         yield handleShareNative();
-    }), [activeMedia === null || activeMedia === void 0 ? void 0 : activeMedia.type, bestImageUrl, composeInstagramStoryImage, ensureLocalFile, extensionFromUrl, getShareModule, handleShareNative, highResImageUrl, instagramStorySubtitle, instagramStoryTitle, resolveShareUrl, shouldPreferLocalStoryImage, t]);
+    }), [activeMedia === null || activeMedia === void 0 ? void 0 : activeMedia.type, composeInstagramStoryImage, ensureLocalFile, extensionFromUrl, getShareModule, handleShareNative, instagramStoryImageUrl, instagramStorySubtitle, instagramStoryTitle, resolveShareUrl, resolvedMediaId, t]);
     const handleAddToProfile = useCallback(() => __awaiter(void 0, void 0, void 0, function* () {
         var _22, _23, _24;
         if (!apiAccessToken) {

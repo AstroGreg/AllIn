@@ -34,6 +34,10 @@ type ComposerProps = {
     onError: (error: Error) => void;
 };
 
+function debugInstagramStoryComposer(stage: string, details?: Record<string, unknown>) {
+    console.log(`[IGStoryComposer] ${stage}`, details ?? {});
+}
+
 function estimateTextWidth(text: string, fontSize: number) {
     return Array.from(text).reduce((total, char) => {
         if (char === ' ') {
@@ -178,11 +182,17 @@ async function writeBase64Png(base64: string, requestId: string) {
     const safeId = String(requestId || `${Date.now()}`).replace(/[^a-z0-9_-]/gi, '');
     const path = `${RNFS.CachesDirectoryPath}/instagram-story-${safeId}.png`;
     await RNFS.writeFile(path, base64, 'base64');
+    debugInstagramStoryComposer('writeBase64Png.done', {
+        requestId,
+        path,
+        byteLength: base64.length,
+    });
     return `file://${path}`;
 }
 
 const InstagramStoryComposer = ({request, onComplete, onError}: ComposerProps) => {
     const svgRef = useRef<Svg | null>(null);
+    const [backgroundPrimed, setBackgroundPrimed] = useState(false);
     const [backgroundLoaded, setBackgroundLoaded] = useState(false);
     const [backgroundFailed, setBackgroundFailed] = useState(false);
     const capturedRequestIdRef = useRef<string | null>(null);
@@ -190,8 +200,49 @@ const InstagramStoryComposer = ({request, onComplete, onError}: ComposerProps) =
     useEffect(() => {
         capturedRequestIdRef.current = null;
         setBackgroundFailed(false);
-        setBackgroundLoaded(Boolean(!request?.imageUri || request?.mode === 'overlay'));
-    }, [request?.id, request?.imageUri, request?.mode]);
+        const isImmediateReady = Boolean(!request?.imageUri || request?.mode === 'overlay');
+        setBackgroundPrimed(isImmediateReady);
+        setBackgroundLoaded(isImmediateReady);
+        debugInstagramStoryComposer('request.reset', {
+            requestId: request?.id ?? null,
+            layout: request?.layout ?? null,
+            mode: request?.mode ?? null,
+            imageUri: request?.imageUri ?? null,
+            isImmediateReady,
+        });
+
+        if (!request?.imageUri || request?.mode === 'overlay') {
+            return;
+        }
+
+        let cancelled = false;
+        RNImage.getSize(
+            request.imageUri,
+            (width, height) => {
+                if (!cancelled) {
+                    debugInstagramStoryComposer('image.getSize.success', {
+                        requestId: request.id,
+                        width,
+                        height,
+                    });
+                    setBackgroundPrimed(true);
+                }
+            },
+            (error) => {
+                if (!cancelled) {
+                    debugInstagramStoryComposer('image.getSize.failed', {
+                        requestId: request.id,
+                        message: String((error as any)?.message ?? error ?? 'unknown'),
+                    });
+                    setBackgroundPrimed(true);
+                }
+            },
+        );
+
+        return () => {
+            cancelled = true;
+        };
+    }, [request?.id, request?.imageUri, request?.layout, request?.mode]);
 
     const canvas = useMemo(
         () =>
@@ -246,6 +297,15 @@ const InstagramStoryComposer = ({request, onComplete, onError}: ComposerProps) =
         }
 
         capturedRequestIdRef.current = request.id;
+        debugInstagramStoryComposer('export.start', {
+            requestId: request.id,
+            layout: request.layout,
+            mode: request.mode,
+            imageUri: request.imageUri ?? null,
+            backgroundPrimed,
+            backgroundLoaded,
+            backgroundFailed,
+        });
 
         try {
             const base64 = await new Promise<string>((resolve, reject) => {
@@ -256,34 +316,51 @@ const InstagramStoryComposer = ({request, onComplete, onError}: ComposerProps) =
                 svgRef.current?.toDataURL((value: string) => {
                     clearTimeout(timeout);
                     if (!value) {
+                        debugInstagramStoryComposer('export.empty', {requestId: request.id});
                         reject(new Error('Could not compose Instagram Story image.'));
                         return;
                     }
+                    debugInstagramStoryComposer('export.base64.ready', {
+                        requestId: request.id,
+                        byteLength: value.length,
+                    });
                     resolve(value);
                 }, {width: canvas.width, height: canvas.height});
             });
 
             const fileUri = await writeBase64Png(base64, request.id);
+            debugInstagramStoryComposer('export.complete', {
+                requestId: request.id,
+                fileUri,
+            });
             onComplete(fileUri);
         } catch (error: any) {
             capturedRequestIdRef.current = null;
+            debugInstagramStoryComposer('export.failed', {
+                requestId: request.id,
+                message: String(error?.message ?? error),
+            });
             onError(error instanceof Error ? error : new Error(String(error ?? 'Instagram Story composition failed')));
         }
-    }, [canvas.height, canvas.width, onComplete, onError, request]);
+    }, [backgroundFailed, backgroundLoaded, backgroundPrimed, canvas.height, canvas.width, onComplete, onError, request]);
 
     useEffect(() => {
-        if (!request || !backgroundLoaded) {
+        if (!request || !backgroundPrimed || !backgroundLoaded || backgroundFailed) {
             return;
         }
 
         const timer = setTimeout(() => {
+            debugInstagramStoryComposer('export.scheduled', {
+                requestId: request.id,
+                delayMs: 140,
+            });
             exportStoryImage().catch((error) => {
                 onError(error instanceof Error ? error : new Error(String(error ?? 'Instagram Story composition failed')));
             });
-        }, 90);
+        }, 140);
 
         return () => clearTimeout(timer);
-    }, [backgroundLoaded, exportStoryImage, onError, request]);
+    }, [backgroundFailed, backgroundLoaded, backgroundPrimed, exportStoryImage, onError, request]);
 
     if (!request) {
         return null;
@@ -294,6 +371,7 @@ const InstagramStoryComposer = ({request, onComplete, onError}: ComposerProps) =
     const isHomeMediaCard = request.layout === 'home_media_card';
     const isHomeMediaOverlayCard = request.layout === 'home_media_overlay_card';
     const isAnyHomeMediaCard = isHomeMediaCard || isHomeMediaOverlayCard;
+    const hasVisibleBackgroundImage = Boolean(request.imageUri && !backgroundFailed && !isBlogCard);
     const overlayTextWidth = estimateTextWidth(appName, OVERLAY_BRAND_FONT_SIZE);
     const overlayBrandWidth = overlayTextWidth + OVERLAY_BRAND_GAP + OVERLAY_BRAND_LOGO_SIZE;
     const overlayBrandStartX = (STORY_WIDTH - overlayBrandWidth) / 2;
@@ -376,9 +454,9 @@ const InstagramStoryComposer = ({request, onComplete, onError}: ComposerProps) =
                             y={0}
                             width={STORY_WIDTH}
                             height={STORY_HEIGHT}
-                            fill={backgroundFailed ? '#0D0F12' : isBlogCard ? '#122047' : '#09111A'}
+                            fill={isBlogCard ? (backgroundFailed ? '#0D0F12' : '#122047') : 'rgba(0,0,0,0)'}
                         />
-                        {request.imageUri && !backgroundFailed && !isBlogCard ? (
+                        {hasVisibleBackgroundImage ? (
                             <SvgImage
                                 x={0}
                                 y={0}
@@ -386,14 +464,25 @@ const InstagramStoryComposer = ({request, onComplete, onError}: ComposerProps) =
                                 height={STORY_HEIGHT}
                                 href={{uri: request.imageUri}}
                                 preserveAspectRatio="xMidYMid slice"
-                                onLoad={() => setBackgroundLoaded(true)}
-                                onError={() => {
-                                    setBackgroundFailed(true);
+                                onLoad={() => {
+                                    debugInstagramStoryComposer('image.onLoad', {
+                                        requestId: request.id,
+                                        layout: request.layout,
+                                    });
                                     setBackgroundLoaded(true);
+                                }}
+                                onError={() => {
+                                    debugInstagramStoryComposer('image.onError', {
+                                        requestId: request.id,
+                                        layout: request.layout,
+                                        imageUri: request.imageUri,
+                                    });
+                                    setBackgroundFailed(true);
+                                    onError(new Error('Could not load image for Instagram Story sharing.'));
                                 }}
                             />
                         ) : null}
-                        {isHomeMediaCard ? (
+                        {isHomeMediaCard && hasVisibleBackgroundImage ? (
                             <Rect
                                 x={0}
                                 y={0}
@@ -402,7 +491,7 @@ const InstagramStoryComposer = ({request, onComplete, onError}: ComposerProps) =
                                 fill="rgba(4,10,16,0.18)"
                             />
                         ) : null}
-                        {isHomeMediaCard ? (
+                        {isHomeMediaCard && hasVisibleBackgroundImage ? (
                             <Rect
                                 x={0}
                                 y={0}
@@ -485,10 +574,21 @@ const InstagramStoryComposer = ({request, onComplete, onError}: ComposerProps) =
                                 href={{uri: request.imageUri}}
                                 preserveAspectRatio="xMidYMid slice"
                                 clipPath="url(#blogCardImageClip)"
-                                onLoad={() => setBackgroundLoaded(true)}
-                                onError={() => {
-                                    setBackgroundFailed(true);
+                                onLoad={() => {
+                                    debugInstagramStoryComposer('image.onLoad', {
+                                        requestId: request.id,
+                                        layout: request.layout,
+                                    });
                                     setBackgroundLoaded(true);
+                                }}
+                                onError={() => {
+                                    debugInstagramStoryComposer('image.onError', {
+                                        requestId: request.id,
+                                        layout: request.layout,
+                                        imageUri: request.imageUri,
+                                    });
+                                    setBackgroundFailed(true);
+                                    onError(new Error('Could not load image for Instagram Story sharing.'));
                                 }}
                             />
                         ) : (
@@ -695,12 +795,16 @@ export function useInstagramStoryImageComposer() {
     );
 
     const handleComplete = useCallback((uri: string) => {
+        debugInstagramStoryComposer('hook.resolve', {uri});
         pendingRef.current?.resolve(uri);
         pendingRef.current = null;
         setRequest(null);
     }, []);
 
     const handleError = useCallback((error: Error) => {
+        debugInstagramStoryComposer('hook.reject', {
+            message: String(error?.message ?? error),
+        });
         pendingRef.current?.reject(error);
         pendingRef.current = null;
         setRequest(null);
