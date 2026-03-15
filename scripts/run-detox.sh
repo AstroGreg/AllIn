@@ -17,6 +17,7 @@ E2E_API_BASE_URL="${E2E_API_BASE_URL:-http://127.0.0.1:3000}"
 E2E_GATEWAY_LOG="${E2E_GATEWAY_LOG:-/tmp/spotme-e2e-gateway.log}"
 E2E_METRO_LOG="${E2E_METRO_LOG:-/tmp/spotme-metro.log}"
 E2E_GATEWAY_PORT="$(node -e "const u=new URL(process.argv[1]); process.stdout.write(String(u.port || (u.protocol==='https:'?'443':'80')));" "${E2E_API_BASE_URL}")"
+E2E_GATEWAY_REUSE="${E2E_GATEWAY_REUSE:-0}"
 
 cleanup() {
   if [ -n "${METRO_PID}" ] && kill -0 "${METRO_PID}" >/dev/null 2>&1; then
@@ -32,8 +33,16 @@ cleanup() {
 trap cleanup EXIT INT TERM
 
 ensure_gateway_ready() {
-  if curl -fsS "${E2E_API_BASE_URL%/}/e2e/catalog" -H "x-e2e-key: ${E2E_TEST_KEY:-spotme-e2e-local}" >/dev/null 2>&1; then
+  if [ "${E2E_GATEWAY_REUSE}" = "1" ] && curl -fsS "${E2E_API_BASE_URL%/}/e2e/catalog" -H "x-e2e-key: ${E2E_TEST_KEY:-spotme-e2e-local}" >/dev/null 2>&1; then
     return 0
+  fi
+
+  if [ "${E2E_GATEWAY_REUSE}" != "1" ]; then
+    EXISTING_GATEWAY_PID="$(lsof -ti tcp:${E2E_GATEWAY_PORT} || true)"
+    if [ -n "${EXISTING_GATEWAY_PID}" ]; then
+      kill ${EXISTING_GATEWAY_PID} >/dev/null 2>&1 || true
+      sleep 1
+    fi
   fi
 
   (

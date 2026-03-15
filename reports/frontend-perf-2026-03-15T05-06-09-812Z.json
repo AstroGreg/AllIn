@@ -1,0 +1,105 @@
+{
+  "generated_at": "2026-03-15T05:06:09.812Z",
+  "api_base_url": "http://127.0.0.1:3000",
+  "target_ms": 1000,
+  "max_ms": 2000,
+  "iterations": 3,
+  "backend_baselines_ms": {
+    "home": 216.4,
+    "hub": 164.8,
+    "search": 250.6,
+    "profile": 297.4,
+    "upload_select": 154.4,
+    "upload_competition": 179.4,
+    "competition": 179.4
+  },
+  "dataset_validation": {
+    "home_empty": {
+      "has_video": false,
+      "has_photo": false,
+      "feed_posts": 0
+    },
+    "home_rich": {
+      "has_video": false,
+      "has_photo": false,
+      "has_blog": true,
+      "feed_posts": 60,
+      "media_total": 60,
+      "photo_posts": 60,
+      "video_posts": 0
+    },
+    "hub": {
+      "appearances": 5,
+      "uploads": 126
+    },
+    "search": {
+      "competitions": 6,
+      "thumbnails": 5
+    },
+    "competition": {
+      "competition_id": "d07bd22c-8904-4e5b-af10-a6306af3b61a",
+      "disciplines": 20
+    },
+    "profile_rich": {
+      "posts": 20,
+      "uploads": 126
+    },
+    "onboarding": {
+      "clubs": 50,
+      "groups": 5,
+      "disciplines": 20
+    },
+    "search_entities": {
+      "person_query": "9852297503",
+      "group_query": "9852261369",
+      "person_results": 1,
+      "group_results": 1,
+      "person_media": 8,
+      "group_media": 8
+    },
+    "ai_bib": {
+      "selected_competitions": 5,
+      "seeded_media_per_competition": [
+        5,
+        5,
+        5,
+        5,
+        5
+      ],
+      "single_competition_results": 5,
+      "five_competition_results": 25
+    }
+  },
+  "results": [
+    {
+      "name": "photo_viewer_open",
+      "routeName": "PhotoDetailScreen",
+      "ready_test_id": "e2e-perf-ready-photo-viewer",
+      "cold_ms": 0,
+      "cold_wall_clock_ms": 15491,
+      "cold_launch_overhead_ms": 15491,
+      "warm_samples_ms": [
+        0,
+        0
+      ],
+      "warm_wall_clock_samples_ms": [
+        8548,
+        8206
+      ],
+      "warm_p50_ms": 0,
+      "warm_p95_ms": 0,
+      "warm_max_ms": 0,
+      "target_ms": 1000,
+      "max_ms": 2000,
+      "backend_baseline_ms": null,
+      "estimated_frontend_overhead_ms": null,
+      "dominant_layer": "unknown",
+      "failures": [],
+      "target_met": true,
+      "pass": true
+    }
+  ],
+  "all_passed": true,
+  "target_met": true,
+  "target_warnings": []
+}

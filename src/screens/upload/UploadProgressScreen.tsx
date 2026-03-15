@@ -124,6 +124,21 @@ function deriveStatusStage(status?: MediaProcessingStatus | null) {
   return 'uploaded';
 }
 
+function getUploadRequestErrorMessage(error: unknown, t: (value: string) => string) {
+  if (error instanceof ApiError) {
+    if (error.status === 401) return t('Please sign in again to upload.');
+    if (error.status === 403) {
+      const detailedMessage = String(error.message || '').trim();
+      if (detailedMessage && !/^forbidden$/i.test(detailedMessage)) {
+        return detailedMessage;
+      }
+      return t('Upload is not available for this account right now.');
+    }
+  }
+  const message = String((error as any)?.message ?? error ?? '').trim();
+  return message || t('Upload failed. Please try again.');
+}
+
 const UploadProgressScreen = ({navigation, route}: any) => {
   const insets = useSafeAreaInsets();
   const {colors} = useTheme();
@@ -151,7 +166,7 @@ const UploadProgressScreen = ({navigation, route}: any) => {
   const assetsKey = useMemo(() => `@upload_assets_${competitionId}`, [competitionId]);
 
   const [items, setItems] = useState<UploadItem[]>([]);
-  const [phase, setPhase] = useState<'idle' | 'uploading' | 'processing' | 'done' | 'blocked'>('idle');
+  const [phase, setPhase] = useState<'idle' | 'uploading' | 'processing' | 'done' | 'blocked' | 'failed'>('idle');
   const [error, setError] = useState<string | null>(null);
   const [processing, setProcessing] = useState<{ready: number; total: number}>({ready: 0, total: 0});
   const [sessionSnapshot, setSessionSnapshot] = useState<UploadSession | null>(null);
@@ -291,11 +306,8 @@ const UploadProgressScreen = ({navigation, route}: any) => {
 
     try {
       const health = await getWorkerHealth(apiAccessToken);
-      const unhealthy = Object.entries(health?.workers ?? {})
-        .filter(([, state]) => !state?.ok)
-        .map(([name]) => name);
-      if (unhealthy.length > 0) {
-        const msg = `${t('Upload blocked. Workers unavailable')}: ${unhealthy.join(', ')}`;
+      if (!health?.ok) {
+        const msg = String(health?.message || t('Cloud system is not operational. Please try again shortly.'));
         if (isMountedRef.current) {
           setError(msg);
           setPhase('blocked');
@@ -305,7 +317,7 @@ const UploadProgressScreen = ({navigation, route}: any) => {
         return;
       }
     } catch (e: any) {
-      const msg = e instanceof ApiError ? e.message : String(e?.message ?? e);
+      const msg = t('Could not verify cloud system. Please try again.');
       if (isMountedRef.current) {
         setError(msg);
         setPhase('blocked');
@@ -313,6 +325,12 @@ const UploadProgressScreen = ({navigation, route}: any) => {
       await persistSession({phase: 'blocked', error: msg});
       await persistActivity({phase: 'blocked', error: msg});
       return;
+    }
+
+    mediaIdsRef.current = [];
+    if (isMountedRef.current) {
+      setStatusById({});
+      setProcessing({ready: 0, total: 0});
     }
 
     const flat = await loadAssets();
@@ -328,6 +346,7 @@ const UploadProgressScreen = ({navigation, route}: any) => {
 
     let uploadedCount = 0;
     const nextItems = [...flat];
+    let lastUploadError: string | null = null;
     for (let i = 0; i < nextItems.length; i += BATCH_SIZE) {
       const batch = nextItems.slice(i, i + BATCH_SIZE);
       // mark uploading
@@ -413,6 +432,9 @@ const UploadProgressScreen = ({navigation, route}: any) => {
             media_id: ok ? (resolvedMediaId || null) : null,
             error: ok ? null : String(r?.error ?? 'upload failed'),
           };
+          if (!ok) {
+            lastUploadError = String(r?.error ?? t('Upload failed. Please try again.'));
+          }
           if (ok) uploadedCount += 1;
         }
         if (isMountedRef.current) {
@@ -421,10 +443,8 @@ const UploadProgressScreen = ({navigation, route}: any) => {
         await persistActivity({uploaded: uploadedCount, total: nextItems.length, phase: 'uploading'});
         await persistSession({uploaded: uploadedCount, total: nextItems.length, phase: 'uploading'});
       } catch (e: any) {
-        const msg = e instanceof ApiError ? e.message : String(e?.message ?? e);
-        if (isMountedRef.current) {
-          setError(msg);
-        }
+        const msg = getUploadRequestErrorMessage(e, t);
+        lastUploadError = msg;
         // mark batch as failed
         for (let j = 0; j < batch.length; j += 1) {
           nextItems[i + j] = {...nextItems[i + j], status: 'failed', error: msg};
@@ -438,6 +458,33 @@ const UploadProgressScreen = ({navigation, route}: any) => {
     }
 
     const mediaIds = [...mediaIdsRef.current];
+    if (uploadedCount === 0) {
+      const msg = lastUploadError || t('Upload failed. Please try again.');
+      await persistActivity({
+        media_ids: [],
+        uploaded: 0,
+        total: nextItems.length,
+        phase: 'failed',
+        processing_ready: 0,
+        processing_total: 0,
+        error: msg,
+      });
+      await persistSession({
+        media_ids: [],
+        uploaded: 0,
+        total: nextItems.length,
+        phase: 'failed',
+        processing_ready: 0,
+        processing_total: 0,
+        error: msg,
+      });
+      if (isMountedRef.current) {
+        setError(msg);
+        setPhase('failed');
+      }
+      return;
+    }
+
     // Reset upload draft immediately after successful upload, without waiting for processing completion.
     if (uploadedCount > 0) {
       try {
@@ -450,9 +497,10 @@ const UploadProgressScreen = ({navigation, route}: any) => {
         // ignore
       }
     }
-    await persistActivity({media_ids: mediaIds, phase: 'processing', processing_total: mediaIds.length});
-    await persistSession({media_ids: mediaIds, phase: 'processing', processing_total: mediaIds.length});
+    await persistActivity({media_ids: mediaIds, phase: 'processing', processing_total: mediaIds.length, error: null});
+    await persistSession({media_ids: mediaIds, phase: 'processing', processing_total: mediaIds.length, error: null});
     if (isMountedRef.current) {
+      setError(null);
       setPhase('processing');
     }
   }, [anonymous, apiAccessToken, assetsKey, competitionId, loadAssets, persistActivity, persistSession, t, watermarkText]);
@@ -477,8 +525,8 @@ const UploadProgressScreen = ({navigation, route}: any) => {
         if (existing.phase === 'processing') setPhase('processing');
         if (existing.phase === 'done') setPhase('done');
         if (existing.phase === 'blocked') setPhase('blocked');
-      if (existing.phase === 'failed') setPhase('idle');
-      if (!autoStart) return;
+        if (existing.phase === 'failed') setPhase('failed');
+        if (!autoStart) return;
       }
       if (!autoStart && e2eMediaIds.length > 0) {
         mediaIdsRef.current = e2eMediaIds;
@@ -605,6 +653,7 @@ const UploadProgressScreen = ({navigation, route}: any) => {
     if (phase === 'uploading') return t('Starting upload');
     if (phase === 'processing') return t('Processing');
     if (phase === 'blocked') return t('Upload blocked');
+    if (phase === 'failed') return t('Upload failed');
     if (phase === 'done') return t('Done');
     return t('Upload');
   }, [phase, t]);
@@ -620,7 +669,8 @@ const UploadProgressScreen = ({navigation, route}: any) => {
   }, [computeUploadProgress.done, computeUploadProgress.total, phase, processing.ready, processing.total]);
 
   const subtitle = useMemo(() => {
-    if (phase === 'blocked') return t('Uploads can only start when all workers are healthy.');
+    if (phase === 'blocked') return t('Uploads can only start when the cloud system is operational.');
+    if (phase === 'failed') return t('Your files could not be uploaded. Please review the error and try again.');
     if (phase === 'processing') return t('We are processing media, running AI, and notifying competition subscribers.');
     if (phase === 'done') return t('Your uploads are ready.');
     return t('Uploading your files to storage now. Please keep this screen open while heavy files are prepared.');
@@ -634,7 +684,8 @@ const UploadProgressScreen = ({navigation, route}: any) => {
       processing_ready: processing.ready,
       processing_total: processing.total,
     });
-    if (phase === 'blocked') return t('Worker health check failed');
+    if (phase === 'blocked') return t('Cloud system check failed');
+    if (phase === 'failed') return t('Upload failed');
     if (phase === 'processing') {
       return `${state.processingReady}/${state.processingTotal} ${t('ready')} • ${aggregatedMetrics.notificationsSent}/${aggregatedMetrics.subscribersTotal} ${t('notifications sent')}`;
     }
@@ -644,7 +695,8 @@ const UploadProgressScreen = ({navigation, route}: any) => {
 
   const currentStageLabel = useMemo(() => {
     const stage = sessionSnapshot?.current_stage;
-    if (phase === 'blocked') return t('Waiting for worker health');
+    if (phase === 'blocked') return t('Checking cloud system');
+    if (phase === 'failed') return t('Upload failed');
     if (phase === 'done') return t('All processing completed');
     if (phase === 'processing') return formatUploadStageLabel(stage || 'ai_processing');
     if (phase === 'uploading') return t('Uploading to storage');
@@ -776,11 +828,11 @@ const UploadProgressScreen = ({navigation, route}: any) => {
               </TouchableOpacity>
               <TouchableOpacity
                 style={styles.ctaPrimary}
-                onPress={() => (phase === 'done' ? goToUploadActivity() : phase === 'blocked' ? uploadAll() : pollStatus())}
+                onPress={() => (phase === 'done' ? goToUploadActivity() : phase === 'blocked' || phase === 'failed' ? uploadAll() : pollStatus())}
                 activeOpacity={0.85}
               >
                 <Text style={styles.ctaPrimaryText}>
-                  {phase === 'done' ? t('OK') : phase === 'blocked' ? t('Retry') : t('Refresh')}
+                  {phase === 'done' ? t('OK') : phase === 'blocked' || phase === 'failed' ? t('Retry') : t('Refresh')}
                 </Text>
               </TouchableOpacity>
             </View>

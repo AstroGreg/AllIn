@@ -30,6 +30,24 @@ import { isE2ELaunchEnabled } from '../../constants/E2EConfig';
 const INSTAGRAM_APP_ID = String(AppConfig.INSTAGRAM_APP_ID ?? '').trim();
 const E2E_HIDDEN_TEXT_STYLE = { position: 'absolute' as const, left: -1000, top: -1000, width: 1, height: 1, opacity: 0.01 };
 
+const parseRequestedStartAt = (params: any): number => {
+    const candidates = [
+        params?.startAt,
+        params?.match_time_seconds,
+        params?.matchTimeSeconds,
+        params?.video?.startAt,
+        params?.video?.match_time_seconds,
+        params?.video?.matchTimeSeconds,
+    ];
+    for (const candidate of candidates) {
+        const parsed = Number(candidate);
+        if (Number.isFinite(parsed) && parsed > 0) {
+            return parsed;
+        }
+    }
+    return 0;
+};
+
 const VideoPlayingScreen = ({ navigation, route }: any) => {
     const { t } = useTranslation();
     const insets = useSafeAreaInsets();
@@ -68,7 +86,7 @@ const VideoPlayingScreen = ({ navigation, route }: any) => {
         route?.params?.media?.event_id ||
         route?.params?.media?.eventId ||
         null;
-    const startAt = Number(route?.params?.startAt ?? 0);
+    const requestedStartAt = parseRequestedStartAt(route?.params);
     const e2eLaunchEnabled = isE2ELaunchEnabled();
     const hasInitialSeekedRef = useRef(false);
     const [videoTitle, setVideoTitle] = useState(fallbackVideo.title);
@@ -126,9 +144,9 @@ const VideoPlayingScreen = ({ navigation, route }: any) => {
         setPosterUrl(fallbackPoster());
         perfStartedAtRef.current = Date.now();
         setPerfReadyElapsedMs(null);
-        setInitialSeekSeconds(Number.isFinite(startAt) && startAt > 0 ? startAt : null);
+        setInitialSeekSeconds(Number.isFinite(requestedStartAt) && requestedStartAt > 0 ? requestedStartAt : null);
         hasInitialSeekedRef.current = false;
-    }, [fallbackPoster, fallbackVideo.title, fallbackVideo.uri, route?.params?.video?.views, route?.params?.video?.views_count, startAt]);
+    }, [fallbackPoster, fallbackVideo.title, fallbackVideo.uri, requestedStartAt, route?.params?.video?.views, route?.params?.video?.views_count]);
 
     const formatTime = useCallback((value: number) => {
         const safe = Number.isFinite(value) ? Math.max(0, value) : 0;
@@ -592,8 +610,8 @@ const VideoPlayingScreen = ({ navigation, route }: any) => {
                         onLoad={(meta) => {
                             const nextDuration = meta.duration || 0;
                             setDuration(nextDuration);
-                            if (!hasInitialSeekedRef.current && Number.isFinite(startAt) && startAt > 0) {
-                                const seekToTime = Math.min(startAt, nextDuration || startAt);
+                            if (!hasInitialSeekedRef.current && Number.isFinite(requestedStartAt) && requestedStartAt > 0) {
+                                const seekToTime = Math.min(requestedStartAt, nextDuration || requestedStartAt);
                                 hasInitialSeekedRef.current = true;
                                 videoRef.current?.seek(seekToTime);
                                 setCurrentTime(seekToTime);
@@ -621,9 +639,9 @@ const VideoPlayingScreen = ({ navigation, route }: any) => {
                         {`ready:${perfReadyElapsedMs}`}
                     </Text>
                 ) : null}
-                {initialSeekSeconds != null ? (
+                {(initialSeekSeconds ?? requestedStartAt) > 0 ? (
                     <Text style={E2E_HIDDEN_TEXT_STYLE} testID="video-playing-initial-seek-time">
-                        {formatTime(initialSeekSeconds)}
+                        {formatTime(initialSeekSeconds ?? requestedStartAt)}
                     </Text>
                 ) : null}
 

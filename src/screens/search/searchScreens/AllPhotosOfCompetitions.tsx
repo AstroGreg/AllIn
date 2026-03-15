@@ -1,5 +1,5 @@
 import { View, Text, FlatList, TouchableOpacity, Image, ActivityIndicator, StyleSheet, useWindowDimensions } from 'react-native'
-import React, { useEffect, useState, useCallback, useMemo } from 'react'
+import React, { useEffect, useState, useCallback, useMemo, useRef } from 'react'
 import SizeBox from '../../../constants/SizeBox'
 import { createStyles } from '../SearchStyles';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -21,7 +21,7 @@ const AllPhotosOfEvents = ({ navigation, route }: any) => {
     const disciplineId = route?.params?.disciplineId;
     const checkpointId = route?.params?.checkpointId ?? route?.params?.checkpoint?.id;
     const categoryLabel = route?.params?.categoryLabel;
-    const categoryLabels = Array.isArray(route?.params?.categoryLabels) ? route.params.categoryLabels : [];
+    const routeCategoryLabels = route?.params?.categoryLabels;
     const { apiAccessToken } = useAuth();
     const { colors } = useTheme();
     const { t } = useTranslation();
@@ -94,13 +94,15 @@ const AllPhotosOfEvents = ({ navigation, route }: any) => {
     const [isRefreshing, setIsRefreshing] = useState(false);
     const [isFetchingMore, setIsFetchingMore] = useState(false);
     const [hasMore, setHasMore] = useState(true);
+    const itemCountRef = useRef(0);
     const targetCompetitionId = competitionId ?? eventId;
     const activeCategoryLabels = useMemo(() => {
-        const raw = categoryLabels.length > 0 ? categoryLabels : (categoryLabel ? [categoryLabel] : []);
+        const routeLabels = Array.isArray(routeCategoryLabels) ? routeCategoryLabels : [];
+        const raw = routeLabels.length > 0 ? routeLabels : (categoryLabel ? [categoryLabel] : []);
         return raw
             .map((value) => String(value ?? '').trim())
             .filter(Boolean);
-    }, [categoryLabel, categoryLabels]);
+    }, [categoryLabel, routeCategoryLabels]);
     const tileWidth = useMemo(() => Math.max(140, Math.floor((width - 52) / 2)), [width]);
     const tileHeight = useMemo(() => Math.round(tileWidth * 1.15), [tileWidth]);
     const helperCopy = useMemo(() => {
@@ -175,11 +177,15 @@ const AllPhotosOfEvents = ({ navigation, route }: any) => {
         });
     }, []);
 
+    useEffect(() => {
+        itemCountRef.current = items.length;
+    }, [items.length]);
+
     const loadPage = useCallback(async (offset: number, append: boolean) => {
         if (!apiAccessToken) return;
         if (append) {
             setIsFetchingMore(true);
-        } else if (offset === 0 && items.length > 0) {
+        } else if (offset === 0 && itemCountRef.current > 0) {
             setIsRefreshing(true);
         } else {
             setIsLoading(true);
@@ -218,7 +224,7 @@ const AllPhotosOfEvents = ({ navigation, route }: any) => {
             setIsRefreshing(false);
             setIsFetchingMore(false);
         }
-    }, [activeCategoryLabels, apiAccessToken, appearanceOnly, checkpointId, competitionId, disciplineId, eventId, isVideoMedia, items.length, mergeItems, targetCompetitionId]);
+    }, [activeCategoryLabels, apiAccessToken, appearanceOnly, checkpointId, competitionId, disciplineId, eventId, isVideoMedia, mergeItems, targetCompetitionId]);
 
     useEffect(() => {
         let mounted = true;
@@ -309,9 +315,9 @@ const AllPhotosOfEvents = ({ navigation, route }: any) => {
                 ListHeaderComponent={
                         <View style={localStyles.headerWrap}>
                             <Text style={styles.titleText}>{eventName}</Text>
-                            {(categoryLabel || categoryLabels.length > 0) && (
+                            {(categoryLabel || activeCategoryLabels.length > 0) && (
                                 <Text style={localStyles.subtitle}>
-                                    {[categoryLabel || (categoryLabels.length ? categoryLabels.join(', ') : null)].filter(Boolean).join(' • ')}
+                                    {[categoryLabel || (activeCategoryLabels.length ? activeCategoryLabels.join(', ') : null)].filter(Boolean).join(' • ')}
                                 </Text>
                             )}
                             <Text style={localStyles.helper}>{helperCopy}</Text>

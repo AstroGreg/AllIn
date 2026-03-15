@@ -72,7 +72,7 @@ const UploadActivityScreen = ({navigation}: any) => {
         return `${state.total}/${state.total} ${t('ready')}`;
       }
       if (s.phase === 'blocked') {
-        return t('Waiting for all workers to become healthy.');
+        return t('Waiting for the cloud system to become operational.');
       }
       return `${state.uploaded}/${state.total} ${t('uploaded')}`;
     },

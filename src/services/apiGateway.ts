@@ -76,6 +76,19 @@ async function parseJsonSafely(res: Response): Promise<any | null> {
   }
 }
 
+function extractApiErrorMessage(data: any, fallback: string): string {
+  const error = String(data?.error ?? '').trim();
+  const message = String(data?.message ?? '').trim();
+  const details = String(data?.details ?? '').trim();
+  const genericLabel = /^(forbidden|unauthorized|bad request|insufficient permissions)$/i;
+
+  if (details && ((!error || genericLabel.test(error)) && (!message || genericLabel.test(message)))) {
+    return details;
+  }
+
+  return error || message || details || fallback;
+}
+
 export async function apiRequest<T>(
   path: string,
   {
@@ -141,9 +154,7 @@ export async function apiRequest<T>(
         responseBody: data,
       });
     }
-    const message =
-      (data && (data.error || data.message || data.details)) ||
-      `Request failed (${res.status})`;
+    const message = extractApiErrorMessage(data, `Request failed (${res.status})`);
     throw new ApiError({status: res.status, message: String(message), body: data});
   }
 
@@ -2664,12 +2675,14 @@ export interface WorkerHealthItem {
 
 export interface WorkerHealthResponse {
   ok: boolean;
-  workers: {
-    media: WorkerHealthItem;
-    ai: WorkerHealthItem;
-    search: WorkerHealthItem;
-    notifications: WorkerHealthItem;
-    face: WorkerHealthItem;
+  status?: 'operational' | 'not_operational';
+  message?: string;
+  workers?: {
+    media?: WorkerHealthItem;
+    ai?: WorkerHealthItem;
+    search?: WorkerHealthItem;
+    notifications?: WorkerHealthItem;
+    face?: WorkerHealthItem;
   };
 }
 
@@ -2698,14 +2711,12 @@ export async function getWorkerHealth(accessToken?: string): Promise<WorkerHealt
   const data = await parseJsonSafely(res);
 
   // A 503 here is still valid health payload and should drive blocked-upload UI.
-  if (res.status === 503 && data && typeof data === 'object' && 'workers' in data) {
+  if (res.status === 503 && data && typeof data === 'object' && 'ok' in data) {
     return data as WorkerHealthResponse;
   }
 
   if (!res.ok) {
-    const message =
-      (data && (data.error || data.message || data.details)) ||
-      `Request failed (${res.status})`;
+    const message = extractApiErrorMessage(data, `Request failed (${res.status})`);
     throw new ApiError({status: res.status, message: String(message), body: data});
   }
 

@@ -25,7 +25,7 @@ describe('Profile creation', () => {
     await element(by.id('focus-card-track-field')).tap();
     await element(by.id('select-event-next-button')).tap();
 
-    await expect(element(by.id('complete-athlete-details-screen'))).toBeVisible();
+    await expect(element(by.id('profile-complete-athlete-details-screen'))).toBeVisible();
     await element(by.id('athlete-finish-button')).tap();
     await expect(element(by.id('athlete-review-card'))).toBeVisible();
     await element(by.id('athlete-create-profile-button')).tap();

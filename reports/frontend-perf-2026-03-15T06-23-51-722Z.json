@@ -1,0 +1,546 @@
+{
+  "generated_at": "2026-03-15T06:23:51.723Z",
+  "api_base_url": "http://127.0.0.1:3000",
+  "target_ms": 1000,
+  "max_ms": 2000,
+  "iterations": 3,
+  "backend_baselines_ms": {
+    "home": 216.4,
+    "hub": 164.8,
+    "search": 250.6,
+    "profile": 297.4,
+    "upload_select": 154.4,
+    "upload_competition": 179.4,
+    "competition": 179.4
+  },
+  "dataset_validation": {
+    "home_empty": {
+      "has_video": false,
+      "has_photo": false,
+      "feed_posts": 0
+    },
+    "home_rich": {
+      "has_video": false,
+      "has_photo": false,
+      "has_blog": true,
+      "feed_posts": 60,
+      "media_total": 60,
+      "photo_posts": 60,
+      "video_posts": 0
+    },
+    "hub": {
+      "appearances": 6,
+      "uploads": 192
+    },
+    "search": {
+      "competitions": 6,
+      "thumbnails": 6
+    },
+    "competition": {
+      "competition_id": "d07bd22c-8904-4e5b-af10-a6306af3b61a",
+      "disciplines": 20
+    },
+    "profile_rich": {
+      "posts": 20,
+      "uploads": 192
+    },
+    "onboarding": {
+      "clubs": 50,
+      "groups": 12,
+      "disciplines": 20
+    },
+    "search_entities": {
+      "person_query": "2580995062",
+      "group_query": "2580933614",
+      "person_results": 1,
+      "group_results": 1,
+      "person_media": 8,
+      "group_media": 8
+    },
+    "ai_bib": {
+      "selected_competitions": 5,
+      "seeded_media_per_competition": [
+        5,
+        5,
+        5,
+        5,
+        5
+      ],
+      "single_competition_results": 5,
+      "five_competition_results": 25
+    }
+  },
+  "results": [
+    {
+      "name": "home_empty",
+      "routeName": "HomeScreen",
+      "ready_test_id": "e2e-perf-ready-home",
+      "cold_ms": 481,
+      "cold_wall_clock_ms": 13888,
+      "cold_launch_overhead_ms": 13407,
+      "warm_samples_ms": [
+        614,
+        471
+      ],
+      "warm_wall_clock_samples_ms": [
+        10126,
+        8593
+      ],
+      "warm_p50_ms": 471,
+      "warm_p95_ms": 614,
+      "warm_max_ms": 614,
+      "target_ms": 1000,
+      "max_ms": 2000,
+      "backend_baseline_ms": 216.4,
+      "estimated_frontend_overhead_ms": 397.6,
+      "dominant_layer": "frontend",
+      "failures": [],
+      "target_met": true,
+      "pass": true
+    },
+    {
+      "name": "home_rich",
+      "routeName": "HomeScreen",
+      "ready_test_id": "e2e-perf-ready-home",
+      "cold_ms": 1107,
+      "cold_wall_clock_ms": 8594,
+      "cold_launch_overhead_ms": 7487,
+      "warm_samples_ms": [
+        1165,
+        1147
+      ],
+      "warm_wall_clock_samples_ms": [
+        8577,
+        8555
+      ],
+      "warm_p50_ms": 1147,
+      "warm_p95_ms": 1165,
+      "warm_max_ms": 1165,
+      "target_ms": 1000,
+      "max_ms": 2000,
+      "backend_baseline_ms": 216.4,
+      "estimated_frontend_overhead_ms": 948.6,
+      "dominant_layer": "frontend",
+      "failures": [],
+      "target_met": false,
+      "pass": true
+    },
+    {
+      "name": "hub",
+      "routeName": "HubScreen",
+      "ready_test_id": "e2e-perf-ready-hub",
+      "cold_ms": 482,
+      "cold_wall_clock_ms": 8767,
+      "cold_launch_overhead_ms": 8285,
+      "warm_samples_ms": [
+        454,
+        460
+      ],
+      "warm_wall_clock_samples_ms": [
+        8584,
+        8485
+      ],
+      "warm_p50_ms": 454,
+      "warm_p95_ms": 460,
+      "warm_max_ms": 460,
+      "target_ms": 1000,
+      "max_ms": 2000,
+      "backend_baseline_ms": 164.8,
+      "estimated_frontend_overhead_ms": 295.2,
+      "dominant_layer": "frontend",
+      "failures": [],
+      "target_met": true,
+      "pass": true
+    },
+    {
+      "name": "search",
+      "routeName": "SearchScreen",
+      "ready_test_id": "e2e-perf-ready-search",
+      "cold_ms": 625,
+      "cold_wall_clock_ms": 8481,
+      "cold_launch_overhead_ms": 7856,
+      "warm_samples_ms": [
+        680,
+        619
+      ],
+      "warm_wall_clock_samples_ms": [
+        8388,
+        8475
+      ],
+      "warm_p50_ms": 619,
+      "warm_p95_ms": 680,
+      "warm_max_ms": 680,
+      "target_ms": 1000,
+      "max_ms": 2000,
+      "backend_baseline_ms": 250.6,
+      "estimated_frontend_overhead_ms": 429.4,
+      "dominant_layer": "frontend",
+      "failures": [],
+      "target_met": true,
+      "pass": true
+    },
+    {
+      "name": "upload_select",
+      "routeName": "RootUploadSelectCompetitionScreen",
+      "ready_test_id": "e2e-perf-ready-upload-select",
+      "cold_ms": 949,
+      "cold_wall_clock_ms": 8454,
+      "cold_launch_overhead_ms": 7505,
+      "warm_samples_ms": [
+        976,
+        1051
+      ],
+      "warm_wall_clock_samples_ms": [
+        8494,
+        8477
+      ],
+      "warm_p50_ms": 976,
+      "warm_p95_ms": 1051,
+      "warm_max_ms": 1051,
+      "target_ms": 1000,
+      "max_ms": 2000,
+      "backend_baseline_ms": 154.4,
+      "estimated_frontend_overhead_ms": 896.6,
+      "dominant_layer": "frontend",
+      "failures": [],
+      "target_met": false,
+      "pass": true
+    },
+    {
+      "name": "upload_competition",
+      "routeName": "RootUploadCompetitionDetailsScreen",
+      "ready_test_id": "e2e-perf-ready-upload-competition",
+      "cold_ms": 534,
+      "cold_wall_clock_ms": 8395,
+      "cold_launch_overhead_ms": 7861,
+      "warm_samples_ms": [
+        614,
+        542
+      ],
+      "warm_wall_clock_samples_ms": [
+        8418,
+        8407
+      ],
+      "warm_p50_ms": 542,
+      "warm_p95_ms": 614,
+      "warm_max_ms": 614,
+      "target_ms": 1000,
+      "max_ms": 2000,
+      "backend_baseline_ms": 179.4,
+      "estimated_frontend_overhead_ms": 434.6,
+      "dominant_layer": "frontend",
+      "failures": [],
+      "target_met": true,
+      "pass": true
+    },
+    {
+      "name": "profile_sparse",
+      "routeName": "UserProfileScreen",
+      "ready_test_id": "e2e-perf-ready-profile",
+      "cold_ms": 328,
+      "cold_wall_clock_ms": 8631,
+      "cold_launch_overhead_ms": 8303,
+      "warm_samples_ms": [
+        319,
+        325
+      ],
+      "warm_wall_clock_samples_ms": [
+        8659,
+        8630
+      ],
+      "warm_p50_ms": 319,
+      "warm_p95_ms": 325,
+      "warm_max_ms": 325,
+      "target_ms": 1000,
+      "max_ms": 2000,
+      "backend_baseline_ms": 297.4,
+      "estimated_frontend_overhead_ms": 27.6,
+      "dominant_layer": "backend",
+      "failures": [],
+      "target_met": true,
+      "pass": true
+    },
+    {
+      "name": "profile_rich",
+      "routeName": "UserProfileScreen",
+      "ready_test_id": "e2e-perf-ready-profile",
+      "cold_ms": 326,
+      "cold_wall_clock_ms": 8638,
+      "cold_launch_overhead_ms": 8312,
+      "warm_samples_ms": [
+        328,
+        333
+      ],
+      "warm_wall_clock_samples_ms": [
+        8712,
+        8711
+      ],
+      "warm_p50_ms": 328,
+      "warm_p95_ms": 333,
+      "warm_max_ms": 333,
+      "target_ms": 1000,
+      "max_ms": 2000,
+      "backend_baseline_ms": 297.4,
+      "estimated_frontend_overhead_ms": 35.6,
+      "dominant_layer": "backend",
+      "failures": [],
+      "target_met": true,
+      "pass": true
+    },
+    {
+      "name": "competition",
+      "routeName": "CompetitionDetailsScreen",
+      "ready_test_id": "e2e-perf-ready-competition",
+      "cold_ms": 354,
+      "cold_wall_clock_ms": 8391,
+      "cold_launch_overhead_ms": 8037,
+      "warm_samples_ms": [
+        358,
+        360
+      ],
+      "warm_wall_clock_samples_ms": [
+        8440,
+        8509
+      ],
+      "warm_p50_ms": 358,
+      "warm_p95_ms": 360,
+      "warm_max_ms": 360,
+      "target_ms": 1000,
+      "max_ms": 2000,
+      "backend_baseline_ms": 179.4,
+      "estimated_frontend_overhead_ms": 180.6,
+      "dominant_layer": "frontend",
+      "failures": [],
+      "target_met": true,
+      "pass": true
+    },
+    {
+      "name": "photo_viewer_open",
+      "routeName": "PhotoDetailScreen",
+      "ready_test_id": "e2e-perf-ready-photo-viewer",
+      "cold_ms": 0,
+      "cold_wall_clock_ms": 7980,
+      "cold_launch_overhead_ms": 7980,
+      "warm_samples_ms": [
+        0,
+        0
+      ],
+      "warm_wall_clock_samples_ms": [
+        8013,
+        7993
+      ],
+      "warm_p50_ms": 0,
+      "warm_p95_ms": 0,
+      "warm_max_ms": 0,
+      "target_ms": 1000,
+      "max_ms": 2000,
+      "backend_baseline_ms": null,
+      "estimated_frontend_overhead_ms": null,
+      "dominant_layer": "unknown",
+      "failures": [],
+      "target_met": true,
+      "pass": true
+    },
+    {
+      "name": "video_viewer_long_open",
+      "routeName": "VideoPlayingScreen",
+      "ready_test_id": "e2e-perf-ready-video-viewer",
+      "cold_ms": 248,
+      "cold_wall_clock_ms": 8325,
+      "cold_launch_overhead_ms": 8077,
+      "warm_samples_ms": [
+        206,
+        207
+      ],
+      "warm_wall_clock_samples_ms": [
+        8170,
+        8176
+      ],
+      "warm_p50_ms": 206,
+      "warm_p95_ms": 207,
+      "warm_max_ms": 207,
+      "target_ms": 1000,
+      "max_ms": 2000,
+      "backend_baseline_ms": null,
+      "estimated_frontend_overhead_ms": null,
+      "dominant_layer": "unknown",
+      "failures": [],
+      "target_met": true,
+      "pass": true
+    },
+    {
+      "name": "onboarding_focus_select",
+      "routeName": "SelectEventScreen",
+      "prepare_samples_ms": [
+        0,
+        0
+      ],
+      "prepare_p95_ms": 0,
+      "cold_ms": 6,
+      "warm_samples_ms": [
+        5,
+        4
+      ],
+      "warm_p50_ms": 4,
+      "warm_p95_ms": 5,
+      "warm_max_ms": 5,
+      "target_ms": 1000,
+      "max_ms": 2000,
+      "backend_baseline_ms": null,
+      "estimated_frontend_overhead_ms": null,
+      "dominant_layer": "frontend",
+      "failures": [],
+      "target_met": true,
+      "pass": true
+    },
+    {
+      "name": "onboarding_club_picker",
+      "routeName": "CompleteAthleteDetailsScreen",
+      "prepare_samples_ms": [
+        301,
+        291
+      ],
+      "prepare_p95_ms": 301,
+      "cold_ms": 685,
+      "warm_samples_ms": [
+        568,
+        590
+      ],
+      "warm_p50_ms": 568,
+      "warm_p95_ms": 590,
+      "warm_max_ms": 590,
+      "target_ms": 1000,
+      "max_ms": 2000,
+      "backend_baseline_ms": null,
+      "estimated_frontend_overhead_ms": null,
+      "dominant_layer": "frontend",
+      "failures": [],
+      "target_met": true,
+      "pass": true
+    },
+    {
+      "name": "onboarding_discipline_picker",
+      "routeName": "CompleteAthleteDetailsScreen",
+      "prepare_samples_ms": [
+        2195,
+        2194
+      ],
+      "prepare_p95_ms": 2195,
+      "cold_ms": 581,
+      "warm_samples_ms": [
+        590,
+        588
+      ],
+      "warm_p50_ms": 588,
+      "warm_p95_ms": 590,
+      "warm_max_ms": 590,
+      "target_ms": 1000,
+      "max_ms": 2000,
+      "backend_baseline_ms": null,
+      "estimated_frontend_overhead_ms": null,
+      "dominant_layer": "frontend",
+      "failures": [],
+      "target_met": true,
+      "pass": true
+    },
+    {
+      "name": "ai_competition_selector",
+      "routeName": "AISearchScreen",
+      "prepare_samples_ms": [
+        9,
+        9
+      ],
+      "prepare_p95_ms": 9,
+      "cold_ms": 899,
+      "warm_samples_ms": [
+        922,
+        928
+      ],
+      "warm_p50_ms": 922,
+      "warm_p95_ms": 928,
+      "warm_max_ms": 928,
+      "target_ms": 1000,
+      "max_ms": 2000,
+      "backend_baseline_ms": null,
+      "estimated_frontend_overhead_ms": null,
+      "dominant_layer": "frontend",
+      "failures": [],
+      "target_met": true,
+      "pass": true
+    },
+    {
+      "name": "ai_bib_single_competition",
+      "routeName": "AISearchScreen",
+      "prepare_samples_ms": [
+        273,
+        268
+      ],
+      "prepare_p95_ms": 273,
+      "cold_ms": 1233,
+      "warm_samples_ms": [
+        1146,
+        1148
+      ],
+      "warm_p50_ms": 1146,
+      "warm_p95_ms": 1148,
+      "warm_max_ms": 1148,
+      "target_ms": 1000,
+      "max_ms": 2000,
+      "backend_baseline_ms": 232,
+      "estimated_frontend_overhead_ms": 916,
+      "dominant_layer": "frontend",
+      "failures": [],
+      "target_met": false,
+      "pass": true
+    },
+    {
+      "name": "ai_bib_five_competitions",
+      "routeName": "AISearchScreen",
+      "prepare_samples_ms": [
+        300,
+        283
+      ],
+      "prepare_p95_ms": 300,
+      "cold_ms": 1561,
+      "warm_samples_ms": [
+        1629,
+        1699
+      ],
+      "warm_p50_ms": 1629,
+      "warm_p95_ms": 1699,
+      "warm_max_ms": 1699,
+      "target_ms": 1000,
+      "max_ms": 2000,
+      "backend_baseline_ms": 598,
+      "estimated_frontend_overhead_ms": 1101,
+      "dominant_layer": "frontend",
+      "failures": [],
+      "target_met": false,
+      "pass": true
+    }
+  ],
+  "all_passed": true,
+  "target_met": false,
+  "target_warnings": [
+    {
+      "name": "home_rich",
+      "warm_p95_ms": 1165,
+      "target_ms": 1000
+    },
+    {
+      "name": "upload_select",
+      "warm_p95_ms": 1051,
+      "target_ms": 1000
+    },
+    {
+      "name": "ai_bib_single_competition",
+      "warm_p95_ms": 1148,
+      "target_ms": 1000
+    },
+    {
+      "name": "ai_bib_five_competitions",
+      "warm_p95_ms": 1699,
+      "target_ms": 1000
+    }
+  ]
+}
