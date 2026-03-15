@@ -219,26 +219,29 @@ const UploadSummaryScreen = ({ navigation, route }: any) => {
         };
     }, [competitionId, formatResolution]);
 
-    const unhealthyWorkers = useMemo(() => {
-        const workers = workerHealth?.workers;
-        if (!workers) return [];
-        return Object.entries(workers)
-            .filter(([, state]) => !state?.ok)
-            .map(([name]) => name);
-    }, [workerHealth]);
+    const cloudSystemOperational = useMemo(
+        () => Boolean(workerHealth?.ok),
+        [workerHealth?.ok],
+    );
+
+    const cloudSystemMessage = useMemo(() => {
+        if (workersLoading) return t('Checking cloud system before upload…');
+        if (workersError) return `${t('Could not verify cloud system')}: ${workersError}`;
+        if (!workerHealth?.ok) {
+            return workerHealth?.message || t('Cloud system is not operational. Please try again shortly.');
+        }
+        return workerHealth?.message || t('Cloud system is operational. Upload can start.');
+    }, [workerHealth?.message, workerHealth?.ok, workersError, workersLoading, t]);
 
     const canStartUpload = useMemo(
-        () => !workersLoading && unhealthyWorkers.length === 0 && !workersError,
-        [unhealthyWorkers.length, workersError, workersLoading],
+        () => !workersLoading && cloudSystemOperational && !workersError,
+        [cloudSystemOperational, workersError, workersLoading],
     );
 
     const handleConfirm = async () => {
         try {
             const health = await refreshWorkerHealth();
-            const unhealthy = Object.entries(health?.workers ?? {})
-                .filter(([, state]) => !state?.ok)
-                .map(([name]) => name);
-            if (unhealthy.length > 0) {
+            if (!health?.ok) {
                 return;
             }
         } catch {
@@ -419,15 +422,9 @@ const UploadSummaryScreen = ({ navigation, route }: any) => {
                 {categories.map(renderCategory)}
 
                 <View style={Styles.healthCard} testID="upload-worker-health-card">
-                    <Text style={Styles.healthTitle}>{t('Worker readiness')}</Text>
+                    <Text style={Styles.healthTitle}>{t('Cloud system status')}</Text>
                     <Text style={Styles.healthText} testID="upload-worker-health-text">
-                        {workersLoading
-                            ? t('Checking worker health before upload…')
-                            : unhealthyWorkers.length > 0
-                                ? `${t('Upload blocked. Workers unavailable')}: ${unhealthyWorkers.join(', ')}`
-                                : workersError
-                                    ? `${t('Could not verify workers')}: ${workersError}`
-                                    : t('All workers are live. Upload can start.')}
+                        {cloudSystemMessage}
                     </Text>
                 </View>
 
@@ -441,7 +438,7 @@ const UploadSummaryScreen = ({ navigation, route }: any) => {
                     testID="upload-start-button"
                 >
                     <Text style={Styles.confirmButtonText}>
-                        {workersLoading ? t('Checking workers…') : t('Start upload')}
+                        {workersLoading ? t('Checking cloud system…') : t('Start upload')}
                     </Text>
                     <ArrowRight size={18} color={colors.pureWhite} variant="Linear" />
                 </TouchableOpacity>

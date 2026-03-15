@@ -238,6 +238,12 @@ const PhotoDetailScreen = ({navigation, route}: any) => {
         setIsFullImageLoaded(false);
     }, [resolvedMediaId, isVideo]);
 
+    useEffect(() => {
+        if (isVideo) return;
+        if (thumbnailImageUrl || highResImageUrl) return;
+        markPerfReady();
+    }, [highResImageUrl, isVideo, markPerfReady, thumbnailImageUrl]);
+
     const apiBaseUrl = useMemo(() => getApiBaseUrl(), []);
     const hlsBaseUrl = useMemo(() => getHlsBaseUrl(), []);
 
@@ -1590,6 +1596,10 @@ const PhotoDetailScreen = ({navigation, route}: any) => {
                                             setIsImageLoading(false);
                                             markPerfReady();
                                         }}
+                                        onError={() => {
+                                            setIsImageLoading(false);
+                                            markPerfReady();
+                                        }}
                                         style={Styles.photoImage}
                                         resizeMode="cover"
                                     />
@@ -1598,6 +1608,10 @@ const PhotoDetailScreen = ({navigation, route}: any) => {
                                             source={{uri: highResImageUrl}}
                                             onLoadEnd={() => {
                                                 setIsFullImageLoaded(true);
+                                                markPerfReady();
+                                            }}
+                                            onError={() => {
+                                                setIsFullImageLoaded(false);
                                                 markPerfReady();
                                             }}
                                             style={[

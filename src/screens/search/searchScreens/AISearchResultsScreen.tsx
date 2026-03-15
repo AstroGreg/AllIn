@@ -203,13 +203,19 @@ const AISearchResultsScreen = ({navigation, route}: any) => {
         return;
       }
       if (item.type === 'video') {
+        const requestedStartAt = item.matchTimeSeconds ?? 0;
         navigation.navigate('VideoPlayingScreen', {
           mediaId: item.id,
-          startAt: item.matchTimeSeconds ?? 0,
+          startAt: requestedStartAt,
+          matchTimeSeconds: requestedStartAt > 0 ? requestedStartAt : undefined,
+          match_time_seconds: requestedStartAt > 0 ? requestedStartAt : undefined,
           video: {
             title: item.eventName || eventNameById(item.eventId),
             thumbnail: resolvedThumbnail,
             uri: resolvedOriginal ?? resolvedPreview ?? resolvedThumbnail,
+            startAt: requestedStartAt > 0 ? requestedStartAt : undefined,
+            matchTimeSeconds: requestedStartAt > 0 ? requestedStartAt : undefined,
+            match_time_seconds: requestedStartAt > 0 ? requestedStartAt : undefined,
           },
         });
         return;

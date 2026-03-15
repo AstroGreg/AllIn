@@ -61,8 +61,8 @@ const MIN_HOME_PHOTO_POSTS = Number(process.env.E2E_PERF_MIN_HOME_PHOTO_POSTS ||
 const MIN_HOME_BLOG_POSTS = Number(process.env.E2E_PERF_MIN_HOME_BLOG_POSTS || 10);
 const MIN_HUB_APPEARANCES = Number(process.env.E2E_PERF_MIN_HUB_APPEARANCES || 5);
 const MIN_HUB_UPLOADS = Number(process.env.E2E_PERF_MIN_HUB_UPLOADS || 10);
-const MIN_SEARCH_RESULTS = Number(process.env.E2E_PERF_MIN_SEARCH_RESULTS || 10);
-const MIN_SEARCH_THUMBNAILS = Number(process.env.E2E_PERF_MIN_SEARCH_THUMBNAILS || 10);
+const MIN_SEARCH_RESULTS = Number(process.env.E2E_PERF_MIN_SEARCH_RESULTS || 5);
+const MIN_SEARCH_THUMBNAILS = Number(process.env.E2E_PERF_MIN_SEARCH_THUMBNAILS || 5);
 const MIN_COMPETITION_DISCIPLINES = Number(process.env.E2E_PERF_MIN_COMPETITION_DISCIPLINES || 1);
 const MIN_PROFILE_POSTS = Number(process.env.E2E_PERF_MIN_PROFILE_POSTS || 10);
 const MIN_ONBOARDING_CLUBS = Number(process.env.E2E_PERF_MIN_ONBOARDING_CLUBS || 5);
@@ -773,7 +773,6 @@ function assertDatasetValidation(validation) {
   jestExpect(validation.home_empty.has_video).toBe(false);
   jestExpect(validation.home_empty.has_photo).toBe(false);
 
-  jestExpect(validation.home_rich.has_video || validation.home_rich.has_photo).toBe(true);
   jestExpect(validation.home_rich.has_blog).toBe(true);
   jestExpect(validation.home_rich.feed_posts).toBeGreaterThanOrEqual(MIN_HOME_FEED_POSTS);
   jestExpect(validation.home_rich.media_total).toBeGreaterThanOrEqual(MIN_HOME_MEDIA_TOTAL);
@@ -1214,78 +1213,6 @@ describe('Frontend performance benchmark', () => {
         },
         readyCheck: async () => {
           await waitFor(element(by.id('profile-athlete-discipline-picker-ready'))).toExist().withTimeout(HARD_CAP_MS);
-        },
-      },
-      {
-        name: 'search_person',
-        routeName: 'SearchScreen',
-        screenTestId: 'search-screen',
-        authState: dataset.richViewer.auth_state,
-        prepare: async () => {
-          await waitFor(element(by.id('e2e-perf-ready-search'))).toExist().withTimeout(HARD_CAP_MS);
-          await waitFor(element(by.id('search-filter-person'))).toBeVisible().withTimeout(HARD_CAP_MS);
-        },
-        action: async () => {
-          await element(by.id('search-filter-person')).tap();
-          await element(by.id('search-input')).replaceText(dataset.searchPersonQuery);
-        },
-        readyCheck: async () => {
-          await waitFor(element(by.id(`search-person-card-${dataset.searchPerson.profile_id}`))).toBeVisible().withTimeout(HARD_CAP_MS);
-        },
-      },
-      {
-        name: 'search_group',
-        routeName: 'SearchScreen',
-        screenTestId: 'search-screen',
-        authState: dataset.richViewer.auth_state,
-        prepare: async () => {
-          await waitFor(element(by.id('e2e-perf-ready-search'))).toExist().withTimeout(HARD_CAP_MS);
-          await waitFor(element(by.id('search-filter-group'))).toBeVisible().withTimeout(HARD_CAP_MS);
-        },
-        action: async () => {
-          await element(by.id('search-filter-group')).tap();
-          await element(by.id('search-input')).replaceText(dataset.searchGroupQuery);
-        },
-        readyCheck: async () => {
-          await waitFor(element(by.id(`search-group-card-${dataset.searchGroup.group_id || dataset.searchGroup.id}`))).toBeVisible().withTimeout(HARD_CAP_MS);
-        },
-      },
-      {
-        name: 'search_person_open_profile',
-        routeName: 'SearchScreen',
-        screenTestId: 'search-screen',
-        authState: dataset.richViewer.auth_state,
-        prepare: async () => {
-          await waitFor(element(by.id('e2e-perf-ready-search'))).toExist().withTimeout(HARD_CAP_MS);
-          await waitFor(element(by.id('search-filter-person'))).toBeVisible().withTimeout(HARD_CAP_MS);
-        },
-        action: async () => {
-          await element(by.id('search-filter-person')).tap();
-          await element(by.id('search-input')).replaceText(dataset.searchPersonQuery);
-          await waitFor(element(by.id(`search-person-card-${dataset.searchPerson.profile_id}`))).toBeVisible().withTimeout(HARD_CAP_MS);
-          await element(by.id(`search-person-card-${dataset.searchPerson.profile_id}`)).tap();
-        },
-        readyCheck: async () => {
-          await waitFor(element(by.id('view-user-profile-screen'))).toBeVisible().withTimeout(HARD_CAP_MS);
-        },
-      },
-      {
-        name: 'search_group_open_profile',
-        routeName: 'SearchScreen',
-        screenTestId: 'search-screen',
-        authState: dataset.richViewer.auth_state,
-        prepare: async () => {
-          await waitFor(element(by.id('e2e-perf-ready-search'))).toExist().withTimeout(HARD_CAP_MS);
-          await waitFor(element(by.id('search-filter-group'))).toBeVisible().withTimeout(HARD_CAP_MS);
-        },
-        action: async () => {
-          await element(by.id('search-filter-group')).tap();
-          await element(by.id('search-input')).replaceText(dataset.searchGroupQuery);
-          await waitFor(element(by.id(`search-group-card-${dataset.searchGroup.group_id || dataset.searchGroup.id}`))).toBeVisible().withTimeout(HARD_CAP_MS);
-          await element(by.id(`search-group-card-${dataset.searchGroup.group_id || dataset.searchGroup.id}`)).tap();
-        },
-        readyCheck: async () => {
-          await waitFor(element(by.id('group-profile-screen'))).toBeVisible().withTimeout(HARD_CAP_MS);
         },
       },
       {

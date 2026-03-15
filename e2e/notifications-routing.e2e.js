@@ -39,6 +39,11 @@ const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 const apiGet = (pathValue, accessToken) => apiRequest(pathValue, { method: 'GET', accessToken });
 const apiPost = (pathValue, accessToken, body) => apiRequest(pathValue, { method: 'POST', accessToken, body });
 const apiPut = (pathValue, accessToken, body) => apiRequest(pathValue, { method: 'PUT', accessToken, body });
+const extractMediaRows = (payload) => {
+  if (Array.isArray(payload)) return payload;
+  if (Array.isArray(payload?.items)) return payload.items;
+  return [];
+};
 const getUnreadNotifications = async (accessToken) => {
   const payload = await apiGet('/notifications?limit=100&offset=0&unread_only=true', accessToken);
   return Array.isArray(payload?.notifications) ? payload.notifications : [];
@@ -280,11 +285,15 @@ describe('Notification routing', () => {
 
   it('notifies followed profiles and routes to the follower profile', async () => {
     const followed = await createUser({ label: 'notif-followed', displayName: 'Followed Profile' });
-    const follower = await createUser({
-      label: 'notif-follower',
-      displayName: 'Follower Profile',
+    const follower = await createUser({ label: 'notif-follower', displayName: 'Follower Profile' });
+    const followerAvatarMediaId = await uploadCompetitionMedia(follower, {
+      type: 'image',
+      title: `Follower avatar ${Date.now()}`,
+    });
+    await e2eBootstrap({
+      sub: follower.auth_state?.user?.sub,
       profile: {
-        avatar_url: 'https://images.spotme.local/e2e/follower-avatar.png',
+        avatar_media_id: followerAvatarMediaId,
       },
     });
 
@@ -367,7 +376,7 @@ describe('Notification routing', () => {
         `/competitions/${encodeURIComponent(benchmarkCompetition.id)}/media?type=video&discipline_id=${encodeURIComponent(benchmarkDiscipline.id)}&category_labels=${encodeURIComponent(categoryLabel)}&limit=50&offset=0`,
         subscriber.access_token,
       );
-      const rows = Array.isArray(payload) ? payload : [];
+      const rows = extractMediaRows(payload);
       if (!rows.some((item) => String(item?.media_id || '') === mediaId)) {
         throw new Error(`Uploaded media ${mediaId} not visible in filtered competition media.`);
       }
@@ -438,11 +447,11 @@ describe('Notification routing', () => {
     );
 
     const visibleInAllMedia = await eventually(async () => {
-      const rows = await apiGet(
+      const payload = await apiGet(
         `/competitions/${encodeURIComponent(benchmarkCompetition.id)}/media?type=video&discipline_id=${encodeURIComponent(benchmarkDiscipline.id)}&limit=50&offset=0`,
         subscriber.access_token,
       );
-      const mediaRows = Array.isArray(rows) ? rows : [];
+      const mediaRows = extractMediaRows(payload);
       if (!mediaRows.some((item) => String(item?.media_id || '') === mediaId)) {
         throw new Error(`Uploaded media ${mediaId} not visible in all-category competition media.`);
       }
