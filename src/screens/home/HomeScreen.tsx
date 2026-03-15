@@ -758,8 +758,10 @@ const HomeScreen = ({ navigation }: any) => {
             }
 
             const fileUrl = `file://${localPath}`;
-            const storyTitle = media.type === 'video' ? null : getInstagramShareEventTitle(media);
-            const storySubtitle = media.type === 'video' ? null : getInstagramShareMatchLabel(media);
+            const rawStoryTitle = media.type === 'video' ? '' : getInstagramStoryEventLabel(media);
+            const rawStorySubtitle = media.type === 'video' ? '' : getInstagramStoryMatchLabel(media);
+            const storyTitle = rawStoryTitle.trim() || null;
+            const storySubtitle = rawStorySubtitle.trim() || null;
             await shareMediaToInstagramStory({
                 t,
                 composeInstagramStoryImage,
@@ -767,6 +769,7 @@ const HomeScreen = ({ navigation }: any) => {
                 isVideo: media.type === 'video',
                 title: storyTitle,
                 subtitle: storySubtitle,
+                composeImageUri: sourceUrl,
             });
         } catch (e: any) {
             const msg = String(e?.message ?? t('Instagram Story failed'));
@@ -778,25 +781,38 @@ const HomeScreen = ({ navigation }: any) => {
             setDownloadProgress(null);
             downloadInFlightRef.current = false;
         }
-    }, [buildDownloadPath, composeInstagramStoryImage, getInstagramShareEventTitle, getInstagramShareMatchLabel, pickDownloadUrl, pickInstagramStoryImageUrl, t]);
+    }, [buildDownloadPath, composeInstagramStoryImage, getInstagramStoryEventLabel, getInstagramStoryMatchLabel, pickDownloadUrl, pickInstagramStoryImageUrl, t]);
 
     const resolvePostInstagramImage = useCallback(async (post?: PostSummary | null) => {
         const pickMediaUrl = (media?: PostSummary['cover_media'] | Record<string, any> | null) => {
-            const candidate =
-                media?.type !== 'video'
-                    ? (
-                        media?.thumbnail_url ||
-                        media?.preview_url ||
-                        media?.original_url ||
-                        media?.full_url ||
-                        media?.raw_url ||
-                        null
-                    )
-                    : null;
-            if (!candidate) {
+            if (!media || media?.type === 'video') {
                 return null;
             }
-            return withAccessToken(toAbsoluteUrl(String(candidate)) || '') || null;
+
+            const candidates = [
+                (media as any)?.raw_url,
+                (media as any)?.original_url,
+                (media as any)?.full_url,
+                (media as any)?.preview_url,
+                (media as any)?.thumbnail_url,
+            ]
+                .filter(Boolean)
+                .map((value) => {
+                    const absolute = toAbsoluteUrl(String(value));
+                    return withAccessToken(absolute || '') || absolute || '';
+                })
+                .filter(Boolean);
+
+            if (candidates.length === 0) {
+                return null;
+            }
+
+            const bitmap = candidates.find((value) => /\.(jpg|jpeg|png|heic)(\?|$)/i.test(value));
+            if (bitmap) {
+                return bitmap;
+            }
+            const webp = candidates.find((value) => /\.(webp)(\?|$)/i.test(value));
+            return webp || candidates[0] || null;
         };
 
         if (apiAccessToken && post?.id) {

@@ -507,12 +507,6 @@ const InstagramStoryComposer = ({request, onComplete, onError}: ComposerProps) =
                         <View style={styles.captureBackgroundFallback} />
                     )}
 
-                    <View style={styles.captureTint} />
-                    <LinearGradient
-                        colors={['rgba(8,14,24,0.10)', 'rgba(8,14,24,0.42)']}
-                        style={styles.captureFade}
-                    />
-
                     <View
                         style={[
                             styles.captureBrandPill,
@@ -996,17 +990,6 @@ const styles = StyleSheet.create({
         width: STORY_WIDTH,
         height: STORY_HEIGHT,
         backgroundColor: '#0D0F12',
-    },
-    captureTint: {
-        ...StyleSheet.absoluteFillObject,
-        width: STORY_WIDTH,
-        height: STORY_HEIGHT,
-        backgroundColor: 'rgba(4,10,16,0.18)',
-    },
-    captureFade: {
-        ...StyleSheet.absoluteFillObject,
-        width: STORY_WIDTH,
-        height: STORY_HEIGHT,
     },
     captureBrandPill: {
         position: 'absolute',

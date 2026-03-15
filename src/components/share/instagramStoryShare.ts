@@ -202,8 +202,6 @@ export async function shareMediaToInstagramStory(params: {
                     social: availability.shareLib.Social?.INSTAGRAM_STORIES,
                     appId: INSTAGRAM_APP_ID,
                     backgroundImage: composedImageUri,
-                    backgroundTopColor: STORY_BACKGROUND_TOP_COLOR,
-                    backgroundBottomColor: STORY_BACKGROUND_BOTTOM_COLOR,
                     attributionURL: STORY_ATTRIBUTION_URL,
                     failOnCancel: false,
                 });
@@ -241,8 +239,6 @@ export async function shareMediaToInstagramStory(params: {
                 appId: INSTAGRAM_APP_ID,
                 backgroundImage: localAssetUrl,
                 stickerImage,
-                backgroundTopColor: STORY_BACKGROUND_TOP_COLOR,
-                backgroundBottomColor: STORY_BACKGROUND_BOTTOM_COLOR,
                 attributionURL: STORY_ATTRIBUTION_URL,
                 failOnCancel: false,
             });
@@ -328,8 +324,6 @@ export async function shareBlogToInstagramStory(params: {
             social: availability.shareLib.Social?.INSTAGRAM_STORIES,
             appId: INSTAGRAM_APP_ID,
             backgroundImage: composedImageUri,
-            backgroundTopColor: STORY_BACKGROUND_TOP_COLOR,
-            backgroundBottomColor: STORY_BACKGROUND_BOTTOM_COLOR,
             attributionURL: STORY_ATTRIBUTION_URL,
             failOnCancel: false,
         });
