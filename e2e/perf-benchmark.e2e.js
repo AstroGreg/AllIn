@@ -1197,25 +1197,6 @@ describe('Frontend performance benchmark', () => {
         },
       },
       {
-        name: 'onboarding_group_picker',
-        routeName: 'CompleteAthleteDetailsScreen',
-        routeParams: onboardingRouteParams,
-        screenTestId: 'profile-complete-athlete-details-screen',
-        authState: dataset.richViewer.auth_state,
-        prepare: async () => {
-          await waitFor(element(by.id('profile-athlete-group-picker-open')))
-            .toBeVisible()
-            .whileElement(by.id('profile-complete-athlete-details-scroll'))
-            .scroll(200, 'down');
-        },
-        action: async () => {
-          await element(by.id('profile-athlete-group-picker-open')).tap();
-        },
-        readyCheck: async () => {
-          await waitFor(element(by.id('profile-athlete-group-picker-ready'))).toExist().withTimeout(HARD_CAP_MS);
-        },
-      },
-      {
         name: 'onboarding_discipline_picker',
         routeName: 'CompleteAthleteDetailsScreen',
         routeParams: onboardingRouteParams,

@@ -100,12 +100,12 @@ const ProfileTimeline = ({
                     color: colors.pureWhite,
                 },
                 timelineWrap: {
-                    height: 230,
+                    height: 268,
                     position: 'relative',
                 },
                 timelineRail: {
                     position: 'absolute',
-                    top: 26,
+                    top: 48,
                     left: 0,
                     right: 0,
                     height: 2,
@@ -114,7 +114,8 @@ const ProfileTimeline = ({
                 },
                 scrollContent: {
                     paddingHorizontal: sidePadding,
-                    paddingBottom: 12,
+                    paddingTop: 24,
+                    paddingBottom: 20,
                     alignItems: 'center',
                 },
                 card: {
@@ -146,7 +147,7 @@ const ProfileTimeline = ({
                     minHeight: 180,
                 },
                 cardBackgroundImage: {
-                    resizeMode: 'cover',
+                    resizeMode: 'contain',
                 },
                 cardBackgroundOverlay: {
                     backgroundColor: isDark ? 'rgba(3,4,9,0.55)' : 'rgba(255,255,255,0.85)',

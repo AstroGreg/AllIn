@@ -39,10 +39,15 @@ export const createStyles = (colors: ThemeColors) =>
         stepHeaderRow: {
             marginBottom: 18,
         },
+        stepTopRow: {
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            marginBottom: 4,
+        },
         stepCounter: {
             ...Fonts.regular12,
             color: colors.primaryColor,
-            marginBottom: 4,
         },
         stepTitle: {
             ...Fonts.semibold16,
@@ -357,7 +362,9 @@ export const createStyles = (colors: ThemeColors) =>
             borderRadius: 17,
             alignItems: 'center',
             justifyContent: 'center',
-            backgroundColor: colors.btnBackgroundColor,
+            backgroundColor: String(colors.backgroundColor || '').toLowerCase() === '#ffffff'
+                ? 'transparent'
+                : colors.btnBackgroundColor,
         },
         modalSearchRow: {
             flexDirection: 'row',

@@ -1274,9 +1274,11 @@ export interface FaceSearchResponse {
   results: FaceSearchResult[];
 }
 
+export type FaceSearchGrade = 'hard' | 'medium' | 'soft';
+
 export async function searchFaceByEnrollment(
   accessToken: string,
-  params: {event_ids: string[]; label?: string; limit?: number; top?: number; save?: boolean},
+  params: {event_ids: string[]; label?: string; limit?: number; top?: number; save?: boolean; grade?: FaceSearchGrade},
 ): Promise<FaceSearchResponse> {
   const qs = toQueryString({
     event_ids: params.event_ids,
@@ -1284,6 +1286,7 @@ export async function searchFaceByEnrollment(
     limit: params.limit,
     top: params.top,
     save: params.save ? 'true' : undefined,
+    grade: params.grade,
   });
   return apiRequest<FaceSearchResponse>(`/ai/faces/search${qs}`, {method: 'GET', accessToken});
 }
@@ -1437,6 +1440,7 @@ export interface HomeOverviewBlog {
     avatar_url?: string | null;
   };
   media?: HomeOverviewMedia | null;
+  media_items?: HomeOverviewMedia[];
 }
 
 export interface HomeOverviewResponse {
@@ -1739,6 +1743,7 @@ export async function getCompetitionPublicMedia(
     type?: 'image' | 'video';
     discipline_id?: string;
     checkpoint_id?: string;
+    category_labels?: string[];
     limit?: number;
     offset?: number;
     include_original?: boolean;
@@ -1752,6 +1757,7 @@ export async function getCompetitionPublicMedia(
     type: params?.type,
     discipline_id: params?.discipline_id,
     checkpoint_id: params?.checkpoint_id,
+    category_labels: params?.category_labels,
     limit: params?.limit,
     offset: params?.offset,
     include_original: params?.include_original,
@@ -2624,6 +2630,14 @@ export interface MediaProcessingStatus {
     original_url?: string | null;
     hls_manifest_path?: string | null;
   };
+  metrics?: {
+    face_count?: number;
+    chest_number_count?: number;
+    ai_complete?: boolean;
+    notifications_done?: boolean;
+    notifications_sent?: number;
+    subscribers_total?: number;
+  };
   last_error?: string | null;
 }
 
@@ -2636,6 +2650,66 @@ export async function getMediaStatus(
     accessToken,
     body: {media_ids},
   });
+}
+
+export interface WorkerHealthItem {
+  ok: boolean;
+  source?: string;
+  mode?: string;
+  age_ms?: number | null;
+  last_seen?: string | null;
+  checked_at?: string | null;
+  error?: string | null;
+}
+
+export interface WorkerHealthResponse {
+  ok: boolean;
+  workers: {
+    media: WorkerHealthItem;
+    ai: WorkerHealthItem;
+    search: WorkerHealthItem;
+    notifications: WorkerHealthItem;
+    face: WorkerHealthItem;
+  };
+}
+
+export async function getWorkerHealth(accessToken?: string): Promise<WorkerHealthResponse> {
+  const url = `${resolveApiBaseUrl()}/health/workers`;
+  const headers: Record<string, string> = {};
+  if (accessToken) {
+    headers.Authorization = `Bearer ${accessToken}`;
+  }
+
+  let res: Response;
+  try {
+    res = await fetch(url, {
+      method: 'GET',
+      headers,
+    });
+  } catch (e: any) {
+    console.error('[getWorkerHealth] Network error', {
+      url,
+      hasAccessToken: Boolean(accessToken),
+      error: e?.message ?? String(e),
+    });
+    throw e;
+  }
+
+  const data = await parseJsonSafely(res);
+
+  // A 503 here is still valid health payload and should drive blocked-upload UI.
+  if (res.status === 503 && data && typeof data === 'object' && 'workers' in data) {
+    return data as WorkerHealthResponse;
+  }
+
+  if (!res.ok) {
+    const message =
+      (data && (data.error || data.message || data.details)) ||
+      `Request failed (${res.status})`;
+    throw new ApiError({status: res.status, message: String(message), body: data});
+  }
+
+  return data as WorkerHealthResponse;
 }
 
 // -----------------------------
@@ -2666,6 +2740,7 @@ export interface PostSummary {
   description?: string | null;
   created_at?: string | null;
   reading_time_minutes?: number | null;
+  media_count?: number | null;
   likes_count: number;
   views_count: number;
   liked_by_me: boolean;

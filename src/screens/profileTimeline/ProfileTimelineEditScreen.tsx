@@ -10,7 +10,7 @@ import { useTheme } from '../../context/ThemeContext';
 import { createStyles } from './ProfileTimelineEditStyles';
 import type { TimelineEntry } from '../../components/profileTimeline/ProfileTimeline';
 import { useAuth } from '../../context/AuthContext';
-import { getMediaById, getPosts, getProfileSummary, getProfileTimeline, getUploadedCompetitions, searchProfiles, setMyProfileTimeline, uploadMediaBatch, type MediaViewAllItem, type PostSummary, type ProfileTimelineEntry } from '../../services/apiGateway';
+import { getMediaById, getPosts, getProfileSummary, getProfileTimeline, searchEvents, searchProfiles, setMyProfileTimeline, uploadMediaBatch, type MediaViewAllItem, type PostSummary, type ProfileTimelineEntry } from '../../services/apiGateway';
 import { getApiBaseUrl } from '../../constants/RuntimeConfig';
 import { useTranslation } from 'react-i18next'
 import CheckBox from '../../components/checkbox/CheckBox';
@@ -300,11 +300,11 @@ const ProfileTimelineEditScreen = ({ navigation, route }: any) => {
             }
 
             try {
-                const comps = await getUploadedCompetitions(apiAccessToken, { limit: 200 });
-                const items = Array.isArray(comps?.competitions) ? comps.competitions : [];
+                const comps = await searchEvents(apiAccessToken, { q: '', limit: 200 });
+                const items = Array.isArray(comps?.events) ? comps.events : [];
                 setAvailableCompetitions(items.map((c: any) => ({
                     event_id: String(c.event_id),
-                    event_name: c.event_name ?? null,
+                    event_name: c.event_name ?? c.event_title ?? null,
                     event_date: c.event_date ?? null,
                 })));
             } catch {
@@ -314,6 +314,33 @@ const ProfileTimelineEditScreen = ({ navigation, route }: any) => {
 
         loadOptions();
     }, [apiAccessToken, blogStorageKey, competitionOptions]);
+
+    useEffect(() => {
+        if (!showCompetitionModal || !apiAccessToken) return;
+        let active = true;
+        const handle = setTimeout(async () => {
+            try {
+                const comps = await searchEvents(apiAccessToken, {
+                    q: competitionSearch.trim() || undefined,
+                    limit: 50,
+                });
+                if (!active) return;
+                const items = Array.isArray(comps?.events) ? comps.events : [];
+                setAvailableCompetitions(items.map((c: any) => ({
+                    event_id: String(c.event_id),
+                    event_name: c.event_name ?? c.event_title ?? null,
+                    event_date: c.event_date ?? null,
+                })));
+            } catch {
+                if (!active) return;
+                setAvailableCompetitions([]);
+            }
+        }, 200);
+        return () => {
+            active = false;
+            clearTimeout(handle);
+        };
+    }, [apiAccessToken, competitionSearch, showCompetitionModal]);
 
     useEffect(() => {
         if (!showBlogModal) {
@@ -464,6 +491,7 @@ const ProfileTimelineEditScreen = ({ navigation, route }: any) => {
             const resp = await uploadMediaBatch(apiAccessToken, {
                 files,
                 collection_scope_key: collectionScopeKey,
+                skip_profile_collection: true,
             });
             const mediaIds = Array.isArray(resp?.results)
                 ? resp.results.map((r: any) => r.media_id).filter(Boolean)
@@ -637,7 +665,14 @@ const ProfileTimelineEditScreen = ({ navigation, route }: any) => {
 
             <ScrollView contentContainerStyle={Styles.scrollContent} showsVerticalScrollIndicator={false}>
                 <View style={Styles.stepHeaderRow}>
-                    <Text style={Styles.stepCounter}>{t('Step')} {currentStep}/{TOTAL_STEPS}</Text>
+                    <View style={Styles.stepTopRow}>
+                        <Text style={Styles.stepCounter}>{t('Step')} {currentStep}/{TOTAL_STEPS}</Text>
+                        {currentStep < TOTAL_STEPS ? (
+                            <TouchableOpacity style={Styles.previewShortcutButton} onPress={goPreviewStep}>
+                                <Text style={Styles.previewShortcutText}>{t('Preview')}</Text>
+                            </TouchableOpacity>
+                        ) : null}
+                    </View>
                     <Text style={Styles.stepTitle}>
                         {currentStep === 1 ? t('Date') :
                             currentStep === 2 ? t('Description') :
@@ -835,11 +870,6 @@ const ProfileTimelineEditScreen = ({ navigation, route }: any) => {
                 )}
 
                 <View style={Styles.actionRow}>
-                    {currentStep < TOTAL_STEPS ? (
-                        <TouchableOpacity style={Styles.previewShortcutButton} onPress={goPreviewStep}>
-                            <Text style={Styles.previewShortcutText}>{t('Preview')}</Text>
-                        </TouchableOpacity>
-                    ) : null}
                     <TouchableOpacity
                         style={Styles.cancelButton}
                         onPress={currentStep === 1 ? () => navigation.goBack() : goPrevStep}

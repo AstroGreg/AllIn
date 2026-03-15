@@ -16,6 +16,7 @@ export type ProfileNewsItem = {
     postId?: string | null;
     mediaId?: string | null;
     mediaType?: 'image' | 'video' | null;
+    status?: 'UPLOADING' | null;
     canDelete?: boolean;
 };
 
@@ -156,6 +157,9 @@ const ProfileNewsSection = ({
                         </View>
                     </View>
                     <Text style={styles.activityMeta}>{item.date || ''}</Text>
+                    {item.status ? (
+                        <Text style={styles.activityMeta}>{item.status}</Text>
+                    ) : null}
                     <Text style={styles.activityDescription} numberOfLines={2}>
                         {descriptionText}
                     </Text>

@@ -103,6 +103,11 @@ export const createStyles = (colors: ThemeColors) => StyleSheet.create({
         backgroundColor: colors.cardBackground,
         gap: 8,
     },
+    fileNameText: {
+        ...Fonts.medium13,
+        color: colors.mainTextColor,
+        lineHeight: 18,
+    },
     priceText: {
         ...Fonts.medium14,
         color: colors.mainTextColor,
@@ -144,9 +149,31 @@ export const createStyles = (colors: ThemeColors) => StyleSheet.create({
         height: 54,
         gap: 8,
     },
+    confirmButtonDisabled: {
+        opacity: 0.55,
+    },
     confirmButtonText: {
         ...Fonts.medium16,
         color: colors.pureWhite,
+    },
+    healthCard: {
+        borderWidth: 0.5,
+        borderColor: colors.lightGrayColor,
+        borderRadius: 12,
+        paddingHorizontal: 14,
+        paddingVertical: 12,
+        backgroundColor: colors.cardBackground,
+        marginTop: 4,
+    },
+    healthTitle: {
+        ...Fonts.medium14,
+        color: colors.mainTextColor,
+    },
+    healthText: {
+        ...Fonts.regular12,
+        color: colors.subTextColor,
+        marginTop: 6,
+        lineHeight: 18,
     },
 });
 

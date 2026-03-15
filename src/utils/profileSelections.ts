@@ -438,6 +438,10 @@ export function getTrainingGroupModalTitle(raw: any, t?: TranslateFn): string {
   return withTranslation(resolveFocusCopy(raw).groupModalTitle, t);
 }
 
+export function getTrainingGroupHelperText(_raw: any, t?: TranslateFn): string {
+  return withTranslation('Join a group through an invitation link. Group membership cannot be added from this profile flow.', t);
+}
+
 export function normalizeMainDisciplines(raw: any, legacy?: {trackFieldMainEvent?: string | null; roadTrailMainEvent?: string | null}): Record<string, string> {
   const source = typeof raw === 'string'
     ? (() => {

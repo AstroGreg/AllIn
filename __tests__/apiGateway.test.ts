@@ -6,6 +6,7 @@ import {
   ApiError,
   apiRequest,
   getGroupAssignedEvents,
+  getWorkerHealth,
   searchGroups,
   updateProfileSummary,
 } from '../src/services/apiGateway';
@@ -178,6 +179,36 @@ describe('apiGateway service layer', () => {
           assigned_athletes_count: 3,
         },
       ],
+    });
+  });
+
+  test('getWorkerHealth returns worker payload even when backend responds 503', async () => {
+    (global.fetch as jest.Mock).mockResolvedValue({
+      ok: false,
+      status: 503,
+      statusText: 'Service Unavailable',
+      text: async () =>
+        JSON.stringify({
+          ok: false,
+          workers: {
+            media: {ok: false, reason: 'stale'},
+            ai: {ok: true},
+            search: {ok: true},
+            notifications: {ok: true},
+            face: {ok: true, mode: 'local_fallback'},
+          },
+        }),
+    } as MockResponse);
+
+    await expect(getWorkerHealth('token-123')).resolves.toEqual({
+      ok: false,
+      workers: {
+        media: {ok: false, reason: 'stale'},
+        ai: {ok: true},
+        search: {ok: true},
+        notifications: {ok: true},
+        face: {ok: true, mode: 'local_fallback'},
+      },
     });
   });
 });

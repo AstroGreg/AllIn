@@ -7,7 +7,8 @@ import { createStyles } from './SelectCompetitionStyles'
 import SizeBox from '../../constants/SizeBox'
 import { useTheme } from '../../context/ThemeContext'
 import { useAuth } from '../../context/AuthContext'
-import { ApiError, getMediaViewAll, getSubscribedEvents, searchEvents, subscribeToEvent, type MediaViewAllItem, type SubscribedEvent } from '../../services/apiGateway'
+import { useEvents } from '../../context/EventsContext'
+import { ApiError, getMediaViewAll, searchEvents, subscribeToEvent, type MediaViewAllItem, type SubscribedEvent } from '../../services/apiGateway'
 import { getApiBaseUrl } from '../../constants/RuntimeConfig'
 import DateTimePicker from '@react-native-community/datetimepicker'
 import { useTranslation } from 'react-i18next'
@@ -58,6 +59,7 @@ const SelectCompetitionScreen = ({ navigation, route }: any) => {
             : {}
     ), [colors.primaryColor, isLightTheme]);
     const { apiAccessToken } = useAuth();
+    const { events: sharedSubscribedEvents, refresh: refreshSubscribedEvents } = useEvents();
     const perfStartedAtRef = useRef(Date.now());
     const anonymous = route?.params?.anonymous;
     const isAnonymous = !!anonymous;
@@ -366,24 +368,16 @@ const SelectCompetitionScreen = ({ navigation, route }: any) => {
             setSubscribedEventIds(new Set());
             return () => {};
         }
-        getSubscribedEvents(apiAccessToken)
-            .then((resp) => {
-                if (!mounted) return;
-                const ids = new Set(
-                    (Array.isArray(resp?.events) ? resp.events : [])
-                        .map((event) => String(event?.event_id || '').trim())
-                        .filter(Boolean),
-                );
-                setSubscribedEventIds(ids);
-            })
-            .catch(() => {
-                if (!mounted) return;
-                setSubscribedEventIds(new Set());
-            });
+        const ids = new Set(
+            (Array.isArray(sharedSubscribedEvents) ? sharedSubscribedEvents : [])
+                .map((event) => String(event?.event_id || '').trim())
+                .filter(Boolean),
+        );
+        setSubscribedEventIds(ids);
         return () => {
             mounted = false;
         };
-    }, [apiAccessToken, fixtureSubscribedIds, isFixtureMode, t]);
+    }, [apiAccessToken, fixtureSubscribedIds, isFixtureMode, sharedSubscribedEvents]);
 
     const loadCompetitions = useCallback(async (query: string) => {
         if (isFixtureMode) {
@@ -571,11 +565,20 @@ const SelectCompetitionScreen = ({ navigation, route }: any) => {
         setVisibleCompetitionCount((prev) => Math.min(prev + pageSize, filteredCompetitions.length));
     }, [filteredCompetitions.length, hasMoreCompetitions, pageSize]);
 
-    const continueToCompetition = useCallback((competition: Competition) => {
+    const continueToCompetition = useCallback((competition: Competition, options?: { didJustSubscribe?: boolean }) => {
         navigation.navigate(competitionDetailsRouteName, {
             competition,
             anonymous,
+            eventId: competition.id,
+            competitionId: competition.id,
+            name: competition.name,
+            eventName: competition.name,
+            location: competition.location,
+            date: competition.date,
+            organizingClub: competition.organizingClub,
             competitionType: competition.competitionType,
+            competitionFocus: competition.competitionType,
+            didJustSubscribe: options?.didJustSubscribe === true,
         });
     }, [anonymous, competitionDetailsRouteName, navigation]);
 
@@ -597,7 +600,7 @@ const SelectCompetitionScreen = ({ navigation, route }: any) => {
                 return next;
             });
             setSubscribePromptVisible(false);
-            continueToCompetition(pendingCompetition);
+            continueToCompetition(pendingCompetition, { didJustSubscribe: true });
             return;
         }
         if (!apiAccessToken) {
@@ -607,20 +610,21 @@ const SelectCompetitionScreen = ({ navigation, route }: any) => {
         setIsSubscribing(true);
         try {
             await subscribeToEvent(apiAccessToken, pendingCompetition.id);
+            await refreshSubscribedEvents();
             setSubscribedEventIds((prev) => {
                 const next = new Set(prev);
                 next.add(String(pendingCompetition.id));
                 return next;
             });
             setSubscribePromptVisible(false);
-            continueToCompetition(pendingCompetition);
+            continueToCompetition(pendingCompetition, { didJustSubscribe: true });
         } catch (e: any) {
             const msg = e instanceof ApiError ? e.message : String(e?.message ?? e);
             Alert.alert(t('Subscription failed'), msg || t('Could not subscribe to this event.'));
         } finally {
             setIsSubscribing(false);
         }
-    }, [apiAccessToken, continueToCompetition, isFixtureMode, pendingCompetition, t]);
+    }, [apiAccessToken, continueToCompetition, isFixtureMode, pendingCompetition, refreshSubscribedEvents, t]);
 
     const handleSkipSubscribe = useCallback(() => {
         if (!pendingCompetition) {

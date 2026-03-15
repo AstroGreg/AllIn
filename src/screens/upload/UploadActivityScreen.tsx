@@ -51,6 +51,7 @@ const UploadActivityScreen = ({navigation}: any) => {
     (s: UploadSession) => {
       if (s.phase === 'processing') return t('Processing');
       if (s.phase === 'done') return t('Done');
+      if (s.phase === 'blocked') return t('Blocked');
       if (s.phase === 'failed') return t('Failed');
       return t('Starting upload');
     },
@@ -69,6 +70,9 @@ const UploadActivityScreen = ({navigation}: any) => {
       }
       if (s.phase === 'done') {
         return `${state.total}/${state.total} ${t('ready')}`;
+      }
+      if (s.phase === 'blocked') {
+        return t('Waiting for all workers to become healthy.');
       }
       return `${state.uploaded}/${state.total} ${t('uploaded')}`;
     },

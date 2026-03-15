@@ -9,8 +9,7 @@ import SizeBox from '../../constants/SizeBox';
 import { createStyles } from './ProfileBlogEditorStyles';
 import DatePickerModal from '../../components/datePickerModal/DatePickerModal';
 import { useAuth } from '../../context/AuthContext';
-import { useEvents } from '../../context/EventsContext';
-import { createPost, deletePost, getPostById, searchProfiles, updatePost, uploadMediaBatch, type MediaViewAllItem } from '../../services/apiGateway';
+import { createPost, deletePost, getPostById, searchEvents, searchProfiles, updatePost, uploadMediaBatch, type MediaViewAllItem, type SubscribedEvent } from '../../services/apiGateway';
 import { getApiBaseUrl } from '../../constants/RuntimeConfig';
 import { useTranslation } from 'react-i18next'
 
@@ -37,7 +36,6 @@ const ProfileBlogEditorScreen = ({ navigation, route }: any) => {
     const groupId: string | null = route?.params?.groupId ? String(route.params.groupId) : null;
     const collectionScopeKey: string = String(route?.params?.collectionScopeKey ?? 'default').trim() || 'default';
     const { apiAccessToken } = useAuth();
-    const { events: subscribedEvents } = useEvents();
 
     const [title, setTitle] = useState('');
     const [description, setDescription] = useState('');
@@ -45,6 +43,10 @@ const ProfileBlogEditorScreen = ({ navigation, route }: any) => {
     const [showDateModal, setShowDateModal] = useState(false);
     const [showEventModal, setShowEventModal] = useState(false);
     const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
+    const [selectedCompetitionLabel, setSelectedCompetitionLabel] = useState<string | null>(null);
+    const [competitionSearch, setCompetitionSearch] = useState('');
+    const [competitionResults, setCompetitionResults] = useState<SubscribedEvent[]>([]);
+    const [competitionSearchLoading, setCompetitionSearchLoading] = useState(false);
     const [media, setMedia] = useState<BlogMedia[]>([]);
     const [existingMedia, setExistingMedia] = useState<MediaViewAllItem[]>([]);
     const [isSaving, setIsSaving] = useState(false);
@@ -114,14 +116,15 @@ const ProfileBlogEditorScreen = ({ navigation, route }: any) => {
     }, [existingMedia, resolveThumbUrl]);
 
     const selectedEvent = useMemo(
-        () => subscribedEvents.find((event) => String(event.event_id) === String(selectedEventId)),
-        [selectedEventId, subscribedEvents],
+        () => competitionResults.find((event) => String(event.event_id) === String(selectedEventId)),
+        [competitionResults, selectedEventId],
     );
 
     const selectedEventLabel = useMemo(() => {
-        if (!selectedEvent) return t('No event selected');
-        return selectedEvent.event_name || selectedEvent.event_title || t('Event');
-    }, [selectedEvent, t]);
+        const label = selectedEvent?.event_name || selectedEvent?.event_title || selectedCompetitionLabel;
+        if (!label) return t('No competition selected');
+        return label;
+    }, [selectedCompetitionLabel, selectedEvent, t]);
 
     const parseEventDate = useCallback((value?: string | null): Date | null => {
         if (!value) return null;
@@ -248,6 +251,31 @@ const ProfileBlogEditorScreen = ({ navigation, route }: any) => {
         };
     }, [apiAccessToken, mode, postId, splitDescriptionMeta]);
 
+    useEffect(() => {
+        if (!showEventModal || !apiAccessToken) return;
+        let active = true;
+        setCompetitionSearchLoading(true);
+        const handle = setTimeout(async () => {
+            try {
+                const response = await searchEvents(apiAccessToken, {
+                    q: competitionSearch.trim() || undefined,
+                    limit: 30,
+                });
+                if (!active) return;
+                setCompetitionResults(Array.isArray(response?.events) ? response.events : []);
+            } catch {
+                if (!active) return;
+                setCompetitionResults([]);
+            } finally {
+                if (active) setCompetitionSearchLoading(false);
+            }
+        }, 200);
+        return () => {
+            active = false;
+            clearTimeout(handle);
+        };
+    }, [apiAccessToken, competitionSearch, showEventModal]);
+
     const openDateModal = useCallback(() => {
         setShowDateModal(true);
     }, []);
@@ -327,7 +355,7 @@ const ProfileBlogEditorScreen = ({ navigation, route }: any) => {
                     })),
                     post_id: String(currentId),
                     collection_scope_key: groupId ? undefined : collectionScopeKey,
-                    skip_profile_collection: Boolean(groupId),
+                    skip_profile_collection: true,
                 });
             }
             navigation.goBack();
@@ -481,6 +509,13 @@ const ProfileBlogEditorScreen = ({ navigation, route }: any) => {
         const firstImage = [...existingPreview, ...media].find((item) => item?.type === 'image' && item?.uri);
         return firstImage?.uri ? String(firstImage.uri) : null;
     }, [existingPreview, media]);
+    const skipCurrentStep = useMemo(() => {
+        if (currentStep === 3) return skipHighlightStep;
+        if (currentStep === 4) return skipMediaStep;
+        if (currentStep === 5) return skipEventStep;
+        if (currentStep === 6) return skipPeopleStep;
+        return null;
+    }, [currentStep, skipEventStep, skipHighlightStep, skipMediaStep, skipPeopleStep]);
 
     const renderPreviewCard = useCallback(() => (
         <View style={Styles.previewCard}>
@@ -490,8 +525,8 @@ const ProfileBlogEditorScreen = ({ navigation, route }: any) => {
             {!skipHighlight && !!highlight.trim() && (
                 <Text style={Styles.previewMeta}>{t('Highlight')}: {highlight.trim()}</Text>
             )}
-            {selectedEvent ? (
-                <Text style={Styles.previewMeta}>{t('Event')}: {selectedEventLabel}</Text>
+            {selectedEventId ? (
+                <Text style={Styles.previewMeta}>{t('Competition')}: {selectedEventLabel}</Text>
             ) : null}
             {linkedPeople.length > 0 ? (
                 <Text style={Styles.previewMeta}>{t('People')}: {linkedPeople.map((person) => person.display_name).join(', ')}</Text>
@@ -591,7 +626,7 @@ const ProfileBlogEditorScreen = ({ navigation, route }: any) => {
                             currentStep === 2 ? t('Description') :
                                 currentStep === 3 ? t('Highlight') :
                                     currentStep === 4 ? t('Blog media') :
-                                        currentStep === 5 ? t('Event') :
+                                        currentStep === 5 ? t('Competition') :
                                             currentStep === 6 ? t('People') : t('Preview')}
                     </Text>
                 </View>
@@ -688,7 +723,7 @@ const ProfileBlogEditorScreen = ({ navigation, route }: any) => {
 
                 {currentStep === 5 && (
                     <View style={Styles.fieldBlock}>
-                        <Text style={Styles.fieldLabel}>{t('Event')}</Text>
+                        <Text style={Styles.fieldLabel}>{t('Competition')}</Text>
                         <TouchableOpacity style={Styles.dateButton} onPress={() => setShowEventModal(true)}>
                             <Text style={Styles.dateText} numberOfLines={1} testID="profile-blog-event-button">{selectedEventLabel}</Text>
                         </TouchableOpacity>
@@ -739,6 +774,11 @@ const ProfileBlogEditorScreen = ({ navigation, route }: any) => {
                 )}
 
                 <View style={Styles.actionRow}>
+                    {currentStep < TOTAL_STEPS && skipCurrentStep ? (
+                        <TouchableOpacity style={Styles.secondaryActionButton} onPress={skipCurrentStep}>
+                            <Text style={Styles.secondaryActionText}>{t('Skip')}</Text>
+                        </TouchableOpacity>
+                    ) : null}
                     {currentStep < TOTAL_STEPS ? (
                         <TouchableOpacity
                             style={[Styles.saveButton, !canGoNext && Styles.saveButtonDisabled]}
@@ -754,23 +794,6 @@ const ProfileBlogEditorScreen = ({ navigation, route }: any) => {
                         </TouchableOpacity>
                     )}
                 </View>
-                {currentStep === 3 ? (
-                    <TouchableOpacity style={Styles.skipSecondaryButton} onPress={skipHighlightStep}>
-                        <Text style={Styles.skipSecondaryText}>{t('Skip')}</Text>
-                    </TouchableOpacity>
-                ) : currentStep === 4 ? (
-                    <TouchableOpacity style={Styles.skipSecondaryButton} onPress={skipMediaStep}>
-                        <Text style={Styles.skipSecondaryText}>{t('Skip')}</Text>
-                    </TouchableOpacity>
-                ) : currentStep === 5 ? (
-                    <TouchableOpacity style={Styles.skipSecondaryButton} onPress={skipEventStep}>
-                        <Text style={Styles.skipSecondaryText}>{t('Skip')}</Text>
-                    </TouchableOpacity>
-                ) : currentStep === 6 ? (
-                    <TouchableOpacity style={Styles.skipSecondaryButton} onPress={skipPeopleStep}>
-                        <Text style={Styles.skipSecondaryText}>{t('Skip')}</Text>
-                    </TouchableOpacity>
-                ) : null}
 
                 {mode === 'edit' && postId ? (
                     <TouchableOpacity style={Styles.deleteButton} onPress={deleteEntry} testID="profile-blog-delete-button">
@@ -802,31 +825,43 @@ const ProfileBlogEditorScreen = ({ navigation, route }: any) => {
                 <View style={Styles.modalOverlay}>
                     <Pressable style={Styles.modalBackdrop} onPress={() => setShowEventModal(false)} />
                     <View style={Styles.dateModalContainer}>
-                        <Text style={Styles.dateModalTitle}>{t('Select event')}</Text>
+                        <Text style={Styles.dateModalTitle}>{t('Select competition')}</Text>
+                        <SizeBox height={10} />
+                        <TextInput
+                            style={Styles.fieldInput}
+                            placeholder={t('Search competitions')}
+                            placeholderTextColor={colors.grayColor}
+                            value={competitionSearch}
+                            onChangeText={setCompetitionSearch}
+                        />
                         <SizeBox height={10} />
                         <ScrollView style={Styles.eventList} showsVerticalScrollIndicator={false}>
                             <TouchableOpacity
                                 style={[Styles.eventRow, !selectedEventId && Styles.eventRowActive]}
                                 onPress={() => {
                                     setSelectedEventId(null);
+                                    setSelectedCompetitionLabel(null);
                                     setSkipEvent(false);
                                     setShowEventModal(false);
                                 }}
                             >
                                 <Text style={[Styles.eventRowText, !selectedEventId && Styles.eventRowTextActive]}>
-                                    {t('No event selected')}
+                                    {t('No competition selected')}
                                 </Text>
                             </TouchableOpacity>
-                            {subscribedEvents.map((event) => {
+                            {competitionSearchLoading ? (
+                                <ActivityIndicator color={colors.primaryColor} />
+                            ) : competitionResults.map((event) => {
                                 const eventId = String(event.event_id);
                                 const active = String(selectedEventId || '') === eventId;
-                                const label = event.event_name || event.event_title || t('Event');
+                                const label = event.event_name || event.event_title || t('Competition');
                                 return (
                                     <TouchableOpacity
                                         key={eventId}
                                         style={[Styles.eventRow, active && Styles.eventRowActive]}
                                         onPress={() => {
                                             setSelectedEventId(eventId);
+                                            setSelectedCompetitionLabel(label);
                                             setSkipEvent(false);
                                             const eventDate = parseEventDate(event.event_date ?? null);
                                             if (eventDate) {

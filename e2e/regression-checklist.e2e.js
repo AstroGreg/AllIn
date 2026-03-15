@@ -449,37 +449,158 @@ describe('Regression checklist', () => {
     await openScreen({ routeName: 'UserProfileScreen', authState: athlete.auth_state, rootTestId: 'user-profile-screen' });
   });
 
-  it('9. a blog can be created and retrieved on the profile news feed', async () => {
+  it('9. a blog upload stays linked to blog/news only and does not leak into collections or profit', async () => {
     const author = await createUser({ label: 'blog-author' });
+    const follower = await createUser({ label: 'blog-follower' });
+    await apiPost(`/profiles/${encodeURIComponent(author.profile_id)}/follow`, follower.access_token, {});
+
     const created = await apiPost('/posts', author.access_token, {
       title: 'Meet recap',
       description: 'Race day details',
       post_type: 'blog',
     });
     const postId = String(created.post?.id || '');
+    jestExpect(postId).toBeTruthy();
+
+    const upload = await uploadFixtureMedia(author.access_token, {
+      event_id: cyclingCompetition.id,
+      discipline_id: cyclingDiscipline.id,
+      post_id: postId,
+      skip_profile_collection: true,
+      files: [
+        {
+          ...PHOTO_FIXTURE,
+          name: `blog-photo-${Date.now()}.png`,
+          title: 'Blog gallery image',
+        },
+      ],
+    });
+    const mediaId = extractMediaId(upload.results?.[0]);
+    jestExpect(mediaId).toBeTruthy();
+
     const posts = await fetchPosts(author.access_token, { author_profile_id: author.profile_id, limit: 20 });
-    jestExpect((posts.posts || []).some((entry) => String(entry.id) === postId)).toBe(true);
+    const createdPost = (posts.posts || []).find((entry) => String(entry.id) === postId);
+    jestExpect(createdPost).toBeTruthy();
+    jestExpect(Number(createdPost?.media_count || 0)).toBeGreaterThan(0);
+
+    const imageCollection = await apiGet('/profiles/me/collections/by-type?type=image', author.access_token);
+    const collectionMediaIds = (imageCollection.items || []).map((entry) =>
+      String(entry.media_id || entry.media?.media_id || ''),
+    );
+    jestExpect(collectionMediaIds).not.toContain(mediaId);
+
+    const profit = await apiGet('/downloads/profit', author.access_token);
+    const profitMediaIds = (profit.items || []).map((entry) => String(entry.media_id || ''));
+    jestExpect(profitMediaIds).not.toContain(mediaId);
+
+    await eventually(async () => {
+      const overview = await apiGet('/home/overview/me', follower.access_token);
+      const feedPosts = Array.isArray(overview?.overview?.feed_posts) ? overview.overview.feed_posts : [];
+      const feedEntry = feedPosts.find((entry) => String(entry?.post?.id || '') === postId);
+      jestExpect(feedEntry).toBeTruthy();
+      jestExpect(Array.isArray(feedEntry?.media_items) ? feedEntry.media_items.length : 0).toBeGreaterThan(0);
+    }, { attempts: 20, delayMs: 750 });
 
     await openScreen({ routeName: 'UserProfileScreen', authState: author.auth_state, rootTestId: 'user-profile-screen' });
+    await openScreen({ routeName: 'HomeScreen', authState: follower.auth_state, rootTestId: 'home-screen' });
   });
 
-  it('10. following someone surfaces their media in the overview data', async () => {
+  it('10. overview shows friend updates only and never raw uploads from subscribed competitions', async () => {
     const followed = await createUser({ label: 'followed-user' });
     const follower = await createUser({ label: 'follower-user' });
-    await uploadCompetitionMedia(followed, {
+    const competitionUploader = await createUser({ label: 'overview-competition-uploader' });
+
+    await subscribeUserToCompetition(follower.profile_id, cyclingCompetition.id, {
+      discipline_ids: [cyclingDiscipline.id],
+    });
+
+    const rawCompetitionUpload = await uploadCompetitionMedia(competitionUploader, {
       competitionId: cyclingCompetition.id,
       disciplineId: cyclingDiscipline.id,
       files: [
-        { ...PHOTO_FIXTURE, name: `follow-photo-${Date.now()}.png` },
-        { ...VIDEO_FIXTURE, name: `follow-video-${Date.now()}.mp4` },
+        { ...PHOTO_FIXTURE, name: `competition-photo-${Date.now()}.png` },
       ],
     });
+    const rawCompetitionMediaId = extractMediaId(rawCompetitionUpload.results?.[0]);
+    jestExpect(rawCompetitionMediaId).toBeTruthy();
 
     await apiPost(`/profiles/${encodeURIComponent(followed.profile_id)}/follow`, follower.access_token, {});
-    const overview = await apiGet('/home/overview/me', follower.access_token);
-    jestExpect(overview.overview).toBeTruthy();
+
+    const created = await apiPost('/posts', followed.access_token, {
+      title: 'Friend blog update',
+      description: 'Visible because this is a friend update',
+      post_type: 'blog',
+    });
+    const postId = String(created.post?.id || '');
+    jestExpect(postId).toBeTruthy();
+
+    const friendUpload = await uploadFixtureMedia(followed.access_token, {
+      event_id: cyclingCompetition.id,
+      discipline_id: cyclingDiscipline.id,
+      post_id: postId,
+      skip_profile_collection: true,
+      files: [
+        {
+          ...PHOTO_FIXTURE,
+          name: `friend-blog-photo-${Date.now()}.png`,
+          title: 'Friend update preview',
+        },
+      ],
+    });
+    const friendMediaId = extractMediaId(friendUpload.results?.[0]);
+    jestExpect(friendMediaId).toBeTruthy();
+
+    await eventually(async () => {
+      const overview = await apiGet('/home/overview/me', follower.access_token);
+      jestExpect(overview.overview).toBeTruthy();
+      jestExpect(overview.overview.video).toBeNull();
+      jestExpect(overview.overview.photo).toBeNull();
+      const feedPosts = Array.isArray(overview.overview.feed_posts) ? overview.overview.feed_posts : [];
+      const feedEntry = feedPosts.find((entry) => String(entry?.post?.id || '') === postId);
+      jestExpect(feedEntry).toBeTruthy();
+      const previewIds = Array.isArray(feedEntry?.media_items)
+        ? feedEntry.media_items.map((item) => String(item?.media_id || ''))
+        : [];
+      jestExpect(previewIds).toContain(friendMediaId);
+      jestExpect(previewIds).not.toContain(rawCompetitionMediaId);
+    }, { attempts: 20, delayMs: 750 });
 
     await openScreen({ routeName: 'HomeScreen', authState: follower.auth_state, rootTestId: 'home-screen' });
+  });
+
+  it('10b. a follower cannot see edit or delete controls on someone else’s blog', async () => {
+    const author = await createUser({ label: 'foreign-blog-author' });
+    const follower = await createUser({ label: 'foreign-blog-follower' });
+    const created = await apiPost('/posts', author.access_token, {
+      title: 'Friends only read this',
+      description: 'But they must not be able to manage it',
+      post_type: 'blog',
+    });
+    const postId = String(created.post?.id || '');
+    jestExpect(postId).toBeTruthy();
+
+    await apiPost(`/profiles/${encodeURIComponent(author.profile_id)}/follow`, follower.access_token, {});
+
+    await openScreen({
+      routeName: 'ViewUserBlogDetailsScreen',
+      routeParams: {
+        postId,
+        postPreview: {
+          id: postId,
+          title: 'Friends only read this',
+          description: 'But they must not be able to manage it',
+          author: {
+            profile_id: author.profile_id,
+            display_name: 'Foreign Author',
+          },
+        },
+      },
+      authState: follower.auth_state,
+      rootTestId: 'view-user-blog-details-screen',
+    });
+
+    await expect(element(by.id('view-blog-edit-button'))).not.toExist();
+    await expect(element(by.id('view-blog-delete-button'))).not.toExist();
   });
 
   it('11. duplicate athlete types are normalized instead of being stored twice', async () => {

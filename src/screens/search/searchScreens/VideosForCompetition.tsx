@@ -22,8 +22,8 @@ const VideosForEvent = ({ navigation, route }: any) => {
     const appearanceOnly = Boolean(route?.params?.appearanceOnly);
     const disciplineId = route?.params?.disciplineId;
     const checkpointId = route?.params?.checkpointId ?? route?.params?.checkpoint?.id;
-    const division = route?.params?.division;
-    const gender = route?.params?.gender;
+    const categoryLabel = route?.params?.categoryLabel;
+    const categoryLabels = Array.isArray(route?.params?.categoryLabels) ? route.params.categoryLabels : [];
     const { apiAccessToken } = useAuth();
     const { colors } = useTheme();
     const { t } = useTranslation();
@@ -33,6 +33,12 @@ const VideosForEvent = ({ navigation, route }: any) => {
     const [isFetchingMore, setIsFetchingMore] = useState(false);
     const [hasMore, setHasMore] = useState(true);
     const targetCompetitionId = competitionId ?? eventId;
+    const activeCategoryLabels = useMemo(() => {
+        const raw = categoryLabels.length > 0 ? categoryLabels : (categoryLabel ? [categoryLabel] : []);
+        return raw
+            .map((value) => String(value ?? '').trim())
+            .filter(Boolean);
+    }, [categoryLabel, categoryLabels]);
 
     const isSignedUrl = useCallback((value?: string | null) => {
         if (!value) return false;
@@ -128,6 +134,7 @@ const VideosForEvent = ({ navigation, route }: any) => {
                     type: 'video',
                     discipline_id: disciplineId ? String(disciplineId) : undefined,
                     checkpoint_id: checkpointId ? String(checkpointId) : undefined,
+                    category_labels: activeCategoryLabels.length > 0 ? activeCategoryLabels : undefined,
                     limit: PAGE_SIZE,
                     offset,
                     include_original: false,
@@ -146,7 +153,7 @@ const VideosForEvent = ({ navigation, route }: any) => {
             setIsLoading(false);
             setIsFetchingMore(false);
         }
-    }, [apiAccessToken, appearanceOnly, checkpointId, disciplineId, isVideoMedia, mergeItems, targetCompetitionId]);
+    }, [activeCategoryLabels, apiAccessToken, appearanceOnly, checkpointId, disciplineId, isVideoMedia, mergeItems, targetCompetitionId]);
 
     useEffect(() => {
         if (!apiAccessToken) return () => {};
@@ -217,7 +224,7 @@ const VideosForEvent = ({ navigation, route }: any) => {
     return (
         <View style={styles.mainContainer}>
             <SizeBox height={insets.top} />
-            <CustomHeader title={t('Video')} onBackPress={() => navigation.goBack()} onPressSetting={() => navigation.navigate('ProfileSettings')} />
+            <CustomHeader title={t('Video')} onBackPress={() => navigation.goBack()} isSetting={false} />
 
             <FlatList
                 data={data}
@@ -236,7 +243,7 @@ const VideosForEvent = ({ navigation, route }: any) => {
                             <Text style={styles.titleText}>{eventName}</Text>
                             <SizeBox height={2} />
                             <Text style={styles.filterText}>
-                                {[eventName, division, gender].filter(Boolean).join(' • ')}
+                                {[eventName, categoryLabel || (categoryLabels.length ? categoryLabels.join(', ') : null)].filter(Boolean).join(' • ')}
                             </Text>
                             <SizeBox height={10} />
                             <View style={styles.separator} />

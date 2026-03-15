@@ -42,19 +42,10 @@ export const createStyles = (colors: ThemeColors) => StyleSheet.create({
         paddingTop: 20,
         paddingBottom: 100,
     },
-    sectionHeader: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'flex-end',
-    },
     sectionTitle: {
         ...Fonts.medium16,
         fontSize: 18,
         color: colors.mainTextColor,
-    },
-    viewAllText: {
-        ...Fonts.regular14,
-        color: colors.subTextColor,
     },
     notificationsList: {
         gap: 24,
@@ -69,6 +60,9 @@ export const createStyles = (colors: ThemeColors) => StyleSheet.create({
         borderRadius: 10,
         padding: 16,
         minHeight: 78,
+    },
+    notificationCardRead: {
+        opacity: 0.78,
     },
     notificationLeft: {
         flexDirection: 'row',
@@ -121,17 +115,24 @@ export const createStyles = (colors: ThemeColors) => StyleSheet.create({
         lineHeight: 18,
         color: colors.primaryColor,
     },
-    dateText: {
-        ...Fonts.regular12,
-        color: colors.subTextColor,
+    readBadge: {
+        backgroundColor: colors.btnBackgroundColor,
+        borderRadius: 4,
+        paddingHorizontal: 14,
+        paddingVertical: 4,
+        alignItems: 'center',
+        justifyContent: 'center',
     },
-    detailsLink: {
+    readBadgeText: {
         fontFamily: 'Inter-Regular',
         fontSize: 10,
         lineHeight: 18,
-        color: colors.primaryColor,
-        textDecorationLine: 'underline',
-        textAlign: 'center',
+        color: colors.subTextColor,
+        textTransform: 'uppercase',
+    },
+    dateText: {
+        ...Fonts.regular12,
+        color: colors.subTextColor,
     },
 });
 

@@ -19,6 +19,7 @@ import CustomSwitch from '../../../components/customSwitch/CustomSwitch';
 import {useAuth} from '../../../context/AuthContext';
 import {
   ApiError,
+  type FaceSearchGrade,
   getProfileSummary,
   grantFaceRecognitionConsent,
   searchFaceByEnrollment,
@@ -44,6 +45,7 @@ interface ResumeCombinedSearchPayload {
   useSavedBib?: boolean;
   contextText?: string;
   includeFace?: boolean;
+  faceSearchGrade?: FaceSearchGrade;
   autoRun?: boolean;
 }
 
@@ -73,6 +75,7 @@ const CombinedSearchScreen = ({navigation}: any) => {
   const [useDefaultBib, setUseDefaultBib] = useState(false);
   const [contextText, setContextText] = useState('');
   const [includeFace, setIncludeFace] = useState(false);
+  const [faceSearchGrade, setFaceSearchGrade] = useState<FaceSearchGrade>('hard');
 
   const [selectedEvents, setSelectedEvents] = useState<EventOption[]>([]);
   const [showCompetitionModal, setShowCompetitionModal] = useState(false);
@@ -323,6 +326,9 @@ const CombinedSearchScreen = ({navigation}: any) => {
         setFaceEnrollmentStatus('ready');
       }
     }
+    if (resumeCombinedSearch.faceSearchGrade) {
+      setFaceSearchGrade(resumeCombinedSearch.faceSearchGrade);
+    }
     if (resumeCombinedSearch.autoRun) {
       setPendingAutoRun(true);
     }
@@ -371,6 +377,7 @@ const CombinedSearchScreen = ({navigation}: any) => {
       useSavedBib: useDefaultBib,
       contextText,
       includeFace: true,
+      faceSearchGrade,
       autoRun: true,
     };
     navigation.navigate('SearchFaceCaptureScreen', {
@@ -383,7 +390,7 @@ const CombinedSearchScreen = ({navigation}: any) => {
         },
       },
     });
-  }, [bib, contextText, includeFace, navigation, origin, selectedEvents]);
+  }, [bib, contextText, faceSearchGrade, includeFace, navigation, origin, selectedEvents]);
 
   const verifyFaceSearchReady = useCallback(async (): Promise<'ready' | 'consent' | 'missing' | 'error'> => {
     if (!apiAccessToken || selectedEventIds.length === 0) {
@@ -550,6 +557,7 @@ const CombinedSearchScreen = ({navigation}: any) => {
             limit: 600,
             top: 100,
             save: true,
+            grade: faceSearchGrade,
           });
           setFaceEnrollmentStatus('ready');
           const results = Array.isArray(res?.results) ? res.results : [];
@@ -615,6 +623,7 @@ const CombinedSearchScreen = ({navigation}: any) => {
     apiAccessToken,
     activeBib,
     contextText,
+    faceSearchGrade,
     includeFace,
     navigation,
     t,
@@ -992,6 +1001,26 @@ const CombinedSearchScreen = ({navigation}: any) => {
             </View>
           </View>
 
+          <SizeBox height={12} />
+          <Text style={styles.sectionTitle}>{t('Face match grade')}</Text>
+          <View style={styles.gradeRow}>
+            {(['hard', 'medium', 'soft'] as FaceSearchGrade[]).map((grade) => {
+              const active = faceSearchGrade === grade;
+              return (
+                <TouchableOpacity
+                  key={grade}
+                  style={[styles.gradeButton, active && styles.gradeButtonActive]}
+                  onPress={() => setFaceSearchGrade(grade)}
+                  testID={`ai-search-face-grade-${grade}`}
+                >
+                  <Text style={[styles.gradeButtonText, active && styles.gradeButtonTextActive]}>
+                    {grade === 'hard' ? t('Hard · 90%') : grade === 'medium' ? t('Medium · 87%') : t('Soft · 85%')}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+
           {needsConsent && (
             <TouchableOpacity style={styles.secondaryButton} onPress={handleGrantConsent}>
               <Text style={styles.secondaryButtonText}>{t('Grant face consent')}</Text>
@@ -1100,7 +1129,6 @@ const CombinedSearchScreen = ({navigation}: any) => {
             <UnifiedSearchInput
               testID="ai-search-competition-modal-input"
               containerStyle={styles.modalSearchRow}
-              left={<SearchNormal1 size={18} color={colors.subTextColor} variant="Linear" />}
               inputStyle={styles.modalSearchInput}
               placeholder={t('Search competitions')}
               placeholderTextColor={colors.subTextColor}

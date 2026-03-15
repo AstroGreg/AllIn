@@ -6,6 +6,7 @@ const mockStorage = new Map<string, string>();
 const mockGetUploadSession = jest.fn();
 const mockUpsertUploadSession = jest.fn();
 const mockGetMediaStatus = jest.fn();
+const mockGetWorkerHealth = jest.fn();
 const mockUploadMediaBatch = jest.fn();
 const mockUploadMediaBatchWatermark = jest.fn();
 const mockExists = jest.fn();
@@ -97,6 +98,7 @@ jest.mock('../src/services/apiGateway', () => {
 
   return {
     ApiError: MockApiError,
+    getWorkerHealth: (...args: any[]) => mockGetWorkerHealth(...args),
     getMediaStatus: (...args: any[]) => mockGetMediaStatus(...args),
     uploadMediaBatch: (...args: any[]) => mockUploadMediaBatch(...args),
     uploadMediaBatchWatermark: (...args: any[]) => mockUploadMediaBatchWatermark(...args),
@@ -140,6 +142,8 @@ async function flushEffects(times = 1) {
 }
 
 describe('UploadProgressScreen', () => {
+  const renderers: ReactTestRenderer.ReactTestRenderer[] = [];
+
   beforeEach(() => {
     mockStorage.clear();
     mockAuthState.apiAccessToken = 'api-token';
@@ -147,6 +151,7 @@ describe('UploadProgressScreen', () => {
     mockGetUploadSession.mockReset();
     mockUpsertUploadSession.mockReset();
     mockGetMediaStatus.mockReset();
+    mockGetWorkerHealth.mockReset();
     mockUploadMediaBatch.mockReset();
     mockUploadMediaBatchWatermark.mockReset();
     mockExists.mockReset();
@@ -158,10 +163,25 @@ describe('UploadProgressScreen', () => {
     AsyncStorage.multiRemove.mockClear();
 
     mockExists.mockResolvedValue(true);
+    mockGetWorkerHealth.mockResolvedValue({
+      ok: true,
+      workers: {
+        media: {ok: true},
+        ai: {ok: true},
+        search: {ok: true},
+        notifications: {ok: true},
+        face: {ok: true, mode: 'local_fallback'},
+      },
+    });
     jest.spyOn(console, 'error').mockImplementation(() => {});
   });
 
   afterEach(() => {
+    act(() => {
+      while (renderers.length > 0) {
+        renderers.pop()?.unmount();
+      }
+    });
     jest.restoreAllMocks();
   });
 
@@ -195,6 +215,7 @@ describe('UploadProgressScreen', () => {
           route={{params: {competition: {id: 'event-1'}, sessionId: 'sess-1', autoStart: false}}}
         />,
       );
+      renderers.push(renderer);
     });
     await flushEffects(4);
 
@@ -253,6 +274,7 @@ describe('UploadProgressScreen', () => {
           }}
         />,
       );
+      renderers.push(renderer);
     });
     await flushEffects(6);
 
@@ -288,5 +310,118 @@ describe('UploadProgressScreen', () => {
       }),
     );
     expect(findTextValues(renderer!.root)).toContain('Done');
+  });
+
+  test('blocks upload immediately when worker health is unhealthy', async () => {
+    mockGetUploadSession.mockResolvedValue(null);
+    mockGetWorkerHealth.mockResolvedValue({
+      ok: false,
+      workers: {
+        media: {ok: false, reason: 'stale'},
+        ai: {ok: true},
+        search: {ok: true},
+        notifications: {ok: true},
+        face: {ok: true, mode: 'local_fallback'},
+      },
+    });
+    mockStorage.set(
+      '@upload_assets_event-13',
+      JSON.stringify({
+        relay: [
+          {
+            uri: 'file://C:/media/photo 2.jpg',
+            type: 'image/jpeg',
+            fileName: 'photo 2.jpg',
+            price_cents: 100,
+            price_currency: 'EUR',
+          },
+        ],
+      }),
+    );
+
+    let renderer: ReactTestRenderer.ReactTestRenderer;
+    const navigation = {
+      goBack: jest.fn(),
+      reset: jest.fn(),
+    };
+
+    await act(async () => {
+      renderer = ReactTestRenderer.create(
+        <UploadProgressScreen
+          navigation={navigation}
+          route={{params: {competition: {id: 'event-13'}}}}
+        />,
+      );
+      renderers.push(renderer);
+    });
+    await flushEffects(4);
+
+    expect(mockUploadMediaBatch).not.toHaveBeenCalled();
+    expect(findTextValues(renderer!.root)).toContain('Upload blocked');
+    expect(findTextValues(renderer!.root)).toContain('Retry');
+    expect(findTextValues(renderer!.root).some((value) => value.includes('Upload blocked. Workers unavailable'))).toBe(true);
+  });
+
+  test('shows aggregate processing metrics while media is still being processed', async () => {
+    mockGetUploadSession.mockResolvedValue({
+      id: 'sess-2',
+      competitionId: 'event-2',
+      createdAt: 1,
+      updatedAt: 1,
+      anonymous: false,
+      phase: 'processing',
+      media_ids: ['media-1', 'media-2'],
+    });
+    mockGetMediaStatus.mockResolvedValue({
+      results: [
+        {
+          media_id: 'media-1',
+          stage: 'notifying',
+          metrics: {
+            face_count: 3,
+            chest_number_count: 1,
+            ai_complete: true,
+            notifications_sent: 2,
+            subscribers_total: 4,
+          },
+        },
+        {
+          media_id: 'media-2',
+          stage: 'ai_processing',
+          metrics: {
+            face_count: 2,
+            chest_number_count: 0,
+            ai_complete: false,
+            notifications_sent: 0,
+            subscribers_total: 4,
+          },
+        },
+      ],
+    });
+
+    let renderer: ReactTestRenderer.ReactTestRenderer;
+    const navigation = {
+      goBack: jest.fn(),
+      reset: jest.fn(),
+    };
+
+    await act(async () => {
+      renderer = ReactTestRenderer.create(
+        <UploadProgressScreen
+          navigation={navigation}
+          route={{params: {competition: {id: 'event-2'}, sessionId: 'sess-2', autoStart: false}}}
+        />,
+      );
+      renderers.push(renderer);
+    });
+    await flushEffects(4);
+
+    const values = findTextValues(renderer!.root);
+    expect(values).toContain('Sending notifications');
+    expect(values).toContain('Faces found');
+    expect(values).toContain('Chest numbers');
+    expect(values).toContain('5');
+    expect(values).toContain('1/2');
+    expect(values).toContain('2/8');
   });
 });

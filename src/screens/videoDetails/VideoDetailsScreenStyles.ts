@@ -106,6 +106,24 @@ export const createStyles = (colors: ThemeColors) => StyleSheet.create({
         ...Fonts.regular14,
         color: colors.subTextColor,
     },
+    metricRow: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        gap: 8,
+        marginTop: 4,
+    },
+    metricBadge: {
+        borderRadius: 999,
+        borderWidth: 0.5,
+        borderColor: colors.lightGrayColor,
+        paddingHorizontal: 10,
+        paddingVertical: 6,
+        backgroundColor: colors.secondaryColor,
+    },
+    metricBadgeText: {
+        ...Fonts.regular12,
+        color: colors.mainTextColor,
+    },
     sectionTitle: {
         ...Fonts.medium16,
         fontSize: 18,

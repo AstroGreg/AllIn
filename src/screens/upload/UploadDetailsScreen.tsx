@@ -9,6 +9,7 @@ import { useTheme } from '../../context/ThemeContext'
 import { ArrowLeft2, Ghost } from 'iconsax-react-nativejs'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import RNFS from 'react-native-fs';
+import { formatUploadDisplayName, normalizeUploadFileName } from '../../utils/uploadPresentation';
 
 function fileUriToPath(uri: string) {
     if (!uri || !uri.startsWith('file://')) return uri;
@@ -42,10 +43,7 @@ function defaultPriceCentsForType(type?: string | null) {
 }
 
 function deriveVideoTitleFromFileName(fileName?: string | null) {
-    const raw = String(fileName || '').trim();
-    if (!raw) return '';
-    const withoutExtension = raw.replace(/\.[^.]+$/, '');
-    return withoutExtension.replace(/[_\-]+/g, ' ').replace(/\s+/g, ' ').trim();
+    return normalizeUploadFileName(fileName);
 }
 
 const UploadDetailsScreen = ({ navigation, route }: any) => {
@@ -57,6 +55,7 @@ const UploadDetailsScreen = ({ navigation, route }: any) => {
     const [isPreparingAssets, setIsPreparingAssets] = useState(false);
     const [preparingAssetIndex, setPreparingAssetIndex] = useState(0);
     const [preparingAssetTotal, setPreparingAssetTotal] = useState(0);
+    const [preparingAssetName, setPreparingAssetName] = useState('');
     const [allPhotosPrice, setAllPhotosPrice] = useState('1.00');
     const [allVideosPrice, setAllVideosPrice] = useState('5.00');
     const competition = route?.params?.competition;
@@ -64,6 +63,11 @@ const UploadDetailsScreen = ({ navigation, route }: any) => {
     const account = route?.params?.account;
     const anonymous = route?.params?.anonymous;
     const competitionType = route?.params?.competitionType ?? competition?.competitionType;
+    const selectedCategoryLabels = Array.isArray(route?.params?.category_labels)
+        ? route.params.category_labels.map((value: unknown) => String(value)).filter(Boolean)
+        : Array.isArray(category?.category_labels)
+            ? category.category_labels.map((value: unknown) => String(value)).filter(Boolean)
+            : [];
     const selectedCompetitionMapId = String(
         route?.params?.competition_map_id ??
         category?.competition_map_id ??
@@ -145,6 +149,12 @@ const UploadDetailsScreen = ({ navigation, route }: any) => {
                     if (!uri) continue;
 
                     const fileName = String(a?.fileName || `upload-${Date.now()}-${i}`);
+                    setPreparingAssetName(formatUploadDisplayName({
+                        fileName,
+                        title: isVideoAssetType(a?.type) ? deriveVideoTitleFromFileName(fileName) : '',
+                        type: a?.type,
+                        fallbackIndex: i + 1,
+                    }));
                     const safeName = fileName.replace(/[^\w.\-]+/g, '_');
                     const destPath = `${destDir}/${Date.now()}-${i}-${safeName}`;
 
@@ -184,6 +194,7 @@ const UploadDetailsScreen = ({ navigation, route }: any) => {
             setIsPreparingAssets(false);
             setPreparingAssetIndex(0);
             setPreparingAssetTotal(0);
+            setPreparingAssetName('');
         }
     };
 
@@ -211,17 +222,6 @@ const UploadDetailsScreen = ({ navigation, route }: any) => {
         );
     };
 
-    const setVideoTitleAtIndex = (index: number, nextTitle: string) => {
-        setSelectedAssets((prev) => prev.map((asset, assetIndex) => {
-            if (assetIndex !== index) return asset;
-            if (!isVideoAssetType(asset?.type)) return asset;
-            return {
-                ...asset,
-                title: nextTitle,
-            };
-        }));
-    };
-
     const handleUpload = async () => {
         if (selectedAssets.length === 0) return;
         const competitionId = String(competition?.id || competition?.event_id || competition?.eventId || 'competition');
@@ -241,6 +241,7 @@ const UploadDetailsScreen = ({ navigation, route }: any) => {
                 price_cents: Number(asset?.price_cents ?? defaultPriceCentsForType(asset?.type)),
                 price_currency: String(asset?.price_currency || 'EUR'),
                 discipline_id: selectedDisciplineId,
+                category_labels: selectedCategoryLabels,
                 competition_map_id: selectedCompetitionMapId,
                 checkpoint_id: selectedCheckpointId,
                 checkpoint_label: selectedCheckpointLabel,
@@ -284,7 +285,7 @@ const UploadDetailsScreen = ({ navigation, route }: any) => {
                 <Text style={Styles.titleText}>{t('Choose files')}</Text>
 
                 {selectedCount > 0 && (
-                    <View style={Styles.selectedImagesContainer}>
+                    <View style={Styles.selectedImagesContainer} testID="upload-selected-assets-ready">
                         <Text style={Styles.subText}>
                             {t('Selected')} {selectedCount} {t('files')}
                         </Text>
@@ -338,33 +339,6 @@ const UploadDetailsScreen = ({ navigation, route }: any) => {
                 ) : null}
                 <SizeBox height={20} />
 
-                {selectedAssets.some((asset) => isVideoAssetType(asset?.type)) ? (
-                    <>
-                        <View style={Styles.bulkPriceCard}>
-                            <Text style={Styles.bulkPriceTitle}>{t('Video titles')}</Text>
-                            {selectedAssets.map((asset, index) => {
-                                if (!isVideoAssetType(asset?.type)) return null;
-                                return (
-                                    <View key={`${asset?.fileName || 'video'}-${index}`} style={Styles.videoTitleCard}>
-                                        <Text style={Styles.videoTitleLabel} numberOfLines={1}>
-                                            {asset?.fileName || t('Video')}
-                                        </Text>
-                                        <TextInput
-                                            style={Styles.bulkPriceInput}
-                                            value={String(asset?.title || '')}
-                                            onChangeText={(value) => setVideoTitleAtIndex(index, value)}
-                                            placeholder={t('Give this video a title')}
-                                            placeholderTextColor={colors.grayColor}
-                                            testID={`upload-video-title-input-${index}`}
-                                        />
-                                    </View>
-                                );
-                            })}
-                        </View>
-                        <SizeBox height={20} />
-                    </>
-                ) : null}
-
                 <TouchableOpacity
                     style={[
                         Styles.btnContianer,
@@ -379,17 +353,25 @@ const UploadDetailsScreen = ({ navigation, route }: any) => {
             </View>
 
             {isPreparingAssets ? (
-                <View style={Styles.preparingOverlay}>
+                <View style={Styles.preparingOverlay} testID="upload-preparing-overlay">
                     <View style={Styles.preparingCard}>
                         <ActivityIndicator size="large" color={colors.primaryColor} />
                         <SizeBox height={14} />
-                        <Text style={Styles.preparingTitle}>{t('Preparing files')}</Text>
+                        <Text style={Styles.preparingTitle} testID="upload-preparing-title">{t('Preparing files')}</Text>
                         <SizeBox height={6} />
-                        <Text style={Styles.preparingText}>
+                        <Text style={Styles.preparingText} testID="upload-preparing-count">
                             {preparingAssetTotal > 0
                                 ? `${preparingAssetIndex}/${preparingAssetTotal} ${t('files')}`
                                 : t('Preparing selected media...')}
                         </Text>
+                        {preparingAssetName ? (
+                            <>
+                                <SizeBox height={6} />
+                                <Text style={Styles.preparingText} numberOfLines={2} testID="upload-preparing-name">
+                                    {t('Copying from local storage')}: {preparingAssetName}
+                                </Text>
+                            </>
+                        ) : null}
                     </View>
                 </View>
             ) : null}

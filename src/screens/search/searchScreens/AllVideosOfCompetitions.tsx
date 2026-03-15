@@ -22,8 +22,8 @@ const AllVideosOfEvents = ({ navigation, route }: any) => {
     const appearanceOnly = Boolean(route?.params?.appearanceOnly);
     const disciplineId = route?.params?.disciplineId;
     const checkpointId = route?.params?.checkpointId ?? route?.params?.checkpoint?.id;
-    const division = route?.params?.division;
-    const gender = route?.params?.gender;
+    const categoryLabel = route?.params?.categoryLabel;
+    const categoryLabels = Array.isArray(route?.params?.categoryLabels) ? route.params.categoryLabels : [];
     const { apiAccessToken } = useAuth();
     const { colors } = useTheme();
     const { t } = useTranslation();
@@ -131,6 +131,12 @@ const AllVideosOfEvents = ({ navigation, route }: any) => {
     const [isFetchingMore, setIsFetchingMore] = useState(false);
     const [hasMore, setHasMore] = useState(true);
     const targetCompetitionId = competitionId ?? eventId;
+    const activeCategoryLabels = useMemo(() => {
+        const raw = categoryLabels.length > 0 ? categoryLabels : (categoryLabel ? [categoryLabel] : []);
+        return raw
+            .map((value) => String(value ?? '').trim())
+            .filter(Boolean);
+    }, [categoryLabel, categoryLabels]);
     const helperCopy = useMemo(() => {
         if (checkpointId) return t('Shows videos tagged to this checkpoint.');
         if (disciplineId) return t('Shows videos tagged to this discipline.');
@@ -249,6 +255,7 @@ const AllVideosOfEvents = ({ navigation, route }: any) => {
                     type: 'video',
                     discipline_id: disciplineId ? String(disciplineId) : undefined,
                     checkpoint_id: checkpointId ? String(checkpointId) : undefined,
+                    category_labels: activeCategoryLabels.length > 0 ? activeCategoryLabels : undefined,
                     limit: PAGE_SIZE,
                     offset,
                     include_original: false,
@@ -268,7 +275,7 @@ const AllVideosOfEvents = ({ navigation, route }: any) => {
             setIsRefreshing(false);
             setIsFetchingMore(false);
         }
-    }, [apiAccessToken, appearanceOnly, checkpointId, competitionId, disciplineId, eventId, isVideoMedia, items.length, mergeItems, targetCompetitionId]);
+    }, [activeCategoryLabels, apiAccessToken, appearanceOnly, checkpointId, competitionId, disciplineId, eventId, isVideoMedia, items.length, mergeItems, targetCompetitionId]);
 
     useEffect(() => {
         let mounted = true;
@@ -367,13 +374,15 @@ const AllVideosOfEvents = ({ navigation, route }: any) => {
                     </TouchableOpacity>
                 )}
                 ListHeaderComponent={
-                    <View style={localStyles.headerWrap}>
-                        <Text style={styles.titleText}>{eventName}</Text>
-                        {(division || gender) && (
-                            <Text style={localStyles.subtitle}>{[division, gender].filter(Boolean).join(' • ')}</Text>
-                        )}
-                        <Text style={localStyles.helper}>{helperCopy}</Text>
-                    </View>
+                        <View style={localStyles.headerWrap}>
+                            <Text style={styles.titleText}>{eventName}</Text>
+                            {(categoryLabel || categoryLabels.length > 0) && (
+                                <Text style={localStyles.subtitle}>
+                                    {[categoryLabel || (categoryLabels.length ? categoryLabels.join(', ') : null)].filter(Boolean).join(' • ')}
+                                </Text>
+                            )}
+                            <Text style={localStyles.helper}>{helperCopy}</Text>
+                        </View>
                 }
                 ListEmptyComponent={
                     <View style={localStyles.emptyBox}>

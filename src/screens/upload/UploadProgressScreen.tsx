@@ -10,6 +10,7 @@ import SizeBox from '../../constants/SizeBox';
 import {createStyles} from './UploadProgressScreenStyles';
 import {
   ApiError,
+  getWorkerHealth,
   getMediaStatus,
   uploadMediaBatch,
   uploadMediaBatchWatermark,
@@ -23,6 +24,7 @@ import {
 } from '../../services/uploadSessions';
 import RNFS from 'react-native-fs';
 import FastImage from 'react-native-fast-image';
+import { formatUploadDisplayName, formatUploadStageLabel } from '../../utils/uploadPresentation';
 
 function fileUriToPath(uri: string) {
   if (!uri || !uri.startsWith('file://')) return uri;
@@ -87,7 +89,7 @@ type UploadItem = {
   checkpoint_label?: string | null;
   price_cents?: number;
   price_currency?: string;
-  status: 'pending' | 'uploading' | 'uploaded' | 'failed';
+  status: 'pending' | 'uploading' | 'stored' | 'failed';
   media_id?: string | null;
   error?: string | null;
 };
@@ -95,6 +97,32 @@ type UploadItem = {
 const BATCH_SIZE = 1;
 const STATUS_POLL_MS = 5000;
 const UPLOAD_FLOW_RESET_KEY = '@upload_flow_reset_required';
+
+function isStatusComplete(status?: MediaProcessingStatus | null) {
+  const stage = String(status?.stage || '').toLowerCase();
+  if (stage === 'complete') return true;
+  const steps = status?.steps;
+  if (!steps) return false;
+  const transformsDone = Boolean(steps.transforms_done);
+  const embeddingsDone = Boolean(steps.embeddings_done);
+  const bibDone = steps.bib_done === undefined ? true : Boolean(steps.bib_done);
+  const indexedDone = steps.indexed_done === undefined ? true : Boolean(steps.indexed_done);
+  return transformsDone && embeddingsDone && bibDone && indexedDone;
+}
+
+function deriveStatusStage(status?: MediaProcessingStatus | null) {
+  const explicitStage = String(status?.stage || '').toLowerCase();
+  if (explicitStage) return explicitStage;
+  const steps = status?.steps;
+  if (!steps) return 'processing';
+  if (isStatusComplete(status)) return 'complete';
+  if (steps.transforms_done) {
+    return steps.embeddings_done || steps.bib_done || steps.indexed_done
+      ? 'ai_processing'
+      : 'transforms_done';
+  }
+  return 'uploaded';
+}
 
 const UploadProgressScreen = ({navigation, route}: any) => {
   const insets = useSafeAreaInsets();
@@ -108,6 +136,11 @@ const UploadProgressScreen = ({navigation, route}: any) => {
   const watermarkText = String(route?.params?.watermarkText ?? route?.params?.watermark_text ?? '').trim();
   const sessionId: string = String(route?.params?.sessionId ?? '').trim() || `u_${Date.now()}_${Math.random().toString(16).slice(2)}`;
   const autoStart: boolean = route?.params?.autoStart !== false;
+  const e2eMediaIds = useMemo(
+    () => (Array.isArray(route?.params?.e2eMediaIds) ? route.params.e2eMediaIds.map((value: any) => String(value)).filter(Boolean) : []),
+    [route?.params?.e2eMediaIds],
+  );
+  const e2ePhase = String(route?.params?.e2ePhase ?? '').trim().toLowerCase();
 
   const competitionId = useMemo(
     () => String(competition?.id || competition?.event_id || competition?.eventId || 'competition'),
@@ -118,7 +151,7 @@ const UploadProgressScreen = ({navigation, route}: any) => {
   const assetsKey = useMemo(() => `@upload_assets_${competitionId}`, [competitionId]);
 
   const [items, setItems] = useState<UploadItem[]>([]);
-  const [phase, setPhase] = useState<'idle' | 'uploading' | 'processing' | 'done'>('idle');
+  const [phase, setPhase] = useState<'idle' | 'uploading' | 'processing' | 'done' | 'blocked'>('idle');
   const [error, setError] = useState<string | null>(null);
   const [processing, setProcessing] = useState<{ready: number; total: number}>({ready: 0, total: 0});
   const [sessionSnapshot, setSessionSnapshot] = useState<UploadSession | null>(null);
@@ -126,6 +159,40 @@ const UploadProgressScreen = ({navigation, route}: any) => {
   const mediaIdsRef = useRef<string[]>([]);
   const [statusById, setStatusById] = useState<Record<string, MediaProcessingStatus>>({});
   const sessionRef = useRef<UploadSession | null>(null);
+  const isMountedRef = useRef(true);
+
+  useEffect(() => {
+    return () => {
+      isMountedRef.current = false;
+      if (pollTimerRef.current) {
+        clearInterval(pollTimerRef.current);
+        pollTimerRef.current = null;
+      }
+    };
+  }, []);
+
+  const aggregatedMetrics = useMemo(() => {
+    const statuses = Object.values(statusById);
+    return statuses.reduce(
+      (acc, status) => {
+        acc.facesFound += Math.max(0, Number(status?.metrics?.face_count ?? 0));
+        acc.chestNumbersFound += Math.max(0, Number(status?.metrics?.chest_number_count ?? 0));
+        acc.aiComplete += status?.metrics?.ai_complete ? 1 : 0;
+        acc.notificationsReady += status?.metrics?.notifications_done ? 1 : 0;
+        acc.notificationsSent += Math.max(0, Number(status?.metrics?.notifications_sent ?? 0));
+        acc.subscribersTotal += Math.max(0, Number(status?.metrics?.subscribers_total ?? 0));
+        return acc;
+      },
+      {
+        facesFound: 0,
+        chestNumbersFound: 0,
+        aiComplete: 0,
+        notificationsReady: 0,
+        notificationsSent: 0,
+        subscribersTotal: 0,
+      },
+    );
+  }, [statusById]);
 
   const persistSession = useCallback(async (patch: Partial<UploadSession>) => {
     const base: UploadSession = sessionRef.current ?? {
@@ -151,7 +218,9 @@ const UploadProgressScreen = ({navigation, route}: any) => {
       updatedAt: Date.now(),
     };
     sessionRef.current = next;
-    setSessionSnapshot(next);
+    if (isMountedRef.current) {
+      setSessionSnapshot(next);
+    }
     await upsertUploadSession(next);
   }, [anonymous, competitionId, sessionId, watermarkText]);
 
@@ -200,7 +269,9 @@ const UploadProgressScreen = ({navigation, route}: any) => {
         }
       }
     }
-    setItems(flat);
+    if (isMountedRef.current) {
+      setItems(flat);
+    }
     await persistActivity({phase: 'uploading', total: flat.length, uploaded: 0, processing_ready: 0, processing_total: 0, watermarkText, anonymous});
     await persistSession({phase: 'uploading', total: flat.length, uploaded: 0, processing_ready: 0, processing_total: 0, media_ids: []});
     return flat;
@@ -208,16 +279,48 @@ const UploadProgressScreen = ({navigation, route}: any) => {
 
   const uploadAll = useCallback(async () => {
     if (!apiAccessToken) {
-      setError(t('Log in (or set a Dev API token) to upload.'));
+      if (isMountedRef.current) {
+        setError(t('Log in (or set a Dev API token) to upload.'));
+      }
       return;
     }
-    setError(null);
-    setPhase('uploading');
+    if (isMountedRef.current) {
+      setError(null);
+      setPhase('uploading');
+    }
+
+    try {
+      const health = await getWorkerHealth(apiAccessToken);
+      const unhealthy = Object.entries(health?.workers ?? {})
+        .filter(([, state]) => !state?.ok)
+        .map(([name]) => name);
+      if (unhealthy.length > 0) {
+        const msg = `${t('Upload blocked. Workers unavailable')}: ${unhealthy.join(', ')}`;
+        if (isMountedRef.current) {
+          setError(msg);
+          setPhase('blocked');
+        }
+        await persistSession({phase: 'blocked', error: msg});
+        await persistActivity({phase: 'blocked', error: msg});
+        return;
+      }
+    } catch (e: any) {
+      const msg = e instanceof ApiError ? e.message : String(e?.message ?? e);
+      if (isMountedRef.current) {
+        setError(msg);
+        setPhase('blocked');
+      }
+      await persistSession({phase: 'blocked', error: msg});
+      await persistActivity({phase: 'blocked', error: msg});
+      return;
+    }
 
     const flat = await loadAssets();
     if (flat.length === 0) {
-      setError(t('No uploads yet.'));
-      setPhase('idle');
+      if (isMountedRef.current) {
+        setError(t('No uploads yet.'));
+        setPhase('idle');
+      }
       return;
     }
 
@@ -231,7 +334,9 @@ const UploadProgressScreen = ({navigation, route}: any) => {
       for (let j = 0; j < batch.length; j += 1) {
         nextItems[i + j] = {...nextItems[i + j], status: 'uploading'};
       }
-      setItems([...nextItems]);
+      if (isMountedRef.current) {
+        setItems([...nextItems]);
+      }
       try {
         const files = [];
         for (let j = 0; j < batch.length; j += 1) {
@@ -263,7 +368,9 @@ const UploadProgressScreen = ({navigation, route}: any) => {
 
         // If everything in the batch was missing, skip hitting the API.
         if (files.length === 0) {
-          setItems([...nextItems]);
+          if (isMountedRef.current) {
+            setItems([...nextItems]);
+          }
           continue;
         }
 
@@ -302,23 +409,29 @@ const UploadProgressScreen = ({navigation, route}: any) => {
           }
           nextItems[i + j] = {
             ...nextItems[i + j],
-            status: ok ? 'uploaded' : 'failed',
+            status: ok ? 'stored' : 'failed',
             media_id: ok ? (resolvedMediaId || null) : null,
             error: ok ? null : String(r?.error ?? 'upload failed'),
           };
           if (ok) uploadedCount += 1;
         }
-        setItems([...nextItems]);
+        if (isMountedRef.current) {
+          setItems([...nextItems]);
+        }
         await persistActivity({uploaded: uploadedCount, total: nextItems.length, phase: 'uploading'});
         await persistSession({uploaded: uploadedCount, total: nextItems.length, phase: 'uploading'});
       } catch (e: any) {
         const msg = e instanceof ApiError ? e.message : String(e?.message ?? e);
-        setError(msg);
+        if (isMountedRef.current) {
+          setError(msg);
+        }
         // mark batch as failed
         for (let j = 0; j < batch.length; j += 1) {
           nextItems[i + j] = {...nextItems[i + j], status: 'failed', error: msg};
         }
-        setItems([...nextItems]);
+        if (isMountedRef.current) {
+          setItems([...nextItems]);
+        }
         await persistActivity({uploaded: uploadedCount, total: nextItems.length, phase: 'uploading', error: msg});
         await persistSession({uploaded: uploadedCount, total: nextItems.length, phase: 'failed', error: msg});
       }
@@ -339,7 +452,9 @@ const UploadProgressScreen = ({navigation, route}: any) => {
     }
     await persistActivity({media_ids: mediaIds, phase: 'processing', processing_total: mediaIds.length});
     await persistSession({media_ids: mediaIds, phase: 'processing', processing_total: mediaIds.length});
-    setPhase('processing');
+    if (isMountedRef.current) {
+      setPhase('processing');
+    }
   }, [anonymous, apiAccessToken, assetsKey, competitionId, loadAssets, persistActivity, persistSession, t, watermarkText]);
 
   useEffect(() => {
@@ -349,6 +464,7 @@ const UploadProgressScreen = ({navigation, route}: any) => {
       const existing = await getUploadSession(sessionId);
       if (existing) {
         sessionRef.current = existing;
+        if (!isMountedRef.current) return;
         setSessionSnapshot(existing);
         if (Array.isArray(existing.media_ids)) {
           mediaIdsRef.current = existing.media_ids;
@@ -360,8 +476,17 @@ const UploadProgressScreen = ({navigation, route}: any) => {
         setError(existing.error ? String(existing.error) : null);
         if (existing.phase === 'processing') setPhase('processing');
         if (existing.phase === 'done') setPhase('done');
-        if (existing.phase === 'failed') setPhase('idle');
-        if (!autoStart) return;
+        if (existing.phase === 'blocked') setPhase('blocked');
+      if (existing.phase === 'failed') setPhase('idle');
+      if (!autoStart) return;
+      }
+      if (!autoStart && e2eMediaIds.length > 0) {
+        mediaIdsRef.current = e2eMediaIds;
+        if (isMountedRef.current) {
+          setProcessing({ready: 0, total: e2eMediaIds.length});
+          setPhase(e2ePhase === 'done' ? 'done' : e2ePhase === 'blocked' ? 'blocked' : 'processing');
+        }
+        return;
       }
       if (autoStart) uploadAll();
     })();
@@ -371,7 +496,7 @@ const UploadProgressScreen = ({navigation, route}: any) => {
   const computeUploadProgress = useMemo(() => {
     const total = items.length > 0 ? items.length : Number(sessionSnapshot?.total ?? 0);
     const done = items.length > 0
-      ? items.filter((x) => x.status === 'uploaded').length
+      ? items.filter((x) => x.status === 'stored').length
       : Number(sessionSnapshot?.uploaded ?? 0);
     const failed = items.filter((x) => x.status === 'failed').length;
     return {total, done, failed};
@@ -389,14 +514,49 @@ const UploadProgressScreen = ({navigation, route}: any) => {
         if (!s?.media_id) continue;
         map[String(s.media_id)] = s;
       }
+      if (!isMountedRef.current) return;
       setStatusById(map);
-      const ready = list.filter((x) => x?.steps?.transforms_done && x?.steps?.embeddings_done).length;
+      const ready = list.filter((x) => isStatusComplete(x)).length;
+      const facesFound = list.reduce((sum, item) => sum + Math.max(0, Number(item?.metrics?.face_count ?? 0)), 0);
+      const chestNumbersFound = list.reduce((sum, item) => sum + Math.max(0, Number(item?.metrics?.chest_number_count ?? 0)), 0);
+      const notificationsSent = list.reduce((sum, item) => sum + Math.max(0, Number(item?.metrics?.notifications_sent ?? 0)), 0);
+      const subscribersTotal = list.reduce((sum, item) => sum + Math.max(0, Number(item?.metrics?.subscribers_total ?? 0)), 0);
+      const currentStage = list.some((item) => deriveStatusStage(item) === 'notifying')
+        ? 'notifying'
+        : list.some((item) => deriveStatusStage(item) === 'ai_processing')
+          ? 'ai_processing'
+          : list.some((item) => deriveStatusStage(item) === 'transforms_done')
+            ? 'transforms_done'
+            : list.some((item) => deriveStatusStage(item) === 'uploaded')
+              ? 'uploaded'
+                : ready >= ids.length
+                  ? 'complete'
+                : 'processing';
       setProcessing({ready, total: ids.length});
-      await persistActivity({processing_ready: ready, processing_total: ids.length, phase: 'processing'});
+      await persistActivity({
+        processing_ready: ready,
+        processing_total: ids.length,
+        phase: ready >= ids.length ? 'done' : 'processing',
+        current_stage: currentStage,
+        faces_found: facesFound,
+        chest_numbers_found: chestNumbersFound,
+        notifications_sent: notificationsSent,
+        subscribers_total: subscribersTotal,
+      });
       if (ready >= ids.length) {
+        if (!isMountedRef.current) return;
         setPhase('done');
         await persistActivity({phase: 'done'});
-        await persistSession({phase: 'done', processing_ready: ready, processing_total: ids.length});
+        await persistSession({
+          phase: 'done',
+          processing_ready: ready,
+          processing_total: ids.length,
+          current_stage: 'complete',
+          faces_found: facesFound,
+          chest_numbers_found: chestNumbersFound,
+          notifications_sent: notificationsSent,
+          subscribers_total: subscribersTotal,
+        });
         try {
           await AsyncStorage.multiRemove([
             assetsKey,
@@ -411,6 +571,18 @@ const UploadProgressScreen = ({navigation, route}: any) => {
           clearInterval(pollTimerRef.current);
           pollTimerRef.current = null;
         }
+      }
+      if (ready < ids.length) {
+        await persistSession({
+          phase: 'processing',
+          processing_ready: ready,
+          processing_total: ids.length,
+          current_stage: currentStage,
+          faces_found: facesFound,
+          chest_numbers_found: chestNumbersFound,
+          notifications_sent: notificationsSent,
+          subscribers_total: subscribersTotal,
+        });
       }
     } catch {
       // ignore polling errors
@@ -432,6 +604,7 @@ const UploadProgressScreen = ({navigation, route}: any) => {
   const headerTitle = useMemo(() => {
     if (phase === 'uploading') return t('Starting upload');
     if (phase === 'processing') return t('Processing');
+    if (phase === 'blocked') return t('Upload blocked');
     if (phase === 'done') return t('Done');
     return t('Upload');
   }, [phase, t]);
@@ -447,9 +620,10 @@ const UploadProgressScreen = ({navigation, route}: any) => {
   }, [computeUploadProgress.done, computeUploadProgress.total, phase, processing.ready, processing.total]);
 
   const subtitle = useMemo(() => {
-    if (phase === 'processing') return t('We are enhancing your media and generating AI results.');
+    if (phase === 'blocked') return t('Uploads can only start when all workers are healthy.');
+    if (phase === 'processing') return t('We are processing media, running AI, and notifying competition subscribers.');
     if (phase === 'done') return t('Your uploads are ready.');
-    return t('Uploading your files now. You can leave this screen, but uploads may pause in the background.');
+    return t('Uploading your files to storage now. Please keep this screen open while heavy files are prepared.');
   }, [phase, t]);
 
   const progressLabel = useMemo(() => {
@@ -460,10 +634,22 @@ const UploadProgressScreen = ({navigation, route}: any) => {
       processing_ready: processing.ready,
       processing_total: processing.total,
     });
-    if (phase === 'processing') return `${state.processingReady}/${state.processingTotal} ${t('ready')} • ${state.uploaded}/${state.total} ${t('uploaded')}`;
+    if (phase === 'blocked') return t('Worker health check failed');
+    if (phase === 'processing') {
+      return `${state.processingReady}/${state.processingTotal} ${t('ready')} • ${aggregatedMetrics.notificationsSent}/${aggregatedMetrics.subscribersTotal} ${t('notifications sent')}`;
+    }
     if (phase === 'done') return `${state.total}/${state.total} ${t('ready')}`;
-    return `${state.uploaded}/${state.total} ${t('uploaded')}`;
-  }, [computeUploadProgress.done, computeUploadProgress.total, phase, processing.ready, processing.total, t]);
+    return `${state.uploaded}/${state.total} ${t('stored')}`;
+  }, [aggregatedMetrics.notificationsSent, aggregatedMetrics.subscribersTotal, computeUploadProgress.done, computeUploadProgress.total, phase, processing.ready, processing.total, t]);
+
+  const currentStageLabel = useMemo(() => {
+    const stage = sessionSnapshot?.current_stage;
+    if (phase === 'blocked') return t('Waiting for worker health');
+    if (phase === 'done') return t('All processing completed');
+    if (phase === 'processing') return formatUploadStageLabel(stage || 'ai_processing');
+    if (phase === 'uploading') return t('Uploading to storage');
+    return t('Preparing upload');
+  }, [phase, sessionSnapshot?.current_stage, t]);
 
   const handleBack = () => {
     navigation.goBack();
@@ -489,7 +675,7 @@ const UploadProgressScreen = ({navigation, route}: any) => {
   };
 
   return (
-    <View style={styles.mainContainer}>
+    <View style={styles.mainContainer} testID="upload-progress-screen">
       <SizeBox height={insets.top} />
       <View style={styles.header}>
         <TouchableOpacity style={styles.headerBtn} onPress={handleBack}>
@@ -512,15 +698,42 @@ const UploadProgressScreen = ({navigation, route}: any) => {
               <Text style={styles.progressMeta}>{progressLabel}</Text>
               <Text style={styles.progressMeta}>{Math.round(progress * 100)}%</Text>
             </View>
+            <Text style={styles.stageText} testID="upload-progress-stage">{currentStageLabel}</Text>
 
-            {error ? <Text style={styles.errorText}>{error}</Text> : null}
+            {error ? <Text style={styles.errorText} testID="upload-progress-error">{error}</Text> : null}
+
+            <View style={styles.metricsGrid} testID="upload-progress-metrics">
+              <View style={styles.metricCard} testID="upload-progress-faces">
+                <Text style={styles.metricValue} testID="upload-progress-faces-value">{aggregatedMetrics.facesFound}</Text>
+                <Text style={styles.metricLabel}>{t('Faces found')}</Text>
+              </View>
+              <View style={styles.metricCard} testID="upload-progress-bibs">
+                <Text style={styles.metricValue} testID="upload-progress-bibs-value">{aggregatedMetrics.chestNumbersFound}</Text>
+                <Text style={styles.metricLabel}>{t('Chest numbers')}</Text>
+              </View>
+              <View style={styles.metricCard} testID="upload-progress-ai">
+                <Text style={styles.metricValue} testID="upload-progress-ai-value">{aggregatedMetrics.aiComplete}/{processing.total || 0}</Text>
+                <Text style={styles.metricLabel}>{t('AI complete')}</Text>
+              </View>
+              <View style={styles.metricCard} testID="upload-progress-notifications">
+                <Text style={styles.metricValue} testID="upload-progress-notifications-value">{aggregatedMetrics.notificationsSent}/{aggregatedMetrics.subscribersTotal}</Text>
+                <Text style={styles.metricLabel}>{t('Subscribers notified')}</Text>
+              </View>
+            </View>
 
             <View style={styles.list}>
               {items.slice(0, 6).map((it, idx) => {
-                const label =
-                  it.status === 'uploaded' ? t('Uploaded') : it.status === 'failed' ? t('Failed') : t('Pending');
                 const st = it.media_id ? statusById[String(it.media_id)] : null;
                 const thumb = st?.assets?.thumbnail_url ?? st?.assets?.preview_url ?? null;
+                const label = st
+                  ? formatUploadStageLabel(st.stage)
+                  : it.status === 'stored'
+                    ? t('Stored')
+                    : it.status === 'failed'
+                      ? t('Failed')
+                      : it.status === 'uploading'
+                        ? t('Uploading')
+                        : t('Queued');
                 return (
                   <View key={`${it.uri}-${idx}`} style={styles.row}>
                     {thumb ? (
@@ -530,10 +743,19 @@ const UploadProgressScreen = ({navigation, route}: any) => {
                     )}
                     <View style={styles.rowLeft}>
                       <Text style={styles.rowTitle} numberOfLines={1}>
-                        {it.fileName || `File ${idx + 1}`}
+                        {formatUploadDisplayName({
+                          title: it.title,
+                          fileName: it.fileName,
+                          type: it.type,
+                          fallbackIndex: idx + 1,
+                        })}
                       </Text>
                       <Text style={styles.rowMeta} numberOfLines={1}>
-                        {it.category || ''}
+                        {[
+                          it.category || '',
+                          st?.metrics?.face_count ? `${st.metrics.face_count} ${t('faces')}` : '',
+                          st?.metrics?.chest_number_count ? `${st.metrics.chest_number_count} ${t('bibs')}` : '',
+                        ].filter(Boolean).join(' • ')}
                       </Text>
                     </View>
                     <View style={styles.pill}>
@@ -554,10 +776,12 @@ const UploadProgressScreen = ({navigation, route}: any) => {
               </TouchableOpacity>
               <TouchableOpacity
                 style={styles.ctaPrimary}
-                onPress={() => (phase === 'done' ? goToUploadActivity() : pollStatus())}
+                onPress={() => (phase === 'done' ? goToUploadActivity() : phase === 'blocked' ? uploadAll() : pollStatus())}
                 activeOpacity={0.85}
               >
-                <Text style={styles.ctaPrimaryText}>{phase === 'done' ? t('OK') : t('Refresh')}</Text>
+                <Text style={styles.ctaPrimaryText}>
+                  {phase === 'done' ? t('OK') : phase === 'blocked' ? t('Retry') : t('Refresh')}
+                </Text>
               </TouchableOpacity>
             </View>
           </View>

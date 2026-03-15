@@ -6,7 +6,7 @@ import { ArrowLeft2, ArrowRight } from 'iconsax-react-nativejs'
 import Icons from '../../../constants/Icons'
 import { createStyles } from './CompetitionDetailsScreenStyles'
 import { useAuth } from '../../../context/AuthContext'
-import { ApiError, CompetitionMapCheckpoint, CompetitionMapSummary, getCompetitionMapById, getCompetitionMaps, getEventCompetitions, getProfileSummary, searchEvents, searchFaceByEnrollment, searchMediaByBib, grantFaceRecognitionConsent, unsubscribeToEvent } from '../../../services/apiGateway'
+import { ApiError, CompetitionMapCheckpoint, CompetitionMapSummary, getCompetitionMapById, getCompetitionMaps, getEventCompetitions, getProfileSummary, searchEvents, searchFaceByEnrollment, searchMediaByBib, grantFaceRecognitionConsent, unsubscribeToEvent, type FaceSearchGrade } from '../../../services/apiGateway'
 import { useTheme } from '../../../context/ThemeContext'
 import { useTranslation } from 'react-i18next'
 import UnifiedSearchInput from '../../../components/unifiedSearchInput/UnifiedSearchInput';
@@ -41,6 +41,7 @@ const CompetitionDetailsScreen = ({ navigation, route }: any) => {
     const { apiAccessToken, userProfile } = useAuth();
     const { colors } = useTheme();
     const styles = createStyles(colors);
+    const isLightTheme = String(colors.backgroundColor || '').toLowerCase() === '#ffffff';
     const { t } = useTranslation();
     const { events: subscribedEvents, refresh: refreshSubscribed } = useEvents();
     const perfStartedAtRef = useRef(Date.now());
@@ -68,6 +69,7 @@ const CompetitionDetailsScreen = ({ navigation, route }: any) => {
     const [quickNeedsConsent, setQuickNeedsConsent] = useState(false);
     const [quickMissingAngles, setQuickMissingAngles] = useState<string[] | null>(null);
     const [quickUseFace, setQuickUseFace] = useState(true);
+    const [quickFaceSearchGrade, setQuickFaceSearchGrade] = useState<FaceSearchGrade>('hard');
     const [isSubscriptionLoading, setIsSubscriptionLoading] = useState(false);
     const [subscribeSheetVisible, setSubscribeSheetVisible] = useState(false);
     const [subscribeStep, setSubscribeStep] = useState<0 | 1 | 2>(0);
@@ -81,6 +83,7 @@ const CompetitionDetailsScreen = ({ navigation, route }: any) => {
     const [subscribeCategoryLabels, setSubscribeCategoryLabels] = useState<string[]>(['All']);
 
     const competitionName = route?.params?.name || route?.params?.eventName || t('Competition');
+    const AiActionIcon = isLightTheme ? Icons.AiBlueBordered : Icons.AiWhiteBordered;
     const legacyDescription = String(route?.params?.description ?? '').trim();
     const legacyLocation = legacyDescription.replace(/^competition held in\s*/i, '').trim();
     const competitionLocation = String(route?.params?.location ?? '').trim() || (legacyLocation && legacyLocation !== legacyDescription ? legacyLocation : '');
@@ -130,12 +133,14 @@ const CompetitionDetailsScreen = ({ navigation, route }: any) => {
     }, [competitionDate, competitionLocation, competitionTypeLabel]);
     const eventId = route?.params?.eventId as string | undefined;
     const competitionId = route?.params?.competitionId as string | undefined;
+    const didJustSubscribe = route?.params?.didJustSubscribe === true;
     const resolvedEventId = useMemo(() => String(eventId ?? competitionId ?? '').trim(), [competitionId, eventId]);
     const canSubscribe = resolvedEventId.length > 0;
     const isSubscribed = useMemo(
         () => canSubscribe && subscribedEvents.some((event) => String(event.event_id) === resolvedEventId),
         [canSubscribe, resolvedEventId, subscribedEvents],
     );
+    const effectiveIsSubscribed = isSubscribed || didJustSubscribe;
     const getYearFromDateLike = useCallback((value?: string | null) => {
         const raw = String(value ?? '').trim();
         if (!raw) return null;
@@ -301,9 +306,9 @@ const CompetitionDetailsScreen = ({ navigation, route }: any) => {
 
     useEffect(() => {
         if (!isRoadTrailCompetition || !apiAccessToken || !resolvedEventId) {
-            setMapError(null);
-            setCourseOptions([]);
-            setSelectedCourseId('');
+            setMapError((prev) => (prev === null ? prev : null));
+            setCourseOptions((prev) => (prev.length === 0 ? prev : []));
+            setSelectedCourseId((prev) => (prev ? '' : prev));
             setIsMapLoading(false);
             setHasLoadedMaps(false);
             return;
@@ -578,6 +583,7 @@ const CompetitionDetailsScreen = ({ navigation, route }: any) => {
                         limit: 600,
                         top: 100,
                         save: true,
+                        grade: quickFaceSearchGrade,
                     });
                     const results = Array.isArray(res?.results) ? res.results : [];
                     addResults(results, 'face');
@@ -638,7 +644,7 @@ const CompetitionDetailsScreen = ({ navigation, route }: any) => {
         } finally {
             setQuickSearchLoading(false);
         }
-    }, [apiAccessToken, competitionDate, competitionId, competitionName, defaultChestNumber, eventId, navigation, quickChestNumber, quickUseDefaultChest, quickUseFace, resolveEventId, selectedCheckpoint?.id, selectedCheckpoint?.label, selectedCourse?.disciplineId, selectedCourse?.id, selectedCourse?.label, startFaceRegistrationFlow, t]);
+    }, [apiAccessToken, competitionDate, competitionId, competitionName, defaultChestNumber, eventId, navigation, quickChestNumber, quickFaceSearchGrade, quickUseDefaultChest, quickUseFace, resolveEventId, selectedCheckpoint?.id, selectedCheckpoint?.label, selectedCourse?.disciplineId, selectedCourse?.id, selectedCourse?.label, startFaceRegistrationFlow, t]);
 
     const handleGrantConsent = useCallback(async () => {
         if (!apiAccessToken) return;
@@ -882,7 +888,7 @@ const CompetitionDetailsScreen = ({ navigation, route }: any) => {
 
     const handleSubscriptionToggle = useCallback(async () => {
         if (!apiAccessToken || !canSubscribe || isSubscriptionLoading) return;
-        if (isSubscribed) {
+        if (effectiveIsSubscribed) {
             Alert.alert(
                 t('Subscribed'),
                 t('Turn off competition updates for this event?'),
@@ -909,14 +915,14 @@ const CompetitionDetailsScreen = ({ navigation, route }: any) => {
             return;
         }
         openSubscribeSheet();
-    }, [apiAccessToken, canSubscribe, isSubscribed, isSubscriptionLoading, openSubscribeSheet, refreshSubscribed, resolvedEventId, t]);
+    }, [apiAccessToken, canSubscribe, effectiveIsSubscribed, isSubscriptionLoading, openSubscribeSheet, refreshSubscribed, resolvedEventId, t]);
 
     const subscriptionButtonLabel = isSubscriptionLoading
         ? t('Loading...')
-        : isSubscribed
+        : effectiveIsSubscribed
             ? t('Subscribed')
             : t('Subscribe');
-    const subscriptionButtonHint = isSubscribed
+    const subscriptionButtonHint = effectiveIsSubscribed
         ? t('Competition updates are enabled for this event.')
         : t('Choose disciplines, category, and optional chest number or Face ID for this competition.');
 
@@ -1006,7 +1012,7 @@ const CompetitionDetailsScreen = ({ navigation, route }: any) => {
                         <TouchableOpacity
                             style={[
                                 styles.subscribeButton,
-                                isSubscribed && styles.subscribeButtonActive,
+                                effectiveIsSubscribed && styles.subscribeButtonActive,
                                 isSubscriptionLoading && styles.subscribeButtonDisabled,
                             ]}
                             onPress={handleSubscriptionToggle}
@@ -1166,8 +1172,9 @@ const CompetitionDetailsScreen = ({ navigation, route }: any) => {
                                     setQuickMissingAngles(null);
                                     setAiCompareModalVisible(true);
                                 }}
+                                testID="competition-ai-quick-open"
                             >
-                                <Icons.AiWhiteBordered width={18} height={18} />
+                                <AiActionIcon width={18} height={18} />
                                 <Text style={styles.aiActionButtonText}>{t('AI Search')}</Text>
                             </TouchableOpacity>
                         </View>
@@ -1270,7 +1277,7 @@ const CompetitionDetailsScreen = ({ navigation, route }: any) => {
                     activeOpacity={1}
                     onPress={() => setAiCompareModalVisible(false)}
                 >
-                    <TouchableOpacity style={styles.checkpointModal} activeOpacity={1}>
+                    <TouchableOpacity style={styles.checkpointModal} activeOpacity={1} testID="competition-ai-quick-modal">
                         <Text style={styles.modalTitle}>{t('AI quick compare')}</Text>
                         <SizeBox height={12} />
                         <Text style={styles.helperText}>
@@ -1320,6 +1327,29 @@ const CompetitionDetailsScreen = ({ navigation, route }: any) => {
                                 thumbColor={colors.pureWhite}
                             />
                         </View>
+                        {quickUseFace ? (
+                            <>
+                                <SizeBox height={12} />
+                                <Text style={styles.modalLabel}>{t('Face match grade')}</Text>
+                                <View style={styles.gradeRow}>
+                                    {(['hard', 'medium', 'soft'] as FaceSearchGrade[]).map((grade) => {
+                                        const active = quickFaceSearchGrade === grade;
+                                        return (
+                                            <TouchableOpacity
+                                                key={grade}
+                                                style={[styles.gradeButton, active && styles.gradeButtonActive]}
+                                                onPress={() => setQuickFaceSearchGrade(grade)}
+                                                testID={`competition-ai-quick-grade-${grade}`}
+                                            >
+                                                <Text style={[styles.gradeButtonText, active && styles.gradeButtonTextActive]}>
+                                                    {grade === 'hard' ? t('Hard · 90%') : grade === 'medium' ? t('Medium · 87%') : t('Soft · 85%')}
+                                                </Text>
+                                            </TouchableOpacity>
+                                        );
+                                    })}
+                                </View>
+                            </>
+                        ) : null}
                         {quickSearchError ? (
                             <>
                                 <SizeBox height={10} />
@@ -1356,6 +1386,25 @@ const CompetitionDetailsScreen = ({ navigation, route }: any) => {
                                     <ArrowRight size={18} color={colors.pureWhite} variant="Linear" />
                                 </>
                             )}
+                        </TouchableOpacity>
+                        <SizeBox height={12} />
+                        <TouchableOpacity
+                            style={styles.modalSecondaryButton}
+                            onPress={() => {
+                                setAiCompareModalVisible(false);
+                                navigation.navigate('AISearchScreen', {
+                                    preselectedEvents: [
+                                        {
+                                            event_id: resolvedEventId,
+                                            event_name: competitionName,
+                                            event_title: competitionName,
+                                            event_date: route?.params?.date ?? null,
+                                        },
+                                    ],
+                                });
+                            }}
+                        >
+                            <Text style={styles.modalSecondaryButtonText}>{t('Open context search')}</Text>
                         </TouchableOpacity>
                         <SizeBox height={12} />
                         <TouchableOpacity

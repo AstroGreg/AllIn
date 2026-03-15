@@ -13,7 +13,6 @@ import {
     ApiError,
     createMediaIssueRequest,
     getHomeOverview,
-    getMediaViewAll,
     getNotifications,
     getPostById,
     getProfileSummaryById,
@@ -45,7 +44,7 @@ import { shareBlogToInstagramStory, shareMediaToInstagramStory } from '../../com
 const HOME_FEED_PAGE_SIZE = 8;
 type HomeFeedItem =
     | { kind: 'media'; created_at?: string | null; media: MediaViewAllItem }
-    | { kind: 'post'; created_at?: string | null; post: PostSummary };
+    | { kind: 'post'; created_at?: string | null; post: PostSummary; previewMedia: HomeOverviewMedia[] };
 
 const HomeScreen = ({ navigation }: any) => {
     const insets = useSafeAreaInsets();
@@ -206,7 +205,7 @@ const HomeScreen = ({ navigation }: any) => {
         setReportIssueVisible(true);
     }, []);
 
-    const performLoadOverview = useCallback(async (force = false) => {
+    const performLoadOverview = useCallback(async (_force = false) => {
         if (!apiAccessToken) {
             setOverview(null);
             setAllVideos([]);
@@ -217,36 +216,15 @@ const HomeScreen = ({ navigation }: any) => {
         setIsLoadingOverview(true);
         setOverviewError(null);
         try {
-            const [overviewResult, mediaResult] = await Promise.allSettled([
-                getHomeOverview(apiAccessToken, 'me'),
-                getMediaViewAll(apiAccessToken),
-            ]);
-
-            let firstError: unknown = null;
-
-            if (overviewResult.status === 'fulfilled') {
-                setOverview(overviewResult.value);
-            } else {
-                setOverview(null);
-                firstError = overviewResult.reason;
-            }
-
-            if (mediaResult.status === 'fulfilled') {
-                const mediaItems = Array.isArray(mediaResult.value) ? mediaResult.value : [];
-                setAllVideos(mediaItems.filter((item) => String(item?.type || '').toLowerCase() === 'video'));
-                setAllPhotos(mediaItems.filter((item) => String(item?.type || '').toLowerCase() !== 'video'));
-            } else {
-                setAllVideos([]);
-                setAllPhotos([]);
-                firstError = firstError ?? mediaResult.reason;
-            }
-
-            if (firstError && overviewResult.status !== 'fulfilled' && mediaResult.status !== 'fulfilled') {
-                throw firstError;
-            }
+            const overviewResult = await getHomeOverview(apiAccessToken, 'me');
+            setOverview(overviewResult);
+            setAllVideos([]);
+            setAllPhotos([]);
         } catch (e: any) {
             const msg = e instanceof ApiError ? e.message : String(e?.message ?? e);
             setOverviewError(msg);
+            setAllVideos([]);
+            setAllPhotos([]);
         } finally {
             setIsLoadingOverview(false);
         }
@@ -1178,6 +1156,7 @@ const HomeScreen = ({ navigation }: any) => {
             .map((entry) => ({
                 kind: 'post' as const,
                 created_at: entry?.post?.created_at ?? null,
+                previewMedia: Array.isArray(entry?.media_items) ? entry.media_items : (entry?.media ? [entry.media] : []),
                 post: {
                     id: entry.post.id,
                     title: entry.post.title ?? '',
@@ -1197,12 +1176,7 @@ const HomeScreen = ({ navigation }: any) => {
                       : undefined,
                 } as PostSummary,
             }));
-        const mediaItems: HomeFeedItem[] = [...allVideos, ...allPhotos].map((media) => ({
-            kind: 'media' as const,
-            created_at: media?.created_at ?? null,
-            media,
-        }));
-        const sorted: HomeFeedItem[] = [...postItems, ...mediaItems].sort((a, b) => {
+        const sorted: HomeFeedItem[] = [...postItems].sort((a, b) => {
             const aTs = new Date(String(a.created_at || '')).getTime();
             const bTs = new Date(String(b.created_at || '')).getTime();
             const safeA = Number.isFinite(aTs) ? aTs : 0;
@@ -1219,7 +1193,7 @@ const HomeScreen = ({ navigation }: any) => {
             seenFeedKeys.add(key);
             return true;
         });
-    }, [allPhotos, allVideos, mediaDedupFingerprint, overview]);
+    }, [mediaDedupFingerprint, overview]);
 
     useEffect(() => {
         setFeedVisibleCount((prev) => {
@@ -1236,9 +1210,7 @@ const HomeScreen = ({ navigation }: any) => {
 
     const hasMoreFeedItems = feedVisibleCount < infiniteFeedItems.length;
     const hasOverviewContent = Boolean(
-        overview?.overview?.video
-        || overview?.overview?.photo
-        || overview?.overview?.blog
+        overview?.overview?.blog
         || ((overview?.overview?.feed_posts?.length ?? 0) > 0),
     );
     const perfReady = !isLoadingOverview && (overview !== null || overviewError !== null);
@@ -1299,22 +1271,22 @@ const HomeScreen = ({ navigation }: any) => {
     }, [toAbsoluteUrl, withAccessToken]);
 
     const blogPrimaryMedia = useMemo(() => {
+        const previewMedia = Array.isArray(overviewBlog?.media_items) ? overviewBlog.media_items : [];
         return (
+            previewMedia[0] ||
             overviewBlog?.media ||
-            topPhotos[0] ||
-            overviewPhoto ||
-            overviewVideo ||
             null
         );
-    }, [overviewBlog?.media, overviewPhoto, overviewVideo, topPhotos]);
+    }, [overviewBlog?.media, overviewBlog?.media_items]);
 
     const blogPrimaryImage = useMemo(() => {
         return getMediaThumb(blogPrimaryMedia) || Images.photo3;
     }, [blogPrimaryMedia, getMediaThumb]);
 
     const blogExtraVideos = useMemo(() => {
-        return topVideos as HomeOverviewMedia[];
-    }, [topVideos]);
+        const previewMedia = Array.isArray(overviewBlog?.media_items) ? overviewBlog.media_items : [];
+        return previewMedia.filter((item) => String(item?.type || '').toLowerCase() === 'video') as HomeOverviewMedia[];
+    }, [overviewBlog?.media_items]);
 
     const blogGalleryItems = useMemo(() => {
         const buildItem = (media?: HomeOverviewMedia | MediaViewAllItem | null, fallbackImage?: any) => {
@@ -1334,10 +1306,12 @@ const HomeScreen = ({ navigation }: any) => {
 
         const items = [
             buildItem(blogPrimaryMedia, Images.photo3),
-            ...blogExtraVideos.map((item) => buildItem(item, Images.photo3)),
+            ...blogExtraVideos
+                .filter((item) => String(item?.media_id || '') !== String(blogPrimaryMedia?.media_id || ''))
+                .map((item) => buildItem(item, Images.photo3)),
         ];
         return items;
-    }, [blogExtraVideos, blogPrimaryMedia, getMediaThumb, toAbsoluteUrl, toHlsUrl]);
+    }, [blogExtraVideos, blogPrimaryMedia, getMediaThumb]);
 
     const blogGalleryImages = useMemo(() => blogGalleryItems.map((item) => item.image), [blogGalleryItems]);
     const blogMediaCounts = useMemo(() => {
@@ -1528,13 +1502,23 @@ const HomeScreen = ({ navigation }: any) => {
         ({ item }: ListRenderItemInfo<HomeFeedItem>) => {
             if (item.kind === 'post') {
                 const post = item.post;
+                const previewMedia = Array.isArray(item.previewMedia) ? item.previewMedia : [];
                 const translated = Boolean(translatedBlogsById[String(post.id)]);
                 const postDescriptionRaw = String(post.summary ?? post.description ?? '');
                 const postDescription = translated ? translateText(postDescriptionRaw, i18n.language) : postDescriptionRaw;
+                const previewImages = previewMedia
+                    .map((media) => getMediaThumb(media))
+                    .filter(Boolean);
+                const galleryItems = previewMedia.map((media) => ({
+                    image: getMediaThumb(media) || Images.photo3,
+                    videoUri: pickPlayableVideoUrl(media),
+                    type: String(media?.type || '').toLowerCase() === 'video' ? 'video' : 'image',
+                    media,
+                }));
                 return (
                     <NewsFeedCard
                         title={post.title ?? t('Latest blog')}
-                        images={['__text__']}
+                        images={previewImages.length > 0 ? previewImages : ['__text__']}
                         textSlide={{
                             title: post.title ?? t('Latest blog'),
                             description: postDescription,
@@ -1570,9 +1554,9 @@ const HomeScreen = ({ navigation }: any) => {
                                     date: post.created_at
                                         ? new Date(post.created_at).toLocaleDateString()
                                         : '',
-                                    image: Images.photo3,
-                                    gallery: [],
-                                    galleryItems: [],
+                                    image: previewImages[0] || Images.photo3,
+                                    gallery: previewImages,
+                                    galleryItems,
                                     readCount: post.reading_time_minutes
                                         ? `${post.reading_time_minutes} min`
                                         : '1 min',
