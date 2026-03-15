@@ -148,7 +148,6 @@ const ViewUserBlogDetailsScreen = ({ navigation, route }: any) => {
             if (bitmapImage) return bitmapImage;
             const webpImage = resolved.find((value) => /\.(webp)(\?|$)/i.test(value));
             if (webpImage) return webpImage;
-            if (resolved[0]) return resolved[0];
         }
 
         if (candidateItem?.image?.uri) {

@@ -164,8 +164,6 @@ const ViewUserBlogDetailsScreen = ({ navigation, route }) => {
             const webpImage = resolved.find((value) => /\.(webp)(\?|$)/i.test(value));
             if (webpImage)
                 return webpImage;
-            if (resolved[0])
-                return resolved[0];
         }
         if ((_a = candidateItem === null || candidateItem === void 0 ? void 0 : candidateItem.image) === null || _a === void 0 ? void 0 : _a.uri) {
             return String(candidateItem.image.uri);

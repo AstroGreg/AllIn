@@ -80,6 +80,12 @@ const VideoPlayingScreen = ({ navigation, route }: any) => {
         Number(route?.params?.video?.views_count ?? route?.params?.video?.views ?? 0) || 0,
     );
     const [videoUrl, setVideoUrl] = useState<string | null>(fallbackVideo.uri || null);
+    const [downloadVideoUrl, setDownloadVideoUrl] = useState<string | null>(() => {
+        const candidate = String(fallbackVideo.uri || '').trim();
+        if (!candidate) return null;
+        if (candidate.toLowerCase().includes('.m3u8')) return null;
+        return candidate;
+    });
     const fallbackPoster = useCallback(() => {
         if (!fallbackVideo.thumbnail) return null;
         if (typeof fallbackVideo.thumbnail === 'number') {
@@ -95,10 +101,6 @@ const VideoPlayingScreen = ({ navigation, route }: any) => {
         const blogTitle = String(blogTitleFromRoute || '').trim();
         return blogTitle || null;
     }, [blogTitleFromRoute]);
-    const shouldUseStaticBlogMediaStory = useMemo(
-        () => Boolean(String(blogTitleFromRoute || '').trim() && String(posterUrl || '').trim()),
-        [blogTitleFromRoute, posterUrl],
-    );
 
     const [showBuyModal, setShowBuyModal] = useState(false);
     const [showSuccessModal, setShowSuccessModal] = useState(false);
@@ -206,6 +208,30 @@ const VideoPlayingScreen = ({ navigation, route }: any) => {
                 setVideoTitle(title);
                 setVideoViewsCount(Number((media as any)?.views_count ?? 0) || 0);
                 const hls = media.hls_manifest_path ? toHlsUrl(media.hls_manifest_path) : null;
+                const assets = Array.isArray((media as any)?.assets) ? (media as any).assets : [];
+                const mp4Assets = assets.filter((a: any) => {
+                    const variant = String(a?.variant ?? '').toLowerCase();
+                    const mime = String(a?.mime_type ?? '').toLowerCase();
+                    const url = String(a?.url ?? '').toLowerCase();
+                    return (
+                        /mp4|mov|m4v/.test(variant) ||
+                        /video\/mp4/.test(mime) ||
+                        /\.(mp4|mov|m4v)(\?|$)/.test(url)
+                    );
+                });
+                const signedAsset = mp4Assets.find((a: any) => {
+                    const urlType = String(a?.url_type ?? '').toLowerCase();
+                    const url = String(a?.url ?? '').toLowerCase();
+                    return (
+                        urlType.includes('signed') ||
+                        url.includes('x-amz-signature') ||
+                        url.includes('signature=') ||
+                        url.includes('sig=') ||
+                        url.includes('token=') ||
+                        url.includes('sv=')
+                    );
+                });
+                const assetMp4Url = signedAsset?.url || mp4Assets[0]?.url || null;
                 const candidates = [
                     media.preview_url,
                     media.original_url,
@@ -215,11 +241,17 @@ const VideoPlayingScreen = ({ navigation, route }: any) => {
                     .filter(Boolean)
                     .map((value) => toAbsoluteUrl(String(value)) || '')
                     .filter(Boolean);
-                const mp4 = candidates.find((value) => /\.(mp4|mov|m4v)(\\?|$)/i.test(value));
-                const resolvedVideo = hls || mp4 || candidates[0] || fallbackVideo.uri || null;
+                const mp4 = candidates.find((value) => /\.(mp4|mov|m4v)(\?|$)/i.test(value));
+                const resolvedMp4 = assetMp4Url
+                    ? (toAbsoluteUrl(String(assetMp4Url)) || String(assetMp4Url))
+                    : (mp4 || null);
+                const resolvedVideo = hls || resolvedMp4 || candidates[0] || fallbackVideo.uri || null;
                 const thumbCandidate = media.thumbnail_url || media.preview_url || media.full_url || media.raw_url || null;
                 const resolvedPoster = thumbCandidate ? toAbsoluteUrl(String(thumbCandidate)) : fallbackPoster();
                 setVideoUrl(withAccessToken(resolvedVideo || '') || resolvedVideo || null);
+                setDownloadVideoUrl(
+                    resolvedMp4 ? (withAccessToken(resolvedMp4) || resolvedMp4) : null,
+                );
                 setPosterUrl(withAccessToken(resolvedPoster || '') || resolvedPoster || null);
             })
             .catch((_err: any) => {
@@ -278,6 +310,7 @@ const VideoPlayingScreen = ({ navigation, route }: any) => {
 
     const resolveDownloadUrl = useCallback(() => {
         const candidates = [
+            downloadVideoUrl,
             videoUrl,
             route?.params?.video?.uri,
             route?.params?.video?.preview_url,
@@ -286,8 +319,11 @@ const VideoPlayingScreen = ({ navigation, route }: any) => {
             route?.params?.video?.raw_url,
             route?.params?.video?.hls_manifest_path ? toHlsUrl(route?.params?.video?.hls_manifest_path) : null,
         ].filter(Boolean) as string[];
-        return candidates.find((value) => /\.(mp4|mov|m4v)(\?|$)/i.test(value)) ?? candidates[0] ?? null;
-    }, [route?.params?.video, toHlsUrl, videoUrl]);
+        const mp4 = candidates.find((value) => /\.(mp4|mov|m4v)(\?|$)/i.test(value));
+        if (mp4) return mp4;
+        const direct = candidates.find((value) => !String(value).toLowerCase().includes('.m3u8'));
+        return direct ?? candidates[0] ?? null;
+    }, [downloadVideoUrl, route?.params?.video, toHlsUrl, videoUrl]);
 
     const ensureLocalFile = useCallback(
         async (remoteUrl: string, extensionHint: string) => {
@@ -332,6 +368,10 @@ const VideoPlayingScreen = ({ navigation, route }: any) => {
             Alert.alert(t('No download URL'), t('The API did not provide a downloadable URL for this media.'));
             return;
         }
+        if (String(downloadUrl).toLowerCase().includes('.m3u8')) {
+            Alert.alert(t('Download unavailable'), t('This video is streaming-only right now. Try again later.'));
+            return;
+        }
         const fileUrl = await ensureLocalFile(downloadUrl, extensionFromUrl(downloadUrl));
         if (!fileUrl) {
             Alert.alert(t('Download failed'), t('Unable to download the media file.'));
@@ -368,6 +408,10 @@ const VideoPlayingScreen = ({ navigation, route }: any) => {
         const downloadUrl = resolveDownloadUrl();
         if (!downloadUrl) {
             Alert.alert(t('No media available'), t('There is no media to share.'));
+            return;
+        }
+        if (String(downloadUrl).toLowerCase().includes('.m3u8')) {
+            Alert.alert(t('Share failed'), t('This video is streaming-only right now. Try again later.'));
             return;
         }
 
@@ -409,6 +453,31 @@ const VideoPlayingScreen = ({ navigation, route }: any) => {
         }
 
         try {
+            if (String(downloadUrl).toLowerCase().includes('.m3u8')) {
+                if (!posterUrl) {
+                    Alert.alert(t('Share failed'), t('This video is streaming-only right now.'));
+                    return;
+                }
+                const posterFileUrl = await ensureLocalFile(posterUrl, 'jpg');
+                if (!posterFileUrl) {
+                    Alert.alert(t('Share failed'), t('Unable to download the preview image.'));
+                    return;
+                }
+                const result = await shareMediaToInstagramStory({
+                    t,
+                    composeInstagramStoryImage,
+                    localAssetUrl: posterFileUrl,
+                    isVideo: false,
+                    title: instagramStoryTitle,
+                    composeImageUri: posterFileUrl,
+                    shareModule: shareModule.default,
+                });
+                if (result === 'unsupported') {
+                    await handleShareNative();
+                }
+                return;
+            }
+
             const fileUrl = await ensureLocalFile(downloadUrl, extensionFromUrl(downloadUrl));
             if (!fileUrl) {
                 Alert.alert(t('Share failed'), t('Unable to download the media file.'));
@@ -420,8 +489,6 @@ const VideoPlayingScreen = ({ navigation, route }: any) => {
                 localAssetUrl: fileUrl,
                 isVideo: true,
                 title: instagramStoryTitle,
-                composeImageUri: shouldUseStaticBlogMediaStory ? posterUrl : null,
-                preferComposedBackground: shouldUseStaticBlogMediaStory,
                 shareModule: shareModule.default,
             });
             if (result === 'unsupported') {
@@ -433,7 +500,7 @@ const VideoPlayingScreen = ({ navigation, route }: any) => {
                 Alert.alert(t('Instagram Story failed'), msg);
             }
         }
-    }, [composeInstagramStoryImage, ensureLocalFile, extensionFromUrl, getShareModule, handleShareNative, instagramStoryTitle, posterUrl, resolveDownloadUrl, shouldUseStaticBlogMediaStory, t]);
+    }, [composeInstagramStoryImage, ensureLocalFile, extensionFromUrl, getShareModule, handleShareNative, instagramStoryTitle, posterUrl, resolveDownloadUrl, t]);
 
     const showInfoPopup = useCallback((title: string, message: string) => {
         setInfoPopupTitle(title);

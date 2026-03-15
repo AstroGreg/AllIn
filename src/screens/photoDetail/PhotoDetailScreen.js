@@ -828,6 +828,15 @@ const PhotoDetailScreen = ({ navigation, route }) => {
         return (match === null || match === void 0 ? void 0 : match[1]) ? match[1].toLowerCase() : '';
     }, []);
     const resolveDownloadUrl = useCallback(() => __awaiter(void 0, void 0, void 0, function* () {
+        var _a, _b;
+        const wantsVideoFile = String((_b = (_a = activeMedia === null || activeMedia === void 0 ? void 0 : activeMedia.type) !== null && _a !== void 0 ? _a : '') !== null && _b !== void 0 ? _b : '').toLowerCase() === 'video';
+        const isVideoFileUrl = (value) => /\.(mp4|mov|m4v)(\?|$)/i.test(value);
+        const resolveCandidate = (value) => {
+            if (!value)
+                return null;
+            const resolved = withAccessToken(String(value)) || toAbsoluteUrl(String(value));
+            return resolved ? String(resolved) : null;
+        };
         const candidates = [
             assetMp4Url,
             activeMedia === null || activeMedia === void 0 ? void 0 : activeMedia.originalUrl,
@@ -840,14 +849,52 @@ const PhotoDetailScreen = ({ navigation, route }) => {
             activeMedia === null || activeMedia === void 0 ? void 0 : activeMedia.preview_url,
         ]
             .filter(Boolean)
-            .map((value) => withAccessToken(String(value)) || toAbsoluteUrl(String(value)))
+            .map(resolveCandidate)
             .filter(Boolean);
-        const direct = candidates.find((value) => !isHlsUrl(value));
-        if (direct)
-            return direct;
+        if (wantsVideoFile) {
+            const resolvedAssetMp4Url = resolveCandidate(assetMp4Url);
+            if (resolvedAssetMp4Url && !isHlsUrl(resolvedAssetMp4Url)) {
+                return resolvedAssetMp4Url;
+            }
+            const directMp4 = candidates.find((value) => isVideoFileUrl(value));
+            if (directMp4) {
+                return directMp4;
+            }
+        }
+        else {
+            const direct = candidates.find((value) => !isHlsUrl(value));
+            if (direct)
+                return direct;
+        }
         if (resolvedMediaId && apiAccessToken) {
             try {
                 const fresh = yield getMediaById(apiAccessToken, resolvedMediaId);
+                if (wantsVideoFile) {
+                    const freshAssets = Array.isArray(fresh === null || fresh === void 0 ? void 0 : fresh.assets) ? fresh.assets : [];
+                    const mp4Assets = freshAssets.filter((asset) => {
+                        var _a, _b, _c;
+                        const variant = String((_a = asset === null || asset === void 0 ? void 0 : asset.variant) !== null && _a !== void 0 ? _a : '').toLowerCase();
+                        const mime = String((_b = asset === null || asset === void 0 ? void 0 : asset.mime_type) !== null && _b !== void 0 ? _b : '').toLowerCase();
+                        const url = String((_c = asset === null || asset === void 0 ? void 0 : asset.url) !== null && _c !== void 0 ? _c : '').toLowerCase();
+                        return /mp4|mov|m4v/.test(variant) || /video\/mp4/.test(mime) || /\.(mp4|mov|m4v)(\?|$)/.test(url);
+                    });
+                    const signedFirst = mp4Assets.find((asset) => {
+                        var _a, _b;
+                        const urlType = String((_a = asset === null || asset === void 0 ? void 0 : asset.url_type) !== null && _a !== void 0 ? _a : '').toLowerCase();
+                        const url = String((_b = asset === null || asset === void 0 ? void 0 : asset.url) !== null && _b !== void 0 ? _b : '').toLowerCase();
+                        return (urlType.includes('signed') ||
+                            url.includes('x-amz-signature') ||
+                            url.includes('signature=') ||
+                            url.includes('sig=') ||
+                            url.includes('token=') ||
+                            url.includes('sv='));
+                    });
+                    const freshAssetMp4Url = (signedFirst === null || signedFirst === void 0 ? void 0 : signedFirst.url) || (mp4Assets[0] === null || mp4Assets[0] === void 0 ? void 0 : mp4Assets[0].url) || null;
+                    const resolvedFreshAsset = resolveCandidate(freshAssetMp4Url);
+                    if (resolvedFreshAsset && !isHlsUrl(resolvedFreshAsset)) {
+                        return resolvedFreshAsset;
+                    }
+                }
                 const freshCandidates = [
                     fresh.original_url,
                     fresh.full_url,
@@ -856,17 +903,24 @@ const PhotoDetailScreen = ({ navigation, route }) => {
                     fresh.thumbnail_url,
                 ]
                     .filter(Boolean)
-                    .map((value) => withAccessToken(String(value)) || toAbsoluteUrl(String(value)))
+                    .map(resolveCandidate)
                     .filter(Boolean);
-                const freshDirect = freshCandidates.find((value) => !isHlsUrl(value));
-                if (freshDirect)
-                    return freshDirect;
+                if (wantsVideoFile) {
+                    const freshMp4 = freshCandidates.find((value) => isVideoFileUrl(value));
+                    if (freshMp4)
+                        return freshMp4;
+                }
+                else {
+                    const freshDirect = freshCandidates.find((value) => !isHlsUrl(value));
+                    if (freshDirect)
+                        return freshDirect;
+                }
             }
             catch (_11) {
                 // ignore
             }
         }
-        return bestVideoUrl !== null && bestVideoUrl !== void 0 ? bestVideoUrl : null;
+        return wantsVideoFile ? null : (bestVideoUrl !== null && bestVideoUrl !== void 0 ? bestVideoUrl : null);
     }), [
         activeMedia === null || activeMedia === void 0 ? void 0 : activeMedia.fullUrl,
         activeMedia === null || activeMedia === void 0 ? void 0 : activeMedia.full_url,
@@ -876,6 +930,7 @@ const PhotoDetailScreen = ({ navigation, route }) => {
         activeMedia === null || activeMedia === void 0 ? void 0 : activeMedia.preview_url,
         activeMedia === null || activeMedia === void 0 ? void 0 : activeMedia.rawUrl,
         activeMedia === null || activeMedia === void 0 ? void 0 : activeMedia.raw_url,
+        activeMedia === null || activeMedia === void 0 ? void 0 : activeMedia.type,
         apiAccessToken,
         assetMp4Url,
         bestVideoUrl,

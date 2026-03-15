@@ -894,6 +894,14 @@ const PhotoDetailScreen = ({navigation, route}: any) => {
     }, []);
 
     const resolveDownloadUrl = useCallback(async () => {
+        const wantsVideoFile = String(activeMedia?.type ?? '').toLowerCase() === 'video';
+        const isVideoFileUrl = (value: string) => /\.(mp4|mov|m4v)(\?|$)/i.test(value);
+
+        const resolveCandidate = (value: unknown) => {
+            if (!value) return null;
+            const resolved = withAccessToken(String(value)) || toAbsoluteUrl(String(value));
+            return resolved ? String(resolved) : null;
+        };
 
         const candidates = [
             assetMp4Url,
@@ -907,15 +915,54 @@ const PhotoDetailScreen = ({navigation, route}: any) => {
             activeMedia?.preview_url,
         ]
             .filter(Boolean)
-            .map((value) => withAccessToken(String(value)) || toAbsoluteUrl(String(value)))
+            .map(resolveCandidate)
             .filter(Boolean) as string[];
 
-        const direct = candidates.find((value) => !isHlsUrl(value));
-        if (direct) return direct;
+        if (wantsVideoFile) {
+            const resolvedAssetMp4Url = resolveCandidate(assetMp4Url);
+            if (resolvedAssetMp4Url && !isHlsUrl(resolvedAssetMp4Url)) {
+                return resolvedAssetMp4Url;
+            }
+            const directMp4 = candidates.find((value) => isVideoFileUrl(value));
+            if (directMp4) {
+                return directMp4;
+            }
+        } else {
+            const direct = candidates.find((value) => !isHlsUrl(value));
+            if (direct) return direct;
+        }
 
         if (resolvedMediaId && apiAccessToken) {
             try {
                 const fresh = await getMediaById(apiAccessToken, resolvedMediaId);
+
+                if (wantsVideoFile) {
+                    const freshAssets = Array.isArray((fresh as any)?.assets) ? (fresh as any).assets : [];
+                    const mp4Assets = freshAssets.filter((asset: any) => {
+                        const variant = String(asset?.variant ?? '').toLowerCase();
+                        const mime = String(asset?.mime_type ?? '').toLowerCase();
+                        const url = String(asset?.url ?? '').toLowerCase();
+                        return /mp4|mov|m4v/.test(variant) || /video\/mp4/.test(mime) || /\.(mp4|mov|m4v)(\?|$)/.test(url);
+                    });
+                    const signedFirst = mp4Assets.find((asset: any) => {
+                        const urlType = String(asset?.url_type ?? '').toLowerCase();
+                        const url = String(asset?.url ?? '').toLowerCase();
+                        return (
+                            urlType.includes('signed') ||
+                            url.includes('x-amz-signature') ||
+                            url.includes('signature=') ||
+                            url.includes('sig=') ||
+                            url.includes('token=') ||
+                            url.includes('sv=')
+                        );
+                    });
+                    const freshAssetMp4Url = signedFirst?.url || mp4Assets[0]?.url || null;
+                    const resolvedFreshAsset = resolveCandidate(freshAssetMp4Url);
+                    if (resolvedFreshAsset && !isHlsUrl(resolvedFreshAsset)) {
+                        return resolvedFreshAsset;
+                    }
+                }
+
                 const freshCandidates = [
                     fresh.original_url,
                     fresh.full_url,
@@ -924,17 +971,22 @@ const PhotoDetailScreen = ({navigation, route}: any) => {
                     fresh.thumbnail_url,
                 ]
                     .filter(Boolean)
-                    .map((value) => withAccessToken(String(value)) || toAbsoluteUrl(String(value)))
+                    .map(resolveCandidate)
                     .filter(Boolean) as string[];
 
-                const freshDirect = freshCandidates.find((value) => !isHlsUrl(value));
-                if (freshDirect) return freshDirect;
+                if (wantsVideoFile) {
+                    const freshMp4 = freshCandidates.find((value) => isVideoFileUrl(value));
+                    if (freshMp4) return freshMp4;
+                } else {
+                    const freshDirect = freshCandidates.find((value) => !isHlsUrl(value));
+                    if (freshDirect) return freshDirect;
+                }
             } catch {
                 // ignore
             }
         }
 
-        return bestVideoUrl ?? null;
+        return wantsVideoFile ? null : bestVideoUrl ?? null;
     }, [
         activeMedia?.fullUrl,
         activeMedia?.full_url,
@@ -944,6 +996,7 @@ const PhotoDetailScreen = ({navigation, route}: any) => {
         activeMedia?.preview_url,
         activeMedia?.rawUrl,
         activeMedia?.raw_url,
+        activeMedia?.type,
         apiAccessToken,
         assetMp4Url,
         bestVideoUrl,
