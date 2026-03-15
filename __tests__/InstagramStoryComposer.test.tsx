@@ -8,6 +8,7 @@ import InstagramStoryComposer, {
 } from '../src/components/share/InstagramStoryComposer';
 
 const mockToDataURL = jest.fn();
+const mockCaptureRef = jest.fn();
 
 jest.mock('react-native-fs', () => ({
   __esModule: true,
@@ -51,6 +52,17 @@ jest.mock('react-native-svg', () => {
   };
 });
 
+jest.mock('react-native-linear-gradient', () => {
+  const ReactModule = require('react');
+  return ({children, ...props}: any) =>
+    ReactModule.createElement('LinearGradient', props, children);
+});
+
+jest.mock('react-native-view-shot', () => ({
+  __esModule: true,
+  captureRef: (...args: any[]) => mockCaptureRef(...args),
+}));
+
 function createRequest(overrides: Record<string, unknown> = {}) {
   return {
     id: 'req-1',
@@ -83,12 +95,9 @@ function extractText(node: any): string {
 function findFullScreenBackgroundImages(root: ReactTestRenderer.ReactTestInstance, uri: string) {
   return root.findAll(
     (node) =>
-      node.type === 'SvgImage' &&
-      node.props.x === 0 &&
-      node.props.y === 0 &&
-      node.props.width === 1080 &&
-      node.props.height === 1920 &&
-      node.props.href?.uri === uri,
+      node.props.testID === 'story-background-image' &&
+      node.props.source?.uri === uri &&
+      typeof node.props.onLoad === 'function',
   );
 }
 
@@ -119,6 +128,8 @@ describe('InstagramStoryComposer', () => {
     jest.useFakeTimers();
     mockToDataURL.mockReset();
     mockToDataURL.mockImplementation((callback: (value: string) => void) => callback('mock-base64'));
+    mockCaptureRef.mockReset();
+    mockCaptureRef.mockResolvedValue('captured-base64');
     jest.spyOn(Image, 'resolveAssetSource').mockReturnValue({uri: 'asset://spotme-mark'} as any);
     jest.spyOn(Image, 'getSize').mockImplementation((uri: string, success?: any) => {
       success?.(1080, 1920);
@@ -158,17 +169,20 @@ describe('InstagramStoryComposer', () => {
     expect(extractText(renderer!.root)).toContain('Get your race photos on SpotMe');
 
     const backgroundImages = findFullScreenBackgroundImages(renderer!.root, request.imageUri);
-    expect(backgroundImages).toHaveLength(1);
+    expect(backgroundImages.length).toBeGreaterThan(0);
 
     await act(async () => {
       backgroundImages[0].props.onLoad();
     });
     await flushStoryExport();
 
-    expect(mockToDataURL).toHaveBeenCalledWith(expect.any(Function), {width: 1080, height: 1920});
+    expect(mockCaptureRef).toHaveBeenCalledWith(
+      expect.any(Object),
+      expect.objectContaining({width: 1080, height: 1920, format: 'png', result: 'base64'}),
+    );
     expect(RNFS.writeFile).toHaveBeenCalledWith(
       '/tmp/instagram-story-req-1.png',
-      'mock-base64',
+      'captured-base64',
       'base64',
     );
     expect(onComplete).toHaveBeenCalledWith('file:///tmp/instagram-story-req-1.png');
@@ -187,19 +201,14 @@ describe('InstagramStoryComposer', () => {
       );
     });
 
-    expect(findFullScreenBackgroundImages(renderer!.root, request.imageUri)).toHaveLength(1);
-    expect(findFullScreenRects(renderer!.root, 'rgba(4,10,16,0.18)')).toHaveLength(1);
-    expect(findFullScreenRects(renderer!.root, 'url(#homeCardFade)')).toHaveLength(1);
+    expect(findFullScreenBackgroundImages(renderer!.root, request.imageUri).length).toBeGreaterThan(0);
 
     await act(async () => {
       findFullScreenBackgroundImages(renderer!.root, request.imageUri)[0].props.onError();
     });
     await flushStoryExport();
 
-    expect(findFullScreenBackgroundImages(renderer!.root, request.imageUri)).toHaveLength(0);
-    expect(findFullScreenRects(renderer!.root, 'rgba(4,10,16,0.18)')).toHaveLength(0);
-    expect(findFullScreenRects(renderer!.root, 'url(#homeCardFade)')).toHaveLength(0);
-    expect(findFullScreenRects(renderer!.root, 'rgba(0,0,0,0)')).not.toHaveLength(0);
+    expect(mockCaptureRef).not.toHaveBeenCalled();
     expect(onComplete).not.toHaveBeenCalled();
     expect(onError).toHaveBeenCalledWith(
       expect.objectContaining({

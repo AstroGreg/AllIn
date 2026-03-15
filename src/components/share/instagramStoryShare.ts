@@ -178,8 +178,49 @@ export async function shareMediaToInstagramStory(params: {
         }
 
         if (!isVideo && (String(title ?? '').trim() || String(subtitle ?? '').trim())) {
+            const backgroundSource = String(composeImageUri ?? localAssetUrl).trim() || localAssetUrl;
+
+            try {
+                debugInstagramStory('shareMedia.compose.background.start', {
+                    branch: 'image_composed_background_capture',
+                    backgroundAsset: await describeLocalFile(localAssetUrl),
+                    composeImageUri: backgroundSource,
+                });
+                const composedImageUri = await composeInstagramStoryImage(
+                    backgroundSource,
+                    title,
+                    STORY_APP_NAME,
+                    subtitle,
+                    { layout: 'home_media_card' },
+                );
+                debugInstagramStory('shareMedia.compose.background.done', {
+                    branch: 'image_composed_background_capture',
+                    composedImage: await describeLocalFile(composedImageUri),
+                });
+
+                await availability.shareLib.shareSingle?.({
+                    social: availability.shareLib.Social?.INSTAGRAM_STORIES,
+                    appId: INSTAGRAM_APP_ID,
+                    backgroundImage: composedImageUri,
+                    backgroundTopColor: STORY_BACKGROUND_TOP_COLOR,
+                    backgroundBottomColor: STORY_BACKGROUND_BOTTOM_COLOR,
+                    attributionURL: STORY_ATTRIBUTION_URL,
+                    failOnCancel: false,
+                });
+                debugInstagramStory('shareMedia.shareSingle.done', {
+                    branch: 'image_composed_background_capture',
+                });
+
+                return 'shared';
+            } catch (error: any) {
+                debugInstagramStory('shareMedia.compose.background.fallback', {
+                    branch: 'image_composed_background_capture',
+                    message: String(error?.message ?? error),
+                });
+            }
+
             debugInstagramStory('shareMedia.compose.sticker.start', {
-                branch: 'image_overlay_card',
+                branch: 'image_overlay_card_fallback',
                 backgroundAsset: await describeLocalFile(localAssetUrl),
                 composeImageUri: composeImageUri ?? null,
             });
@@ -191,7 +232,7 @@ export async function shareMediaToInstagramStory(params: {
                 { mode: 'overlay', layout: 'home_media_overlay_card' },
             );
             debugInstagramStory('shareMedia.compose.sticker.done', {
-                branch: 'image_overlay_card',
+                branch: 'image_overlay_card_fallback',
                 stickerImage: await describeLocalFile(stickerImage),
             });
 
@@ -205,7 +246,7 @@ export async function shareMediaToInstagramStory(params: {
                 attributionURL: STORY_ATTRIBUTION_URL,
                 failOnCancel: false,
             });
-            debugInstagramStory('shareMedia.shareSingle.done', {branch: 'image_overlay_card'});
+            debugInstagramStory('shareMedia.shareSingle.done', {branch: 'image_overlay_card_fallback'});
 
             return 'shared';
         }

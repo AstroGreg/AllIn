@@ -1,7 +1,18 @@
 import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
-import {Image as RNImage, StyleSheet, View} from 'react-native';
+import {Image as RNImage, StyleSheet, Text, View} from 'react-native';
+import LinearGradient from 'react-native-linear-gradient';
 import RNFS from 'react-native-fs';
-import Svg, {ClipPath, Defs, Image as SvgImage, LinearGradient, Rect, Stop, Text as SvgText, TSpan} from 'react-native-svg';
+import {captureRef} from 'react-native-view-shot';
+import Svg, {
+    ClipPath,
+    Defs,
+    Image as SvgImage,
+    LinearGradient as SvgLinearGradient,
+    Rect,
+    Stop,
+    Text as SvgText,
+    TSpan,
+} from 'react-native-svg';
 
 const STORY_WIDTH = 1080;
 const STORY_HEIGHT = 1920;
@@ -9,6 +20,7 @@ const OVERLAY_BRAND_FONT_SIZE = 58;
 const OVERLAY_BRAND_Y = STORY_HEIGHT - 132;
 const OVERLAY_BRAND_LOGO_SIZE = 60;
 const OVERLAY_BRAND_GAP = 18;
+const splashLogoSource = require('../../../android/app/src/main/res/drawable-nodpi/spotme_mark.png');
 
 type StoryComposeMode = 'background' | 'overlay';
 type StoryComposeLayout = 'badge' | 'blog_card' | 'home_media_card' | 'home_media_overlay_card';
@@ -98,7 +110,7 @@ function stripDateText(text: string) {
     }
 
     return output
-        .replace(/\s*[-|,•]\s*/g, ' ')
+        .replace(/\s*[-|,\u2022]\s*/g, ' ')
         .replace(/\s{2,}/g, ' ')
         .trim();
 }
@@ -178,6 +190,13 @@ function dedupeSubtitle(title?: string | null, subtitle?: string | null) {
     return safeSubtitle;
 }
 
+function formatHomeTitle(lines: string[]) {
+    if (!lines.length) {
+        return '';
+    }
+    return lines.map((line, index) => (index === 0 ? `Event: ${line}` : line)).join('\n');
+}
+
 async function writeBase64Png(base64: string, requestId: string) {
     const safeId = String(requestId || `${Date.now()}`).replace(/[^a-z0-9_-]/gi, '');
     const path = `${RNFS.CachesDirectoryPath}/instagram-story-${safeId}.png`;
@@ -192,6 +211,7 @@ async function writeBase64Png(base64: string, requestId: string) {
 
 const InstagramStoryComposer = ({request, onComplete, onError}: ComposerProps) => {
     const svgRef = useRef<Svg | null>(null);
+    const captureViewRef = useRef<View | null>(null);
     const [backgroundPrimed, setBackgroundPrimed] = useState(false);
     const [backgroundLoaded, setBackgroundLoaded] = useState(false);
     const [backgroundFailed, setBackgroundFailed] = useState(false);
@@ -244,20 +264,10 @@ const InstagramStoryComposer = ({request, onComplete, onError}: ComposerProps) =
         };
     }, [request?.id, request?.imageUri, request?.layout, request?.mode]);
 
-    const canvas = useMemo(
-        () =>
-            request?.mode === 'overlay'
-                ? {width: STORY_WIDTH, height: STORY_HEIGHT}
-                : {width: STORY_WIDTH, height: STORY_HEIGHT},
-        [request?.mode],
-    );
+    const canvas = useMemo(() => ({width: STORY_WIDTH, height: STORY_HEIGHT}), []);
+    const shouldUseViewCapture = request?.layout === 'home_media_card' && request?.mode === 'background';
     const appName = normalizeText(request?.appName || 'SpotMe') || 'SpotMe';
-    const splashLogoUri = useMemo(
-        () => RNImage.resolveAssetSource(
-            require('../../../android/app/src/main/res/drawable-nodpi/spotme_mark.png'),
-        ).uri,
-        [],
-    );
+    const splashLogoUri = useMemo(() => RNImage.resolveAssetSource(splashLogoSource).uri, []);
     const titleText = normalizeText(request?.title);
     const subtitleText = dedupeSubtitle(request?.title, request?.subtitle);
 
@@ -274,6 +284,7 @@ const InstagramStoryComposer = ({request, onComplete, onError}: ComposerProps) =
         }
         return wrapTextLines(subtitleText, 960 - 96, 32, 3);
     }, [request?.layout, subtitleText]);
+
     const hasSubtitle = subtitleLines.length > 0;
     const homeTitleLines = useMemo(() => {
         if (request?.layout !== 'home_media_card' && request?.layout !== 'home_media_overlay_card') {
@@ -281,6 +292,7 @@ const InstagramStoryComposer = ({request, onComplete, onError}: ComposerProps) =
         }
         return wrapTextLines(titleText, 860, 48, 2);
     }, [request?.layout, titleText]);
+
     const homeSubtitleLines = useMemo(() => {
         if (request?.layout !== 'home_media_card' && request?.layout !== 'home_media_overlay_card') {
             return [];
@@ -289,10 +301,16 @@ const InstagramStoryComposer = ({request, onComplete, onError}: ComposerProps) =
     }, [request?.layout, subtitleText]);
 
     const exportStoryImage = useCallback(async () => {
-        if (!request || !svgRef.current) {
+        if (!request) {
             return;
         }
         if (capturedRequestIdRef.current === request.id) {
+            return;
+        }
+        if (shouldUseViewCapture && !captureViewRef.current) {
+            return;
+        }
+        if (!shouldUseViewCapture && !svgRef.current) {
             return;
         }
 
@@ -305,28 +323,49 @@ const InstagramStoryComposer = ({request, onComplete, onError}: ComposerProps) =
             backgroundPrimed,
             backgroundLoaded,
             backgroundFailed,
+            renderer: shouldUseViewCapture ? 'view-shot' : 'svg',
         });
 
         try {
-            const base64 = await new Promise<string>((resolve, reject) => {
-                const timeout = setTimeout(() => {
-                    reject(new Error('Instagram Story composition timed out.'));
-                }, 5000);
+            let base64 = '';
 
-                svgRef.current?.toDataURL((value: string) => {
-                    clearTimeout(timeout);
-                    if (!value) {
-                        debugInstagramStoryComposer('export.empty', {requestId: request.id});
-                        reject(new Error('Could not compose Instagram Story image.'));
-                        return;
-                    }
-                    debugInstagramStoryComposer('export.base64.ready', {
-                        requestId: request.id,
-                        byteLength: value.length,
-                    });
-                    resolve(value);
-                }, {width: canvas.width, height: canvas.height});
-            });
+            if (shouldUseViewCapture) {
+                base64 = await captureRef(captureViewRef.current, {
+                    format: 'png',
+                    quality: 1,
+                    result: 'base64',
+                    width: canvas.width,
+                    height: canvas.height,
+                });
+                debugInstagramStoryComposer('export.captureRef.ready', {
+                    requestId: request.id,
+                    byteLength: base64.length,
+                });
+            } else {
+                base64 = await new Promise<string>((resolve, reject) => {
+                    const timeout = setTimeout(() => {
+                        reject(new Error('Instagram Story composition timed out.'));
+                    }, 5000);
+
+                    svgRef.current?.toDataURL((value: string) => {
+                        clearTimeout(timeout);
+                        if (!value) {
+                            debugInstagramStoryComposer('export.empty', {requestId: request.id});
+                            reject(new Error('Could not compose Instagram Story image.'));
+                            return;
+                        }
+                        debugInstagramStoryComposer('export.base64.ready', {
+                            requestId: request.id,
+                            byteLength: value.length,
+                        });
+                        resolve(value);
+                    }, {width: canvas.width, height: canvas.height});
+                });
+            }
+
+            if (!base64) {
+                throw new Error('Could not compose Instagram Story image.');
+            }
 
             const fileUri = await writeBase64Png(base64, request.id);
             debugInstagramStoryComposer('export.complete', {
@@ -342,7 +381,17 @@ const InstagramStoryComposer = ({request, onComplete, onError}: ComposerProps) =
             });
             onError(error instanceof Error ? error : new Error(String(error ?? 'Instagram Story composition failed')));
         }
-    }, [backgroundFailed, backgroundLoaded, backgroundPrimed, canvas.height, canvas.width, onComplete, onError, request]);
+    }, [
+        backgroundFailed,
+        backgroundLoaded,
+        backgroundPrimed,
+        canvas.height,
+        canvas.width,
+        onComplete,
+        onError,
+        request,
+        shouldUseViewCapture,
+    ]);
 
     useEffect(() => {
         if (!request || !backgroundPrimed || !backgroundLoaded || backgroundFailed) {
@@ -368,9 +417,7 @@ const InstagramStoryComposer = ({request, onComplete, onError}: ComposerProps) =
 
     const isOverlay = request.mode === 'overlay';
     const isBlogCard = request.layout === 'blog_card';
-    const isHomeMediaCard = request.layout === 'home_media_card';
     const isHomeMediaOverlayCard = request.layout === 'home_media_overlay_card';
-    const isAnyHomeMediaCard = isHomeMediaCard || isHomeMediaOverlayCard;
     const hasVisibleBackgroundImage = Boolean(request.imageUri && !backgroundFailed && !isBlogCard);
     const overlayTextWidth = estimateTextWidth(appName, OVERLAY_BRAND_FONT_SIZE);
     const overlayBrandWidth = overlayTextWidth + OVERLAY_BRAND_GAP + OVERLAY_BRAND_LOGO_SIZE;
@@ -419,6 +466,128 @@ const InstagramStoryComposer = ({request, onComplete, onError}: ComposerProps) =
     const ctaHeight = 92;
     const ctaX = (STORY_WIDTH - ctaWidth) / 2;
     const ctaY = homeCardY + homeCardHeight - ctaHeight - 42;
+    const homeTitleText = formatHomeTitle(homeTitleLines);
+    const homeSubtitleText = homeSubtitleLines[0] ? `Match: ${homeSubtitleLines[0]}` : '';
+
+    if (shouldUseViewCapture) {
+        return (
+            <View pointerEvents="none" style={styles.hiddenHost}>
+                <View
+                    ref={captureViewRef}
+                    collapsable={false}
+                    style={styles.captureCanvas}
+                    testID="story-capture-host"
+                >
+                    {request.imageUri ? (
+                        <RNImage
+                            source={{uri: request.imageUri}}
+                            style={styles.captureBackgroundImage}
+                            resizeMode="cover"
+                            testID="story-background-image"
+                            onLoad={() => {
+                                debugInstagramStoryComposer('image.onLoad', {
+                                    requestId: request.id,
+                                    layout: request.layout,
+                                    renderer: 'view-shot',
+                                });
+                                setBackgroundLoaded(true);
+                            }}
+                            onError={() => {
+                                debugInstagramStoryComposer('image.onError', {
+                                    requestId: request.id,
+                                    layout: request.layout,
+                                    renderer: 'view-shot',
+                                    imageUri: request.imageUri,
+                                });
+                                setBackgroundFailed(true);
+                                onError(new Error('Could not load image for Instagram Story sharing.'));
+                            }}
+                        />
+                    ) : (
+                        <View style={styles.captureBackgroundFallback} />
+                    )}
+
+                    <View style={styles.captureTint} />
+                    <LinearGradient
+                        colors={['rgba(8,14,24,0.10)', 'rgba(8,14,24,0.42)']}
+                        style={styles.captureFade}
+                    />
+
+                    <View
+                        style={[
+                            styles.captureBrandPill,
+                            {
+                                left: brandPillX,
+                                top: brandPillY,
+                                width: brandPillWidth,
+                                height: brandPillHeight,
+                            },
+                        ]}
+                    >
+                        <RNImage source={splashLogoSource} style={styles.captureBrandLogo} resizeMode="contain" />
+                        <Text style={[styles.captureBrandText, {fontSize: brandFontSize}]}>{appName}</Text>
+                    </View>
+
+                    <View
+                        style={[
+                            styles.captureHomeCard,
+                            {
+                                left: homeCardX,
+                                top: homeCardY,
+                                width: homeCardWidth,
+                                height: homeCardHeight,
+                            },
+                        ]}
+                    >
+                        {homeTitleText ? (
+                            <Text
+                                style={[
+                                    styles.captureHomeTitle,
+                                    styles.captureTextInset,
+                                    {
+                                        top: homeTitleY - homeCardY - 48,
+                                    },
+                                ]}
+                            >
+                                {homeTitleText}
+                            </Text>
+                        ) : null}
+
+                        {homeSubtitleText ? (
+                            <Text
+                                style={[
+                                    styles.captureHomeSubtitle,
+                                    styles.captureTextInset,
+                                    {
+                                        top: homeSubtitleY - homeCardY - 22,
+                                    },
+                                ]}
+                            >
+                                {homeSubtitleText}
+                            </Text>
+                        ) : null}
+
+                        <LinearGradient
+                            colors={['#4E92FF', '#377EF5']}
+                            start={{x: 0, y: 0}}
+                            end={{x: 1, y: 0}}
+                            style={[
+                                styles.captureCta,
+                                {
+                                    left: ctaX - homeCardX,
+                                    top: ctaY - homeCardY,
+                                    width: ctaWidth,
+                                    height: ctaHeight,
+                                },
+                            ]}
+                        >
+                            <Text style={styles.captureCtaText}>{`Get your race photos on ${appName}`}</Text>
+                        </LinearGradient>
+                    </View>
+                </View>
+            </View>
+        );
+    }
 
     return (
         <View pointerEvents="none" style={styles.hiddenHost}>
@@ -438,14 +607,10 @@ const InstagramStoryComposer = ({request, onComplete, onError}: ComposerProps) =
                             rx={34}
                         />
                     </ClipPath>
-                    <LinearGradient id="homeCardFade" x1="0" y1="0" x2="0" y2="1">
-                        <Stop offset="0" stopColor="rgba(8,14,24,0.10)" />
-                        <Stop offset="1" stopColor="rgba(8,14,24,0.42)" />
-                    </LinearGradient>
-                    <LinearGradient id="homeCardButton" x1="0" y1="0" x2="1" y2="0">
+                    <SvgLinearGradient id="homeCardButton" x1="0" y1="0" x2="1" y2="0">
                         <Stop offset="0" stopColor="#4E92FF" />
                         <Stop offset="1" stopColor="#377EF5" />
-                    </LinearGradient>
+                    </SvgLinearGradient>
                 </Defs>
                 {!isOverlay ? (
                     <>
@@ -468,6 +633,7 @@ const InstagramStoryComposer = ({request, onComplete, onError}: ComposerProps) =
                                     debugInstagramStoryComposer('image.onLoad', {
                                         requestId: request.id,
                                         layout: request.layout,
+                                        renderer: 'svg',
                                     });
                                     setBackgroundLoaded(true);
                                 }}
@@ -475,29 +641,12 @@ const InstagramStoryComposer = ({request, onComplete, onError}: ComposerProps) =
                                     debugInstagramStoryComposer('image.onError', {
                                         requestId: request.id,
                                         layout: request.layout,
+                                        renderer: 'svg',
                                         imageUri: request.imageUri,
                                     });
                                     setBackgroundFailed(true);
                                     onError(new Error('Could not load image for Instagram Story sharing.'));
                                 }}
-                            />
-                        ) : null}
-                        {isHomeMediaCard && hasVisibleBackgroundImage ? (
-                            <Rect
-                                x={0}
-                                y={0}
-                                width={STORY_WIDTH}
-                                height={STORY_HEIGHT}
-                                fill="rgba(4,10,16,0.18)"
-                            />
-                        ) : null}
-                        {isHomeMediaCard && hasVisibleBackgroundImage ? (
-                            <Rect
-                                x={0}
-                                y={0}
-                                width={STORY_WIDTH}
-                                height={STORY_HEIGHT}
-                                fill="url(#homeCardFade)"
                             />
                         ) : null}
                     </>
@@ -507,25 +656,25 @@ const InstagramStoryComposer = ({request, onComplete, onError}: ComposerProps) =
 
                 {isOverlay ? (
                     <>
-                    <SvgText
-                        x={overlayBrandStartX}
-                        y={OVERLAY_BRAND_Y}
-                        fill="#FFFFFF"
-                        fontSize={OVERLAY_BRAND_FONT_SIZE}
-                        fontWeight="700"
-                        stroke="rgba(0,0,0,0.40)"
-                        strokeWidth={2}
-                    >
-                        {appName}
-                    </SvgText>
-                    <SvgImage
-                        x={overlayBrandStartX + overlayTextWidth + OVERLAY_BRAND_GAP}
-                        y={overlayLogoY}
-                        width={OVERLAY_BRAND_LOGO_SIZE}
-                        height={OVERLAY_BRAND_LOGO_SIZE}
-                        href={{uri: splashLogoUri}}
-                        preserveAspectRatio="xMidYMid meet"
-                    />
+                        <SvgText
+                            x={overlayBrandStartX}
+                            y={OVERLAY_BRAND_Y}
+                            fill="#FFFFFF"
+                            fontSize={OVERLAY_BRAND_FONT_SIZE}
+                            fontWeight="700"
+                            stroke="rgba(0,0,0,0.40)"
+                            strokeWidth={2}
+                        >
+                            {appName}
+                        </SvgText>
+                        <SvgImage
+                            x={overlayBrandStartX + overlayTextWidth + OVERLAY_BRAND_GAP}
+                            y={overlayLogoY}
+                            width={OVERLAY_BRAND_LOGO_SIZE}
+                            height={OVERLAY_BRAND_LOGO_SIZE}
+                            href={{uri: splashLogoUri}}
+                            preserveAspectRatio="xMidYMid meet"
+                        />
                     </>
                 ) : null}
 
@@ -578,6 +727,7 @@ const InstagramStoryComposer = ({request, onComplete, onError}: ComposerProps) =
                                     debugInstagramStoryComposer('image.onLoad', {
                                         requestId: request.id,
                                         layout: request.layout,
+                                        renderer: 'svg',
                                     });
                                     setBackgroundLoaded(true);
                                 }}
@@ -585,6 +735,7 @@ const InstagramStoryComposer = ({request, onComplete, onError}: ComposerProps) =
                                     debugInstagramStoryComposer('image.onError', {
                                         requestId: request.id,
                                         layout: request.layout,
+                                        renderer: 'svg',
                                         imageUri: request.imageUri,
                                     });
                                     setBackgroundFailed(true);
@@ -653,7 +804,7 @@ const InstagramStoryComposer = ({request, onComplete, onError}: ComposerProps) =
                     </>
                 ) : null}
 
-                {isAnyHomeMediaCard ? (
+                {isHomeMediaOverlayCard ? (
                     <>
                         <Rect
                             x={brandPillX}
@@ -787,7 +938,7 @@ export function useInstagramStoryImageComposer() {
                                 ? 'home_media_card'
                                 : options?.layout === 'home_media_overlay_card'
                                     ? 'home_media_overlay_card'
-                                : 'badge',
+                                    : 'badge',
                 });
             });
         },
@@ -829,6 +980,92 @@ const styles = StyleSheet.create({
         top: 0,
         width: STORY_WIDTH,
         height: STORY_HEIGHT,
+    },
+    captureCanvas: {
+        width: STORY_WIDTH,
+        height: STORY_HEIGHT,
+        backgroundColor: '#0D0F12',
+    },
+    captureBackgroundImage: {
+        ...StyleSheet.absoluteFillObject,
+        width: STORY_WIDTH,
+        height: STORY_HEIGHT,
+    },
+    captureBackgroundFallback: {
+        ...StyleSheet.absoluteFillObject,
+        width: STORY_WIDTH,
+        height: STORY_HEIGHT,
+        backgroundColor: '#0D0F12',
+    },
+    captureTint: {
+        ...StyleSheet.absoluteFillObject,
+        width: STORY_WIDTH,
+        height: STORY_HEIGHT,
+        backgroundColor: 'rgba(4,10,16,0.18)',
+    },
+    captureFade: {
+        ...StyleSheet.absoluteFillObject,
+        width: STORY_WIDTH,
+        height: STORY_HEIGHT,
+    },
+    captureBrandPill: {
+        position: 'absolute',
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingHorizontal: 18,
+        borderRadius: 24,
+        backgroundColor: 'rgba(78,146,255,0.95)',
+    },
+    captureBrandLogo: {
+        width: 44,
+        height: 44,
+        marginRight: 14,
+    },
+    captureBrandText: {
+        color: '#FFFFFF',
+        fontWeight: '700',
+    },
+    captureHomeCard: {
+        position: 'absolute',
+        borderRadius: 40,
+        backgroundColor: 'rgba(18,23,36,0.34)',
+        borderWidth: 3,
+        borderColor: 'rgba(255,255,255,0.65)',
+    },
+    captureHomeTitle: {
+        position: 'absolute',
+        color: '#FFFFFF',
+        fontSize: 48,
+        fontWeight: '700',
+        lineHeight: 58,
+        textAlign: 'center',
+        includeFontPadding: false,
+    },
+    captureHomeSubtitle: {
+        position: 'absolute',
+        color: 'rgba(255,255,255,0.92)',
+        fontSize: 34,
+        fontWeight: '500',
+        lineHeight: 42,
+        textAlign: 'center',
+        includeFontPadding: false,
+    },
+    captureTextInset: {
+        left: 58,
+        right: 58,
+    },
+    captureCta: {
+        position: 'absolute',
+        borderRadius: 30,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    captureCtaText: {
+        color: '#FFFFFF',
+        fontSize: 36,
+        fontWeight: '700',
+        textAlign: 'center',
+        includeFontPadding: false,
     },
 });
 
