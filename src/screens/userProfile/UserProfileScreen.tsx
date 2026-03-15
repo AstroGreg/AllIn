@@ -133,9 +133,14 @@ const UserProfileScreen = ({ navigation, route }: any) => {
             userProfile?.category === 'support'
         );
     }, [profileSummary?.profile, userProfile]);
-    const serverDeclaresNoProfiles = authBootstrap?.has_profiles === false && !didLoadProfileData;
-    const hasAnyLinkedProfiles = serverDeclaresNoProfiles ? false : (selectedFocuses.length > 0 || myGroups.length > 0 || hasSupportProfile);
-    const shouldShowEmptyProfileState = serverDeclaresNoProfiles || (!hasAnyLinkedProfiles && didLoadProfileData);
+    const bootstrapProfileId = String(authBootstrap?.profile_id ?? '').trim();
+    const summaryProfileId = String(profileSummary?.profile_id ?? '').trim();
+    const hasConcreteProfileRecord =
+        summaryProfileId.length > 0 ||
+        bootstrapProfileId.length > 0 ||
+        authBootstrap?.has_profiles === true;
+    const hasAnyLinkedProfiles = hasConcreteProfileRecord || selectedFocuses.length > 0 || myGroups.length > 0 || hasSupportProfile;
+    const shouldShowEmptyProfileState = didLoadProfileData && !hasAnyLinkedProfiles;
     const perfReady = Boolean(profileImage) || (didLoadProfileData && (profileSummary !== null || shouldShowEmptyProfileState));
     const profileCategoryLabel = profileCategory ? (profileCategory === 'support' ? t('Support') : getSportFocusLabel(profileCategory, t)) : '';
     const collectionScopeKey = useMemo(() => {
@@ -436,6 +441,8 @@ const UserProfileScreen = ({ navigation, route }: any) => {
                     const resolved = coverCandidate ? toAbsoluteUrl(String(coverCandidate)) : null;
                     const coverImage = resolved ? (withAccessToken(resolved) || resolved) : null;
                     const rawPostType = String((p as any)?.post_type ?? '').trim().toLowerCase();
+                    const mediaCount = Number((p as any)?.media_count ?? 0);
+                    const isUploading = mediaCount > 0 && !cover?.media_id;
                     return ({
                         id: String(p.id),
                         postId: String(p.id),
@@ -447,6 +454,7 @@ const UserProfileScreen = ({ navigation, route }: any) => {
                         date: createdAtRaw ? String(createdAtRaw).slice(0, 10) : '',
                         description: p.summary || p.description || '',
                         coverImage,
+                        status: isUploading ? 'UPLOADING' : null,
                         likes_count: Number((p as any)?.likes_count ?? 0),
                         views_count: Number((p as any)?.views_count ?? 0),
                         canDelete: String((p as any)?.author?.profile_id ?? '') === String(postsProfileId),
@@ -629,12 +637,12 @@ const UserProfileScreen = ({ navigation, route }: any) => {
     };
 
     const handleHeaderAction = useCallback(() => {
-        if (!hasAnyLinkedProfiles) {
+        if (!hasConcreteProfileRecord) {
             navigation.navigate('CategorySelectionScreen', { fromAddFlow: true });
             return;
         }
         openProfileMenu();
-    }, [hasAnyLinkedProfiles, navigation]);
+    }, [hasConcreteProfileRecord, navigation]);
 
     useEffect(() => {
         const shouldOpen = Boolean(route?.params?.openProfileSwitcher);
@@ -1159,6 +1167,7 @@ const UserProfileScreen = ({ navigation, route }: any) => {
             date: entry.createdAt ? toDateLabel(String(entry.createdAt)) : (entry.date ? String(entry.date) : ''),
             description: entry.description ? String(entry.description) : '',
             coverImage: entry.coverImage ? String(entry.coverImage) : null,
+            status: entry.status ? String(entry.status) : null,
             canDelete: entry.canDelete !== false,
         }));
 
@@ -1237,9 +1246,7 @@ const UserProfileScreen = ({ navigation, route }: any) => {
                         <View style={Styles.headerSpacer} />
                     )}
                     <Text style={Styles.headerTitle}>{t('Profile')}</Text>
-                    <TouchableOpacity style={Styles.headerButton} onPress={handleHeaderAction}>
-                        <Add size={24} color={colors.primaryColor} variant="Linear" />
-                    </TouchableOpacity>
+                    <View style={Styles.headerSpacer} />
                 </View>
                 <View style={Styles.emptyProfileContainer}>
                     <TouchableOpacity

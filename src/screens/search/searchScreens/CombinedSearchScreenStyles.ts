@@ -182,6 +182,31 @@ export const createStyles = (colors: ThemeColors) =>
       ...Fonts.medium12,
       color: colors.primaryColor,
     },
+    gradeRow: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: 8,
+      marginTop: 6,
+    },
+    gradeButton: {
+      borderWidth: 1,
+      borderColor: colors.lightGrayColor,
+      backgroundColor: colors.btnBackgroundColor,
+      borderRadius: 999,
+      paddingHorizontal: 12,
+      paddingVertical: 8,
+    },
+    gradeButtonActive: {
+      borderColor: colors.primaryColor,
+      backgroundColor: colors.secondaryBlueColor,
+    },
+    gradeButtonText: {
+      ...Fonts.medium12,
+      color: colors.subTextColor,
+    },
+    gradeButtonTextActive: {
+      color: colors.primaryColor,
+    },
     primaryButton: {
       height: 52,
       borderRadius: 14,

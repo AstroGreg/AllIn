@@ -1,6 +1,26 @@
 import React from 'react';
 import ReactTestRenderer, {act} from 'react-test-renderer';
-import {Alert, Text, TouchableOpacity, View} from 'react-native';
+import {Alert, InteractionManager, Text, TouchableOpacity, View} from 'react-native';
+
+jest.mock('react-native/Libraries/Lists/FlatList', () => {
+  const React = require('react');
+  const {View} = require('react-native');
+
+  const MockFlatList = ({data, renderItem, ListEmptyComponent, ...props}: any) =>
+    React.createElement(
+      View,
+      props,
+      Array.isArray(data) && data.length > 0
+        ? data.map((item, index) =>
+            React.createElement(React.Fragment, {
+              key: item?.id ?? item?.media_id ?? String(index),
+            }, renderItem({item, index})),
+          )
+        : ListEmptyComponent ?? null,
+    );
+
+  return MockFlatList;
+});
 
 const mockSearchEvents = jest.fn();
 const mockSearchMediaByBib = jest.fn();
@@ -196,6 +216,8 @@ function createNavigation() {
 }
 
 describe('CombinedSearchScreen flows', () => {
+  const renderers: ReactTestRenderer.ReactTestRenderer[] = [];
+
   beforeEach(() => {
     mockRoute.params = {};
     mockAuthState.apiAccessToken = 'api-token';
@@ -210,9 +232,18 @@ describe('CombinedSearchScreen flows', () => {
 
     mockGetProfileSummary.mockResolvedValue({profile: {}});
     jest.spyOn(Alert, 'alert').mockImplementation(() => undefined);
+    jest.spyOn(InteractionManager, 'runAfterInteractions').mockImplementation((callback: () => void) => {
+      callback();
+      return {cancel: jest.fn()} as any;
+    });
   });
 
   afterEach(() => {
+    act(() => {
+      while (renderers.length > 0) {
+        renderers.pop()?.unmount();
+      }
+    });
     jest.restoreAllMocks();
   });
 
@@ -233,7 +264,7 @@ describe('CombinedSearchScreen flows', () => {
     const navigation = createNavigation();
 
     act(() => {
-      ReactTestRenderer.create(<CombinedSearchScreen navigation={navigation} />);
+      renderers.push(ReactTestRenderer.create(<CombinedSearchScreen navigation={navigation} />));
     });
     await flushEffects(4);
 
@@ -286,6 +317,7 @@ describe('CombinedSearchScreen flows', () => {
 
     act(() => {
       renderer = ReactTestRenderer.create(<CombinedSearchScreen navigation={navigation} />);
+      renderers.push(renderer);
     });
     await flushEffects(3);
 
@@ -294,6 +326,7 @@ describe('CombinedSearchScreen flows', () => {
 
     expect(mockSearchFaceByEnrollment).toHaveBeenCalledWith('api-token', {
       event_ids: ['evt-1'],
+      grade: 'hard',
       label: 'default',
       limit: 600,
       save: true,
@@ -325,6 +358,7 @@ describe('CombinedSearchScreen flows', () => {
 
     act(() => {
       renderer = ReactTestRenderer.create(<CombinedSearchScreen navigation={navigation} />);
+      renderers.push(renderer);
     });
     await flushEffects(3);
 
@@ -362,5 +396,39 @@ describe('CombinedSearchScreen flows', () => {
         mode: 'enrolFace',
       }),
     );
+  });
+
+  test('lets the user pick a softer face match grade in the main AI search flow', async () => {
+    mockRoute.params = {
+      preselectedEvents: [{id: 'evt-1', name: 'Brussels 2025'}],
+    };
+    mockSearchFaceByEnrollment.mockResolvedValue({
+      results: [{media_id: 'media-1', event_id: 'evt-1', preview_url: 'preview'}],
+    });
+
+    let renderer: ReactTestRenderer.ReactTestRenderer;
+    const navigation = createNavigation();
+
+    act(() => {
+      renderer = ReactTestRenderer.create(<CombinedSearchScreen navigation={navigation} />);
+      renderers.push(renderer);
+    });
+    await flushEffects(3);
+
+    expect(findTextValues(renderer!.root)).toContain('Face match grade');
+    pressTouchableWithText(renderer!.root, 'Soft · 85%');
+    pressTouchableWithText(renderer!.root, 'Face switch off');
+    await flushEffects(2);
+    pressTouchableWithText(renderer!.root, 'Run AI search');
+    await flushEffects(3);
+
+    expect(mockSearchFaceByEnrollment).toHaveBeenCalledWith('api-token', {
+      event_ids: ['evt-1'],
+      grade: 'soft',
+      label: 'default',
+      limit: 600,
+      save: true,
+      top: 100,
+    });
   });
 });

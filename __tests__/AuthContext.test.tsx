@@ -3,6 +3,7 @@ import ReactTestRenderer, {act} from 'react-test-renderer';
 
 const mockStorage = new Map<string, string>();
 const mockGetAuthBootstrap = jest.fn();
+const mockGetProfileSummary = jest.fn();
 const mockUpdateUserMe = jest.fn();
 const mockUserInfo = jest.fn();
 const mockAuthorize = jest.fn();
@@ -32,6 +33,7 @@ jest.mock('@react-native-async-storage/async-storage', () => ({
 
 jest.mock('../src/services/apiGateway', () => ({
   getAuthBootstrap: (...args: any[]) => mockGetAuthBootstrap(...args),
+  getProfileSummary: (...args: any[]) => mockGetProfileSummary(...args),
   updateUserMe: (...args: any[]) => mockUpdateUserMe(...args),
 }));
 
@@ -89,6 +91,7 @@ describe('AuthProvider bootstrap', () => {
     latestAuth = null;
     mockStorage.clear();
     mockGetAuthBootstrap.mockReset();
+    mockGetProfileSummary.mockReset();
     mockUpdateUserMe.mockReset();
     mockUserInfo.mockReset();
     mockAuthorize.mockReset();
@@ -123,6 +126,19 @@ describe('AuthProvider bootstrap', () => {
         birthdate: '1995-04-10T00:00:00.000Z',
       },
     });
+    mockGetProfileSummary.mockResolvedValue({
+      ok: true,
+      profile_id: 'profile-1',
+      profile: {
+        username: 'road.runner',
+        category: 'Athlete',
+        selected_events: ['track-field'],
+        main_disciplines: { 'track-field': '800m' },
+        track_field_main_event: '800m',
+      },
+      posts_count: 0,
+      followers_count: 0,
+    });
 
     await act(async () => {
       ReactTestRenderer.create(
@@ -148,11 +164,20 @@ describe('AuthProvider bootstrap', () => {
         lastName: 'Runner',
         nationality: 'BE',
         birthDate: '1995-04-10',
+        selectedEvents: ['track-field'],
+        trackFieldMainEvent: '800m',
+        mainDisciplines: {'track-field': '800m'},
       }),
     );
 
     const storedProfile = JSON.parse(mockStorage.get(PROFILE_STORAGE_KEY) ?? '{}');
-    expect(storedProfile).toEqual({});
+    expect(storedProfile).toEqual(
+      expect.objectContaining({
+        selectedEvents: ['track-field'],
+        trackFieldMainEvent: '800m',
+        mainDisciplines: {'track-field': '800m'},
+      }),
+    );
   });
 
   test('keeps the session active when bootstrap fails transiently', async () => {
@@ -173,6 +198,7 @@ describe('AuthProvider bootstrap', () => {
       sub: 'auth0|runner-1',
     });
     mockGetAuthBootstrap.mockRejectedValue(new Error('gateway unavailable'));
+    mockGetProfileSummary.mockRejectedValue(new Error('gateway unavailable'));
 
     await act(async () => {
       ReactTestRenderer.create(
@@ -189,7 +215,12 @@ describe('AuthProvider bootstrap', () => {
     expect(latestAuth?.isLoading).toBe(false);
     expect(latestAuth?.isAuthenticated).toBe(true);
     expect(latestAuth?.authBootstrap).toBeNull();
-    expect(latestAuth?.userProfile).toBeNull();
+    expect(latestAuth?.userProfile).toEqual(
+      expect.objectContaining({
+        category: 'find',
+        selectedEvents: ['evt-1'],
+      }),
+    );
   });
 
   test('updateUserAccount refreshes bootstrap and re-syncs the local profile', async () => {
@@ -235,6 +266,32 @@ describe('AuthProvider bootstrap', () => {
           birthdate: '1995-04-10',
         },
       });
+    mockGetProfileSummary
+      .mockResolvedValueOnce({
+        ok: true,
+        profile_id: 'profile-1',
+        profile: {
+          category: 'Athlete',
+          selected_events: ['track-field'],
+          main_disciplines: { 'track-field': '1500m' },
+          track_field_main_event: '1500m',
+        },
+        posts_count: 0,
+        followers_count: 0,
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        profile_id: 'profile-1',
+        profile: {
+          username: 'updated.runner',
+          category: 'Athlete',
+          selected_events: ['track-field'],
+          main_disciplines: { 'track-field': '1500m' },
+          track_field_main_event: '1500m',
+        },
+        posts_count: 0,
+        followers_count: 0,
+      });
     mockUpdateUserMe.mockResolvedValue({
       ok: true,
     });
@@ -270,6 +327,8 @@ describe('AuthProvider bootstrap', () => {
     expect(latestAuth?.userProfile).toEqual(
       expect.objectContaining({
         username: 'updated.runner',
+        selectedEvents: ['track-field'],
+        trackFieldMainEvent: '1500m',
       }),
     );
   });
@@ -292,6 +351,17 @@ describe('AuthProvider bootstrap', () => {
       needs_user_onboarding: true,
       missing_user_fields: ['username'],
       user: null,
+    });
+    mockGetProfileSummary.mockResolvedValue({
+      ok: true,
+      profile_id: 'profile-2',
+      profile: {
+        category: 'Athlete',
+        selected_events: [],
+        main_disciplines: {},
+      },
+      posts_count: 0,
+      followers_count: 0,
     });
 
     await act(async () => {
@@ -361,6 +431,17 @@ describe('AuthProvider bootstrap', () => {
       missing_user_fields: ['username'],
       user: null,
     });
+    mockGetProfileSummary.mockResolvedValue({
+      ok: true,
+      profile_id: 'profile-3',
+      profile: {
+        category: 'Athlete',
+        selected_events: [],
+        main_disciplines: {},
+      },
+      posts_count: 0,
+      followers_count: 0,
+    });
 
     await act(async () => {
       ReactTestRenderer.create(
@@ -406,6 +487,74 @@ describe('AuthProvider bootstrap', () => {
       }),
       expect.objectContaining({
         customScheme: 'allin',
+      }),
+    );
+  });
+
+  test('restore keeps stored athlete focus when server summary is sparse', async () => {
+    mockStorage.set(
+      AUTH_STORAGE_KEY,
+      JSON.stringify({
+        accessToken: 'stored-token',
+      }),
+    );
+    mockStorage.set(
+      PROFILE_STORAGE_KEY,
+      JSON.stringify({
+        category: 'find',
+        selectedEvents: ['track-field'],
+        trackFieldMainEvent: '400m',
+        mainDisciplines: {'track-field': '400m'},
+      }),
+    );
+    mockUserInfo.mockResolvedValue({
+      sub: 'auth0|runner-4',
+      email: 'runner4@example.com',
+    });
+    mockGetAuthBootstrap.mockResolvedValue({
+      ok: true,
+      sub: 'auth0|runner-4',
+      profile_id: 'profile-4',
+      has_profiles: true,
+      profiles_count: 1,
+      needs_user_onboarding: false,
+      missing_user_fields: [],
+      user: {
+        username: 'runner.four',
+      },
+    });
+    mockGetProfileSummary.mockResolvedValue({
+      ok: true,
+      profile_id: 'profile-4',
+      profile: {
+        username: 'runner.four',
+        category: 'Athlete',
+        selected_events: [],
+        main_disciplines: {},
+        track_field_main_event: null,
+      },
+      posts_count: 0,
+      followers_count: 0,
+    });
+
+    await act(async () => {
+      ReactTestRenderer.create(
+        <AuthProvider>
+          <ContextProbe onChange={(value) => {
+            latestAuth = value;
+          }} />
+        </AuthProvider>,
+      );
+    });
+    await flushEffects();
+    await flushEffects();
+
+    expect(latestAuth?.userProfile).toEqual(
+      expect.objectContaining({
+        category: 'find',
+        selectedEvents: ['track-field'],
+        trackFieldMainEvent: '400m',
+        mainDisciplines: {'track-field': '400m'},
       }),
     );
   });

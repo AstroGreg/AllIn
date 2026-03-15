@@ -3,8 +3,6 @@ import {Image, Text, TouchableOpacity, View} from 'react-native';
 import {fireEvent, render, screen, waitFor} from '@testing-library/react-native';
 
 const mockGetHomeOverview = jest.fn();
-const mockGetAllVideos = jest.fn();
-const mockGetAllPhotos = jest.fn();
 const mockGetPosts = jest.fn();
 const mockGetNotifications = jest.fn();
 const mockGetProfileSummaryById = jest.fn();
@@ -249,8 +247,6 @@ jest.mock('../src/screens/home/components/NewsFeedCard', () => {
 
 jest.mock('../src/services/apiGateway', () => ({
   getHomeOverview: (...args: any[]) => mockGetHomeOverview(...args),
-  getAllVideos: (...args: any[]) => mockGetAllVideos(...args),
-  getAllPhotos: (...args: any[]) => mockGetAllPhotos(...args),
   getPosts: (...args: any[]) => mockGetPosts(...args),
   getNotifications: (...args: any[]) => mockGetNotifications(...args),
   getProfileSummaryById: (...args: any[]) => mockGetProfileSummaryById(...args),
@@ -289,8 +285,6 @@ describe('HomeScreen like integration', () => {
 
   beforeEach(() => {
     mockGetHomeOverview.mockReset();
-    mockGetAllVideos.mockReset();
-    mockGetAllPhotos.mockReset();
     mockGetPosts.mockReset();
     mockGetNotifications.mockReset();
     mockGetProfileSummaryById.mockReset();
@@ -309,30 +303,38 @@ describe('HomeScreen like integration', () => {
       overview: {
         video: null,
         photo: null,
-        blog: {
-          post: {
-            id: postId,
-            title,
-            summary: 'summary',
-            description: 'description',
-            created_at: nowIso,
-            reading_time_minutes: 1,
-            likes_count: 0,
-            views_count: 0,
-            liked_by_me: false,
+        blog: null,
+        feed_posts: [
+          {
+            post: {
+              id: postId,
+              title,
+              summary: 'summary',
+              description: 'description',
+              created_at: nowIso,
+              reading_time_minutes: 1,
+              likes_count: 0,
+              views_count: 0,
+              liked_by_me: false,
+            },
+            author: {
+              profile_id: 'profile-author',
+              display_name: 'Author Name',
+              avatar_url: null,
+            },
+            media: null,
+            media_items: [
+              {
+                media_id: 'media-preview-1',
+                type: 'image',
+                thumbnail_url: 'https://example.com/thumb-1.jpg',
+              },
+            ],
           },
-          author: {
-            profile_id: 'profile-author',
-            display_name: 'Author Name',
-            avatar_url: null,
-          },
-          media: null,
-        },
+        ],
       },
     });
 
-    mockGetAllVideos.mockResolvedValue([]);
-    mockGetAllPhotos.mockResolvedValue([]);
     mockGetPosts.mockResolvedValue({ok: true, posts: []});
     mockGetNotifications.mockResolvedValue({
       ok: true,
@@ -386,4 +388,16 @@ describe('HomeScreen like integration', () => {
       expect(screen.getByText('1 likes')).toBeTruthy();
     });
   }, 20000);
+
+  test('home overview only uses friend feed posts and never raw competition overview media', async () => {
+    render(<HomeScreen navigation={createNavigation()} />);
+
+    await waitFor(() => {
+      expect(mockGetHomeOverview).toHaveBeenCalledWith('api-token', 'me');
+    });
+
+    expect(screen.getByText('Homepage Like Story')).toBeTruthy();
+    expect(mockGetHomeOverview.mock.calls[0]).toEqual(['api-token', 'me']);
+    expect(mockGetHomeOverview.mock.results[0]).toBeTruthy();
+  });
 });

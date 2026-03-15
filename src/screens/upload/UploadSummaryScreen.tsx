@@ -11,6 +11,9 @@ import AsyncStorage from '@react-native-async-storage/async-storage'
 import Video from 'react-native-video'
 import { useTranslation } from 'react-i18next';
 import { useFocusEffect } from '@react-navigation/native';
+import { useAuth } from '../../context/AuthContext';
+import { ApiError, getWorkerHealth, type WorkerHealthResponse } from '../../services/apiGateway';
+import { formatUploadDisplayName } from '../../utils/uploadPresentation';
 
 function normalizeLocalUri(uri?: string) {
     if (!uri) return uri;
@@ -28,6 +31,8 @@ interface UploadItem {
     id: number;
     thumbnail?: any;
     uri?: string;
+    fileName?: string | null;
+    title?: string | null;
     price: string;
     priceInput: string;
     priceCents: number;
@@ -66,6 +71,7 @@ const UploadSummaryScreen = ({ navigation, route }: any) => {
     const { colors } = useTheme();
     const Styles = createStyles(colors);
     const { t } = useTranslation();
+    const { apiAccessToken } = useAuth();
     const competition = route?.params?.competition;
     const account = route?.params?.account;
     const anonymous = route?.params?.anonymous;
@@ -73,6 +79,9 @@ const UploadSummaryScreen = ({ navigation, route }: any) => {
     const watermarkText = String(route?.params?.watermarkText ?? route?.params?.watermark_text ?? '').trim();
 
     const [categories, setCategories] = useState<CategorySection[]>([]);
+    const [workersLoading, setWorkersLoading] = useState(true);
+    const [workersError, setWorkersError] = useState<string | null>(null);
+    const [workerHealth, setWorkerHealth] = useState<WorkerHealthResponse | null>(null);
 
     const competitionId = useMemo(
         () => String(competition?.id || competition?.event_id || competition?.eventId || 'competition'),
@@ -87,6 +96,23 @@ const UploadSummaryScreen = ({ navigation, route }: any) => {
         }
         return 'Original';
     }, []);
+
+    const refreshWorkerHealth = useCallback(async () => {
+        setWorkersLoading(true);
+        setWorkersError(null);
+        try {
+            const health = await getWorkerHealth(apiAccessToken || undefined);
+            setWorkerHealth(health);
+            return health;
+        } catch (error: any) {
+            const message = error instanceof ApiError ? error.message : String(error?.message ?? error);
+            setWorkerHealth(null);
+            setWorkersError(message);
+            throw error;
+        } finally {
+            setWorkersLoading(false);
+        }
+    }, [apiAccessToken]);
 
     useFocusEffect(
         useCallback(() => {
@@ -111,6 +137,8 @@ const UploadSummaryScreen = ({ navigation, route }: any) => {
                             id: index + 1,
                             uri: normalizeLocalUri(asset?.uri),
                             thumbnail: asset?.uri ? { uri: normalizeLocalUri(asset.uri) } : undefined,
+                            fileName: asset?.fileName ?? null,
+                            title: asset?.title ?? null,
                             price: `€${(Math.min(
                                 priceCapForType(asset?.type),
                                 Math.max(0, Number(asset?.price_cents ?? (isVideoType(asset?.type) ? VIDEO_PRICE_CAP_CENTS : PHOTO_PRICE_CAP_CENTS))),
@@ -133,10 +161,11 @@ const UploadSummaryScreen = ({ navigation, route }: any) => {
                 }
             };
             loadAssets();
+            refreshWorkerHealth().catch(() => {});
             return () => {
                 mounted = false;
             };
-        }, [competitionId, formatResolution]),
+        }, [competitionId, formatResolution, refreshWorkerHealth]),
     );
 
     useEffect(() => {
@@ -161,6 +190,8 @@ const UploadSummaryScreen = ({ navigation, route }: any) => {
                         id: index + 1,
                         uri: normalizeLocalUri(asset?.uri),
                         thumbnail: asset?.uri ? { uri: normalizeLocalUri(asset.uri) } : undefined,
+                        fileName: asset?.fileName ?? null,
+                        title: asset?.title ?? null,
                         price: `€${(Math.min(
                             priceCapForType(asset?.type),
                             Math.max(0, Number(asset?.price_cents ?? (isVideoType(asset?.type) ? VIDEO_PRICE_CAP_CENTS : PHOTO_PRICE_CAP_CENTS))),
@@ -188,7 +219,31 @@ const UploadSummaryScreen = ({ navigation, route }: any) => {
         };
     }, [competitionId, formatResolution]);
 
-    const handleConfirm = () => {
+    const unhealthyWorkers = useMemo(() => {
+        const workers = workerHealth?.workers;
+        if (!workers) return [];
+        return Object.entries(workers)
+            .filter(([, state]) => !state?.ok)
+            .map(([name]) => name);
+    }, [workerHealth]);
+
+    const canStartUpload = useMemo(
+        () => !workersLoading && unhealthyWorkers.length === 0 && !workersError,
+        [unhealthyWorkers.length, workersError, workersLoading],
+    );
+
+    const handleConfirm = async () => {
+        try {
+            const health = await refreshWorkerHealth();
+            const unhealthy = Object.entries(health?.workers ?? {})
+                .filter(([, state]) => !state?.ok)
+                .map(([name]) => name);
+            if (unhealthy.length > 0) {
+                return;
+            }
+        } catch {
+            return;
+        }
         const sessionId = `u_${Date.now()}_${Math.random().toString(16).slice(2)}`;
         navigation.navigate('UploadProgressScreen', {
             competition,
@@ -221,6 +276,7 @@ const UploadSummaryScreen = ({ navigation, route }: any) => {
     }, [competitionId]);
 
     const handlePriceInputChange = useCallback((categoryName: string, itemId: number, value: string) => {
+        const centsByItem = new Map<number, number>();
         setCategories((prev) =>
             prev.map((section) => {
                 if (section.name !== categoryName) return section;
@@ -229,6 +285,7 @@ const UploadSummaryScreen = ({ navigation, route }: any) => {
                     items: section.items.map((item) => {
                         if (item.id !== itemId) return item;
                         const cents = clampPriceCents(value, item.maxPriceCents);
+                        centsByItem.set(item.id, cents);
                         return {
                             ...item,
                             priceInput: value,
@@ -239,7 +296,11 @@ const UploadSummaryScreen = ({ navigation, route }: any) => {
                 };
             }),
         );
-    }, []);
+        const updatedCents = centsByItem.get(itemId);
+        if (updatedCents != null) {
+            persistPrice(categoryName, Math.max(0, itemId - 1), updatedCents);
+        }
+    }, [persistPrice]);
 
     const handlePriceInputBlur = useCallback((categoryName: string, itemId: number) => {
         const section = categories.find((s) => s.name === categoryName);
@@ -293,6 +354,14 @@ const UploadSummaryScreen = ({ navigation, route }: any) => {
                 )}
             </View>
             <View style={Styles.itemInfo}>
+                <Text style={Styles.fileNameText} numberOfLines={2}>
+                    {formatUploadDisplayName({
+                        title: item.title,
+                        fileName: item.fileName,
+                        type: item.type,
+                        fallbackIndex: item.id,
+                    })}
+                </Text>
                 <View style={Styles.priceInputRow}>
                     <Text style={Styles.priceEuro}>€</Text>
                     <TextInput
@@ -301,6 +370,7 @@ const UploadSummaryScreen = ({ navigation, route }: any) => {
                         keyboardType="decimal-pad"
                         onChangeText={(value) => handlePriceInputChange(categoryName, item.id, value)}
                         onBlur={() => handlePriceInputBlur(categoryName, item.id)}
+                        testID={`upload-summary-price-input-${categoryName}-${item.id}`}
                     />
                 </View>
                 <Text style={Styles.resolutionText}>
@@ -327,7 +397,7 @@ const UploadSummaryScreen = ({ navigation, route }: any) => {
 
             {/* Header */}
             <View style={Styles.header}>
-                <TouchableOpacity style={Styles.headerButton} onPress={() => navigation.goBack()}>
+                <TouchableOpacity style={Styles.headerButton} onPress={() => navigation.goBack()} testID="upload-summary-back-button">
                     <ArrowLeft2 size={24} color={colors.primaryColor} variant="Linear" />
                 </TouchableOpacity>
                 <Text style={Styles.headerTitle}>{t('Upload Summary')}</Text>
@@ -348,11 +418,31 @@ const UploadSummaryScreen = ({ navigation, route }: any) => {
                 )}
                 {categories.map(renderCategory)}
 
+                <View style={Styles.healthCard} testID="upload-worker-health-card">
+                    <Text style={Styles.healthTitle}>{t('Worker readiness')}</Text>
+                    <Text style={Styles.healthText} testID="upload-worker-health-text">
+                        {workersLoading
+                            ? t('Checking worker health before upload…')
+                            : unhealthyWorkers.length > 0
+                                ? `${t('Upload blocked. Workers unavailable')}: ${unhealthyWorkers.join(', ')}`
+                                : workersError
+                                    ? `${t('Could not verify workers')}: ${workersError}`
+                                    : t('All workers are live. Upload can start.')}
+                    </Text>
+                </View>
+
                 <SizeBox height={30} />
 
                 {/* Confirm Button */}
-                <TouchableOpacity style={Styles.confirmButton} onPress={handleConfirm} testID="upload-start-button">
-                    <Text style={Styles.confirmButtonText}>{t('Start upload')}</Text>
+                <TouchableOpacity
+                    style={[Styles.confirmButton, !canStartUpload && Styles.confirmButtonDisabled]}
+                    onPress={handleConfirm}
+                    disabled={!canStartUpload}
+                    testID="upload-start-button"
+                >
+                    <Text style={Styles.confirmButtonText}>
+                        {workersLoading ? t('Checking workers…') : t('Start upload')}
+                    </Text>
                     <ArrowRight size={18} color={colors.pureWhite} variant="Linear" />
                 </TouchableOpacity>
 

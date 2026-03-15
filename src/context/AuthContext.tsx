@@ -213,6 +213,7 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 const AUTH_STORAGE_KEY = '@auth_credentials';
+const PROFILE_STORAGE_KEY = '@user_profile';
 
 type E2EAuthState = {
     enabled?: boolean;
@@ -447,14 +448,40 @@ const buildUserProfileFromSummary = (
             trackFieldMainEvent: profile?.track_field_main_event ?? null,
             roadTrailMainEvent: profile?.road_trail_main_event ?? null,
         })).length > 0;
-    const selectedEvents = normalizeStringArrayForProfile(profile?.selected_events);
+    const fallbackSelectedEvents = normalizeStringArrayForProfile(fallback?.selectedEvents);
+    const selectedEventsFromServer = normalizeStringArrayForProfile(profile?.selected_events);
+    const selectedEvents = selectedEventsFromServer.length > 0 ? selectedEventsFromServer : fallbackSelectedEvents;
+    const fallbackMainDisciplines = normalizeMainDisciplinesForProfile(fallback?.mainDisciplines, {
+        trackFieldMainEvent: fallback?.trackFieldMainEvent ?? null,
+        roadTrailMainEvent: fallback?.roadTrailMainEvent ?? null,
+    });
+    const mainDisciplinesFromServer = normalizeMainDisciplinesForProfile(profile?.main_disciplines, {
+        trackFieldMainEvent: profile?.track_field_main_event ?? null,
+        roadTrailMainEvent: profile?.road_trail_main_event ?? null,
+    });
+    const mainDisciplines =
+        Object.keys(mainDisciplinesFromServer).length > 0 ? mainDisciplinesFromServer : fallbackMainDisciplines;
+    const trackFieldMainEvent = String(
+        profile?.track_field_main_event ??
+        mainDisciplinesFromServer['track-field'] ??
+        fallback?.trackFieldMainEvent ??
+        fallbackMainDisciplines['track-field'] ??
+        '',
+    ).trim();
+    const roadTrailMainEvent = String(
+        profile?.road_trail_main_event ??
+        mainDisciplinesFromServer['road-events'] ??
+        fallback?.roadTrailMainEvent ??
+        fallbackMainDisciplines['road-events'] ??
+        '',
+    ).trim();
     const supportFocuses = (() => {
         const explicit = normalizeStringArrayForProfile((profile as any)?.support_focuses);
         if (explicit.length > 0) return explicit;
         if (String(profile?.category ?? '').trim().toLowerCase() === 'photographer' && !legacyAthleteSignals) {
             return selectedEvents;
         }
-        return [];
+        return normalizeStringArrayForProfile((fallback as any)?.supportFocuses);
     })();
 
     const next: UserProfile = {
@@ -464,17 +491,18 @@ const buildUserProfileFromSummary = (
         ...(profile?.category ? { category: deriveFrontendProfileCategory(profile) } : {}),
         selectedEvents,
         chestNumbersByYear: normalizeChestNumbersForProfile(profile?.chest_numbers_by_year ?? {}),
-        trackFieldClub: String(profile?.track_field_club ?? '').trim(),
-        runningClub: String(profile?.track_field_club ?? '').trim(),
-        runningClubGroupId: String(profile?.running_club_group_id ?? '').trim(),
-        trackFieldClubDetail: normalizeSingleClubSummaryForProfile((profile as any)?.track_field_club_detail),
-        runningClubGroup: normalizeSingleGroupMembershipForProfile((profile as any)?.running_club_group),
-        trackFieldMainEvent: String(profile?.track_field_main_event ?? '').trim(),
-        roadTrailMainEvent: String(profile?.road_trail_main_event ?? '').trim(),
-        mainDisciplines: normalizeMainDisciplinesForProfile(profile?.main_disciplines, {
-            trackFieldMainEvent: profile?.track_field_main_event ?? null,
-            roadTrailMainEvent: profile?.road_trail_main_event ?? null,
-        }),
+        trackFieldClub: String(profile?.track_field_club ?? fallback?.trackFieldClub ?? fallback?.runningClub ?? '').trim(),
+        runningClub: String(profile?.track_field_club ?? fallback?.runningClub ?? fallback?.trackFieldClub ?? '').trim(),
+        runningClubGroupId: String(profile?.running_club_group_id ?? fallback?.runningClubGroupId ?? '').trim(),
+        trackFieldClubDetail:
+            normalizeSingleClubSummaryForProfile((profile as any)?.track_field_club_detail) ??
+            ((fallback as any)?.trackFieldClubDetail ?? null),
+        runningClubGroup:
+            normalizeSingleGroupMembershipForProfile((profile as any)?.running_club_group) ??
+            ((fallback as any)?.runningClubGroup ?? null),
+        trackFieldMainEvent,
+        roadTrailMainEvent,
+        mainDisciplines,
         website: String(profile?.website ?? '').trim(),
         supportRole: String(profile?.support_role ?? '').trim(),
         supportOrganization: String(profile?.support_organization ?? '').trim(),
@@ -537,12 +565,29 @@ export const AuthProvider = ({
     const [error, setError] = useState<string | null>(null);
     const isE2EAuthBootstrapEnabled = Boolean(initialE2EAuth && (initialE2EAuth.enabled ?? true));
 
+    const loadStoredProfile = useCallback(async (): Promise<UserProfile | null> => {
+        try {
+            const raw = await AsyncStorage.getItem(PROFILE_STORAGE_KEY);
+            if (!raw) return null;
+            const parsed = JSON.parse(raw);
+            return parsed && typeof parsed === 'object' ? parsed : null;
+        } catch (err: any) {
+            console.log('[Auth] Could not load stored profile:', err?.message ?? err);
+            return null;
+        }
+    }, []);
+
     const clearAuthSessionState = useCallback(async (clearStoredCredentials: boolean) => {
         if (clearStoredCredentials) {
             try {
                 await AsyncStorage.removeItem(AUTH_STORAGE_KEY);
             } catch (err: any) {
                 console.log('[Auth] Could not clear stored credentials:', err?.message ?? err);
+            }
+            try {
+                await AsyncStorage.removeItem(PROFILE_STORAGE_KEY);
+            } catch (err: any) {
+                console.log('[Auth] Could not clear stored profile:', err?.message ?? err);
             }
         }
         setUser(null);
@@ -552,16 +597,20 @@ export const AuthProvider = ({
         setIsAuthenticated(false);
     }, []);
 
-    const syncProfileFromServer = useCallback(async (token: string, bootstrap: AuthBootstrapResponse | null) => {
+    const syncProfileFromServer = useCallback(async (
+        token: string,
+        bootstrap: AuthBootstrapResponse | null,
+        fallbackProfile?: Partial<UserProfile> | null,
+    ) => {
         try {
             const summary = await getProfileSummary(token);
             setUserProfile((prev) => (
-                buildUserProfileFromSummary(summary, bootstrap, prev) ??
-                buildUserProfileFromSummary(null, bootstrap, prev)
+                buildUserProfileFromSummary(summary, bootstrap, prev ?? fallbackProfile ?? null) ??
+                buildUserProfileFromSummary(null, bootstrap, prev ?? fallbackProfile ?? null)
             ));
         } catch (err: any) {
             console.log('[Auth] Could not sync profile summary from server:', err?.message ?? err);
-            const fallback = buildUserProfileFromSummary(null, bootstrap, null);
+            const fallback = buildUserProfileFromSummary(null, bootstrap, fallbackProfile ?? null);
             setUserProfile(fallback);
         }
     }, []);
@@ -570,7 +619,7 @@ export const AuthProvider = ({
         credentials: Credentials,
         userInfo: User | null,
         context: 'login' | 'signup' | 'restore',
-        options?: { allowBootstrapFailure?: boolean },
+        options?: { allowBootstrapFailure?: boolean; fallbackProfile?: Partial<UserProfile> | null },
     ) => {
         const token = String(credentials?.accessToken ?? '').trim();
         if (!token) {
@@ -593,7 +642,10 @@ export const AuthProvider = ({
         setAccessToken(token);
         setIsAuthenticated(true);
         setAuthBootstrap(bootstrap);
-        await syncProfileFromServer(token, bootstrap);
+        if (options?.fallbackProfile) {
+            setUserProfile(options.fallbackProfile as UserProfile);
+        }
+        await syncProfileFromServer(token, bootstrap, options?.fallbackProfile ?? null);
         return bootstrap;
     }, [syncProfileFromServer]);
 
@@ -601,6 +653,7 @@ export const AuthProvider = ({
         console.log('[Auth] Checking stored credentials...');
         try {
             const storedCredentials = await AsyncStorage.getItem(AUTH_STORAGE_KEY);
+            const storedProfile = await loadStoredProfile();
 
             if (storedCredentials) {
                 console.log('[Auth] Found stored credentials');
@@ -649,6 +702,7 @@ export const AuthProvider = ({
 
                     await finalizeAuthenticatedSession(credentials, userInfo, 'restore', {
                         allowBootstrapFailure: true,
+                        fallbackProfile: storedProfile,
                     });
                 }
             } else {
@@ -660,7 +714,7 @@ export const AuthProvider = ({
         } finally {
             setIsLoading(false);
         }
-    }, [clearAuthSessionState, finalizeAuthenticatedSession]);
+    }, [clearAuthSessionState, finalizeAuthenticatedSession, loadStoredProfile]);
 
     // Check for stored credentials on app start
     useEffect(() => {
@@ -678,6 +732,22 @@ export const AuthProvider = ({
         if (isE2EAuthBootstrapEnabled) return;
         checkStoredCredentials();
     }, [checkStoredCredentials, isE2EAuthBootstrapEnabled]);
+
+    useEffect(() => {
+        if (isE2EAuthBootstrapEnabled) return;
+        if (isLoading) return;
+        (async () => {
+            try {
+                if (isAuthenticated && userProfile) {
+                    await AsyncStorage.setItem(PROFILE_STORAGE_KEY, JSON.stringify(userProfile));
+                } else if (!isAuthenticated) {
+                    await AsyncStorage.removeItem(PROFILE_STORAGE_KEY);
+                }
+            } catch (err: any) {
+                console.log('[Auth] Could not persist profile cache:', err?.message ?? err);
+            }
+        })();
+    }, [isAuthenticated, isE2EAuthBootstrapEnabled, isLoading, userProfile]);
 
     const storeCredentials = async (credentials: Credentials) => {
         try {

@@ -13,6 +13,7 @@ import FastImage from 'react-native-fast-image'
 import { ApiError, CompetitionMapSummary, getCompetitionMaps, getEventCompetitions } from '../../services/apiGateway'
 import { getApiBaseUrl } from '../../constants/RuntimeConfig'
 import { getSportFocusLabel, normalizeFocusId, type SportFocusId } from '../../utils/profileSelections'
+import { SUBSCRIPTION_CATEGORY_OPTIONS, type SubscriptionCategoryLabel } from '../../utils/eventSubscription'
 import E2EPerfReady from '../../components/e2e/E2EPerfReady'
 
 interface EventCategory {
@@ -33,17 +34,6 @@ interface RoadCourseMap {
         checkpointIndex: number;
     }>;
 }
-
-const DIVISIONS = [
-    'Pupil',
-    'Miniem',
-    'Cadet',
-    'Scholier',
-    'Junior',
-    'Beloften',
-    'Seniors',
-    'Masters',
-];
 
 const FIELD_DISCIPLINE_PATTERN = /jump|throw|put|vault|discus|javelin|hammer/i;
 const ROAD_DISCIPLINE_PATTERN = /road|trail|cross|veldloop|checkpoint|finish|start|\b\d+\s?km\b/i;
@@ -79,8 +69,7 @@ const CompetitionDetailsScreen = ({ navigation, route }: any) => {
     const [activeTab, setActiveTab] = useState<'track' | 'field'>('track');
     const [categoryModalVisible, setCategoryModalVisible] = useState(false);
     const [selectedEvent, setSelectedEvent] = useState<EventCategory | null>(null);
-    const [selectedGender, setSelectedGender] = useState<'Men' | 'Women' | null>(null);
-    const [selectedDivision, setSelectedDivision] = useState<string | null>(null);
+    const [selectedCategoryLabel, setSelectedCategoryLabel] = useState<SubscriptionCategoryLabel>('All');
     const [uploadCounts, setUploadCounts] = useState<Record<string, { photos: number; videos: number }>>({});
     const [trackEvents, setTrackEvents] = useState<EventCategory[]>([]);
     const [fieldEvents, setFieldEvents] = useState<EventCategory[]>([]);
@@ -384,13 +373,12 @@ const CompetitionDetailsScreen = ({ navigation, route }: any) => {
             }
         }
         setSelectedEvent(category);
-        setSelectedGender(null);
-        setSelectedDivision(null);
+        setSelectedCategoryLabel('All');
         setCategoryModalVisible(true);
     };
 
     const handleContinue = () => {
-        if (!selectedEvent || !selectedGender || !selectedDivision) return;
+        if (!selectedEvent) return;
         const selectedMap = isRoadFocus ? selectedRoadCourseMap : null;
         const selectedEventNameNormalized = normalizeCheckpointLabel(selectedEvent?.name);
         const selectedCheckpoint = (() => {
@@ -430,8 +418,8 @@ const CompetitionDetailsScreen = ({ navigation, route }: any) => {
         navigation.navigate('UploadDetailsScreen', {
             competition,
             category: selectedEvent,
-            gender: selectedGender,
-            division: selectedDivision,
+            categoryLabel: selectedCategoryLabel,
+            category_labels: [selectedCategoryLabel],
             account,
             anonymous,
             competitionType: isRoadFocus ? 'road' : 'track',
@@ -611,39 +599,19 @@ const CompetitionDetailsScreen = ({ navigation, route }: any) => {
                         <Text style={Styles.modalTitle}>{t('Select category')}</Text>
                         <Text style={Styles.modalSubtitle}>{selectedEvent?.name ?? t('Event')}</Text>
                         <View style={Styles.modalSection}>
-                            <Text style={Styles.modalLabel}>{t('Gender')}</Text>
+                            <Text style={Styles.modalLabel}>{t('Category')}</Text>
                             <View style={Styles.choiceRow}>
-                                {['Men', 'Women'].map((gender) => {
-                                    const active = selectedGender === gender;
+                                {SUBSCRIPTION_CATEGORY_OPTIONS.map((label) => {
+                                    const active = selectedCategoryLabel === label;
                                     return (
                                         <TouchableOpacity
-                                            key={gender}
+                                            key={label}
                                             style={[Styles.choiceChip, active && Styles.choiceChipActive]}
-                                            onPress={() => setSelectedGender(gender as 'Men' | 'Women')}
-                                            testID={`upload-gender-${String(gender).toLowerCase()}`}
+                                            onPress={() => setSelectedCategoryLabel(label)}
+                                            testID={`upload-category-${String(label).toLowerCase()}`}
                                         >
                                             <Text style={[Styles.choiceChipText, active && Styles.choiceChipTextActive]}>
-                                                {gender}
-                                            </Text>
-                                        </TouchableOpacity>
-                                    );
-                                })}
-                            </View>
-                        </View>
-                        <View style={Styles.modalSection}>
-                            <Text style={Styles.modalLabel}>{t('Division')}</Text>
-                            <View style={Styles.choiceRow}>
-                                {DIVISIONS.map((division) => {
-                                    const active = selectedDivision === division;
-                                    return (
-                                        <TouchableOpacity
-                                            key={division}
-                                            style={[Styles.choiceChip, active && Styles.choiceChipActive]}
-                                            onPress={() => setSelectedDivision(division)}
-                                            testID={`upload-division-${String(division).toLowerCase()}`}
-                                        >
-                                            <Text style={[Styles.choiceChipText, active && Styles.choiceChipTextActive]}>
-                                                {division}
+                                                {label === 'All' ? t('All') : t(label)}
                                             </Text>
                                         </TouchableOpacity>
                                     );
@@ -655,8 +623,7 @@ const CompetitionDetailsScreen = ({ navigation, route }: any) => {
                                 <Text style={Styles.modalGhostText}>{t('Cancel')}</Text>
                             </TouchableOpacity>
                             <TouchableOpacity
-                                style={[Styles.modalPrimary, (!selectedGender || !selectedDivision) && Styles.modalPrimaryDisabled]}
-                                disabled={!selectedGender || !selectedDivision}
+                                style={Styles.modalPrimary}
                                 onPress={handleContinue}
                                 testID="upload-discipline-continue"
                             >

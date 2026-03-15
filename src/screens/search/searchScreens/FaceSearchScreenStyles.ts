@@ -184,6 +184,30 @@ export const createStyles = (colors: ThemeColors) => StyleSheet.create({
         marginBottom: 24,
         backgroundColor: colors.cardBackground,
     },
+    gradeRow: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        gap: 8,
+    },
+    gradeButton: {
+        borderWidth: 1,
+        borderColor: colors.lightGrayColor,
+        borderRadius: 999,
+        paddingHorizontal: 12,
+        paddingVertical: 8,
+        backgroundColor: colors.secondaryColor,
+    },
+    gradeButtonActive: {
+        backgroundColor: colors.primaryColor,
+        borderColor: colors.primaryColor,
+    },
+    gradeButtonText: {
+        ...Fonts.regular12,
+        color: colors.mainTextColor,
+    },
+    gradeButtonTextActive: {
+        color: '#FFFFFF',
+    },
     faceGroupHeader: {
         flexDirection: 'row',
         alignItems: 'center',

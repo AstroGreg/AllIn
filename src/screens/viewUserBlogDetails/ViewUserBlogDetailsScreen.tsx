@@ -26,7 +26,7 @@ const ViewUserBlogDetailsScreen = ({ navigation, route }: any) => {
     const { t, i18n } = useTranslation();
     const Styles = createStyles(colors);
     const { eventNameById } = useEvents();
-    const { apiAccessToken } = useAuth();
+    const { apiAccessToken, authBootstrap } = useAuth();
     const { composeInstagramStoryImage, composerElement } = useInstagramStoryImageComposer();
     const postPreview = route?.params?.postPreview || route?.params?.post || null;
     const postId = route?.params?.postId || postPreview?.id || null;
@@ -153,6 +153,19 @@ const ViewUserBlogDetailsScreen = ({ navigation, route }: any) => {
             t('Profile'),
         [postData?.author?.display_name, postPreview?.author?.display_name, postPreview?.writer, t],
     );
+    const activeProfileId = String(authBootstrap?.profile_id || '').trim();
+    const ownerProfileId = useMemo(
+        () =>
+            String(
+                postData?.author?.profile_id ||
+                postData?.author_profile_id ||
+                postPreview?.author?.profile_id ||
+                postPreview?.author_profile_id ||
+                '',
+            ).trim(),
+        [postData?.author?.profile_id, postData?.author_profile_id, postPreview?.author?.profile_id, postPreview?.author_profile_id],
+    );
+    const canManagePost = activeProfileId.length > 0 && ownerProfileId.length > 0 && activeProfileId === ownerProfileId;
 
     const authorImage = useMemo(() => {
         const avatarCandidate =
@@ -299,41 +312,47 @@ const ViewUserBlogDetailsScreen = ({ navigation, route }: any) => {
                     <ArrowLeft2 size={24} color={colors.mainTextColor} variant="Linear" />
                 </TouchableOpacity>
                 <Text style={Styles.headerTitle}>{t('blogDetails')}</Text>
-                <View style={Styles.headerActions}>
-                    <TouchableOpacity
-                        style={Styles.headerIconButton}
-                        onPress={() => navigation.navigate('ProfileBlogEditorScreen', { mode: 'edit', postId })}
-                    >
-                        <Edit2 size={18} color={colors.mainTextColor} variant="Linear" />
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                        style={Styles.headerIconButton}
-                        onPress={() => {
-                            if (!apiAccessToken || !postId) return;
-                            Alert.alert(
-                                t('Delete'),
-                                t('Are you sure you want to delete this blog?'),
-                                [
-                                    { text: t('Cancel'), style: 'cancel' },
-                                    {
-                                        text: t('Delete'),
-                                        style: 'destructive',
-                                        onPress: async () => {
-                                            try {
-                                                await deletePost(apiAccessToken, String(postId));
-                                                navigation.goBack();
-                                            } catch {
-                                                // ignore
-                                            }
+                {canManagePost ? (
+                    <View style={Styles.headerActions}>
+                        <TouchableOpacity
+                            style={Styles.headerIconButton}
+                            onPress={() => navigation.navigate('ProfileBlogEditorScreen', { mode: 'edit', postId })}
+                            testID="view-blog-edit-button"
+                        >
+                            <Edit2 size={18} color={colors.mainTextColor} variant="Linear" />
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                            style={Styles.headerIconButton}
+                            testID="view-blog-delete-button"
+                            onPress={() => {
+                                if (!apiAccessToken || !postId) return;
+                                Alert.alert(
+                                    t('Delete'),
+                                    t('Are you sure you want to delete this blog?'),
+                                    [
+                                        { text: t('Cancel'), style: 'cancel' },
+                                        {
+                                            text: t('Delete'),
+                                            style: 'destructive',
+                                            onPress: async () => {
+                                                try {
+                                                    await deletePost(apiAccessToken, String(postId));
+                                                    navigation.goBack();
+                                                } catch {
+                                                    // ignore
+                                                }
+                                            },
                                         },
-                                    },
-                                ],
-                            );
-                        }}
-                    >
-                        <Trash size={18} color={colors.mainTextColor} variant="Linear" />
-                    </TouchableOpacity>
-                </View>
+                                    ],
+                                );
+                            }}
+                        >
+                            <Trash size={18} color={colors.mainTextColor} variant="Linear" />
+                        </TouchableOpacity>
+                    </View>
+                ) : (
+                    <View style={Styles.headerActions} />
+                )}
             </View>
 
             <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={Styles.scrollContent}>

@@ -12,7 +12,6 @@ import {
   getGroup,
   getProfileSummary,
   searchClubs,
-  searchGroups,
 } from '../../../services/apiGateway';
 import { useTranslation } from 'react-i18next';
 import ChestNumbersByYearField from '../../../components/profile/ChestNumbersByYearField';
@@ -32,7 +31,7 @@ import {
   getOfficialClubSearchFocuses,
   getSportFocusLabel,
   getTrainingGroupFieldLabel,
-  getTrainingGroupModalTitle,
+  getTrainingGroupHelperText,
   getTrainingGroupPlaceholder,
   normalizeMainDisciplines,
   normalizeSelectedEvents,
@@ -95,12 +94,6 @@ const TrackFieldSettings = ({ navigation, route }: any) => {
   const [clubOptions, setClubOptions] = useState<SearchPickerOption[]>([]);
   const [clubsLoading, setClubsLoading] = useState(false);
   const [clubsError, setClubsError] = useState<string | null>(null);
-
-  const [groupModalVisible, setGroupModalVisible] = useState(false);
-  const [groupQuery, setGroupQuery] = useState('');
-  const [groupOptions, setGroupOptions] = useState<SearchPickerOption[]>([]);
-  const [groupsLoading, setGroupsLoading] = useState(false);
-  const [groupsError, setGroupsError] = useState<string | null>(null);
 
   const [disciplineModalVisible, setDisciplineModalVisible] = useState(false);
   const [disciplineFocusId, setDisciplineFocusId] = useState<SportFocusId | null>(null);
@@ -198,39 +191,6 @@ const TrackFieldSettings = ({ navigation, route }: any) => {
       clearTimeout(timeout);
     };
   }, [apiAccessToken, clubModalVisible, clubQuery, clubSearchFocuses]);
-
-  useEffect(() => {
-    if (!groupModalVisible || !apiAccessToken) return;
-    let mounted = true;
-    const timeout = setTimeout(async () => {
-      setGroupsLoading(true);
-      setGroupsError(null);
-      try {
-        const res = await searchGroups(apiAccessToken, {
-          q: groupQuery.trim() || undefined,
-          limit: 200,
-        });
-        if (!mounted) return;
-        const mapped = (res.groups || []).map((group) => ({
-          id: String(group.group_id || ''),
-          title: String(group.name || '').trim(),
-          subtitle: String(group.location || '').trim() || null,
-        })).filter((group) => group.id && group.title);
-        setGroupOptions(mapped);
-      } catch (e: any) {
-        if (!mounted) return;
-        const message = e instanceof ApiError ? e.message : String(e?.message ?? e);
-        setGroupsError(message);
-        setGroupOptions([]);
-      } finally {
-        if (mounted) setGroupsLoading(false);
-      }
-    }, 250);
-    return () => {
-      mounted = false;
-      clearTimeout(timeout);
-    };
-  }, [apiAccessToken, groupModalVisible, groupQuery]);
 
   const disciplineOptions = useMemo(() => {
     if (!disciplineFocusId) return [];
@@ -354,23 +314,15 @@ const TrackFieldSettings = ({ navigation, route }: any) => {
             <View style={Styles.addCardInputGroup}>
               <Text style={Styles.addCardLabel}>{getTrainingGroupFieldLabel(selectedFocuses, t)}</Text>
               <SizeBox height={8} />
-              <View style={Styles.addCardInputContainer}>
-                <TouchableOpacity
-                  style={{ flex: 1, flexDirection: 'row', alignItems: 'center', gap: 12 }}
-                  activeOpacity={0.85}
-                  onPress={() => setGroupModalVisible(true)}
-                >
+              <View testID="track-field-group-invite-only" style={Styles.addCardInputContainer}>
+                <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center', gap: 12 }}>
                   <Profile2User size={20} color={colors.primaryColor} variant="Linear" />
                   <Text style={[Styles.addCardPlaceholder, runningGroupName ? Styles.addCardInputText : null]}>
                     {runningGroupName || getTrainingGroupPlaceholder(selectedFocuses, t)}
                   </Text>
-                </TouchableOpacity>
-                {runningGroupName ? (
-                  <TouchableOpacity onPress={() => { setRunningGroupName(''); setRunningGroupId(''); }}>
-                    <CloseCircle size={18} color={colors.grayColor} />
-                  </TouchableOpacity>
-                ) : null}
+                </View>
               </View>
+              <Text style={Styles.inlineHelperText}>{getTrainingGroupHelperText(selectedFocuses, t)}</Text>
             </View>
             <SizeBox height={14} />
 
@@ -470,25 +422,6 @@ const TrackFieldSettings = ({ navigation, route }: any) => {
           setClubId(option.id);
           setClubInput(option.title);
           setClubModalVisible(false);
-        }}
-      />
-
-      <SearchPickerModal
-        visible={groupModalVisible}
-        title={getTrainingGroupModalTitle(selectedFocuses, t)}
-        placeholder={getTrainingGroupPlaceholder(selectedFocuses, t)}
-        query={groupQuery}
-        onChangeQuery={setGroupQuery}
-        onClose={() => setGroupModalVisible(false)}
-        options={groupOptions}
-        loading={groupsLoading}
-        error={groupsError}
-        emptyText={t('No groups found.')}
-        selectedId={runningGroupId}
-        onSelect={(option) => {
-          setRunningGroupId(option.id);
-          setRunningGroupName(option.title);
-          setGroupModalVisible(false);
         }}
       />
 

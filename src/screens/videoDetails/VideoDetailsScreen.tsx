@@ -16,10 +16,49 @@ import Icons from '../../constants/Icons';
 import Images from '../../constants/Images';
 import { launchImageLibrary } from 'react-native-image-picker';
 import { useAuth } from '../../context/AuthContext';
-import { deleteMedia, deletePost, getMediaById, getMediaIssueRequests, getMyMediaIssueRequests, updateMedia, updateMediaIssueRequest } from '../../services/apiGateway';
+import { deleteMedia, deletePost, getMediaById, getMediaIssueRequests, getMediaStatus, getMyMediaIssueRequests, updateMedia, updateMediaIssueRequest } from '../../services/apiGateway';
 import { getApiBaseUrl, getHlsBaseUrl } from '../../constants/RuntimeConfig';
 import { useTheme } from '../../context/ThemeContext';
 import { useTranslation } from 'react-i18next';
+
+function formatDurationLabel(totalSeconds?: number | null) {
+    const safeSeconds = Math.max(0, Math.round(Number(totalSeconds ?? 0)));
+    if (!safeSeconds) return '';
+    const hours = Math.floor(safeSeconds / 3600);
+    const minutes = Math.floor((safeSeconds % 3600) / 60);
+    const seconds = safeSeconds % 60;
+    if (hours > 0) {
+        return `${hours}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+    }
+    return `${minutes}:${String(seconds).padStart(2, '0')}`;
+}
+
+function resolveMediaResolution(assets?: Array<{ width?: number | null; height?: number | null }>, fallback?: { width?: number | null; height?: number | null }) {
+    const assetWithSize = Array.isArray(assets)
+        ? assets.find((asset) => Number(asset?.width ?? 0) > 0 && Number(asset?.height ?? 0) > 0)
+        : null;
+    const width = Number(assetWithSize?.width ?? fallback?.width ?? 0);
+    const height = Number(assetWithSize?.height ?? fallback?.height ?? 0);
+    if (!width || !height) return '';
+    return `${width}×${height}`;
+}
+
+function resolveMediaDuration(assets?: Array<{ duration_seconds?: number | null }>, fallbackSeconds?: number | null) {
+    const assetWithDuration = Array.isArray(assets)
+        ? assets.find((asset) => Number(asset?.duration_seconds ?? 0) > 0)
+        : null;
+    return formatDurationLabel(assetWithDuration?.duration_seconds ?? fallbackSeconds ?? 0);
+}
+
+function resolveInitialMediaMeta(routeVideo: any, mediaType: 'image' | 'video') {
+    if (mediaType === 'video') {
+        return resolveMediaDuration(undefined, Number(routeVideo?.duration_seconds ?? 0));
+    }
+    return resolveMediaResolution(undefined, {
+        width: Number(routeVideo?.width ?? 0),
+        height: Number(routeVideo?.height ?? 0),
+    });
+}
 
 const VideoDetailsScreen = ({ navigation, route }: any) => {
     const insets = useSafeAreaInsets();
@@ -38,6 +77,10 @@ const VideoDetailsScreen = ({ navigation, route }: any) => {
         String(route?.params?.video?.type || '').toLowerCase() === 'video' ? 'video' : 'image',
     );
     const [issueRequests, setIssueRequests] = useState<any[]>([]);
+    const [processingMetrics, setProcessingMetrics] = useState<{faceCount: number; chestNumberCount: number}>({
+        faceCount: 0,
+        chestNumberCount: 0,
+    });
     const [isSavingStatus, setIsSavingStatus] = useState(false);
     const [eventIdDraft, setEventIdDraft] = useState(String(route?.params?.video?.event_id || '').trim());
     const [titleDraft, setTitleDraft] = useState(String(route?.params?.video?.title || '').trim());
@@ -51,7 +94,7 @@ const VideoDetailsScreen = ({ navigation, route }: any) => {
     const [videoData, setVideoData] = useState({
         title: routeVideo?.title ?? 'BK Studentent 23',
         location: routeVideo?.location ?? 'Berlin, Germany',
-        duration: routeVideo?.duration ?? '2 Minutes',
+        mediaMeta: resolveInitialMediaMeta(routeVideo, mediaType),
         date: routeVideo?.date ?? '27/05/2025',
         videoUri: routeVideo?.uri ?? '',
         thumbnail: routeVideo?.thumbnail ?? Images.photo7,
@@ -128,18 +171,45 @@ const VideoDetailsScreen = ({ navigation, route }: any) => {
                 const resolvedVideo = hls || mp4 || candidates[0] || '';
                 const thumbCandidate = media.thumbnail_url || media.preview_url || media.full_url || media.raw_url || null;
                 const resolvedPoster = thumbCandidate ? toAbsoluteUrl(String(thumbCandidate)) : null;
+                const nextMediaType = String(media?.type || routeVideo?.type || 'image').toLowerCase() === 'video' ? 'video' : 'image';
+                const resolvedMediaMeta = nextMediaType === 'video'
+                    ? resolveMediaDuration(media.assets, Number((media as any)?.duration_seconds ?? (routeVideo as any)?.duration_seconds ?? 0))
+                    : resolveMediaResolution(media.assets, {
+                        width: Number((media as any)?.width ?? (routeVideo as any)?.width ?? 0),
+                        height: Number((media as any)?.height ?? (routeVideo as any)?.height ?? 0),
+                    });
                 setVideoData((prev) => ({
                     ...prev,
                     title: String(media?.title || prev.title || '').trim() || prev.title,
+                    mediaMeta: resolvedMediaMeta || prev.mediaMeta,
                     videoUri: withAccessToken(resolvedVideo) || resolvedVideo,
                     thumbnail: resolvedPoster ? { uri: withAccessToken(resolvedPoster) || resolvedPoster } : prev.thumbnail,
                 }));
+                setMediaType(nextMediaType);
             })
             .catch(() => {});
         return () => {
             mounted = false;
         };
     }, [apiAccessToken, mediaId, routeVideo?.event_id, routeVideo?.type, toAbsoluteUrl, toHlsUrl, withAccessToken]);
+
+    useEffect(() => {
+        let mounted = true;
+        if (!apiAccessToken || !mediaId) return () => {};
+        getMediaStatus(apiAccessToken, [mediaId])
+            .then((resp) => {
+                if (!mounted) return;
+                const status = Array.isArray(resp?.results) ? resp.results[0] : null;
+                setProcessingMetrics({
+                    faceCount: Math.max(0, Number(status?.metrics?.face_count ?? 0)),
+                    chestNumberCount: Math.max(0, Number(status?.metrics?.chest_number_count ?? 0)),
+                });
+            })
+            .catch(() => {});
+        return () => {
+            mounted = false;
+        };
+    }, [apiAccessToken, mediaId]);
 
     const loadIssueRequests = useCallback(async () => {
         if (!apiAccessToken || !mediaId) {
@@ -436,12 +506,24 @@ const VideoDetailsScreen = ({ navigation, route }: any) => {
                     </View>
                     <View style={Styles.videoInfoRow}>
                         <View style={Styles.durationContainer}>
-                            <Clock size={16} color="#9B9F9F" variant="Linear" />
-                            <Text style={Styles.durationText}>{videoData.duration}</Text>
+                            {mediaType === 'video' ? (
+                                <Clock size={16} color="#9B9F9F" variant="Linear" />
+                            ) : null}
+                            <Text style={Styles.durationText}>
+                                {videoData.mediaMeta || (mediaType === 'video' ? t('Video processing') : t('Original resolution'))}
+                            </Text>
                         </View>
                         <View style={Styles.dateContainer}>
                             <Calendar size={16} color="#9B9F9F" variant="Linear" />
                             <Text style={Styles.dateText}>{videoData.date}</Text>
+                        </View>
+                    </View>
+                    <View style={Styles.metricRow}>
+                        <View style={Styles.metricBadge}>
+                            <Text style={Styles.metricBadgeText} testID="video-details-metric-faces">{t('Faces')}: {processingMetrics.faceCount}</Text>
+                        </View>
+                        <View style={Styles.metricBadge}>
+                            <Text style={Styles.metricBadgeText} testID="video-details-metric-chest">{t('Chest numbers')}: {processingMetrics.chestNumberCount}</Text>
                         </View>
                     </View>
                 </View>
@@ -496,6 +578,14 @@ const VideoDetailsScreen = ({ navigation, route }: any) => {
                     <View style={Styles.modalCard} testID="video-details-manage-modal">
                         <Text style={Styles.modalTitle}>{t('Edit upload')}</Text>
                         <Text style={Styles.modalSubtitle}>{t('Update your media details.')}</Text>
+                        <View style={Styles.metricRow}>
+                            <View style={Styles.metricBadge}>
+                                <Text style={Styles.metricBadgeText} testID="video-details-modal-metric-faces">{t('Faces')}: {processingMetrics.faceCount}</Text>
+                            </View>
+                            <View style={Styles.metricBadge}>
+                                <Text style={Styles.metricBadgeText} testID="video-details-modal-metric-chest">{t('Chest numbers')}: {processingMetrics.chestNumberCount}</Text>
+                            </View>
+                        </View>
 
                         {routePostId ? (
                             <>

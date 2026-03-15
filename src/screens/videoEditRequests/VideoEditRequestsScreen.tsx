@@ -20,6 +20,25 @@ import { getApiBaseUrl, getHlsBaseUrl } from '../../constants/RuntimeConfig';
 import { useTheme } from '../../context/ThemeContext';
 import { useTranslation } from 'react-i18next';
 
+function formatDurationLabel(totalSeconds?: number | null) {
+    const safeSeconds = Math.max(0, Math.round(Number(totalSeconds ?? 0)));
+    if (!safeSeconds) return '';
+    const hours = Math.floor(safeSeconds / 3600);
+    const minutes = Math.floor((safeSeconds % 3600) / 60);
+    const seconds = safeSeconds % 60;
+    if (hours > 0) {
+        return `${hours}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+    }
+    return `${minutes}:${String(seconds).padStart(2, '0')}`;
+}
+
+function resolveMediaDuration(assets?: Array<{ duration_seconds?: number | null }>, fallbackSeconds?: number | null) {
+    const assetWithDuration = Array.isArray(assets)
+        ? assets.find((asset) => Number(asset?.duration_seconds ?? 0) > 0)
+        : null;
+    return formatDurationLabel(assetWithDuration?.duration_seconds ?? fallbackSeconds ?? 0);
+}
+
 const VideoEditRequestsScreen = ({ navigation }: any) => {
     const insets = useSafeAreaInsets();
     const { apiAccessToken } = useAuth();
@@ -33,7 +52,7 @@ const VideoEditRequestsScreen = ({ navigation }: any) => {
     const [videoData, setVideoData] = useState({
         title: 'BK Studentent 23',
         location: 'Berlin, Germany',
-        duration: '2 Minutes',
+        duration: '',
         date: '27.5.2025',
         videoUri: '',
         thumbnail: Images.photo7,
@@ -107,8 +126,10 @@ const VideoEditRequestsScreen = ({ navigation }: any) => {
                 const resolvedVideo = hls || mp4 || candidates[0] || '';
                 const thumbCandidate = media.thumbnail_url || media.preview_url || media.full_url || media.raw_url || null;
                 const resolvedPoster = thumbCandidate ? toAbsoluteUrl(String(thumbCandidate)) : null;
+                const resolvedDuration = resolveMediaDuration(media.assets, Number((media as any)?.duration_seconds ?? 0));
                 setVideoData((prev) => ({
                     ...prev,
+                    duration: resolvedDuration || prev.duration,
                     videoUri: withAccessToken(resolvedVideo) || resolvedVideo,
                     thumbnail: resolvedPoster ? { uri: withAccessToken(resolvedPoster) || resolvedPoster } : prev.thumbnail,
                 }));

@@ -131,6 +131,51 @@ async function e2eMutation(pathSuffix, body = {}) {
   }
 }
 
+async function setWorkerHealthOverride(workers = null) {
+  try {
+    return await rawJsonRequest('/e2e/worker-health', {
+      method: 'POST',
+      body: workers == null ? {} : {workers},
+      headers: {
+        'Content-Type': 'application/json',
+        'x-e2e-key': DEFAULT_E2E_KEY,
+      },
+    });
+  } catch (error) {
+    throw new Error(`E2E worker health override failed: ${String(error?.message || error)}`);
+  }
+}
+
+async function setMediaStatusOverride(statuses = null) {
+  try {
+    return await rawJsonRequest('/e2e/media-status', {
+      method: 'POST',
+      body: statuses == null ? {} : {statuses},
+      headers: {
+        'Content-Type': 'application/json',
+        'x-e2e-key': DEFAULT_E2E_KEY,
+      },
+    });
+  } catch (error) {
+    throw new Error(`E2E media status override failed: ${String(error?.message || error)}`);
+  }
+}
+
+async function triggerCompetitionUploadNotification(mediaId) {
+  try {
+    return await rawJsonRequest('/e2e/competition-upload-notify', {
+      method: 'POST',
+      body: {media_id: String(mediaId || '')},
+      headers: {
+        'Content-Type': 'application/json',
+        'x-e2e-key': DEFAULT_E2E_KEY,
+      },
+    });
+  } catch (error) {
+    throw new Error(`E2E competition upload notify failed: ${String(error?.message || error)}`);
+  }
+}
+
 async function uploadFixtureMedia(accessToken, params = {}) {
   const files = Array.isArray(params.files) ? params.files : [];
   if (files.length === 0) {
@@ -177,6 +222,9 @@ async function uploadFixtureMedia(accessToken, params = {}) {
   if (params.is_anonymous != null) {
     form.append('is_anonymous', params.is_anonymous ? 'true' : 'false');
   }
+  if (Array.isArray(params.category_labels) && params.category_labels.length > 0) {
+    form.append('category_labels_json', JSON.stringify(params.category_labels.map((value) => String(value))));
+  }
   if (fileTitles.some((entry) => entry.trim().length > 0)) {
     form.append('file_titles_json', JSON.stringify(fileTitles));
   }
@@ -207,5 +255,8 @@ module.exports = {
   e2eMutation,
   e2eResetSeed,
   getCatalog,
+  setMediaStatusOverride,
+  setWorkerHealthOverride,
+  triggerCompetitionUploadNotification,
   uploadFixtureMedia,
 };

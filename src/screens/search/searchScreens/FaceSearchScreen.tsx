@@ -3,12 +3,13 @@ import React, {useCallback, useEffect, useMemo, useState} from 'react';
 import SizeBox from '../../../constants/SizeBox';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import {useTheme} from '../../../context/ThemeContext';
-import {ArrowLeft2, SearchNormal1, Add, ArrowRight, CloseCircle} from 'iconsax-react-nativejs';
+import {ArrowLeft2, Add, ArrowRight, CloseCircle} from 'iconsax-react-nativejs';
 import { createStyles } from './FaceSearchScreenStyles';
 import {useAuth} from '../../../context/AuthContext';
 import {useFocusEffect} from '@react-navigation/native';
 import {
   ApiError,
+  type FaceSearchGrade,
   getAuthMe,
   grantFaceRecognitionConsent,
   searchFaceByEnrollment,
@@ -55,6 +56,7 @@ const FaceSearchScreen = ({navigation, route}: any) => {
     const [missingAngles, setMissingAngles] = useState<string[] | null>(null);
     const [needsConsent, setNeedsConsent] = useState(false);
     const [errorText, setErrorText] = useState<string | null>(null);
+    const [faceSearchGrade, setFaceSearchGrade] = useState<FaceSearchGrade>('hard');
     const hasCompetition = Boolean(localFilters?.competition && String(localFilters.competition).trim());
 
     const refreshMe = useCallback(async () => {
@@ -229,6 +231,7 @@ const FaceSearchScreen = ({navigation, route}: any) => {
 
             const res = await searchFaceByEnrollment(requestAccessToken, {
                 event_ids,
+                grade: faceSearchGrade,
                 label: 'default',
                 limit: 600,
                 top: 100,
@@ -276,7 +279,7 @@ const FaceSearchScreen = ({navigation, route}: any) => {
         } finally {
             setIsSearching(false);
         }
-    }, [apiAccessToken, authMe, filteredEventIds, localFilters?.competition, localFilters?.timeRange, navigation, t]);
+    }, [apiAccessToken, authMe, faceSearchGrade, filteredEventIds, localFilters?.competition, localFilters?.timeRange, navigation, t]);
 
     const handleGrantConsent = useCallback(async () => {
         if (!apiAccessToken) return;
@@ -471,10 +474,30 @@ const FaceSearchScreen = ({navigation, route}: any) => {
                     )}
                 </View>
 
+                <View style={styles.faceGroupCard}>
+                    <Text style={styles.searchLabel}>{t('Match grade')}</Text>
+                    <SizeBox height={10} />
+                    <View style={styles.gradeRow}>
+                        {(['hard', 'medium', 'soft'] as FaceSearchGrade[]).map((grade) => {
+                            const active = faceSearchGrade === grade;
+                            return (
+                                <TouchableOpacity
+                                    key={grade}
+                                    style={[styles.gradeButton, active && styles.gradeButtonActive]}
+                                    onPress={() => setFaceSearchGrade(grade)}
+                                >
+                                    <Text style={[styles.gradeButtonText, active && styles.gradeButtonTextActive]}>
+                                        {grade === 'hard' ? t('Hard · 90%') : grade === 'medium' ? t('Medium · 87%') : t('Soft · 85%')}
+                                    </Text>
+                                </TouchableOpacity>
+                            );
+                        })}
+                    </View>
+                </View>
+
                 {/* Search filter input (for competition list) */}
                 <UnifiedSearchInput
                     containerStyle={styles.searchInputContainer}
-                    left={<SearchNormal1 size={24} color={colors.grayColor} variant="Linear" />}
                     inputStyle={styles.searchInput}
                     placeholder={t('Filter competitions')}
                     value={searchText}

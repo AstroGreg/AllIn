@@ -1,6 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-export type UploadSessionPhase = 'uploading' | 'processing' | 'done' | 'failed';
+export type UploadSessionPhase = 'uploading' | 'processing' | 'done' | 'failed' | 'blocked';
 
 export type UploadSession = {
   id: string;
@@ -15,6 +15,11 @@ export type UploadSession = {
   processing_ready?: number;
   processing_total?: number;
   media_ids?: string[];
+  current_stage?: string | null;
+  faces_found?: number;
+  chest_numbers_found?: number;
+  notifications_sent?: number;
+  subscribers_total?: number;
   error?: string | null;
 };
 

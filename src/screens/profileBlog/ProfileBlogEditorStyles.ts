@@ -215,6 +215,21 @@ export const createStyles = (colors: ThemeColors) =>
             ...Fonts.medium14,
             color: colors.pureWhite,
         },
+        secondaryActionButton: {
+            flex: 1,
+            borderWidth: 1,
+            borderColor: colors.lightGrayColor,
+            borderRadius: 14,
+            alignItems: 'center',
+            justifyContent: 'center',
+            minHeight: 56,
+            paddingVertical: 14,
+            backgroundColor: colors.cardBackground,
+        },
+        secondaryActionText: {
+            ...Fonts.medium14,
+            color: colors.subTextColor,
+        },
         skipSecondaryButton: {
             marginTop: 10,
             borderWidth: 1,
@@ -384,5 +399,15 @@ export const createStyles = (colors: ThemeColors) =>
         loadingText: {
             ...Fonts.medium14,
             color: colors.mainTextColor,
+        },
+        modalCloseButton: {
+            width: 34,
+            height: 34,
+            borderRadius: 17,
+            alignItems: 'center',
+            justifyContent: 'center',
+            backgroundColor: String(colors.backgroundColor || '').toLowerCase() === '#ffffff'
+                ? 'transparent'
+                : colors.btnBackgroundColor,
         },
     });

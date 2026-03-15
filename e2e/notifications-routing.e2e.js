@@ -9,6 +9,7 @@ const {
   e2eBootstrap,
   e2eMutation,
   getCatalog,
+  triggerCompetitionUploadNotification,
   uploadFixtureMedia,
 } = require('./helpers/backend');
 
@@ -38,6 +39,10 @@ const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 const apiGet = (pathValue, accessToken) => apiRequest(pathValue, { method: 'GET', accessToken });
 const apiPost = (pathValue, accessToken, body) => apiRequest(pathValue, { method: 'POST', accessToken, body });
 const apiPut = (pathValue, accessToken, body) => apiRequest(pathValue, { method: 'PUT', accessToken, body });
+const getUnreadNotifications = async (accessToken) => {
+  const payload = await apiGet('/notifications?limit=100&offset=0&unread_only=true', accessToken);
+  return Array.isArray(payload?.notifications) ? payload.notifications : [];
+};
 
 const eventually = async (fn, { attempts = 20, delayMs = 1000 } = {}) => {
   let lastError;
@@ -123,13 +128,14 @@ const subscribeUserToCompetition = async (profileId, competitionId, extra = {}) 
   });
 };
 
-const uploadCompetitionMedia = async (uploader, { type, title }) => {
+const uploadCompetitionMedia = async (uploader, { type, title, category_labels = [] }) => {
   await subscribeUserToCompetition(uploader.profile_id, benchmarkCompetition.id, {
     discipline_ids: benchmarkDiscipline?.id ? [benchmarkDiscipline.id] : [],
   });
   const upload = await uploadFixtureMedia(uploader.access_token, {
     event_id: benchmarkCompetition.id,
     discipline_id: benchmarkDiscipline?.id || null,
+    category_labels,
     files: [
       {
         ...(type === 'video' ? VIDEO_FIXTURE : PHOTO_FIXTURE),
@@ -148,8 +154,7 @@ const uploadCompetitionMedia = async (uploader, { type, title }) => {
 };
 
 const findNotification = async (accessToken, predicate) => {
-  const payload = await apiGet('/notifications?limit=100&offset=0&unread_only=true', accessToken);
-  const notifications = Array.isArray(payload?.notifications) ? payload.notifications : [];
+  const notifications = await getUnreadNotifications(accessToken);
   const match = notifications.find(predicate);
   if (!match) {
     throw new Error(`Matching notification not found in ${JSON.stringify(notifications)}`);
@@ -157,13 +162,30 @@ const findNotification = async (accessToken, predicate) => {
   return match;
 };
 
-const openNotificationsAndTap = async (authState, notificationId) => {
+const expectNoNotification = async (accessToken, predicate, { attempts = 8, delayMs = 1500 } = {}) => {
+  for (let attempt = 0; attempt < attempts; attempt += 1) {
+    // eslint-disable-next-line no-await-in-loop
+    const notifications = await getUnreadNotifications(accessToken);
+    if (notifications.some(predicate)) {
+      throw new Error(`Unexpected notification found in ${JSON.stringify(notifications)}`);
+    }
+    if (attempt < attempts - 1) {
+      // eslint-disable-next-line no-await-in-loop
+      await sleep(delayMs);
+    }
+  }
+};
+
+const openNotificationsAndTap = async (authState, notificationId, options = {}) => {
   await openScreen({
     routeName: 'NotificationsScreen',
     authState,
     rootTestId: 'notifications-screen',
   });
   await waitFor(element(by.id(`notification-card-${notificationId}`))).toBeVisible().withTimeout(15000);
+  if (options.expectThumbnail) {
+    await expect(element(by.id(`notification-thumbnail-${notificationId}`))).toBeVisible();
+  }
   await element(by.id(`notification-card-${notificationId}`)).tap();
 };
 
@@ -192,12 +214,16 @@ describe('Notification routing', () => {
       discipline_ids: benchmarkDiscipline?.id ? [benchmarkDiscipline.id] : [],
     });
 
-    await uploadCompetitionMedia(uploader, { type: 'image', title: `Photo upload ${Date.now()}` });
+    const mediaId = await uploadCompetitionMedia(uploader, { type: 'image', title: `Photo upload ${Date.now()}` });
+    await triggerCompetitionUploadNotification(mediaId);
 
     const notification = await eventually(() =>
       findNotification(
         subscriber.access_token,
-        (item) => String(item?.metadata?.action || '') === 'competition_upload' && String(item?.metadata?.media_type || '') === 'image',
+        (item) =>
+          String(item?.metadata?.action || '') === 'competition_upload'
+          && String(item?.metadata?.media_type || '') === 'image'
+          && String(item?.metadata?.media_id || '') === mediaId,
       ),
     );
 
@@ -212,12 +238,16 @@ describe('Notification routing', () => {
       discipline_ids: benchmarkDiscipline?.id ? [benchmarkDiscipline.id] : [],
     });
 
-    await uploadCompetitionMedia(uploader, { type: 'video', title: `Video upload ${Date.now()}` });
+    const mediaId = await uploadCompetitionMedia(uploader, { type: 'video', title: `Video upload ${Date.now()}` });
+    await triggerCompetitionUploadNotification(mediaId);
 
     const notification = await eventually(() =>
       findNotification(
         subscriber.access_token,
-        (item) => String(item?.metadata?.action || '') === 'competition_upload' && String(item?.metadata?.media_type || '') === 'video',
+        (item) =>
+          String(item?.metadata?.action || '') === 'competition_upload'
+          && String(item?.metadata?.media_type || '') === 'video'
+          && String(item?.metadata?.media_id || '') === mediaId,
       ),
     );
 
@@ -250,7 +280,13 @@ describe('Notification routing', () => {
 
   it('notifies followed profiles and routes to the follower profile', async () => {
     const followed = await createUser({ label: 'notif-followed', displayName: 'Followed Profile' });
-    const follower = await createUser({ label: 'notif-follower', displayName: 'Follower Profile' });
+    const follower = await createUser({
+      label: 'notif-follower',
+      displayName: 'Follower Profile',
+      profile: {
+        avatar_url: 'https://images.spotme.local/e2e/follower-avatar.png',
+      },
+    });
 
     await apiPost(`/profiles/${encodeURIComponent(followed.profile_id)}/follow`, follower.access_token, {});
 
@@ -261,8 +297,16 @@ describe('Notification routing', () => {
       ),
     );
 
-    await openNotificationsAndTap(followed.auth_state, String(notification.id));
+    jestExpect(String(notification?.thumbnail_url || '').trim().length).toBeGreaterThan(0);
+    await openNotificationsAndTap(followed.auth_state, String(notification.id), { expectThumbnail: true });
     await expect(element(by.id('view-user-profile-screen'))).toBeVisible();
+    await openScreen({
+      routeName: 'NotificationsScreen',
+      authState: followed.auth_state,
+      rootTestId: 'notifications-screen',
+      deleteApp: false,
+    });
+    await expect(element(by.id(`notification-read-badge-${notification.id}`))).toBeVisible();
   });
 
   it('notifies owners when their media is liked and routes to the liker profile', async () => {
@@ -282,8 +326,132 @@ describe('Notification routing', () => {
       ),
     );
 
-    await openNotificationsAndTap(owner.auth_state, String(notification.id));
+    jestExpect(String(notification?.thumbnail_url || '').trim().length).toBeGreaterThan(0);
+    await openNotificationsAndTap(owner.auth_state, String(notification.id), { expectThumbnail: true });
     await expect(element(by.id('view-user-profile-screen'))).toBeVisible();
+  });
+
+  it('notifies matching discipline and category subscribers for uploads and filtered competition media returns the upload', async () => {
+    const subscriber = await createUser({ label: 'notif-category-subscriber', displayName: 'Category Subscriber' });
+    const uploader = await createUser({ label: 'notif-category-uploader', displayName: 'Category Uploader' });
+    const categoryLabel = 'Miniem';
+    if (!benchmarkDiscipline?.id) {
+      throw new Error('Missing benchmark discipline for category upload notification test');
+    }
+
+    await subscribeUserToCompetition(subscriber.profile_id, benchmarkCompetition.id, {
+      discipline_ids: [benchmarkDiscipline.id],
+      category_labels: [categoryLabel],
+    });
+
+    const mediaId = await uploadCompetitionMedia(uploader, {
+      type: 'video',
+      title: `Category notify ${Date.now()}`,
+      category_labels: [categoryLabel],
+    });
+    await triggerCompetitionUploadNotification(mediaId);
+
+    const notification = await eventually(() =>
+      findNotification(
+        subscriber.access_token,
+        (item) =>
+          String(item?.metadata?.action || '') === 'competition_upload'
+          && String(item?.metadata?.media_id || '') === mediaId,
+      ),
+    );
+
+    jestExpect(String(notification?.thumbnail_url || '').trim().length).toBeGreaterThan(0);
+
+    const filteredMedia = await eventually(async () => {
+      const payload = await apiGet(
+        `/competitions/${encodeURIComponent(benchmarkCompetition.id)}/media?type=video&discipline_id=${encodeURIComponent(benchmarkDiscipline.id)}&category_labels=${encodeURIComponent(categoryLabel)}&limit=50&offset=0`,
+        subscriber.access_token,
+      );
+      const rows = Array.isArray(payload) ? payload : [];
+      if (!rows.some((item) => String(item?.media_id || '') === mediaId)) {
+        throw new Error(`Uploaded media ${mediaId} not visible in filtered competition media.`);
+      }
+      return rows;
+    });
+
+    jestExpect(filteredMedia.some((item) => String(item?.media_id || '') === mediaId)).toBe(true);
+    await openNotificationsAndTap(subscriber.auth_state, String(notification.id), { expectThumbnail: true });
+    await expect(element(by.id('all-videos-events-screen'))).toBeVisible();
+  });
+
+  it('does not notify subscribers when the uploaded media category does not match their subscribed category', async () => {
+    const subscriber = await createUser({ label: 'notif-category-mismatch-subscriber', displayName: 'Mismatch Subscriber' });
+    const uploader = await createUser({ label: 'notif-category-mismatch-uploader', displayName: 'Mismatch Uploader' });
+    const subscribedCategory = 'Miniem';
+    const uploadedCategory = 'Seniors';
+    if (!benchmarkDiscipline?.id) {
+      throw new Error('Missing benchmark discipline for mismatch upload notification test');
+    }
+
+    await subscribeUserToCompetition(subscriber.profile_id, benchmarkCompetition.id, {
+      discipline_ids: [benchmarkDiscipline.id],
+      category_labels: [subscribedCategory],
+    });
+
+    const mediaId = await uploadCompetitionMedia(uploader, {
+      type: 'video',
+      title: `Category mismatch ${Date.now()}`,
+      category_labels: [uploadedCategory],
+    });
+    await triggerCompetitionUploadNotification(mediaId);
+
+    await expectNoNotification(
+      subscriber.access_token,
+      (item) =>
+        String(item?.metadata?.action || '') === 'competition_upload'
+        && String(item?.metadata?.media_id || '') === mediaId,
+    );
+  });
+
+  it('notifies wildcard subscribers for uploads in any category and shows the upload in the all-media competition view', async () => {
+    const subscriber = await createUser({ label: 'notif-category-wildcard-subscriber', displayName: 'Wildcard Subscriber' });
+    const uploader = await createUser({ label: 'notif-category-wildcard-uploader', displayName: 'Wildcard Uploader' });
+    const uploadedCategory = 'Seniors';
+    if (!benchmarkDiscipline?.id) {
+      throw new Error('Missing benchmark discipline for wildcard upload notification test');
+    }
+
+    await subscribeUserToCompetition(subscriber.profile_id, benchmarkCompetition.id, {
+      discipline_ids: [benchmarkDiscipline.id],
+      category_labels: [],
+    });
+
+    const mediaId = await uploadCompetitionMedia(uploader, {
+      type: 'video',
+      title: `Wildcard category ${Date.now()}`,
+      category_labels: [uploadedCategory],
+    });
+    await triggerCompetitionUploadNotification(mediaId);
+
+    const notification = await eventually(() =>
+      findNotification(
+        subscriber.access_token,
+        (item) =>
+          String(item?.metadata?.action || '') === 'competition_upload'
+          && String(item?.metadata?.media_id || '') === mediaId,
+      ),
+    );
+
+    const visibleInAllMedia = await eventually(async () => {
+      const rows = await apiGet(
+        `/competitions/${encodeURIComponent(benchmarkCompetition.id)}/media?type=video&discipline_id=${encodeURIComponent(benchmarkDiscipline.id)}&limit=50&offset=0`,
+        subscriber.access_token,
+      );
+      const mediaRows = Array.isArray(rows) ? rows : [];
+      if (!mediaRows.some((item) => String(item?.media_id || '') === mediaId)) {
+        throw new Error(`Uploaded media ${mediaId} not visible in all-category competition media.`);
+      }
+      return mediaRows;
+    });
+
+    jestExpect(visibleInAllMedia.some((item) => String(item?.media_id || '') === mediaId)).toBe(true);
+    await openNotificationsAndTap(subscriber.auth_state, String(notification.id), { expectThumbnail: true });
+    await expect(element(by.id('all-videos-events-screen'))).toBeVisible();
   });
 
   it('notifies owners when their blog is liked and routes to the liker profile', async () => {

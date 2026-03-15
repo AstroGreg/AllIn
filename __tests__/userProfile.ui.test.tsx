@@ -9,6 +9,7 @@ const mockGetDownloadsSummary = jest.fn();
 const mockGetHubAppearanceMedia = jest.fn();
 const mockGetHubAppearances = jest.fn();
 const mockGetMyGroups = jest.fn();
+const mockProfileNewsSection = jest.fn();
 const mockGetPosts = jest.fn();
 const mockGetProfileCollectionByType = jest.fn();
 const mockGetProfileSummary = jest.fn();
@@ -143,9 +144,28 @@ jest.mock('../src/components/profileTimeline/ProfileTimeline', () => {
 
 jest.mock('../src/components/profileNews/ProfileNewsSection', () => {
   const React = require('react');
-  const {Text} = require('react-native');
-  return function MockProfileNewsSection({sectionTitle}: {sectionTitle: string}) {
-    return React.createElement(Text, null, sectionTitle);
+  const {Text, View} = require('react-native');
+  return function MockProfileNewsSection({
+    sectionTitle,
+    items = [],
+    }: {
+      sectionTitle: string;
+      items?: Array<{id: string; title: string; status?: string | null}>;
+    }) {
+      mockProfileNewsSection({sectionTitle, items});
+      return React.createElement(
+        View,
+        null,
+      React.createElement(Text, null, sectionTitle),
+      ...(items || []).map((item) =>
+        React.createElement(
+          View,
+          {key: item.id},
+          React.createElement(Text, null, item.title),
+          item.status ? React.createElement(Text, null, item.status) : null,
+        ),
+      ),
+    );
   };
 });
 
@@ -154,6 +174,11 @@ const mockAuthState = {
     picture: 'https://example.com/google-avatar.jpg',
     sub: 'auth0|viewer',
     email: 'viewer@example.com',
+  },
+  authBootstrap: {
+    status: 'ready',
+    has_profiles: false,
+    profile_id: null,
   },
   userProfile: {
     username: 'viewer',
@@ -199,6 +224,11 @@ function createNavigation() {
 describe('UserProfileScreen UI', () => {
   beforeEach(() => {
     mockStorage.clear();
+    mockAuthState.authBootstrap = {
+      status: 'ready',
+      has_profiles: false,
+      profile_id: null,
+    };
     mockAuthState.userProfile = {
       username: 'viewer',
       selectedEvents: [],
@@ -209,6 +239,7 @@ describe('UserProfileScreen UI', () => {
     mockGetHubAppearanceMedia.mockReset();
     mockGetHubAppearances.mockReset();
     mockGetMyGroups.mockReset();
+    mockProfileNewsSection.mockReset();
     mockGetPosts.mockReset();
     mockGetProfileCollectionByType.mockReset();
     mockGetProfileSummary.mockReset();
@@ -250,6 +281,50 @@ describe('UserProfileScreen UI', () => {
     expect(navigation.navigate).toHaveBeenCalledWith('CategorySelectionScreen', {fromAddFlow: true});
   });
 
+  test('keeps a sparse real profile visible after remount', async () => {
+    mockAuthState.authBootstrap = {
+      status: 'ready',
+      has_profiles: true,
+      profile_id: 'profile-sparse-1',
+    };
+    mockAuthState.userProfile = {
+      username: 'viewer',
+      firstName: 'Sparse',
+      lastName: 'Runner',
+      selectedEvents: [],
+    };
+    mockGetProfileSummary.mockResolvedValue({
+      ok: true,
+      profile_id: 'profile-sparse-1',
+      followers_count: 0,
+      posts_count: 0,
+      profile: {
+        display_name: 'Sparse Runner',
+        username: 'viewer',
+        selected_events: [],
+        groups: [],
+      },
+    });
+
+    const navigation = createNavigation();
+    const route = {params: {}};
+    const firstRender = render(<UserProfileScreen navigation={navigation} route={route} />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId('user-profile-screen')).toBeTruthy();
+    });
+    expect(screen.queryByTestId('user-profile-empty-state')).toBeNull();
+
+    firstRender.unmount();
+
+    render(<UserProfileScreen navigation={navigation} route={route} />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId('user-profile-screen')).toBeTruthy();
+    });
+    expect(screen.queryByTestId('user-profile-empty-state')).toBeNull();
+  });
+
   test('renders profile meta for track athlete', async () => {
     mockGetProfileSummary.mockResolvedValue({
       profile_id: 'profile-1',
@@ -277,6 +352,51 @@ describe('UserProfileScreen UI', () => {
       expect(screen.getByText('Followers')).toBeTruthy();
       expect(screen.getByText('Track & Field')).toBeTruthy();
     });
+  });
+
+  test('shows uploading status for blog items whose media is still processing', async () => {
+    mockAuthState.authBootstrap = {
+      status: 'ready',
+      has_profiles: true,
+      profile_id: 'profile-blog-1',
+    };
+    mockGetProfileSummary.mockResolvedValue({
+      ok: true,
+      profile_id: 'profile-blog-1',
+      followers_count: 3,
+      posts_count: 1,
+      profile: {
+        display_name: 'Blog Runner',
+        username: 'blog.runner',
+        selected_events: ['track-field'],
+        groups: [],
+      },
+    });
+    mockGetPosts.mockResolvedValue({
+      posts: [
+        {
+          id: 'post-uploading-1',
+          title: 'Race recap',
+          description: 'Pending media processing',
+          post_type: 'blog',
+          created_at: new Date().toISOString(),
+          media_count: 2,
+          cover_media: null,
+        },
+      ],
+    });
+
+    render(<UserProfileScreen navigation={createNavigation()} route={{params: {}}} />);
+    fireEvent.press(screen.getByText('News'));
+
+    await waitFor(() => {
+      expect(screen.getByText('Race recap')).toBeTruthy();
+      expect(mockProfileNewsSection).toHaveBeenCalled();
+    });
+    const sawUploadingItem = mockProfileNewsSection.mock.calls.some(([props]) =>
+      Array.isArray(props?.items) && props.items.some((item: any) => item?.title === 'Race recap' && item?.status === 'UPLOADING'),
+    );
+    expect(sawUploadingItem).toBe(true);
   });
 
   test('shows joined group in the compact meta summary on profile', async () => {

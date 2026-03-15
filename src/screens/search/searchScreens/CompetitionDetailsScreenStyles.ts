@@ -30,6 +30,10 @@ export const createStyles = (colors: ThemeColors) => {
     headerTitle: {
         ...Fonts.medium18,
         color: colors.mainTextColor,
+        flex: 1,
+        marginHorizontal: 12,
+        minWidth: 0,
+        textAlign: 'center',
     },
     content: {
         flex: 1,
@@ -528,6 +532,30 @@ export const createStyles = (colors: ThemeColors) => {
         ...Fonts.regular14,
         color: colors.mainTextColor,
         paddingVertical: 0,
+    },
+    gradeRow: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        gap: 8,
+    },
+    gradeButton: {
+        paddingHorizontal: 12,
+        paddingVertical: 10,
+        borderRadius: 999,
+        borderWidth: 1,
+        borderColor: colors.lightGrayColor,
+        backgroundColor: colors.cardBackground,
+    },
+    gradeButtonActive: {
+        borderColor: colors.primaryColor,
+        backgroundColor: colors.primaryColor,
+    },
+    gradeButtonText: {
+        ...Fonts.medium12,
+        color: colors.mainTextColor,
+    },
+    gradeButtonTextActive: {
+        color: colors.pureWhite,
     },
     modalErrorText: {
         ...Fonts.regular12,

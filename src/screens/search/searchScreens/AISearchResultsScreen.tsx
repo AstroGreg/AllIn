@@ -110,8 +110,12 @@ const AISearchResultsScreen = ({navigation, route}: any) => {
 
   const confidenceLabel = useCallback(
     (item: ResultItem) => {
-      if (String(item.matchType ?? '').toLowerCase() === 'bib') {
+      const matchType = String(item.matchType ?? '').toLowerCase();
+      if (matchType === 'bib') {
         return t('Chest number');
+      }
+      if (matchType === 'context') {
+        return null;
       }
       if (item.confidencePercent == null) return t('Needs review');
       const rounded = Math.round(item.confidencePercent);
@@ -253,9 +257,11 @@ const AISearchResultsScreen = ({navigation, route}: any) => {
             <View style={styles.sourceChip}>
               <Text style={styles.sourceChipText}>{matchLabel(item.matchType)}</Text>
             </View>
-            <View style={styles.confidenceChip}>
-              <Text style={styles.confidenceChipText}>{confidenceLabel(item)}</Text>
-            </View>
+            {confidenceLabel(item) ? (
+              <View style={styles.confidenceChip}>
+                <Text style={styles.confidenceChipText}>{confidenceLabel(item)}</Text>
+              </View>
+            ) : null}
           </View>
           <View>
             {item.bibNumber ? <Text style={styles.resultMeta}>{t('Chest number')}: {item.bibNumber}</Text> : null}

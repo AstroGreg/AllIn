@@ -6,19 +6,7 @@ import {useTheme} from '../../../context/ThemeContext';
 import {ArrowLeft2} from 'iconsax-react-nativejs';
 import {createStyles} from './CompetitionDisciplineScreenStyles';
 import { useTranslation } from 'react-i18next'
-
-const AGE_GROUPS = [
-  'Pupil',
-  'Miniem',
-  'Cadet',
-  'Scholier',
-  'Junior',
-  'Beloften',
-  'Seniors',
-  'Masters',
-];
-
-const GENDERS = ['Men', 'Women', 'Mixed'];
+import { SUBSCRIPTION_CATEGORY_OPTIONS, type SubscriptionCategoryLabel } from '../../../utils/eventSubscription';
 
 const EventDivisionScreen = ({navigation, route}: any) => {
     const { t } = useTranslation();
@@ -31,12 +19,11 @@ const EventDivisionScreen = ({navigation, route}: any) => {
   const eventId = route?.params?.eventId;
   const competitionId = route?.params?.competitionId;
   const disciplineId = route?.params?.disciplineId;
-  const [selectedAge, setSelectedAge] = useState(AGE_GROUPS[0]);
-  const [selectedGender, setSelectedGender] = useState(GENDERS[0]);
+  const [selectedCategoryLabel, setSelectedCategoryLabel] = useState<SubscriptionCategoryLabel>('All');
 
   const subtitle = useMemo(() => {
     const parts = [competitionName].filter(Boolean);
-    return parts.length ? parts.join(' • ') : 'Select a category and gender';
+    return parts.length ? parts.join(' • ') : 'Select a category';
   }, [competitionName]);
 
   const handleOpenVideos = () => {
@@ -45,8 +32,8 @@ const EventDivisionScreen = ({navigation, route}: any) => {
       eventId,
       competitionId: competitionId ?? eventId,
       disciplineId,
-      division: selectedAge,
-      gender: selectedGender,
+      categoryLabel: selectedCategoryLabel,
+      categoryLabels: [selectedCategoryLabel],
     });
   };
 
@@ -56,8 +43,8 @@ const EventDivisionScreen = ({navigation, route}: any) => {
       eventId,
       competitionId: competitionId ?? eventId,
       disciplineId,
-      division: selectedAge,
-      gender: selectedGender,
+      categoryLabel: selectedCategoryLabel,
+      categoryLabels: [selectedCategoryLabel],
     });
   };
 
@@ -81,32 +68,17 @@ const EventDivisionScreen = ({navigation, route}: any) => {
         <SizeBox height={20} />
         <Text style={styles.sectionTitle}>{t('Category')}</Text>
         <View style={styles.chipRow}>
-          {AGE_GROUPS.map((item) => {
-            const active = item === selectedAge;
+          {SUBSCRIPTION_CATEGORY_OPTIONS.map((item) => {
+            const active = item === selectedCategoryLabel;
             return (
               <TouchableOpacity
                 key={item}
                 style={[styles.chip, active && styles.chipActive]}
-                onPress={() => setSelectedAge(item)}
+                onPress={() => setSelectedCategoryLabel(item)}
               >
-                <Text style={[styles.chipText, active && styles.chipTextActive]}>{item}</Text>
-              </TouchableOpacity>
-            );
-          })}
-        </View>
-
-        <SizeBox height={20} />
-        <Text style={styles.sectionTitle}>{t('Gender')}</Text>
-        <View style={styles.chipRow}>
-          {GENDERS.map((item) => {
-            const active = item === selectedGender;
-            return (
-              <TouchableOpacity
-                key={item}
-                style={[styles.chip, active && styles.chipActive]}
-                onPress={() => setSelectedGender(item)}
-              >
-                <Text style={[styles.chipText, active && styles.chipTextActive]}>{item}</Text>
+                <Text style={[styles.chipText, active && styles.chipTextActive]}>
+                  {item === 'All' ? t('All') : t(item)}
+                </Text>
               </TouchableOpacity>
             );
           })}
