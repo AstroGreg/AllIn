@@ -1,0 +1,21 @@
+import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
+import { View, Text, TouchableOpacity } from 'react-native';
+import { useState } from 'react';
+import { createStyles } from '../MenuStyles';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import SizeBox from '../../../constants/SizeBox';
+import MenuContainers from '../components/MenuContainers';
+import Icons from '../../../constants/Icons';
+import { useTheme } from '../../../context/ThemeContext';
+import ConfirmationModel from '../../../components/confirmationModel/ConfirmationModel';
+import { ArrowLeft2, Notification, Pause } from 'iconsax-react-nativejs';
+import { useTranslation } from 'react-i18next';
+const DeleteAndPause = ({ navigation }) => {
+    const { t } = useTranslation();
+    const insets = useSafeAreaInsets();
+    const { colors } = useTheme();
+    const Styles = createStyles(colors);
+    const [isPauseVisible, setIsPauseVisible] = useState(false);
+    return (_jsxs(View, Object.assign({ style: Styles.mainContainer }, { children: [_jsx(SizeBox, { height: insets.top }), _jsxs(View, Object.assign({ style: Styles.header }, { children: [_jsx(TouchableOpacity, Object.assign({ style: Styles.headerButton, onPress: () => navigation.goBack() }, { children: _jsx(ArrowLeft2, { size: 24, color: colors.primaryColor, variant: "Linear" }) })), _jsx(Text, Object.assign({ style: Styles.headerTitle }, { children: t('Menu') })), _jsx(TouchableOpacity, Object.assign({ style: Styles.headerButton }, { children: _jsx(Notification, { size: 24, color: colors.primaryColor, variant: "Linear" }) }))] })), _jsxs(View, Object.assign({ style: Styles.container }, { children: [_jsx(SizeBox, { height: 24 }), _jsx(Text, Object.assign({ style: Styles.sectionTitle }, { children: t('Delete/Pause') })), _jsx(SizeBox, { height: 16 }), _jsx(MenuContainers, { icon: _jsx(Icons.DeleteAccount, { height: 20, width: 20 }), title: t('Delete your account'), onPress: () => navigation.navigate('RightToBeForgotten'), isNext: true }), _jsx(SizeBox, { height: 12 }), _jsxs(TouchableOpacity, Object.assign({ style: Styles.menuContainer, onPress: () => setIsPauseVisible(true) }, { children: [_jsx(View, Object.assign({ style: Styles.iconCont }, { children: _jsx(Pause, { size: 20, color: colors.primaryColor, variant: "Linear" }) })), _jsx(SizeBox, { width: 20 }), _jsxs(View, Object.assign({ style: Styles.pauseContent }, { children: [_jsx(Text, Object.assign({ style: Styles.titlesText }, { children: t('Pause your account') })), _jsx(Text, Object.assign({ style: Styles.pauseDescription }, { children: t('Pausing your account temporarily hides it while keeping your data safe.') }))] })), _jsx(View, Object.assign({ style: Styles.nextArrow }, { children: _jsx(Icons.ArrowNext, { height: 24, width: 24 }) }))] }))] })), _jsx(ConfirmationModel, { isVisible: isPauseVisible, onClose: () => setIsPauseVisible(false), text: t('Are You Sure You Want to Pause Your Account?'), icon: _jsx(Pause, { size: 28, color: colors.pureWhite, variant: "Bold" }), onPressYes: () => { } })] })));
+};
+export default DeleteAndPause;

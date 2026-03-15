@@ -1,0 +1,24 @@
+import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
+import { Text, View, TouchableOpacity, ScrollView } from 'react-native';
+import React from 'react';
+import { createStyles } from '../MenuStyles';
+import SizeBox from '../../../constants/SizeBox';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import MenuContainers from '../components/MenuContainers';
+import Icons from '../../../constants/Icons';
+import { useTheme } from '../../../context/ThemeContext';
+import { ArrowLeft2, LanguageCircle } from 'iconsax-react-nativejs';
+import { useTranslation } from 'react-i18next';
+import i18n from '../../../i18n';
+import { getLanguageOptions, setAppLanguage } from '../../../i18n';
+const Language = ({ navigation }) => {
+    var _a;
+    const insets = useSafeAreaInsets();
+    const { colors } = useTheme();
+    const Styles = createStyles(colors);
+    const { t } = useTranslation();
+    const languages = getLanguageOptions();
+    const currentLanguage = (_a = i18n.language) !== null && _a !== void 0 ? _a : 'en';
+    return (_jsxs(View, Object.assign({ style: Styles.mainContainer }, { children: [_jsx(SizeBox, { height: insets.top }), _jsxs(View, Object.assign({ style: Styles.header }, { children: [_jsx(TouchableOpacity, Object.assign({ style: Styles.headerButton, onPress: () => navigation.goBack() }, { children: _jsx(ArrowLeft2, { size: 24, color: colors.primaryColor, variant: "Linear" }) })), _jsx(Text, Object.assign({ style: Styles.headerTitle }, { children: t('language') })), _jsx(View, { style: Styles.headerSpacer })] })), _jsxs(ScrollView, Object.assign({ style: Styles.container, contentContainerStyle: { paddingBottom: insets.bottom > 0 ? insets.bottom + 20 : 24 }, showsVerticalScrollIndicator: false }, { children: [_jsx(SizeBox, { height: 24 }), _jsx(Text, Object.assign({ style: Styles.sectionTitle }, { children: t('chooseLanguage') })), _jsx(SizeBox, { height: 16 }), languages.map((lang) => (_jsxs(React.Fragment, { children: [_jsx(MenuContainers, { icon: lang.code === 'en' ? _jsx(Icons.EnglishBlueCircle, { height: 20, width: 20 }) : _jsx(LanguageCircle, { size: 20, color: colors.primaryColor, variant: "Linear" }), title: lang.label, onPress: () => setAppLanguage(lang.code), isNext: false, isSelected: currentLanguage === lang.code }), _jsx(SizeBox, { height: 12 })] }, lang.code)))] }))] })));
+};
+export default Language;

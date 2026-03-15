@@ -1,0 +1,101 @@
+import { StyleSheet } from 'react-native';
+import { lightColors } from '../../constants/Theme';
+import Fonts from '../../constants/Fonts';
+export const createStyles = (colors) => StyleSheet.create({
+    mainContainer: {
+        flex: 1,
+        backgroundColor: colors.backgroundColor,
+    },
+    header: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        paddingHorizontal: 20,
+        paddingVertical: 15,
+        borderBottomWidth: 0.5,
+        borderBottomColor: colors.lightGrayColor,
+    },
+    backButton: {
+        width: 44,
+        height: 44,
+        borderRadius: 22,
+        backgroundColor: colors.btnBackgroundColor,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    headerTitle: Object.assign(Object.assign({}, Fonts.medium16), { fontSize: 18, color: colors.mainTextColor }),
+    notificationButton: {
+        width: 44,
+        height: 44,
+        borderRadius: 22,
+        backgroundColor: colors.btnBackgroundColor,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    scrollContent: {
+        paddingHorizontal: 20,
+        paddingTop: 20,
+        paddingBottom: 100,
+    },
+    videoContainer: {
+        width: '100%',
+        height: 200,
+        borderRadius: 10,
+        overflow: 'hidden',
+        position: 'relative',
+    },
+    videoPlayer: {
+        width: '100%',
+        height: '100%',
+    },
+    playButtonOverlay: {
+        position: 'absolute',
+        top: '50%',
+        left: '50%',
+        marginTop: -28,
+        marginLeft: -28,
+        width: 56,
+        height: 56,
+        borderRadius: 28,
+        backgroundColor: 'rgba(0,0,0,0.25)',
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    videoInfo: {
+        marginTop: 14,
+        gap: 8,
+    },
+    videoInfoRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+    },
+    videoTitle: Object.assign(Object.assign({}, Fonts.medium16), { color: colors.mainTextColor }),
+    locationContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 4,
+    },
+    locationText: Object.assign(Object.assign({}, Fonts.regular14), { color: colors.subTextColor }),
+    durationContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 4,
+    },
+    durationText: Object.assign(Object.assign({}, Fonts.regular14), { color: colors.subTextColor }),
+    dateContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 4,
+    },
+    dateText: Object.assign(Object.assign({}, Fonts.regular14), { color: colors.subTextColor }),
+    sectionTitle: Object.assign(Object.assign({}, Fonts.medium16), { fontSize: 18, color: colors.mainTextColor, marginTop: 16 }),
+    emptyStateContainer: {
+        alignItems: 'center',
+        justifyContent: 'center',
+        paddingVertical: 20,
+    },
+    emptyStateText: Object.assign(Object.assign({}, Fonts.medium16), { fontSize: 20, color: colors.mainTextColor, textAlign: 'center' }),
+});
+const Styles = createStyles(lightColors);
+export default Styles;

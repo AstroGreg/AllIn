@@ -1,0 +1,24 @@
+import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
+import { useState } from 'react';
+import { View, Text, FlatList } from 'react-native';
+import FastImage from 'react-native-fast-image';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import SizeBox from '../../../constants/SizeBox';
+import { createStyles } from '../UploadDetailsStyles';
+import CustomHeader from '../../../components/customHeader/CustomHeader';
+import CustomButton from '../../../components/customButton/CustomButton';
+import CustomSearch from '../../../components/customSearch/CustomSearch';
+import { useTheme } from '../../../context/ThemeContext';
+import { useTranslation } from 'react-i18next';
+const UploadedImagesScreen = ({ route, navigation }) => {
+    const { t } = useTranslation();
+    const insets = useSafeAreaInsets();
+    const { colors } = useTheme();
+    const Styles = createStyles(colors);
+    const { images } = route.params || {};
+    const [search, setSearch] = useState('');
+    const renderItem = ({ item }) => (_jsx(View, Object.assign({ style: Styles.imgContainer }, { children: _jsx(FastImage, { source: { uri: item.uri }, style: { width: '100%', height: '100%' }, resizeMode: "cover" }) })));
+    const ListHeaderComponent = ({ item }) => (_jsxs(View, { children: [_jsx(Text, Object.assign({ style: [Styles.titleText, { marginLeft: 15 }] }, { children: t('Event Search') })), _jsx(SizeBox, { height: 8 }), _jsxs(View, Object.assign({ style: [Styles.row] }, { children: [_jsx(View, Object.assign({ style: { flex: 2 } }, { children: _jsx(CustomSearch, { value: search, placeholder: t('Competition Search....'), onChangeText: (text) => setSearch(text) }) })), _jsx(SizeBox, { width: 5 }), _jsx(View, Object.assign({ style: { flex: 1, marginRight: 20 } }, { children: _jsx(CustomButton, { title: t('Add New'), onPress: () => navigation.navigate('CreateCompetition'), isAdd: true }) }))] })), _jsx(SizeBox, { height: 24 })] }));
+    return (_jsxs(View, Object.assign({ style: Styles.mainContainer }, { children: [_jsx(SizeBox, { height: insets.top }), _jsx(CustomHeader, { title: `Uploaded Images`, onBackPress: () => navigation.goBack(), onPressSetting: () => navigation.navigate('ProfileSettings') }), _jsx(FlatList, { data: images, renderItem: renderItem, keyExtractor: (item, index) => index.toString(), style: { paddingTop: 24 }, showsVerticalScrollIndicator: false, ListHeaderComponent: ListHeaderComponent }), _jsx(View, Object.assign({ style: Styles.bottomBtn }, { children: _jsx(CustomButton, { title: t('Upload'), onPress: () => { navigation.goBack(); }, isSmall: true }) }))] })));
+};
+export default UploadedImagesScreen;
