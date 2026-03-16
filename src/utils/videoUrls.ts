@@ -39,12 +39,22 @@ export function selectPreferredVideoUrls(
 
   const mp4LikeUrl = fileUrls.find((value) => MP4_LIKE_RE.test(value)) || null;
   const hlsUrl = source.hls_manifest_path ? (resolvers.toHlsUrl(source.hls_manifest_path) || null) : null;
-  const playbackUrl = hlsUrl || mp4LikeUrl || fileUrls[0] || null;
+  const filePlaybackUrl = mp4LikeUrl || fileUrls[0] || null;
+  const playbackUrl = hlsUrl || filePlaybackUrl || null;
   const downloadUrl = mp4LikeUrl || fileUrls[0] || hlsUrl || null;
+
+  let fallbackPlaybackUrl: string | null = null;
+  if (playbackUrl === hlsUrl && filePlaybackUrl && filePlaybackUrl !== playbackUrl) {
+    fallbackPlaybackUrl = filePlaybackUrl;
+  } else if (playbackUrl === filePlaybackUrl && hlsUrl && hlsUrl !== playbackUrl) {
+    fallbackPlaybackUrl = hlsUrl;
+  } else if (playbackUrl && downloadUrl && playbackUrl !== downloadUrl) {
+    fallbackPlaybackUrl = downloadUrl;
+  }
 
   return {
     playbackUrl,
-    fallbackPlaybackUrl: playbackUrl && downloadUrl && playbackUrl !== downloadUrl ? downloadUrl : null,
+    fallbackPlaybackUrl,
     downloadUrl,
     fileUrls,
     hlsUrl,

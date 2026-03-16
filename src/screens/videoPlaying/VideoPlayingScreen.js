@@ -9,10 +9,10 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 import { jsx as _jsx, jsxs as _jsxs, Fragment as _Fragment } from "react/jsx-runtime";
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { View, Text, TouchableOpacity, Image, Modal, Alert, Pressable, TextInput, Share } from 'react-native';
+import { View, Text, TouchableOpacity, Image, Modal, Alert, Pressable, TextInput, Share, Platform } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import FastImage from 'react-native-fast-image';
-import Video from 'react-native-video';
+import Video, { ViewType } from 'react-native-video';
 import Slider from '@react-native-community/slider';
 import { ArrowLeft2, ArrowRight, Eye, More, TickCircle, CloseCircle, } from 'iconsax-react-nativejs';
 import { createStyles } from './VideoPlayingScreenStyles';
@@ -78,6 +78,8 @@ const VideoPlayingScreen = ({ navigation, route }) => {
     const [videoTitle, setVideoTitle] = useState(fallbackVideo.title);
     const [videoViewsCount, setVideoViewsCount] = useState(Number((_16 = (_13 = (_12 = (_11 = route === null || route === void 0 ? void 0 : route.params) === null || _11 === void 0 ? void 0 : _11.video) === null || _12 === void 0 ? void 0 : _12.views_count) !== null && _13 !== void 0 ? _13 : (_15 = (_14 = route === null || route === void 0 ? void 0 : route.params) === null || _14 === void 0 ? void 0 : _14.video) === null || _15 === void 0 ? void 0 : _15.views) !== null && _16 !== void 0 ? _16 : 0) || 0);
     const [videoUrl, setVideoUrl] = useState(fallbackVideo.uri || null);
+    const [fallbackPlaybackUrl, setFallbackPlaybackUrl] = useState(null);
+    const [hasRetriedPlaybackFallback, setHasRetriedPlaybackFallback] = useState(false);
     const [downloadVideoUrl, setDownloadVideoUrl] = useState(() => {
         const candidate = String(fallbackVideo.uri || '').trim();
         if (!candidate)
@@ -114,6 +116,8 @@ const VideoPlayingScreen = ({ navigation, route }) => {
     const [pendingSeek, setPendingSeek] = useState(0);
     const [initialSeekSeconds, setInitialSeekSeconds] = useState(null);
     const videoRef = useRef(null);
+    const sourceLoadStartedAtRef = useRef(0);
+    const hasPlaybackProgressRef = useRef(false);
     const [sliderWidth, setSliderWidth] = useState(0);
     const [moreMenuVisible, setMoreMenuVisible] = useState(false);
     const [moreMenuActions, setMoreMenuActions] = useState([]);
@@ -131,11 +135,50 @@ const VideoPlayingScreen = ({ navigation, route }) => {
         ((_24 = (_23 = route === null || route === void 0 ? void 0 : route.params) === null || _23 === void 0 ? void 0 : _23.video) === null || _24 === void 0 ? void 0 : _24.raw_url) ||
         ((_26 = (_25 = route === null || route === void 0 ? void 0 : route.params) === null || _25 === void 0 ? void 0 : _25.video) === null || _26 === void 0 ? void 0 : _26.hls_manifest_path));
     const shouldRenderNativePlayer = Boolean(videoUrl) && !(e2eLaunchEnabled && !hasRoutePlayableUrl);
+    const stallFallbackUrl = useMemo(() => {
+        if (fallbackPlaybackUrl && fallbackPlaybackUrl !== videoUrl) {
+            return fallbackPlaybackUrl;
+        }
+        if (downloadVideoUrl &&
+            downloadVideoUrl !== videoUrl &&
+            !String(downloadVideoUrl).toLowerCase().includes('.m3u8')) {
+            return downloadVideoUrl;
+        }
+        return null;
+    }, [downloadVideoUrl, fallbackPlaybackUrl, videoUrl]);
+    useEffect(() => {
+        sourceLoadStartedAtRef.current = Date.now();
+        hasPlaybackProgressRef.current = false;
+    }, [videoUrl]);
+    useEffect(() => {
+        if (Platform.OS !== 'android')
+            return () => { };
+        if (!shouldRenderNativePlayer || !isPlaying || isSeeking)
+            return () => { };
+        if (!videoUrl || !String(videoUrl).toLowerCase().includes('.m3u8'))
+            return () => { };
+        if (!stallFallbackUrl)
+            return () => { };
+        if (hasRetriedPlaybackFallback)
+            return () => { };
+        const timer = setInterval(() => {
+            const elapsedMs = Date.now() - sourceLoadStartedAtRef.current;
+            if (elapsedMs < 8000)
+                return;
+            if (hasPlaybackProgressRef.current)
+                return;
+            setHasRetriedPlaybackFallback(true);
+            setVideoUrl(stallFallbackUrl);
+        }, 1000);
+        return () => clearInterval(timer);
+    }, [hasRetriedPlaybackFallback, isPlaying, isSeeking, shouldRenderNativePlayer, stallFallbackUrl, videoUrl]);
     useEffect(() => {
         var _a, _b, _c, _d, _e, _f;
         setVideoTitle(fallbackVideo.title);
         setVideoViewsCount(Number((_f = (_c = (_b = (_a = route === null || route === void 0 ? void 0 : route.params) === null || _a === void 0 ? void 0 : _a.video) === null || _b === void 0 ? void 0 : _b.views_count) !== null && _c !== void 0 ? _c : (_e = (_d = route === null || route === void 0 ? void 0 : route.params) === null || _d === void 0 ? void 0 : _d.video) === null || _e === void 0 ? void 0 : _e.views) !== null && _f !== void 0 ? _f : 0) || 0);
         setVideoUrl(fallbackVideo.uri || null);
+        setFallbackPlaybackUrl(null);
+        setHasRetriedPlaybackFallback(false);
         setPosterUrl(fallbackPoster());
         perfStartedAtRef.current = Date.now();
         setPerfReadyElapsedMs(null);
@@ -248,9 +291,14 @@ const VideoPlayingScreen = ({ navigation, route }) => {
                 ? (toAbsoluteUrl(String(assetMp4Url)) || String(assetMp4Url))
                 : (mp4 || null);
             const resolvedVideo = hls || resolvedMp4 || candidates[0] || fallbackVideo.uri || null;
+            const resolvedFallbackPlaybackUrl = resolvedVideo && resolvedMp4 && resolvedVideo !== resolvedMp4
+                ? resolvedMp4
+                : null;
             const thumbCandidate = media.thumbnail_url || media.preview_url || media.full_url || media.raw_url || null;
             const resolvedPoster = thumbCandidate ? toAbsoluteUrl(String(thumbCandidate)) : fallbackPoster();
             setVideoUrl(withAccessToken(resolvedVideo || '') || resolvedVideo || null);
+            setFallbackPlaybackUrl((withAccessToken(resolvedFallbackPlaybackUrl || '') || resolvedFallbackPlaybackUrl || null));
+            setHasRetriedPlaybackFallback(false);
             setDownloadVideoUrl(resolvedMp4 ? (withAccessToken(resolvedMp4) || resolvedMp4) : null);
             setPosterUrl(withAccessToken(resolvedPoster || '') || resolvedPoster || null);
         })
@@ -595,7 +643,10 @@ const VideoPlayingScreen = ({ navigation, route }) => {
         setMoreMenuActions(actions);
         setMoreMenuVisible(true);
     }, [handleAddToProfile, handleDownload, handleGoToEvent, handleGoToProfile, handleMarkInappropriate, handleRequestRemoval, handleShareInstagram, handleShareNative, openReportIssuePopup, t]);
-    return (_jsxs(View, Object.assign({ style: Styles.mainContainer, testID: "video-playing-screen" }, { children: [_jsx(SizeBox, { height: insets.top }), _jsxs(View, Object.assign({ style: Styles.header }, { children: [_jsx(TouchableOpacity, Object.assign({ onPress: () => navigation.goBack(), style: Styles.headerBack }, { children: _jsx(ArrowLeft2, { size: 24, color: colors.primaryColor, variant: "Linear" }) })), _jsx(Text, Object.assign({ style: Styles.headerTitleCentered, numberOfLines: 1 }, { children: videoTitle })), _jsxs(View, Object.assign({ style: Styles.headerActions }, { children: [_jsxs(View, Object.assign({ style: Styles.headerViews }, { children: [_jsx(Eye, { size: 18, color: colors.grayColor, variant: "Linear" }), _jsx(Text, Object.assign({ style: Styles.headerViewsText, numberOfLines: 1 }, { children: videoViewsCount }))] })), _jsx(TouchableOpacity, Object.assign({ onPress: openMoreMenu, style: Styles.headerMore }, { children: _jsx(More, { size: 24, color: colors.mainTextColor, variant: "Linear", style: { transform: [{ rotate: '90deg' }] } }) }))] }))] })), _jsxs(TouchableOpacity, Object.assign({ style: Styles.videoContainer, activeOpacity: 0.9, onPress: () => setIsPlaying((prev) => !prev) }, { children: [shouldRenderNativePlayer ? (_jsx(Video, { ref: videoRef, source: { uri: videoUrl, type: String(videoUrl).includes('.m3u8') ? 'm3u8' : undefined }, style: Styles.videoImage, resizeMode: "cover", controls: false, paused: !isPlaying, poster: posterUrl || Image.resolveAssetSource(Images.photo1).uri, posterResizeMode: "cover", ignoreSilentSwitch: "ignore", repeat: false, onLoad: (meta) => {
+    return (_jsxs(View, Object.assign({ style: Styles.mainContainer, testID: "video-playing-screen" }, { children: [_jsx(SizeBox, { height: insets.top }), _jsxs(View, Object.assign({ style: Styles.header }, { children: [_jsx(TouchableOpacity, Object.assign({ onPress: () => navigation.goBack(), style: Styles.headerBack }, { children: _jsx(ArrowLeft2, { size: 24, color: colors.primaryColor, variant: "Linear" }) })), _jsx(Text, Object.assign({ style: Styles.headerTitleCentered, numberOfLines: 1 }, { children: videoTitle })), _jsxs(View, Object.assign({ style: Styles.headerActions }, { children: [_jsxs(View, Object.assign({ style: Styles.headerViews }, { children: [_jsx(Eye, { size: 18, color: colors.grayColor, variant: "Linear" }), _jsx(Text, Object.assign({ style: Styles.headerViewsText, numberOfLines: 1 }, { children: videoViewsCount }))] })), _jsx(TouchableOpacity, Object.assign({ onPress: openMoreMenu, style: Styles.headerMore }, { children: _jsx(More, { size: 24, color: colors.mainTextColor, variant: "Linear", style: { transform: [{ rotate: '90deg' }] } }) }))] }))] })), _jsxs(TouchableOpacity, Object.assign({ style: Styles.videoContainer, activeOpacity: 0.9, onPress: () => setIsPlaying((prev) => !prev) }, { children: [shouldRenderNativePlayer ? (_jsx(Video, { ref: videoRef, source: { uri: videoUrl, type: String(videoUrl).includes('.m3u8') ? 'm3u8' : undefined }, style: Styles.videoImage, resizeMode: "cover", controls: false, paused: !isPlaying, viewType: Platform.OS === 'android' ? ViewType.TEXTURE : undefined, poster: posterUrl || Image.resolveAssetSource(Images.photo1).uri, posterResizeMode: "cover", ignoreSilentSwitch: "ignore", repeat: false, onLoadStart: () => {
+                            sourceLoadStartedAtRef.current = Date.now();
+                            hasPlaybackProgressRef.current = false;
+                        }, onLoad: (meta) => {
                             var _a;
                             const nextDuration = meta.duration || 0;
                             setDuration(nextDuration);
@@ -608,8 +659,16 @@ const VideoPlayingScreen = ({ navigation, route }) => {
                             }
                             setPerfReadyElapsedMs(Date.now() - perfStartedAtRef.current);
                         }, onProgress: (progress) => {
+                            if ((progress === null || progress === void 0 ? void 0 : progress.currentTime) > 0.2) {
+                                hasPlaybackProgressRef.current = true;
+                            }
                             if (!isSeeking) {
                                 setCurrentTime(progress.currentTime);
+                            }
+                        }, onError: () => {
+                            if (!hasRetriedPlaybackFallback && stallFallbackUrl && stallFallbackUrl !== videoUrl) {
+                                setHasRetriedPlaybackFallback(true);
+                                setVideoUrl(stallFallbackUrl);
                             }
                         } })) : (_jsx(FastImage, { source: posterUrl ? { uri: posterUrl } : Images.photo1, style: Styles.videoImage, resizeMode: "cover", onLoadEnd: () => setPerfReadyElapsedMs(Date.now() - perfStartedAtRef.current) })), perfReadyElapsedMs != null ? (_jsx(Text, Object.assign({ style: E2E_HIDDEN_TEXT_STYLE, testID: "e2e-perf-ready-video-viewer" }, { children: `ready:${perfReadyElapsedMs}` }))) : null, initialSeekSeconds != null ? (_jsx(Text, Object.assign({ style: E2E_HIDDEN_TEXT_STYLE, testID: "video-playing-initial-seek-time" }, { children: formatTime(initialSeekSeconds) }))) : null, !isPlaying && (_jsx(View, Object.assign({ style: Styles.playButtonOverlay }, { children: _jsx(Icons.PlayCricle, { width: 46, height: 46 }) }))), duration > 0 && (_jsxs(View, Object.assign({ style: Styles.videoSliderOverlay, onLayout: (event) => {
                             setSliderWidth(event.nativeEvent.layout.width);

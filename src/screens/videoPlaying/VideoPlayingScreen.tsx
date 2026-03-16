@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { View, Text, TouchableOpacity, Image, Modal, Alert, Pressable, TextInput, Share } from 'react-native';
+import { View, Text, TouchableOpacity, Image, Modal, Alert, Pressable, TextInput, Share, Platform } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import FastImage from 'react-native-fast-image';
-import Video from 'react-native-video';
+import Video, { ViewType } from 'react-native-video';
 import Slider from '@react-native-community/slider';
 import {
     ArrowLeft2,
@@ -181,6 +181,8 @@ const VideoPlayingScreen = ({ navigation, route }: any) => {
     const [pendingSeek, setPendingSeek] = useState(0);
     const [initialSeekSeconds, setInitialSeekSeconds] = useState<number | null>(null);
     const videoRef = useRef<any>(null);
+    const sourceLoadStartedAtRef = useRef(0);
+    const hasPlaybackProgressRef = useRef(false);
     const [sliderWidth, setSliderWidth] = useState(0);
     const [moreMenuVisible, setMoreMenuVisible] = useState(false);
     const [moreMenuActions, setMoreMenuActions] = useState<Array<{ label: string; onPress: () => void }>>([]);
@@ -200,6 +202,19 @@ const VideoPlayingScreen = ({ navigation, route }: any) => {
         route?.params?.video?.hls_manifest_path
     );
     const shouldRenderNativePlayer = Boolean(videoUrl) && !(e2eLaunchEnabled && !hasRoutePlayableUrl);
+    const stallFallbackUrl = useMemo(() => {
+        if (fallbackPlaybackUrl && fallbackPlaybackUrl !== videoUrl) {
+            return fallbackPlaybackUrl;
+        }
+        if (
+            preferredDownloadUrl &&
+            preferredDownloadUrl !== videoUrl &&
+            !String(preferredDownloadUrl).toLowerCase().includes('.m3u8')
+        ) {
+            return preferredDownloadUrl;
+        }
+        return null;
+    }, [fallbackPlaybackUrl, preferredDownloadUrl, videoUrl]);
 
     const formatTime = useCallback((value: number) => {
         const safe = Number.isFinite(value) ? Math.max(0, value) : 0;
@@ -280,6 +295,44 @@ const VideoPlayingScreen = ({ navigation, route }: any) => {
         routePreferredUrls.downloadUrl,
         routePreferredUrls.fallbackPlaybackUrl,
         routePreferredUrls.playbackUrl,
+    ]);
+
+    useEffect(() => {
+        sourceLoadStartedAtRef.current = Date.now();
+        hasPlaybackProgressRef.current = false;
+    }, [videoUrl]);
+
+    useEffect(() => {
+        if (Platform.OS !== 'android') return () => {};
+        if (!shouldRenderNativePlayer || !isPlaying || isSeeking) return () => {};
+        if (!videoUrl || !String(videoUrl).toLowerCase().includes('.m3u8')) return () => {};
+        if (!stallFallbackUrl) return () => {};
+        if (hasRetriedPlaybackFallback) return () => {};
+
+        const timer = setInterval(() => {
+            const elapsedMs = Date.now() - sourceLoadStartedAtRef.current;
+            if (elapsedMs < 8000) return;
+            if (hasPlaybackProgressRef.current) return;
+
+            debugVideoLog('fallback-stalled-hls', {
+                mediaId: routeMediaId,
+                from: videoUrl,
+                to: stallFallbackUrl,
+                elapsedMs,
+            });
+            setHasRetriedPlaybackFallback(true);
+            setVideoUrl(stallFallbackUrl);
+        }, 1000);
+
+        return () => clearInterval(timer);
+    }, [
+        stallFallbackUrl,
+        hasRetriedPlaybackFallback,
+        isPlaying,
+        isSeeking,
+        routeMediaId,
+        shouldRenderNativePlayer,
+        videoUrl,
     ]);
 
     useEffect(() => {
@@ -752,11 +805,14 @@ const VideoPlayingScreen = ({ navigation, route }: any) => {
                         resizeMode="cover"
                         controls={false}
                         paused={!isPlaying}
+                        viewType={Platform.OS === 'android' ? ViewType.TEXTURE : undefined}
                         poster={posterUrl || Image.resolveAssetSource(Images.photo1).uri}
                         posterResizeMode="cover"
                         ignoreSilentSwitch="ignore"
                         repeat={false}
                         onLoadStart={(meta) => {
+                            sourceLoadStartedAtRef.current = Date.now();
+                            hasPlaybackProgressRef.current = false;
                             debugVideoLog('onLoadStart', {
                                 mediaId: routeMediaId,
                                 sourceType: String(videoUrl).includes('.m3u8') ? 'hls' : 'file',
@@ -783,6 +839,9 @@ const VideoPlayingScreen = ({ navigation, route }: any) => {
                             setPerfReadyElapsedMs(Date.now() - perfStartedAtRef.current);
                         }}
                         onProgress={(progress) => {
+                            if ((progress?.currentTime ?? 0) > 0.2) {
+                                hasPlaybackProgressRef.current = true;
+                            }
                             if (!isSeeking) {
                                 setCurrentTime(progress.currentTime);
                             }
@@ -792,22 +851,22 @@ const VideoPlayingScreen = ({ navigation, route }: any) => {
                                 mediaId: routeMediaId,
                                 sourceType: String(videoUrl).includes('.m3u8') ? 'hls' : 'file',
                                 videoUrl,
-                                fallbackPlaybackUrl,
+                                fallbackPlaybackUrl: stallFallbackUrl,
                                 hasRetriedPlaybackFallback,
                                 error,
                             });
                             if (
                                 !hasRetriedPlaybackFallback &&
-                                fallbackPlaybackUrl &&
-                                fallbackPlaybackUrl !== videoUrl
+                                stallFallbackUrl &&
+                                stallFallbackUrl !== videoUrl
                             ) {
                                 debugVideoLog('fallback-to-file', {
                                     mediaId: routeMediaId,
                                     from: videoUrl,
-                                    to: fallbackPlaybackUrl,
+                                    to: stallFallbackUrl,
                                 });
                                 setHasRetriedPlaybackFallback(true);
-                                setVideoUrl(fallbackPlaybackUrl);
+                                setVideoUrl(stallFallbackUrl);
                                 return;
                             }
                         }}
