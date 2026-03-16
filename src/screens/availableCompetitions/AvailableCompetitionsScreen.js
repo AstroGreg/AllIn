@@ -349,34 +349,34 @@ const AvailableEventsScreen = ({ navigation, route }) => {
         });
     }, [apiAccessToken, resetSubscribeForm]);
     useEffect(() => {
-        var _a, _b, _c, _d, _e, _f, _g;
-        const requestId = String((_a = (_a = route === null || route === void 0 ? void 0 : route.params) === null || _a === void 0 ? void 0 : _a.autoOpenSubscribeRequestId) !== null && _a !== void 0 ? _a : '').trim();
-        const targetEventId = String((_b = (_b = route === null || route === void 0 ? void 0 : route.params) === null || _b === void 0 ? void 0 : _b.autoOpenSubscribeEventId) !== null && _b !== void 0 ? _b : '').trim();
+        const autoOpenParams = route === null || route === void 0 ? void 0 : route.params;
+        const requestId = String((autoOpenParams === null || autoOpenParams === void 0 ? void 0 : autoOpenParams.autoOpenSubscribeRequestId) || '').trim();
+        const targetEventId = String((autoOpenParams === null || autoOpenParams === void 0 ? void 0 : autoOpenParams.autoOpenSubscribeEventId) || '').trim();
         if (!requestId || !targetEventId)
             return;
         if (autoOpenRequestHandledRef.current === requestId)
             return;
         if (isLoadingEvents)
             return;
-        const matchedEvent = availableEvents.find((event) => String(event === null || event === void 0 ? void 0 : event.id).trim() === targetEventId);
+        const matchedEvent = availableEvents.find((event) => String((event === null || event === void 0 ? void 0 : event.id) || '').trim() === targetEventId);
         const fallbackEvent = {
             id: targetEventId,
-            title: String((_c = (_c = route === null || route === void 0 ? void 0 : route.params) === null || _c === void 0 ? void 0 : _c.autoOpenSubscribeEventTitle) !== null && _c !== void 0 ? _c : ''),
-            date: String((_d = (_d = route === null || route === void 0 ? void 0 : route.params) === null || _d === void 0 ? void 0 : _d.autoOpenSubscribeEventDate) !== null && _d !== void 0 ? _d : ''),
-            location: String((_e = (_e = route === null || route === void 0 ? void 0 : route.params) === null || _e === void 0 ? void 0 : _e.autoOpenSubscribeEventLocation) !== null && _e !== void 0 ? _e : ''),
+            title: String((autoOpenParams === null || autoOpenParams === void 0 ? void 0 : autoOpenParams.autoOpenSubscribeEventTitle) || ''),
+            date: String((autoOpenParams === null || autoOpenParams === void 0 ? void 0 : autoOpenParams.autoOpenSubscribeEventDate) || ''),
+            location: String((autoOpenParams === null || autoOpenParams === void 0 ? void 0 : autoOpenParams.autoOpenSubscribeEventLocation) || ''),
             competitionType: resolveCompetitionType({
-                type: (_f = route === null || route === void 0 ? void 0 : route.params) === null || _f === void 0 ? void 0 : _f.autoOpenSubscribeEventCompetitionType,
-                name: (_g = route === null || route === void 0 ? void 0 : route.params) === null || _g === void 0 ? void 0 : _g.autoOpenSubscribeEventTitle,
-                location: route === null || route === void 0 ? void 0 : route.params.autoOpenSubscribeEventLocation,
-                organizer: route === null || route === void 0 ? void 0 : route.params.autoOpenSubscribeEventOrganizingClub,
+                type: (autoOpenParams === null || autoOpenParams === void 0 ? void 0 : autoOpenParams.autoOpenSubscribeEventCompetitionType) || null,
+                name: (autoOpenParams === null || autoOpenParams === void 0 ? void 0 : autoOpenParams.autoOpenSubscribeEventTitle) || null,
+                location: (autoOpenParams === null || autoOpenParams === void 0 ? void 0 : autoOpenParams.autoOpenSubscribeEventLocation) || null,
+                organizer: (autoOpenParams === null || autoOpenParams === void 0 ? void 0 : autoOpenParams.autoOpenSubscribeEventOrganizingClub) || null,
             }),
-            organizingClub: String((route === null || route === void 0 ? void 0 : route.params.autoOpenSubscribeEventOrganizingClub) || ''),
+            organizingClub: String((autoOpenParams === null || autoOpenParams === void 0 ? void 0 : autoOpenParams.autoOpenSubscribeEventOrganizingClub) || ''),
             thumbnail: Images.photo4,
         };
         openSubscribeModal(matchedEvent || fallbackEvent);
         autoOpenRequestHandledRef.current = requestId;
-        var _h;
-        (_h = navigation.setParams) === null || _h === void 0 ? void 0 : _h.call(navigation, {
+        var _a;
+        (_a = navigation.setParams) === null || _a === void 0 ? void 0 : _a.call(navigation, {
             autoOpenSubscribeRequestId: undefined,
             autoOpenSubscribeEventId: undefined,
             autoOpenSubscribeEventTitle: undefined,
@@ -385,7 +385,7 @@ const AvailableEventsScreen = ({ navigation, route }) => {
             autoOpenSubscribeEventCompetitionType: undefined,
             autoOpenSubscribeEventOrganizingClub: undefined,
         });
-    }, [availableEvents, isLoadingEvents, navigation, openSubscribeModal, resolveCompetitionType, route === null || route === void 0 ? void 0 : route.params.autoOpenSubscribeEventCompetitionType, route === null || route === void 0 ? void 0 : route.params.autoOpenSubscribeEventDate, route === null || route === void 0 ? void 0 : route.params.autoOpenSubscribeEventId, route === null || route === void 0 ? void 0 : route.params.autoOpenSubscribeEventLocation, route === null || route === void 0 ? void 0 : route.params.autoOpenSubscribeEventOrganizingClub, route === null || route === void 0 ? void 0 : route.params.autoOpenSubscribeEventTitle, route === null || route === void 0 ? void 0 : route.params.autoOpenSubscribeRequestId]);
+    }, [availableEvents, isLoadingEvents, navigation, openSubscribeModal, resolveCompetitionType, route === null || route === void 0 ? void 0 : route.params]);
     const closeSubscribeModal = useCallback(() => {
         setShowSubscribeModal(false);
         setModalEvent(null);
