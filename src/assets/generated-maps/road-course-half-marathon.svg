@@ -1,0 +1,50 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="900" viewBox="0 0 1600 900">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#eef2ff"/>
+      <stop offset="100%" stop-color="#dbeafe"/>
+    </linearGradient>
+    <filter id="shadow" x="-50%" y="-50%" width="200%" height="200%">
+      <feDropShadow dx="0" dy="2" stdDeviation="4" flood-color="#00000044"/>
+    </filter>
+  </defs>
+
+  <rect width="1600" height="900" fill="url(#bg)"/>
+  <rect x="170" y="150" width="320" height="160" rx="34" fill="#bfdbfe" opacity="0.4"/>
+  <rect x="1080" y="110" width="360" height="180" rx="38" fill="#bbf7d0" opacity="0.4"/>
+  <rect x="220" y="560" width="380" height="210" rx="42" fill="#d9f99d" opacity="0.38"/>
+  <rect x="1020" y="500" width="360" height="230" rx="42" fill="#c7d2fe" opacity="0.42"/>
+
+  <path d="M 120 170 L 1500 240" stroke="#9ca3af" stroke-width="18" stroke-linecap="round" opacity="0.52"/>
+  <path d="M 90 430 L 1520 500" stroke="#9ca3af" stroke-width="18" stroke-linecap="round" opacity="0.52"/>
+  <path d="M 160 760 L 1460 700" stroke="#9ca3af" stroke-width="18" stroke-linecap="round" opacity="0.52"/>
+  <path d="M 310 90 L 260 830" stroke="#9ca3af" stroke-width="18" stroke-linecap="round" opacity="0.52"/>
+  <path d="M 860 90 L 820 840" stroke="#9ca3af" stroke-width="18" stroke-linecap="round" opacity="0.52"/>
+  <path d="M 1260 120 L 1210 820" stroke="#9ca3af" stroke-width="18" stroke-linecap="round" opacity="0.52"/>
+
+  <path d="M 120 170 L 1500 240" stroke="#f8fafc" stroke-width="3" stroke-dasharray="10 12" stroke-linecap="round" opacity="0.72"/>
+  <path d="M 90 430 L 1520 500" stroke="#f8fafc" stroke-width="3" stroke-dasharray="10 12" stroke-linecap="round" opacity="0.72"/>
+  <path d="M 160 760 L 1460 700" stroke="#f8fafc" stroke-width="3" stroke-dasharray="10 12" stroke-linecap="round" opacity="0.72"/>
+  <path d="M 310 90 L 260 830" stroke="#f8fafc" stroke-width="3" stroke-dasharray="10 12" stroke-linecap="round" opacity="0.72"/>
+  <path d="M 860 90 L 820 840" stroke="#f8fafc" stroke-width="3" stroke-dasharray="10 12" stroke-linecap="round" opacity="0.72"/>
+  <path d="M 1260 120 L 1210 820" stroke="#f8fafc" stroke-width="3" stroke-dasharray="10 12" stroke-linecap="round" opacity="0.72"/>
+
+  <polyline points="210,680 320,590 460,520 620,460 790,420 980,430 1130,490 1240,590 1290,700 1250,795 1110,835 920,820 760,780 610,700 470,620 330,640 210,680" fill="none" stroke="#0f172a" stroke-width="22" stroke-linejoin="round" stroke-linecap="round" opacity="0.95"/>
+  <polyline points="210,680 320,590 460,520 620,460 790,420 980,430 1130,490 1240,590 1290,700 1250,795 1110,835 920,820 760,780 610,700 470,620 330,640 210,680" fill="none" stroke="#2563eb" stroke-width="12" stroke-linejoin="round" stroke-linecap="round"/>
+  <polyline points="210,680 320,590 460,520 620,460 790,420 980,430 1130,490 1240,590 1290,700 1250,795 1110,835 920,820 760,780 610,700 470,620 330,640 210,680" fill="none" stroke="#93c5fd" stroke-width="5" stroke-linejoin="round" stroke-linecap="round" stroke-dasharray="18 14" opacity="0.95"/>
+
+  <g fill="#0f172a" font-family="Arial, sans-serif" font-size="20" font-weight="700">
+    <circle cx="210" cy="680" r="12" fill="#0f172a" stroke="#f8fafc" stroke-width="4"/><circle cx="210" cy="680" r="5" fill="#38bdf8"/><rect x="224" y="636" rx="10" ry="10" width="210" height="34" fill="#0f172acc" stroke="#334155" stroke-width="1.5"/><text x="238" y="658" fill="#e2e8f0">Start line</text>
+    <circle cx="530" cy="494" r="12" fill="#0f172a" stroke="#f8fafc" stroke-width="4"/><circle cx="530" cy="494" r="5" fill="#38bdf8"/><rect x="544" y="450" rx="10" ry="10" width="210" height="34" fill="#0f172acc" stroke="#334155" stroke-width="1.5"/><text x="558" y="472" fill="#e2e8f0">5km</text>
+    <circle cx="980" cy="430" r="12" fill="#0f172a" stroke="#f8fafc" stroke-width="4"/><circle cx="980" cy="430" r="5" fill="#38bdf8"/><rect x="994" y="386" rx="10" ry="10" width="210" height="34" fill="#0f172acc" stroke="#334155" stroke-width="1.5"/><text x="1008" y="408" fill="#e2e8f0">10km</text>
+    <circle cx="1235" cy="790" r="12" fill="#0f172a" stroke="#f8fafc" stroke-width="4"/><circle cx="1235" cy="790" r="5" fill="#38bdf8"/><rect x="1249" y="746" rx="10" ry="10" width="210" height="34" fill="#0f172acc" stroke="#334155" stroke-width="1.5"/><text x="1263" y="768" fill="#e2e8f0">15km</text>
+    <circle cx="700" cy="760" r="12" fill="#0f172a" stroke="#f8fafc" stroke-width="4"/><circle cx="700" cy="760" r="5" fill="#38bdf8"/><rect x="714" y="716" rx="10" ry="10" width="250" height="34" fill="#0f172acc" stroke="#334155" stroke-width="1.5"/><text x="728" y="738" fill="#e2e8f0">20km checkpoint</text>
+    <circle cx="210" cy="680" r="12" fill="#0f172a" stroke="#f8fafc" stroke-width="4"/><circle cx="210" cy="680" r="5" fill="#38bdf8"/><rect x="224" y="696" rx="10" ry="10" width="210" height="34" fill="#0f172acc" stroke="#334155" stroke-width="1.5"/><text x="238" y="718" fill="#e2e8f0">Finish line</text>
+  </g>
+
+  <g filter="url(#shadow)">
+    <rect x="48" y="36" width="560" height="120" rx="20" fill="#0b1220d9" stroke="#334155" stroke-width="2"/>
+  </g>
+  <text x="74" y="92" font-size="40" fill="#f8fafc" font-family="Arial, sans-serif" font-weight="800">Road Run Half Marathon Course</text>
+  <text x="74" y="130" font-size="24" fill="#cbd5e1" font-family="Arial, sans-serif">Checkpoint tags: Start line, 5km, 10km, 15km, 20km checkpoint, Finish line</text>
+</svg>

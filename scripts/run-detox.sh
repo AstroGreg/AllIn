@@ -18,6 +18,11 @@ E2E_GATEWAY_LOG="${E2E_GATEWAY_LOG:-/tmp/spotme-e2e-gateway.log}"
 E2E_METRO_LOG="${E2E_METRO_LOG:-/tmp/spotme-metro.log}"
 E2E_GATEWAY_PORT="$(node -e "const u=new URL(process.argv[1]); process.stdout.write(String(u.port || (u.protocol==='https:'?'443':'80')));" "${E2E_API_BASE_URL}")"
 E2E_GATEWAY_REUSE="${E2E_GATEWAY_REUSE:-0}"
+if [[ "${CONFIG}" == android* ]]; then
+  DETOX_TARGET_PLATFORM="android"
+else
+  DETOX_TARGET_PLATFORM="ios"
+fi
 
 cleanup() {
   if [ -n "${METRO_PID}" ] && kill -0 "${METRO_PID}" >/dev/null 2>&1; then
@@ -127,4 +132,6 @@ if ! nc -z 127.0.0.1 8081 >/dev/null 2>&1; then
   fi
 fi
 
-E2E_API_BASE_URL="${E2E_API_BASE_URL}" npx detox test -c "${CONFIG}" --cleanup "$@"
+DETOX_TARGET_PLATFORM="${DETOX_TARGET_PLATFORM}" \
+E2E_API_BASE_URL="${E2E_API_BASE_URL}" \
+npx detox test -c "${CONFIG}" --cleanup "$@"

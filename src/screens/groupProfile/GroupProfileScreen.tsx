@@ -34,7 +34,7 @@ import {
     type PostSummary,
 } from '../../services/apiGateway';
 import { getApiBaseUrl } from '../../constants/RuntimeConfig';
-import { getSportFocusLabel, normalizeFocusId, normalizeSelectedEvents, type SportFocusId } from '../../utils/profileSelections';
+import { getSportFocusLabel, normalizeFocusId, normalizeSelectedEvents, resolveCompetitionFocusId, type SportFocusId } from '../../utils/profileSelections';
 
 const GroupProfileScreen = ({ navigation, route }: any) => {
     const insets = useSafeAreaInsets();
@@ -1033,7 +1033,12 @@ const GroupProfileScreen = ({ navigation, route }: any) => {
                                             key={String(event.event_id)}
                                             style={localStyles.eventListCard}
                                             onPress={() => {
-                                                const typeToken = `${eventName} ${String(event.event_location || '')}`.toLowerCase();
+                                                const competitionType = resolveCompetitionFocusId({
+                                                    type: (event as any)?.competition_type,
+                                                    name: eventName,
+                                                    location: event.event_location,
+                                                    organizer: (event as any)?.organizing_club,
+                                                });
                                                 navigation.navigate('CompetitionDetailsScreen', {
                                                     id: String(event.event_id),
                                                     event_id: String(event.event_id),
@@ -1042,9 +1047,8 @@ const GroupProfileScreen = ({ navigation, route }: any) => {
                                                     location: event.event_location,
                                                     date: event.event_date,
                                                     organizingClub: (event as any)?.organizing_club,
-                                                    competitionType: /road|trail|marathon|veldloop|veldlopen|cross|5k|10k|half|ultra|city\s*run/.test(typeToken)
-                                                        ? 'road'
-                                                        : 'track',
+                                                    competitionType,
+                                                    competitionFocus: competitionType,
                                                 });
                                             }}
                                         >

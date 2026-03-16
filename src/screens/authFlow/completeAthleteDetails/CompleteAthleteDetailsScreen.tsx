@@ -3,7 +3,7 @@ import { View, Text, ScrollView, TouchableOpacity, Alert, ActivityIndicator, Tex
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { CommonActions } from '@react-navigation/native';
 import FastImage from 'react-native-fast-image';
-import { ArrowLeft2, Buildings, CloseCircle, Global, Profile2User, User } from 'iconsax-react-nativejs';
+import { ArrowLeft2, Buildings, CloseCircle, Global, User } from 'iconsax-react-nativejs';
 
 import { createStyles } from './CompleteAthleteDetailsScreenStyles';
 import SizeBox from '../../../constants/SizeBox';
@@ -16,7 +16,6 @@ import { useAuth } from '../../../context/AuthContext';
 import { useTranslation } from 'react-i18next';
 import {
     ApiError,
-    getGroup,
     searchClubs,
 } from '../../../services/apiGateway';
 import {
@@ -32,9 +31,6 @@ import {
     getOfficialClubPlaceholder,
     getOfficialClubSearchFocuses,
     getSportFocusLabel,
-    getTrainingGroupFieldLabel,
-    getTrainingGroupHelperText,
-    getTrainingGroupPlaceholder,
     normalizeMainDisciplines,
     normalizeSelectedEvents,
     type SportFocusId,
@@ -101,7 +97,6 @@ const CompleteAthleteDetailsScreen = ({ navigation, route }: any) => {
     const [website, setWebsite] = useState(String((userProfile as any)?.website ?? ''));
     const [clubName, setClubName] = useState(String((userProfile as any)?.trackFieldClub ?? (userProfile as any)?.runningClub ?? ''));
     const [clubId, setClubId] = useState('');
-    const [runningGroupName, setRunningGroupName] = useState('');
     const [runningGroupId, setRunningGroupId] = useState(String((userProfile as any)?.runningClubGroupId ?? ''));
     const [mainDisciplines, setMainDisciplines] = useState<Record<string, string>>(initialMainDisciplines);
     const [isSaving, setIsSaving] = useState(false);
@@ -154,21 +149,6 @@ const CompleteAthleteDetailsScreen = ({ navigation, route }: any) => {
         clubOptionsPromiseCacheRef.current[cacheKey] = pending;
         return pending;
     };
-
-    useEffect(() => {
-        if (!apiAccessToken || !runningGroupId) return;
-        let mounted = true;
-        getGroup(apiAccessToken, runningGroupId)
-            .then((response) => {
-                if (mounted) setRunningGroupName(String(response?.group?.name ?? ''));
-            })
-            .catch(() => {
-                if (mounted) setRunningGroupName('');
-            });
-        return () => {
-            mounted = false;
-        };
-    }, [apiAccessToken, runningGroupId]);
 
     useEffect(() => {
         if (!apiAccessToken || clubSearchFocuses.length === 0) return;
@@ -251,7 +231,6 @@ const CompleteAthleteDetailsScreen = ({ navigation, route }: any) => {
             if (chestValue) rows.push({ label: t('Chest number'), value: chestValue });
         }
         if (clubName.trim()) rows.push({ label: getOfficialClubFieldLabel(selectedFocuses, t), value: clubName.trim() });
-        if (runningGroupName.trim()) rows.push({ label: getTrainingGroupFieldLabel(selectedFocuses, t), value: runningGroupName.trim() });
         selectedFocuses.forEach((focusId) => {
             const selectedDiscipline = String(mainDisciplines[focusId] || '').trim();
             if (!selectedDiscipline) return;
@@ -262,7 +241,7 @@ const CompleteAthleteDetailsScreen = ({ navigation, route }: any) => {
         });
         if (website.trim()) rows.push({ label: t('Website'), value: website.trim() });
         return rows;
-    }, [chestNumbersByYear, clubName, mainDisciplines, runningGroupName, selectedFocuses, showsChestNumbers, t, website]);
+    }, [chestNumbersByYear, clubName, mainDisciplines, selectedFocuses, showsChestNumbers, t, website]);
 
     const handleSkip = () => {
         setIsReviewing(true);
@@ -442,20 +421,6 @@ const CompleteAthleteDetailsScreen = ({ navigation, route }: any) => {
                             ) : officialClubHelperText ? (
                                 <Text style={Styles.helperTextLeft}>{officialClubHelperText}</Text>
                             ) : null}
-
-                            <Text style={Styles.clubFieldLabel}>{getTrainingGroupFieldLabel(selectedFocuses, t)}</Text>
-                            <View testID="profile-athlete-group-invite-only" style={Styles.clubFieldContainer}>
-                                <View style={Styles.clubFieldTapArea}>
-                                    <View style={Styles.clubFieldLeft}>
-                                        <Profile2User size={16} color={colors.primaryColor} />
-                                        <SizeBox width={10} />
-                                        <Text style={runningGroupName ? Styles.clubFieldText : Styles.clubFieldPlaceholder}>
-                                            {runningGroupName || getTrainingGroupPlaceholder(selectedFocuses, t)}
-                                        </Text>
-                                    </View>
-                                </View>
-                            </View>
-                            <Text style={[Styles.helperTextLeft, { marginTop: 8 }]}>{getTrainingGroupHelperText(selectedFocuses, t)}</Text>
 
                             {selectedFocuses.map((focusId) => {
                                 const selectedDiscipline = String(mainDisciplines[focusId] || '').trim();

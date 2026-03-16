@@ -1,5 +1,6 @@
 /** @type {import('detox').DetoxConfig} */
-const androidAvdName = process.env.DETOX_ANDROID_AVD || 'Pixel_8_API_35';
+const androidAvdName = process.env.DETOX_ANDROID_AVD || 'Medium_Phone_API_36';
+const androidAdbName = process.env.DETOX_ANDROID_DEVICE || 'emulator-5554';
 
 module.exports = {
   testRunner: {
@@ -38,6 +39,12 @@ module.exports = {
         avdName: androidAvdName,
       },
     },
+    attached: {
+      type: 'android.attached',
+      device: {
+        adbName: androidAdbName,
+      },
+    },
   },
   configurations: {
     'ios.sim.debug': {
@@ -46,6 +53,10 @@ module.exports = {
     },
     'android.emu.debug': {
       device: 'emulator',
+      app: 'android.debug',
+    },
+    'android.att.debug': {
+      device: 'attached',
       app: 'android.debug',
     },
   },

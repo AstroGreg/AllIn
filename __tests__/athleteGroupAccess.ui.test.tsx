@@ -153,7 +153,7 @@ describe('athlete group access', () => {
     });
   });
 
-  test('standard athlete onboarding keeps the group field invite-only', () => {
+  test('standard athlete onboarding hides group membership entirely', () => {
     render(
       <CompleteAthleteDetailsScreen
         navigation={createNavigation()}
@@ -162,11 +162,11 @@ describe('athlete group access', () => {
     );
 
     expect(screen.queryByTestId('profile-athlete-group-picker-open')).toBeNull();
-    expect(screen.getByTestId('profile-athlete-group-invite-only')).toBeTruthy();
-    expect(screen.getByText(INVITE_ONLY_COPY)).toBeTruthy();
+    expect(screen.queryByTestId('profile-athlete-group-invite-only')).toBeNull();
+    expect(screen.queryByText(INVITE_ONLY_COPY)).toBeNull();
   });
 
-  test('auth athlete onboarding keeps the group field invite-only', () => {
+  test('auth athlete onboarding hides group membership entirely', () => {
     render(
       <AuthCompleteAthleteDetailsScreen
         navigation={createNavigation()}
@@ -175,8 +175,8 @@ describe('athlete group access', () => {
     );
 
     expect(screen.queryByTestId('profile-athlete-group-picker-open')).toBeNull();
-    expect(screen.getByTestId('profile-athlete-group-invite-only')).toBeTruthy();
-    expect(screen.getByText(INVITE_ONLY_COPY)).toBeTruthy();
+    expect(screen.queryByTestId('profile-athlete-group-invite-only')).toBeNull();
+    expect(screen.queryByText(INVITE_ONLY_COPY)).toBeNull();
   });
 
   test('track field settings shows invite-only group copy for persisted athlete focus', async () => {

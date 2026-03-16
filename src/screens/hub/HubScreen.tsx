@@ -20,6 +20,7 @@ import { getApiBaseUrl } from '../../constants/RuntimeConfig';
 import { useTranslation } from 'react-i18next';
 import E2EPerfReady from '../../components/e2e/E2EPerfReady';
 import { isE2ELaunchEnabled } from '../../constants/E2EConfig';
+import { getSportFocusLabel, normalizeFocusId, resolveCompetitionFocusId, type SportFocusId } from '../../utils/profileSelections';
 
 const HUB_DEFAULT_INITIAL_LIMIT = 10;
 const HUB_SEARCH_INITIAL_LIMIT = 20;
@@ -53,17 +54,14 @@ const HubScreen = ({ navigation }: any) => {
         type?: string | null;
         name?: string | null;
         location?: string | null;
+        organizer?: string | null;
     }) => {
-        const token = `${params?.type || ''} ${params?.name || ''} ${params?.location || ''}`.toLowerCase();
-        if (/road|trail|marathon|veldloop|veldlopen|cross|5k|10k|half|ultra|city\s*run/.test(token)) {
-            return 'road' as const;
-        }
-        return 'track' as const;
+        return resolveCompetitionFocusId(params);
     }, []);
 
-    const getCompetitionTypeLabel = useCallback((type?: 'track' | 'road' | string | null) => {
-        if (String(type || '').toLowerCase() === 'road') return t('roadAndTrail');
-        return t('trackAndField');
+    const getCompetitionTypeLabel = useCallback((type?: SportFocusId | string | null) => {
+        const focusId = normalizeFocusId(type) ?? resolveCompetitionFocusId({ type });
+        return getSportFocusLabel(focusId, t);
     }, [t]);
 
     const isSignedUrl = useCallback((value?: string | null) => {
@@ -129,6 +127,12 @@ const HubScreen = ({ navigation }: any) => {
                             type: (item as any)?.competition_type,
                             name: item.event_name,
                             location: item.event_location,
+                            organizer: String(
+                                (item as any)?.organizing_club
+                                || (item as any)?.organizer_club
+                                || (item as any)?.competition_organizer_name
+                                || '',
+                            ).trim(),
                         }),
                         organizingClub: String(
                             (item as any)?.organizing_club
@@ -257,6 +261,7 @@ const HubScreen = ({ navigation }: any) => {
                     type: (event as any)?.competition_type,
                     name: event.event_name || event.event_title,
                     location: event.event_location,
+                    organizer: String((event as any)?.organizing_club || '').trim(),
                 }),
                 organizingClub: String((event as any)?.organizing_club || '').trim(),
                 cardType: 'subscription',
@@ -405,7 +410,8 @@ const HubScreen = ({ navigation }: any) => {
                 location: card.location,
                 date: card.date,
                 organizingClub: card.organizingClub,
-                competitionType: card.competitionType ?? 'track',
+                competitionType: card.competitionType ?? 'track-field',
+                competitionFocus: card.competitionType ?? 'track-field',
                 eventId: card.eventId ?? card.id,
             });
             return;

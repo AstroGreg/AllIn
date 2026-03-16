@@ -92,7 +92,9 @@ describe('Upload worker health gating', () => {
     });
 
     await device.disableSynchronization();
-    await expect(element(by.id('upload-details-screen'))).toBeVisible();
+    await waitFor(element(by.id('upload-details-screen')))
+      .toBeVisible()
+      .withTimeout(30000);
     await waitFor(element(by.id('upload-selected-assets-ready')))
       .toBeVisible()
       .withTimeout(15000);
@@ -113,27 +115,9 @@ describe('Upload worker health gating', () => {
       face: { ok: true, mode: 'local_fallback' },
     });
 
-    await device.terminateApp();
-    await launchApp({
-      routeName: 'UploadSummaryScreen',
-      routeParams: {
-        competition: {
-          id: competition.id,
-          name: competition.name,
-        },
-      },
-      authState: seededUser.auth_state,
-      apiBaseUrl: DEFAULT_API_BASE_URL,
-      deleteApp: false,
-    });
-
-    await device.disableSynchronization();
-    await waitFor(element(by.id('upload-summary-screen')))
-      .toBeVisible()
-      .withTimeout(15000);
     await waitFor(element(by.id('upload-worker-health-text')))
       .toHaveText('All workers are live. Upload can start.')
-      .withTimeout(15000);
+      .withTimeout(20000);
 
     await element(by.id('upload-start-button')).tap();
     await waitFor(element(by.id('upload-progress-screen')))

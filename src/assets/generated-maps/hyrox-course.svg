@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="900" viewBox="0 0 1600 900">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#111827"/>
+      <stop offset="100%" stop-color="#1f2937"/>
+    </linearGradient>
+  </defs>
+  <rect width="1600" height="900" fill="url(#bg)"/>
+  <rect x="180" y="140" width="290" height="150" rx="28" fill="#0f766e" opacity="0.42"/>
+  <rect x="1120" y="120" width="300" height="170" rx="28" fill="#1d4ed8" opacity="0.36"/>
+  <rect x="230" y="580" width="340" height="190" rx="30" fill="#f97316" opacity="0.24"/>
+  <rect x="980" y="520" width="360" height="220" rx="30" fill="#facc15" opacity="0.18"/>
+
+  <polyline points="250,690 360,600 500,520 660,470 830,450 1010,470 1170,530 1280,620 1330,720 1270,800 1120,820 930,790 760,730 600,660 430,640 300,700 250,690" fill="none" stroke="#f8fafc" stroke-width="20" stroke-linejoin="round" stroke-linecap="round" opacity="0.9"/>
+  <polyline points="250,690 360,600 500,520 660,470 830,450 1010,470 1170,530 1280,620 1330,720 1270,800 1120,820 930,790 760,730 600,660 430,640 300,700 250,690" fill="none" stroke="#f97316" stroke-width="10" stroke-linejoin="round" stroke-linecap="round"/>
+
+  <g fill="#f8fafc" font-family="Arial, sans-serif" font-size="20" font-weight="700">
+    <circle cx="250" cy="690" r="12" fill="#111827" stroke="#f8fafc" stroke-width="4"/><circle cx="250" cy="690" r="5" fill="#f97316"/><rect x="264" y="646" rx="10" ry="10" width="220" height="34" fill="#111827dd" stroke="#374151" stroke-width="1.5"/><text x="278" y="668">Start zone</text>
+    <circle cx="500" cy="520" r="12" fill="#111827" stroke="#f8fafc" stroke-width="4"/><circle cx="500" cy="520" r="5" fill="#f97316"/><rect x="514" y="476" rx="10" ry="10" width="220" height="34" fill="#111827dd" stroke="#374151" stroke-width="1.5"/><text x="528" y="498">SkiErg</text>
+    <circle cx="830" cy="450" r="12" fill="#111827" stroke="#f8fafc" stroke-width="4"/><circle cx="830" cy="450" r="5" fill="#f97316"/><rect x="844" y="406" rx="10" ry="10" width="220" height="34" fill="#111827dd" stroke="#374151" stroke-width="1.5"/><text x="858" y="428">Sled push</text>
+    <circle cx="1170" cy="530" r="12" fill="#111827" stroke="#f8fafc" stroke-width="4"/><circle cx="1170" cy="530" r="5" fill="#f97316"/><rect x="1184" y="486" rx="10" ry="10" width="220" height="34" fill="#111827dd" stroke="#374151" stroke-width="1.5"/><text x="1198" y="508">Burpee broad jumps</text>
+    <circle cx="1180" cy="815" r="12" fill="#111827" stroke="#f8fafc" stroke-width="4"/><circle cx="1180" cy="815" r="5" fill="#f97316"/><rect x="1194" y="771" rx="10" ry="10" width="220" height="34" fill="#111827dd" stroke="#374151" stroke-width="1.5"/><text x="1208" y="793">Wall balls</text>
+    <circle cx="250" cy="690" r="12" fill="#111827" stroke="#f8fafc" stroke-width="4"/><circle cx="250" cy="690" r="5" fill="#f97316"/><rect x="264" y="706" rx="10" ry="10" width="220" height="34" fill="#111827dd" stroke="#374151" stroke-width="1.5"/><text x="278" y="728">Finish line</text>
+  </g>
+
+  <rect x="48" y="36" width="410" height="120" rx="20" fill="#0b1220d9" stroke="#374151" stroke-width="2"/>
+  <text x="74" y="92" font-size="40" fill="#f8fafc" font-family="Arial, sans-serif" font-weight="800">HYROX Layout</text>
+  <text x="74" y="130" font-size="24" fill="#d1d5db" font-family="Arial, sans-serif">Checkpoint markers for fitness race stations in seed data</text>
+</svg>

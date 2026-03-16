@@ -71,6 +71,9 @@ redis.env
 
 # testing
 /coverage
+/dist
+/ios/build-check/
+/ios/build-verify-*/
 
 # Yarn
 .yarn/*

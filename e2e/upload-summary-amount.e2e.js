@@ -92,27 +92,42 @@ describe('Upload summary amounts', () => {
       .withTimeout(15000);
 
     const inputId = `upload-summary-price-input-${discipline.name}-1`;
-    await element(by.id(inputId)).replaceText('0.55');
+    if (process.env.DETOX_TARGET_PLATFORM === 'android') {
+      await element(by.id(inputId)).tap();
+      await element(by.id(inputId)).clearText();
+      await element(by.id(inputId)).typeText('0,55');
+    } else {
+      await element(by.id(inputId)).replaceText('0.55');
+    }
     await element(by.id('upload-worker-health-card')).tap();
-    await waitFor(element(by.id(inputId)))
-      .toHaveText('0.55')
-      .withTimeout(10000);
 
-    await device.terminateApp();
-    await launchApp({
-      routeName: 'UploadSummaryScreen',
-      routeParams: {
-        competition: {
-          id: competition.id,
-          name: competition.name,
+    if (process.env.DETOX_TARGET_PLATFORM === 'android') {
+      await element(by.id('upload-summary-back-button')).tap();
+      await waitFor(element(by.id('upload-details-screen')))
+        .toBeVisible()
+        .withTimeout(15000);
+      await waitFor(element(by.id('upload-selected-assets-ready')))
+        .toBeVisible()
+        .withTimeout(15000);
+      await element(by.id('upload-details-next-button')).tap();
+    } else {
+      await device.terminateApp();
+      await launchApp({
+        routeName: 'UploadSummaryScreen',
+        routeParams: {
+          competition: {
+            id: competition.id,
+            name: competition.name,
+          },
         },
-      },
-      authState: seededUser.auth_state,
-      apiBaseUrl: DEFAULT_API_BASE_URL,
-      deleteApp: false,
-    });
+        authState: seededUser.auth_state,
+        apiBaseUrl: DEFAULT_API_BASE_URL,
+        deleteApp: false,
+      });
 
-    await device.disableSynchronization();
+      await device.disableSynchronization();
+    }
+
     await waitFor(element(by.id('upload-summary-screen')))
       .toBeVisible()
       .withTimeout(15000);

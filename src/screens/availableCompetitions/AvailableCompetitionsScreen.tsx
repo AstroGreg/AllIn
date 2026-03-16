@@ -936,6 +936,7 @@ const AvailableEventsScreen = ({ navigation }: any) => {
                                                 date: modalEvent.date,
                                                 organizingClub: modalEvent.organizingClub,
                                                 competitionType: modalEvent.competitionType,
+                                                competitionFocus: modalEvent.competitionType,
                                                 eventId: modalEvent.id,
                                             });
                                         }}

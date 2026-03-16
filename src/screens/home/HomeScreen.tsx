@@ -40,6 +40,7 @@ import { translateText } from '../../i18n'
 import E2EPerfReady from '../../components/e2e/E2EPerfReady'
 import { useInstagramStoryImageComposer } from '../../components/share/InstagramStoryComposer'
 import { shareBlogToInstagramStory, shareMediaToInstagramStory } from '../../components/share/instagramStoryShare'
+import { resolveCompetitionFocusId } from '../../utils/profileSelections';
 
 const HOME_FEED_PAGE_SIZE = 8;
 type HomeFeedItem =
@@ -982,10 +983,12 @@ const HomeScreen = ({ navigation }: any) => {
                             || '',
                         ).trim();
                         const eventDate = String((safeMedia as any)?.event_date || '').trim();
-                        const typeToken = `${(safeMedia as any)?.competition_type || ''} ${label} ${location}`.toLowerCase();
-                        const competitionType = /road|trail|marathon|veldloop|veldlopen|cross|5k|10k|half|ultra|city\s*run/.test(typeToken)
-                            ? 'road'
-                            : 'track';
+                        const competitionType = resolveCompetitionFocusId({
+                            type: (safeMedia as any)?.competition_type,
+                            name: label,
+                            location,
+                            organizer,
+                        });
                         navigation.navigate('CompetitionDetailsScreen', {
                             eventId: safeMedia?.event_id ? String(safeMedia.event_id) : undefined,
                             name: label,
@@ -993,6 +996,7 @@ const HomeScreen = ({ navigation }: any) => {
                             date: eventDate,
                             organizingClub: organizer,
                             competitionType,
+                            competitionFocus: competitionType,
                         });
                     },
                 },

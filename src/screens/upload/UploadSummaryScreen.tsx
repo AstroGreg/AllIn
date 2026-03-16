@@ -117,6 +117,7 @@ const UploadSummaryScreen = ({ navigation, route }: any) => {
     useFocusEffect(
         useCallback(() => {
             let mounted = true;
+            let workerHealthInterval: ReturnType<typeof setInterval> | null = null;
             const loadAssets = async () => {
                 try {
                     const assetsRaw = await AsyncStorage.getItem(`@upload_assets_${competitionId}`);
@@ -162,8 +163,12 @@ const UploadSummaryScreen = ({ navigation, route }: any) => {
             };
             loadAssets();
             refreshWorkerHealth().catch(() => {});
+            workerHealthInterval = setInterval(() => {
+                refreshWorkerHealth().catch(() => {});
+            }, 5000);
             return () => {
                 mounted = false;
+                if (workerHealthInterval) clearInterval(workerHealthInterval);
             };
         }, [competitionId, formatResolution, refreshWorkerHealth]),
     );
@@ -238,7 +243,36 @@ const UploadSummaryScreen = ({ navigation, route }: any) => {
         [cloudSystemOperational, workersError, workersLoading],
     );
 
+    const persistCurrentPrices = useCallback(async (sections: CategorySection[] = categories) => {
+        try {
+            const key = `@upload_assets_${competitionId}`;
+            const assetsRaw = await AsyncStorage.getItem(key);
+            const parsed = assetsRaw ? JSON.parse(assetsRaw) : {};
+            sections.forEach((section) => {
+                const list = Array.isArray(parsed?.[section.name]) ? [...parsed[section.name]] : [];
+                section.items.forEach((item, index) => {
+                    if (!list[index]) return;
+                    list[index] = {
+                        ...list[index],
+                        price_cents: item.priceCents,
+                        price_currency: 'EUR',
+                    };
+                });
+                parsed[section.name] = list;
+            });
+            await AsyncStorage.setItem(key, JSON.stringify(parsed));
+        } catch {
+            // ignore
+        }
+    }, [categories, competitionId]);
+
+    const handleBack = useCallback(async () => {
+        await persistCurrentPrices();
+        navigation.goBack();
+    }, [navigation, persistCurrentPrices]);
+
     const handleConfirm = async () => {
+        await persistCurrentPrices();
         try {
             const health = await refreshWorkerHealth();
             if (!health?.ok) {
@@ -400,7 +434,7 @@ const UploadSummaryScreen = ({ navigation, route }: any) => {
 
             {/* Header */}
             <View style={Styles.header}>
-                <TouchableOpacity style={Styles.headerButton} onPress={() => navigation.goBack()} testID="upload-summary-back-button">
+                <TouchableOpacity style={Styles.headerButton} onPress={handleBack} testID="upload-summary-back-button">
                     <ArrowLeft2 size={24} color={colors.primaryColor} variant="Linear" />
                 </TouchableOpacity>
                 <Text style={Styles.headerTitle}>{t('Upload Summary')}</Text>

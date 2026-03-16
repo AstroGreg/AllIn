@@ -12,9 +12,11 @@ import { useTranslation } from 'react-i18next'
 import UnifiedSearchInput from '../../../components/unifiedSearchInput/UnifiedSearchInput';
 import { useEvents } from '../../../context/EventsContext'
 import { getApiBaseUrl } from '../../../constants/RuntimeConfig';
-import { getSportFocusLabel, normalizeFocusId, type SportFocusId } from '../../../utils/profileSelections';
+import { getSportFocusLabel, normalizeFocusId, resolveCompetitionFocusId, type SportFocusId } from '../../../utils/profileSelections';
 import { buildSubscriptionDisciplineOptions, normalizeSubscriptionCategories, SUBSCRIPTION_ALL_DISCIPLINE_ID, SUBSCRIPTION_CATEGORY_OPTIONS, toggleSubscriptionCategory, toggleSubscriptionDiscipline } from '../../../utils/eventSubscription';
 import E2EPerfReady from '../../../components/e2e/E2EPerfReady';
+import { SvgUri } from 'react-native-svg';
+import { isSvgAssetUrl } from '../../../utils/isSvgAssetUrl';
 
 interface EventCategory {
     id: string | number;
@@ -46,8 +48,13 @@ const CompetitionDetailsScreen = ({ navigation, route }: any) => {
     const { events: subscribedEvents, refresh: refreshSubscribed } = useEvents();
     const perfStartedAtRef = useRef(Date.now());
     const [selectedTab, setSelectedTab] = useState<'track' | 'field'>('track');
-    const [competitionFocusId, setCompetitionFocusId] = useState<SportFocusId | null>(
-        normalizeFocusId(route?.params?.competitionFocus ?? route?.params?.competitionType),
+    const [competitionFocusId, setCompetitionFocusId] = useState<SportFocusId | null>(() =>
+        normalizeFocusId(route?.params?.competitionFocus) ?? resolveCompetitionFocusId({
+            type: route?.params?.competitionType,
+            name: route?.params?.name ?? route?.params?.eventName,
+            location: route?.params?.location ?? route?.params?.description,
+            organizer: route?.params?.organizingClub ?? route?.params?.organizing_club ?? route?.params?.organizer_club,
+        }),
     );
     const [selectedCourseId, setSelectedCourseId] = useState('');
     const [checkpointModalVisible, setCheckpointModalVisible] = useState(false);
@@ -112,13 +119,21 @@ const CompetitionDetailsScreen = ({ navigation, route }: any) => {
         ?? route?.params?.organizer_club
         ?? '',
     ).trim();
-    const competitionType: 'track' | 'marathon' = route?.params?.competitionType || 'track';
-    const normalizedCompetitionType = String(competitionType || '').toLowerCase();
-    const isRoadTrailCompetition = competitionFocusId === 'road-events' || normalizedCompetitionType === 'marathon' || normalizedCompetitionType === 'road' || normalizedCompetitionType === 'trail' || normalizedCompetitionType === 'roadtrail' || normalizedCompetitionType === 'road&trail';
-    const isTrackFieldCompetition = competitionFocusId === 'track-field' || (!competitionFocusId && !isRoadTrailCompetition);
+    const competitionType = String(route?.params?.competitionType ?? '').trim();
+    const usesCourseMaps = Boolean(competitionFocusId) && competitionFocusId !== 'track-field';
+    const isTrackFieldCompetition = !usesCourseMaps;
+    const fallbackCompetitionFocusId = useMemo(
+        () => resolveCompetitionFocusId({
+            type: competitionType,
+            name: competitionName,
+            location: competitionLocation,
+            organizer: organizingClub,
+        }),
+        [competitionLocation, competitionName, competitionType, organizingClub],
+    );
     const competitionTypeLabel = useMemo(
-        () => (competitionFocusId ? getSportFocusLabel(competitionFocusId, t) : (isRoadTrailCompetition ? t('roadAndTrail') : t('trackAndField'))),
-        [competitionFocusId, isRoadTrailCompetition, t],
+        () => getSportFocusLabel(competitionFocusId ?? fallbackCompetitionFocusId, t),
+        [competitionFocusId, fallbackCompetitionFocusId, t],
     );
     const competitionMetaLine = useMemo(() => {
         const parts = [
@@ -224,7 +239,7 @@ const CompetitionDetailsScreen = ({ navigation, route }: any) => {
     }, [fieldEvents, isTrackFieldCompetition, selectedTab, trackEvents]);
 
     const visibleCourses = courseOptions.length > 0 ? courseOptions : FALLBACK_COURSES;
-    const showCoursesSection = isRoadTrailCompetition;
+    const showCoursesSection = usesCourseMaps;
     const perfReady = !isDisciplinesLoading && !isMapLoading && (hasLoadedDisciplines || hasLoadedMaps);
     const subscriptionDisciplineOptions = useMemo(() => {
         const rows = showCoursesSection
@@ -305,7 +320,7 @@ const CompetitionDetailsScreen = ({ navigation, route }: any) => {
     }, []);
 
     useEffect(() => {
-        if (!isRoadTrailCompetition || !apiAccessToken || !resolvedEventId) {
+        if (!usesCourseMaps || !apiAccessToken || !resolvedEventId) {
             setMapError((prev) => (prev === null ? prev : null));
             setCourseOptions((prev) => (prev.length === 0 ? prev : []));
             setSelectedCourseId((prev) => (prev ? '' : prev));
@@ -358,10 +373,10 @@ const CompetitionDetailsScreen = ({ navigation, route }: any) => {
         return () => {
             isActive = false;
         };
-    }, [apiAccessToken, isRoadTrailCompetition, resolvedEventId, t, toAbsoluteUrl, withAccessToken]);
+    }, [apiAccessToken, resolvedEventId, t, toAbsoluteUrl, usesCourseMaps, withAccessToken]);
 
     useEffect(() => {
-        if (!apiAccessToken || !resolvedEventId || isRoadTrailCompetition) {
+        if (!apiAccessToken || !resolvedEventId || usesCourseMaps) {
             setTrackEvents([]);
             setFieldEvents([]);
             setIsDisciplinesLoading(false);
@@ -377,7 +392,12 @@ const CompetitionDetailsScreen = ({ navigation, route }: any) => {
                 const comps = await getEventCompetitions(apiAccessToken, String(resolvedEventId), { onlyWithMedia: true });
                 if (!isActive) return;
                 const rows = Array.isArray(comps.competitions) ? comps.competitions : [];
-                const resolvedFocus = normalizeFocusId(rows[0]?.competition_focus ?? competitionFocusId ?? competitionType);
+                const resolvedFocus = normalizeFocusId(rows[0]?.competition_focus) ?? resolveCompetitionFocusId({
+                    type: rows[0]?.competition_focus ?? rows[0]?.competition_type ?? competitionFocusId ?? competitionType,
+                    name: rows[0]?.competition_name ?? rows[0]?.competition_name_normalized ?? competitionName,
+                    location: competitionLocation,
+                    organizer: organizingClub,
+                });
                 setCompetitionFocusId(resolvedFocus);
 
                 const mapped = rows
@@ -424,10 +444,10 @@ const CompetitionDetailsScreen = ({ navigation, route }: any) => {
         return () => {
             isActive = false;
         };
-    }, [apiAccessToken, competitionFocusId, competitionType, isRoadTrailCompetition, resolvedEventId, t, toAbsoluteUrl, withAccessToken]);
+    }, [apiAccessToken, competitionFocusId, competitionLocation, competitionName, competitionType, organizingClub, resolvedEventId, t, toAbsoluteUrl, usesCourseMaps, withAccessToken]);
 
     useEffect(() => {
-        if (!isRoadTrailCompetition) return;
+        if (!usesCourseMaps) return;
         if (!apiAccessToken) return;
         if (courseOptions.length === 0) return;
 
@@ -462,7 +482,7 @@ const CompetitionDetailsScreen = ({ navigation, route }: any) => {
         return () => {
             isActive = false;
         };
-    }, [apiAccessToken, courseOptions, isRoadTrailCompetition, selectedCourseId, toAbsoluteUrl, withAccessToken]);
+    }, [apiAccessToken, courseOptions, selectedCourseId, toAbsoluteUrl, usesCourseMaps, withAccessToken]);
 
     const renderEventCard = (event: EventCategory) => (
         <TouchableOpacity
@@ -996,7 +1016,7 @@ const CompetitionDetailsScreen = ({ navigation, route }: any) => {
                 <View style={{ width: 44, height: 44 }} />
             </View>
 
-            <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+            <ScrollView style={styles.content} showsVerticalScrollIndicator={false} testID="competition-details-scroll">
                 {/* Competition Info */}
                 <View style={styles.competitionMetaCard}>
                     <Text style={styles.competitionDescription}>
@@ -1079,12 +1099,24 @@ const CompetitionDetailsScreen = ({ navigation, route }: any) => {
                                 <SizeBox height={12} />
                                 <View style={styles.mapCard}>
                                     {hasSelectedCourseMap ? (
-                                        <Image
-                                            source={{ uri: String(selectedCourse?.imageUrl) }}
-                                            style={styles.mapImage}
-                                            resizeMode="cover"
-                                            onError={() => setMapLoadFailed(true)}
-                                        />
+                                        isSvgAssetUrl(selectedCourse?.imageUrl) ? (
+                                            <View style={styles.mapImage}>
+                                                <SvgUri
+                                                    uri={String(selectedCourse?.imageUrl)}
+                                                    width="100%"
+                                                    height="100%"
+                                                    preserveAspectRatio="xMidYMid slice"
+                                                    onError={() => setMapLoadFailed(true)}
+                                                />
+                                            </View>
+                                        ) : (
+                                            <Image
+                                                source={{ uri: String(selectedCourse?.imageUrl) }}
+                                                style={styles.mapImage}
+                                                resizeMode="cover"
+                                                onError={() => setMapLoadFailed(true)}
+                                            />
+                                        )
                                     ) : (
                                         <View style={styles.mapEmptyState}>
                                             <Text style={styles.mapEmptyTitle}>{t('No map uploaded for this course yet.')}</Text>

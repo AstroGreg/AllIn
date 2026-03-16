@@ -782,6 +782,7 @@ const SearchScreen = ({ navigation }: any) => {
                 location: event.location,
                 date: event.date,
                 competitionType: event.competitionType,
+                competitionFocus: event.competitionType,
                 organizingClub: event.organizingClub,
             })}
         >

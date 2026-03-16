@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="900" viewBox="0 0 1600 900">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#e6f0db"/>
+      <stop offset="100%" stop-color="#d7e5d1"/>
+    </linearGradient>
+    <filter id="shadow" x="-50%" y="-50%" width="200%" height="200%">
+      <feDropShadow dx="0" dy="2" stdDeviation="4" flood-color="#00000066"/>
+    </filter>
+  </defs>
+
+  <rect width="1600" height="900" fill="url(#bg)"/>
+  <path d="M -50 120 C 190 70, 420 150, 700 110 C 980 70, 1230 150, 1650 100" stroke="#94a3b822" stroke-width="2" fill="none"/>
+  <path d="M -50 250 C 190 200, 420 280, 700 240 C 980 200, 1230 280, 1650 230" stroke="#94a3b822" stroke-width="2" fill="none"/>
+  <path d="M -50 380 C 190 330, 420 410, 700 370 C 980 330, 1230 410, 1650 360" stroke="#94a3b822" stroke-width="2" fill="none"/>
+  <path d="M -50 510 C 190 460, 420 540, 700 500 C 980 460, 1230 540, 1650 490" stroke="#94a3b822" stroke-width="2" fill="none"/>
+  <path d="M -50 640 C 190 590, 420 670, 700 630 C 980 590, 1230 670, 1650 620" stroke="#94a3b822" stroke-width="2" fill="none"/>
+  <path d="M -50 770 C 190 720, 420 800, 700 760 C 980 720, 1230 800, 1650 750" stroke="#94a3b822" stroke-width="2" fill="none"/>
+
+  <rect x="210" y="180" width="320" height="170" rx="44" fill="#a7c89f" opacity="0.58"/>
+  <rect x="1100" y="130" width="280" height="160" rx="38" fill="#a7c89f" opacity="0.55"/>
+  <rect x="940" y="520" width="390" height="230" rx="40" fill="#9ac8e3" opacity="0.52"/>
+
+  <polyline points="250,650 340,560 450,470 610,430 780,450 930,520 1050,610 1120,700 1080,770 930,785 730,745 560,675 400,665 300,690 250,650" fill="none" stroke="#0f172a" stroke-width="24" stroke-linejoin="round" stroke-linecap="round" opacity="0.95"/>
+  <polyline points="250,650 340,560 450,470 610,430 780,450 930,520 1050,610 1120,700 1080,770 930,785 730,745 560,675 400,665 300,690 250,650" fill="none" stroke="#f97316" stroke-width="14" stroke-linejoin="round" stroke-linecap="round"/>
+  <polyline points="250,650 340,560 450,470 610,430 780,450 930,520 1050,610 1120,700 1080,770 930,785 730,745 560,675 400,665 300,690 250,650" fill="none" stroke="#fb923c" stroke-width="6" stroke-linejoin="round" stroke-linecap="round" stroke-dasharray="18 14" opacity="0.95"/>
+
+  <g fill="#0f172a" font-family="Arial, sans-serif" font-size="20" font-weight="700">
+    <circle cx="250" cy="650" r="12" fill="#0f172a" stroke="#f8fafc" stroke-width="4"/><circle cx="250" cy="650" r="5" fill="#38bdf8"/><rect x="264" y="606" rx="10" ry="10" width="220" height="34" fill="#0f172acc" stroke="#334155" stroke-width="1.5"/><text x="278" y="628" fill="#e2e8f0">Start line</text>
+    <circle cx="470" cy="465" r="12" fill="#0f172a" stroke="#f8fafc" stroke-width="4"/><circle cx="470" cy="465" r="5" fill="#38bdf8"/><rect x="484" y="421" rx="10" ry="10" width="220" height="34" fill="#0f172acc" stroke="#334155" stroke-width="1.5"/><text x="498" y="443" fill="#e2e8f0">Trail split</text>
+    <circle cx="790" cy="455" r="12" fill="#0f172a" stroke="#f8fafc" stroke-width="4"/><circle cx="790" cy="455" r="5" fill="#38bdf8"/><rect x="804" y="411" rx="10" ry="10" width="220" height="34" fill="#0f172acc" stroke="#334155" stroke-width="1.5"/><text x="818" y="433" fill="#e2e8f0">Forest loop</text>
+    <circle cx="1090" cy="735" r="12" fill="#0f172a" stroke="#f8fafc" stroke-width="4"/><circle cx="1090" cy="735" r="5" fill="#38bdf8"/><rect x="1104" y="691" rx="10" ry="10" width="220" height="34" fill="#0f172acc" stroke="#334155" stroke-width="1.5"/><text x="1118" y="713" fill="#e2e8f0">Climb summit</text>
+    <circle cx="250" cy="650" r="12" fill="#0f172a" stroke="#f8fafc" stroke-width="4"/><circle cx="250" cy="650" r="5" fill="#38bdf8"/><rect x="264" y="666" rx="10" ry="10" width="220" height="34" fill="#0f172acc" stroke="#334155" stroke-width="1.5"/><text x="278" y="688" fill="#e2e8f0">Finish line</text>
+  </g>
+
+  <g filter="url(#shadow)">
+    <rect x="48" y="36" width="500" height="120" rx="20" fill="#0b1220d9" stroke="#334155" stroke-width="2"/>
+  </g>
+  <text x="74" y="92" font-size="40" fill="#f8fafc" font-family="Arial, sans-serif" font-weight="800">Trail Short Course</text>
+  <text x="74" y="130" font-size="24" fill="#cbd5e1" font-family="Arial, sans-serif">Checkpoint tags: Start line, Trail split, Forest loop, Climb summit, Finish line</text>
+</svg>

@@ -26,6 +26,7 @@ import { useInstagramStoryImageComposer } from '../../components/share/Instagram
 import { shareMediaToInstagramStory } from '../../components/share/instagramStoryShare';
 import { usePreventMediaCapture } from '../../utils/usePreventMediaCapture';
 import { isE2ELaunchEnabled } from '../../constants/E2EConfig';
+import { resolveCompetitionFocusId } from '../../utils/profileSelections';
 
 const E2E_HIDDEN_TEXT_STYLE = { position: 'absolute' as const, left: -1000, top: -1000, width: 1, height: 1, opacity: 0.01 };
 
@@ -592,15 +593,21 @@ const VideoPlayingScreen = ({ navigation, route }: any) => {
     const handleGoToEvent = useCallback(() => {
         const location = String((fallbackVideo as any)?.location || '').trim();
         const eventDate = String((fallbackVideo as any)?.date || '').trim();
-        const typeToken = `${videoTitle} ${location}`.toLowerCase();
+        const organizingClub = String((fallbackVideo as any)?.organizing_club || (fallbackVideo as any)?.organizer_club || '').trim();
+        const competitionType = resolveCompetitionFocusId({
+            type: (fallbackVideo as any)?.competition_type,
+            name: videoTitle,
+            location,
+            organizer: organizingClub,
+        });
         navigation.navigate('CompetitionDetailsScreen', {
             eventId: String((fallbackVideo as any)?.eventId || (fallbackVideo as any)?.event_id || '').trim() || undefined,
             name: videoTitle,
             location,
             date: eventDate,
-            competitionType: /road|trail|marathon|veldloop|veldlopen|cross|5k|10k|half|ultra|city\s*run/.test(typeToken)
-                ? 'road'
-                : 'track',
+            organizingClub,
+            competitionType,
+            competitionFocus: competitionType,
         });
     }, [fallbackVideo, navigation, videoTitle]);
 

@@ -105,13 +105,10 @@ const App = (props: any) => {
   );
 
   setE2ELaunchEnabled(e2eLaunchEnabled);
-
-  useEffect(() => {
-    setRuntimeUrlOverrides({
-      apiBaseUrl: typeof props?.e2eApiBaseUrl === 'string' ? props.e2eApiBaseUrl : null,
-      hlsBaseUrl: typeof props?.e2eHlsBaseUrl === 'string' ? props.e2eHlsBaseUrl : null,
-    });
-  }, [props?.e2eApiBaseUrl, props?.e2eHlsBaseUrl]);
+  setRuntimeUrlOverrides({
+    apiBaseUrl: typeof props?.e2eApiBaseUrl === 'string' ? props.e2eApiBaseUrl : null,
+    hlsBaseUrl: typeof props?.e2eHlsBaseUrl === 'string' ? props.e2eHlsBaseUrl : null,
+  });
 
   return (
     <AuthProvider initialE2EAuth={initialE2EAuth}>

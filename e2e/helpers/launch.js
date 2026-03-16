@@ -1,4 +1,15 @@
 /* global device */
+const normalizeAndroidLoopback = (rawUrl) => {
+  const value = String(rawUrl || '').trim();
+  if (!value) return value;
+  if (process.env.DETOX_TARGET_PLATFORM !== 'android') return value;
+  return value
+    .replace(/^http:\/\/127\.0\.0\.1(?=[:/]|$)/i, 'http://10.0.2.2')
+    .replace(/^https:\/\/127\.0\.0\.1(?=[:/]|$)/i, 'https://10.0.2.2')
+    .replace(/^http:\/\/localhost(?=[:/]|$)/i, 'http://10.0.2.2')
+    .replace(/^https:\/\/localhost(?=[:/]|$)/i, 'https://10.0.2.2');
+};
+
 const buildAuthState = (overrides = {}) => {
   const baseUserProfile = {
     id: 'profile-e2e',
@@ -59,16 +70,20 @@ const launchApp = async ({
   apiBaseUrl,
   hlsBaseUrl,
   deleteApp = true,
+  launchArgs = {},
 } = {}) => {
+  const normalizedApiBaseUrl = normalizeAndroidLoopback(apiBaseUrl);
+  const normalizedHlsBaseUrl = normalizeAndroidLoopback(hlsBaseUrl);
   await device.launchApp({
     newInstance: true,
     delete: deleteApp,
     launchArgs: {
+      ...launchArgs,
       e2eInitialRouteName: routeName,
       e2eInitialRouteParams: JSON.stringify(routeParams),
       e2eAuthState: JSON.stringify(buildAuthState(authState)),
-      ...(apiBaseUrl ? { e2eApiBaseUrl: apiBaseUrl } : {}),
-      ...(hlsBaseUrl ? { e2eHlsBaseUrl: hlsBaseUrl } : {}),
+      ...(normalizedApiBaseUrl ? { e2eApiBaseUrl: normalizedApiBaseUrl } : {}),
+      ...(normalizedHlsBaseUrl ? { e2eHlsBaseUrl: normalizedHlsBaseUrl } : {}),
     },
   });
 };

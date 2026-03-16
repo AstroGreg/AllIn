@@ -183,6 +183,7 @@ describe('upload flow screens', () => {
     );
     mockGetWorkerHealth.mockResolvedValue({
       ok: false,
+      message: 'Upload blocked. Workers unavailable: media',
       workers: {
         media: { ok: false, reason: 'stale' },
         ai: { ok: true },

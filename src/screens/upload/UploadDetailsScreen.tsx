@@ -9,6 +9,7 @@ import { useTheme } from '../../context/ThemeContext'
 import { ArrowLeft2, Ghost } from 'iconsax-react-nativejs'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import RNFS from 'react-native-fs';
+import { useFocusEffect } from '@react-navigation/native';
 import { formatUploadDisplayName, normalizeUploadFileName } from '../../utils/uploadPresentation';
 
 function fileUriToPath(uri: string) {
@@ -93,6 +94,8 @@ const UploadDetailsScreen = ({ navigation, route }: any) => {
         () => Array.isArray(route?.params?.e2eFixtureFiles) ? route.params.e2eFixtureFiles : [],
         [route?.params?.e2eFixtureFiles],
     );
+    const competitionId = String(competition?.id || competition?.event_id || competition?.eventId || 'competition');
+    const eventName = String(category?.name || 'Unlabelled');
 
     useEffect(() => {
         if (!Array.isArray(e2eFixtureFiles) || e2eFixtureFiles.length === 0) return;
@@ -118,6 +121,33 @@ const UploadDetailsScreen = ({ navigation, route }: any) => {
             setSelectedAssets(mapped);
         }
     }, [e2eFixtureFiles]);
+
+    useFocusEffect(
+        React.useCallback(() => {
+            let mounted = true;
+            const loadSavedAssets = async () => {
+                try {
+                    const assetsRaw = await AsyncStorage.getItem(`@upload_assets_${competitionId}`);
+                    const parsed = assetsRaw ? JSON.parse(assetsRaw) : {};
+                    const saved = Array.isArray(parsed?.[eventName]) ? parsed[eventName] : null;
+                    if (!mounted || !saved || saved.length === 0) return;
+                    setSelectedAssets(saved.map((asset: any) => ({
+                        ...asset,
+                        uri: normalizeFileUri(String(asset?.uri || '')),
+                        title: isVideoAssetType(asset?.type) ? String(asset?.title || '').trim() : '',
+                        price_cents: Number(asset?.price_cents ?? defaultPriceCentsForType(asset?.type)),
+                        price_currency: String(asset?.price_currency || 'EUR'),
+                    })));
+                } catch {
+                    // ignore
+                }
+            };
+            loadSavedAssets();
+            return () => {
+                mounted = false;
+            };
+        }, [competitionId, eventName]),
+    );
 
     const handleFilePicker = async () => {
         const options: any = {
@@ -224,8 +254,6 @@ const UploadDetailsScreen = ({ navigation, route }: any) => {
 
     const handleUpload = async () => {
         if (selectedAssets.length === 0) return;
-        const competitionId = String(competition?.id || competition?.event_id || competition?.eventId || 'competition');
-        const eventName = String(category?.name || 'Unlabelled');
         try {
             const assetsKey = `@upload_assets_${competitionId}`;
             const existingAssetsRaw = await AsyncStorage.getItem(assetsKey);

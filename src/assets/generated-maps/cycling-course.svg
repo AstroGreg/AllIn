@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="900" viewBox="0 0 1600 900">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#f8fafc"/>
+      <stop offset="100%" stop-color="#dbe4ea"/>
+    </linearGradient>
+  </defs>
+  <rect width="1600" height="900" fill="url(#bg)"/>
+  <rect x="170" y="130" width="320" height="170" rx="40" fill="#d9f99d" opacity="0.36"/>
+  <rect x="1100" y="120" width="300" height="180" rx="40" fill="#bfdbfe" opacity="0.42"/>
+  <rect x="240" y="560" width="320" height="190" rx="42" fill="#bbf7d0" opacity="0.4"/>
+  <rect x="980" y="510" width="390" height="230" rx="42" fill="#c7d2fe" opacity="0.4"/>
+
+  <path d="M 130 150 L 1490 230" stroke="#9ca3af" stroke-width="18" stroke-linecap="round" opacity="0.55"/>
+  <path d="M 100 420 L 1520 500" stroke="#9ca3af" stroke-width="18" stroke-linecap="round" opacity="0.55"/>
+  <path d="M 170 780 L 1460 700" stroke="#9ca3af" stroke-width="18" stroke-linecap="round" opacity="0.55"/>
+  <path d="M 330 100 L 250 820" stroke="#9ca3af" stroke-width="18" stroke-linecap="round" opacity="0.55"/>
+  <path d="M 870 90 L 820 840" stroke="#9ca3af" stroke-width="18" stroke-linecap="round" opacity="0.55"/>
+  <path d="M 1250 120 L 1200 820" stroke="#9ca3af" stroke-width="18" stroke-linecap="round" opacity="0.55"/>
+  <polyline points="220,680 340,590 500,500 700,440 920,430 1100,480 1230,570 1300,690 1260,800 1120,840 920,820 730,760 560,690 380,640 240,700 220,680" fill="none" stroke="#0f172a" stroke-width="22" stroke-linejoin="round" stroke-linecap="round" opacity="0.95"/>
+  <polyline points="220,680 340,590 500,500 700,440 920,430 1100,480 1230,570 1300,690 1260,800 1120,840 920,820 730,760 560,690 380,640 240,700 220,680" fill="none" stroke="#16a34a" stroke-width="12" stroke-linejoin="round" stroke-linecap="round"/>
+  <polyline points="220,680 340,590 500,500 700,440 920,430 1100,480 1230,570 1300,690 1260,800 1120,840 920,820 730,760 560,690 380,640 240,700 220,680" fill="none" stroke="#86efac" stroke-width="5" stroke-linejoin="round" stroke-linecap="round" stroke-dasharray="18 14" opacity="0.95"/>
+
+  <g fill="#0f172a" font-family="Arial, sans-serif" font-size="20" font-weight="700">
+    <circle cx="220" cy="680" r="12" fill="#0f172a" stroke="#f8fafc" stroke-width="4"/><circle cx="220" cy="680" r="5" fill="#38bdf8"/><rect x="234" y="636" rx="10" ry="10" width="210" height="34" fill="#0f172acc" stroke="#334155" stroke-width="1.5"/><text x="248" y="658" fill="#e2e8f0">Start line</text>
+    <circle cx="560" cy="470" r="12" fill="#0f172a" stroke="#f8fafc" stroke-width="4"/><circle cx="560" cy="470" r="5" fill="#38bdf8"/><rect x="574" y="426" rx="10" ry="10" width="210" height="34" fill="#0f172acc" stroke="#334155" stroke-width="1.5"/><text x="588" y="448" fill="#e2e8f0">Feed zone</text>
+    <circle cx="980" cy="445" r="12" fill="#0f172a" stroke="#f8fafc" stroke-width="4"/><circle cx="980" cy="445" r="5" fill="#38bdf8"/><rect x="994" y="401" rx="10" ry="10" width="210" height="34" fill="#0f172acc" stroke="#334155" stroke-width="1.5"/><text x="1008" y="423" fill="#e2e8f0">Climb sector</text>
+    <circle cx="1240" cy="790" r="12" fill="#0f172a" stroke="#f8fafc" stroke-width="4"/><circle cx="1240" cy="790" r="5" fill="#38bdf8"/><rect x="1254" y="746" rx="10" ry="10" width="210" height="34" fill="#0f172acc" stroke="#334155" stroke-width="1.5"/><text x="1268" y="768" fill="#e2e8f0">Sprint sector</text>
+    <circle cx="220" cy="680" r="12" fill="#0f172a" stroke="#f8fafc" stroke-width="4"/><circle cx="220" cy="680" r="5" fill="#38bdf8"/><rect x="234" y="696" rx="10" ry="10" width="210" height="34" fill="#0f172acc" stroke="#334155" stroke-width="1.5"/><text x="248" y="718" fill="#e2e8f0">Finish line</text>
+  </g>
+
+  <rect x="48" y="36" width="450" height="120" rx="20" fill="#0b1220d9" stroke="#334155" stroke-width="2"/>
+  <text x="74" y="92" font-size="40" fill="#f8fafc" font-family="Arial, sans-serif" font-weight="800">Cycling Course Map</text>
+  <text x="74" y="130" font-size="24" fill="#cbd5e1" font-family="Arial, sans-serif">Route markers for road, gravel, mountain bike and track seed data</text>
+</svg>

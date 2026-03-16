@@ -15,6 +15,7 @@ import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../context/AuthContext';
 import { useEvents } from '../../context/EventsContext';
 import { ApiError, getHubAppearances, type HubAppearanceSummary, searchEvents, type SubscribedEvent } from '../../services/apiGateway';
+import { resolveCompetitionFocusId } from '../../utils/profileSelections';
 
 const CompetitionsScreen = ({ navigation }: any) => {
     const insets = useSafeAreaInsets();
@@ -107,10 +108,13 @@ const CompetitionsScreen = ({ navigation }: any) => {
     }, [getEventTypeToken]);
 
     const resolveCompetitionType = useCallback((event: SubscribedEvent) => {
-        const name = getEventTypeToken(event);
-        if (/marathon|trail|road|veldlopen|veldloop|cross|5k|10k|half/.test(name)) return 'marathon';
-        return 'track';
-    }, [getEventTypeToken]);
+        return resolveCompetitionFocusId({
+            type: (event as any).competition_type ?? (event as any).event_type,
+            name: event.event_name ?? event.event_title,
+            location: event.event_location,
+            organizer: (event as any).organizing_club,
+        });
+    }, []);
 
     const combinedEvents = useMemo(() => {
         const map = new Map<string, SubscribedEvent>();
@@ -166,6 +170,7 @@ const CompetitionsScreen = ({ navigation }: any) => {
                     date: item.date,
                     organizingClub: item.organizingClub,
                     competitionType: item.competitionType,
+                    competitionFocus: item.competitionType,
                 });
             }}
         >

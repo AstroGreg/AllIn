@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, ActivityIndicator, Alert, TextInput } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import FastImage from 'react-native-fast-image';
-import { ArrowLeft2, ArrowRight, Buildings, CloseCircle, Global, Profile2User, User } from 'iconsax-react-nativejs';
+import { ArrowLeft2, ArrowRight, Buildings, CloseCircle, Global, User } from 'iconsax-react-nativejs';
 
 import SizeBox from '../../constants/SizeBox';
 import Images from '../../constants/Images';
@@ -12,7 +12,7 @@ import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../context/AuthContext';
 import ChestNumbersByYearField from '../../components/profile/ChestNumbersByYearField';
 import SearchPickerModal, { type SearchPickerOption } from '../../components/profile/SearchPickerModal';
-import { ApiError, getGroup, searchClubs } from '../../services/apiGateway';
+import { ApiError, searchClubs } from '../../services/apiGateway';
 import {
     buildDisciplineSearchOptions,
     focusUsesChestNumbers,
@@ -26,9 +26,6 @@ import {
     getOfficialClubPlaceholder,
     getOfficialClubSearchFocuses,
     getSportFocusLabel,
-    getTrainingGroupFieldLabel,
-    getTrainingGroupHelperText,
-    getTrainingGroupPlaceholder,
     normalizeMainDisciplines,
     normalizeSelectedEvents,
     type SportFocusId,
@@ -91,7 +88,6 @@ const CompleteAthleteDetailsScreen = ({ navigation, route }: any) => {
     const [website, setWebsite] = useState(String((userProfile as any)?.website ?? ''));
     const [clubName, setClubName] = useState(String((userProfile as any)?.trackFieldClub ?? (userProfile as any)?.runningClub ?? ''));
     const [clubId, setClubId] = useState('');
-    const [runningGroupName, setRunningGroupName] = useState('');
     const [runningGroupId, setRunningGroupId] = useState(String((userProfile as any)?.runningClubGroupId ?? ''));
     const [mainDisciplines, setMainDisciplines] = useState<Record<string, string>>(initialMainDisciplines);
     const [isSaving, setIsSaving] = useState(false);
@@ -143,21 +139,6 @@ const CompleteAthleteDetailsScreen = ({ navigation, route }: any) => {
         clubOptionsPromiseCacheRef.current[cacheKey] = pending;
         return pending;
     };
-
-    useEffect(() => {
-        if (!apiAccessToken || !runningGroupId) return;
-        let mounted = true;
-        getGroup(apiAccessToken, runningGroupId)
-            .then((response) => {
-                if (mounted) setRunningGroupName(String(response?.group?.name ?? ''));
-            })
-            .catch(() => {
-                if (mounted) setRunningGroupName('');
-            });
-        return () => {
-            mounted = false;
-        };
-    }, [apiAccessToken, runningGroupId]);
 
     useEffect(() => {
         if (!apiAccessToken || clubSearchFocuses.length === 0) return;
@@ -239,7 +220,6 @@ const CompleteAthleteDetailsScreen = ({ navigation, route }: any) => {
             if (chestValue) rows.push({ label: t('Chest number'), value: chestValue });
         }
         if (clubName.trim()) rows.push({ label: getOfficialClubFieldLabel(selectedFocuses, t), value: clubName.trim() });
-        if (runningGroupName.trim()) rows.push({ label: getTrainingGroupFieldLabel(selectedFocuses, t), value: runningGroupName.trim() });
         selectedFocuses.forEach((focusId) => {
             const selectedDiscipline = String(mainDisciplines[focusId] || '').trim();
             if (!selectedDiscipline) return;
@@ -250,7 +230,7 @@ const CompleteAthleteDetailsScreen = ({ navigation, route }: any) => {
         });
         if (website.trim()) rows.push({ label: t('Website'), value: website.trim() });
         return rows;
-    }, [chestNumbersByYear, clubName, mainDisciplines, runningGroupName, selectedFocuses, showsChestNumbers, t, website]);
+    }, [chestNumbersByYear, clubName, mainDisciplines, selectedFocuses, showsChestNumbers, t, website]);
 
     const onSave = async () => {
         if (!isReviewing) {
@@ -326,7 +306,7 @@ const CompleteAthleteDetailsScreen = ({ navigation, route }: any) => {
                     <Text style={Styles.subtitle}>
                         {isReviewing
                             ? t('Check the final details once before saving this athlete focus.')
-                            : t('Choose the club, group, and profile details you want to show.')}
+                            : t('Choose the club and profile details you want to show.')}
                     </Text>
                 </View>
 
@@ -385,22 +365,6 @@ const CompleteAthleteDetailsScreen = ({ navigation, route }: any) => {
                         ) : officialClubHelperText ? (
                             <Text style={[Styles.subtitle, { textAlign: 'left', marginTop: 0 }]}>{officialClubHelperText}</Text>
                         ) : null}
-
-                        <View style={Styles.inputGroup}>
-                            <Text style={Styles.inputLabel}>{getTrainingGroupFieldLabel(selectedFocuses, t)}</Text>
-                            <View style={Styles.inputContainer}>
-                                <View
-                                    testID="profile-athlete-group-invite-only"
-                                    style={{ flex: 1, flexDirection: 'row', alignItems: 'center', gap: 10 }}
-                                >
-                                    <Profile2User size={24} color={colors.primaryColor} variant="Linear" />
-                                    <Text style={[Styles.dropdownText, !runningGroupName ? Styles.placeholderText : null]}>
-                                        {runningGroupName || getTrainingGroupPlaceholder(selectedFocuses, t)}
-                                    </Text>
-                                </View>
-                            </View>
-                            <Text style={[Styles.subtitle, { textAlign: 'left', marginTop: 8 }]}>{getTrainingGroupHelperText(selectedFocuses, t)}</Text>
-                        </View>
 
                         {selectedFocuses.map((focusId) => {
                             const selectedDiscipline = String(mainDisciplines[focusId] || '').trim();

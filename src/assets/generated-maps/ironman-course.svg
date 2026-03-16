@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="900" viewBox="0 0 1600 900">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#cffafe"/>
+      <stop offset="50%" stop-color="#bfdbfe"/>
+      <stop offset="100%" stop-color="#e9d5ff"/>
+    </linearGradient>
+  </defs>
+  <rect width="1600" height="900" fill="url(#bg)"/>
+  <rect x="190" y="130" width="320" height="180" rx="42" fill="#93c5fd" opacity="0.42"/>
+  <rect x="1080" y="110" width="340" height="210" rx="42" fill="#c4b5fd" opacity="0.35"/>
+  <rect x="210" y="560" width="340" height="200" rx="42" fill="#bbf7d0" opacity="0.42"/>
+  <rect x="980" y="510" width="380" height="230" rx="42" fill="#a5b4fc" opacity="0.35"/>
+
+  <polyline points="220,250 360,250 500,290 670,360 850,420" fill="none" stroke="#0ea5e9" stroke-width="18" stroke-linecap="round" stroke-linejoin="round"/>
+  <polyline points="850,420 980,360 1130,330 1260,360 1360,430" fill="none" stroke="#2563eb" stroke-width="16" stroke-linecap="round" stroke-linejoin="round"/>
+  <polyline points="1360,430 1280,550 1150,660 990,730 800,760 620,740 470,690 330,620 240,700" fill="none" stroke="#7c3aed" stroke-width="16" stroke-linecap="round" stroke-linejoin="round"/>
+
+  <g fill="#0f172a" font-family="Arial, sans-serif" font-size="20" font-weight="700">
+    <circle cx="220" cy="250" r="12" fill="#0f172a" stroke="#f8fafc" stroke-width="4"/><circle cx="220" cy="250" r="5" fill="#38bdf8"/><rect x="234" y="206" rx="10" ry="10" width="220" height="34" fill="#0f172acc" stroke="#334155" stroke-width="1.5"/><text x="248" y="228" fill="#e2e8f0">Start line</text>
+    <circle cx="850" cy="420" r="12" fill="#0f172a" stroke="#f8fafc" stroke-width="4"/><circle cx="850" cy="420" r="5" fill="#38bdf8"/><rect x="864" y="376" rx="10" ry="10" width="220" height="34" fill="#0f172acc" stroke="#334155" stroke-width="1.5"/><text x="878" y="398" fill="#e2e8f0">Swim exit</text>
+    <circle cx="1130" cy="330" r="12" fill="#0f172a" stroke="#f8fafc" stroke-width="4"/><circle cx="1130" cy="330" r="5" fill="#38bdf8"/><rect x="1144" y="286" rx="10" ry="10" width="220" height="34" fill="#0f172acc" stroke="#334155" stroke-width="1.5"/><text x="1158" y="308" fill="#e2e8f0">T1</text>
+    <circle cx="1280" cy="550" r="12" fill="#0f172a" stroke="#f8fafc" stroke-width="4"/><circle cx="1280" cy="550" r="5" fill="#38bdf8"/><rect x="1294" y="506" rx="10" ry="10" width="220" height="34" fill="#0f172acc" stroke="#334155" stroke-width="1.5"/><text x="1308" y="528" fill="#e2e8f0">Bike split</text>
+    <circle cx="800" cy="760" r="12" fill="#0f172a" stroke="#f8fafc" stroke-width="4"/><circle cx="800" cy="760" r="5" fill="#38bdf8"/><rect x="814" y="716" rx="10" ry="10" width="220" height="34" fill="#0f172acc" stroke="#334155" stroke-width="1.5"/><text x="828" y="738" fill="#e2e8f0">T2</text>
+    <circle cx="240" cy="700" r="12" fill="#0f172a" stroke="#f8fafc" stroke-width="4"/><circle cx="240" cy="700" r="5" fill="#38bdf8"/><rect x="254" y="716" rx="10" ry="10" width="220" height="34" fill="#0f172acc" stroke="#334155" stroke-width="1.5"/><text x="268" y="738" fill="#e2e8f0">Finish line</text>
+  </g>
+
+  <rect x="48" y="36" width="480" height="120" rx="20" fill="#0b1220d9" stroke="#334155" stroke-width="2"/>
+  <text x="74" y="92" font-size="40" fill="#f8fafc" font-family="Arial, sans-serif" font-weight="800">Ironman Course Map</text>
+  <text x="74" y="130" font-size="24" fill="#cbd5e1" font-family="Arial, sans-serif">Long-format multisport route markers for seed data</text>
+</svg>

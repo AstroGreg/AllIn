@@ -8,8 +8,45 @@ import com.facebook.react.defaults.DefaultNewArchitectureEntryPoint.fabricEnable
 import com.facebook.react.defaults.DefaultReactActivityDelegate
 
 class MainActivity : ReactActivity() {
+  private fun supportedE2EKeys() = setOf(
+      "e2eInitialRouteName",
+      "e2eInitialRouteParams",
+      "e2eAuthState",
+      "e2eApiBaseUrl",
+      "e2eHlsBaseUrl",
+  )
+
+  private fun collectSupportedLaunchOptions(): Bundle? {
+    val supportedKeys = supportedE2EKeys()
+    val launchOptions = Bundle()
+    val topLevelExtras = intent?.extras
+    val detoxLaunchArgs = intent?.getBundleExtra("launchArgs")
+
+    fun mergeStringLikeValues(source: Bundle?) {
+      if (source == null) return
+      for (key in source.keySet()) {
+        if (!supportedKeys.contains(key)) continue
+        val value = source.get(key)
+        when (value) {
+          is String -> launchOptions.putString(key, value)
+          is Boolean -> launchOptions.putBoolean(key, value)
+          is Int -> launchOptions.putInt(key, value)
+          is Double -> launchOptions.putDouble(key, value)
+        }
+      }
+    }
+
+    mergeStringLikeValues(topLevelExtras)
+    mergeStringLikeValues(detoxLaunchArgs)
+
+    return if (launchOptions.isEmpty) null else launchOptions
+  }
+
   override fun onCreate(savedInstanceState: Bundle?) {
-    installSplashScreen()
+    val isE2ELaunch = collectSupportedLaunchOptions() != null
+    if (!isE2ELaunch) {
+      installSplashScreen()
+    }
     super.onCreate(null)
   }
   /**
@@ -24,25 +61,6 @@ class MainActivity : ReactActivity() {
    */
   override fun createReactActivityDelegate(): ReactActivityDelegate =
       object : DefaultReactActivityDelegate(this, mainComponentName, fabricEnabled) {
-        override fun getLaunchOptions(): Bundle? {
-          val extras = intent?.extras ?: return null
-          val supportedKeys = setOf(
-              "e2eInitialRouteName",
-              "e2eInitialRouteParams",
-              "e2eAuthState",
-          )
-          val launchOptions = Bundle()
-          for (key in extras.keySet()) {
-            if (!supportedKeys.contains(key)) continue
-            val value = extras.get(key)
-            when (value) {
-              is String -> launchOptions.putString(key, value)
-              is Boolean -> launchOptions.putBoolean(key, value)
-              is Int -> launchOptions.putInt(key, value)
-              is Double -> launchOptions.putDouble(key, value)
-            }
-          }
-          return if (launchOptions.isEmpty) null else launchOptions
-        }
+        override fun getLaunchOptions(): Bundle? = collectSupportedLaunchOptions()
       }
 }

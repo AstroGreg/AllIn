@@ -18,6 +18,7 @@ import { useTranslation } from 'react-i18next'
 import { useInstagramStoryImageComposer } from '../../components/share/InstagramStoryComposer';
 import { shareMediaToInstagramStory } from '../../components/share/instagramStoryShare';
 import { usePreventMediaCapture } from '../../utils/usePreventMediaCapture';
+import { resolveCompetitionFocusId } from '../../utils/profileSelections';
 
 type FeedbackChoice = 'yes' | 'no' | null;
 
@@ -1258,13 +1259,21 @@ const PhotoDetailScreen = ({navigation, route}: any) => {
                 label: t('Go to event'),
                 onPress: () => {
                     const eventName = headerLabel || t('Competition');
-                    const typeToken = String(eventName || '').toLowerCase();
+                    const location = String((activeMedia as any)?.event_location || '').trim();
+                    const organizingClub = String((activeMedia as any)?.organizing_club || (activeMedia as any)?.organizer_club || '').trim();
+                    const competitionType = resolveCompetitionFocusId({
+                        type: (activeMedia as any)?.competition_type,
+                        name: eventName,
+                        location,
+                        organizer: organizingClub,
+                    });
                     navigation.navigate('CompetitionDetailsScreen', {
                         eventId: eventId || undefined,
                         name: eventName,
-                        competitionType: /road|trail|marathon|veldloop|veldlopen|cross|5k|10k|half|ultra|city\s*run/.test(typeToken)
-                            ? 'road'
-                            : 'track',
+                        location,
+                        organizingClub,
+                        competitionType,
+                        competitionFocus: competitionType,
                     });
                 },
             },
@@ -1279,7 +1288,7 @@ const PhotoDetailScreen = ({navigation, route}: any) => {
         ];
         setMoreMenuActions(actions);
         setMoreMenuVisible(true);
-    }, [eventId, handleAddToProfile, handleDownload, handleShareInstagram, handleShareNative, headerLabel, navigation, openReportIssuePopup, t]);
+    }, [activeMedia, eventId, handleAddToProfile, handleDownload, handleShareInstagram, handleShareNative, headerLabel, navigation, openReportIssuePopup, t]);
 
     useEffect(() => {
         const parent = navigation.getParent?.();

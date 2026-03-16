@@ -36,6 +36,7 @@ import {getApiBaseUrl} from '../../constants/RuntimeConfig';
 import {createStyles} from './DownloadsDetailsStyles';
 import {useFocusEffect} from '@react-navigation/native';
 import {useTranslation} from 'react-i18next';
+import {getSportFocusLabel, normalizeFocusId, resolveCompetitionFocusId} from '../../utils/profileSelections';
 
 const COMPETITION_MEDIA_PAGE_SIZE = 60;
 
@@ -163,10 +164,8 @@ const DownloadsDetailsScreen = ({navigation, route}: any) => {
 
   const formatCompetitionType = useCallback(
     (value?: string | null) => {
-      const raw = String(value || '').toLowerCase();
-      if (raw.includes('road') || raw.includes('trail') || raw.includes('marathon')) return t('roadAndTrail');
-      if (raw.includes('track') || raw.includes('field')) return t('trackAndField');
-      return t('competition');
+      const focusId = normalizeFocusId(value) ?? resolveCompetitionFocusId({type: value});
+      return getSportFocusLabel(focusId, t);
     },
     [t],
   );
