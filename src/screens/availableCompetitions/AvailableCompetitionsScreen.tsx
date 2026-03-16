@@ -17,6 +17,7 @@ import SizeBox from '../../constants/SizeBox';
 import Images from '../../constants/Images';
 import { useTheme } from '../../context/ThemeContext';
 import { useAuth } from '../../context/AuthContext';
+import { useEvents } from '../../context/EventsContext';
 import { ApiError, getEventCompetitions, getProfileSummary, grantFaceRecognitionConsent, searchEvents, searchFaceByEnrollment } from '../../services/apiGateway';
 import { useTranslation } from 'react-i18next';
 import {
@@ -97,6 +98,16 @@ const AvailableEventsScreen = ({ navigation, route }: any) => {
     const loadMoreLockedRef = useRef(false);
     const autoOpenRequestHandledRef = useRef<string>('');
     const { apiAccessToken, userProfile } = useAuth();
+    const { events: subscribedEvents } = useEvents();
+    const subscribedEventIdSet = useMemo(
+        () =>
+            new Set(
+                (Array.isArray(subscribedEvents) ? subscribedEvents : [])
+                    .map((event) => String(event?.event_id ?? '').trim())
+                    .filter(Boolean),
+            ),
+        [subscribedEvents],
+    );
     const getYearFromDateLike = useCallback((value?: string | null) => {
         const raw = String(value ?? '').trim();
         if (!raw) return null;
@@ -757,7 +768,9 @@ const AvailableEventsScreen = ({ navigation, route }: any) => {
         }));
     };
 
-    const renderEventCard = (item: any) => (
+    const renderEventCard = (item: any) => {
+        const isSubscribed = subscribedEventIdSet.has(String(item?.id ?? '').trim());
+        return (
         <TouchableOpacity
             key={item.id}
             style={Styles.eventCard}
@@ -772,8 +785,15 @@ const AvailableEventsScreen = ({ navigation, route }: any) => {
             <View style={Styles.eventContent}>
                 <View style={Styles.eventNameRow}>
                     <Text style={Styles.eventName}>{item.title}</Text>
-                    <View style={Styles.eventTypeBadge}>
-                        <Text style={Styles.eventTypeBadgeText}>{getCompetitionTypeLabel(item.competitionType)}</Text>
+                    <View style={Styles.eventTypeRow}>
+                        <View style={Styles.eventTypeBadge}>
+                            <Text style={Styles.eventTypeBadgeText}>{getCompetitionTypeLabel(item.competitionType)}</Text>
+                        </View>
+                        {isSubscribed ? (
+                            <View style={Styles.subscribedCheckBadge} testID={`available-event-subscribed-${item.id}`}>
+                                <Text style={Styles.subscribedCheckText}>✓</Text>
+                            </View>
+                        ) : null}
                     </View>
                 </View>
                 <SizeBox height={6} />
@@ -802,6 +822,7 @@ const AvailableEventsScreen = ({ navigation, route }: any) => {
             </View>
         </TouchableOpacity>
     );
+    };
 
     return (
         <View style={Styles.mainContainer}>

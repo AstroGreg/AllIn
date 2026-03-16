@@ -143,16 +143,34 @@ export const createStyles = (colors: ThemeColors) => StyleSheet.create({
         color: colors.mainTextColor,
         flex: 1,
     },
+    eventTypeRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginLeft: 8,
+    },
     eventTypeBadge: {
         backgroundColor: colors.btnBackgroundColor,
         paddingHorizontal: 10,
         paddingVertical: 4,
         borderRadius: 6,
-        marginLeft: 8,
     },
     eventTypeBadgeText: {
         ...Fonts.regular12,
         color: colors.subTextColor,
+    },
+    subscribedCheckBadge: {
+        width: 16,
+        height: 16,
+        borderRadius: 8,
+        marginLeft: 6,
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: '#3C82F6',
+    },
+    subscribedCheckText: {
+        ...Fonts.medium10,
+        color: '#FFFFFF',
+        lineHeight: 10,
     },
     eventDetails: {
         flexDirection: 'row',
