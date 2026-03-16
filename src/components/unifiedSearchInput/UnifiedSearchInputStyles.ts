@@ -28,5 +28,7 @@ export const createStyles = (colors: ThemeColors) =>
       paddingVertical: 0,
       includeFontPadding: false as any,
     },
+    inputWithLeft: {
+      marginLeft: 12,
+    },
   });
-

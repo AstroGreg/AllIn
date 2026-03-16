@@ -22,7 +22,7 @@ const UnifiedSearchInput = forwardRef<TextInput, UnifiedSearchInputProps>(
           {left}
           <TextInput
             ref={ref}
-            style={[styles.input, inputStyle]}
+            style={[styles.input, left ? styles.inputWithLeft : null, inputStyle]}
             placeholderTextColor={placeholderTextColor ?? colors.subTextColor}
             autoCorrect={false}
             autoCapitalize="none"
@@ -38,4 +38,3 @@ const UnifiedSearchInput = forwardRef<TextInput, UnifiedSearchInputProps>(
 UnifiedSearchInput.displayName = 'UnifiedSearchInput';
 
 export default UnifiedSearchInput;
-

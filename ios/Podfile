@@ -9,9 +9,8 @@ require Pod::Executable.execute_command('node', ['-p',
 $CODEGEN_OUTPUT_DIR = '../build/generated/ios'
 
 # React Native 0.77 defaults Codegen output to ios/build/generated/ios.
-# This workspace also uses ios/build for product output, so a clean/archive can
-# wipe generated sources and break the next Release build. Keep Codegen in the
-# repo-root build/generated/ios folder for both pod-install and Xcode builds.
+# Keep Codegen under the repo-root build folder so clean/archive cycles never
+# wipe generated sources before the next Release build.
 def patch_react_native_codegen_paths!
   rn_scripts_root = File.join(__dir__, '..', 'node_modules', 'react-native', 'scripts')
 
@@ -30,10 +29,15 @@ def patch_react_native_codegen_paths!
   script_phases_path = File.join(rn_scripts_root, 'react_native_pods_utils', 'script_phases.rb')
   if File.exist?(script_phases_path)
     script_phases = File.read(script_phases_path)
-    updated_script_phases = script_phases.gsub(
-      %q{'RCT_SCRIPT_OUTPUT_DIR' => "$RCT_SCRIPT_POD_INSTALLATION_ROOT",},
-      %q{'RCT_SCRIPT_OUTPUT_DIR' => "$RCT_SCRIPT_APP_PATH/build/generated/ios",}
-    )
+    updated_script_phases = script_phases
+      .gsub(
+        %q{'RCT_SCRIPT_OUTPUT_DIR' => "$RCT_SCRIPT_POD_INSTALLATION_ROOT",},
+        %q{'RCT_SCRIPT_OUTPUT_DIR' => "$RCT_SCRIPT_APP_PATH",}
+      )
+      .gsub(
+        %q{'RCT_SCRIPT_OUTPUT_DIR' => "$RCT_SCRIPT_APP_PATH/build/generated/ios",},
+        %q{'RCT_SCRIPT_OUTPUT_DIR' => "$RCT_SCRIPT_APP_PATH",}
+      )
     if updated_script_phases != script_phases
       File.write(script_phases_path, updated_script_phases)
     end
@@ -41,6 +45,17 @@ def patch_react_native_codegen_paths!
 end
 
 patch_react_native_codegen_paths!
+
+generated_ios_root = File.expand_path('../build/generated/ios', __dir__)
+generated_ios_nested_root = File.join(generated_ios_root, 'build')
+FileUtils.rm_rf(generated_ios_nested_root) if File.exist?(generated_ios_nested_root)
+
+XCODE_BUILD_ROOT = '${SRCROOT}/build-xcode/Build'
+XCODE_OBJ_ROOT = '${SRCROOT}/build-xcode/Build/Intermediates.noindex'
+XCODE_SHARED_PRECOMPS_DIR = '${SRCROOT}/build-xcode/Build/SharedPrecompiledHeaders'
+PODS_XCODE_BUILD_ROOT = '${SRCROOT}/../build-xcode/Build'
+PODS_XCODE_OBJ_ROOT = '${SRCROOT}/../build-xcode/Build/Intermediates.noindex'
+PODS_XCODE_SHARED_PRECOMPS_DIR = '${SRCROOT}/../build-xcode/Build/SharedPrecompiledHeaders'
 
 platform :ios, min_ios_version_supported
 prepare_react_native_project!
@@ -82,6 +97,24 @@ target 'SpotMe' do
           build_config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '13.0'
         end
       end
+    end
+
+    # Keep Xcode GUI builds in a stable project-local folder that is separate from
+    # CLI builds (`build-cli`) so their module maps and build.db files never collide.
+    installer.pods_project.build_configurations.each do |build_config|
+      build_config.build_settings['SYMROOT'] = PODS_XCODE_BUILD_ROOT
+      build_config.build_settings['OBJROOT'] = PODS_XCODE_OBJ_ROOT
+      build_config.build_settings['SHARED_PRECOMPS_DIR'] = PODS_XCODE_SHARED_PRECOMPS_DIR
+    end
+
+    installer.aggregate_targets.map(&:user_project).uniq.each do |user_project|
+      user_project.build_configurations.each do |build_config|
+        build_config.build_settings['SYMROOT'] = XCODE_BUILD_ROOT
+        build_config.build_settings['OBJROOT'] = XCODE_OBJ_ROOT
+        build_config.build_settings['SHARED_PRECOMPS_DIR'] = XCODE_SHARED_PRECOMPS_DIR
+      end
+
+      user_project.save
     end
 
     # Hermes xcframework script uses bash arrays; force bash to avoid /bin/sh syntax errors.

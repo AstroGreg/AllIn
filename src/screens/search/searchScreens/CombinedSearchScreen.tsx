@@ -1063,25 +1063,28 @@ const CombinedSearchScreen = ({navigation}: any) => {
             <CustomSwitch isEnabled={includeFace} toggleSwitch={handleToggleFaceSearch} />
           </View>
 
-          <SizeBox height={12} />
-          <Text style={styles.sectionTitle}>{t('Face match grade')}</Text>
-          <View style={styles.gradeRow}>
-            {(['hard', 'medium', 'soft'] as FaceSearchGrade[]).map((grade) => {
-              const active = faceSearchGrade === grade;
-              return (
-                <TouchableOpacity
-                  key={grade}
-                  style={[styles.gradeButton, active && styles.gradeButtonActive]}
-                  onPress={() => setFaceSearchGrade(grade)}
-                  testID={`ai-search-face-grade-${grade}`}
-                >
-                  <Text style={[styles.gradeButtonText, active && styles.gradeButtonTextActive]}>
-                    {grade === 'hard' ? t('Hard · 90%') : grade === 'medium' ? t('Medium · 87%') : t('Soft · 85%')}
-                  </Text>
-                </TouchableOpacity>
-              );
-            })}
-          </View>
+          {includeFace ? (
+            <>
+              <SizeBox height={12} />
+              <View style={styles.gradeRow}>
+                {(['hard', 'medium', 'soft'] as FaceSearchGrade[]).map((grade) => {
+                  const active = faceSearchGrade === grade;
+                  return (
+                    <TouchableOpacity
+                      key={grade}
+                      style={[styles.gradeButton, active && styles.gradeButtonActive]}
+                      onPress={() => setFaceSearchGrade(grade)}
+                      testID={`ai-search-face-grade-${grade}`}
+                    >
+                      <Text style={[styles.gradeButtonText, active && styles.gradeButtonTextActive]}>
+                        {grade === 'hard' ? t('Hard · 90%') : grade === 'medium' ? t('Medium · 87%') : t('Soft · 85%')}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            </>
+          ) : null}
 
           {needsConsent && (
             <TouchableOpacity style={styles.secondaryButton} onPress={handleGrantConsent}>
@@ -1114,11 +1117,6 @@ const CombinedSearchScreen = ({navigation}: any) => {
           <View style={styles.toggleRow}>
             <View style={styles.toggleInfo}>
               <Text style={styles.faceSectionTitle}>{t('Use saved chest number')}</Text>
-              <Text style={styles.helperText}>
-                {defaultBib
-                  ? `${defaultBib}`
-                  : t('No saved chest number yet. Enter the chest number for this competition below.')}
-              </Text>
             </View>
             <CustomSwitch
               isEnabled={useDefaultBib}

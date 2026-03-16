@@ -1,12 +1,7 @@
 #!/usr/bin/env node
 
 import { spawnSync } from 'node:child_process';
-import { dirname, join } from 'node:path';
-import { fileURLToPath } from 'node:url';
-
-const scriptDir = dirname(fileURLToPath(import.meta.url));
-const appRoot = join(scriptDir, '..');
-const iosDir = join(appRoot, 'ios');
+import { appRoot, cliBuildDir, cliObjRoot, cliSharedPrecompsDir, cliSymRoot } from './ios-build-paths.mjs';
 const args = [
   '-workspace',
   'ios/SpotMe.xcworkspace',
@@ -17,7 +12,10 @@ const args = [
   '-sdk',
   'iphonesimulator',
   '-derivedDataPath',
-  'ios/build',
+  cliBuildDir,
+  `SYMROOT=${cliSymRoot}`,
+  `OBJROOT=${cliObjRoot}`,
+  `SHARED_PRECOMPS_DIR=${cliSharedPrecompsDir}`,
   'clean',
 ];
 
@@ -48,7 +46,7 @@ const combinedOutput = `${result.stdout ?? ''}\n${result.stderr ?? ''}`;
 if ((result.status ?? 1) !== 0 && /build\.db|database is locked|unable to attach DB/i.test(combinedOutput)) {
   console.error('\nXcode clean hit a locked build database.');
   console.error('Close any active Xcode builds/tests, quit duplicate Xcode windows, then rerun `npm run ios:clean`.');
-  console.error('If it still happens, restart Xcode and remove the project build folder from Xcode Settings > Locations > Derived Data.');
+  console.error(`CLI builds now use ${cliBuildDir}. If the lock persists, Xcode itself still has an active build open.`);
 }
 
 process.exit(result.status ?? 1);

@@ -172,21 +172,21 @@ export const createStyles = (colors: ThemeColors) =>
     gradeButton: {
       borderWidth: 1,
       borderColor: colors.lightGrayColor,
-      backgroundColor: colors.btnBackgroundColor,
+      backgroundColor: colors.secondaryColor,
       borderRadius: 999,
       paddingHorizontal: 12,
       paddingVertical: 8,
     },
     gradeButtonActive: {
       borderColor: colors.primaryColor,
-      backgroundColor: colors.secondaryBlueColor,
+      backgroundColor: colors.primaryColor,
     },
     gradeButtonText: {
       ...Fonts.medium12,
-      color: colors.subTextColor,
+      color: colors.mainTextColor,
     },
     gradeButtonTextActive: {
-      color: colors.primaryColor,
+      color: colors.pureWhite,
     },
     primaryButton: {
       height: 52,

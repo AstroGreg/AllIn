@@ -1433,6 +1433,27 @@ PODS:
     - ReactCommon/turbomodule/bridging
     - ReactCommon/turbomodule/core
     - Yoga
+  - react-native-view-shot (4.0.3):
+    - DoubleConversion
+    - glog
+    - hermes-engine
+    - RCT-Folly (= 2024.11.18.00)
+    - RCTRequired
+    - RCTTypeSafety
+    - React-Core
+    - React-debug
+    - React-Fabric
+    - React-featureflags
+    - React-graphics
+    - React-ImageManager
+    - React-NativeModulesApple
+    - React-RCTFabric
+    - React-rendererdebug
+    - React-utils
+    - ReactCodegen
+    - ReactCommon/turbomodule/bridging
+    - ReactCommon/turbomodule/core
+    - Yoga
   - react-native-worklets-core (1.6.2):
     - DoubleConversion
     - glog
@@ -1876,6 +1897,7 @@ DEPENDENCIES:
   - react-native-safe-area-context (from `../node_modules/react-native-safe-area-context`)
   - "react-native-slider (from `../node_modules/@react-native-community/slider`)"
   - react-native-video (from `../node_modules/react-native-video`)
+  - react-native-view-shot (from `../node_modules/react-native-view-shot`)
   - react-native-worklets-core (from `../node_modules/react-native-worklets-core`)
   - React-nativeconfig (from `../node_modules/react-native/ReactCommon`)
   - React-NativeModulesApple (from `../node_modules/react-native/ReactCommon/react/nativemodule/core/platform/ios`)
@@ -2033,6 +2055,8 @@ EXTERNAL SOURCES:
     :path: "../node_modules/@react-native-community/slider"
   react-native-video:
     :path: "../node_modules/react-native-video"
+  react-native-view-shot:
+    :path: "../node_modules/react-native-view-shot"
   react-native-worklets-core:
     :path: "../node_modules/react-native-worklets-core"
   React-nativeconfig:
@@ -2179,6 +2203,7 @@ SPEC CHECKSUMS:
   react-native-safe-area-context: 9d72abf6d8473da73033b597090a80b709c0b2f1
   react-native-slider: 1205801a8d29b28cacc14eef08cb120015cdafcb
   react-native-video: eb861d67a71dfef1bbf6086a811af5f338b13781
+  react-native-view-shot: 16b52ee447420cb06810b8dd05b711d3f978efb4
   react-native-worklets-core: b59cf88762c8fb6132d8796babd4cec15217d6f0
   React-nativeconfig: cd0fbb40987a9658c24dab5812c14e5522a64929
   React-NativeModulesApple: 4a9c304aa4fb086af32e8758ba892386d895b4d3
@@ -2207,7 +2232,7 @@ SPEC CHECKSUMS:
   React-timing: 0d0263a5d8ab6fc8c325efb54cee1d6a6f01d657
   React-utils: 8905cd01f46755ea42268875d04c614a0d46431e
   ReactAppDependencyProvider: 6e8d68583f39dc31ee65235110287277eb8556ef
-  ReactCodegen: 85e6c9492d866776e99c12512b18a3e7c3126115
+  ReactCodegen: e2eee103c7b7823193cbfe57c3a81d7a05b9c078
   ReactCommon: 1bd2dc684d7992acbf0dfee887b89a57a1ead86d
   RNCAsyncStorage: b9f5f78da5d16a853fe3dc22e8268d932fc45a83
   RNCClipboard: f6679d470d0da2bce2a37b0af7b9e0bf369ecda5
@@ -2226,6 +2251,6 @@ SPEC CHECKSUMS:
   VisionCameraFaceDetector: 8ddb9cf838945b8df2cc31ec847adfc88dd8405a
   Yoga: 78d74e245ed67bb94275a1316cdc170b9b7fe884
 
-PODFILE CHECKSUM: c2a9a968dd9786bb9a86a1c6391deb9545d800e2
+PODFILE CHECKSUM: c9f3e20cff33ce6d65d12a642a0a8bb5022b211c
 
 COCOAPODS: 1.16.2
