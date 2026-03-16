@@ -32,6 +32,9 @@ local.properties
 *.iml
 *.hprof
 .cxx/
+*.apk
+*.aab
+android/app/build/outputs/apk/
 *.keystore
 !debug.keystore
 

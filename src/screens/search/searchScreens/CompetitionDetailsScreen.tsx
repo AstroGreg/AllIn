@@ -75,7 +75,7 @@ const CompetitionDetailsScreen = ({ navigation, route }: any) => {
     const [quickSearchLoading, setQuickSearchLoading] = useState(false);
     const [quickNeedsConsent, setQuickNeedsConsent] = useState(false);
     const [quickMissingAngles, setQuickMissingAngles] = useState<string[] | null>(null);
-    const [quickUseFace, setQuickUseFace] = useState(true);
+    const [quickUseFace, setQuickUseFace] = useState(Boolean((userProfile as any)?.faceVerified));
     const [quickFaceSearchGrade, setQuickFaceSearchGrade] = useState<FaceSearchGrade>('hard');
     const [isSubscriptionLoading, setIsSubscriptionLoading] = useState(false);
     const [subscribeSheetVisible, setSubscribeSheetVisible] = useState(false);
@@ -522,6 +522,15 @@ const CompetitionDetailsScreen = ({ navigation, route }: any) => {
         setCheckpointModalVisible(true);
     };
 
+    const openAiCompareModal = useCallback(() => {
+        setQuickUseDefaultChest(Boolean(defaultChestNumber));
+        setQuickUseFace(hasFaceEnrollment);
+        setQuickSearchError(null);
+        setQuickNeedsConsent(false);
+        setQuickMissingAngles(null);
+        setAiCompareModalVisible(true);
+    }, [defaultChestNumber, hasFaceEnrollment]);
+
     const resolveEventId = useCallback(async () => {
         if (eventId) return String(eventId);
         if (!apiAccessToken) return null;
@@ -728,6 +737,12 @@ const CompetitionDetailsScreen = ({ navigation, route }: any) => {
             };
         }
     }, [apiAccessToken, profileFaceConsentGranted, profileFaceVerified, userProfile]);
+
+    useEffect(() => {
+        if (!defaultChestNumber && quickUseDefaultChest) {
+            setQuickUseDefaultChest(false);
+        }
+    }, [defaultChestNumber, quickUseDefaultChest]);
     const startSubscriptionFaceEnrollment = useCallback(() => {
         closeSubscribeSheet();
         InteractionManager.runAfterInteractions(() => {
@@ -1197,13 +1212,7 @@ const CompetitionDetailsScreen = ({ navigation, route }: any) => {
                             <Text style={styles.sectionTitle}>{t('Disciplines')}</Text>
                             <TouchableOpacity
                                 style={styles.aiActionButton}
-                                onPress={() => {
-                                    setQuickUseDefaultChest(false);
-                                    setQuickSearchError(null);
-                                    setQuickNeedsConsent(false);
-                                    setQuickMissingAngles(null);
-                                    setAiCompareModalVisible(true);
-                                }}
+                                onPress={openAiCompareModal}
                                 testID="competition-ai-quick-open"
                             >
                                 <AiActionIcon width={18} height={18} />
@@ -1284,12 +1293,8 @@ const CompetitionDetailsScreen = ({ navigation, route }: any) => {
                                     style={styles.modalTertiaryButton}
                                     onPress={() => {
                                         setCheckpointModalVisible(false);
-                                        setQuickUseDefaultChest(false);
-                                        setQuickSearchError(null);
-                                        setQuickNeedsConsent(false);
-                                        setQuickMissingAngles(null);
-                                setAiCompareModalVisible(true);
-                            }}
+                                        openAiCompareModal();
+                                    }}
                         >
                             <Text style={styles.modalTertiaryButtonText}>{t('AI Search')}</Text>
                             <ArrowRight size={18} color={colors.primaryColor} variant="Linear" />

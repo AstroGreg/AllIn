@@ -5,7 +5,6 @@ import {
   FlatList,
   InteractionManager,
   Modal,
-  ScrollView,
   Text,
   TouchableOpacity,
   View,
@@ -13,7 +12,7 @@ import {
 import SizeBox from '../../../constants/SizeBox';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import {useTheme} from '../../../context/ThemeContext';
-import {AddCircle, ArrowLeft2, CloseCircle, SearchNormal1, TickCircle} from 'iconsax-react-nativejs';
+import {ArrowLeft2, CloseCircle, SearchNormal1, TickCircle} from 'iconsax-react-nativejs';
 import KeyboardAvoidingContainer from '../../../components/KeyboardAvoidingContainer';
 import CustomSwitch from '../../../components/customSwitch/CustomSwitch';
 import {useAuth} from '../../../context/AuthContext';
@@ -70,11 +69,13 @@ const CombinedSearchScreen = ({navigation}: any) => {
   const resumeCombinedSearch = route?.params?.resumeCombinedSearch as
     | ResumeCombinedSearchPayload
     | undefined;
+  const userHasSavedFace = Boolean((userProfile as any)?.faceVerified);
+  const userFaceConsentGranted = Boolean((userProfile as any)?.faceConsentGranted);
 
   const [bib, setBib] = useState('');
   const [useDefaultBib, setUseDefaultBib] = useState(false);
   const [contextText, setContextText] = useState('');
-  const [includeFace, setIncludeFace] = useState(false);
+  const [includeFace, setIncludeFace] = useState(userHasSavedFace);
   const [faceSearchGrade, setFaceSearchGrade] = useState<FaceSearchGrade>('hard');
 
   const [selectedEvents, setSelectedEvents] = useState<EventOption[]>([]);
@@ -90,15 +91,23 @@ const CombinedSearchScreen = ({navigation}: any) => {
   const [errorText, setErrorText] = useState<string | null>(null);
   const [needsConsent, setNeedsConsent] = useState(false);
   const [missingAngles, setMissingAngles] = useState<string[] | null>(null);
-  const [faceEnrollmentStatus, setFaceEnrollmentStatus] = useState<'unknown' | 'ready' | 'missing'>('unknown');
+  const [faceEnrollmentStatus, setFaceEnrollmentStatus] = useState<'unknown' | 'ready' | 'missing'>(
+    userHasSavedFace && userFaceConsentGranted
+      ? 'ready'
+      : 'unknown',
+  );
   const [isCheckingFaceSetup, setIsCheckingFaceSetup] = useState(false);
   const [showAutoCompareModal, setShowAutoCompareModal] = useState(false);
   const [pendingAutoRun, setPendingAutoRun] = useState(false);
   const [profileChestByYear, setProfileChestByYear] = useState<Record<string, string>>({});
+  const [profileFaceVerified, setProfileFaceVerified] = useState(userHasSavedFace);
+  const [profileFaceConsentGranted, setProfileFaceConsentGranted] = useState(userFaceConsentGranted);
   const [competitionRequiredError, setCompetitionRequiredError] = useState(false);
   const [tutorialDemoRan, setTutorialDemoRan] = useState(false);
   const competitionOptionsCacheRef = useRef<Record<string, EventOption[]>>({});
   const competitionInflightRef = useRef<Record<string, Promise<EventOption[]>>>({});
+  const bibPreferenceLockedRef = useRef(false);
+  const facePreferenceLockedRef = useRef(false);
 
   const normalizeChestByYear = useCallback((raw: any): Record<string, string> => {
     if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return {};
@@ -187,10 +196,20 @@ const CombinedSearchScreen = ({navigation}: any) => {
     try {
       const summary = await getProfileSummary(apiAccessToken);
       setProfileChestByYear(normalizeChestByYear(summary?.profile?.chest_numbers_by_year ?? {}));
+      setProfileFaceVerified(Boolean(summary?.profile?.face_verified));
+      setProfileFaceConsentGranted(Boolean((summary?.profile as any)?.face_consent_granted));
     } catch {
       // keep local fallback from userProfile
     }
   }, [apiAccessToken, normalizeChestByYear]);
+
+  useEffect(() => {
+    setProfileFaceVerified(userHasSavedFace);
+  }, [userHasSavedFace]);
+
+  useEffect(() => {
+    setProfileFaceConsentGranted(userFaceConsentGranted);
+  }, [userFaceConsentGranted]);
 
   useFocusEffect(
     useCallback(() => {
@@ -312,15 +331,20 @@ const CombinedSearchScreen = ({navigation}: any) => {
     }
 
     if (typeof resumeCombinedSearch.bib === 'string') {
+      if (resumeCombinedSearch.bib.trim().length > 0) {
+        bibPreferenceLockedRef.current = true;
+      }
       setBib(resumeCombinedSearch.bib);
     }
     if (typeof resumeCombinedSearch.useSavedBib === 'boolean') {
+      bibPreferenceLockedRef.current = true;
       setUseDefaultBib(resumeCombinedSearch.useSavedBib);
     }
     if (typeof resumeCombinedSearch.contextText === 'string') {
       setContextText(resumeCombinedSearch.contextText);
     }
     if (typeof resumeCombinedSearch.includeFace === 'boolean') {
+      facePreferenceLockedRef.current = true;
       setIncludeFace(resumeCombinedSearch.includeFace);
       if (resumeCombinedSearch.includeFace) {
         setFaceEnrollmentStatus('ready');
@@ -343,10 +367,33 @@ const CombinedSearchScreen = ({navigation}: any) => {
   }, [autoCompare]);
 
   useEffect(() => {
-    if (!defaultBib && useDefaultBib) {
-      setUseDefaultBib(false);
+    if (!defaultBib) {
+      if (useDefaultBib) {
+        setUseDefaultBib(false);
+      }
+      return;
+    }
+
+    if (!bibPreferenceLockedRef.current) {
+      setUseDefaultBib(true);
     }
   }, [defaultBib, useDefaultBib]);
+
+  useEffect(() => {
+    if (!profileFaceVerified) {
+      setFaceEnrollmentStatus((prev) => (prev === 'missing' ? prev : 'unknown'));
+      if (!facePreferenceLockedRef.current) {
+        setIncludeFace(false);
+      }
+      return;
+    }
+
+    setFaceEnrollmentStatus(profileFaceConsentGranted ? 'ready' : 'unknown');
+
+    if (!facePreferenceLockedRef.current) {
+      setIncludeFace(true);
+    }
+  }, [profileFaceConsentGranted, profileFaceVerified]);
 
   const toggleEvent = (option: EventOption) => {
     setSelectedEvents((prev) => {
@@ -365,10 +412,22 @@ const CombinedSearchScreen = ({navigation}: any) => {
 
   const applyAutoCompare = () => {
     setShowAutoCompareModal(false);
+    facePreferenceLockedRef.current = true;
     setIncludeFace(true);
-    if (defaultBib) setUseDefaultBib(true);
+    if (defaultBib) {
+      bibPreferenceLockedRef.current = true;
+      setUseDefaultBib(true);
+    }
     setPendingAutoRun(true);
   };
+
+  const handleBibChange = useCallback((value: string) => {
+    bibPreferenceLockedRef.current = true;
+    if (useDefaultBib) {
+      setUseDefaultBib(false);
+    }
+    setBib(value);
+  }, [useDefaultBib]);
 
   const startFaceEnrollmentFlow = useCallback(() => {
     const resumePayload: ResumeCombinedSearchPayload = {
@@ -390,7 +449,7 @@ const CombinedSearchScreen = ({navigation}: any) => {
         },
       },
     });
-  }, [bib, contextText, faceSearchGrade, includeFace, navigation, origin, selectedEvents]);
+  }, [bib, contextText, faceSearchGrade, navigation, origin, selectedEvents, useDefaultBib]);
 
   const verifyFaceSearchReady = useCallback(async (): Promise<'ready' | 'consent' | 'missing' | 'error'> => {
     if (!apiAccessToken || selectedEventIds.length === 0) {
@@ -645,9 +704,11 @@ const CombinedSearchScreen = ({navigation}: any) => {
     try {
       await grantFaceRecognitionConsent(apiAccessToken);
       setNeedsConsent(false);
+      setProfileFaceConsentGranted(true);
       await refreshMe();
       const status = await verifyFaceSearchReady();
       if (status === 'ready') {
+        facePreferenceLockedRef.current = true;
         setIncludeFace(true);
         return;
       }
@@ -668,6 +729,7 @@ const CombinedSearchScreen = ({navigation}: any) => {
   }, [apiAccessToken, refreshMe, startFaceEnrollmentFlow, t, verifyFaceSearchReady]);
 
   const handleEnroll = useCallback(() => {
+    facePreferenceLockedRef.current = true;
     setIncludeFace(false);
     setFaceEnrollmentStatus('unknown');
     startFaceEnrollmentFlow();
@@ -675,11 +737,13 @@ const CombinedSearchScreen = ({navigation}: any) => {
 
   const handleToggleFaceSearch = useCallback(async () => {
     if (includeFace) {
+      facePreferenceLockedRef.current = true;
       setIncludeFace(false);
       return;
     }
 
     if (faceEnrollmentStatus === 'ready') {
+      facePreferenceLockedRef.current = true;
       setIncludeFace(true);
       return;
     }
@@ -716,6 +780,7 @@ const CombinedSearchScreen = ({navigation}: any) => {
     try {
       const status = await verifyFaceSearchReady();
       if (status === 'ready') {
+        facePreferenceLockedRef.current = true;
         setIncludeFace(true);
         return;
       }
@@ -731,8 +796,10 @@ const CombinedSearchScreen = ({navigation}: any) => {
                 try {
                   await grantFaceRecognitionConsent(apiAccessToken ?? '');
                   setNeedsConsent(false);
+                  setProfileFaceConsentGranted(true);
                   const retryStatus = await verifyFaceSearchReady();
                   if (retryStatus === 'ready') {
+                    facePreferenceLockedRef.current = true;
                     setIncludeFace(true);
                     return;
                   }
@@ -773,6 +840,7 @@ const CombinedSearchScreen = ({navigation}: any) => {
   }, [
     apiAccessToken,
     faceEnrollmentStatus,
+    handleEnroll,
     includeFace,
     selectedEventIds,
     startFaceEnrollmentFlow,
@@ -992,13 +1060,7 @@ const CombinedSearchScreen = ({navigation}: any) => {
                 {isCheckingFaceSetup ? t('Checking face setup…') : t('Use your enrolled face to match photos.')}
               </Text>
             </View>
-            <View style={styles.faceActions}>
-              <TouchableOpacity style={styles.redoFaceButton} onPress={handleEnroll}>
-                <AddCircle size={20} color={colors.primaryColor} variant="Bold" />
-                <Text style={styles.redoFaceText}>{t('Redo face')}</Text>
-              </TouchableOpacity>
-              <CustomSwitch isEnabled={includeFace} toggleSwitch={handleToggleFaceSearch} />
-            </View>
+            <CustomSwitch isEnabled={includeFace} toggleSwitch={handleToggleFaceSearch} />
           </View>
 
           <SizeBox height={12} />
@@ -1043,7 +1105,7 @@ const CombinedSearchScreen = ({navigation}: any) => {
               inputStyle={styles.input}
               placeholder={t('e.g. 1234')}
               value={bib}
-              onChangeText={setBib}
+              onChangeText={handleBibChange}
               keyboardType="number-pad"
               returnKeyType="next"
             />
@@ -1062,6 +1124,7 @@ const CombinedSearchScreen = ({navigation}: any) => {
               isEnabled={useDefaultBib}
               toggleSwitch={() => {
                 if (!defaultBib) return;
+                bibPreferenceLockedRef.current = true;
                 setUseDefaultBib((prev) => !prev);
               }}
             />
