@@ -20,6 +20,7 @@ import { deleteMedia, deletePost, getMediaById, getMediaIssueRequests, getMediaS
 import { getApiBaseUrl, getHlsBaseUrl } from '../../constants/RuntimeConfig';
 import { useTheme } from '../../context/ThemeContext';
 import { useTranslation } from 'react-i18next';
+import { selectPreferredVideoUrls } from '../../utils/videoUrls';
 
 function formatDurationLabel(totalSeconds?: number | null) {
     const safeSeconds = Math.max(0, Math.round(Number(totalSeconds ?? 0)));
@@ -150,7 +151,6 @@ const VideoDetailsScreen = ({ navigation, route }: any) => {
         getMediaById(apiAccessToken, mediaId)
             .then((media) => {
                 if (!mounted) return;
-                const hls = media.hls_manifest_path ? toHlsUrl(media.hls_manifest_path) : null;
                 setMediaType(String(media?.type || routeVideo?.type || 'image').toLowerCase() === 'video' ? 'video' : 'image');
                 const nextEventIdDraft = String(media?.event_id || routeVideo?.event_id || '').trim();
                 const nextTitleDraft = String(media?.title || routeVideo?.title || '').trim();
@@ -158,17 +158,8 @@ const VideoDetailsScreen = ({ navigation, route }: any) => {
                 titleDraftRef.current = nextTitleDraft;
                 setEventIdDraft(nextEventIdDraft);
                 setTitleDraft(nextTitleDraft);
-                const candidates = [
-                    media.preview_url,
-                    media.original_url,
-                    media.full_url,
-                    media.raw_url,
-                ]
-                    .filter(Boolean)
-                    .map((value) => toAbsoluteUrl(String(value)) || '')
-                    .filter(Boolean);
-                const mp4 = candidates.find((value) => /\.(mp4|mov|m4v)(\?|$)/i.test(value));
-                const resolvedVideo = hls || mp4 || candidates[0] || '';
+                const preferredUrls = selectPreferredVideoUrls(media, { toAbsoluteUrl, toHlsUrl });
+                const resolvedVideo = preferredUrls.playbackUrl || '';
                 const thumbCandidate = media.thumbnail_url || media.preview_url || media.full_url || media.raw_url || null;
                 const resolvedPoster = thumbCandidate ? toAbsoluteUrl(String(thumbCandidate)) : null;
                 const nextMediaType = String(media?.type || routeVideo?.type || 'image').toLowerCase() === 'video' ? 'video' : 'image';

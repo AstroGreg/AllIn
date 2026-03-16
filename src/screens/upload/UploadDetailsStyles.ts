@@ -68,6 +68,18 @@ export const createStyles = (colors: ThemeColors) => StyleSheet.create({
         fontWeight: '500',
         color: colors.primaryColor
     },
+    validationCard: {
+        borderRadius: 10,
+        borderWidth: 0.5,
+        borderColor: '#F0B35A',
+        backgroundColor: colors.cardBackground,
+        paddingHorizontal: 12,
+        paddingVertical: 10,
+    },
+    validationText: {
+        ...Fonts.regular13,
+        color: colors.mainTextColor,
+    },
     row: {
         flexDirection: 'row',
         alignItems: 'center'

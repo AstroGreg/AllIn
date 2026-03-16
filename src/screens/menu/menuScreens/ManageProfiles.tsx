@@ -8,7 +8,7 @@ import { ArrowLeft2, Add, Trash } from 'iconsax-react-nativejs';
 import { useAuth } from '../../../context/AuthContext';
 import { deleteGroup, getMyGroups, type GroupSummary } from '../../../services/apiGateway';
 import { useTranslation } from 'react-i18next';
-import { getSportFocusLabel, normalizeMainDisciplines, normalizeSelectedEvents, type SportFocusId } from '../../../utils/profileSelections';
+import { getSportFocusDefinitions, getSportFocusLabel, normalizeMainDisciplines, normalizeSelectedEvents, type SportFocusId } from '../../../utils/profileSelections';
 
 const ManageProfiles = ({ navigation }: any) => {
   const insets = useSafeAreaInsets();
@@ -36,7 +36,11 @@ const ManageProfiles = ({ navigation }: any) => {
       userProfile?.category === 'support'
     );
   }, [userProfile]);
-  const canOpenAddProfileFlow = true;
+  const canAddAthleteProfile = useMemo(
+    () => getSportFocusDefinitions().some((focus) => !selectedFocuses.includes(focus.id)),
+    [selectedFocuses],
+  );
+  const canAddSupportProfile = !hasSupportProfile;
   const linkedMainDisciplines = useMemo(
     () => normalizeMainDisciplines((userProfile as any)?.mainDisciplines ?? {}, {
       trackFieldMainEvent: userProfile?.trackFieldMainEvent ?? null,
@@ -108,8 +112,15 @@ const ManageProfiles = ({ navigation }: any) => {
     );
   };
 
+  const openAddFlow = (selectedCategory: 'find' | 'manage' | 'support') => {
+    navigation.navigate('SelectEventScreen', {
+      fromAddFlow: true,
+      selectedCategory,
+    });
+  };
+
   return (
-    <View style={Styles.mainContainer}>
+    <View style={Styles.mainContainer} testID="manage-profiles-screen">
       <SizeBox height={insets.top} />
       <View style={Styles.header}>
         <TouchableOpacity style={Styles.headerButton} onPress={() => navigation.goBack()}>
@@ -162,21 +173,38 @@ const ManageProfiles = ({ navigation }: any) => {
             <SizeBox height={10} />
           </>
         ) : null}
-        {canOpenAddProfileFlow && (
+        {canAddAthleteProfile && (
           <>
             <TouchableOpacity
               style={Styles.accountSettingsCard}
-              onPress={() => navigation.navigate('CategorySelectionScreen', { fromAddFlow: true })}
+              onPress={() => openAddFlow('find')}
+              testID="manage-profiles-add-athlete"
             >
               <View style={Styles.accountSettingsLeft}>
                 <Add size={16} color={colors.primaryColor} variant="Linear" />
                 <SizeBox width={10} />
-                <Text style={Styles.accountSettingsTitle}>{t('Add profile')}</Text>
+                <Text style={Styles.accountSettingsTitle}>{t('Add athlete profile')}</Text>
               </View>
             </TouchableOpacity>
             <SizeBox height={10} />
           </>
         )}
+        {canAddSupportProfile ? (
+          <>
+            <TouchableOpacity
+              style={Styles.accountSettingsCard}
+              onPress={() => openAddFlow('support')}
+              testID="manage-profiles-add-support"
+            >
+              <View style={Styles.accountSettingsLeft}>
+                <Add size={16} color={colors.primaryColor} variant="Linear" />
+                <SizeBox width={10} />
+                <Text style={Styles.accountSettingsTitle}>{t('Add support profile')}</Text>
+              </View>
+            </TouchableOpacity>
+            <SizeBox height={10} />
+          </>
+        ) : null}
 
         <SizeBox height={16} />
         <Text style={Styles.sectionTitle}>{t('Groups')}</Text>
@@ -215,18 +243,19 @@ const ManageProfiles = ({ navigation }: any) => {
             );
           })
         )}
-        {(groups.length === 0 || canOpenAddProfileFlow) ? (
-          <TouchableOpacity
-            style={Styles.accountSettingsCard}
-            onPress={() => navigation.navigate('CategorySelectionScreen', { fromAddFlow: true })}
-          >
-            <View style={Styles.accountSettingsLeft}>
-              <Add size={16} color={colors.primaryColor} variant="Linear" />
-              <SizeBox width={10} />
-              <Text style={Styles.accountSettingsTitle}>{t('Add group')}</Text>
-            </View>
-          </TouchableOpacity>
-        ) : null}
+        <TouchableOpacity
+          style={Styles.accountSettingsCard}
+          onPress={() => openAddFlow('manage')}
+          testID="manage-profiles-add-group"
+        >
+          <View style={Styles.accountSettingsLeft}>
+            <Add size={16} color={colors.primaryColor} variant="Linear" />
+            <SizeBox width={10} />
+            <Text style={Styles.accountSettingsTitle}>
+              {groups.length === 0 ? t('Create your first group') : t('Add group profile')}
+            </Text>
+          </View>
+        </TouchableOpacity>
 
         <SizeBox height={insets.bottom > 0 ? insets.bottom + 20 : 40} />
       </ScrollView>

@@ -6,6 +6,7 @@ const mockGetWorkerHealth = jest.fn();
 const mockLaunchImageLibrary = jest.fn();
 const mockMkdir = jest.fn();
 const mockCopyFile = jest.fn();
+const mockStat = jest.fn();
 
 jest.mock('@react-native-async-storage/async-storage', () => ({
   __esModule: true,
@@ -120,6 +121,7 @@ jest.mock('react-native-fs', () => ({
   DocumentDirectoryPath: '/documents',
   mkdir: (...args: any[]) => mockMkdir(...args),
   copyFile: (...args: any[]) => mockCopyFile(...args),
+  stat: (...args: any[]) => mockStat(...args),
 }));
 
 const UploadSummaryScreen = require('../src/screens/upload/UploadSummaryScreen').default;
@@ -152,7 +154,9 @@ describe('upload flow screens', () => {
     mockLaunchImageLibrary.mockReset();
     mockMkdir.mockReset();
     mockCopyFile.mockReset();
+    mockStat.mockReset();
     mockMkdir.mockResolvedValue(undefined);
+    mockStat.mockResolvedValue({ size: 0 });
     mockGetWorkerHealth.mockResolvedValue({
       ok: true,
       workers: {
@@ -285,7 +289,7 @@ describe('upload flow screens', () => {
       expect(screen.getByTestId('upload-preparing-overlay')).toBeTruthy();
     });
     expect(screen.getByTestId('upload-preparing-title')).toBeTruthy();
-    expect(textChildren(screen.getByTestId('upload-preparing-name'))).toContain('IMG 2026 03 15 00 55 33');
+    expect(textChildren(screen.getByTestId('upload-preparing-name'))).toContain('Img 2026 03 15 00 55 33');
 
     await act(async () => {
       deferredCopy.resolve();
@@ -298,5 +302,75 @@ describe('upload flow screens', () => {
     await waitFor(() => {
       expect(screen.getByTestId('upload-selected-assets-ready')).toBeTruthy();
     });
+  });
+
+  test('UploadDetailsScreen skips oversized files before preparation starts', async () => {
+    const navigation = { goBack: jest.fn(), navigate: jest.fn() };
+
+    mockLaunchImageLibrary.mockResolvedValue({
+      assets: [
+        {
+          uri: 'file:///private/tmp/HUGE_VIDEO.MOV',
+          type: 'video/quicktime',
+          fileName: 'HUGE_VIDEO.MOV',
+          fileSize: 1024 * 1024 * 1024 + 1,
+        },
+      ],
+    });
+
+    render(
+      <UploadDetailsScreen
+        navigation={navigation}
+        route={{ params: { competition: { id: 'event-99' }, category: { name: 'sprint' } } }}
+      />,
+    );
+
+    fireEvent.press(screen.getByTestId('upload-browse-files-button'));
+
+    await waitFor(() => {
+      expect(screen.getByTestId('upload-size-error')).toBeTruthy();
+    });
+    expect(screen.queryByTestId('upload-preparing-overlay')).toBeNull();
+    expect(screen.queryByTestId('upload-selected-assets-ready')).toBeNull();
+    expect(screen.getByText(/Max upload size is 1 GB/)).toBeTruthy();
+  });
+
+  test('UploadDetailsScreen keeps valid files when a mixed selection includes oversized media', async () => {
+    const navigation = { goBack: jest.fn(), navigate: jest.fn() };
+
+    mockLaunchImageLibrary.mockResolvedValue({
+      assets: [
+        {
+          uri: 'file:///private/tmp/track_photo.JPG',
+          type: 'image/jpeg',
+          fileName: 'track_photo.JPG',
+          fileSize: 2 * 1024 * 1024,
+        },
+        {
+          uri: 'file:///private/tmp/HUGE_VIDEO.MOV',
+          type: 'video/quicktime',
+          fileName: 'HUGE_VIDEO.MOV',
+          fileSize: 1024 * 1024 * 1024 + 1,
+        },
+      ],
+    });
+    mockCopyFile.mockResolvedValue(undefined);
+
+    render(
+      <UploadDetailsScreen
+        navigation={navigation}
+        route={{ params: { competition: { id: 'event-100' }, category: { name: 'sprint' } } }}
+      />,
+    );
+
+    fireEvent.press(screen.getByTestId('upload-browse-files-button'));
+
+    await waitFor(() => {
+      expect(screen.getByTestId('upload-selected-assets-ready')).toBeTruthy();
+    });
+
+    expect(screen.getByText('Selected 1 files')).toBeTruthy();
+    expect(screen.getByTestId('upload-size-error')).toBeTruthy();
+    expect(screen.getByText(/Skipped Huge Video/)).toBeTruthy();
   });
 });

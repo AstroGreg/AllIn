@@ -12,6 +12,8 @@ import RNFS from 'react-native-fs';
 import { useFocusEffect } from '@react-navigation/native';
 import { formatUploadDisplayName, normalizeUploadFileName } from '../../utils/uploadPresentation';
 
+const MAX_UPLOAD_FILE_BYTES = 1024 * 1024 * 1024;
+
 function fileUriToPath(uri: string) {
     if (!uri || !uri.startsWith('file://')) return uri;
     let path = uri.slice('file://'.length);
@@ -47,6 +49,18 @@ function deriveVideoTitleFromFileName(fileName?: string | null) {
     return normalizeUploadFileName(fileName);
 }
 
+function formatBytesToHuman(bytes: number) {
+    if (!Number.isFinite(bytes) || bytes <= 0) return '0 B';
+    const units = ['B', 'KB', 'MB', 'GB'];
+    let value = bytes;
+    let unitIndex = 0;
+    while (value >= 1024 && unitIndex < units.length - 1) {
+        value /= 1024;
+        unitIndex += 1;
+    }
+    return `${value >= 10 || unitIndex === 0 ? value.toFixed(0) : value.toFixed(1)} ${units[unitIndex]}`;
+}
+
 const UploadDetailsScreen = ({ navigation, route }: any) => {
     const insets = useSafeAreaInsets();
     const { colors } = useTheme();
@@ -57,6 +71,7 @@ const UploadDetailsScreen = ({ navigation, route }: any) => {
     const [preparingAssetIndex, setPreparingAssetIndex] = useState(0);
     const [preparingAssetTotal, setPreparingAssetTotal] = useState(0);
     const [preparingAssetName, setPreparingAssetName] = useState('');
+    const [sizeValidationMessage, setSizeValidationMessage] = useState('');
     const [allPhotosPrice, setAllPhotosPrice] = useState('1.00');
     const [allVideosPrice, setAllVideosPrice] = useState('5.00');
     const competition = route?.params?.competition;
@@ -99,27 +114,17 @@ const UploadDetailsScreen = ({ navigation, route }: any) => {
 
     useEffect(() => {
         if (!Array.isArray(e2eFixtureFiles) || e2eFixtureFiles.length === 0) return;
-        const mapped = e2eFixtureFiles
-            .map((entry: any, index: number) => {
-                const uri = normalizeFileUri(String(entry?.uri || ''));
-                if (!uri) return null;
-                const type = String(entry?.type || '').trim() || undefined;
-                const fileName = String(entry?.fileName || entry?.name || `e2e-upload-${index + 1}`).trim() || `e2e-upload-${index + 1}`;
-                return {
-                    uri,
-                    type,
-                    fileName,
-                    title: isVideoAssetType(type) ? deriveVideoTitleFromFileName(fileName) : '',
-                    width: Number(entry?.width || 0) || undefined,
-                    height: Number(entry?.height || 0) || undefined,
-                    price_cents: defaultPriceCentsForType(type),
-                    price_currency: 'EUR',
-                };
-            })
-            .filter(Boolean) as any[];
-        if (mapped.length > 0) {
-            setSelectedAssets(mapped);
-        }
+        let active = true;
+        const loadFixtureAssets = async () => {
+            const { accepted, rejectedTooLarge } = await validateSelectedAssets(e2eFixtureFiles);
+            if (!active) return;
+            setSelectedAssets(accepted);
+            setSizeValidationMessage(buildSizeValidationMessage(rejectedTooLarge));
+        };
+        loadFixtureAssets();
+        return () => {
+            active = false;
+        };
     }, [e2eFixtureFiles]);
 
     useFocusEffect(
@@ -160,9 +165,15 @@ const UploadDetailsScreen = ({ navigation, route }: any) => {
         try {
             const result: any = await launchImageLibrary(options);
             if (result.assets) {
+                const { accepted, rejectedTooLarge } = await validateSelectedAssets(result.assets);
+                setSizeValidationMessage(buildSizeValidationMessage(rejectedTooLarge));
+                if (accepted.length === 0) {
+                    setSelectedAssets([]);
+                    return;
+                }
                 setIsPreparingAssets(true);
                 setPreparingAssetIndex(0);
-                setPreparingAssetTotal(result.assets.length);
+                setPreparingAssetTotal(accepted.length);
                 await new Promise<void>((resolve) => {
                     requestAnimationFrame(() => resolve());
                 });
@@ -172,9 +183,9 @@ const UploadDetailsScreen = ({ navigation, route }: any) => {
                 try { await RNFS.mkdir(destDir); } catch {}
 
                 const copied: any[] = [];
-                for (let i = 0; i < result.assets.length; i += 1) {
+                for (let i = 0; i < accepted.length; i += 1) {
                     setPreparingAssetIndex(i + 1);
-                    const a = result.assets[i];
+                    const a = accepted[i];
                     const uri = normalizeFileUri(String(a?.uri || ''));
                     if (!uri) continue;
 
@@ -226,6 +237,66 @@ const UploadDetailsScreen = ({ navigation, route }: any) => {
             setPreparingAssetTotal(0);
             setPreparingAssetName('');
         }
+    };
+
+    const buildSizeValidationMessage = (rejectedTooLarge: Array<{ fileName: string; fileSizeBytes: number }>) => {
+        if (rejectedTooLarge.length === 0) return '';
+        if (rejectedTooLarge.length === 1) {
+            const item = rejectedTooLarge[0];
+            const displayName = formatUploadDisplayName({
+                fileName: item.fileName,
+                type: '',
+                fallbackIndex: 1,
+            });
+            return `Skipped ${displayName} because it is ${formatBytesToHuman(item.fileSizeBytes)}. Max upload size is 1 GB.`;
+        }
+        return `Skipped ${rejectedTooLarge.length} files larger than 1 GB.`;
+    };
+
+    const readFileSize = async (entry: any) => {
+        const explicit = Number(entry?.fileSize ?? entry?.size ?? 0);
+        if (Number.isFinite(explicit) && explicit > 0) return explicit;
+        const uri = normalizeFileUri(String(entry?.uri || ''));
+        if (!uri.startsWith('file://')) return 0;
+        try {
+            const stat = await RNFS.stat(fileUriToPath(uri));
+            const size = Number((stat as any)?.size ?? 0);
+            return Number.isFinite(size) && size > 0 ? size : 0;
+        } catch {
+            return 0;
+        }
+    };
+
+    const validateSelectedAssets = async (assets: any[]) => {
+        const accepted: any[] = [];
+        const rejectedTooLarge: Array<{ fileName: string; fileSizeBytes: number }> = [];
+
+        for (let index = 0; index < assets.length; index += 1) {
+            const entry = assets[index];
+            const uri = normalizeFileUri(String(entry?.uri || ''));
+            if (!uri) continue;
+            const type = String(entry?.type || '').trim() || undefined;
+            const fileName = String(entry?.fileName || entry?.name || `upload-${Date.now()}-${index + 1}`).trim() || `upload-${Date.now()}-${index + 1}`;
+            const fileSizeBytes = await readFileSize(entry);
+            if (fileSizeBytes > MAX_UPLOAD_FILE_BYTES) {
+                rejectedTooLarge.push({ fileName, fileSizeBytes });
+                continue;
+            }
+            accepted.push({
+                ...entry,
+                uri,
+                type,
+                fileName,
+                fileSize: fileSizeBytes || entry?.fileSize || entry?.size,
+                title: isVideoAssetType(type) ? deriveVideoTitleFromFileName(fileName) : '',
+                width: Number(entry?.width || 0) || undefined,
+                height: Number(entry?.height || 0) || undefined,
+                price_cents: defaultPriceCentsForType(type),
+                price_currency: 'EUR',
+            });
+        }
+
+        return { accepted, rejectedTooLarge };
     };
 
     const parseEuroToCents = (value: string, maxCents: number) => {
@@ -329,6 +400,14 @@ const UploadDetailsScreen = ({ navigation, route }: any) => {
                 >
                     <Text style={Styles.uploadText}>{t('Browse files')}</Text>
                 </TouchableOpacity>
+                {sizeValidationMessage ? (
+                    <>
+                        <SizeBox height={10} />
+                        <View style={Styles.validationCard} testID="upload-size-error">
+                            <Text style={Styles.validationText}>{sizeValidationMessage}</Text>
+                        </View>
+                    </>
+                ) : null}
                 {selectedCount > 0 ? (
                     <>
                         <SizeBox height={14} />

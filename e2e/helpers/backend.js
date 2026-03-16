@@ -161,6 +161,21 @@ async function setMediaStatusOverride(statuses = null) {
   }
 }
 
+async function upsertMediaAsset(asset = {}) {
+  try {
+    return await rawJsonRequest('/e2e/media-asset', {
+      method: 'POST',
+      body: asset,
+      headers: {
+        'Content-Type': 'application/json',
+        'x-e2e-key': DEFAULT_E2E_KEY,
+      },
+    });
+  } catch (error) {
+    throw new Error(`E2E media asset upsert failed: ${String(error?.message || error)}`);
+  }
+}
+
 async function triggerCompetitionUploadNotification(mediaId) {
   try {
     return await rawJsonRequest('/e2e/competition-upload-notify', {
@@ -258,5 +273,6 @@ module.exports = {
   setMediaStatusOverride,
   setWorkerHealthOverride,
   triggerCompetitionUploadNotification,
+  upsertMediaAsset,
   uploadFixtureMedia,
 };

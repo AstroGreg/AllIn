@@ -27,8 +27,60 @@ import { shareMediaToInstagramStory } from '../../components/share/instagramStor
 import { usePreventMediaCapture } from '../../utils/usePreventMediaCapture';
 import { isE2ELaunchEnabled } from '../../constants/E2EConfig';
 import { resolveCompetitionFocusId } from '../../utils/profileSelections';
+import { selectPreferredVideoUrls } from '../../utils/videoUrls';
 
 const E2E_HIDDEN_TEXT_STYLE = { position: 'absolute' as const, left: -1000, top: -1000, width: 1, height: 1, opacity: 0.01 };
+const E2E_VISIBLE_TEXT_STYLE = {
+    position: 'absolute' as const,
+    left: 4,
+    top: 4,
+    fontSize: 8,
+    lineHeight: 10,
+    opacity: 0.6,
+    color: '#0D0F12',
+    backgroundColor: 'rgba(255,255,255,0.01)',
+};
+
+const debugVideoLog = (...args: any[]) => {
+    if (!__DEV__) return;
+    try {
+        // Keep this scoped to device debugging for playback issues.
+        console.log('[VideoPlaying]', ...args);
+    } catch {
+        // ignore logging issues
+    }
+};
+
+const resolveSignedVideoAssetUrl = (
+    source: any,
+    toAbsoluteUrl: (value?: string | null) => string | null,
+): string | null => {
+    const assets = Array.isArray(source?.assets) ? source.assets : [];
+    const mp4Assets = assets.filter((asset: any) => {
+        const variant = String(asset?.variant ?? '').toLowerCase();
+        const mime = String(asset?.mime_type ?? '').toLowerCase();
+        const url = String(asset?.url ?? '').toLowerCase();
+        return (
+            /mp4|mov|m4v/.test(variant) ||
+            /video\/mp4/.test(mime) ||
+            /\.(mp4|mov|m4v)(\?|$)/.test(url)
+        );
+    });
+    const signedAsset = mp4Assets.find((asset: any) => {
+        const urlType = String(asset?.url_type ?? '').toLowerCase();
+        const url = String(asset?.url ?? '').toLowerCase();
+        return (
+            urlType.includes('signed') ||
+            url.includes('x-amz-signature') ||
+            url.includes('signature=') ||
+            url.includes('sig=') ||
+            url.includes('token=') ||
+            url.includes('sv=')
+        );
+    });
+    const assetUrl = signedAsset?.url || mp4Assets[0]?.url || null;
+    return assetUrl ? (toAbsoluteUrl(String(assetUrl)) || String(assetUrl)) : null;
+};
 
 const parseRequestedStartAt = (params: any): number => {
     const candidates = [
@@ -91,7 +143,7 @@ const VideoPlayingScreen = ({ navigation, route }: any) => {
         route?.params?.postTitle ||
         route?.params?.post?.title ||
         '';
-    const startAt = Number(route?.params?.startAt ?? 0);
+    const requestedStartAt = parseRequestedStartAt(route?.params);
     const e2eLaunchEnabled = isE2ELaunchEnabled();
     const hasInitialSeekedRef = useRef(false);
     const [videoTitle, setVideoTitle] = useState(fallbackVideo.title);
@@ -99,12 +151,9 @@ const VideoPlayingScreen = ({ navigation, route }: any) => {
         Number(route?.params?.video?.views_count ?? route?.params?.video?.views ?? 0) || 0,
     );
     const [videoUrl, setVideoUrl] = useState<string | null>(fallbackVideo.uri || null);
-    const [downloadVideoUrl, setDownloadVideoUrl] = useState<string | null>(() => {
-        const candidate = String(fallbackVideo.uri || '').trim();
-        if (!candidate) return null;
-        if (candidate.toLowerCase().includes('.m3u8')) return null;
-        return candidate;
-    });
+    const [fallbackPlaybackUrl, setFallbackPlaybackUrl] = useState<string | null>(null);
+    const [hasRetriedPlaybackFallback, setHasRetriedPlaybackFallback] = useState(false);
+    const [preferredDownloadUrl, setPreferredDownloadUrl] = useState<string | null>(null);
     const fallbackPoster = useCallback(() => {
         if (!fallbackVideo.thumbnail) return null;
         if (typeof fallbackVideo.thumbnail === 'number') {
@@ -151,17 +200,6 @@ const VideoPlayingScreen = ({ navigation, route }: any) => {
         route?.params?.video?.hls_manifest_path
     );
     const shouldRenderNativePlayer = Boolean(videoUrl) && !(e2eLaunchEnabled && !hasRoutePlayableUrl);
-
-    useEffect(() => {
-        setVideoTitle(fallbackVideo.title);
-        setVideoViewsCount(Number(route?.params?.video?.views_count ?? route?.params?.video?.views ?? 0) || 0);
-        setVideoUrl(fallbackVideo.uri || null);
-        setPosterUrl(fallbackPoster());
-        perfStartedAtRef.current = Date.now();
-        setPerfReadyElapsedMs(null);
-        setInitialSeekSeconds(Number.isFinite(requestedStartAt) && requestedStartAt > 0 ? requestedStartAt : null);
-        hasInitialSeekedRef.current = false;
-    }, [fallbackPoster, fallbackVideo.title, fallbackVideo.uri, requestedStartAt, route?.params?.video?.views, route?.params?.video?.views_count]);
 
     const formatTime = useCallback((value: number) => {
         const safe = Number.isFinite(value) ? Math.max(0, value) : 0;
@@ -215,6 +253,53 @@ const VideoPlayingScreen = ({ navigation, route }: any) => {
         return `${base.replace(/\/$/, '')}/${raw.replace(/^\//, '')}`;
     }, []);
 
+    const routePreferredUrls = useMemo(
+        () => selectPreferredVideoUrls(route?.params?.video, { toAbsoluteUrl, toHlsUrl }),
+        [route?.params?.video, toAbsoluteUrl, toHlsUrl],
+    );
+
+    useEffect(() => {
+        setVideoTitle(fallbackVideo.title);
+        setVideoViewsCount(Number(route?.params?.video?.views_count ?? route?.params?.video?.views ?? 0) || 0);
+        setVideoUrl(routePreferredUrls.playbackUrl || fallbackVideo.uri || null);
+        setFallbackPlaybackUrl(routePreferredUrls.fallbackPlaybackUrl || null);
+        setHasRetriedPlaybackFallback(false);
+        setPreferredDownloadUrl(routePreferredUrls.downloadUrl || null);
+        setPosterUrl(fallbackPoster());
+        perfStartedAtRef.current = Date.now();
+        setPerfReadyElapsedMs(null);
+        setInitialSeekSeconds(Number.isFinite(requestedStartAt) && requestedStartAt > 0 ? requestedStartAt : null);
+        hasInitialSeekedRef.current = false;
+    }, [
+        fallbackPoster,
+        fallbackVideo.title,
+        fallbackVideo.uri,
+        requestedStartAt,
+        route?.params?.video?.views,
+        route?.params?.video?.views_count,
+        routePreferredUrls.downloadUrl,
+        routePreferredUrls.fallbackPlaybackUrl,
+        routePreferredUrls.playbackUrl,
+    ]);
+
+    useEffect(() => {
+        debugVideoLog('route-init', {
+            routeMediaId,
+            routeEventId,
+            requestedStartAt,
+            routePlaybackUrl: routePreferredUrls.playbackUrl,
+            routeDownloadUrl: routePreferredUrls.downloadUrl,
+            fallbackVideoUri: fallbackVideo.uri || null,
+        });
+    }, [
+        fallbackVideo.uri,
+        requestedStartAt,
+        routeEventId,
+        routeMediaId,
+        routePreferredUrls.downloadUrl,
+        routePreferredUrls.playbackUrl,
+    ]);
+
     useEffect(() => {
         let mounted = true;
         if (!apiAccessToken || !routeMediaId) {
@@ -226,54 +311,48 @@ const VideoPlayingScreen = ({ navigation, route }: any) => {
                 const title = (media as any)?.title || (media as any)?.description || fallbackVideo.title;
                 setVideoTitle(title);
                 setVideoViewsCount(Number((media as any)?.views_count ?? 0) || 0);
-                const hls = media.hls_manifest_path ? toHlsUrl(media.hls_manifest_path) : null;
-                const assets = Array.isArray((media as any)?.assets) ? (media as any).assets : [];
-                const mp4Assets = assets.filter((a: any) => {
-                    const variant = String(a?.variant ?? '').toLowerCase();
-                    const mime = String(a?.mime_type ?? '').toLowerCase();
-                    const url = String(a?.url ?? '').toLowerCase();
-                    return (
-                        /mp4|mov|m4v/.test(variant) ||
-                        /video\/mp4/.test(mime) ||
-                        /\.(mp4|mov|m4v)(\?|$)/.test(url)
+                const preferredUrls = selectPreferredVideoUrls(media, { toAbsoluteUrl, toHlsUrl });
+                const assetDownloadUrl = resolveSignedVideoAssetUrl(media, toAbsoluteUrl);
+                const resolvedVideo = preferredUrls.playbackUrl || assetDownloadUrl || fallbackVideo.uri || null;
+                const resolvedDownloadUrl = assetDownloadUrl || preferredUrls.downloadUrl || null;
+                const resolvedFallbackPlaybackUrl =
+                    preferredUrls.fallbackPlaybackUrl ||
+                    (
+                        resolvedVideo &&
+                        resolvedDownloadUrl &&
+                        resolvedVideo !== resolvedDownloadUrl
+                            ? resolvedDownloadUrl
+                            : null
                     );
-                });
-                const signedAsset = mp4Assets.find((a: any) => {
-                    const urlType = String(a?.url_type ?? '').toLowerCase();
-                    const url = String(a?.url ?? '').toLowerCase();
-                    return (
-                        urlType.includes('signed') ||
-                        url.includes('x-amz-signature') ||
-                        url.includes('signature=') ||
-                        url.includes('sig=') ||
-                        url.includes('token=') ||
-                        url.includes('sv=')
-                    );
-                });
-                const assetMp4Url = signedAsset?.url || mp4Assets[0]?.url || null;
-                const candidates = [
-                    media.preview_url,
-                    media.original_url,
-                    media.full_url,
-                    media.raw_url,
-                ]
-                    .filter(Boolean)
-                    .map((value) => toAbsoluteUrl(String(value)) || '')
-                    .filter(Boolean);
-                const mp4 = candidates.find((value) => /\.(mp4|mov|m4v)(\?|$)/i.test(value));
-                const resolvedMp4 = assetMp4Url
-                    ? (toAbsoluteUrl(String(assetMp4Url)) || String(assetMp4Url))
-                    : (mp4 || null);
-                const resolvedVideo = hls || resolvedMp4 || candidates[0] || fallbackVideo.uri || null;
                 const thumbCandidate = media.thumbnail_url || media.preview_url || media.full_url || media.raw_url || null;
                 const resolvedPoster = thumbCandidate ? toAbsoluteUrl(String(thumbCandidate)) : fallbackPoster();
+                debugVideoLog('resolved-media', {
+                    mediaId: routeMediaId,
+                    title,
+                    hlsManifestPath: (media as any)?.hls_manifest_path || null,
+                    previewUrl: (media as any)?.preview_url || null,
+                    fullUrl: (media as any)?.full_url || null,
+                    rawUrl: (media as any)?.raw_url || null,
+                    resolvedVideo,
+                    fallbackPlaybackUrl: resolvedFallbackPlaybackUrl,
+                    resolvedDownloadUrl,
+                    resolvedPoster,
+                });
                 setVideoUrl(withAccessToken(resolvedVideo || '') || resolvedVideo || null);
-                setDownloadVideoUrl(
-                    resolvedMp4 ? (withAccessToken(resolvedMp4) || resolvedMp4) : null,
+                setFallbackPlaybackUrl(
+                    withAccessToken(resolvedFallbackPlaybackUrl || '') || resolvedFallbackPlaybackUrl || null,
+                );
+                setHasRetriedPlaybackFallback(false);
+                setPreferredDownloadUrl(
+                    withAccessToken(resolvedDownloadUrl || '') || resolvedDownloadUrl || null,
                 );
                 setPosterUrl(withAccessToken(resolvedPoster || '') || resolvedPoster || null);
             })
-            .catch((_err: any) => {
+            .catch((err: any) => {
+                debugVideoLog('getMediaById-failed', {
+                    mediaId: routeMediaId,
+                    error: err?.message || String(err),
+                });
                 if (!mounted) return;
                 // ignore fetch errors for now; keep fallback values
             });
@@ -328,21 +407,20 @@ const VideoPlayingScreen = ({ navigation, route }: any) => {
     }, []);
 
     const resolveDownloadUrl = useCallback(() => {
+        if (preferredDownloadUrl) {
+            return preferredDownloadUrl;
+        }
+        const routePreferred = selectPreferredVideoUrls(route?.params?.video, { toAbsoluteUrl, toHlsUrl });
         const candidates = [
-            downloadVideoUrl,
             videoUrl,
             route?.params?.video?.uri,
-            route?.params?.video?.preview_url,
-            route?.params?.video?.original_url,
-            route?.params?.video?.full_url,
-            route?.params?.video?.raw_url,
-            route?.params?.video?.hls_manifest_path ? toHlsUrl(route?.params?.video?.hls_manifest_path) : null,
+            routePreferred.downloadUrl,
         ].filter(Boolean) as string[];
         const mp4 = candidates.find((value) => /\.(mp4|mov|m4v)(\?|$)/i.test(value));
         if (mp4) return mp4;
         const direct = candidates.find((value) => !String(value).toLowerCase().includes('.m3u8'));
         return direct ?? candidates[0] ?? null;
-    }, [downloadVideoUrl, route?.params?.video, toHlsUrl, videoUrl]);
+    }, [preferredDownloadUrl, route?.params?.video, toAbsoluteUrl, toHlsUrl, videoUrl]);
 
     const ensureLocalFile = useCallback(
         async (remoteUrl: string, extensionHint: string) => {
@@ -678,7 +756,21 @@ const VideoPlayingScreen = ({ navigation, route }: any) => {
                         posterResizeMode="cover"
                         ignoreSilentSwitch="ignore"
                         repeat={false}
+                        onLoadStart={(meta) => {
+                            debugVideoLog('onLoadStart', {
+                                mediaId: routeMediaId,
+                                sourceType: String(videoUrl).includes('.m3u8') ? 'hls' : 'file',
+                                videoUrl,
+                                meta,
+                            });
+                        }}
                         onLoad={(meta) => {
+                            debugVideoLog('onLoad', {
+                                mediaId: routeMediaId,
+                                sourceType: String(videoUrl).includes('.m3u8') ? 'hls' : 'file',
+                                duration: meta?.duration ?? null,
+                                naturalSize: (meta as any)?.naturalSize ?? null,
+                            });
                             const nextDuration = meta.duration || 0;
                             setDuration(nextDuration);
                             if (!hasInitialSeekedRef.current && Number.isFinite(requestedStartAt) && requestedStartAt > 0) {
@@ -695,6 +787,30 @@ const VideoPlayingScreen = ({ navigation, route }: any) => {
                                 setCurrentTime(progress.currentTime);
                             }
                         }}
+                        onError={(error) => {
+                            debugVideoLog('onError', {
+                                mediaId: routeMediaId,
+                                sourceType: String(videoUrl).includes('.m3u8') ? 'hls' : 'file',
+                                videoUrl,
+                                fallbackPlaybackUrl,
+                                hasRetriedPlaybackFallback,
+                                error,
+                            });
+                            if (
+                                !hasRetriedPlaybackFallback &&
+                                fallbackPlaybackUrl &&
+                                fallbackPlaybackUrl !== videoUrl
+                            ) {
+                                debugVideoLog('fallback-to-file', {
+                                    mediaId: routeMediaId,
+                                    from: videoUrl,
+                                    to: fallbackPlaybackUrl,
+                                });
+                                setHasRetriedPlaybackFallback(true);
+                                setVideoUrl(fallbackPlaybackUrl);
+                                return;
+                            }
+                        }}
                     />
                 ) : (
                     <FastImage
@@ -708,6 +824,22 @@ const VideoPlayingScreen = ({ navigation, route }: any) => {
                 {perfReadyElapsedMs != null ? (
                     <Text style={E2E_HIDDEN_TEXT_STYLE} testID="e2e-perf-ready-video-viewer">
                         {`ready:${perfReadyElapsedMs}`}
+                    </Text>
+                ) : null}
+                {videoUrl ? (
+                    <Text
+                        style={e2eLaunchEnabled ? E2E_VISIBLE_TEXT_STYLE : E2E_HIDDEN_TEXT_STYLE}
+                        testID="video-playing-source-kind"
+                    >
+                        {String(videoUrl).includes('.m3u8') ? 'hls' : 'file'}
+                    </Text>
+                ) : null}
+                {videoUrl ? (
+                    <Text
+                        style={e2eLaunchEnabled ? E2E_VISIBLE_TEXT_STYLE : E2E_HIDDEN_TEXT_STYLE}
+                        testID="video-playing-source-url"
+                    >
+                        {String(videoUrl)}
                     </Text>
                 ) : null}
                 {(initialSeekSeconds ?? requestedStartAt) > 0 ? (

@@ -9,7 +9,8 @@ export function normalizeUploadFileName(raw?: string | null): string {
 }
 
 export function toTitleCaseWords(raw: string): string {
-  return raw.replace(/\b([a-z])/g, (match) => match.toUpperCase());
+  const lower = raw.toLowerCase();
+  return lower.replace(/\b([a-z])/g, (match) => match.toUpperCase());
 }
 
 export function formatUploadDisplayName(input: {

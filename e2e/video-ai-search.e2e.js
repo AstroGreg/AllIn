@@ -7,6 +7,7 @@ const {
   e2eMutation,
   e2eBootstrap,
   getCatalog,
+  upsertMediaAsset,
   uploadFixtureMedia,
 } = require('./helpers/backend');
 
@@ -196,6 +197,14 @@ beforeAll(async () => {
     media_id: relayMediaId,
     text: 'athletics 4x400 mixed merksem',
   });
+  await upsertMediaAsset({
+    media_id: relayMediaId,
+    variant: 'hls_master',
+    access_level: 'protected',
+    storage_key: `e2e/hls/${relayMediaId}/master.m3u8`,
+    mime_type: 'application/vnd.apple.mpegurl',
+    file_size_bytes: 1,
+  });
   await e2eMutation('bib-detections', {
     media_id: relayMediaId,
     bib_number: '6038',
@@ -230,7 +239,8 @@ describe('Video AI search', () => {
     await waitFor(element(by.id('ai-search-results-ready'))).toExist().withTimeout(20000);
     await waitFor(element(by.id(`ai-search-result-${mediaId}`))).toBeVisible().withTimeout(15000);
     await element(by.id(`ai-search-result-${mediaId}`)).tap();
-    await expect(element(by.id('video-playing-screen'))).toBeVisible();
+    await waitFor(element(by.id('video-playing-screen'))).toBeVisible().withTimeout(20000);
+    await waitFor(element(by.id('video-playing-source-kind'))).toHaveText('hls').withTimeout(20000);
   });
 
   it('returns a video bib hit with timestamp and opens the player at the matched time', async () => {
@@ -250,7 +260,8 @@ describe('Video AI search', () => {
     await waitFor(element(by.id('ai-search-results-ready'))).toExist().withTimeout(20000);
     await waitFor(element(by.id(`ai-search-result-${mediaId}`))).toBeVisible().withTimeout(15000);
     await element(by.id(`ai-search-result-${mediaId}`)).tap();
-    await expect(element(by.id('video-playing-screen'))).toBeVisible();
+    await waitFor(element(by.id('video-playing-screen'))).toBeVisible().withTimeout(20000);
+    await waitFor(element(by.id('video-playing-source-kind'))).toHaveText('hls').withTimeout(20000);
     await waitFor(element(by.id('video-playing-initial-seek-time'))).toHaveText('1:10').withTimeout(20000);
   });
 });

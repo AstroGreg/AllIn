@@ -37,6 +37,12 @@ interface RoadCourseMap {
     }>;
 }
 
+interface RoadCheckpointOption {
+    id: string;
+    label: string;
+    checkpointIndex: number;
+}
+
 const FIELD_DISCIPLINE_PATTERN = /jump|throw|put|vault|discus|javelin|hammer/i;
 const ROAD_DISCIPLINE_PATTERN = /road|trail|cross|veldloop|checkpoint|finish|start|\b\d+\s?km\b/i;
 const GENERIC_DISCIPLINE_NAMES = new Set([
@@ -75,6 +81,7 @@ const CompetitionDetailsScreen = ({ navigation, route }: any) => {
     const [categoryModalVisible, setCategoryModalVisible] = useState(false);
     const [selectedEvent, setSelectedEvent] = useState<EventCategory | null>(null);
     const [selectedCategoryLabel, setSelectedCategoryLabel] = useState<SubscriptionCategoryLabel>('All');
+    const [selectedCheckpointId, setSelectedCheckpointId] = useState<string | null>(null);
     const [uploadCounts, setUploadCounts] = useState<Record<string, { photos: number; videos: number }>>({});
     const [trackEvents, setTrackEvents] = useState<EventCategory[]>([]);
     const [fieldEvents, setFieldEvents] = useState<EventCategory[]>([]);
@@ -337,16 +344,51 @@ const CompetitionDetailsScreen = ({ navigation, route }: any) => {
         };
     }, [apiAccessToken, competitionId, t, toAbsoluteUrl, usesCourseMaps, withAccessToken]);
 
-    const activeEvents = useMemo(() => {
-        if (usesCourseMaps) return roadEvents.length > 0 ? roadEvents : trackEvents;
-        if (!isTrackFieldFocus) return trackEvents;
-        return activeTab === 'track' ? trackEvents : fieldEvents;
-    }, [activeTab, fieldEvents, isTrackFieldFocus, roadEvents, trackEvents, usesCourseMaps]);
-
     const selectedRoadCourseMap = useMemo(() => {
         if (roadCourseMaps.length === 0) return null;
         return roadCourseMaps.find((map) => map.id === selectedRoadCourseMapId) ?? roadCourseMaps[0];
     }, [roadCourseMaps, selectedRoadCourseMapId]);
+
+    const fallbackRoadEvents = useMemo(() => {
+        return roadCourseMaps.reduce<EventCategory[]>((acc, map) => {
+            const stableId = String(map.id || '').trim();
+            const stableName = String(map.label || '').trim();
+            if (!stableId || !stableName) return acc;
+            acc.push({
+                id: stableId,
+                name: stableName,
+                kind: 'road',
+                group: null,
+            });
+            return acc;
+        }, []);
+    }, [roadCourseMaps]);
+
+    const activeEvents = useMemo(() => {
+        if (usesCourseMaps) {
+            if (fallbackRoadEvents.length > 0) return fallbackRoadEvents;
+            if (roadEvents.length > 0) return roadEvents;
+            return trackEvents;
+        }
+        if (!isTrackFieldFocus) return trackEvents;
+        return activeTab === 'track' ? trackEvents : fieldEvents;
+    }, [activeTab, fallbackRoadEvents, fieldEvents, isTrackFieldFocus, roadEvents, trackEvents, usesCourseMaps]);
+
+    const selectedMapForEvent = useMemo(() => {
+        if (!usesCourseMaps) return null;
+        if (!selectedEvent) return selectedRoadCourseMap;
+        const normalizedEvent = normalizeCheckpointLabel(selectedEvent.name);
+        return roadCourseMaps.find((map) => {
+            if (map.disciplineId && map.disciplineId === selectedEvent.id) return true;
+            const normalizedMap = normalizeCheckpointLabel(map.label);
+            return normalizedMap === normalizedEvent || normalizedMap.includes(normalizedEvent) || normalizedEvent.includes(normalizedMap);
+        }) ?? selectedRoadCourseMap;
+    }, [normalizeCheckpointLabel, roadCourseMaps, selectedEvent, selectedRoadCourseMap, usesCourseMaps]);
+
+    const availableCheckpointOptions = useMemo<RoadCheckpointOption[]>(() => {
+        if (!usesCourseMaps) return [];
+        return Array.isArray(selectedMapForEvent?.checkpoints) ? selectedMapForEvent.checkpoints : [];
+    }, [selectedMapForEvent, usesCourseMaps]);
 
     const loadCounts = useCallback(async () => {
         if (!competitionId) {
@@ -387,64 +429,50 @@ const CompetitionDetailsScreen = ({ navigation, route }: any) => {
 
     const openCategoryModal = (category: EventCategory) => {
         if (usesCourseMaps) {
-            const matchedMap = roadCourseMaps.find((map) => map.disciplineId === category.id);
+            const normalizedEvent = normalizeCheckpointLabel(category.name);
+            const matchedMap = roadCourseMaps.find((map) => {
+                if (map.disciplineId && map.disciplineId === category.id) return true;
+                const normalizedMap = normalizeCheckpointLabel(map.label);
+                return normalizedMap === normalizedEvent || normalizedMap.includes(normalizedEvent) || normalizedEvent.includes(normalizedMap);
+            });
             if (matchedMap) {
                 setSelectedRoadCourseMapId(matchedMap.id);
+                const firstCheckpoint = Array.isArray(matchedMap.checkpoints) ? matchedMap.checkpoints[0] : null;
+                setSelectedCheckpointId(firstCheckpoint?.id ?? null);
+            } else {
+                setSelectedCheckpointId(null);
             }
+        } else {
+            setSelectedCategoryLabel('All');
         }
         setSelectedEvent(category);
-        setSelectedCategoryLabel('All');
         setCategoryModalVisible(true);
     };
 
     const handleContinue = () => {
         if (!selectedEvent) return;
-        const selectedMap = usesCourseMaps ? selectedRoadCourseMap : null;
-        const selectedEventNameNormalized = normalizeCheckpointLabel(selectedEvent?.name);
-        const selectedCheckpoint = (() => {
-            if (!selectedMap || !Array.isArray(selectedMap.checkpoints) || selectedMap.checkpoints.length === 0) {
-                return null;
-            }
-            const checkpoints = selectedMap.checkpoints;
-            const exact = checkpoints.find((cp) => normalizeCheckpointLabel(cp.label) === selectedEventNameNormalized);
-            if (exact) return exact;
+        const selectedMap = usesCourseMaps ? selectedMapForEvent : null;
+        const selectedCheckpoint = usesCourseMaps
+            ? availableCheckpointOptions.find((checkpoint) => checkpoint.id === selectedCheckpointId) ?? availableCheckpointOptions[0] ?? null
+            : null;
+        const resolvedDisciplineId = usesCourseMaps
+            ? (selectedMap?.disciplineId ?? (selectedCheckpoint ? null : selectedEvent?.id ?? null))
+            : (selectedEvent?.id ?? null);
 
-            const includesMatch = checkpoints.find((cp) => {
-                const cpNorm = normalizeCheckpointLabel(cp.label);
-                return (
-                    cpNorm.includes(selectedEventNameNormalized) ||
-                    selectedEventNameNormalized.includes(cpNorm)
-                );
-            });
-            if (includesMatch) return includesMatch;
+        const openUploadDetails = typeof navigation?.push === 'function'
+            ? navigation.push.bind(navigation)
+            : navigation.navigate.bind(navigation);
 
-            if (/\bstart\b/i.test(selectedEvent?.name || '')) {
-                const startMatch = checkpoints.find((cp) => /\bstart\b/i.test(cp.label || ''));
-                if (startMatch) return startMatch;
-            }
-            if (/\bfinish\b/i.test(selectedEvent?.name || '')) {
-                const finishMatch = checkpoints.find((cp) => /\bfinish\b/i.test(cp.label || ''));
-                if (finishMatch) return finishMatch;
-            }
-            const kmMatch = String(selectedEvent?.name || '').match(/(\d+(?:[.,]\d+)?)\s*km/i);
-            if (kmMatch?.[1]) {
-                const kmValue = kmMatch[1].replace(',', '.');
-                const byKm = checkpoints.find((cp) => new RegExp(`\\b${kmValue}\\s*km\\b`, 'i').test(cp.label || ''));
-                if (byKm) return byKm;
-            }
-            return checkpoints[0] ?? null;
-        })();
-
-        navigation.navigate('UploadDetailsScreen', {
+        openUploadDetails('UploadDetailsScreen', {
             competition,
             category: selectedEvent,
-            categoryLabel: selectedCategoryLabel,
-            category_labels: [selectedCategoryLabel],
+            categoryLabel: usesCourseMaps ? null : selectedCategoryLabel,
+            category_labels: usesCourseMaps ? [] : [selectedCategoryLabel],
             account,
             anonymous,
             competitionType: competitionFocusId ?? (usesCourseMaps ? 'road-events' : 'track-field'),
             competitionFocus: competitionFocusId ?? (usesCourseMaps ? 'road-events' : 'track-field'),
-            discipline_id: selectedEvent?.id ?? null,
+            discipline_id: resolvedDisciplineId,
             competition_map_id: selectedMap?.id ?? null,
             checkpoint_id: selectedCheckpoint?.id ?? null,
             checkpoint_label: selectedCheckpoint?.label ?? null,
@@ -598,7 +626,7 @@ const CompetitionDetailsScreen = ({ navigation, route }: any) => {
                 )}
 
                 <Text style={Styles.sectionTitle}>
-                    {competitionFocusId === 'road-events' ? t('Choose a checkpoint') : t('Disciplines')}
+                    {competitionFocusId === 'road-events' ? t('Choose a route') : t('Disciplines')}
                 </Text>
                 <SizeBox height={16} />
 
@@ -627,36 +655,65 @@ const CompetitionDetailsScreen = ({ navigation, route }: any) => {
 
             <Modal visible={categoryModalVisible} transparent animationType="fade" onRequestClose={() => setCategoryModalVisible(false)}>
                 <Pressable style={Styles.modalBackdrop} onPress={() => setCategoryModalVisible(false)}>
-                    <Pressable style={Styles.modalCard} onPress={() => {}}>
-                        <Text style={Styles.modalTitle}>{t('Select category')}</Text>
+                    <Pressable style={Styles.modalCard} onPress={() => {}} testID="upload-selection-modal">
+                        <Text style={Styles.modalTitle}>{usesCourseMaps ? t('Select checkpoint') : t('Select category')}</Text>
                         <Text style={Styles.modalSubtitle}>{selectedEvent?.name ?? t('Event')}</Text>
                         <View style={Styles.modalSection}>
-                            <Text style={Styles.modalLabel}>{t('Category')}</Text>
-                            <View style={Styles.choiceRow}>
-                                {SUBSCRIPTION_CATEGORY_OPTIONS.map((label) => {
-                                    const active = selectedCategoryLabel === label;
-                                    return (
-                                        <TouchableOpacity
-                                            key={label}
-                                            style={[Styles.choiceChip, active && Styles.choiceChipActive]}
-                                            onPress={() => setSelectedCategoryLabel(label)}
-                                            testID={`upload-category-${String(label).toLowerCase()}`}
-                                        >
-                                            <Text style={[Styles.choiceChipText, active && Styles.choiceChipTextActive]}>
-                                                {label === 'All' ? t('All') : t(label)}
-                                            </Text>
-                                        </TouchableOpacity>
-                                    );
-                                })}
-                            </View>
+                            <Text style={Styles.modalLabel}>{usesCourseMaps ? t('Checkpoint') : t('Category')}</Text>
+                            {usesCourseMaps ? (
+                                <View style={Styles.choiceRow}>
+                                    {availableCheckpointOptions.map((checkpoint) => {
+                                        const active = selectedCheckpointId === checkpoint.id;
+                                        return (
+                                            <TouchableOpacity
+                                                key={checkpoint.id}
+                                                style={[Styles.choiceChip, active && Styles.choiceChipActive]}
+                                                onPress={() => setSelectedCheckpointId(checkpoint.id)}
+                                                testID={`upload-checkpoint-${checkpoint.id}`}
+                                            >
+                                                <Text style={[Styles.choiceChipText, active && Styles.choiceChipTextActive]}>
+                                                    {checkpoint.label}
+                                                </Text>
+                                            </TouchableOpacity>
+                                        );
+                                    })}
+                                    {availableCheckpointOptions.length === 0 ? (
+                                        <Text style={Styles.disciplineEmptySubtitle}>{t('No checkpoints available for this route yet.')}</Text>
+                                    ) : null}
+                                </View>
+                            ) : (
+                                <View style={Styles.choiceRow}>
+                                    {SUBSCRIPTION_CATEGORY_OPTIONS.map((label) => {
+                                        const active = selectedCategoryLabel === label;
+                                        return (
+                                            <TouchableOpacity
+                                                key={label}
+                                                style={[Styles.choiceChip, active && Styles.choiceChipActive]}
+                                                onPress={() => setSelectedCategoryLabel(label)}
+                                                testID={`upload-category-${String(label).toLowerCase()}`}
+                                            >
+                                                <Text style={[Styles.choiceChipText, active && Styles.choiceChipTextActive]}>
+                                                    {label === 'All' ? t('All') : t(label)}
+                                                </Text>
+                                            </TouchableOpacity>
+                                        );
+                                    })}
+                                </View>
+                            )}
                         </View>
                         <View style={Styles.modalActions}>
                             <TouchableOpacity style={Styles.modalGhost} onPress={() => setCategoryModalVisible(false)}>
                                 <Text style={Styles.modalGhostText}>{t('Cancel')}</Text>
                             </TouchableOpacity>
                             <TouchableOpacity
-                                style={Styles.modalPrimary}
+                                style={[
+                                    Styles.modalPrimary,
+                                    usesCourseMaps && availableCheckpointOptions.length > 0 && !selectedCheckpointId
+                                        ? { opacity: 0.5 }
+                                        : null,
+                                ]}
                                 onPress={handleContinue}
+                                disabled={Boolean(usesCourseMaps && availableCheckpointOptions.length > 0 && !selectedCheckpointId)}
                                 testID="upload-discipline-continue"
                             >
                                 <Text style={Styles.modalPrimaryText}>{t('Continue')}</Text>

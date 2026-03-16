@@ -103,6 +103,10 @@ const AllPhotosOfEvents = ({ navigation, route }: any) => {
             .map((value) => String(value ?? '').trim())
             .filter(Boolean);
     }, [categoryLabel, routeCategoryLabels]);
+    const shouldUseAppearanceFeed = appearanceOnly
+        && !disciplineId
+        && !checkpointId
+        && activeCategoryLabels.length === 0;
     const tileWidth = useMemo(() => Math.max(140, Math.floor((width - 52) / 2)), [width]);
     const tileHeight = useMemo(() => Math.round(tileWidth * 1.15), [tileWidth]);
     const helperCopy = useMemo(() => {
@@ -192,7 +196,7 @@ const AllPhotosOfEvents = ({ navigation, route }: any) => {
         }
         try {
             let list: MediaViewAllItem[] = [];
-            if (appearanceOnly && (eventId || competitionId)) {
+            if (shouldUseAppearanceFeed && (eventId || competitionId)) {
                 const res = await getHubAppearanceMedia(apiAccessToken, String(eventId ?? competitionId), {
                     include_original: false,
                     limit: PAGE_SIZE,
@@ -224,7 +228,7 @@ const AllPhotosOfEvents = ({ navigation, route }: any) => {
             setIsRefreshing(false);
             setIsFetchingMore(false);
         }
-    }, [activeCategoryLabels, apiAccessToken, appearanceOnly, checkpointId, competitionId, disciplineId, eventId, isVideoMedia, mergeItems, targetCompetitionId]);
+    }, [activeCategoryLabels, apiAccessToken, checkpointId, competitionId, disciplineId, eventId, isVideoMedia, mergeItems, shouldUseAppearanceFeed, targetCompetitionId]);
 
     useEffect(() => {
         let mounted = true;
@@ -282,6 +286,7 @@ const AllPhotosOfEvents = ({ navigation, route }: any) => {
                     <TouchableOpacity
                         activeOpacity={0.9}
                         style={[localStyles.mediaTile, { width: tileWidth }]}
+                        testID={`competition-photo-card-${item.id}`}
                         onPress={() => navigation.navigate('PhotoDetailScreen', {
                             eventTitle: eventName,
                             media: {

@@ -2,6 +2,7 @@ import React from 'react';
 import { render, waitFor } from '@testing-library/react-native';
 
 const mockGetCompetitionPublicMedia = jest.fn();
+const mockGetHubAppearanceMedia = jest.fn();
 
 jest.mock('react-native-safe-area-context', () => ({
   useSafeAreaInsets: () => ({ top: 0, bottom: 0, left: 0, right: 0 }),
@@ -67,18 +68,22 @@ jest.mock('../src/constants/RuntimeConfig', () => ({
 
 jest.mock('../src/services/apiGateway', () => ({
   getCompetitionPublicMedia: (...args: any[]) => mockGetCompetitionPublicMedia(...args),
-  getHubAppearanceMedia: jest.fn(),
+  getHubAppearanceMedia: (...args: any[]) => mockGetHubAppearanceMedia(...args),
 }));
 
 const AllPhotosOfEvents =
   require('../src/screens/search/searchScreens/AllPhotosOfCompetitions').default;
 const AllVideosOfEvents =
   require('../src/screens/search/searchScreens/AllVideosOfCompetitions').default;
+const VideosForCompetition =
+  require('../src/screens/search/searchScreens/VideosForCompetition').default;
 
 describe('competition media filters', () => {
   beforeEach(() => {
     mockGetCompetitionPublicMedia.mockReset();
     mockGetCompetitionPublicMedia.mockResolvedValue([]);
+    mockGetHubAppearanceMedia.mockReset();
+    mockGetHubAppearanceMedia.mockResolvedValue({ results: [] });
   });
 
   test('passes selected category labels when loading photos', async () => {
@@ -139,5 +144,101 @@ describe('competition media filters', () => {
         }),
       );
     });
+  });
+
+  test('uses filtered competition media instead of appearance feed when photos have category filters', async () => {
+    render(
+      <AllPhotosOfEvents
+        navigation={{ goBack: jest.fn(), navigate: jest.fn() }}
+        route={{
+          params: {
+            eventName: 'Hub appearance',
+            eventId: 'competition-1',
+            competitionId: 'competition-1',
+            appearanceOnly: true,
+            disciplineId: 'discipline-1',
+            categoryLabel: 'Cadet',
+            categoryLabels: ['Cadet'],
+          },
+        }}
+      />,
+    );
+
+    await waitFor(() => {
+      expect(mockGetCompetitionPublicMedia).toHaveBeenCalledWith(
+        'api-token',
+        'competition-1',
+        expect.objectContaining({
+          type: 'image',
+          discipline_id: 'discipline-1',
+          category_labels: ['Cadet'],
+        }),
+      );
+    });
+    expect(mockGetHubAppearanceMedia).not.toHaveBeenCalled();
+  });
+
+  test('uses filtered competition media instead of appearance feed when videos have category filters', async () => {
+    render(
+      <AllVideosOfEvents
+        navigation={{ goBack: jest.fn(), navigate: jest.fn() }}
+        route={{
+          params: {
+            eventName: 'Hub appearance',
+            eventId: 'competition-1',
+            competitionId: 'competition-1',
+            appearanceOnly: true,
+            disciplineId: 'discipline-1',
+            categoryLabel: 'Miniem',
+            categoryLabels: ['Miniem'],
+          },
+        }}
+      />,
+    );
+
+    await waitFor(() => {
+      expect(mockGetCompetitionPublicMedia).toHaveBeenCalledWith(
+        'api-token',
+        'competition-1',
+        expect.objectContaining({
+          type: 'video',
+          discipline_id: 'discipline-1',
+          category_labels: ['Miniem'],
+        }),
+      );
+    });
+    expect(mockGetHubAppearanceMedia).not.toHaveBeenCalled();
+  });
+
+  test('uses filtered competition media on the category-specific video screen even when opened from appearance flow', async () => {
+    render(
+      <VideosForCompetition
+        navigation={{ goBack: jest.fn(), navigate: jest.fn() }}
+        route={{
+          params: {
+            eventName: 'Hub appearance',
+            eventId: 'competition-1',
+            competitionId: 'competition-1',
+            appearanceOnly: true,
+            disciplineId: 'discipline-1',
+            categoryLabel: 'Scholier',
+            categoryLabels: ['Scholier'],
+          },
+        }}
+      />,
+    );
+
+    await waitFor(() => {
+      expect(mockGetCompetitionPublicMedia).toHaveBeenCalledWith(
+        'api-token',
+        'competition-1',
+        expect.objectContaining({
+          type: 'video',
+          discipline_id: 'discipline-1',
+          category_labels: ['Scholier'],
+        }),
+      );
+    });
+    expect(mockGetHubAppearanceMedia).not.toHaveBeenCalled();
   });
 });

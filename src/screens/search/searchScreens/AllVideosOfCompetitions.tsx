@@ -11,6 +11,7 @@ import { getHlsBaseUrl } from '../../../constants/RuntimeConfig'
 import Images from '../../../constants/Images'
 import { useTheme } from '../../../context/ThemeContext'
 import { useTranslation } from 'react-i18next'
+import { selectPreferredVideoUrls } from '../../../utils/videoUrls'
 
 const PAGE_SIZE = 60;
 
@@ -139,6 +140,10 @@ const AllVideosOfEvents = ({ navigation, route }: any) => {
             .map((value) => String(value ?? '').trim())
             .filter(Boolean);
     }, [categoryLabel, routeCategoryLabels]);
+    const shouldUseAppearanceFeed = appearanceOnly
+        && !disciplineId
+        && !checkpointId
+        && activeCategoryLabels.length === 0;
     const helperCopy = useMemo(() => {
         if (checkpointId) return t('Shows videos tagged to this checkpoint.');
         if (disciplineId) return t('Shows videos tagged to this discipline.');
@@ -249,7 +254,7 @@ const AllVideosOfEvents = ({ navigation, route }: any) => {
         }
         try {
             let list: MediaViewAllItem[] = [];
-            if (appearanceOnly && (eventId || competitionId)) {
+            if (shouldUseAppearanceFeed && (eventId || competitionId)) {
                 const res = await getHubAppearanceMedia(apiAccessToken, String(eventId ?? competitionId), {
                     include_original: false,
                     limit: PAGE_SIZE,
@@ -281,7 +286,7 @@ const AllVideosOfEvents = ({ navigation, route }: any) => {
             setIsRefreshing(false);
             setIsFetchingMore(false);
         }
-    }, [activeCategoryLabels, apiAccessToken, appearanceOnly, checkpointId, competitionId, disciplineId, eventId, isVideoMedia, mergeItems, targetCompetitionId]);
+    }, [activeCategoryLabels, apiAccessToken, checkpointId, competitionId, disciplineId, eventId, isVideoMedia, mergeItems, shouldUseAppearanceFeed, targetCompetitionId]);
 
     useEffect(() => {
         let mounted = true;
@@ -303,12 +308,11 @@ const AllVideosOfEvents = ({ navigation, route }: any) => {
         return items.map((item) => {
             const thumbCandidate = item.thumbnail_url || item.preview_url || item.full_url || item.raw_url || null;
             const resolvedThumb = withAccessToken(thumbCandidate) || thumbCandidate || '';
-            const hls = item.hls_manifest_path ? toHlsUrl(item.hls_manifest_path) : null;
-            const candidates = [item.full_url, item.original_url, item.raw_url, item.preview_url]
-                .filter(Boolean)
-                .map((value) => String(value));
-            const mp4 = candidates.find((value) => /\.(mp4|mov|m4v)(\?|$)/i.test(value));
-            const resolvedVideo = hls || mp4 || candidates[0] || null;
+            const preferredUrls = selectPreferredVideoUrls(item, {
+                toAbsoluteUrl: (value) => value ? String(value) : null,
+                toHlsUrl,
+            });
+            const resolvedVideo = preferredUrls.playbackUrl;
             return {
                 id: item.media_id,
                 videoUri: withAccessToken(resolvedVideo) || resolvedVideo,
@@ -346,6 +350,7 @@ const AllVideosOfEvents = ({ navigation, route }: any) => {
                     <TouchableOpacity
                         activeOpacity={0.9}
                         style={localStyles.videoCard}
+                        testID={`competition-video-card-${item.id}`}
                         onPress={() => navigation.navigate('VideoPlayingScreen', {
                             mediaId: item.media.media_id,
                             video: {

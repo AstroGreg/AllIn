@@ -18,6 +18,8 @@ E2E_GATEWAY_LOG="${E2E_GATEWAY_LOG:-/tmp/spotme-e2e-gateway.log}"
 E2E_METRO_LOG="${E2E_METRO_LOG:-/tmp/spotme-metro.log}"
 E2E_GATEWAY_PORT="$(node -e "const u=new URL(process.argv[1]); process.stdout.write(String(u.port || (u.protocol==='https:'?'443':'80')));" "${E2E_API_BASE_URL}")"
 E2E_GATEWAY_REUSE="${E2E_GATEWAY_REUSE:-0}"
+E2E_METRO_REUSE="${E2E_METRO_REUSE:-0}"
+E2E_METRO_PORT="${E2E_METRO_PORT:-8081}"
 if [[ "${CONFIG}" == android* ]]; then
   DETOX_TARGET_PLATFORM="android"
 else
@@ -115,19 +117,27 @@ ensure_gateway_ready() {
 
 ensure_gateway_ready
 
-if ! nc -z 127.0.0.1 8081 >/dev/null 2>&1; then
-  npm start >"${E2E_METRO_LOG}" 2>&1 &
+if [ "${E2E_METRO_REUSE}" != "1" ]; then
+  EXISTING_METRO_PID="$(lsof -ti tcp:${E2E_METRO_PORT} || true)"
+  if [ -n "${EXISTING_METRO_PID}" ]; then
+    kill ${EXISTING_METRO_PID} >/dev/null 2>&1 || true
+    sleep 1
+  fi
+fi
+
+if ! nc -z 127.0.0.1 "${E2E_METRO_PORT}" >/dev/null 2>&1; then
+  npm start -- --reset-cache >"${E2E_METRO_LOG}" 2>&1 &
   METRO_PID="$!"
 
   for _ in $(seq 1 60); do
-    if nc -z 127.0.0.1 8081 >/dev/null 2>&1; then
+    if nc -z 127.0.0.1 "${E2E_METRO_PORT}" >/dev/null 2>&1; then
       break
     fi
     sleep 1
   done
 
-  if ! nc -z 127.0.0.1 8081 >/dev/null 2>&1; then
-    echo "Metro did not start on port 8081. See ${E2E_METRO_LOG}" >&2
+  if ! nc -z 127.0.0.1 "${E2E_METRO_PORT}" >/dev/null 2>&1; then
+    echo "Metro did not start on port ${E2E_METRO_PORT}. See ${E2E_METRO_LOG}" >&2
     exit 1
   fi
 fi
