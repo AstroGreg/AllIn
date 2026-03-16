@@ -792,11 +792,7 @@ const VideoPlayingScreen = ({ navigation, route }: any) => {
             </View>
 
             {/* Video Container */}
-            <TouchableOpacity
-                style={Styles.videoContainer}
-                activeOpacity={0.9}
-                onPress={() => setIsPlaying((prev) => !prev)}
-            >
+            <View style={Styles.videoContainer}>
                 {shouldRenderNativePlayer ? (
                     <Video
                         ref={videoRef}
@@ -906,11 +902,12 @@ const VideoPlayingScreen = ({ navigation, route }: any) => {
                         {formatTime(initialSeekSeconds ?? requestedStartAt)}
                     </Text>
                 ) : null}
+                <Pressable style={Styles.videoTapOverlay} onPress={() => setIsPlaying((prev) => !prev)} />
 
                 {!isPlaying && (
-                    <View style={Styles.playButtonOverlay}>
+                    <Pressable style={Styles.playButtonOverlay} onPress={() => setIsPlaying(true)}>
                         <Icons.PlayCricle width={46} height={46} />
-                    </View>
+                    </Pressable>
                 )}
 
                 {duration > 0 && (
@@ -948,19 +945,22 @@ const VideoPlayingScreen = ({ navigation, route }: any) => {
                             minimumTrackTintColor={colors.primaryColor}
                             maximumTrackTintColor="rgba(255,255,255,0.45)"
                             thumbTintColor={colors.primaryColor}
-                            onValueChange={(value) => {
+                            onSlidingStart={() => {
                                 setIsSeeking(true);
+                            }}
+                            onValueChange={(value) => {
                                 setPendingSeek(value);
                             }}
                             onSlidingComplete={(value) => {
                                 videoRef.current?.seek(value);
+                                setPendingSeek(value);
                                 setCurrentTime(value);
                                 setIsSeeking(false);
                             }}
                         />
                     </View>
                 )}
-            </TouchableOpacity>
+            </View>
 
             <SizeBox height={insets.bottom > 0 ? insets.bottom : 0} />
 

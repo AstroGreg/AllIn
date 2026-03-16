@@ -1,8 +1,6 @@
-import { StyleSheet, Dimensions } from 'react-native';
+import { StyleSheet } from 'react-native';
 import Fonts from '../../constants/Fonts';
 import { ThemeColors, lightColors } from '../../constants/Theme';
-
-const { width, height } = Dimensions.get('window');
 
 export const createStyles = (colors: ThemeColors) => StyleSheet.create({
     mainContainer: {
@@ -65,6 +63,9 @@ export const createStyles = (colors: ThemeColors) => StyleSheet.create({
     videoImage: {
         width: '100%',
         height: '100%',
+    },
+    videoTapOverlay: {
+        ...StyleSheet.absoluteFillObject,
     },
     playButtonOverlay: {
         position: 'absolute',

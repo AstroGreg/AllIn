@@ -55,6 +55,7 @@ export const createStyles = (colors) => StyleSheet.create({
         width: '100%',
         height: '100%',
     },
+    videoTapOverlay: Object.assign({}, StyleSheet.absoluteFillObject),
     playButtonOverlay: {
         position: 'absolute',
         top: '50%',
