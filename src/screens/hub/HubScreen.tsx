@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState, useCallback, useRef } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, Modal, TextInput, Keyboard, InteractionManager } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useFocusEffect } from '@react-navigation/native';
 import FastImage from 'react-native-fast-image';
 import {
     ArrowLeft2,
@@ -15,7 +16,7 @@ import { useTheme } from '../../context/ThemeContext';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useAuth } from '../../context/AuthContext';
 import { useEvents } from '../../context/EventsContext';
-import { getHubAppearances, getHubUploads, getMediaViewAll } from '../../services/apiGateway';
+import { getDownloads, getHubAppearances, getHubUploads, getMediaViewAll } from '../../services/apiGateway';
 import { getApiBaseUrl } from '../../constants/RuntimeConfig';
 import { useTranslation } from 'react-i18next';
 import E2EPerfReady from '../../components/e2e/E2EPerfReady';
@@ -48,6 +49,7 @@ const HubScreen = ({ navigation }: any) => {
     const [appearanceCardsData, setAppearanceCardsData] = useState<any[]>([]);
     const [uploadCardsData, setUploadCardsData] = useState<any[]>([]);
     const [mediaByEvent, setMediaByEvent] = useState<Record<string, { thumbUrl?: string; videoCount: number }>>({});
+    const [downloadedPhotoCount, setDownloadedPhotoCount] = useState<number | null>(null);
     const [e2eManageUploadState, setE2EManageUploadState] = useState('idle');
 
     const resolveCompetitionType = useCallback((params?: {
@@ -227,6 +229,40 @@ const HubScreen = ({ navigation }: any) => {
             mounted = false;
         };
     }, [apiAccessToken, t]);
+
+    useFocusEffect(
+        useCallback(() => {
+            let active = true;
+
+            const loadDownloadCount = async () => {
+                if (!apiAccessToken) {
+                    if (active) {
+                        setDownloadedPhotoCount(0);
+                    }
+                    return;
+                }
+
+                try {
+                    const downloads = await getDownloads(apiAccessToken, { limit: 500 });
+                    if (!active) return;
+                    const photoCount = (Array.isArray(downloads) ? downloads : []).filter((item) => {
+                        return String(item?.media?.type ?? '').toLowerCase() !== 'video';
+                    }).length;
+                    setDownloadedPhotoCount(photoCount);
+                } catch {
+                    if (active) {
+                        setDownloadedPhotoCount(0);
+                    }
+                }
+            };
+
+            void loadDownloadCount();
+
+            return () => {
+                active = false;
+            };
+        }, [apiAccessToken]),
+    );
 
     const formatDateOnly = (value?: string | null) => {
         if (!value || value === '-') return '-';
@@ -704,7 +740,9 @@ const HubScreen = ({ navigation }: any) => {
                     <View style={Styles.downloadsInfo}>
                         <Icons.Downloads height={24} width={24} />
                         <Text style={Styles.downloadsText}>{t('Total downloads')}</Text>
-                        <Text style={Styles.downloadsNumber}>{'346,456'}</Text>
+                        <Text style={Styles.downloadsNumber}>
+                            {downloadedPhotoCount == null ? '—' : String(downloadedPhotoCount)}
+                        </Text>
                     </View>
                 </TouchableOpacity>
 

@@ -12,11 +12,11 @@ import Icons from '../../../constants/Icons';
 import Images from '../../../constants/Images';
 import { useTheme } from '../../../context/ThemeContext';
 import { useAuth } from '../../../context/AuthContext';
-import { ApiError, checkAccountAvailability, type AccountAvailabilityProvider } from '../../../services/apiGateway';
+import { ApiError, checkAccountAvailability } from '../../../services/apiGateway';
 import { ArrowDown2, Calendar as CalendarIcon, Card } from 'iconsax-react-nativejs';
 import { getNationalityOptions } from '../../../constants/Nationalities';
 import { useTranslation } from 'react-i18next';
-import { formatAccountProvider, validateEmailInput, validateUsernameInput } from '../../../utils/accountAvailability';
+import { validateUsernameInput } from '../../../utils/accountAvailability';
 import { getWizardStepLabel } from '../../../utils/profileSelections';
 
 type AvailabilityState = {
@@ -24,7 +24,7 @@ type AvailabilityState = {
     message: string;
     valid: boolean;
     available: boolean;
-    provider: AccountAvailabilityProvider | null;
+    provider: null;
 };
 
 const neutralAvailabilityState = (): AvailabilityState => ({
@@ -45,7 +45,6 @@ const CreateProfileScreen = ({ navigation }: any) => {
     const [username, setUsername] = useState('');
     const [firstName, setFirstName] = useState('');
     const [lastName, setLastName] = useState('');
-    const [email, setEmail] = useState('');
     const [nationality, setNationality] = useState('');
     const [birthDate, setBirthDate] = useState('');
     const [step, setStep] = useState(1);
@@ -58,10 +57,8 @@ const CreateProfileScreen = ({ navigation }: any) => {
     const [showStep2Validation, setShowStep2Validation] = useState(false);
     const [showStep3Validation, setShowStep3Validation] = useState(false);
     const [usernameAvailability, setUsernameAvailability] = useState<AvailabilityState>(neutralAvailabilityState);
-    const [emailAvailability, setEmailAvailability] = useState<AvailabilityState>(neutralAvailabilityState);
     const lastNameRef = useRef<TextInput | null>(null);
     const usernameRef = useRef<TextInput | null>(null);
-    const emailRef = useRef<TextInput | null>(null);
 
     useEffect(() => {
         let mounted = true;
@@ -133,7 +130,6 @@ const CreateProfileScreen = ({ navigation }: any) => {
         const rawUsername = asText((bootstrapUser as any).username);
         const rawFirstName = asText((bootstrapUser as any).first_name);
         const rawLastName = asText((bootstrapUser as any).last_name);
-        const rawEmail = asText((bootstrapUser as any).email);
         const rawNationality = asText((bootstrapUser as any).nationality);
 
         const authGiven = normalizeSpaces(asText(authUser?.givenName));
@@ -163,11 +159,6 @@ const CreateProfileScreen = ({ navigation }: any) => {
                 ? cleanUsernameCandidate(String(authEmail).split('@')[0] || '')
                 : '');
 
-        const emailCandidate =
-            looksLikeRealEmail(rawEmail)
-                ? rawEmail
-                : (looksLikeRealEmail(authEmail) ? authEmail : '');
-
         setUsername((prev) => {
             const current = String(prev || '').trim();
             if (current && !looksLikeAuthSubject(current)) return prev;
@@ -183,11 +174,6 @@ const CreateProfileScreen = ({ navigation }: any) => {
             if (current && !isPlaceholderName(current)) return prev;
             return lastCandidate;
         });
-        setEmail((prev) => {
-            const current = String(prev || '').trim();
-            if (current && looksLikeRealEmail(current)) return prev;
-            return emailCandidate;
-        });
         setNationality((prev) => prev || rawNationality);
         setBirthDate((prev) => prev || ((bootstrapUser as any).birthdate ? String((bootstrapUser as any).birthdate).slice(0, 10) : ''));
     }, [authBootstrap, authUser]);
@@ -199,14 +185,10 @@ const CreateProfileScreen = ({ navigation }: any) => {
     const canContinueStep2 = useMemo(
         () =>
             username.trim().length > 0 &&
-            email.trim().length > 0 &&
             usernameAvailability.valid &&
             usernameAvailability.available &&
-            emailAvailability.valid &&
-            emailAvailability.available &&
-            usernameAvailability.status !== 'checking' &&
-            emailAvailability.status !== 'checking',
-        [email, emailAvailability, username, usernameAvailability]
+            usernameAvailability.status !== 'checking',
+        [username, usernameAvailability]
     );
     const canSubmitStep3 = useMemo(
         () => nationality.trim().length > 0 && birthDate.trim().length > 0,
@@ -246,17 +228,6 @@ const CreateProfileScreen = ({ navigation }: any) => {
         if (reason === 'too_long') return t('Use 32 characters or fewer.');
         if (reason === 'invalid_format') return t('Use only letters, numbers, dots, underscores, or hyphens.');
         return t('This username is already in use.');
-    }, [t]);
-
-    const emailReasonMessage = useCallback((reason: string | null, provider?: AccountAvailabilityProvider | null) => {
-        if (reason === 'required') return t('Email is required.');
-        if (reason === 'invalid_format') return t('Enter a valid email address.');
-        if (provider) {
-            return t('This email is already linked to {{provider}}.', {
-                provider: formatAccountProvider(provider),
-            });
-        }
-        return t('This email is already in use.');
     }, [t]);
 
     useEffect(() => {
@@ -340,87 +311,6 @@ const CreateProfileScreen = ({ navigation }: any) => {
         };
     }, [accessToken, step, t, username, usernameReasonMessage]);
 
-    useEffect(() => {
-        if (step !== 2) return;
-        const value = email.trim();
-        if (!value) {
-            setEmailAvailability(neutralAvailabilityState());
-            return;
-        }
-        const reason = validateEmailInput(value);
-        if (reason) {
-            setEmailAvailability({
-                status: 'invalid',
-                message: emailReasonMessage(reason),
-                valid: false,
-                available: false,
-                provider: null,
-            });
-            return;
-        }
-        if (!accessToken) {
-            setEmailAvailability(neutralAvailabilityState());
-            return;
-        }
-
-        let cancelled = false;
-        setEmailAvailability({
-            status: 'checking',
-            message: t('Checking email...'),
-            valid: true,
-            available: false,
-            provider: null,
-        });
-
-        const timer = setTimeout(async () => {
-            try {
-                const res = await checkAccountAvailability(accessToken, { email: value });
-                if (cancelled) return;
-                const next = res.email;
-                if (!next) {
-                    setEmailAvailability(neutralAvailabilityState());
-                    return;
-                }
-                if (!next.valid) {
-                    setEmailAvailability({
-                        status: 'invalid',
-                        message: emailReasonMessage(next.reason ?? null, next.provider),
-                        valid: false,
-                        available: false,
-                        provider: next.provider ?? null,
-                    });
-                    return;
-                }
-                if (!next.available) {
-                    setEmailAvailability({
-                        status: 'taken',
-                        message: emailReasonMessage(next.reason ?? 'taken', next.provider),
-                        valid: true,
-                        available: false,
-                        provider: next.provider ?? null,
-                    });
-                    return;
-                }
-                setEmailAvailability({
-                    status: 'available',
-                    message: t('Email is available.'),
-                    valid: true,
-                    available: true,
-                    provider: null,
-                });
-            } catch {
-                if (!cancelled) {
-                    setEmailAvailability(neutralAvailabilityState());
-                }
-            }
-        }, 350);
-
-        return () => {
-            cancelled = true;
-            clearTimeout(timer);
-        };
-    }, [accessToken, email, emailReasonMessage, step, t]);
-
     const handleContinue = async () => {
         if (step === 1) {
             if (!canContinueStep1) {
@@ -452,7 +342,6 @@ const CreateProfileScreen = ({ navigation }: any) => {
                 username,
                 first_name: firstName,
                 last_name: lastName,
-                email,
                 nationality,
                 birthdate: birthDate,
             });
@@ -463,11 +352,6 @@ const CreateProfileScreen = ({ navigation }: any) => {
                 if (code === 'username_taken') {
                     setStep(2);
                     Alert.alert(t('Username unavailable'), t('This username is already in use.'));
-                    return;
-                }
-                if (code === 'email_taken') {
-                    setStep(2);
-                    Alert.alert(t('Email unavailable'), t('This email is already in use.'));
                     return;
                 }
             }
@@ -627,7 +511,7 @@ const CreateProfileScreen = ({ navigation }: any) => {
                                     value={username}
                                     onChangeText={(value) => {
                                         setUsername(value);
-                                        if (showStep2Validation && value.trim().length > 0 && email.trim().length > 0) {
+                                        if (showStep2Validation && value.trim().length > 0) {
                                             setShowStep2Validation(false);
                                         }
                                     }}
@@ -637,9 +521,7 @@ const CreateProfileScreen = ({ navigation }: any) => {
                                     autoCorrect={false}
                                     textContentType="username"
                                     autoComplete="username"
-                                    returnKeyType="next"
-                                    blurOnSubmit={false}
-                                    onSubmitEditing={() => emailRef.current?.focus()}
+                                    returnKeyType="done"
                                 />
                             </View>
                             {usernameAvailability.status !== 'idle' ? (
@@ -654,56 +536,6 @@ const CreateProfileScreen = ({ navigation }: any) => {
                                     ]}
                                 >
                                     {usernameAvailability.message}
-                                </Text>
-                            ) : null}
-                            <SizeBox height={24} />
-                            <Text style={Styles.label}>{t('Email')}</Text>
-                            <View
-                                style={[
-                                    Styles.inputContainer,
-                                    Styles.nativeInputRow,
-                                    { marginTop: 8 },
-                                    (showStep2Validation && email.trim().length === 0) ||
-                                    emailAvailability.status === 'invalid' ||
-                                    emailAvailability.status === 'taken'
-                                        ? { borderColor: colors.errorColor }
-                                        : null,
-                                ]}
-                            >
-                                <Icons.User height={16} width={16} />
-                                <SizeBox width={10} />
-                                <TextInput
-                                    ref={emailRef}
-                                    style={Styles.nativeInput}
-                                    value={email}
-                                    onChangeText={(value) => {
-                                        setEmail(value);
-                                        if (showStep2Validation && username.trim().length > 0 && value.trim().length > 0) {
-                                            setShowStep2Validation(false);
-                                        }
-                                    }}
-                                    placeholder={t('Enter Email')}
-                                    placeholderTextColor={colors.grayColor}
-                                    autoCapitalize="none"
-                                    autoCorrect={false}
-                                    textContentType="emailAddress"
-                                    autoComplete="email"
-                                    keyboardType="email-address"
-                                    returnKeyType="done"
-                                />
-                            </View>
-                            {emailAvailability.status !== 'idle' ? (
-                                <Text
-                                    style={[
-                                        Styles.helperText,
-                                        emailAvailability.status === 'available'
-                                            ? { color: colors.greenColor }
-                                            : emailAvailability.status === 'checking'
-                                                ? { color: colors.grayColor }
-                                                : { color: colors.errorColor },
-                                    ]}
-                                >
-                                    {emailAvailability.message}
                                 </Text>
                             ) : null}
                         </>
