@@ -18,7 +18,7 @@ import Images from '../../constants/Images';
 import { useTheme } from '../../context/ThemeContext';
 import { useAuth } from '../../context/AuthContext';
 import { useEvents } from '../../context/EventsContext';
-import { ApiError, getEventCompetitions, getProfileSummary, grantFaceRecognitionConsent, searchEvents, searchFaceByEnrollment } from '../../services/apiGateway';
+import { ApiError, getEventCompetitions, getProfileSummary, grantFaceRecognitionConsent, searchEvents, searchFaceByEnrollment, unsubscribeToEvent } from '../../services/apiGateway';
 import { useTranslation } from 'react-i18next';
 import {
     buildSubscriptionDisciplineOptions,
@@ -81,6 +81,8 @@ const AvailableEventsScreen = ({ navigation, route }: any) => {
     const [activeDateField, setActiveDateField] = useState<'start' | 'end' | null>(null);
     const [showSubscribeModal, setShowSubscribeModal] = useState(false);
     const [modalEvent, setModalEvent] = useState<any | null>(null);
+    const [unsubscribeEvent, setUnsubscribeEvent] = useState<any | null>(null);
+    const [isUnsubscribing, setIsUnsubscribing] = useState(false);
     const [subscribeStep, setSubscribeStep] = useState<0 | 1 | 2>(0);
     const [chestNumber, setChestNumber] = useState('');
     const [useDefaultChest, setUseDefaultChest] = useState(false);
@@ -98,7 +100,7 @@ const AvailableEventsScreen = ({ navigation, route }: any) => {
     const loadMoreLockedRef = useRef(false);
     const autoOpenRequestHandledRef = useRef<string>('');
     const { apiAccessToken, userProfile } = useAuth();
-    const { events: subscribedEvents } = useEvents();
+    const { events: subscribedEvents, refresh: refreshSubscribedEvents } = useEvents();
     const subscribedEventIdSet = useMemo(
         () =>
             new Set(
@@ -437,6 +439,7 @@ const AvailableEventsScreen = ({ navigation, route }: any) => {
         setModalEvent(null);
         resetSubscribeForm();
     }, [resetSubscribeForm]);
+
     const refreshProfileFaceState = useCallback(async () => {
         if (!apiAccessToken) {
             return {
@@ -768,6 +771,48 @@ const AvailableEventsScreen = ({ navigation, route }: any) => {
         }));
     };
 
+    const closeUnsubscribeModal = useCallback(() => {
+        if (isUnsubscribing) return;
+        setUnsubscribeEvent(null);
+    }, [isUnsubscribing]);
+
+    const confirmUnsubscribe = useCallback(async () => {
+        const eventId = String(unsubscribeEvent?.id ?? '').trim();
+        if (!eventId) {
+            setUnsubscribeEvent(null);
+            return;
+        }
+        if (!apiAccessToken) {
+            setUnsubscribeEvent(null);
+            Alert.alert(t('Upload unavailable'), t('Log in again to manage event subscriptions.'));
+            return;
+        }
+        try {
+            setIsUnsubscribing(true);
+            await unsubscribeToEvent(apiAccessToken, eventId);
+            await refreshSubscribedEvents();
+            setUnsubscribeEvent(null);
+        } catch (e: any) {
+            const msg = e instanceof ApiError ? e.message : String(e?.message ?? e);
+            Alert.alert(t('Subscription failed'), msg || t('Could not unsubscribe from this event.'));
+        } finally {
+            setIsUnsubscribing(false);
+        }
+    }, [apiAccessToken, refreshSubscribedEvents, t, unsubscribeEvent?.id]);
+
+    const handleEventCardPress = useCallback((eventItem: any) => {
+        const eventId = String(eventItem?.id ?? '').trim();
+        if (subscribedEventIdSet.has(eventId)) {
+            if (!apiAccessToken) {
+                Alert.alert(t('Upload unavailable'), t('Log in again to manage event subscriptions.'));
+                return;
+            }
+            setUnsubscribeEvent(eventItem);
+            return;
+        }
+        openSubscribeModal(eventItem);
+    }, [apiAccessToken, openSubscribeModal, subscribedEventIdSet, t]);
+
     const renderEventCard = (item: any) => {
         const isSubscribed = subscribedEventIdSet.has(String(item?.id ?? '').trim());
         return (
@@ -775,7 +820,7 @@ const AvailableEventsScreen = ({ navigation, route }: any) => {
             key={item.id}
             style={Styles.eventCard}
             activeOpacity={0.85}
-            onPress={() => openSubscribeModal(item)}
+            onPress={() => handleEventCardPress(item)}
             testID={`available-event-card-${item.id}`}
         >
             <View style={Styles.eventIconContainer}>
@@ -791,7 +836,7 @@ const AvailableEventsScreen = ({ navigation, route }: any) => {
                         </View>
                         {isSubscribed ? (
                             <View style={Styles.subscribedCheckBadge} testID={`available-event-subscribed-${item.id}`}>
-                                <Text style={Styles.subscribedCheckText}>✓</Text>
+                                <Text style={Styles.subscribedCheckText}>{'\u2713'}</Text>
                             </View>
                         ) : null}
                     </View>
@@ -976,8 +1021,40 @@ const AvailableEventsScreen = ({ navigation, route }: any) => {
                     </View>
                 )}
 
-                <SizeBox height={20} />
-            </ScrollView>
+            <SizeBox height={20} />
+        </ScrollView>
+
+            <Modal
+                visible={Boolean(unsubscribeEvent)}
+                transparent
+                animationType="fade"
+                onRequestClose={closeUnsubscribeModal}
+            >
+                <View style={Styles.modalBackdrop}>
+                    <Pressable style={{ position: 'absolute', top: 0, right: 0, bottom: 0, left: 0 }} onPress={closeUnsubscribeModal} />
+                    <View style={[Styles.modalCard, { width: modalWidth }]}>
+                        <Text style={Styles.modalTitle}>Do you want to unsubscribe from this event?</Text>
+                        <SizeBox height={16} />
+                        <View style={Styles.modalButtonsRow}>
+                            <TouchableOpacity
+                                style={Styles.modalCancelButton}
+                                onPress={closeUnsubscribeModal}
+                                disabled={isUnsubscribing}
+                            >
+                                <Text style={Styles.modalCancelText}>Cancel</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                                style={[Styles.modalConfirmButton, isUnsubscribing && Styles.modalConfirmButtonDisabled]}
+                                onPress={confirmUnsubscribe}
+                                disabled={isUnsubscribing}
+                                testID="available-event-unsubscribe-confirm"
+                            >
+                                <Text style={Styles.modalConfirmText}>Yes</Text>
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+                </View>
+            </Modal>
 
             <Modal
                 visible={showSubscribeModal}
