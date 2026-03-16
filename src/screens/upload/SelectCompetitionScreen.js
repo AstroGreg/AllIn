@@ -8,7 +8,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 import { jsx as _jsx, jsxs as _jsxs, Fragment as _Fragment } from "react/jsx-runtime";
-import { View, Text, TouchableOpacity, ScrollView, TextInput, ActivityIndicator, Modal, Pressable, Alert, Platform } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, TextInput, ActivityIndicator, Modal, Pressable, Platform } from 'react-native';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import FastImage from 'react-native-fast-image';
@@ -17,7 +17,7 @@ import { createStyles } from './SelectCompetitionStyles';
 import SizeBox from '../../constants/SizeBox';
 import { useTheme } from '../../context/ThemeContext';
 import { useAuth } from '../../context/AuthContext';
-import { ApiError, getMediaViewAll, getSubscribedEvents, searchEvents, subscribeToEvent } from '../../services/apiGateway';
+import { ApiError, getMediaViewAll, getSubscribedEvents, searchEvents } from '../../services/apiGateway';
 import { getApiBaseUrl } from '../../constants/RuntimeConfig';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { useTranslation } from 'react-i18next';
@@ -106,7 +106,6 @@ const SelectCompetitionScreen = ({ navigation, route }) => {
     const [errorText, setErrorText] = useState(null);
     const [subscribePromptVisible, setSubscribePromptVisible] = useState(false);
     const [pendingCompetition, setPendingCompetition] = useState(null);
-    const [isSubscribing, setIsSubscribing] = useState(false);
     const [visibleCompetitionCount, setVisibleCompetitionCount] = useState(UPLOAD_DEFAULT_INITIAL_LIMIT);
     const loadMoreLockedRef = useRef(false);
     const perfReady = !isLoading && (rawEvents.length > 0 || errorText !== null);
@@ -120,7 +119,6 @@ const SelectCompetitionScreen = ({ navigation, route }) => {
         setCalendarEnd(null);
         setSubscribePromptVisible(false);
         setPendingCompetition(null);
-        setIsSubscribing(false);
     }, []);
     const isSignedUrl = useCallback((value) => {
         if (!value)
@@ -574,43 +572,28 @@ const SelectCompetitionScreen = ({ navigation, route }) => {
         setPendingCompetition(competition);
         setSubscribePromptVisible(true);
     }, [continueToCompetition, subscribedEventIds]);
-    const handleConfirmSubscribe = useCallback(() => __awaiter(void 0, void 0, void 0, function* () {
-        var _g;
-        if (!pendingCompetition)
-            return;
-        if (isFixtureMode && !apiAccessToken) {
-            setSubscribedEventIds((prev) => {
-                const next = new Set(prev);
-                next.add(String(pendingCompetition.id));
-                return next;
-            });
-            setSubscribePromptVisible(false);
-            continueToCompetition(pendingCompetition);
-            return;
-        }
-        if (!apiAccessToken) {
-            Alert.alert(t('Upload unavailable'), t('Log in to upload to a competition.'));
-            return;
-        }
-        setIsSubscribing(true);
-        try {
-            yield subscribeToEvent(apiAccessToken, pendingCompetition.id);
-            setSubscribedEventIds((prev) => {
-                const next = new Set(prev);
-                next.add(String(pendingCompetition.id));
-                return next;
-            });
-            setSubscribePromptVisible(false);
-            continueToCompetition(pendingCompetition);
-        }
-        catch (e) {
-            const msg = e instanceof ApiError ? e.message : String((_g = e === null || e === void 0 ? void 0 : e.message) !== null && _g !== void 0 ? _g : e);
-            Alert.alert(t('Subscription failed'), msg || t('Could not subscribe to this event.'));
-        }
-        finally {
-            setIsSubscribing(false);
-        }
-    }), [apiAccessToken, continueToCompetition, isFixtureMode, pendingCompetition, t]);
+    const handleConfirmSubscribe = useCallback(() => {
+        const targetCompetition = pendingCompetition;
+        setSubscribePromptVisible(false);
+        setPendingCompetition(null);
+        navigation.navigate('BottomTabBar', {
+            screen: 'Home',
+            params: {
+                screen: 'AvailableEventsScreen',
+                params: targetCompetition
+                    ? {
+                        autoOpenSubscribeEventId: String(targetCompetition.id),
+                        autoOpenSubscribeRequestId: String(Date.now()),
+                        autoOpenSubscribeEventTitle: String(targetCompetition.name || ''),
+                        autoOpenSubscribeEventDate: String(targetCompetition.date || ''),
+                        autoOpenSubscribeEventLocation: String(targetCompetition.location || ''),
+                        autoOpenSubscribeEventCompetitionType: targetCompetition.competitionType,
+                        autoOpenSubscribeEventOrganizingClub: String(targetCompetition.organizingClub || ''),
+                    }
+                    : undefined,
+            },
+        });
+    }, [navigation, pendingCompetition]);
     const handleSkipSubscribe = useCallback(() => {
         if (!pendingCompetition) {
             setSubscribePromptVisible(false);
@@ -627,10 +610,8 @@ const SelectCompetitionScreen = ({ navigation, route }) => {
                                         label: getSportFocusLabel(focusId, t),
                                     })),
                                 ].map((tab) => (_jsx(TouchableOpacity, Object.assign({ style: [Styles.typeFilterChip, eventTypeFilter === tab.key && Styles.typeFilterChipActive], onPress: () => setEventTypeFilter(tab.key) }, { children: _jsx(Text, Object.assign({ style: [Styles.typeFilterChipText, eventTypeFilter === tab.key && Styles.typeFilterChipTextActive] }, { children: tab.label })) }), tab.key))) }))] })), _jsx(SizeBox, { height: 12 }), _jsxs(View, Object.assign({ style: Styles.activeChipsContainer }, { children: [filterValues.Competition.trim().length > 0 && (_jsx(View, Object.assign({ style: Styles.activeChip }, { children: _jsxs(Text, Object.assign({ style: Styles.activeChipText }, { children: [t('Competition'), ": ", filterValues.Competition] })) }))), filterValues.Location.trim().length > 0 && (_jsx(View, Object.assign({ style: Styles.activeChip }, { children: _jsxs(Text, Object.assign({ style: Styles.activeChipText }, { children: [t('Location'), ": ", filterValues.Location] })) }))), _jsxs(TouchableOpacity, Object.assign({ style: [Styles.timeRangeChip, timeRange.start && timeRange.end && Styles.timeRangeChipActive], onPress: openDateTimePicker }, { children: [_jsx(Calendar, { size: 14, color: timeRange.start ? colors.primaryColor : colors.grayColor, variant: "Linear" }), _jsx(Text, Object.assign({ style: [Styles.timeRangeText, timeRange.start && Styles.timeRangeTextActive] }, { children: timeRange.start && timeRange.end ? timeRangeLabel : t('selectDateRange') }))] }))] })), _jsxs(View, Object.assign({ style: Styles.resultsHeader }, { children: [_jsx(Text, Object.assign({ style: Styles.resultsTitle }, { children: t('availableCompetitions') })), _jsx(View, Object.assign({ style: Styles.resultsCountBadge }, { children: _jsx(Text, Object.assign({ style: Styles.resultsCountText }, { children: isLoading ? '...' : `${filteredCompetitions.length} ${t('competitions')}` })) }))] })), _jsx(SizeBox, { height: 16 }), isLoading && filteredCompetitions.length === 0 && (_jsxs(View, Object.assign({ style: Styles.loadingRow }, { children: [_jsx(ActivityIndicator, { color: colors.primaryColor }), _jsx(Text, Object.assign({ style: Styles.loadingText }, { children: t('loadingCompetitions') }))] }))), !isLoading && errorText && (_jsx(Text, Object.assign({ style: Styles.errorText }, { children: errorText }))), visibleCompetitions.length > 0 ? (visibleCompetitions.map(renderCompetitionCard)) : !isLoading ? (_jsx(Text, Object.assign({ style: Styles.loadingText }, { children: hasTypedQuery ? t('No competitions found') : t('No competitions available yet.') }))) : (_jsx(_Fragment, {})), _jsx(SizeBox, { height: insets.bottom > 0 ? insets.bottom + 20 : 40 })] })), _jsx(Modal, Object.assign({ visible: subscribePromptVisible, transparent: true, animationType: "fade", onRequestClose: () => setSubscribePromptVisible(false) }, { children: _jsxs(View, Object.assign({ style: Styles.modalOverlay }, { children: [_jsx(Pressable, { style: { position: 'absolute', top: 0, bottom: 0, left: 0, right: 0 }, onPress: () => {
-                                if (isSubscribing)
-                                    return;
                                 setSubscribePromptVisible(false);
-                            } }), _jsxs(View, Object.assign({ style: Styles.subscribeModalContainer }, { children: [_jsx(Text, Object.assign({ style: Styles.subscribeModalTitle }, { children: t('Subscribe to event') })), _jsx(SizeBox, { height: 8 }), _jsx(Text, Object.assign({ style: Styles.subscribeModalText }, { children: t('Do you want to subscribe to this event before uploading?') })), _jsx(SizeBox, { height: 14 }), _jsxs(View, Object.assign({ style: Styles.subscribeButtonRow }, { children: [_jsx(TouchableOpacity, Object.assign({ style: Styles.subscribeNoButton, disabled: isSubscribing, onPress: handleSkipSubscribe, testID: "upload-subscribe-skip" }, { children: _jsx(Text, Object.assign({ style: Styles.subscribeNoText }, { children: t('No') })) })), _jsx(TouchableOpacity, Object.assign({ style: [Styles.subscribeYesButton, isSubscribing && Styles.modalSubmitButtonDisabled], disabled: isSubscribing, onPress: handleConfirmSubscribe, testID: "upload-subscribe-confirm" }, { children: _jsx(Text, Object.assign({ style: Styles.subscribeYesText }, { children: isSubscribing ? t('Loading...') : t('Yes') })) }))] }))] }))] })) })), _jsx(Modal, Object.assign({ visible: showCalendar, transparent: true, animationType: "fade", onRequestClose: () => {
+                            } }), _jsxs(View, Object.assign({ style: Styles.subscribeModalContainer }, { children: [_jsx(Text, Object.assign({ style: Styles.subscribeModalTitle }, { children: t('Subscribe to event') })), _jsx(SizeBox, { height: 8 }), _jsx(Text, Object.assign({ style: Styles.subscribeModalText }, { children: t('You need to subscribe this event before uploading') })), _jsx(SizeBox, { height: 14 }), _jsxs(View, Object.assign({ style: Styles.subscribeButtonRow }, { children: [_jsx(TouchableOpacity, Object.assign({ style: Styles.subscribeNoButton, onPress: handleSkipSubscribe, testID: "upload-subscribe-skip" }, { children: _jsx(Text, Object.assign({ style: Styles.subscribeNoText }, { children: t('Cancel') })) })), _jsx(TouchableOpacity, Object.assign({ style: Styles.subscribeYesButton, onPress: handleConfirmSubscribe, testID: "upload-subscribe-confirm" }, { children: _jsx(Text, Object.assign({ style: Styles.subscribeYesText }, { children: t('Oke') })) }))] }))] }))] })) })), _jsx(Modal, Object.assign({ visible: showCalendar, transparent: true, animationType: "fade", onRequestClose: () => {
                     setShowCalendar(false);
                     closeNativePicker();
                 } }, { children: _jsxs(View, Object.assign({ style: Styles.modalOverlay }, { children: [_jsx(Pressable, { style: { position: 'absolute', top: 0, bottom: 0, left: 0, right: 0 }, onPress: () => {

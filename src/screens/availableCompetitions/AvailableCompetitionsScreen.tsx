@@ -46,7 +46,7 @@ const COMPETITION_TYPE_FILTERS: Array<{ key: CompetitionTypeFilter; focusId?: Sp
 const DEFAULT_EVENTS_INITIAL_LIMIT = 10;
 const SEARCH_EVENTS_INITIAL_LIMIT = 20;
 const SCROLL_LOAD_THRESHOLD_PX = 220;
-const AvailableEventsScreen = ({ navigation }: any) => {
+const AvailableEventsScreen = ({ navigation, route }: any) => {
     const insets = useSafeAreaInsets();
     const { width: windowWidth } = useWindowDimensions();
     const { colors } = useTheme();
@@ -95,6 +95,7 @@ const AvailableEventsScreen = ({ navigation }: any) => {
     const [profileFaceVerified, setProfileFaceVerified] = useState<boolean | null>(null);
     const [profileFaceConsentGranted, setProfileFaceConsentGranted] = useState<boolean | null>(null);
     const loadMoreLockedRef = useRef(false);
+    const autoOpenRequestHandledRef = useRef<string>('');
     const { apiAccessToken, userProfile } = useAuth();
     const getYearFromDateLike = useCallback((value?: string | null) => {
         const raw = String(value ?? '').trim();
@@ -370,6 +371,55 @@ const AvailableEventsScreen = ({ navigation }: any) => {
                 setSubscribeDisciplinesLoading(false);
             });
     }, [apiAccessToken, resetSubscribeForm]);
+
+    useEffect(() => {
+        const requestId = String(route?.params?.autoOpenSubscribeRequestId ?? '').trim();
+        const targetEventId = String(route?.params?.autoOpenSubscribeEventId ?? '').trim();
+        if (!requestId || !targetEventId) return;
+        if (autoOpenRequestHandledRef.current === requestId) return;
+        if (isLoadingEvents) return;
+
+        const matchedEvent = availableEvents.find((event) => String(event?.id ?? '').trim() === targetEventId);
+        const fallbackEvent = {
+            id: targetEventId,
+            title: String(route?.params?.autoOpenSubscribeEventTitle ?? ''),
+            date: String(route?.params?.autoOpenSubscribeEventDate ?? ''),
+            location: String(route?.params?.autoOpenSubscribeEventLocation ?? ''),
+            competitionType: resolveCompetitionType({
+                type: route?.params?.autoOpenSubscribeEventCompetitionType ?? null,
+                name: route?.params?.autoOpenSubscribeEventTitle ?? null,
+                location: route?.params?.autoOpenSubscribeEventLocation ?? null,
+                organizer: route?.params?.autoOpenSubscribeEventOrganizingClub ?? null,
+            }),
+            organizingClub: String(route?.params?.autoOpenSubscribeEventOrganizingClub ?? ''),
+            thumbnail: Images.photo4,
+        };
+
+        openSubscribeModal(matchedEvent ?? fallbackEvent);
+        autoOpenRequestHandledRef.current = requestId;
+        navigation.setParams?.({
+            autoOpenSubscribeRequestId: undefined,
+            autoOpenSubscribeEventId: undefined,
+            autoOpenSubscribeEventTitle: undefined,
+            autoOpenSubscribeEventDate: undefined,
+            autoOpenSubscribeEventLocation: undefined,
+            autoOpenSubscribeEventCompetitionType: undefined,
+            autoOpenSubscribeEventOrganizingClub: undefined,
+        });
+    }, [
+        availableEvents,
+        isLoadingEvents,
+        navigation,
+        openSubscribeModal,
+        resolveCompetitionType,
+        route?.params?.autoOpenSubscribeEventCompetitionType,
+        route?.params?.autoOpenSubscribeEventDate,
+        route?.params?.autoOpenSubscribeEventId,
+        route?.params?.autoOpenSubscribeEventLocation,
+        route?.params?.autoOpenSubscribeEventOrganizingClub,
+        route?.params?.autoOpenSubscribeEventTitle,
+        route?.params?.autoOpenSubscribeRequestId,
+    ]);
 
     const closeSubscribeModal = useCallback(() => {
         setShowSubscribeModal(false);
