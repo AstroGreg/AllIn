@@ -383,7 +383,7 @@ const CompleteAthleteDetailsScreen = ({ navigation, route }) => {
                 trackFieldMainEvent: String(normalizedMainDisciplines['track-field'] || '').trim(),
                 roadTrailMainEvent: String(normalizedMainDisciplines['road-events'] || '').trim(),
                 mainDisciplines: normalizedMainDisciplines,
-            }, { persistLocally: false });
+            });
             const targetFocus = (_k = (_j = (_h = flowSelectedFocuses[0]) !== null && _h !== void 0 ? _h : persistedSelectedFocuses[0]) !== null && _j !== void 0 ? _j : nextSelectedEvents[0]) !== null && _k !== void 0 ? _k : null;
             navigation.dispatch(CommonActions.reset(buildBottomTabUserProfileReset(targetFocus ? { forceProfileCategory: targetFocus } : undefined)));
         }

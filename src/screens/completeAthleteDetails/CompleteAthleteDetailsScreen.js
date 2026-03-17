@@ -48,6 +48,7 @@ const CompleteAthleteDetailsScreen = ({ navigation, route }) => {
     const persistedSelectedFocuses = useMemo(() => { var _a, _b, _c; return normalizeSelectedEvents((_c = (_b = (_a = route === null || route === void 0 ? void 0 : route.params) === null || _a === void 0 ? void 0 : _a.selectedEvents) !== null && _b !== void 0 ? _b : userProfile === null || userProfile === void 0 ? void 0 : userProfile.selectedEvents) !== null && _c !== void 0 ? _c : []); }, [(_a = route === null || route === void 0 ? void 0 : route.params) === null || _a === void 0 ? void 0 : _a.selectedEvents, userProfile === null || userProfile === void 0 ? void 0 : userProfile.selectedEvents]);
     const flowSelectedFocuses = useMemo(() => { var _a, _b, _c, _d; return normalizeSelectedEvents((_d = (_b = (_a = route === null || route === void 0 ? void 0 : route.params) === null || _a === void 0 ? void 0 : _a.flowSelectedEvents) !== null && _b !== void 0 ? _b : (_c = route === null || route === void 0 ? void 0 : route.params) === null || _c === void 0 ? void 0 : _c.selectedEvents) !== null && _d !== void 0 ? _d : []); }, [(_b = route === null || route === void 0 ? void 0 : route.params) === null || _b === void 0 ? void 0 : _b.flowSelectedEvents, (_c = route === null || route === void 0 ? void 0 : route.params) === null || _c === void 0 ? void 0 : _c.selectedEvents]);
     const selectedFocuses = flowSelectedFocuses.length > 0 ? flowSelectedFocuses : persistedSelectedFocuses;
+    const existingSelectedFocuses = useMemo(() => { var _a, _b; return normalizeSelectedEvents((_b = (_a = userProfile === null || userProfile === void 0 ? void 0 : userProfile.selectedEvents) !== null && _a !== void 0 ? _a : []) !== null && _b !== void 0 ? _b : []); }, [userProfile === null || userProfile === void 0 ? void 0 : userProfile.selectedEvents]);
     const currentYear = useMemo(() => String(new Date().getFullYear()), []);
     const showsChestNumbers = useMemo(() => selectedFocuses.some((focusId) => focusUsesChestNumbers(focusId)), [selectedFocuses]);
     const clubSearchFocuses = useMemo(() => getOfficialClubSearchFocuses(selectedFocuses), [selectedFocuses]);
@@ -360,7 +361,10 @@ const CompleteAthleteDetailsScreen = ({ navigation, route }) => {
                 acc[safeFocus] = safeDiscipline;
                 return acc;
             }, {});
+            const nextSelectedEvents = Array.from(new Set([...existingSelectedFocuses, ...selectedFocuses]));
             yield updateUserProfile({
+                category: 'find',
+                selectedEvents: nextSelectedEvents,
                 website: String(website || '').trim(),
                 chestNumbersByYear: normalizedChest,
                 trackFieldClub: String(clubName || '').trim(),
