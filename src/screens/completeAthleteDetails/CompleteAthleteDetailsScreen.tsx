@@ -263,7 +263,7 @@ const CompleteAthleteDetailsScreen = ({ navigation, route }: any) => {
                 trackFieldMainEvent: String(normalizedFocusDisciplines['track-field'] || '').trim(),
                 roadTrailMainEvent: String(normalizedFocusDisciplines['road-events'] || '').trim(),
                 mainDisciplines: normalizedFocusDisciplines,
-            } as any, { persistLocally: false });
+            } as any);
 
             navigation.goBack();
         } catch (e: any) {

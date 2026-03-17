@@ -63,7 +63,7 @@ const buildAuthorizeRequest = (mode: AuthFlowMode, connection?: string) => {
     }
 
     const authorizeParams: Record<string, any> = {
-        scope: 'openid profile email read:users write:media access:ai search:media list:media read:media',
+        scope: 'openid profile email offline_access read:users write:media access:ai search:media list:media read:media',
         audience: AUTH0_AUDIENCE,
         redirectUrl: AUTH0_REDIRECT_URI,
         ...(connection ? { connection } : {}),
@@ -250,6 +250,72 @@ const logApiTokenDebug = (label: string, token?: string | null) => {
         permissions: payload.permissions ?? null,
         sub: payload.sub ?? null,
     });
+};
+
+const pickCredentialValue = (credentials: any, camelKey: string, snakeKey: string) => {
+    if (!credentials || typeof credentials !== 'object') return undefined;
+    if (credentials[camelKey] != null) return credentials[camelKey];
+    if (credentials[snakeKey] != null) return credentials[snakeKey];
+    return undefined;
+};
+
+const normalizeCredentials = (credentials: any): Credentials | null => {
+    const accessToken = String(pickCredentialValue(credentials, 'accessToken', 'access_token') ?? '').trim();
+    if (!accessToken) return null;
+
+    const normalized: Credentials = {
+        ...(credentials && typeof credentials === 'object' ? credentials : {}),
+        accessToken,
+    };
+
+    const idTokenRaw = pickCredentialValue(credentials, 'idToken', 'id_token');
+    const refreshTokenRaw = pickCredentialValue(credentials, 'refreshToken', 'refresh_token');
+    const tokenTypeRaw = pickCredentialValue(credentials, 'tokenType', 'token_type');
+    const scopeRaw = pickCredentialValue(credentials, 'scope', 'scope');
+    const expiresAtRaw = pickCredentialValue(credentials, 'expiresAt', 'expires_at');
+    const expiresInRaw = pickCredentialValue(credentials, 'expiresIn', 'expires_in');
+
+    const idToken = idTokenRaw == null ? '' : String(idTokenRaw).trim();
+    const refreshToken = refreshTokenRaw == null ? '' : String(refreshTokenRaw).trim();
+    const tokenType = tokenTypeRaw == null ? '' : String(tokenTypeRaw).trim();
+    const scope = scopeRaw == null ? '' : String(scopeRaw).trim();
+    const parsedExpiresAt = Number(expiresAtRaw);
+    const parsedExpiresIn = Number(expiresInRaw);
+    const expiresAt = Number.isFinite(parsedExpiresAt)
+        ? parsedExpiresAt
+        : Number.isFinite(parsedExpiresIn)
+            ? Math.floor(Date.now() / 1000) + parsedExpiresIn
+            : undefined;
+
+    if (idToken) (normalized as any).idToken = idToken;
+    if (refreshToken) (normalized as any).refreshToken = refreshToken;
+    if (tokenType) (normalized as any).tokenType = tokenType;
+    if (scope) (normalized as any).scope = scope;
+    if (expiresAt) (normalized as any).expiresAt = expiresAt;
+
+    return normalized;
+};
+
+const toCredentialsManagerPayload = (credentials: any): any | null => {
+    const normalized = normalizeCredentials(credentials);
+    if (!normalized) return null;
+
+    const accessToken = String((normalized as any).accessToken ?? '').trim();
+    const idToken = String((normalized as any).idToken ?? '').trim();
+    const refreshToken = String((normalized as any).refreshToken ?? '').trim();
+    const tokenType = String((normalized as any).tokenType ?? 'Bearer').trim();
+    const parsedExpiresAt = Number((normalized as any).expiresAt);
+    const expiresAt = Number.isFinite(parsedExpiresAt) ? parsedExpiresAt : undefined;
+
+    if (!accessToken || !idToken || !refreshToken || !expiresAt) return null;
+    return {
+        ...normalized,
+        accessToken,
+        idToken,
+        refreshToken,
+        tokenType,
+        expiresAt,
+    };
 };
 
 const asNonEmptyText = (value: any): string | null => {
@@ -589,12 +655,36 @@ export const AuthProvider = ({
             } catch (err: any) {
                 console.log('[Auth] Could not clear stored profile:', err?.message ?? err);
             }
+            const auth0 = getAuth0();
+            if (auth0?.credentialsManager?.clearCredentials) {
+                try {
+                    await auth0.credentialsManager.clearCredentials();
+                } catch (err: any) {
+                    console.log('[Auth] Could not clear secure credentials:', err?.message ?? err);
+                }
+            }
         }
         setUser(null);
         setUserProfile(null);
         setAuthBootstrap(null);
         setAccessToken(null);
         setIsAuthenticated(false);
+    }, []);
+
+    const getManagedCredentials = useCallback(async (): Promise<Credentials | null> => {
+        const auth0 = getAuth0();
+        if (!auth0?.credentialsManager?.getCredentials) return null;
+        try {
+            const managed = await auth0.credentialsManager.getCredentials();
+            const normalized = normalizeCredentials(managed);
+            if (!normalized?.accessToken) return null;
+            await AsyncStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(normalized));
+            logApiTokenDebug('credentials-manager', normalized.accessToken);
+            return normalized;
+        } catch (err: any) {
+            console.log('[Auth] Could not restore credentials from manager:', err?.message ?? err);
+            return null;
+        }
     }, []);
 
     const syncProfileFromServer = useCallback(async (
@@ -652,59 +742,61 @@ export const AuthProvider = ({
     const checkStoredCredentials = useCallback(async () => {
         console.log('[Auth] Checking stored credentials...');
         try {
-            const storedCredentials = await AsyncStorage.getItem(AUTH_STORAGE_KEY);
             const storedProfile = await loadStoredProfile();
-
-            if (storedCredentials) {
-                console.log('[Auth] Found stored credentials');
-                const credentials = JSON.parse(storedCredentials);
-
-                if (credentials.accessToken) {
-                    logApiTokenDebug('stored-session', credentials.accessToken);
-                    let userInfo: User | null = null;
-
-                    if (credentials.idToken) {
-                        try {
-                            const idTokenParts = credentials.idToken.split('.');
-                            if (idTokenParts.length === 3) {
-                                const payload = JSON.parse(atob(idTokenParts[1]));
-                                if (payload.exp && payload.exp * 1000 > Date.now()) {
-                                    console.log('[Auth] ID token valid, user:', payload.email);
-                                    userInfo = {
-                                        sub: payload.sub,
-                                        name: payload.name,
-                                        givenName: payload.given_name,
-                                        familyName: payload.family_name,
-                                        nickname: payload.nickname,
-                                        email: payload.email,
-                                        emailVerified: payload.email_verified,
-                                        picture: payload.picture,
-                                    } as User;
-                                } else {
-                                    console.log('[Auth] ID token expired');
-                                }
-                            }
-                        } catch (decodeError: any) {
-                            console.log('[Auth] Failed to decode ID token:', decodeError.message);
-                        }
-                    }
-
-                    if (!userInfo) {
-                        const auth0 = getAuth0();
-                        if (auth0) {
-                            try {
-                                userInfo = await auth0.auth.userInfo({ token: credentials.accessToken });
-                            } catch (userInfoError: any) {
-                                console.log('[Auth] Could not fetch userInfo during restore:', userInfoError?.message ?? userInfoError);
-                            }
-                        }
-                    }
-
-                    await finalizeAuthenticatedSession(credentials, userInfo, 'restore', {
-                        allowBootstrapFailure: true,
-                        fallbackProfile: storedProfile,
-                    });
+            let credentials = await getManagedCredentials();
+            if (!credentials) {
+                const storedCredentialsRaw = await AsyncStorage.getItem(AUTH_STORAGE_KEY);
+                if (storedCredentialsRaw) {
+                    console.log('[Auth] Found stored credentials');
+                    credentials = normalizeCredentials(JSON.parse(storedCredentialsRaw));
                 }
+            }
+
+            if (credentials?.accessToken) {
+                logApiTokenDebug('stored-session', credentials.accessToken);
+                let userInfo: User | null = null;
+
+                if (credentials.idToken) {
+                    try {
+                        const idTokenParts = credentials.idToken.split('.');
+                        if (idTokenParts.length === 3) {
+                            const payload = JSON.parse(atob(idTokenParts[1]));
+                            if (payload.exp && payload.exp * 1000 > Date.now()) {
+                                console.log('[Auth] ID token valid, user:', payload.email);
+                                userInfo = {
+                                    sub: payload.sub,
+                                    name: payload.name,
+                                    givenName: payload.given_name,
+                                    familyName: payload.family_name,
+                                    nickname: payload.nickname,
+                                    email: payload.email,
+                                    emailVerified: payload.email_verified,
+                                    picture: payload.picture,
+                                } as User;
+                            } else {
+                                console.log('[Auth] ID token expired');
+                            }
+                        }
+                    } catch (decodeError: any) {
+                        console.log('[Auth] Failed to decode ID token:', decodeError.message);
+                    }
+                }
+
+                if (!userInfo) {
+                    const auth0 = getAuth0();
+                    if (auth0) {
+                        try {
+                            userInfo = await auth0.auth.userInfo({ token: credentials.accessToken });
+                        } catch (userInfoError: any) {
+                            console.log('[Auth] Could not fetch userInfo during restore:', userInfoError?.message ?? userInfoError);
+                        }
+                    }
+                }
+
+                await finalizeAuthenticatedSession(credentials, userInfo, 'restore', {
+                    allowBootstrapFailure: true,
+                    fallbackProfile: storedProfile,
+                });
             } else {
                 console.log('[Auth] No stored credentials found');
             }
@@ -714,7 +806,7 @@ export const AuthProvider = ({
         } finally {
             setIsLoading(false);
         }
-    }, [clearAuthSessionState, finalizeAuthenticatedSession, loadStoredProfile]);
+    }, [clearAuthSessionState, finalizeAuthenticatedSession, getManagedCredentials, loadStoredProfile]);
 
     // Check for stored credentials on app start
     useEffect(() => {
@@ -751,7 +843,20 @@ export const AuthProvider = ({
 
     const storeCredentials = async (credentials: Credentials) => {
         try {
-            await AsyncStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(credentials));
+            const normalized = normalizeCredentials(credentials);
+            const serializable = normalized ?? credentials;
+            await AsyncStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(serializable));
+            const managerPayload = toCredentialsManagerPayload(serializable);
+            if (managerPayload) {
+                const auth0 = getAuth0();
+                if (auth0?.credentialsManager?.saveCredentials) {
+                    try {
+                        await auth0.credentialsManager.saveCredentials(managerPayload);
+                    } catch (err: any) {
+                        console.log('[Auth] Could not persist secure credentials:', err?.message ?? err);
+                    }
+                }
+            }
         } catch (err) {
             console.error('Error storing credentials:', err);
         }
@@ -1132,6 +1237,13 @@ export const AuthProvider = ({
                     console.log('[Auth] Hosted Auth0 session clear skipped:', clearSessionError?.message ?? clearSessionError);
                 }
             }
+            if (auth0?.credentialsManager?.clearCredentials) {
+                try {
+                    await auth0.credentialsManager.clearCredentials();
+                } catch (clearCredentialsError: any) {
+                    console.log('[Auth] Secure credentials clear skipped:', clearCredentialsError?.message ?? clearCredentialsError);
+                }
+            }
             await AsyncStorage.removeItem(AUTH_STORAGE_KEY);
             await AsyncStorage.removeItem('@dev_api_token');
             await clearAuthSessionState(false);
@@ -1144,14 +1256,21 @@ export const AuthProvider = ({
 
     const apiAccessToken = accessToken;
 
-    const refreshAuthBootstrap = async (): Promise<AuthBootstrapResponse | null> => {
+    const refreshAuthBootstrap = useCallback(async (): Promise<AuthBootstrapResponse | null> => {
         let token = accessToken;
+        if (!token) {
+            const managed = await getManagedCredentials();
+            token = managed?.accessToken ?? null;
+            if (token) {
+                setAccessToken(token);
+            }
+        }
         if (!token) {
             try {
                 const storedCredentials = await AsyncStorage.getItem(AUTH_STORAGE_KEY);
                 if (storedCredentials) {
                     const parsed = JSON.parse(storedCredentials);
-                    token = parsed?.accessToken ?? null;
+                    token = normalizeCredentials(parsed)?.accessToken ?? null;
                 }
             } catch (err: any) {
                 console.log('[Auth] refreshAuthBootstrap could not read stored credentials:', err?.message ?? err);
@@ -1162,7 +1281,7 @@ export const AuthProvider = ({
         setAuthBootstrap(payload);
         await syncProfileFromServer(token, payload);
         return payload;
-    };
+    }, [accessToken, getManagedCredentials, syncProfileFromServer]);
 
     const updateUserAccount = async (input: UpdateUserMeInput): Promise<AuthBootstrapResponse | null> => {
         if (!accessToken) {

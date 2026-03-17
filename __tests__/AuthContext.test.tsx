@@ -8,6 +8,10 @@ const mockUpdateUserMe = jest.fn();
 const mockUserInfo = jest.fn();
 const mockAuthorize = jest.fn();
 const mockClearSession = jest.fn();
+const mockManagerGetCredentials = jest.fn();
+const mockManagerSaveCredentials = jest.fn();
+const mockManagerClearCredentials = jest.fn();
+const mockManagerHasValidCredentials = jest.fn();
 
 jest.mock('../src/constants/AppConfig', () => ({
   AppConfig: {
@@ -45,6 +49,12 @@ jest.mock('react-native-auth0', () =>
     webAuth: {
       authorize: mockAuthorize,
       clearSession: mockClearSession,
+    },
+    credentialsManager: {
+      getCredentials: mockManagerGetCredentials,
+      saveCredentials: mockManagerSaveCredentials,
+      clearCredentials: mockManagerClearCredentials,
+      hasValidCredentials: mockManagerHasValidCredentials,
     },
   })),
 );
@@ -96,6 +106,10 @@ describe('AuthProvider bootstrap', () => {
     mockUserInfo.mockReset();
     mockAuthorize.mockReset();
     mockClearSession.mockReset();
+    mockManagerGetCredentials.mockReset();
+    mockManagerSaveCredentials.mockReset();
+    mockManagerClearCredentials.mockReset();
+    mockManagerHasValidCredentials.mockReset();
     jest.spyOn(console, 'log').mockImplementation(() => {});
   });
 
@@ -557,5 +571,71 @@ describe('AuthProvider bootstrap', () => {
         mainDisciplines: {'track-field': '400m'},
       }),
     );
+  });
+
+  test('restore prefers credentials manager token refresh over stale async storage token', async () => {
+    const idTokenPayload = {
+      sub: 'auth0|runner-refresh',
+      email: 'refresh@example.com',
+      exp: Math.floor(Date.now() / 1000) + 3600,
+    };
+    const toBase64Url = (value: any) => Buffer.from(JSON.stringify(value)).toString('base64url');
+    const idToken = `${toBase64Url({alg: 'RS256', typ: 'JWT'})}.${toBase64Url(idTokenPayload)}.sig`;
+
+    mockStorage.set(
+      AUTH_STORAGE_KEY,
+      JSON.stringify({
+        accessToken: 'stale-token',
+      }),
+    );
+    mockManagerGetCredentials.mockResolvedValue({
+      accessToken: 'fresh-token',
+      idToken,
+      refreshToken: 'refresh-token',
+      tokenType: 'Bearer',
+      expiresAt: Math.floor(Date.now() / 1000) + 1800,
+    });
+    mockGetAuthBootstrap.mockResolvedValue({
+      ok: true,
+      sub: 'auth0|runner-refresh',
+      profile_id: 'profile-refresh-1',
+      has_profiles: true,
+      profiles_count: 1,
+      needs_user_onboarding: false,
+      missing_user_fields: [],
+      user: {
+        username: 'refresh.runner',
+      },
+    });
+    mockGetProfileSummary.mockResolvedValue({
+      ok: true,
+      profile_id: 'profile-refresh-1',
+      profile: {
+        username: 'refresh.runner',
+        category: 'Athlete',
+        selected_events: ['track-field'],
+        main_disciplines: {'track-field': '800m'},
+        track_field_main_event: '800m',
+      },
+      posts_count: 0,
+      followers_count: 0,
+    });
+
+    await act(async () => {
+      ReactTestRenderer.create(
+        <AuthProvider>
+          <ContextProbe onChange={(value) => {
+            latestAuth = value;
+          }} />
+        </AuthProvider>,
+      );
+    });
+    await flushEffects();
+    await flushEffects();
+
+    expect(mockManagerGetCredentials).toHaveBeenCalled();
+    expect(mockGetAuthBootstrap).toHaveBeenCalledWith('fresh-token');
+    expect(latestAuth?.accessToken).toBe('fresh-token');
+    expect(mockManagerSaveCredentials).toHaveBeenCalled();
   });
 });

@@ -115,7 +115,7 @@ const UserProfileScreen = ({ navigation, route }: any) => {
         const localEvents = userProfile?.selectedEvents;
         return Array.isArray(localEvents) ? localEvents : [];
     }, [profileSummary?.profile?.selected_events, userProfile?.selectedEvents]);
-    const selectedFocuses = useMemo(
+    const selectedFocusesFromProfile = useMemo(
         () => normalizeSelectedEvents(selectedEventProfiles),
         [selectedEventProfiles],
     );
@@ -133,6 +133,7 @@ const UserProfileScreen = ({ navigation, route }: any) => {
             userProfile?.category === 'support'
         );
     }, [profileSummary?.profile, userProfile]);
+    const selectedFocuses = useMemo(() => selectedFocusesFromProfile, [selectedFocusesFromProfile]);
     const bootstrapProfileId = String(authBootstrap?.profile_id ?? '').trim();
     const summaryProfileId = String(profileSummary?.profile_id ?? '').trim();
     const hasConcreteProfileRecord =
