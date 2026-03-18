@@ -60,6 +60,10 @@ const CompleteAthleteDetailsScreen = ({ navigation, route }: any) => {
         [route?.params?.flowSelectedEvents, route?.params?.selectedEvents],
     );
     const selectedFocuses = flowSelectedFocuses.length > 0 ? flowSelectedFocuses : persistedSelectedFocuses;
+    const existingSelectedFocuses = useMemo(
+        () => normalizeSelectedEvents(userProfile?.selectedEvents ?? []),
+        [userProfile?.selectedEvents],
+    );
     const currentYear = useMemo(() => String(new Date().getFullYear()), []);
     const showsChestNumbers = useMemo(
         () => selectedFocuses.some((focusId) => focusUsesChestNumbers(focusId)),
@@ -253,8 +257,13 @@ const CompleteAthleteDetailsScreen = ({ navigation, route }: any) => {
                 acc[safeFocus] = safeDiscipline;
                 return acc;
             }, {} as Record<string, string>);
+            const nextSelectedEvents = Array.from(
+                new Set<SportFocusId>([...existingSelectedFocuses, ...selectedFocuses]),
+            );
 
             await updateUserProfile({
+                category: 'find',
+                selectedEvents: nextSelectedEvents,
                 website: String(website || '').trim(),
                 chestNumbersByYear: normalizedChest,
                 trackFieldClub: String(clubName || '').trim(),
@@ -263,7 +272,7 @@ const CompleteAthleteDetailsScreen = ({ navigation, route }: any) => {
                 trackFieldMainEvent: String(normalizedFocusDisciplines['track-field'] || '').trim(),
                 roadTrailMainEvent: String(normalizedFocusDisciplines['road-events'] || '').trim(),
                 mainDisciplines: normalizedFocusDisciplines,
-            } as any, { persistLocally: false });
+            } as any);
 
             navigation.goBack();
         } catch (e: any) {

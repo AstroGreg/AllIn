@@ -287,7 +287,7 @@ const CompleteAthleteDetailsScreen = ({ navigation, route }: any) => {
                 trackFieldMainEvent: String(normalizedMainDisciplines['track-field'] || '').trim(),
                 roadTrailMainEvent: String(normalizedMainDisciplines['road-events'] || '').trim(),
                 mainDisciplines: normalizedMainDisciplines,
-            }, { persistLocally: false });
+            });
 
             const targetFocus = flowSelectedFocuses[0] ?? persistedSelectedFocuses[0] ?? nextSelectedEvents[0] ?? null;
             navigation.dispatch(

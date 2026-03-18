@@ -34,6 +34,7 @@ import {
   getTrainingGroupHelperText,
   getTrainingGroupPlaceholder,
   normalizeMainDisciplines,
+  normalizeFocusId,
   normalizeSelectedEvents,
   type SportFocusId,
 } from '../../../utils/profileSelections';
@@ -60,11 +61,20 @@ const TrackFieldSettings = ({ navigation, route }: any) => {
   const currentYear = useMemo(() => String(new Date().getFullYear()), []);
 
   const requestedFocusId = String(route?.params?.focusId || '').trim();
+  const requestedFocus = useMemo(() => normalizeFocusId(requestedFocusId), [requestedFocusId]);
+  const allSelectedFocuses = useMemo(
+    () => normalizeSelectedEvents(userProfile?.selectedEvents ?? []),
+    [userProfile?.selectedEvents],
+  );
   const selectedFocuses = useMemo(() => {
-    const allFocuses = normalizeSelectedEvents(userProfile?.selectedEvents ?? []);
-    if (!requestedFocusId) return allFocuses;
-    return allFocuses.filter((focusId) => focusId === requestedFocusId);
-  }, [requestedFocusId, userProfile?.selectedEvents]);
+    if (!requestedFocus) return allSelectedFocuses;
+    return allSelectedFocuses.filter((focusId) => focusId === requestedFocus);
+  }, [allSelectedFocuses, requestedFocus]);
+  const focusToDelete = useMemo(() => {
+    if (requestedFocus && allSelectedFocuses.includes(requestedFocus)) return requestedFocus;
+    if (selectedFocuses.length === 1) return selectedFocuses[0];
+    return null;
+  }, [allSelectedFocuses, requestedFocus, selectedFocuses]);
   const screenTitle = useMemo(() => {
     if (selectedFocuses.length === 1) return getSportFocusLabel(selectedFocuses[0], t);
     return t('Athlete details');
@@ -88,6 +98,7 @@ const TrackFieldSettings = ({ navigation, route }: any) => {
   const [mainDisciplines, setMainDisciplines] = useState<Record<string, string>>({});
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const [clubModalVisible, setClubModalVisible] = useState(false);
   const [clubQuery, setClubQuery] = useState('');
@@ -238,6 +249,59 @@ const TrackFieldSettings = ({ navigation, route }: any) => {
     } finally {
       setIsSaving(false);
     }
+  };
+
+  const handleDeleteFocus = () => {
+    if (!focusToDelete || isDeleting || isSaving) return;
+    const focusLabel = getSportFocusLabel(focusToDelete, t);
+    Alert.alert(
+      t('Delete sport focus'),
+      t('Do you want to remove {{focus}} from your athlete profile?', { focus: focusLabel }),
+      [
+        { text: t('Cancel'), style: 'cancel' },
+        {
+          text: t('Delete'),
+          style: 'destructive',
+          onPress: async () => {
+            setIsDeleting(true);
+            try {
+              const nextSelectedFocuses = allSelectedFocuses.filter((focusId) => focusId !== focusToDelete);
+              const nextMainDisciplines = Object.entries(mainDisciplines).reduce((acc, [focusId, discipline]) => {
+                if (String(focusId).trim() === focusToDelete) return acc;
+                const safeFocus = String(focusId || '').trim();
+                const safeDiscipline = String(discipline || '').trim();
+                if (!safeFocus || !safeDiscipline) return acc;
+                acc[safeFocus] = safeDiscipline;
+                return acc;
+              }, {} as Record<string, string>);
+              const nextChestByYear = nextSelectedFocuses.some((focusId) => focusUsesChestNumbers(focusId))
+                ? chestByYear
+                : {};
+
+              await updateUserProfile({
+                selectedEvents: nextSelectedFocuses,
+                mainDisciplines: nextMainDisciplines,
+                trackFieldMainEvent:
+                  focusToDelete === 'track-field'
+                    ? ''
+                    : String(nextMainDisciplines['track-field'] || '').trim(),
+                roadTrailMainEvent:
+                  focusToDelete === 'road-events'
+                    ? ''
+                    : String(nextMainDisciplines['road-events'] || '').trim(),
+                chestNumbersByYear: nextChestByYear,
+              } as any);
+              navigation.goBack();
+            } catch (e: any) {
+              const message = e instanceof ApiError ? e.message : String(e?.message ?? e);
+              Alert.alert(t('Delete failed'), message || t('Please try again'));
+            } finally {
+              setIsDeleting(false);
+            }
+          },
+        },
+      ],
+    );
   };
 
   return (
@@ -394,7 +458,7 @@ const TrackFieldSettings = ({ navigation, route }: any) => {
         <SizeBox height={24} />
         <TouchableOpacity
           style={[Styles.continueBtn, isSaving && { opacity: 0.6 }]}
-          disabled={isSaving}
+          disabled={isSaving || isDeleting}
           onPress={handleSave}
         >
           {isSaving ? (
@@ -403,6 +467,23 @@ const TrackFieldSettings = ({ navigation, route }: any) => {
             <Text style={Styles.continueBtnText}>{t('Save')}</Text>
           )}
         </TouchableOpacity>
+        {focusToDelete ? (
+          <>
+            <SizeBox height={12} />
+            <TouchableOpacity
+              testID="delete-sport-focus-button"
+              style={[Styles.continueBtn, { backgroundColor: colors.errorColor }, isDeleting && { opacity: 0.6 }]}
+              disabled={isDeleting || isSaving}
+              onPress={handleDeleteFocus}
+            >
+              {isDeleting ? (
+                <ActivityIndicator size="small" color={colors.pureWhite} />
+              ) : (
+                <Text style={Styles.continueBtnText}>{t('Delete sport focus')}</Text>
+              )}
+            </TouchableOpacity>
+          </>
+        ) : null}
         <SizeBox height={insets.bottom > 0 ? insets.bottom + 20 : 40} />
       </ScrollView>
 

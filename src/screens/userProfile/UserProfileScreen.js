@@ -85,7 +85,7 @@ const UserProfileScreen = ({ navigation, route }) => {
         const localEvents = userProfile === null || userProfile === void 0 ? void 0 : userProfile.selectedEvents;
         return Array.isArray(localEvents) ? localEvents : [];
     }, [(_c = profileSummary === null || profileSummary === void 0 ? void 0 : profileSummary.profile) === null || _c === void 0 ? void 0 : _c.selected_events, userProfile === null || userProfile === void 0 ? void 0 : userProfile.selectedEvents]);
-    const selectedFocuses = useMemo(() => normalizeSelectedEvents(selectedEventProfiles), [selectedEventProfiles]);
+    const selectedFocusesFromProfile = useMemo(() => normalizeSelectedEvents(selectedEventProfiles), [selectedEventProfiles]);
     const hasSupportProfile = useMemo(() => {
         var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l;
         return (String((_c = (_b = (_a = profileSummary === null || profileSummary === void 0 ? void 0 : profileSummary.profile) === null || _a === void 0 ? void 0 : _a.support_role) !== null && _b !== void 0 ? _b : userProfile === null || userProfile === void 0 ? void 0 : userProfile.supportRole) !== null && _c !== void 0 ? _c : '').trim().length > 0 ||
@@ -99,9 +99,14 @@ const UserProfileScreen = ({ navigation, route }) => {
             (Array.isArray(userProfile === null || userProfile === void 0 ? void 0 : userProfile.supportFocuses) && (userProfile === null || userProfile === void 0 ? void 0 : userProfile.supportFocuses.length) > 0) ||
             (userProfile === null || userProfile === void 0 ? void 0 : userProfile.category) === 'support');
     }, [profileSummary === null || profileSummary === void 0 ? void 0 : profileSummary.profile, userProfile]);
-    const serverDeclaresNoProfiles = (authBootstrap === null || authBootstrap === void 0 ? void 0 : authBootstrap.has_profiles) === false && !didLoadProfileData;
-    const hasAnyLinkedProfiles = serverDeclaresNoProfiles ? false : (selectedFocuses.length > 0 || myGroups.length > 0 || hasSupportProfile);
-    const shouldShowEmptyProfileState = serverDeclaresNoProfiles || (!hasAnyLinkedProfiles && didLoadProfileData);
+    const selectedFocuses = useMemo(() => selectedFocusesFromProfile, [selectedFocusesFromProfile]);
+    const bootstrapProfileId = String((authBootstrap === null || authBootstrap === void 0 ? void 0 : authBootstrap.profile_id) || '').trim();
+    const summaryProfileId = String((profileSummary === null || profileSummary === void 0 ? void 0 : profileSummary.profile_id) || '').trim();
+    const hasConcreteProfileRecord = summaryProfileId.length > 0 ||
+        bootstrapProfileId.length > 0 ||
+        (authBootstrap === null || authBootstrap === void 0 ? void 0 : authBootstrap.has_profiles) === true;
+    const hasAnyLinkedProfiles = hasConcreteProfileRecord || selectedFocuses.length > 0 || myGroups.length > 0 || hasSupportProfile;
+    const shouldShowEmptyProfileState = didLoadProfileData && !hasAnyLinkedProfiles;
     const perfReady = Boolean(profileImage) || (didLoadProfileData && (profileSummary !== null || shouldShowEmptyProfileState));
     const profileCategoryLabel = profileCategory ? (profileCategory === 'support' ? t('Support') : getSportFocusLabel(profileCategory, t)) : '';
     const collectionScopeKey = useMemo(() => {

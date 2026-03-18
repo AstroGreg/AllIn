@@ -20,7 +20,7 @@ import { ApiError, getGroup, getProfileSummary, searchClubs, searchGroups, } fro
 import { useTranslation } from 'react-i18next';
 import ChestNumbersByYearField from '../../../components/profile/ChestNumbersByYearField';
 import SearchPickerModal from '../../../components/profile/SearchPickerModal';
-import { buildDisciplineSearchOptions, focusUsesChestNumbers, getChestNumberFieldLabel, getDisciplineLabel, getFocusDisciplineModalTitle, getFocusMainDisciplineLabel, getMainDisciplineForFocus, getOfficialClubFieldLabel, getOfficialClubHelperText, getOfficialClubModalTitle, getOfficialClubPlaceholder, getOfficialClubSearchFocuses, getSportFocusLabel, getTrainingGroupFieldLabel, getTrainingGroupModalTitle, getTrainingGroupPlaceholder, normalizeMainDisciplines, normalizeSelectedEvents, } from '../../../utils/profileSelections';
+import { buildDisciplineSearchOptions, focusUsesChestNumbers, getChestNumberFieldLabel, getDisciplineLabel, getFocusDisciplineModalTitle, getFocusMainDisciplineLabel, getMainDisciplineForFocus, getOfficialClubFieldLabel, getOfficialClubHelperText, getOfficialClubModalTitle, getOfficialClubPlaceholder, getOfficialClubSearchFocuses, getSportFocusLabel, getTrainingGroupFieldLabel, getTrainingGroupModalTitle, getTrainingGroupPlaceholder, normalizeFocusId, normalizeMainDisciplines, normalizeSelectedEvents, } from '../../../utils/profileSelections';
 const normalizeChestByYear = (raw) => {
     if (!raw || typeof raw !== 'object' || Array.isArray(raw))
         return {};
@@ -45,13 +45,23 @@ const TrackFieldSettings = ({ navigation, route }) => {
     const { apiAccessToken, userProfile, updateUserProfile } = useAuth();
     const currentYear = useMemo(() => String(new Date().getFullYear()), []);
     const requestedFocusId = String(((_a = route === null || route === void 0 ? void 0 : route.params) === null || _a === void 0 ? void 0 : _a.focusId) || '').trim();
-    const selectedFocuses = useMemo(() => {
+    const requestedFocus = useMemo(() => normalizeFocusId(requestedFocusId), [requestedFocusId]);
+    const allSelectedFocuses = useMemo(() => {
         var _a;
-        const allFocuses = normalizeSelectedEvents((_a = userProfile === null || userProfile === void 0 ? void 0 : userProfile.selectedEvents) !== null && _a !== void 0 ? _a : []);
-        if (!requestedFocusId)
-            return allFocuses;
-        return allFocuses.filter((focusId) => focusId === requestedFocusId);
-    }, [requestedFocusId, userProfile === null || userProfile === void 0 ? void 0 : userProfile.selectedEvents]);
+        return normalizeSelectedEvents((_a = userProfile === null || userProfile === void 0 ? void 0 : userProfile.selectedEvents) !== null && _a !== void 0 ? _a : []);
+    }, [userProfile === null || userProfile === void 0 ? void 0 : userProfile.selectedEvents]);
+    const selectedFocuses = useMemo(() => {
+        if (!requestedFocus)
+            return allSelectedFocuses;
+        return allSelectedFocuses.filter((focusId) => focusId === requestedFocus);
+    }, [allSelectedFocuses, requestedFocus]);
+    const focusToDelete = useMemo(() => {
+        if (requestedFocus && allSelectedFocuses.includes(requestedFocus))
+            return requestedFocus;
+        if (selectedFocuses.length === 1)
+            return selectedFocuses[0];
+        return null;
+    }, [allSelectedFocuses, requestedFocus, selectedFocuses]);
     const screenTitle = useMemo(() => {
         if (selectedFocuses.length === 1)
             return getSportFocusLabel(selectedFocuses[0], t);
@@ -69,6 +79,7 @@ const TrackFieldSettings = ({ navigation, route }) => {
     const [mainDisciplines, setMainDisciplines] = useState({});
     const [isLoading, setIsLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
+    const [isDeleting, setIsDeleting] = useState(false);
     const [clubModalVisible, setClubModalVisible] = useState(false);
     const [clubQuery, setClubQuery] = useState('');
     const [clubOptions, setClubOptions] = useState([]);
@@ -282,6 +293,58 @@ const TrackFieldSettings = ({ navigation, route }) => {
             setIsSaving(false);
         }
     });
+    const handleDeleteFocus = () => {
+        if (!focusToDelete || isDeleting || isSaving)
+            return;
+        const focusLabel = getSportFocusLabel(focusToDelete, t);
+        Alert.alert(t('Delete sport focus'), t('Do you want to remove {{focus}} from your athlete profile?', { focus: focusLabel }), [
+            { text: t('Cancel'), style: 'cancel' },
+            {
+                text: t('Delete'),
+                style: 'destructive',
+                onPress: () => __awaiter(void 0, void 0, void 0, function* () {
+                    var _a, _b;
+                    setIsDeleting(true);
+                    try {
+                        const nextSelectedFocuses = allSelectedFocuses.filter((focusId) => focusId !== focusToDelete);
+                        const nextMainDisciplines = Object.entries(mainDisciplines).reduce((acc, [focusId, discipline]) => {
+                            const focusKey = String(focusId).trim();
+                            if (focusKey === focusToDelete)
+                                return acc;
+                            const safeFocus = String(focusId || '').trim();
+                            const safeDiscipline = String(discipline || '').trim();
+                            if (!safeFocus || !safeDiscipline)
+                                return acc;
+                            acc[safeFocus] = safeDiscipline;
+                            return acc;
+                        }, {});
+                        const nextChestByYear = nextSelectedFocuses.some((focusId) => focusUsesChestNumbers(focusId))
+                            ? chestByYear
+                            : {};
+                        yield updateUserProfile({
+                            selectedEvents: nextSelectedFocuses,
+                            mainDisciplines: nextMainDisciplines,
+                            trackFieldMainEvent: focusToDelete === 'track-field'
+                                ? ''
+                                : String(nextMainDisciplines['track-field'] || '').trim(),
+                            roadTrailMainEvent: focusToDelete === 'road-events'
+                                ? ''
+                                : String(nextMainDisciplines['road-events'] || '').trim(),
+                            chestNumbersByYear: nextChestByYear,
+                        });
+                        navigation.goBack();
+                    }
+                    catch (e) {
+                        const message = e instanceof ApiError ? e.message : String((_a = e === null || e === void 0 ? void 0 : e.message) !== null && _a !== void 0 ? _a : e);
+                        Alert.alert(t('Delete failed'), message || t('Please try again'));
+                    }
+                    finally {
+                        setIsDeleting(false);
+                    }
+                }),
+            },
+        ]);
+    };
     return (_jsxs(View, Object.assign({ style: Styles.mainContainer }, { children: [_jsx(SizeBox, { height: insets.top }), _jsxs(View, Object.assign({ style: Styles.header }, { children: [_jsx(TouchableOpacity, Object.assign({ style: Styles.headerButton, onPress: () => navigation.goBack() }, { children: _jsx(ArrowLeft2, { size: 24, color: colors.primaryColor, variant: "Linear" }) })), _jsx(Text, Object.assign({ style: Styles.headerTitle }, { children: screenTitle })), _jsx(View, { style: Styles.headerSpacer })] })), _jsxs(ScrollView, Object.assign({ style: Styles.container, showsVerticalScrollIndicator: false }, { children: [_jsx(SizeBox, { height: 24 }), isLoading ? (_jsx(ActivityIndicator, { color: colors.primaryColor })) : (_jsxs(_Fragment, { children: [selectedFocuses.length === 0 ? (_jsxs(_Fragment, { children: [_jsx(Text, Object.assign({ style: Styles.inlineHelperText }, { children: t('Add an athlete focus first to edit athlete details.') })), _jsx(SizeBox, { height: 14 })] })) : null, selectedFocuses.some((focusId) => focusUsesChestNumbers(focusId)) ? (_jsxs(_Fragment, { children: [_jsx(ChestNumbersByYearField, { currentYear: currentYear, values: chestByYear, onChange: setChestByYear, label: getChestNumberFieldLabel(currentYear, t), helperText: t('Keep the current year up to date and add older years only when you want them shown on the profile.'), addYearLabel: t('Add year'), moreYearsLabel: t('More years'), inputPlaceholder: t('Enter chest number') }), _jsx(SizeBox, { height: 14 })] })) : null, showOfficialClubField ? (_jsxs(_Fragment, { children: [_jsxs(View, Object.assign({ style: Styles.addCardInputGroup }, { children: [_jsx(Text, Object.assign({ style: Styles.addCardLabel }, { children: getOfficialClubFieldLabel(selectedFocuses, t) })), _jsx(SizeBox, { height: 8 }), _jsxs(View, Object.assign({ style: Styles.addCardInputContainer }, { children: [_jsxs(TouchableOpacity, Object.assign({ style: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 12 }, activeOpacity: 0.85, onPress: () => setClubModalVisible(true) }, { children: [_jsx(Buildings, { size: 20, color: colors.primaryColor, variant: "Linear" }), _jsx(Text, Object.assign({ style: [Styles.addCardPlaceholder, clubInput ? Styles.addCardInputText : null] }, { children: clubInput || getOfficialClubPlaceholder(selectedFocuses, t) }))] })), clubInput ? (_jsx(TouchableOpacity, Object.assign({ onPress: () => { setClubInput(''); setClubId(''); } }, { children: _jsx(CloseCircle, { size: 18, color: colors.grayColor }) }))) : null] }))] })), _jsx(SizeBox, { height: 14 })] })) : officialClubHelperText ? (_jsxs(_Fragment, { children: [_jsx(Text, Object.assign({ style: Styles.inlineHelperText }, { children: officialClubHelperText })), _jsx(SizeBox, { height: 14 })] })) : null, _jsxs(View, Object.assign({ style: Styles.addCardInputGroup }, { children: [_jsx(Text, Object.assign({ style: Styles.addCardLabel }, { children: getTrainingGroupFieldLabel(selectedFocuses, t) })), _jsx(SizeBox, { height: 8 }), _jsxs(View, Object.assign({ style: Styles.addCardInputContainer }, { children: [_jsxs(TouchableOpacity, Object.assign({ style: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 12 }, activeOpacity: 0.85, onPress: () => setGroupModalVisible(true) }, { children: [_jsx(Profile2User, { size: 20, color: colors.primaryColor, variant: "Linear" }), _jsx(Text, Object.assign({ style: [Styles.addCardPlaceholder, runningGroupName ? Styles.addCardInputText : null] }, { children: runningGroupName || getTrainingGroupPlaceholder(selectedFocuses, t) }))] })), runningGroupName ? (_jsx(TouchableOpacity, Object.assign({ onPress: () => { setRunningGroupName(''); setRunningGroupId(''); } }, { children: _jsx(CloseCircle, { size: 18, color: colors.grayColor }) }))) : null] }))] })), _jsx(SizeBox, { height: 14 }), selectedFocuses.map((focusId) => {
                                 var _a, _b;
                                 const currentDiscipline = getMainDisciplineForFocus(mainDisciplines, focusId, {
@@ -300,7 +363,7 @@ const TrackFieldSettings = ({ navigation, route }) => {
                                                                 delete next[focusId];
                                                                 return next;
                                                             }) }, { children: _jsx(CloseCircle, { size: 18, color: colors.grayColor }) }))) : null] }))] })), _jsx(SizeBox, { height: 14 })] }, focusId));
-                            }), _jsxs(View, Object.assign({ style: Styles.addCardInputGroup }, { children: [_jsx(Text, Object.assign({ style: Styles.addCardLabel }, { children: t('Website (optional)') })), _jsx(SizeBox, { height: 8 }), _jsxs(View, Object.assign({ style: Styles.addCardInputContainer }, { children: [_jsx(Global, { size: 20, color: colors.primaryColor, variant: "Linear" }), _jsx(TextInput, { style: Styles.addCardInput, value: websiteInput, onChangeText: setWebsiteInput, placeholder: t('Add website'), placeholderTextColor: colors.grayColor, autoCapitalize: "none", autoCorrect: false, keyboardType: "url" })] })), _jsx(Text, Object.assign({ style: Styles.inlineHelperText }, { children: t('Website appears at the bottom of the profile and stays optional.') }))] }))] })), _jsx(SizeBox, { height: 24 }), _jsx(TouchableOpacity, Object.assign({ style: [Styles.continueBtn, isSaving && { opacity: 0.6 }], disabled: isSaving, onPress: handleSave }, { children: isSaving ? (_jsx(ActivityIndicator, { size: "small", color: colors.pureWhite })) : (_jsx(Text, Object.assign({ style: Styles.continueBtnText }, { children: t('Save') }))) })), _jsx(SizeBox, { height: insets.bottom > 0 ? insets.bottom + 20 : 40 })] })), _jsx(SearchPickerModal, { visible: clubModalVisible, title: getOfficialClubModalTitle(selectedFocuses, t), placeholder: getOfficialClubPlaceholder(selectedFocuses, t), query: clubQuery, onChangeQuery: setClubQuery, onClose: () => setClubModalVisible(false), options: clubOptions, loading: clubsLoading, error: clubsError, emptyText: t('No clubs found.'), selectedId: clubId, onSelect: (option) => {
+                            }), _jsxs(View, Object.assign({ style: Styles.addCardInputGroup }, { children: [_jsx(Text, Object.assign({ style: Styles.addCardLabel }, { children: t('Website (optional)') })), _jsx(SizeBox, { height: 8 }), _jsxs(View, Object.assign({ style: Styles.addCardInputContainer }, { children: [_jsx(Global, { size: 20, color: colors.primaryColor, variant: "Linear" }), _jsx(TextInput, { style: Styles.addCardInput, value: websiteInput, onChangeText: setWebsiteInput, placeholder: t('Add website'), placeholderTextColor: colors.grayColor, autoCapitalize: "none", autoCorrect: false, keyboardType: "url" })] })), _jsx(Text, Object.assign({ style: Styles.inlineHelperText }, { children: t('Website appears at the bottom of the profile and stays optional.') }))] }))] })), _jsx(SizeBox, { height: 24 }), _jsx(TouchableOpacity, Object.assign({ style: [Styles.continueBtn, isSaving && { opacity: 0.6 }], disabled: isSaving || isDeleting, onPress: handleSave }, { children: isSaving ? (_jsx(ActivityIndicator, { size: "small", color: colors.pureWhite })) : (_jsx(Text, Object.assign({ style: Styles.continueBtnText }, { children: t('Save') }))) })), focusToDelete ? (_jsxs(_Fragment, { children: [_jsx(SizeBox, { height: 12 }), _jsx(TouchableOpacity, Object.assign({ testID: "delete-sport-focus-button", style: [Styles.continueBtn, { backgroundColor: colors.errorColor }, isDeleting && { opacity: 0.6 }], disabled: isDeleting || isSaving, onPress: handleDeleteFocus }, { children: isDeleting ? (_jsx(ActivityIndicator, { size: "small", color: colors.pureWhite })) : (_jsx(Text, Object.assign({ style: Styles.continueBtnText }, { children: t('Delete sport focus') }))) }))] })) : null, _jsx(SizeBox, { height: insets.bottom > 0 ? insets.bottom + 20 : 40 })] })), _jsx(SearchPickerModal, { visible: clubModalVisible, title: getOfficialClubModalTitle(selectedFocuses, t), placeholder: getOfficialClubPlaceholder(selectedFocuses, t), query: clubQuery, onChangeQuery: setClubQuery, onClose: () => setClubModalVisible(false), options: clubOptions, loading: clubsLoading, error: clubsError, emptyText: t('No clubs found.'), selectedId: clubId, onSelect: (option) => {
                     setClubId(option.id);
                     setClubInput(option.title);
                     setClubModalVisible(false);
